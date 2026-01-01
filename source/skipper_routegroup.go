@@ -193,16 +193,17 @@ func (cli *routeGroupClient) do(req *http.Request) (*http.Response, error) {
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+func NewRouteGroupSource(cfg Config, token, tokenPath, apiServerURL string) (Source, error) {
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	if routegroupVersion == "" {
-		routegroupVersion = DefaultRoutegroupVersion
+	routeGroupVersion := cfg.SkipperRouteGroupVersion
+	if routeGroupVersion == "" {
+		routeGroupVersion = DefaultRoutegroupVersion
 	}
-	cli := newRouteGroupClient(token, tokenPath, timeout)
+	cli := newRouteGroupClient(token, tokenPath, cfg.RequestTimeout)
 
 	u, err := url.Parse(apiServerURL)
 	if err != nil {
@@ -216,31 +217,30 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, 
 		apiServer = "https://" + strings.TrimSuffix(u.Host, ":443")
 	}
 
-	sc := &routeGroupSource{
-		cli:                      cli,
-		apiServer:                apiServer,
-		namespace:                namespace,
-		apiEndpoint:              apiServer + fmt.Sprintf(routeGroupListResource, routegroupVersion),
-		annotationFilter:         annotationFilter,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-	}
-	if namespace != "" {
-		sc.apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routegroupVersion, namespace)
+	apiEndpoint := apiServer + fmt.Sprintf(routeGroupListResource, routeGroupVersion)
+	if cfg.Namespace != "" {
+		apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routeGroupVersion, cfg.Namespace)
 	}
 
-	log.Infoln("Created route group source")
-	return sc, nil
+	return &routeGroupSource{
+		cli:                      cli,
+		apiServer:                apiServer,
+		namespace:                cfg.Namespace,
+		apiEndpoint:              apiEndpoint,
+		annotationFilter:         cfg.AnnotationFilter,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+	}, nil
 }
 
 // AddEventHandler for routegroup is currently a no op, because we do not implement caching, yet.
-func (sc *routeGroupSource) AddEventHandler(ctx context.Context, handler func()) {}
+func (sc *routeGroupSource) AddEventHandler(_ context.Context, handler func()) {}
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.
 // Logic is ported from ingress without fqdnTemplate
-func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	rgList, err := sc.cli.getRouteGroupList(sc.apiEndpoint)
 	if err != nil {
 		log.Errorf("Failed to get RouteGroup list: %v", err)

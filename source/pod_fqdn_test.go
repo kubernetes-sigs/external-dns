@@ -53,14 +53,9 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 			_, err := NewPodSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				"",
-				false,
-				"",
-				tt.fqdnTemplate,
-				false,
-				"",
-				nil)
+				Config{
+					FQDNTemplate: tt.fqdnTemplate,
+				})
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -402,14 +397,11 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				false,
-				tt.sourceDomain,
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				nil)
+				Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: tt.combineFQDN,
+					PodSourceDomain:          tt.sourceDomain,
+				})
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -466,14 +458,11 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				false,
-				tt.sourceDomain,
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				nil)
+				Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: tt.combineFQDN,
+					PodSourceDomain:          tt.sourceDomain,
+				})
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())

@@ -34,8 +34,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -62,20 +60,15 @@ type kongTCPIngressSource struct {
 func NewKongTCPIngressSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
-	namespace, annotationFilter string, ignoreHostnameAnnotation bool,
+	cfg Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = kongTCPIngressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = kongTCPIngressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -90,12 +83,12 @@ func NewKongTCPIngressSource(
 	}
 
 	return &kongTCPIngressSource{
-		annotationFilter:         annotationFilter,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		annotationFilter:         cfg.AnnotationFilter,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:        dynamicKubeClient,
 		kongTCPIngressInformer:   kongTCPIngressInformer,
 		kubeClient:               kubeClient,
-		namespace:                namespace,
+		namespace:                cfg.Namespace,
 		unstructuredConverter:    uc,
 	}, nil
 }

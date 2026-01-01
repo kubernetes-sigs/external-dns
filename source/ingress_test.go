@@ -58,15 +58,10 @@ func (suite *IngressSuite) SetupTest() {
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-		false,
-		false,
-		labels.Everything(),
-		[]string{},
+		Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -122,15 +117,12 @@ func TestNewIngressSource(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				ti.ingressClassNames,
+				Config{
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IngressClassNames:        ti.ingressClassNames,
+				},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1419,15 +1411,17 @@ func testIngressEndpoints(t *testing.T) {
 			source, _ := NewIngressSource(
 				context.TODO(),
 				fakeClient,
-				ti.targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
-				ti.ignoreIngressTLSSpec,
-				ti.ignoreIngressRulesSpec,
-				ti.ingressLabelSelector,
-				ti.ingressClassNames,
+				Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
+					IgnoreIngressRulesSpec:   ti.ignoreIngressRulesSpec,
+					LabelFilter:              ti.ingressLabelSelector,
+					IngressClassNames:        ti.ingressClassNames,
+				},
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(t.Context())
@@ -1623,19 +1617,12 @@ func TestIngressWithConfiguration(t *testing.T) {
 			if tt.cfg == nil {
 				tt.cfg = &Config{}
 			}
+			tt.cfg.LabelFilter = labels.Everything()
 
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				tt.cfg.Namespace,
-				tt.cfg.AnnotationFilter,
-				tt.cfg.FQDNTemplate,
-				tt.cfg.CombineFQDNAndAnnotation,
-				tt.cfg.IgnoreHostnameAnnotation,
-				tt.cfg.IgnoreIngressTLSSpec,
-				tt.cfg.IgnoreIngressRulesSpec,
-				labels.Everything(),
-				tt.cfg.IngressClassNames,
+				*tt.cfg,
 			)
 			require.NoError(t, err)
 			endpoints, err := src.Endpoints(t.Context())

@@ -99,17 +99,16 @@ func NewTraefikSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter string,
-	ignoreHostnameAnnotation, enableLegacy, disableNew bool,
+	cfg Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer kubeinformers.GenericInformer
 	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer kubeinformers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
-	if !disableNew {
+	if !cfg.TraefikDisableNew {
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
@@ -118,36 +117,16 @@ func NewTraefikSource(
 				AddFunc: func(obj any) {},
 			},
 		)
-		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
+		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
-	if enableLegacy {
+	if cfg.TraefikEnableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
-		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
+		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -163,8 +142,8 @@ func NewTraefikSource(
 	}
 
 	return &traefikSource{
-		annotationFilter:           annotationFilter,
-		ignoreHostnameAnnotation:   ignoreHostnameAnnotation,
+		annotationFilter:           cfg.AnnotationFilter,
+		ignoreHostnameAnnotation:   cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:          dynamicKubeClient,
 		ingressRouteInformer:       ingressRouteInformer,
 		ingressRouteTcpInformer:    ingressRouteTcpInformer,
@@ -173,7 +152,7 @@ func NewTraefikSource(
 		oldIngressRouteTcpInformer: oldIngressRouteTcpInformer,
 		oldIngressRouteUdpInformer: oldIngressRouteUdpInformer,
 		kubeClient:                 kubeClient,
-		namespace:                  namespace,
+		namespace:                  cfg.Namespace,
 		unstructuredConverter:      uc,
 	}, nil
 }

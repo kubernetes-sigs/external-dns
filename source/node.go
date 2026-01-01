@@ -50,12 +50,8 @@ type nodeSource struct {
 func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	annotationFilter, fqdnTemplate string,
-	labelSelector labels.Selector,
-	exposeInternalIPv6,
-	excludeUnschedulable bool,
-	combineFQDNAnnotation bool) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	cfg Config) (Source, error) {
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +73,13 @@ func NewNodeSource(
 
 	return &nodeSource{
 		client:                kubeClient,
-		annotationFilter:      annotationFilter,
+		annotationFilter:      cfg.AnnotationFilter,
 		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFQDNAnnotation,
+		combineFQDNAnnotation: cfg.CombineFQDNAndAnnotation,
 		nodeInformer:          nodeInformer,
-		labelSelector:         labelSelector,
-		excludeUnschedulable:  excludeUnschedulable,
-		exposeInternalIPv6:    exposeInternalIPv6,
+		labelSelector:         cfg.LabelFilter,
+		excludeUnschedulable:  cfg.ExcludeUnschedulable,
+		exposeInternalIPv6:    cfg.ExposeInternalIPv6,
 	}, nil
 }
 

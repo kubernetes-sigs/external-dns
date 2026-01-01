@@ -30,8 +30,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -59,31 +57,20 @@ type ocpRouteSource struct {
 func NewOcpRouteSource(
 	ctx context.Context,
 	ocpClient versioned.Interface,
-	namespace string,
-	annotationFilter string,
-	fqdnTemplate string,
-	combineFQDNAnnotation bool,
-	ignoreHostnameAnnotation bool,
-	labelSelector labels.Selector,
-	ocpRouterName string,
+	cfg Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(namespace))
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(cfg.Namespace))
 	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = informer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -94,14 +81,14 @@ func NewOcpRouteSource(
 
 	return &ocpRouteSource{
 		client:                   ocpClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
+		namespace:                cfg.Namespace,
+		annotationFilter:         cfg.AnnotationFilter,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFQDNAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		routeInformer:            informer,
-		labelSelector:            labelSelector,
-		ocpRouterName:            ocpRouterName,
+		labelSelector:            cfg.LabelFilter,
+		ocpRouterName:            cfg.OCPRouterName,
 	}, nil
 }
 

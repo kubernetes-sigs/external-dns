@@ -35,7 +35,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -72,22 +71,15 @@ func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
-	labelSelector labels.Selector,
+	cfg Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = ambassadorHostInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = ambassadorHostInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -104,11 +96,11 @@ func NewAmbassadorHostSource(
 	return &ambassadorHostSource{
 		dynamicKubeClient:      dynamicKubeClient,
 		kubeClient:             kubeClient,
-		namespace:              namespace,
-		annotationFilter:       annotationFilter,
+		namespace:              cfg.Namespace,
+		annotationFilter:       cfg.AnnotationFilter,
 		ambassadorHostInformer: ambassadorHostInformer,
 		unstructuredConverter:  uc,
-		labelSelector:          labelSelector,
+		labelSelector:          cfg.LabelFilter,
 	}, nil
 }
 

@@ -25,8 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -54,15 +52,12 @@ type podSource struct {
 func NewPodSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	compatibility string,
-	ignoreNonHostNetworkPods bool,
-	podSourceDomain string,
-	fqdnTemplate string,
-	combineFqdnAnnotation bool,
-	annotationFilter string,
-	labelSelector labels.Selector,
+	cfg Config,
 ) (Source, error) {
+	namespace := cfg.Namespace
+	annotationFilter := cfg.AnnotationFilter
+	labelSelector := cfg.LabelFilter
+
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -78,7 +73,7 @@ func NewPodSource(
 
 	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
-	if fqdnTemplate == "" {
+	if cfg.FQDNTemplate == "" {
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
@@ -120,7 +115,7 @@ func NewPodSource(
 		return nil, err
 	}
 
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +125,11 @@ func NewPodSource(
 		podInformer:              podInformer,
 		nodeInformer:             nodeInformer,
 		namespace:                namespace,
-		compatibility:            compatibility,
-		ignoreNonHostNetworkPods: ignoreNonHostNetworkPods,
-		podSourceDomain:          podSourceDomain,
+		compatibility:            cfg.Compatibility,
+		ignoreNonHostNetworkPods: cfg.IgnoreNonHostNetworkPods,
+		podSourceDomain:          cfg.PodSourceDomain,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
 	}, nil
 }
 

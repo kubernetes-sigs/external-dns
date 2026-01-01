@@ -131,12 +131,16 @@ type glooSource struct {
 	proxyInformer          kubeinformers.GenericInformer
 	virtualServiceInformer kubeinformers.GenericInformer
 	gatewayInformer        kubeinformers.GenericInformer
-	glooNamespaces         []string
+	// TODO: glooNamespaces is the list of namespaces to scan for Gloo Proxies. All namespace access is still required
+	glooNamespaces []string
 }
 
 // NewGlooSource creates a new glooSource with the given config
-func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
-	glooNamespaces []string) (Source, error) {
+func NewGlooSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface,
+	kubeClient kubernetes.Interface,
+	cfg Config) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
@@ -169,15 +173,15 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 		proxyInformer,
 		virtualServiceInformer,
 		gatewayInformer,
-		glooNamespaces,
+		cfg.GlooNamespaces,
 	}, nil
 }
 
-func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
+func (gs *glooSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects
-func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ns := range gs.glooNamespaces {

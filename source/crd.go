@@ -64,19 +64,24 @@ func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) err
 }
 
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
-func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
+func NewCRDClientForAPIVersionKind(
+	client kubernetes.Interface,
+	cfg Config,
+) (*rest.RESTClient, *runtime.Scheme, error) {
+	kubeConfig := cfg.KubeConfig
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	// TODO: GetRestConfig logic is duplicated from store.go, refactor to avoid duplication
+	config, err := clientcmd.BuildConfigFromFlags(cfg.APIServerURL, kubeConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	groupVersion, err := schema.ParseGroupVersion(apiVersion)
+	groupVersion, err := schema.ParseGroupVersion(cfg.CRDSourceAPIVersion)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,13 +92,13 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 
 	var crdAPIResource *metav1.APIResource
 	for _, apiResource := range apiResourceList.APIResources {
-		if apiResource.Kind == kind {
+		if apiResource.Kind == cfg.CRDSourceKind {
 			crdAPIResource = &apiResource
 			break
 		}
 	}
 	if crdAPIResource == nil {
-		return nil, nil, fmt.Errorf("unable to find Resource Kind %q in GroupVersion %q", kind, apiVersion)
+		return nil, nil, fmt.Errorf("unable to find Resource Kind %q in GroupVersion %q", cfg.CRDSourceKind, cfg.CRDSourceAPIVersion)
 	}
 
 	scheme := runtime.NewScheme()
@@ -113,19 +118,17 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 // NewCRDSource creates a new crdSource with the given config.
 func NewCRDSource(
 	crdClient rest.Interface,
-	namespace, kind, annotationFilter string,
-	labelSelector labels.Selector,
-	scheme *runtime.Scheme,
-	startInformer bool) (Source, error) {
+	cfg Config,
+	scheme *runtime.Scheme) (Source, error) {
 	sourceCrd := crdSource{
-		crdResource:      strings.ToLower(kind) + "s",
-		namespace:        namespace,
-		annotationFilter: annotationFilter,
-		labelSelector:    labelSelector,
+		crdResource:      strings.ToLower(cfg.CRDSourceKind) + "s",
+		namespace:        cfg.Namespace,
+		annotationFilter: cfg.AnnotationFilter,
+		labelSelector:    cfg.LabelFilter,
 		crdClient:        crdClient,
 		codec:            runtime.NewParameterCodec(scheme),
 	}
-	if startInformer {
+	if cfg.UpdateEvents {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
 		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
 		sourceCrd.informer = cache.NewSharedInformer(

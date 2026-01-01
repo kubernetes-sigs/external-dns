@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	routev1 "github.com/openshift/api/route/v1"
-	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/openshift/client-go/route/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,19 +40,16 @@ type OCPRouteSuite struct {
 }
 
 func (suite *OCPRouteSuite) SetupTest() {
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	var err error
 
 	suite.sc, err = NewOcpRouteSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-		labels.Everything(),
-		"",
+		Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -144,14 +141,12 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 
 			_, err := NewOcpRouteSource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				false,
-				labelSelector,
-				"",
+				fake.NewClientset(),
+				Config{
+					AnnotationFilter: ti.annotationFilter,
+					FQDNTemplate:     ti.fqdnTemplate,
+					LabelFilter:      labelSelector,
+				},
 			)
 
 			if ti.expectError {
@@ -516,11 +511,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
-
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 			// Create a Kubernetes testing client
-			fakeClient := fake.NewSimpleClientset()
+			fakeClient := fake.NewClientset()
 			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
@@ -530,13 +524,11 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			source, err := NewOcpRouteSource(
 				context.TODO(),
 				fakeClient,
-				"",
-				"",
-				"{{.Name}}",
-				false,
-				false,
-				labelSelector,
-				tc.ocpRouterName,
+				Config{
+					FQDNTemplate:  "{{.Name}}",
+					LabelFilter:   labelSelector,
+					OCPRouterName: tc.ocpRouterName,
+				},
 			)
 			require.NoError(t, err)
 

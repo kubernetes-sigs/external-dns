@@ -69,33 +69,30 @@ type ingressSource struct {
 func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter, fqdnTemplate string,
-	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
-	labelSelector labels.Selector,
-	ingressClassNames []string) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	cfg Config) (Source, error) {
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
-	if ingressClassNames != nil && annotationFilter != "" {
-		selector, err := getLabelSelector(annotationFilter)
+	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
+		selector, err := getLabelSelector(cfg.AnnotationFilter)
 		if err != nil {
 			return nil, err
 		}
 
 		requirements, _ := selector.Requirements()
 		for _, requirement := range requirements {
-			if requirement.Key() == "kubernetes.io/ingress.class" {
+			if requirement.Key() == IngressClassAnnotationKey {
 				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
 			}
 		}
 	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	// Add default resource event handlers to properly initialize informer.
@@ -110,16 +107,16 @@ func NewIngressSource(
 
 	sc := &ingressSource{
 		client:                   kubeClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
-		ingressClassNames:        ingressClassNames,
+		namespace:                cfg.Namespace,
+		annotationFilter:         cfg.AnnotationFilter,
+		ingressClassNames:        cfg.IngressClassNames,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
-		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
-		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
-		labelSelector:            labelSelector,
+		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
+		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
+		labelSelector:            cfg.LabelFilter,
 	}
 	return sc, nil
 }

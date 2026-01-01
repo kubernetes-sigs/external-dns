@@ -63,15 +63,10 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				"",
-				tt.fqdnTemplate,
-				false,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				[]string{},
+				Config{
+					FQDNTemplate: tt.fqdnTemplate,
+					LabelFilter:  labels.NewSelector(),
+				},
 			)
 
 			if tt.expectError {
@@ -325,15 +320,11 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				true,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				[]string{},
+				Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: true,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 
 			require.NoError(t, err)
