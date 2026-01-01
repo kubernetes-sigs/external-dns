@@ -52,7 +52,7 @@ func TestIndexMdUpToDate(t *testing.T) {
 	require.NoError(t, err, "expected to find sources")
 	actual, err := sources.generateMarkdown()
 	assert.NoError(t, err)
-	assert.Contains(t, string(expected), actual, "expected file 'docs/source/index.md' to be up to date. execute 'make generate-sources-documentation")
+	assert.Contains(t, string(expected), actual, "expected file 'docs/source/index.md' to be up to date. execute 'make generate-sources-documentation'")
 }
 
 func TestDiscoverSources(t *testing.T) {

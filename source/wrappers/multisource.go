@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
+// multiSource is a Source that merges the endpoints of its nested Sources.
 type multiSource struct {
 	children            []source.Source
 	defaultTargets      []string

@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
+// dedupSource is a Source that removes duplicate endpoints from its wrapped source.
 type dedupSource struct {
 	source source.Source
 }

@@ -31,6 +31,7 @@ var (
 	addrFromSlice = netip.AddrFromSlice
 )
 
+// nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
 type nat64Source struct {
 	source        source.Source
 	nat64Prefixes []netip.Prefix

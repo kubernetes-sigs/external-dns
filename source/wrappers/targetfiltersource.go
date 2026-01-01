@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
+// targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
 type targetFilterSource struct {
 	source       source.Source
 	targetFilter endpoint.TargetFilterInterface

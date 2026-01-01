@@ -75,7 +75,7 @@ Sources are responsible for:
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template |
 |:------------|:----------|:--------|:----------|:--------------|
-| **gloo-proxy** | Proxy.gloo.solo.io |  | multiple | false |
+| **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false |
 | **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true |
 | **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true |
 
