@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package dynamodb
 
 import (
 	"context"
@@ -35,6 +35,10 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+)
+
+const (
+	testZone = "test-zone.example.org"
 )
 
 func TestDynamoDBRegistryNew(t *testing.T) {

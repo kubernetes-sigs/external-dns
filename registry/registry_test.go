@@ -26,6 +26,17 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/registry/awssd"
+	"sigs.k8s.io/external-dns/registry/dynamodb"
+	"sigs.k8s.io/external-dns/registry/noop"
+	"sigs.k8s.io/external-dns/registry/txt"
+)
+
+var (
+	_ Registry = &awssd.AWSSDRegistry{}
+	_ Registry = &dynamodb.DynamoDBRegistry{}
+	_ Registry = &noop.NoopRegistry{}
+	_ Registry = &txt.TXTRegistry{}
 )
 
 func TestSelectRegistry(t *testing.T) {
