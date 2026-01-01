@@ -183,6 +183,7 @@ func parseFile(filePath, baseDir string) (Sources, error) {
 	// Create a map of all comments by their starting position
 	cmap := ast.NewCommentMap(fset, node, node.Comments)
 
+	var errFound error
 	// Inspect the AST for type declarations
 	ast.Inspect(node, func(n ast.Node) bool {
 		// Look for type declarations that are GenDecl (general declarations)
@@ -226,19 +227,23 @@ func parseFile(filePath, baseDir string) (Sources, error) {
 				continue
 			}
 
-			extractedSources := extractSourcesFromComments(commentText.String(), typeName, relPath)
+			extractedSources, err := extractSourcesFromComments(commentText.String(), typeName, relPath)
+			if err != nil {
+				errFound = err
+				return false
+			}
 			sources = append(sources, extractedSources...)
 		}
 
 		return true
 	})
 
-	return sources, nil
+	return sources, errFound
 }
 
 // extractSourcesFromComments extracts source metadata from comment text.
 // It can extract multiple sources from the same comment block (e.g., for gateway routes).
-func extractSourcesFromComments(comments, typeName, filePath string) Sources {
+func extractSourcesFromComments(comments, typeName, filePath string) (Sources, error) {
 	lines := strings.Split(comments, "\n")
 	var sources Sources
 	var currentSource *Source
@@ -286,20 +291,21 @@ func extractSourcesFromComments(comments, typeName, filePath string) Sources {
 	var validSources Sources
 	for _, source := range sources {
 		if source.Name == "" {
-			fmt.Fprintf(os.Stderr, "Warning: source %s in %s is missing +externaldns:source:name annotation\n", typeName, filePath)
-			continue
+			// TODO: correct annotations
+			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationName)
 		}
 
 		// Set defaults for optional fields
 		if source.Category == "" {
 			source.Category = "Uncategorized"
+			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationCategory)
 		}
 		if source.Description == "" {
-			source.Description = "No description available"
+			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationDesc)
 		}
 
 		validSources = append(validSources, source)
 	}
 
-	return validSources
+	return validSources, nil
 }

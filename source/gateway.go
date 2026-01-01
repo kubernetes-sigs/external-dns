@@ -118,7 +118,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=TLSRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
+// +externaldns:source:fqdn-template=false
 //
 // +externaldns:source:name=gateway-udproute
 // +externaldns:source:category=Gateway API

@@ -24,82 +24,82 @@ Sources are responsible for:
 
 ### Cloud Platforms
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| cloudfoundry | Creates DNS entries from Cloud Foundry routes | CloudFoundry Routes |  |  | false |
+| **cloudfoundry** | Creates DNS entries from Cloud Foundry routes | CloudFoundry Routes |  |  | false |
 
 ### Gateway API
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| gateway-grpcroute | Creates DNS entries from Gateway API GRPCRoute resources | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| gateway-httproute | Creates DNS entries from Gateway API HTTPRoute resources | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| gateway-tcproute | Creates DNS entries from Gateway API TCPRoute resources | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| gateway-tlsroute | Creates DNS entries from Gateway API TLSRoute resources | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
-| gateway-udproute | Creates DNS entries from Gateway API UDPRoute resources | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-grpcroute** | Creates DNS entries from Gateway API GRPCRoute resources | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-httproute** | Creates DNS entries from Gateway API HTTPRoute resources | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-tcproute** | Creates DNS entries from Gateway API TCPRoute resources | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-tlsroute** | Creates DNS entries from Gateway API TLSRoute resources | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-udproute** | Creates DNS entries from Gateway API UDPRoute resources | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
 
 ### Ingress Controllers
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| ambassador-host | Creates DNS entries from Ambassador Host resources | Host.getambassador.io | annotation,label | all,single | true |
-| contour-httpproxy | Creates DNS entries from Contour HTTPProxy resources | HTTPProxy.projectcontour.io | annotation | all,single | true |
-| kong-tcpingress | Creates DNS entries from Kong TCPIngress resources | TCPIngress.configuration.konghq.com | annotation | all,single | false |
-| skipper-routegroup | Creates DNS entries from Skipper RouteGroup resources | RouteGroup.zalando.org | annotation | all,single | true |
-| traefik-proxy | Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources | IngressRoute.traefik.io,IngressRouteTCP.traefik.io,IngressRouteUDP.traefik.io | annotation | all,single | false |
+| **ambassador-host** | Creates DNS entries from Ambassador Host resources | Host.getambassador.io | annotation,label | all,single | true |
+| **contour-httpproxy** | Creates DNS entries from Contour HTTPProxy resources | HTTPProxy.projectcontour.io | annotation | all,single | true |
+| **kong-tcpingress** | Creates DNS entries from Kong TCPIngress resources | TCPIngress.configuration.konghq.com | annotation | all,single | false |
+| **skipper-routegroup** | Creates DNS entries from Skipper RouteGroup resources | RouteGroup.zalando.org | annotation | all,single | true |
+| **traefik-proxy** | Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources | IngressRoute.traefik.io,IngressRouteTCP.traefik.io,IngressRouteUDP.traefik.io | annotation | all,single | false |
 
 ### Kubernetes Core
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| crd | Creates DNS entries from DNSEndpoint CRD resources | DNSEndpoint | annotation,label | all,single | false |
-| ingress | Creates DNS entries based on Kubernetes Ingress resources | Ingress | annotation,label | all,single | true |
-| node | Creates DNS entries based on Kubernetes Node resources | Node | annotation,label | all | true |
-| pod | Creates DNS entries based on Kubernetes Pod resources | Pod | annotation,label | all,single | true |
-| service | Creates DNS entries based on Kubernetes Service resources | Service | annotation,label | all,single | true |
+| **crd** | Creates DNS entries from DNSEndpoint CRD resources | DNSEndpoint | annotation,label | all,single | false |
+| **ingress** | Creates DNS entries based on Kubernetes Ingress resources | Ingress | annotation,label | all,single | true |
+| **node** | Creates DNS entries based on Kubernetes Node resources | Node | annotation,label | all | true |
+| **pod** | Creates DNS entries based on Kubernetes Pod resources | Pod | annotation,label | all,single | true |
+| **service** | Creates DNS entries based on Kubernetes Service resources | Service | annotation,label | all,single | true |
 
 ### Load Balancers
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| f5-transportserver | Creates DNS entries from F5 TransportServer resources | TransportServer.cis.f5.com | annotation | all,single | false |
-| f5-virtualserver | Creates DNS entries from F5 VirtualServer resources | VirtualServer.cis.f5.com | annotation | all,single | false |
+| **f5-transportserver** | Creates DNS entries from F5 TransportServer resources | TransportServer.cis.f5.com | annotation | all,single | false |
+| **f5-virtualserver** | Creates DNS entries from F5 VirtualServer resources | VirtualServer.cis.f5.com | annotation | all,single | false |
 
 ### OpenShift
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| openshift-route | Creates DNS entries from OpenShift Route resources | Route.route.openshift.io | annotation,label | all,single | true |
+| **openshift-route** | Creates DNS entries from OpenShift Route resources | Route.route.openshift.io | annotation,label | all,single | true |
 
 ### Service Mesh
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| gloo-proxy | Creates DNS entries from Gloo Proxy resources | Proxy.gloo.solo.io |  | multiple | false |
-| istio-gateway | Creates DNS entries from Istio Gateway resources | Gateway.networking.istio.io | annotation | all,single | true |
-| istio-virtualservice | Creates DNS entries from Istio VirtualService resources | VirtualService.networking.istio.io | annotation | all,single | true |
+| **gloo-proxy** | Creates DNS entries from Gloo Proxy resources | Proxy.gloo.solo.io |  | multiple | false |
+| **istio-gateway** | Creates DNS entries from Istio Gateway resources | Gateway.networking.istio.io | annotation | all,single | true |
+| **istio-virtualservice** | Creates DNS entries from Istio VirtualService resources | VirtualService.networking.istio.io | annotation | all,single | true |
 
 ### Special
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| connector | Connects to a remote TCP server to receive DNS endpoints | Remote TCP Server |  |  | false |
+| **connector** | Connects to a remote TCP server to receive DNS endpoints | Remote TCP Server |  |  | false |
 
 ### Testing
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| empty | Returns no endpoints (used for testing or as a placeholder) | None |  |  | false |
-| fake | Provides dummy endpoints for testing and dry-running | Fake Endpoints |  |  | true |
+| **empty** | Returns no endpoints (used for testing or as a placeholder) | None |  |  | false |
+| **fake** | Provides dummy endpoints for testing and dry-running | Fake Endpoints |  |  | true |
 
 ### Wrappers
 
-| Source Name | Description | Resources | Filters | Namespace | FQDN Template |
+| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| dedup | Removes duplicate endpoints from wrapped source | Wrapped Source |  |  | false |
-| multi | Combines multiple sources into a single source | Multiple Sources |  |  | false |
-| nat64 | Adds A records for AAAA records with NAT64 addresses | Wrapped Source |  |  | false |
-| targetfilter | Filters endpoints by target from wrapped source | Wrapped Source |  |  | false |
+| **dedup** | Removes duplicate endpoints from wrapped source | Wrapped Source |  |  | false |
+| **multi** | Combines multiple sources into a single source | Multiple Sources |  |  | false |
+| **nat64** | Adds A records for AAAA records with NAT64 addresses | Wrapped Source |  |  | false |
+| **targetfilter** | Filters endpoints by target from wrapped source | Wrapped Source |  |  | false |
 
 ## Usage
 
