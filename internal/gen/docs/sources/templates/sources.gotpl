@@ -31,7 +31,7 @@ Sources are responsible for:
 | **Source Name** | Resources | Filters | Namespace | FQDN Template |
 |:------------|:----------|:--------|:----------|:--------------|
 {{- end }}
-| **{{ .Name }}** | {{ .Resources }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} |
+| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} |
 {{- end }}
 
 ## Usage
