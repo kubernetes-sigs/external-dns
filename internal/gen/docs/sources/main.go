@@ -70,11 +70,11 @@ type Sources []Source
 // with the supported sources and writes it to the 'docs/sources/index.md' file.
 // to re-generate `docs/sources/index.md` execute 'go run internal/gen/docs/sources/main.go'
 func main() {
-	testPath, _ := os.Getwd()
-	path := fmt.Sprintf("%s/docs/sources/index.md", testPath)
+	cPath, _ := os.Getwd()
+	path := fmt.Sprintf("%s/docs/sources/index.md", cPath)
 	fmt.Printf("generate file '%s' with supported sources\n", path)
 
-	sources, err := discoverSources()
+	sources, err := discoverSources(fmt.Sprintf("%s/source", cPath))
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to discover sources: %v\n", err)
 		os.Exit(1)
@@ -89,13 +89,9 @@ func main() {
 
 // discoverSources scans the source directory and discovers all source implementations
 // by parsing Go files and extracting +externaldns:source annotations
-func discoverSources() (Sources, error) {
-	// Get the source directory path
-	testPath, _ := os.Getwd()
-	sourceDir := fmt.Sprintf("%s/source", testPath)
-
+func discoverSources(dir string) (Sources, error) {
 	// Parse all source files for annotations
-	sources, err := parseSourceAnnotations(sourceDir)
+	sources, err := parseSourceAnnotations(dir)
 	if err != nil {
 		return nil, err
 	}

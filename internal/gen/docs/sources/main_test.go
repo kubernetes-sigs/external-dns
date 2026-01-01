@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,20 +27,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	pathToDocs = "%s/../../../../docs/sources"
+	fileName   = "index.md"
+)
+
+func TestIndexMdExists(t *testing.T) {
+	testPath, _ := os.Getwd()
+	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
+	st, err := fs.Stat(fsys, fileName)
+	assert.NoError(t, err, "expected file %s to exist", fileName)
+	assert.Equal(t, fileName, st.Name())
+}
+
+func TestIndexMdUpToDate(t *testing.T) {
+	testPath, _ := os.Getwd()
+	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
+	expected, err := fs.ReadFile(fsys, fileName)
+	assert.NoError(t, err, "expected file %s to exist", fileName)
+
+	// path to sources folder
+	ssys := os.DirFS(fmt.Sprintf("%s/../../../../source", testPath))
+	sources, err := discoverSources(fmt.Sprintf("%s", ssys))
+	require.NoError(t, err, "expected to find sources")
+	actual, err := sources.generateMarkdown()
+	assert.NoError(t, err)
+	assert.Contains(t, string(expected), actual, "expected file 'docs/source/index.md' to be up to date. execute 'make generate-sources-documentation")
+}
+
 func TestDiscoverSources(t *testing.T) {
-	// Change to project root for testing
-	// Skip if we can't find the source directory
-	_, err := os.Stat("../../../../source")
-	if err != nil {
-		t.Skip("Skipping test: source directory not found (test should run from project root)")
-	}
+	testPath, _ := os.Getwd()
+	ssys := os.DirFS(fmt.Sprintf("%s/../../../../source", testPath))
 
-	err = os.Chdir("../../../..")
-	if err != nil {
-		t.Fatalf("Failed to change directory: %v", err)
-	}
-
-	sources, err := discoverSources()
+	sources, err := discoverSources(fmt.Sprintf("%s", ssys))
 	require.NoError(t, err)
 
 	assert.GreaterOrEqual(t, len(sources), 5, "Expected at least 5 sources with annotations")
