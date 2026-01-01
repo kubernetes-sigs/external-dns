@@ -23,6 +23,15 @@ import (
 )
 
 // emptySource is a Source that returns no endpoints.
+//
+// +externaldns:source:name=empty
+// +externaldns:source:category=Special
+// +externaldns:source:description=Returns no endpoints (used for testing or as a placeholder)
+// +externaldns:source:resources=None
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type emptySource struct{}
 
 func (e *emptySource) AddEventHandler(ctx context.Context, handler func()) {

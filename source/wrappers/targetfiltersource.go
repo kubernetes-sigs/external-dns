@@ -26,6 +26,15 @@ import (
 )
 
 // targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
+//
+// +externaldns:source:name=targetfilter
+// +externaldns:source:category=Wrappers
+// +externaldns:source:description=Filters endpoints by target from wrapped source
+// +externaldns:source:resources=Wrapped Source
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type targetFilterSource struct {
 	source       source.Source
 	targetFilter endpoint.TargetFilterInterface

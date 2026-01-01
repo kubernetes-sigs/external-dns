@@ -48,6 +48,15 @@ const (
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
 )
 
+//
+// +externaldns:source:name=skipper-routegroup
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
+// +externaldns:source:resources=RouteGroup.zalando.org
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+
 type routeGroupSource struct {
 	cli                      routeGroupListClient
 	apiServer                string

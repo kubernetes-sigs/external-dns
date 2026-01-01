@@ -86,6 +86,47 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
 }
 
+// gatewayRouteSource is an implementation of Source for Gateway API Route objects.
+//
+// +externaldns:source:name=gateway-httproute
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API HTTPRoute resources
+// +externaldns:source:resources=HTTPRoute.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+//
+// +externaldns:source:name=gateway-grpcroute
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API GRPCRoute resources
+// +externaldns:source:resources=GRPCRoute.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+//
+// +externaldns:source:name=gateway-tcproute
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API TCPRoute resources
+// +externaldns:source:resources=TCPRoute.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+//
+// +externaldns:source:name=gateway-tlsroute
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API TLSRoute resources
+// +externaldns:source:resources=TLSRoute.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+//
+// +externaldns:source:name=gateway-udproute
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API UDPRoute resources
+// +externaldns:source:resources=UDPRoute.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type gatewayRouteSource struct {
 	gwName      string
 	gwNamespace string

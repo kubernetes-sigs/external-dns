@@ -62,6 +62,13 @@ var (
 // desired hostname and matching or no controller annotation. For each of the
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
+// +externaldns:source:name=service
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Service resources
+// +externaldns:source:resources=Service
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string

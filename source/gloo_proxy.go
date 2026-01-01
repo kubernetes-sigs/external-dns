@@ -125,6 +125,15 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
+// glooSource is an implementation of Source for Gloo Proxy objects.
+//
+// +externaldns:source:name=gloo-proxy
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
+// +externaldns:source:resources=Proxy.gloo.solo.io
+// +externaldns:source:filters=
+// +externaldns:source:namespace=multiple
+// +externaldns:source:fqdn-template=false
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
 	ingressInformer        netinformers.IngressInformer

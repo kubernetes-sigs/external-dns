@@ -28,6 +28,15 @@ import (
 )
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
+//
+// +externaldns:source:name=multi
+// +externaldns:source:category=Wrappers
+// +externaldns:source:description=Combines multiple sources into a single source
+// +externaldns:source:resources=Multiple Sources
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type multiSource struct {
 	children            []source.Source
 	defaultTargets      []string

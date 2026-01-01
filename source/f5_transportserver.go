@@ -49,6 +49,15 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 }
 
 // transportServerSource is an implementation of Source for F5 TransportServer objects.
+//
+// +externaldns:source:name=f5-transportserver
+// +externaldns:source:category=Load Balancers
+// +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
+// +externaldns:source:resources=TransportServer.cis.f5.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer

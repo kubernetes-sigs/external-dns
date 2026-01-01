@@ -25,6 +25,15 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+//
+// +externaldns:source:name=cloudfoundry
+// +externaldns:source:category=Cloud Platforms
+// +externaldns:source:description=Creates DNS entries from Cloud Foundry routes
+// +externaldns:source:resources=CloudFoundry Routes
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type cloudfoundrySource struct {
 	client *cfclient.Client
 }

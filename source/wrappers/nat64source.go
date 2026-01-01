@@ -32,6 +32,15 @@ var (
 )
 
 // nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
+//
+// +externaldns:source:name=nat64
+// +externaldns:source:category=Wrappers
+// +externaldns:source:description=Adds A records for AAAA records with NAT64 addresses
+// +externaldns:source:resources=Wrapped Source
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type nat64Source struct {
 	source        source.Source
 	nat64Prefixes []netip.Prefix

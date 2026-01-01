@@ -48,6 +48,15 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 }
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
+//
+// +externaldns:source:name=kong-tcpingress
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Kong TCPIngress resources
+// +externaldns:source:resources=TCPIngress.configuration.konghq.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+
 type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool

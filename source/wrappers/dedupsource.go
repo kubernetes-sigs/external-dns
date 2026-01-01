@@ -27,6 +27,15 @@ import (
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
+//
+// +externaldns:source:name=dedup
+// +externaldns:source:category=Wrappers
+// +externaldns:source:description=Removes duplicate endpoints from wrapped source
+// +externaldns:source:resources=Wrapped Source
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+
 type dedupSource struct {
 	source source.Source
 }
