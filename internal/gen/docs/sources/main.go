@@ -261,18 +261,18 @@ func extractSourcesFromComments(comments, typeName, filePath string) Sources {
 			}
 		} else if currentSource != nil {
 			// Add other annotations to the current source
-			if strings.HasPrefix(line, annotationCategory) {
-				currentSource.Category = strings.TrimPrefix(line, annotationCategory)
-			} else if strings.HasPrefix(line, annotationDesc) {
-				currentSource.Description = strings.TrimPrefix(line, annotationDesc)
-			} else if strings.HasPrefix(line, annotationResources) {
-				currentSource.Resources = strings.TrimPrefix(line, annotationResources)
-			} else if strings.HasPrefix(line, annotationFilters) {
-				currentSource.Filters = strings.TrimPrefix(line, annotationFilters)
-			} else if strings.HasPrefix(line, annotationNamespace) {
-				currentSource.Namespace = strings.TrimPrefix(line, annotationNamespace)
-			} else if strings.HasPrefix(line, annotationFQDNTemplate) {
-				currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
+			if after, ok := strings.CutPrefix(line, annotationCategory); ok {
+				currentSource.Category = after
+			} else if after, ok := strings.CutPrefix(line, annotationDesc); ok {
+				currentSource.Description = after
+			} else if after, ok := strings.CutPrefix(line, annotationResources); ok {
+				currentSource.Resources = after
+			} else if after, ok := strings.CutPrefix(line, annotationFilters); ok {
+				currentSource.Filters = after
+			} else if after, ok := strings.CutPrefix(line, annotationNamespace); ok {
+				currentSource.Namespace = after
+			} else if after, ok := strings.CutPrefix(line, annotationFQDNTemplate); ok {
+				currentSource.FQDNTemplate = after
 			}
 		}
 	}

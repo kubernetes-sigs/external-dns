@@ -47,7 +47,7 @@ func TestGenerateMarkdownTable(t *testing.T) {
 		{Name: "test", Type: "testSource", File: "source/test.go", Category: "Test"},
 	}
 
-	content, err := sources.generateMarkdownTable()
+	content, err := sources.generateMarkdown()
 	if err != nil {
 		t.Errorf("Failed to generate markdown table: %v", err)
 	}
