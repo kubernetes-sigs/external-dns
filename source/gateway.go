@@ -94,7 +94,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=HTTPRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
+// +externaldns:source:fqdn-template=false
 //
 // +externaldns:source:name=gateway-grpcroute
 // +externaldns:source:category=Gateway API
@@ -102,7 +102,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=GRPCRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
+// +externaldns:source:fqdn-template=false
 //
 // +externaldns:source:name=gateway-tcproute
 // +externaldns:source:category=Gateway API
@@ -110,7 +110,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=TCPRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
+// +externaldns:source:fqdn-template=false
 //
 // +externaldns:source:name=gateway-tlsroute
 // +externaldns:source:category=Gateway API
@@ -126,7 +126,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=UDPRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
+// +externaldns:source:fqdn-template=false
 type gatewayRouteSource struct {
 	gwName      string
 	gwNamespace string

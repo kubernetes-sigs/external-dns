@@ -15,13 +15,13 @@ ExternalDNS supports multiple sources for discovering DNS records. Each source w
 ## Overview
 
 Sources are responsible for:
+
 - Watching Kubernetes resources or external APIs
 - Extracting DNS information from annotations and resource specifications
 - Generating DNS endpoint records for providers to consume
 
 ## Available Sources
-
-{{ $currentCategory := "" -}}
+{{- $currentCategory := "" -}}
 {{- range . }}
 {{- if ne .Category $currentCategory }}
 {{- $currentCategory = .Category }}
@@ -77,6 +77,7 @@ type myNewSource struct {
 {{backtick 3}}
 
 **Annotation Reference:**
+
 - {{backtick 1}}+externaldns:source:name{{backtick 1}} - The CLI name used with {{backtick 1}}--source{{backtick 1}} flag (required)
 - {{backtick 1}}+externaldns:source:category{{backtick 1}} - Category for documentation grouping (required)
 - {{backtick 1}}+externaldns:source:description{{backtick 1}} - Short description of what the source does (required)

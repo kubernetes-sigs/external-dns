@@ -32,11 +32,11 @@ Sources are responsible for:
 
 | Source Name | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
-| gateway-grpcroute | Creates DNS entries from Gateway API GRPCRoute resources | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
-| gateway-httproute | Creates DNS entries from Gateway API HTTPRoute resources | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
-| gateway-tcproute | Creates DNS entries from Gateway API TCPRoute resources | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
+| gateway-grpcroute | Creates DNS entries from Gateway API GRPCRoute resources | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| gateway-httproute | Creates DNS entries from Gateway API HTTPRoute resources | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| gateway-tcproute | Creates DNS entries from Gateway API TCPRoute resources | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
 | gateway-tlsroute | Creates DNS entries from Gateway API TLSRoute resources | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
-| gateway-udproute | Creates DNS entries from Gateway API UDPRoute resources | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
+| gateway-udproute | Creates DNS entries from Gateway API UDPRoute resources | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
 
 ### Ingress Controllers
 
@@ -84,12 +84,12 @@ Sources are responsible for:
 | Source Name | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
 | connector | Connects to a remote TCP server to receive DNS endpoints | Remote TCP Server |  |  | false |
-| empty | Returns no endpoints (used for testing or as a placeholder) | None |  |  | false |
 
 ### Testing
 
 | Source Name | Description | Resources | Filters | Namespace | FQDN Template |
 |:------------|:------------|:----------|:--------|:----------|:--------------|
+| empty | Returns no endpoints (used for testing or as a placeholder) | None |  |  | false |
 | fake | Provides dummy endpoints for testing and dry-running | Fake Endpoints |  |  | true |
 
 ### Wrappers
