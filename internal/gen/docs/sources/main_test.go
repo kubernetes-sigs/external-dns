@@ -230,7 +230,7 @@ func TestParseFile_IgnoresNonSourceTypes(t *testing.T) {
 type regularStruct struct {}
 `
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
+		require.NoError(t, err)
 	}
 
 	sources, err := parseFile(testFile, tmpDir)
@@ -248,7 +248,7 @@ func TestParseSourceAnnotations_ErrorOnInvalidFile(t *testing.T) {
 this is not valid go syntax
 `
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
+		require.NoError(t, err)
 	}
 
 	_, err := parseSourceAnnotations(tmpDir)
