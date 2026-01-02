@@ -168,6 +168,9 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	// TODO: refactor to move this to provider package, conver with tests
+	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -375,14 +378,14 @@ func buildController(
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		clientGen := buildSourceClientGenerator(cfg)
+		clientGen := source.NewClientGenerator(cfg)
 		eventsClient, err := clientGen.EventsClient()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		eventCtrl, err := events.NewEventController(eventsClient, eventsCfg)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
@@ -414,27 +417,12 @@ func configureLogger(cfg *externaldns.Config) {
 	log.SetLevel(ll)
 }
 
-// buildSourceClientGenerator creates a SingletonClientGenerator shared between
-// sources and events controller to ensure consistent client creation and metrics.
-func buildSourceClientGenerator(cfg *externaldns.Config) *source.SingletonClientGenerator {
-	return &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}
-}
-
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
 func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
 	sourceCfg := source.NewSourceConfig(cfg)
-	clientGen := buildSourceClientGenerator(cfg)
+	clientGen := source.NewClientGenerator(cfg)
 	sources, err := source.ByNames(ctx, clientGen, cfg.Sources, sourceCfg)
 	if err != nil {
 		return nil, err
