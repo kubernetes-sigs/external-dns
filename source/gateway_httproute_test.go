@@ -1541,6 +1541,124 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
+		{
+			title: "SourceAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "route-test",
+						Namespace:   "test",
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "defined-hosts-only", annotations.HostnameKey: "test.org.internal"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
+					},
+					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title: "OnlyAnnotationHost",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "route-test",
+						Namespace:   "test",
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "test.org.internal"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
+					},
+					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.org.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "InvalidSourceAnnotation",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-annotation",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.GatewayHostnameSourceKey: "invalid-value",
+						annotations.HostnameKey:              "annotation.invalid.internal",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("route.invalid.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("route.invalid.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotation.invalid.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
