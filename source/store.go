@@ -101,6 +101,12 @@ type Config struct {
 	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
+	ExcludeTargetNets              []string
+	TargetNetFilter                []string
+	NAT64Networks                  []string
+	MinTTL                         time.Duration
+
+	sources []string
 }
 
 func NewSourceConfig(cfg *externaldns.Config) *Config {
@@ -286,9 +292,9 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(ctx context.Context, p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
-	sources := []Source{}
-	for _, name := range names {
+func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
+	sources := make([]Source, len(cfg.sources))
+	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err

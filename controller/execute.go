@@ -108,7 +108,8 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	endpointsSource, err := buildSource(ctx, cfg)
+	sCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -168,6 +169,9 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	// TODO: refactor to move this to provider package, cover with tests
+	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -413,9 +417,8 @@ func configureLogger(cfg *externaldns.Config) {
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg, &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		RequestTimeout: func() time.Duration {
@@ -424,7 +427,7 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 			}
 			return cfg.RequestTimeout
 		}(),
-	}, cfg.Sources, sourceCfg)
+	})
 	if err != nil {
 		return nil, err
 	}
