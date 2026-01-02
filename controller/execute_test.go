@@ -382,7 +382,6 @@ func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
 
 // buildSource failure triggers log.Fatal.
 func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
-
 	// Use a valid source name (ingress) and an invalid kubeconfig path to
 	// force client creation failure inside buildSource.
 	code, _, err := runExecuteSubprocess(t, []string{
