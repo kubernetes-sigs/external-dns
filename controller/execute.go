@@ -169,8 +169,8 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
-	// TODO: refactor to move this to provider package, cover with tests
 	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: refactor to move this to provider package, cover with tests
 	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
