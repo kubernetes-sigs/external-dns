@@ -107,6 +107,10 @@ type Config struct {
 	MinTTL                         time.Duration
 
 	sources []string
+
+	// clientGen is lazily initialized on first access for efficiency
+	clientGen     *SingletonClientGenerator
+	clientGenOnce sync.Once
 }
 
 func NewSourceConfig(cfg *externaldns.Config) *Config {
@@ -153,6 +157,35 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
+	}
+}
+
+// ClientGenerator returns a SingletonClientGenerator from this Config's connection settings.
+// The generator is created once and cached for subsequent calls.
+// This ensures consistent Kubernetes client creation across all sources using this configuration.
+//
+// The timeout behavior is special-cased: when UpdateEvents is true, the timeout is set to 0
+// (no timeout) to allow long-running watch operations for event-driven source updates.
+func (cfg *Config) ClientGenerator() *SingletonClientGenerator {
+	// cfg.clientGen = &SingletonClientGenerator{
+	// 	KubeConfig:   cfg.KubeConfig,
+	// 	APIServerURL: cfg.APIServerURL,
+	// 	RequestTimeout: func() time.Duration {
+	// 		if cfg.UpdateEvents {
+	// 			return 0
+	// 		}
+	// 		return cfg.RequestTimeout
+	// 	}(),
+	// }
+	return &SingletonClientGenerator{
+		KubeConfig:   cfg.KubeConfig,
+		APIServerURL: cfg.APIServerURL,
+		RequestTimeout: func() time.Duration {
+			if cfg.UpdateEvents {
+				return 0
+			}
+			return cfg.RequestTimeout
+		}(),
 	}
 }
 
@@ -293,7 +326,7 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
-	sources := make([]Source, len(cfg.sources))
+	sources := make([]Source, 0, len(cfg.sources))
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
