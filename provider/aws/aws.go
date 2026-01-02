@@ -66,6 +66,8 @@ const (
 	providerSpecificGeoProximityLocationLocalZoneGroup = "aws/geoproximity-local-zone-group"
 	providerSpecificMultiValueAnswer                   = "aws/multi-value-answer"
 	providerSpecificHealthCheckID                      = "aws/health-check-id"
+	providerSpecificAliasDisableA                      = "aws/alias-disable-a"
+	providerSpecificAliasDisableAAAA                   = "aws/alias-disable-aaaa"
 	sameZoneAlias                                      = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
@@ -863,19 +865,32 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
 			}
 
-			if ep.RecordType == endpoint.RecordTypeCNAME {
-				// This needs to match two records from Route53, one alias for 'A' (IPv4)
-				// and one alias for 'AAAA' (IPv6).
-				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
-					DNSName:          ep.DNSName,
-					Targets:          ep.Targets,
-					RecordType:       endpoint.RecordTypeAAAA,
-					RecordTTL:        ep.RecordTTL,
-					Labels:           ep.Labels,
-					ProviderSpecific: ep.ProviderSpecific,
-					SetIdentifier:    ep.SetIdentifier,
-				})
-				ep.RecordType = endpoint.RecordTypeA
+			disableA := aliasDisableARecord(ep)
+			disableAaaa := aliasDisableAaaaRecord(ep)
+			disableAlias := disableA && disableAaaa
+			enableAandAAAA := !disableA && !disableAaaa
+
+			if ep.RecordType == endpoint.RecordTypeCNAME && !disableAlias {
+				if disableA {
+					ep.RecordType = endpoint.RecordTypeAAAA
+				}
+				if disableAaaa {
+					ep.RecordType = endpoint.RecordTypeA
+				}
+				if enableAandAAAA {
+					// Add a new endpoint for the AAAA record
+					aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
+						DNSName:          ep.DNSName,
+						Targets:          ep.Targets,
+						RecordType:       endpoint.RecordTypeAAAA,
+						RecordTTL:        ep.RecordTTL,
+						Labels:           ep.Labels,
+						ProviderSpecific: ep.ProviderSpecific,
+						SetIdentifier:    ep.SetIdentifier,
+					})
+					// Modify the original endpoint to be the A record
+					ep.RecordType = endpoint.RecordTypeA
+				}
 			}
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
@@ -886,6 +901,16 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 
 	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
 	return endpoints, nil
+}
+
+func aliasDisableARecord(ep *endpoint.Endpoint) bool {
+	disable, ok := ep.GetProviderSpecificProperty(providerSpecificAliasDisableA)
+	return ok && disable == "true"
+}
+
+func aliasDisableAaaaRecord(ep *endpoint.Endpoint) bool {
+	disable, ok := ep.GetProviderSpecificProperty(providerSpecificAliasDisableAAAA)
+	return ok && disable == "true"
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set
