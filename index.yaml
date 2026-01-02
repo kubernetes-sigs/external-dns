@@ -4,6 +4,45 @@ entries:
   - annotations:
       artifacthub.io/changes: |-
         - kind: added
+          description: "Add option to set annotationPrefix (#5889) @lexfrei."
+        - kind: changed
+          description: "Grant networking.k8s.io/ingresses and gateway.solo.io/gateways permissions when using gloo-proxy source."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.20.0."
+        - kind: fixed
+          description: "Fixed the missing schema for .provider.webhook."
+        - kind: fixed
+          description: "Fixed incorrect indentation of selector labels under spec.template.spec.topologySpreadConstraints when topologySpreadConstraints is set."
+    apiVersion: v2
+    appVersion: 0.20.0
+    created: "2026-01-02T15:35:03.858232244Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 340713da75324b2f527c0829ec92347d567a96dd3342fdbbb174d8856ab56d75
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.20.0/external-dns-1.20.0.tgz
+    version: 1.20.0
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: added
           description: "Add option to configure annotationFilter via dedicated chart value."
         - kind: changed
           description: "Grant discovery.k8s.io/endpointslices permission only when using service source."
@@ -1103,4 +1142,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-09-08T12:38:06.346715728Z"
+generated: "2026-01-02T15:35:03.858508943Z"
