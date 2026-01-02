@@ -336,19 +336,6 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 	return sources, nil
 }
 
-func ByNamesV0(ctx context.Context, p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
-	sources := []Source{}
-	for _, name := range cfg.sources {
-		source, err := BuildWithConfig(ctx, name, p, cfg)
-		if err != nil {
-			return nil, err
-		}
-		sources = append(sources, source)
-	}
-
-	return sources, nil
-}
-
 // BuildWithConfig creates a Source implementation using the factory pattern.
 // This function serves as the central registry for all available source types.
 //
