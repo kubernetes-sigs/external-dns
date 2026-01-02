@@ -77,7 +77,7 @@ func (m *MockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	return nil, args.Error(1)
 }
 
-func (m *MockClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+func (m *MockClientGenerator) CloudFoundryClient(_ string, _ string, _ string) (*cfclient.Client, error) {
 	args := m.Called()
 	if args.Error(1) == nil {
 		m.cloudFoundryClient = args.Get(0).(*cfclient.Client)
