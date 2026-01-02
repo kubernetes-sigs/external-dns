@@ -19,7 +19,6 @@ package events
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -218,18 +217,4 @@ func TestWithEmitEvents(t *testing.T) {
 			tt.assert(cfg)
 		})
 	}
-}
-
-func TestWithKubeConfig(t *testing.T) {
-	kubeConfig := "/path/to/kubeconfig"
-	apiServerURL := "https://api.server"
-	timeout := 5 * time.Second
-
-	cfg := &Config{}
-	opt := WithKubeConfig(kubeConfig, apiServerURL, timeout)
-	opt(cfg)
-
-	require.Equal(t, kubeConfig, cfg.kubeConfig)
-	require.Equal(t, apiServerURL, cfg.apiServerURL)
-	require.Equal(t, timeout, cfg.timeout)
 }

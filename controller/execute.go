@@ -371,12 +371,16 @@ func buildController(
 		return nil, err
 	}
 	eventsCfg := events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventCtrl, err := events.NewEventController(eventsCfg)
+		clientGen := buildSourceClientGenerator(cfg)
+		eventsClient, err := clientGen.EventsClient()
+		if err != nil {
+			log.Fatal(err)
+		}
+		eventCtrl, err := events.NewEventController(eventsClient, eventsCfg)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -410,12 +414,10 @@ func configureLogger(cfg *externaldns.Config) {
 	log.SetLevel(ll)
 }
 
-// buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
-// It initializes the source configuration, generates the required sources, and combines them into a single,
-// deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+// buildSourceClientGenerator creates a SingletonClientGenerator shared between
+// sources and events controller to ensure consistent client creation and metrics.
+func buildSourceClientGenerator(cfg *externaldns.Config) *source.SingletonClientGenerator {
+	return &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		RequestTimeout: func() time.Duration {
@@ -424,7 +426,16 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 			}
 			return cfg.RequestTimeout
 		}(),
-	}, cfg.Sources, sourceCfg)
+	}
+}
+
+// buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
+// It initializes the source configuration, generates the required sources, and combines them into a single,
+// deduplicated source. Returns the combined source or an error if source creation fails.
+func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
+	sourceCfg := source.NewSourceConfig(cfg)
+	clientGen := buildSourceClientGenerator(cfg)
+	sources, err := source.ByNames(ctx, clientGen, cfg.Sources, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
