@@ -29,6 +29,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	v1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -51,6 +52,10 @@ func gatewayStatus(ips ...string) v1.GatewayStatus {
 		addrs[i] = v1.GatewayStatusAddress{Type: &typ, Value: ip}
 	}
 	return v1.GatewayStatus{Addresses: addrs}
+}
+
+func listenerSetStatus(ips ...string) v1alpha1.ListenerSetStatus {
+	return v1alpha1.ListenerSetStatus{}
 }
 
 func httpRouteStatus(refs ...v1.ParentReference) v1.HTTPRouteStatus {
@@ -118,6 +123,33 @@ func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.Parent
 	return ref
 }
 
+func lsParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
+	group := v1alpha1.Group("gateway.networking.x-k8s.io")
+	kind := v1alpha1.Kind("XListenerSet")
+	ref := v1.ParentReference{
+		Group:     &group,
+		Kind:      &kind,
+		Name:      v1.ObjectName(name),
+		Namespace: (*v1.Namespace)(&namespace),
+	}
+	for _, opt := range options {
+		opt(&ref)
+	}
+	return ref
+}
+
+func lsGwParentRef(namespace, name string) v1alpha1.ParentGatewayReference {
+	group := v1.Group("gateway.networking.k8s.io")
+	kind := v1.Kind("Gateway")
+	ref := v1alpha1.ParentGatewayReference{
+		Group:     &group,
+		Kind:      &kind,
+		Name:      v1.ObjectName(name),
+		Namespace: (*v1.Namespace)(&namespace),
+	}
+	return ref
+}
+
 type gwParentRefOption func(*v1.ParentReference)
 
 func withSectionName(name v1.SectionName) gwParentRefOption {
@@ -170,6 +202,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		config          Config
 		namespaces      []*corev1.Namespace
 		gateways        []*v1beta1.Gateway
+		listenerSets    []*v1alpha1.XListenerSet
 		routes          []*v1beta1.HTTPRoute
 		endpoints       []*endpoint.Endpoint
 		logExpectations []string
@@ -1541,6 +1574,151 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
+		{
+			title: "XListenerSet",
+			config: Config{
+				GatewayEnableExperimental: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "lsgateway"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			listenerSets: []*v1alpha1.XListenerSet{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha1.ListenerSetSpec{
+					ParentRef: lsGwParentRef("default", "lsgateway"),
+					Listeners: []v1alpha1.ListenerEntry{
+						{
+							Name:          "bar",
+							Protocol:      v1.HTTPProtocolType,
+							Hostname:      hostnamePtr("bar.example.internal"),
+							AllowedRoutes: allowAllNamespaces,
+						},
+					},
+				},
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "lstestroute"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("bar.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							lsParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					lsParentRef("default", "test"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title: "XListenerSetAllowedRoutes",
+			config: Config{
+				GatewayEnableExperimental: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "lsgateway"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			listenerSets: []*v1alpha1.XListenerSet{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha1.ListenerSetSpec{
+					ParentRef: lsGwParentRef("default", "lsgateway"),
+					Listeners: []v1alpha1.ListenerEntry{
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: hostnamePtr("bar.example.internal"),
+							AllowedRoutes: &v1.AllowedRoutes{
+								Namespaces: &v1.RouteNamespaces{
+									From: &fromSame,
+								},
+							},
+						},
+					},
+				},
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("other", "lstestroute"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("bar.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							lsParentRef("default", "test"),
+						},
+					},
+				},
+				Status: rsWithoutAccepted(httpRouteStatus(lsParentRef("default", "test"))),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+		},
+		{
+			title:      "XListenerSetNotEnabled",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "lsgateway"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			listenerSets: []*v1alpha1.XListenerSet{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha1.ListenerSetSpec{
+					ParentRef: lsGwParentRef("default", "lsgateway"),
+					Listeners: []v1alpha1.ListenerEntry{
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: hostnamePtr("bar.example.internal"),
+						},
+					},
+				},
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "lstestroute"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("bar.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							lsParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					lsParentRef("default", "test"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
@@ -1555,7 +1733,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			for _, gw := range tt.gateways {
 				_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 				require.NoError(t, err, "failed to create Gateway")
-
+			}
+			for _, ls := range tt.listenerSets {
+				_, err := gwClient.ExperimentalV1alpha1().XListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+				require.NoError(t, err, "failed to create XListenerSet")
 			}
 			for _, rt := range tt.routes {
 				_, err := gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})

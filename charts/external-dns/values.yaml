@@ -208,6 +208,9 @@ namespaced: false
 # -- _Gateway API_ gateway namespace to watch.
 gatewayNamespace:  # @schema type:[string, null]; default: null
 
+# -- If `true`, enable experimental Gateway API X sources.
+gatewayEnableExperimental: false # @schema type:boolean; default:false
+
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:
   - service

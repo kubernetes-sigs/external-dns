@@ -3,6 +3,12 @@
 The gateway-grpcroute, gateway-httproute, gateway-tcproute, gateway-tlsroute, and gateway-udproute
 sources create DNS entries based on their respective `gateway.networking.k8s.io` resources.
 
+## Gateway experimental support
+
+Optionally, [ListenerSet](https://gateway-api.sigs.k8s.io/geps/gep-1713) support can be enabled
+with the flag `--gateway-enable-experimental`. In this case, the `xlistenerset.gateway.networking.x-k8s.io`
+resource listener entries will be appended to the `gateway.networking.k8s.io` listeners.
+
 ## Filtering the Routes considered
 
 These sources support the `--label-filter` flag, which filters \*Route resources
@@ -45,6 +51,9 @@ Matching Gateways are discovered by iterating over the \*Route's `status.parents
 
 - If the `--gateway-name` flag was specified, ignores parents with a `parentRef.name` other than the
   specified value.
+
+- When [experimental](#gateway-experimental-support) support is enabled the Gateway is expanded from
+  the `parentRef` of the `XListenerSet`.
 
   For example, given the following HTTPRoute:
 

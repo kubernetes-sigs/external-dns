@@ -65,6 +65,11 @@ rules:
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
+{{- if .Values.gatewayEnableExperimental -}}
+  - apiGroups: ["gateway.networking.x-k8s.io"]
+    resources: ["xlistenersets"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}
 {{- if not .Values.namespaced }}
   - apiGroups: [""]
@@ -158,6 +163,11 @@ rules:
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
+{{- if .Values.gatewayEnableExperimental -}}
+  - apiGroups: ["gateway.networking.x-k8s.io"]
+    resources: ["xlistenersets"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
