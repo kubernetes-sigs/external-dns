@@ -1541,6 +1541,418 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
+		// Annotation inheritance tests
+		{
+			title:      "AnnotationInheritance/TTLFromGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TtlKey: "300",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("ttl-inherited.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("ttl-inherited.example.com", "A", 300, "1.2.3.4"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/TTLRouteOverridesGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TtlKey: "300",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TtlKey: "60",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("ttl-override.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("ttl-override.example.com", "A", 60, "1.2.3.4"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/TargetFromGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "172.16.6.6",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("target-inherited.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("target-inherited.example.com", "A", "172.16.6.6"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/TargetRouteOverridesGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "172.16.6.6",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "1.2.3.4",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("target-override.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("target-override.example.com", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/ProviderSpecificFromGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.SetIdentifierKey: "gateway-set-id",
+						annotations.AliasKey:         "true",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("provider-inherited.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("provider-inherited.example.com", "A", "1.2.3.4").
+					WithProviderSpecific("alias", "true").
+					WithSetIdentifier("gateway-set-id"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/ProviderSpecificRouteOverridesGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.SetIdentifierKey: "gateway-set-id",
+						annotations.AliasKey:         "true",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.SetIdentifierKey: "route-set-id",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: hostnames("provider-override.example.com"),
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("provider-override.example.com", "A", "1.2.3.4").
+					WithProviderSpecific("alias", "true").
+					WithSetIdentifier("route-set-id"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/MixedInheritanceAndOverride",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey:        "172.16.6.6",
+						annotations.TtlKey:           "300",
+						annotations.SetIdentifierKey: "gateway-set-id",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					// Route without annotations - inherits all from Gateway
+					ObjectMeta: objectMeta("default", "internal"),
+					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
+						Hostnames: hostnames("internal.example.com"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					// Route with target override - external IP
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "external",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.TargetKey: "1.2.3.4",
+							annotations.TtlKey:    "60",
+						},
+					},
+					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
+						Hostnames: hostnames("external.example.com"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				// Internal route: inherits target=172.16.6.6, ttl=300, set-identifier from Gateway
+				newTestEndpointWithTTL("internal.example.com", "A", 300, "172.16.6.6").
+					WithSetIdentifier("gateway-set-id"),
+				// External route: overrides target=1.2.3.4, ttl=60, inherits set-identifier from Gateway
+				newTestEndpointWithTTL("external.example.com", "A", 60, "1.2.3.4").
+					WithSetIdentifier("gateway-set-id"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/TargetTypeChange_ARecordToCNAME",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						// Gateway default: A record (IP address)
+						annotations.TargetKey: "172.16.6.6",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("10.0.0.1"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					// Route inherits A record from Gateway
+					ObjectMeta: objectMeta("default", "internal"),
+					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
+						Hostnames: hostnames("internal.example.com"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					// Route overrides with CNAME (hostname instead of IP)
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cdn",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.TargetKey: "cdn.cloudprovider.com",
+						},
+					},
+					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
+						Hostnames: hostnames("static.example.com"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				// Internal route: inherits target=172.16.6.6 → A record
+				newTestEndpoint("internal.example.com", "A", "172.16.6.6"),
+				// CDN route: overrides target=cdn.cloudprovider.com → CNAME record
+				newTestEndpoint("static.example.com", "CNAME", "cdn.cloudprovider.com"),
+			},
+		},
+		{
+			title:      "AnnotationInheritance/MultipleGatewaysRouteOverride",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "gateway-one",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.TtlKey: "300",
+						},
+					},
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.one.example.com"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("1.1.1.1"),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "gateway-two",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.TtlKey: "600",
+						},
+					},
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.two.example.com"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("2.2.2.2"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "multi-gateway-route",
+					Namespace: "default",
+					Annotations: map[string]string{
+						// Route overrides TTL for all hosts
+						annotations.TtlKey: "60",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "gateway-one"),
+							gwParentRef("default", "gateway-two"),
+						},
+					},
+					Hostnames: hostnames("app.one.example.com", "app.two.example.com"),
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "gateway-one"),
+					gwParentRef("default", "gateway-two"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				// Both hosts get Route's TTL override (60), not Gateway defaults (300 or 600)
+				newTestEndpointWithTTL("app.one.example.com", "A", 60, "1.1.1.1"),
+				newTestEndpointWithTTL("app.two.example.com", "A", 60, "2.2.2.2"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {

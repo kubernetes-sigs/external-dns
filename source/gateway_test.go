@@ -245,3 +245,134 @@ func TestIsDNS1123Domain(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeAnnotations(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		desc     string
+		gateway  map[string]string
+		route    map[string]string
+		expected map[string]string
+	}{
+		{
+			desc:     "nil gateway annotations",
+			gateway:  nil,
+			route:    map[string]string{"key": "route-value"},
+			expected: map[string]string{"key": "route-value"},
+		},
+		{
+			desc:     "nil route annotations",
+			gateway:  map[string]string{"key": "gateway-value"},
+			route:    nil,
+			expected: map[string]string{"key": "gateway-value"},
+		},
+		{
+			desc:     "both nil",
+			gateway:  nil,
+			route:    nil,
+			expected: map[string]string{},
+		},
+		{
+			desc:     "empty gateway annotations",
+			gateway:  map[string]string{},
+			route:    map[string]string{"key": "route-value"},
+			expected: map[string]string{"key": "route-value"},
+		},
+		{
+			desc:     "empty route annotations",
+			gateway:  map[string]string{"key": "gateway-value"},
+			route:    map[string]string{},
+			expected: map[string]string{"key": "gateway-value"},
+		},
+		{
+			desc:     "both empty",
+			gateway:  map[string]string{},
+			route:    map[string]string{},
+			expected: map[string]string{},
+		},
+		{
+			desc:     "route overrides gateway",
+			gateway:  map[string]string{"key": "gateway-value"},
+			route:    map[string]string{"key": "route-value"},
+			expected: map[string]string{"key": "route-value"},
+		},
+		{
+			desc:     "merge different keys",
+			gateway:  map[string]string{"gw-key": "gw-value"},
+			route:    map[string]string{"rt-key": "rt-value"},
+			expected: map[string]string{"gw-key": "gw-value", "rt-key": "rt-value"},
+		},
+		{
+			desc: "partial override with real annotation keys",
+			gateway: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "172.16.6.6",
+				"external-dns.alpha.kubernetes.io/ttl":    "300",
+			},
+			route: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "1.2.3.4",
+			},
+			expected: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "1.2.3.4",
+				"external-dns.alpha.kubernetes.io/ttl":    "300",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+			result := mergeAnnotations(tt.gateway, tt.route)
+			if len(result) != len(tt.expected) {
+				t.Errorf("mergeAnnotations(); got len %d; want len %d", len(result), len(tt.expected))
+			}
+			for k, v := range tt.expected {
+				if result[k] != v {
+					t.Errorf("mergeAnnotations()[%q]; got %q; want %q", k, result[k], v)
+				}
+			}
+		})
+	}
+}
+
+func TestMergeAnnotationsDoesNotMutateInputs(t *testing.T) {
+	t.Parallel()
+	gateway := map[string]string{"gw-key": "gw-value", "shared": "gateway"}
+	route := map[string]string{"rt-key": "rt-value", "shared": "route"}
+
+	// Copy original values
+	gwOriginal := make(map[string]string)
+	for k, v := range gateway {
+		gwOriginal[k] = v
+	}
+	rtOriginal := make(map[string]string)
+	for k, v := range route {
+		rtOriginal[k] = v
+	}
+
+	result := mergeAnnotations(gateway, route)
+
+	// Verify result is correct
+	if result["shared"] != "route" {
+		t.Errorf("expected route to override gateway for 'shared' key")
+	}
+
+	// Verify inputs were not mutated
+	for k, v := range gwOriginal {
+		if gateway[k] != v {
+			t.Errorf("gateway map was mutated: key %q changed from %q to %q", k, v, gateway[k])
+		}
+	}
+	for k, v := range rtOriginal {
+		if route[k] != v {
+			t.Errorf("route map was mutated: key %q changed from %q to %q", k, v, route[k])
+		}
+	}
+
+	// Verify modifying result doesn't affect inputs
+	result["new-key"] = "new-value"
+	if _, ok := gateway["new-key"]; ok {
+		t.Error("modifying result affected gateway map")
+	}
+	if _, ok := route["new-key"]; ok {
+		t.Error("modifying result affected route map")
+	}
+}
