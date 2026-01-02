@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Logger
@@ -267,7 +268,8 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), tt.cfg)
+			sCfg := source.NewSourceConfig(tt.cfg)
+			_, err := buildSource(t.Context(), sCfg)
 			require.NoError(t, err)
 		})
 	}
@@ -438,9 +440,10 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
+	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	src, err := buildSource(ctx, cfg)
+	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
@@ -450,7 +453,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
-	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
 
 	done := make(chan struct{})

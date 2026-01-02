@@ -108,7 +108,8 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	endpointsSource, err := buildSource(ctx, cfg)
+	sourceCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sourceCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -130,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sourceCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -168,6 +169,9 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	// TODO: refactor to move this to provider package, conver with tests
+	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -358,6 +362,7 @@ func buildProvider(
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
+	sCfg *source.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -371,14 +376,17 @@ func buildController(
 		return nil, err
 	}
 	eventsCfg := events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventCtrl, err := events.NewEventController(eventsCfg)
+		eventsClient, err := sCfg.ClientGenerator().EventsClient()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
+		}
+		eventCtrl, err := events.NewEventController(eventsClient, eventsCfg)
+		if err != nil {
+			return nil, err
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
@@ -413,18 +421,8 @@ func configureLogger(cfg *externaldns.Config) {
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}, cfg.Sources, sourceCfg)
+func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg.ClientGenerator(), cfg)
 	if err != nil {
 		return nil, err
 	}

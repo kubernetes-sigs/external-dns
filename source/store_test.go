@@ -20,9 +20,11 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -34,6 +36,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
 	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -46,6 +49,7 @@ type MockClientGenerator struct {
 	cloudFoundryClient      *cfclient.Client
 	dynamicKubernetesClient dynamic.Interface
 	openshiftClient         openshift.Interface
+	eventsClient            v1.EventsV1Interface
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -98,6 +102,15 @@ func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	if args.Error(1) == nil {
 		m.openshiftClient = args.Get(0).(openshift.Interface)
 		return m.openshiftClient, nil
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.eventsClient = args.Get(0).(v1.EventsV1Interface)
+		return m.eventsClient, nil
 	}
 	return nil, args.Error(1)
 }
@@ -265,6 +278,9 @@ func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interfac
 func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	return nil, errMock
 }
+func (m *minimalMockClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
+	return nil, errMock
+}
 
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	ctx := context.Background()
@@ -278,4 +294,48 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	if !errors.Is(err, ErrSourceNotFound) {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
+}
+
+func TestConfig_ClientGenerator(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, "/path/to/kubeconfig", gen.KubeConfig)
+	assert.Equal(t, "https://api.example.com", gen.APIServerURL)
+	assert.Equal(t, 30*time.Second, gen.RequestTimeout)
+}
+
+func TestConfig_ClientGenerator_UpdateEvents(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   true, // Special case
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, time.Duration(0), gen.RequestTimeout, "UpdateEvents should set timeout to 0")
+}
+
+func TestConfig_ClientGenerator_Caching(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	// Call ClientGenerator twice
+	gen1 := cfg.ClientGenerator()
+	gen2 := cfg.ClientGenerator()
+
+	// Should return the same instance (cached)
+	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
 }
