@@ -157,6 +157,11 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
+		ExcludeTargetNets:              cfg.ExcludeTargetNets,
+		TargetNetFilter:                cfg.TargetNetFilter,
+		NAT64Networks:                  cfg.NAT64Networks,
+		MinTTL:                         cfg.MinTTL,
+		sources:                        cfg.Sources,
 	}
 }
 
@@ -167,26 +172,19 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 // The timeout behavior is special-cased: when UpdateEvents is true, the timeout is set to 0
 // (no timeout) to allow long-running watch operations for event-driven source updates.
 func (cfg *Config) ClientGenerator() *SingletonClientGenerator {
-	// cfg.clientGen = &SingletonClientGenerator{
-	// 	KubeConfig:   cfg.KubeConfig,
-	// 	APIServerURL: cfg.APIServerURL,
-	// 	RequestTimeout: func() time.Duration {
-	// 		if cfg.UpdateEvents {
-	// 			return 0
-	// 		}
-	// 		return cfg.RequestTimeout
-	// 	}(),
-	// }
-	return &SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}
+	cfg.clientGenOnce.Do(func() {
+		cfg.clientGen = &SingletonClientGenerator{
+			KubeConfig:   cfg.KubeConfig,
+			APIServerURL: cfg.APIServerURL,
+			RequestTimeout: func() time.Duration {
+				if cfg.UpdateEvents {
+					return 0
+				}
+				return cfg.RequestTimeout
+			}(),
+		}
+	})
+	return cfg.clientGen
 }
 
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
@@ -327,6 +325,19 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
 	sources := make([]Source, 0, len(cfg.sources))
+	for _, name := range cfg.sources {
+		source, err := BuildWithConfig(ctx, name, p, cfg)
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, source)
+	}
+
+	return sources, nil
+}
+
+func ByNamesV0(ctx context.Context, p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
+	sources := []Source{}
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
