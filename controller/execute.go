@@ -108,7 +108,8 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	endpointsSource, err := buildSource(ctx, cfg)
+	sourceCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sourceCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -130,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sourceCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -361,6 +362,7 @@ func buildProvider(
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
+	sCfg *source.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -378,8 +380,7 @@ func buildController(
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		clientGen := source.NewClientGenerator(cfg)
-		eventsClient, err := clientGen.EventsClient()
+		eventsClient, err := sCfg.ClientGenerator().EventsClient()
 		if err != nil {
 			return nil, err
 		}
@@ -420,10 +421,8 @@ func configureLogger(cfg *externaldns.Config) {
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	clientGen := source.NewClientGenerator(cfg)
-	sources, err := source.ByNames(ctx, clientGen, cfg.Sources, sourceCfg)
+func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg.ClientGenerator(), cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -20,9 +20,11 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -292,4 +294,48 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	if !errors.Is(err, ErrSourceNotFound) {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
+}
+
+func TestConfig_ClientGenerator(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, "/path/to/kubeconfig", gen.KubeConfig)
+	assert.Equal(t, "https://api.example.com", gen.APIServerURL)
+	assert.Equal(t, 30*time.Second, gen.RequestTimeout)
+}
+
+func TestConfig_ClientGenerator_UpdateEvents(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   true, // Special case
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, time.Duration(0), gen.RequestTimeout, "UpdateEvents should set timeout to 0")
+}
+
+func TestConfig_ClientGenerator_Caching(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	// Call ClientGenerator twice
+	gen1 := cfg.ClientGenerator()
+	gen2 := cfg.ClientGenerator()
+
+	// Should return the same instance (cached)
+	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
 }
