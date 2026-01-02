@@ -194,21 +194,19 @@ type SingletonClientGenerator struct {
 	cfClient        *cfclient.Client
 	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
-	eventsClient    v1.EventsV1Interface
 	kubeOnce        sync.Once
 	gatewayOnce     sync.Once
 	istioOnce       sync.Once
 	cfOnce          sync.Once
 	dynCliOnce      sync.Once
 	openshiftOnce   sync.Once
-	eventsOnce      sync.Once
 }
 
 // KubeClient generates a kube client if it was not created before
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.kubeOnce.Do(func() {
-		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
+		p.kubeClient, err = kubeclient.NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.kubeClient, err
 }
@@ -286,27 +284,16 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 	return p.openshiftClient, err
 }
 
-// EventsClient generates an events client if it was not created before.
-// The client is instrumented with Prometheus metrics for observability.
+// EventsClient returns the events client from the shared Kubernetes clientset.
+// This ensures the events client shares the same HTTP transport, connection pool,
+// and rate limiter as other Kubernetes API clients, preventing independent rate
+// limit exhaustion.
 func (p *SingletonClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
-	var err error
-	p.eventsOnce.Do(func() {
-		p.eventsClient, err = newEventsClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
-	})
-	return p.eventsClient, err
-}
-
-func newEventsClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (v1.EventsV1Interface, error) {
-	config, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	client, err := p.KubeClient()
 	if err != nil {
 		return nil, err
 	}
-	client, err := v1.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	log.Infof("Created Events client %s", config.Host)
-	return client, nil
+	return client.EventsV1(), nil
 }
 
 // ByNames returns multiple Sources given multiple names.
@@ -639,23 +626,6 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 		return nil, err
 	}
 	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
-}
-
-// NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
-	log.Infof("Instantiating new Kubernetes client")
-	config, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
-	if err != nil {
-		return nil, err
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	log.Infof("Created Kubernetes client %s", config.Host)
-	return client, nil
 }
 
 // NewIstioClient returns a new Istio client object. It uses the configured

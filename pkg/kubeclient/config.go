@@ -28,6 +28,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -89,4 +90,21 @@ func InstrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time
 	config.Timeout = requestTimeout
 
 	return config, nil
+}
+
+// NewKubeClient returns a new Kubernetes client object. It takes a Config and
+// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
+func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+	log.Infof("Instantiating new Kubernetes client")
+	config, err := InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	if err != nil {
+		return nil, err
+	}
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Created Kubernetes client %s", config.Host)
+	return client, nil
 }
