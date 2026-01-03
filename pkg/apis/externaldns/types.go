@@ -434,7 +434,6 @@ var allowedSources = []string{
 	"gateway-udproute",
 	"istio-gateway",
 	"istio-virtualservice",
-	"cloudfoundry",
 	"contour-httpproxy",
 	"gloo-proxy",
 	"fake",
