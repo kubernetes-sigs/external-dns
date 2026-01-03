@@ -780,7 +780,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				}
 			}
 
-			cfg := Config{
+			cfg := &Config{
 				FQDNTemplate:                   tt.fqdnTemplate,
 				CombineFQDNAndAnnotation:       tt.combineFQDN,
 				PublishHostIP:                  tt.publishHostIp,

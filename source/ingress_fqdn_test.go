@@ -63,7 +63,7 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					FQDNTemplate: tt.fqdnTemplate,
 					LabelFilter:  labels.NewSelector(),
 				},
@@ -320,7 +320,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				Config{
+				&Config{
 					FQDNTemplate:             tt.fqdnTemplate,
 					CombineFQDNAndAnnotation: true,
 					LabelFilter:              labels.Everything(),

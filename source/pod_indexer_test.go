@@ -218,7 +218,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 			selector, _ := annotations.ParseFilter(tt.labelSelector)
 			pSource, err := NewPodSource(
 				t.Context(), client,
-				Config{
+				&Config{
 					Namespace:        tt.namespace,
 					FQDNTemplate:     "{{ .Name }}.tld.org",
 					AnnotationFilter: tt.annotationFilter,

@@ -58,7 +58,7 @@ func (suite *IngressSuite) SetupTest() {
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
 		fakeClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 			LabelFilter:  labels.Everything(),
 		},
@@ -117,7 +117,7 @@ func TestNewIngressSource(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					AnnotationFilter:         ti.annotationFilter,
 					FQDNTemplate:             ti.fqdnTemplate,
 					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
@@ -1411,7 +1411,7 @@ func testIngressEndpoints(t *testing.T) {
 			source, _ := NewIngressSource(
 				context.TODO(),
 				fakeClient,
-				Config{
+				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
 					FQDNTemplate:             ti.fqdnTemplate,
@@ -1622,7 +1622,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				*tt.cfg,
+				tt.cfg,
 			)
 			require.NoError(t, err)
 			endpoints, err := src.Endpoints(t.Context())

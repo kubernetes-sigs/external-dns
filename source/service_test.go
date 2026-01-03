@@ -85,7 +85,7 @@ func (suite *ServiceSuite) SetupTest() {
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
 		fakeClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 			LabelFilter:  labels.Everything(),
 		},
@@ -158,7 +158,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 			_, err := NewServiceSource(
 				context.TODO(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					FQDNTemplate:      tc.fqdnTemplate,
 					AnnotationFilter:  tc.annotationFilter,
 					ServiceTypeFilter: tc.serviceTypesFilter,
@@ -1130,7 +1130,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:                tc.fqdnTemplate,
 					AnnotationFilter:            tc.annotationFilter,
 					ServiceTypeFilter:           tc.serviceTypesFilter,
@@ -1341,7 +1341,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:             tc.fqdnTemplate,
 					AnnotationFilter:         tc.annotationFilter,
 					ServiceTypeFilter:        tc.serviceTypesFilter,
@@ -1638,7 +1638,7 @@ func TestClusterIpServices(t *testing.T) {
 			}
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:             tc.fqdnTemplate,
 					AnnotationFilter:         tc.annotationFilter,
 					Compatibility:            tc.compatibility,
@@ -2458,7 +2458,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:             tc.fqdnTemplate,
 					AnnotationFilter:         tc.annotationFilter,
 					Compatibility:            tc.compatibility,
@@ -3360,7 +3360,7 @@ func TestHeadlessServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:             tc.fqdnTemplate,
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
@@ -3489,7 +3489,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	}
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
-		Config{
+		&Config{
 			Namespace:            v1.NamespaceAll,
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
@@ -3844,7 +3844,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 	}
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
-		Config{
+		&Config{
 			Namespace:            v1.NamespaceAll,
 			LabelFilter:          labels.Everything(),
 			ExcludeUnschedulable: true,
@@ -4291,7 +4291,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					Namespace:                tc.targetNamespace,
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
@@ -4495,7 +4495,7 @@ func TestExternalServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(context.TODO(), kubernetes,
-				Config{
+				&Config{
 					FQDNTemplate:             tc.fqdnTemplate,
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
@@ -4550,7 +4550,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	require.NoError(b, err)
 
 	client, err := NewServiceSource(context.TODO(), kubernetes,
-		Config{
+		&Config{
 			Namespace:            v1.NamespaceAll,
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
@@ -4638,7 +4638,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
-				Config{
+				&Config{
 					Namespace:                      "default",
 					ServiceTypeFilter:              tc.svcFilter,
 					AlwaysPublishNotReadyAddresses: true,
@@ -4659,7 +4659,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
 
 	svc, err := NewServiceSource(context.TODO(), fake.NewClientset(),
-		Config{
+		&Config{
 			Namespace:         "default",
 			ServiceTypeFilter: serviceTypeFilter,
 			LabelFilter:       labels.Everything(),
@@ -4827,7 +4827,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
-		Config{
+		&Config{
 			FQDNTemplate:         "{{.Name}}",
 			Namespace:            "default",
 			ExcludeUnschedulable: true,
@@ -4903,7 +4903,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	require.NoError(t, err)
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 			LabelFilter:  labels.Everything(),
 		},

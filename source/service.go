@@ -92,7 +92,7 @@ type serviceSource struct {
 func NewServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	config Config,
+	config *Config,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {

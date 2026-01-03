@@ -93,7 +93,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			_, err := NewNodeSource(
 				context.TODO(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					AnnotationFilter:     ti.annotationFilter,
 					FQDNTemplate:         ti.fqdnTemplate,
 					LabelFilter:          labels.Everything(),
@@ -440,7 +440,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			client, err := NewNodeSource(
 				context.TODO(),
 				kubeClient,
-				Config{
+				&Config{
 					AnnotationFilter:     tc.annotationFilter,
 					FQDNTemplate:         tc.fqdnTemplate,
 					LabelFilter:          labelSelector,
@@ -554,7 +554,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		client, err := NewNodeSource(
 			t.Context(),
 			kubeClient,
-			Config{
+			&Config{
 				AnnotationFilter:     tc.annotationFilter,
 				FQDNTemplate:         tc.fqdnTemplate,
 				LabelFilter:          labelSelector,
@@ -599,7 +599,7 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		kubeClient,
-		Config{
+		&Config{
 			LabelFilter: labels.Everything(),
 		},
 	)

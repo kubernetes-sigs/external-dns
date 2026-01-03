@@ -638,7 +638,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			assert.NoError(t, err)
 
 			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient,
-				Config{
+				&Config{
 					Namespace:        namespace,
 					AnnotationFilter: ti.annotationFilter,
 					LabelFilter:      ti.labelSelector,

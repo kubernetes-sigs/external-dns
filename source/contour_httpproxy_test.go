@@ -92,7 +92,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 	suite.source, err = NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		Config{
+		&Config{
 			Namespace:    "default",
 			FQDNTemplate: "{{.Name}}",
 		},
@@ -188,7 +188,7 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 			_, err := NewContourHTTPProxySource(
 				context.TODO(),
 				fakeDynamicClient,
-				Config{
+				&Config{
 					AnnotationFilter:         ti.annotationFilter,
 					FQDNTemplate:             ti.fqdnTemplate,
 					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
@@ -1056,7 +1056,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			httpProxySource, err := NewContourHTTPProxySource(
 				context.TODO(),
 				fakeDynamicClient,
-				Config{
+				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
 					FQDNTemplate:             ti.fqdnTemplate,
@@ -1085,7 +1085,7 @@ func newTestHTTPProxySource() (*httpProxySource, error) {
 	src, err := NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 		},
 	)

@@ -99,7 +99,7 @@ func (suite *GatewaySuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 		},
 	)
@@ -171,7 +171,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				context.TODO(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				Config{
+				&Config{
 					FQDNTemplate:             ti.fqdnTemplate,
 					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
 					AnnotationFilter:         ti.annotationFilter,
@@ -1509,7 +1509,7 @@ func testGatewayEndpoints(t *testing.T) {
 				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				Config{
+				&Config{
 					Namespace:                targetNamespace,
 					FQDNTemplate:             ti.fqdnTemplate,
 					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
@@ -1624,7 +1624,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				Config{},
+				&Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -1705,7 +1705,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		t.Context(),
 		fakeClient,
 		istiofake.NewSimpleClientset(),
-		Config{})
+		&Config{})
 	require.NoError(t, err)
 	gwSource, ok := src.(*gatewaySource)
 	require.True(t, ok)
@@ -1858,7 +1858,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		fakeKubeClient,
 		fakeIstioClient,
-		Config{},
+		&Config{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, src)
@@ -1896,7 +1896,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.FQDN}}",
 		},
 	)

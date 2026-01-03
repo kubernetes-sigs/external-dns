@@ -50,7 +50,7 @@ type nodeSource struct {
 func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg Config) (Source, error) {
+	cfg *Config) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err

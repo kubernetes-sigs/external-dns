@@ -55,7 +55,7 @@ type httpProxySource struct {
 func NewContourHTTPProxySource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
-	cfg Config,
+	cfg *Config,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {

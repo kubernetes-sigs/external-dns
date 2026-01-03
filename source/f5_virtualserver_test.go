@@ -589,7 +589,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			assert.NoError(t, err)
 
 			source, err := NewF5VirtualServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient,
-				Config{
+				&Config{
 					Namespace:        defaultF5VirtualServerNamespace,
 					AnnotationFilter: tc.annotationFilter,
 				})

@@ -53,7 +53,7 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 			_, err := NewPodSource(
 				t.Context(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					FQDNTemplate: tt.fqdnTemplate,
 				})
 
@@ -397,7 +397,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				Config{
+				&Config{
 					FQDNTemplate:             tt.fqdnTemplate,
 					CombineFQDNAndAnnotation: tt.combineFQDN,
 					PodSourceDomain:          tt.sourceDomain,
@@ -458,7 +458,7 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				Config{
+				&Config{
 					FQDNTemplate:             tt.fqdnTemplate,
 					CombineFQDNAndAnnotation: tt.combineFQDN,
 					PodSourceDomain:          tt.sourceDomain,

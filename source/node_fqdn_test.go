@@ -59,7 +59,7 @@ func TestNodeSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewNodeSource(
 				t.Context(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					AnnotationFilter:         tt.annotationFilter,
 					FQDNTemplate:             tt.fqdnTemplate,
 					CombineFQDNAndAnnotation: false,
@@ -335,7 +335,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewNodeSource(
 				t.Context(),
 				kubeClient,
-				Config{
+				&Config{
 					FQDNTemplate:             tt.fqdnTemplate,
 					ExcludeUnschedulable:     true,
 					ExposeInternalIPv6:       true,

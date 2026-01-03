@@ -46,7 +46,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 	suite.sc, err = NewOcpRouteSource(
 		context.TODO(),
 		fakeClient,
-		Config{
+		&Config{
 			FQDNTemplate: "{{.Name}}",
 			LabelFilter:  labels.Everything(),
 		},
@@ -142,7 +142,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			_, err := NewOcpRouteSource(
 				context.TODO(),
 				fake.NewClientset(),
-				Config{
+				&Config{
 					AnnotationFilter: ti.annotationFilter,
 					FQDNTemplate:     ti.fqdnTemplate,
 					LabelFilter:      labelSelector,
@@ -524,7 +524,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			source, err := NewOcpRouteSource(
 				context.TODO(),
 				fakeClient,
-				Config{
+				&Config{
 					FQDNTemplate:  "{{.Name}}",
 					LabelFilter:   labelSelector,
 					OCPRouterName: tc.ocpRouterName,

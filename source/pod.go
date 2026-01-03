@@ -52,7 +52,7 @@ type podSource struct {
 func NewPodSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg Config,
+	cfg *Config,
 ) (Source, error) {
 	namespace := cfg.Namespace
 	annotationFilter := cfg.AnnotationFilter

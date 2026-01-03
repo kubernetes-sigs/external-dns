@@ -69,7 +69,7 @@ func NewIstioVirtualServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
-	cfg Config,
+	cfg *Config,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {

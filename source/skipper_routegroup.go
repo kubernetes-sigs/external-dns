@@ -193,7 +193,7 @@ func (cli *routeGroupClient) do(req *http.Request) (*http.Response, error) {
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(cfg Config, token, tokenPath, apiServerURL string) (Source, error) {
+func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err

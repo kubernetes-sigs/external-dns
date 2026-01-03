@@ -118,7 +118,7 @@ func NewCRDClientForAPIVersionKind(
 // NewCRDSource creates a new crdSource with the given config.
 func NewCRDSource(
 	crdClient rest.Interface,
-	cfg Config,
+	cfg *Config,
 	scheme *runtime.Scheme) (Source, error) {
 	sourceCrd := crdSource{
 		crdResource:      strings.ToLower(cfg.CRDSourceKind) + "s",
