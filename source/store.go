@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -169,7 +168,6 @@ type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
 	GatewayClient() (gateway.Interface, error)
 	IstioClient() (istioclient.Interface, error)
-	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
 	OpenShiftClient() (openshift.Interface, error)
 }
@@ -192,7 +190,6 @@ type SingletonClientGenerator struct {
 	kubeClient      kubernetes.Interface
 	gatewayClient   gateway.Interface
 	istioClient     *istioclient.Clientset
-	cfClient        *cfclient.Client
 	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
@@ -241,30 +238,6 @@ func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) 
 		p.istioClient, err = NewIstioClient(p.KubeConfig, p.APIServerURL)
 	})
 	return p.istioClient, err
-}
-
-// CloudFoundryClient generates a cf client if it was not created before
-func (p *SingletonClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	var err error
-	p.cfOnce.Do(func() {
-		p.cfClient, err = NewCFClient(cfAPIEndpoint, cfUsername, cfPassword)
-	})
-	return p.cfClient, err
-}
-
-// NewCFClient return a new CF client object.
-func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	c := &cfclient.Config{
-		ApiAddress: "https://" + cfAPIEndpoint,
-		Username:   cfUsername,
-		Password:   cfPassword,
-	}
-	client, err := cfclient.NewClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
 }
 
 // DynamicKubernetesClient generates a dynamic client if it was not created before

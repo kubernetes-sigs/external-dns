@@ -256,9 +256,7 @@ func (m *minimalMockClientGenerator) GatewayClient() (gateway.Interface, error) 
 func (m *minimalMockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	return nil, errMock
 }
-func (m *minimalMockClientGenerator) CloudFoundryClient(string, string, string) (*cfclient.Client, error) {
-	return nil, errMock
-}
+
 func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	return nil, errMock
 }
