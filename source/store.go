@@ -195,7 +195,6 @@ type SingletonClientGenerator struct {
 	kubeOnce        sync.Once
 	gatewayOnce     sync.Once
 	istioOnce       sync.Once
-	cfOnce          sync.Once
 	dynCliOnce      sync.Once
 	openshiftOnce   sync.Once
 }
