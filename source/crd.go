@@ -66,7 +66,7 @@ func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) err
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
 func NewCRDClientForAPIVersionKind(
 	client kubernetes.Interface,
-	cfg Config,
+	cfg *Config,
 ) (*rest.RESTClient, *runtime.Scheme, error) {
 	kubeConfig := cfg.KubeConfig
 	if kubeConfig == "" {

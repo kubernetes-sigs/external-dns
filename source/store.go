@@ -553,7 +553,7 @@ func buildCRDSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, 
 	if err != nil {
 		return nil, err
 	}
-	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, *cfg)
+	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg)
 	if err != nil {
 		return nil, err
 	}
