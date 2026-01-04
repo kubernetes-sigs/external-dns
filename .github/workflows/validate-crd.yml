@@ -16,6 +16,7 @@ on:
     paths:
       - 'go.tool.mod'
       - 'go.tool.sum'
+      - 'scripts/generate-crd.sh'
 
 permissions:
   contents: read
