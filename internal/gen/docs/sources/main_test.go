@@ -65,8 +65,8 @@ func TestDiscoverSources(t *testing.T) {
 	assert.GreaterOrEqual(t, len(sources), 5, "Expected at least 5 sources with annotations")
 
 	// Verify sources are sorted by category, then by name
-	for i := 1; i < len(sources); i++ {
-		prev, curr := sources[i-1], sources[i]
+	for i := range len(sources) - 1 {
+		prev, curr := sources[i], sources[i+1]
 		if prev.Category == curr.Category {
 			if prev.Name > curr.Name {
 				t.Errorf("Sources not sorted correctly: %s should come before %s", curr.Name, prev.Name)
@@ -118,9 +118,8 @@ type testSource struct {
 	client string
 }
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
 	sources, err := parseSourceAnnotations(tmpDir)
 	require.NoError(t, err)
