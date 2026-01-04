@@ -85,9 +85,6 @@ type Config struct {
 	KubeConfig                     string
 	APIServerURL                   string
 	ServiceTypeFilter              []string
-	CFAPIEndpoint                  string
-	CFUsername                     string
-	CFPassword                     string
 	GlooNamespaces                 []string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
@@ -131,9 +128,6 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		KubeConfig:                     cfg.KubeConfig,
 		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
-		CFUsername:                     cfg.CFUsername,
-		CFPassword:                     cfg.CFPassword,
 		GlooNamespaces:                 cfg.GlooNamespaces,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
@@ -158,7 +152,6 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 // - KubeClient: Standard Kubernetes API client
 // - GatewayClient: Gateway API client for Gateway resources
 // - IstioClient: Istio service mesh client
-// - CloudFoundryClient: CloudFoundry platform client
 // - DynamicKubernetesClient: Dynamic client for custom resources
 // - OpenShiftClient: OpenShift-specific client for Route resources
 //
@@ -287,7 +280,6 @@ func ByNames(ctx context.Context, p ClientGenerator, names []string, cfg *Config
 // - "pod": Kubernetes pods
 // - "gateway-*": Gateway API resources (httproute, grpcroute, tlsroute, tcproute, udproute)
 // - "istio-*": Istio resources (gateway, virtualservice)
-// - "cloudfoundry": CloudFoundry applications
 // - "ambassador-host": Ambassador Host resources
 // - "contour-httpproxy": Contour HTTPProxy resources
 // - "gloo-proxy": Gloo proxy resources

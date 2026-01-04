@@ -169,9 +169,6 @@ type Config struct {
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
-	CFAPIEndpoint                                 string
-	CFUsername                                    string
-	CFPassword                                    string
 	ResolveServiceLoadBalancerHostname            bool
 	RFC2136Host                                   []string
 	RFC2136Port                                   int
@@ -255,9 +252,6 @@ var defaultConfig = &Config{
 	AzureSubscriptionID:         "",
 	AzureZonesCacheDuration:     0 * time.Second,
 	AzureMaxRetriesCount:        3,
-	CFAPIEndpoint:               "",
-	CFPassword:                  "",
-	CFUsername:                  "",
 	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
@@ -502,11 +496,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
-
-	// Flags related to cloud foundry
-	b.StringVar("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting", defaultConfig.CFAPIEndpoint, &cfg.CFAPIEndpoint)
-	b.StringVar("cf-username", "The username to log into the cloud foundry API", defaultConfig.CFUsername, &cfg.CFUsername)
-	b.StringVar("cf-password", "The password to log into the cloud foundry API", defaultConfig.CFPassword, &cfg.CFPassword)
 
 	// Flags related to Gloo
 	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
