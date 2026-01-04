@@ -57,15 +57,15 @@ type myNewSource struct {
 
 **Annotation Reference:**
 
-* {{backtick 1}}+externaldns:source:name{{backtick 1}} - The CLI name used with {{backtick 1}}--source{{backtick 1}} flag (required)
-* {{backtick 1}}+externaldns:source:category{{backtick 1}} - Category for documentation grouping (required)
-* {{backtick 1}}+externaldns:source:description{{backtick 1}} - Short description of what the source does (required)
-* {{backtick 1}}+externaldns:source:resources{{backtick 1}} - Kubernetes resources watched (comma-separated)
-* {{backtick 1}}+externaldns:source:filters{{backtick 1}} - Supported filter types (annotation, label)
-* {{backtick 1}}+externaldns:source:namespace{{backtick 1}} - Namespace support: comma-separated values (all, single, multiple)
-* {{backtick 1}}+externaldns:source:fqdn-template{{backtick 1}} - FQDN template support (true, false)
+* `+externaldns:source:name` - The CLI name used with `--source` flag (required)
+* `+externaldns:source:category` - Category for documentation grouping (required)
+* `+externaldns:source:description` - Short description of what the source does (required)
+* `+externaldns:source:resources` - Kubernetes resources watched (comma-separated)
+* `+externaldns:source:filters` - Supported filter types (annotation, label)
+* `+externaldns:source:namespace` - Namespace support: comma-separated values (all, single, multiple)
+* `+externaldns:source:fqdn-template` - FQDN template support (true, false)
 
-After adding annotations, run {{backtick 1}}make generate-sources-documentation{{backtick 1}} to update this file.
+After adding annotations, run `make generate-sources-documentation` to update this file.
 
 ## Providers
 
