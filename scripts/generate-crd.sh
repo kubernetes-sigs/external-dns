@@ -55,30 +55,37 @@ CONTROLLER_GEN="go tool -modfile=go.tool.mod controller-gen"
 YQ="go tool -modfile=go.tool.mod yq"
 YAMLFMT="go tool -modfile=go.tool.mod yamlfmt"
 
-echo "Generating CRDs using controller-gen..."
+echo " Generating CRDs using controller-gen..."
 
 # Step 1: Generate deepcopy methods for endpoint types
 # This creates zz_generated.deepcopy.go with DeepCopy/DeepCopyInto/DeepCopyObject methods
 # The 'object' generator adds these methods for types marked with +kubebuilder:object markers
-echo "→ Generating deepcopy for endpoint package..."
+echo "  → Generating deepcopy for endpoint package..."
 ${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./endpoint/..."
+
+# Clean up empty import statements from generated files
+# controller-gen sometimes adds empty import() blocks which create noise in diffs
+find ./endpoint -name "zz_generated.deepcopy.go" -exec gofmt -s -w {} \;
 
 # Step 2: Generate CRD manifests for API types
 # - Generates CRDs from Go types with kubebuilder markers
 # - Outputs to stdout, formats with yamlfmt, then splits into individual files
 # - Each CRD is saved to config/crd/standard/<crd-name>.yaml
-echo "→ Generating CRDs for apis package..."
+echo "  → Generating CRDs for apis package..."
 ${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout | \
     ${YAMLFMT} - | \
     ${YQ} eval '.' --no-doc --split-exp '"./config/crd/standard/" + .metadata.name + ".yaml"'
+
+# Clean up empty import statements from generated files
+find ./apis -name "zz_generated.deepcopy.go" -exec gofmt -s -w {} \;
 
 # Step 3: Copy CRDs to Helm chart with filtered annotations
 # - Reads CRDs from config/crd/standard/
 # - Filters annotations to only keep kubernetes.io/* (removes controller-gen annotations)
 # - Splits and saves to charts/external-dns/crds/ for Helm chart packaging
-echo "→ Copying CRDs to chart directory..."
+echo "  → Copying CRDs to chart directory..."
 ${YQ} eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
     --no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
     ./config/crd/standard/*.yaml
 
-echo "✅ CRD generation complete"
+echo -e "  ✅ CRD generation complete"
