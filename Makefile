@@ -16,10 +16,6 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
-CONTROLLER_GEN := go tool -modfile=go.tool.mod  controller-gen
-YQ := go tool -modfile=go.tool.mod yq
-YAMLFMT := go tool -modfile=go.tool.mod yamlfmt
-
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
 
@@ -64,13 +60,13 @@ lint: licensecheck go-lint
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd:
-	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./endpoint/..."
-	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout | \
-		$(YAMLFMT) - | \
-		$(YQ) eval '.' --no-doc --split-exp '"./config/crd/standard/" + .metadata.name + ".yaml"'
-	$(YQ) eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
-		--no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
-		./config/crd/standard/*.yaml
+	@./scripts/generate-crd.sh
+
+# Required while depedabot is not supporting go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+#? tools-deps: Update go tools defined in go.tool.mod to latest versions
+tools-deps:
+	@go get -modfile=go.tool.mod tool
+	@go mod tidy -modfile=go.tool.mod
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
