@@ -46,7 +46,7 @@ When creating a new source, add the following annotations above the source struc
 // +externaldns:source:name=my-new-source
 // +externaldns:source:category=Kubernetes Core
 // +externaldns:source:description=Creates DNS entries from MyResource objects
-// +externaldns:source:resources=MyResource
+// +externaldns:source:resources=MyResource<Kind.apigroup.subdomain.domain>
 // +externaldns:source:filters=
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
@@ -60,7 +60,7 @@ type myNewSource struct {
 * `+externaldns:source:name` - The CLI name used with `--source` flag (required)
 * `+externaldns:source:category` - Category for documentation grouping (required)
 * `+externaldns:source:description` - Short description of what the source does (required)
-* `+externaldns:source:resources` - Kubernetes resources watched (comma-separated)
+* `+externaldns:source:resources` - Kubernetes resources watched (comma-separated). Convention `Kind.apigroup.subdomain.domain`
 * `+externaldns:source:filters` - Supported filter types (annotation, label)
 * `+externaldns:source:namespace` - Namespace support: comma-separated values (all, single, multiple)
 * `+externaldns:source:fqdn-template` - FQDN template support (true, false)
