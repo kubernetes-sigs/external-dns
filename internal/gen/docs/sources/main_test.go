@@ -396,6 +396,7 @@ func TestExtractSourcesFromComments(t *testing.T) {
 `,
 			typeName: "testSource",
 			filePath: "test.go",
+			wantErr:  true,
 		},
 		{
 			name: "optional annotations can be missing",
