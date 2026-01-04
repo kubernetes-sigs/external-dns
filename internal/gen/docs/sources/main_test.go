@@ -155,34 +155,6 @@ type testSource struct {}
 	assert.Empty(t, sources)
 }
 
-func TestParseFile(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	testFile := filepath.Join(tmpDir, "sample.go")
-	content := `package main
-
-// sampleSource handles sample resources.
-//
-// +externaldns:source:name=sample
-// +externaldns:source:category=Sample Category
-// +externaldns:source:description=Handles sample resources
-// +externaldns:source:resources=SampleResource
-type sampleSource struct {
-	data string
-}
-`
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
-
-	sources, err := parseFile(testFile, tmpDir)
-	require.NoError(t, err)
-	assert.Len(t, sources, 1)
-	assert.Equal(t, "sample", sources[0].Name)
-	assert.Equal(t, "sampleSource", sources[0].Type)
-	assert.Equal(t, "sample.go", sources[0].File)
-}
-
 func TestParseFile_MultipleSourcesInOneFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
