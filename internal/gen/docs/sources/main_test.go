@@ -146,9 +146,8 @@ func TestParseSourceAnnotations_SkipsTestFiles(t *testing.T) {
 // +externaldns:source:description=Should be skipped
 type testSource struct {}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
 	sources, err := parseSourceAnnotations(tmpDir)
 	require.NoError(t, err)
@@ -175,9 +174,8 @@ type firstSource struct {}
 // +externaldns:source:description=Second source
 type secondSource struct {}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
 	sources, err := parseFile(testFile, tmpDir)
 	require.NoError(t, err)
@@ -199,9 +197,8 @@ func TestParseFile_IgnoresNonSourceTypes(t *testing.T) {
 // +externaldns:source:description=Should not be parsed
 type regularStruct struct {}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
 	sources, err := parseFile(testFile, tmpDir)
 	require.NoError(t, err)
@@ -217,11 +214,10 @@ func TestParseSourceAnnotations_ErrorOnInvalidFile(t *testing.T) {
 
 this is not valid go syntax
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
-	_, err := parseSourceAnnotations(tmpDir)
+	_, err = parseSourceAnnotations(tmpDir)
 	require.Error(t, err)
 }
 
@@ -231,11 +227,10 @@ func TestParseFile_InvalidGoFile(t *testing.T) {
 	testFile := filepath.Join(tmpDir, "invalid.go")
 	content := `this is not valid go code`
 
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
-	_, err := parseFile(testFile, tmpDir)
+	_, err = parseFile(testFile, tmpDir)
 	require.Error(t, err)
 }
 
@@ -257,9 +252,8 @@ func TestParseSourceAnnotations_WithSubdirectories(t *testing.T) {
 // +externaldns:source:description=Nested source
 type nestedSource struct {}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
 
 	sources, err := parseSourceAnnotations(tmpDir)
 	require.NoError(t, err)

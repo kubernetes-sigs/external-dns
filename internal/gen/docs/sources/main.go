@@ -262,18 +262,19 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			}
 		} else if currentSource != nil {
 			// Add other annotations to the current source
-			if after, ok := strings.CutPrefix(line, annotationCategory); ok {
-				currentSource.Category = after
-			} else if after, ok := strings.CutPrefix(line, annotationDesc); ok {
-				currentSource.Description = after
-			} else if after, ok := strings.CutPrefix(line, annotationResources); ok {
-				currentSource.Resources = after
-			} else if after, ok := strings.CutPrefix(line, annotationFilters); ok {
-				currentSource.Filters = after
-			} else if after, ok := strings.CutPrefix(line, annotationNamespace); ok {
-				currentSource.Namespace = after
-			} else if after, ok := strings.CutPrefix(line, annotationFQDNTemplate); ok {
-				currentSource.FQDNTemplate = after
+			switch {
+			case strings.HasPrefix(line, annotationCategory):
+				currentSource.Category = strings.TrimPrefix(line, annotationCategory)
+			case strings.HasPrefix(line, annotationDesc):
+				currentSource.Description = strings.TrimPrefix(line, annotationDesc)
+			case strings.HasPrefix(line, annotationResources):
+				currentSource.Resources = strings.TrimPrefix(line, annotationResources)
+			case strings.HasPrefix(line, annotationFilters):
+				currentSource.Filters = strings.TrimPrefix(line, annotationFilters)
+			case strings.HasPrefix(line, annotationNamespace):
+				currentSource.Namespace = strings.TrimPrefix(line, annotationNamespace)
+			case strings.HasPrefix(line, annotationFQDNTemplate):
+				currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
 			}
 		} else {
 			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
