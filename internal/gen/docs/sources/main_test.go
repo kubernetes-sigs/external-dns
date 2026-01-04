@@ -404,8 +404,10 @@ func TestExtractSourcesFromComments(t *testing.T) {
 			require.NoError(t, err)
 			assert.Len(t, sources, tt.wantSources)
 
-			if tt.validate != nil && len(sources) > 0 {
-				tt.validate(t, sources[0])
+			if tt.validate != nil {
+				for _, source := range sources {
+					tt.validate(t, source)
+				}
 			}
 
 			// Verify all sources have required fields
