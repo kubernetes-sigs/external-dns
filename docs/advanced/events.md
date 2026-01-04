@@ -114,7 +114,6 @@ If a source does not emit events, it may in the future.
 | Source                 | Supported |
 |:-----------------------|:---------:|
 | `ambassador-host`      |           |
-| `cloudfoundry`         |           |
 | `connector`            |           |
 | `contour-httpproxy`    |           |
 | `crd`                  |           |

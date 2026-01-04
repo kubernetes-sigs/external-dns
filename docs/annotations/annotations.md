@@ -9,7 +9,6 @@ The following table documents which sources support which annotations:
 | Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |
 | Connector    |            |          |                   |         |         |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| CloudFoundry |            |          |                   |         |         |                     |
 | CRD          |            |          |                   |         |         |                     |
 | F5           |            |          |                   | Yes     | Yes     |                     |
 | Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |

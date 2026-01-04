@@ -30,7 +30,6 @@ const (
 	GatewayUdpRoute     Type = "gateway-udproute"
 	IstioGateway        Type = "istio-gateway"
 	IstioVirtualService Type = "istio-virtualservice"
-	Cloudfoundry        Type = "cloudfoundry"
 	AmbassadorHost      Type = "ambassador-host"
 	ContourHTTPProxy    Type = "contour-httpproxy"
 	GlooProxy           Type = "gloo-proxy"

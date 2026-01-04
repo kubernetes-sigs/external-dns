@@ -782,18 +782,6 @@ func TestParseFlagsGateway(t *testing.T) {
 	assert.Equal(t, "gw-ns", cfg.GatewayNamespace)
 }
 
-func TestParseFlagsCloudFoundry(t *testing.T) {
-	t.Parallel()
-	cfg := parseCfg(t,
-		"--cf-api-endpoint=https://api.cf.example",
-		"--cf-username=user1",
-		"--cf-password=p@ss",
-	)
-	assert.Equal(t, "https://api.cf.example", cfg.CFAPIEndpoint)
-	assert.Equal(t, "user1", cfg.CFUsername)
-	assert.Equal(t, "p@ss", cfg.CFPassword)
-}
-
 func TestParseFlagsAzure(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,

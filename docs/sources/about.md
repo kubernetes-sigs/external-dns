@@ -9,7 +9,6 @@ ExternalDNS watches the specified sources for hostname information and uses it t
 | ambassador-host                         | Host.getambassador.io                                                         |        Yes        |     Yes      |
 | connector                               |                                                                               |                   |              |
 | contour-httpproxy                       | HttpProxy.projectcontour.io                                                   |        Yes        |              |
-| cloudfoundry                            |                                                                               |                   |              |
 | [crd](crd.md)                           | DNSEndpoint.externaldns.k8s.io                                                |        Yes        |     Yes      |
 | [f5-virtualserver](f5-virtualserver.md) | VirtualServer.cis.f5.com                                                      |        Yes        |              |
 | [gateway-grpcroute](gateway.md)         | GRPCRoute.gateway.networking.k8s.io                                           |        Yes        |     Yes      |
