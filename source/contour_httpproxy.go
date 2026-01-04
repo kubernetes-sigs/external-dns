@@ -41,6 +41,14 @@ import (
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
 // The HTTPProxy implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=contour-httpproxy
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Contour HTTPProxy resources
+// +externaldns:source:resources=HTTPProxy.projectcontour.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string

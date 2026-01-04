@@ -49,6 +49,14 @@ var IstioGatewayIngressSource = annotations.Ingress
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=istio-gateway
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Istio Gateway resources
+// +externaldns:source:resources=Gateway.networking.istio.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type gatewaySource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface

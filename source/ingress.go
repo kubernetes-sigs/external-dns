@@ -51,6 +51,14 @@ const (
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Use annotations.TargetKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
+//
+// +externaldns:source:name=ingress
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Ingress resources
+// +externaldns:source:resources=Ingress
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string

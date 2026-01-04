@@ -36,6 +36,14 @@ import (
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
 // testing/dry-running of dns providers without needing an attached Kubernetes cluster.
+//
+// +externaldns:source:name=fake
+// +externaldns:source:category=Testing
+// +externaldns:source:description=Provides dummy endpoints for testing and dry-running
+// +externaldns:source:resources=Fake Endpoints
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=true
 type fakeSource struct {
 	dnsName string
 }

@@ -46,5 +46,6 @@ func FuncMap() template.FuncMap {
 			return strings.Repeat("`", times)
 		},
 		"capitalize": cases.Title(language.English, cases.Compact).String,
+		"replace":    strings.ReplaceAll,
 	}
 }

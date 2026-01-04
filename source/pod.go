@@ -37,6 +37,15 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
+// podSource is an implementation of Source for Kubernetes Pod objects.
+//
+// +externaldns:source:name=pod
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Pod resources
+// +externaldns:source:resources=Pod
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type podSource struct {
 	client                kubernetes.Interface
 	namespace             string

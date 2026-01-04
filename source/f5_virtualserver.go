@@ -49,6 +49,14 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 }
 
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
+//
+// +externaldns:source:name=f5-virtualserver
+// +externaldns:source:category=Load Balancers
+// +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
+// +externaldns:source:resources=VirtualServer.cis.f5.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer kubeinformers.GenericInformer
