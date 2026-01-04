@@ -97,11 +97,11 @@ func discoverSources(dir string) (Sources, error) {
 	}
 
 	// Sort sources by category, then by name
-	sort.Slice(sources, func(i, j int) bool {
-		if sources[i].Category == sources[j].Category {
-			return sources[i].Name < sources[j].Name
+	slices.SortFunc(sources, func(a, b Source) int {
+		if cmp := strings.Compare(a.Category, b.Category); cmp != 0 {
+			return cmp
 		}
-		return sources[i].Category < sources[j].Category
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return sources, nil
@@ -239,13 +239,14 @@ func parseFile(filePath, baseDir string) (Sources, error) {
 // extractSourcesFromComments extracts source metadata from comment text.
 // It can extract multiple sources from the same comment block (e.g., for gateway routes).
 func extractSourcesFromComments(comments, typeName, filePath string) (Sources, error) {
-	lines := strings.Split(comments, "\n")
 	var sources Sources
 	var currentSource *Source
 
-	for _, line := range lines {
+	for line := range strings.SplitSeq(comments, "\n") {
 		line = strings.TrimSpace(line)
-
+		if !strings.HasPrefix(line, annotationPrefix) {
+			continue
+		}
 		// When we see a name annotation, start a new source
 		if strings.HasPrefix(line, annotationName) {
 			// Save previous source if it exists
