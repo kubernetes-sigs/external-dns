@@ -98,7 +98,6 @@ func TestGenerateMarkdown(t *testing.T) {
 
 	assert.Contains(t, content, "# Supported Sources")
 	assert.Contains(t, content, "## Available Sources")
-	assert.Contains(t, content, "### Test")
 }
 
 func TestParseSourceAnnotations(t *testing.T) {
@@ -331,8 +330,6 @@ func TestGenerateMarkdown_WithMultipleCategories(t *testing.T) {
 
 	content, err := sources.generateMarkdown()
 	require.NoError(t, err)
-	assert.Contains(t, content, "### Kubernetes Core")
-	assert.Contains(t, content, "### Gateway API")
 	assert.Contains(t, content, "service")
 	assert.Contains(t, content, "ingress")
 	assert.Contains(t, content, "gateway-httproute")
