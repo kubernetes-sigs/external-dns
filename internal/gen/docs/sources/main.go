@@ -248,7 +248,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			continue
 		}
 		// When we see a name annotation, start a new source
-		if strings.HasPrefix(line, annotationName) {
+		switch {
+		case strings.HasPrefix(line, annotationName):
 			// Save previous source if it exists
 			if currentSource != nil && currentSource.Name != "" {
 				sources = append(sources, *currentSource)
@@ -260,24 +261,20 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 				File: filePath,
 				Name: strings.TrimPrefix(line, annotationName),
 			}
-		} else if currentSource != nil {
-			// Add other annotations to the current source
-			switch {
-			case strings.HasPrefix(line, annotationCategory):
-				currentSource.Category = strings.TrimPrefix(line, annotationCategory)
-			case strings.HasPrefix(line, annotationDesc):
-				currentSource.Description = strings.TrimPrefix(line, annotationDesc)
-			case strings.HasPrefix(line, annotationResources):
-				currentSource.Resources = strings.TrimPrefix(line, annotationResources)
-			case strings.HasPrefix(line, annotationFilters):
-				currentSource.Filters = strings.TrimPrefix(line, annotationFilters)
-			case strings.HasPrefix(line, annotationNamespace):
-				currentSource.Namespace = strings.TrimPrefix(line, annotationNamespace)
-			case strings.HasPrefix(line, annotationFQDNTemplate):
-				currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
-			}
-		} else {
+		case currentSource == nil:
 			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
+		case strings.HasPrefix(line, annotationCategory):
+			currentSource.Category = strings.TrimPrefix(line, annotationCategory)
+		case strings.HasPrefix(line, annotationDesc):
+			currentSource.Description = strings.TrimPrefix(line, annotationDesc)
+		case strings.HasPrefix(line, annotationResources):
+			currentSource.Resources = strings.TrimPrefix(line, annotationResources)
+		case strings.HasPrefix(line, annotationFilters):
+			currentSource.Filters = strings.TrimPrefix(line, annotationFilters)
+		case strings.HasPrefix(line, annotationNamespace):
+			currentSource.Namespace = strings.TrimPrefix(line, annotationNamespace)
+		case strings.HasPrefix(line, annotationFQDNTemplate):
+			currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
 		}
 	}
 
