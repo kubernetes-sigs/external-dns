@@ -21,14 +21,10 @@ Sources are responsible for:
 - Generating DNS endpoint records for providers to consume
 
 ## Available Sources
-{{- $currentCategory := "" -}}
-{{- range . }}
-{{- if ne .Category $currentCategory }}
-{{- $currentCategory = .Category }}
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
 |:----------------|:----------|:--------|:----------|:--------------|:---------|
-{{- end }}
+{{- range . }}
 | **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} | {{ lower .Category }} |
 {{- end }}
 

@@ -25,55 +25,28 @@ Sources are responsible for:
 | **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
 |:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **cloudfoundry** | CloudFoundry Routes |  |  | false | cloud platforms |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false | externaldns |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **gateway-grpcroute** | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
 | **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
 | **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
 | **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
 | **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true | gateway api |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | ingress controllers |
 | **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | ingress controllers |
 | **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false | ingress controllers |
 | **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true | ingress controllers |
 | **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false | ingress controllers |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **ingress** | Ingress | annotation,label | all,single | true | kubernetes core |
 | **node** | Node | annotation,label | all | true | kubernetes core |
 | **pod** | Pod | annotation,label | all,single | true | kubernetes core |
 | **service** | Service | annotation,label | all,single | true | kubernetes core |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false | load balancers |
 | **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false | load balancers |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true | openshift |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false | service mesh |
 | **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true | service mesh |
 | **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true | service mesh |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **connector** | Remote TCP Server |  |  | false | special |
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **empty** | None |  |  | false | testing |
 | **fake** | Fake Endpoints |  |  | true | testing |
 
