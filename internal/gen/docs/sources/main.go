@@ -275,6 +275,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			} else if after, ok := strings.CutPrefix(line, annotationFQDNTemplate); ok {
 				currentSource.FQDNTemplate = after
 			}
+		} else {
+			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
 		}
 	}
 
