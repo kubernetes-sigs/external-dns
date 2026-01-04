@@ -1072,3 +1072,97 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
+
+func TestGetBoolProviderSpecificProperty(t *testing.T) {
+	tests := []struct {
+		name           string
+		endpoint       Endpoint
+		key            string
+		expectedValue  bool
+		expectedExists bool
+	}{
+		{
+			name:           "key does not exist",
+			endpoint:       Endpoint{},
+			key:            "nonexistent",
+			expectedValue:  false,
+			expectedExists: false,
+		},
+		{
+			name: "key exists with true value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "enabled", Value: "true"},
+				},
+			},
+			key:            "enabled",
+			expectedValue:  true,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with false value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "disabled", Value: "false"},
+				},
+			},
+			key:            "disabled",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with invalid boolean value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "invalid", Value: "maybe"},
+				},
+			},
+			key:            "invalid",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with empty value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "empty", Value: ""},
+				},
+			},
+			key:            "empty",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with numeric value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "numeric", Value: "1"},
+				},
+			},
+			key:            "numeric",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "multiple properties, find correct one",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "first", Value: "invalid"},
+					{Name: "second", Value: "true"},
+					{Name: "third", Value: "false"},
+				},
+			},
+			key:            "second",
+			expectedValue:  true,
+			expectedExists: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, exists := tt.endpoint.GetBoolProviderSpecificProperty(tt.key)
+			assert.Equal(t, tt.expectedValue, value)
+			assert.Equal(t, tt.expectedExists, exists)
+		})
+	}
+}

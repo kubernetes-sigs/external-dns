@@ -244,7 +244,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := ep.GetProviderSpecificProperty("alias"); found && isAlias == "true" && ep.RecordType == endpoint.RecordTypeA {
+		if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
 			key.RecordType = endpoint.RecordTypeCNAME
 		}
 
@@ -299,7 +299,7 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
-	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
+	if isAlias, found := r.GetBoolProviderSpecificProperty("alias"); found && isAlias && recordType == endpoint.RecordTypeA {
 		recordType = endpoint.RecordTypeCNAME
 	}
 
