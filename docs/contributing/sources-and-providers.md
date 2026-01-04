@@ -1,3 +1,10 @@
+---
+tags:
+  - sources
+  - providers
+  - contributing
+---
+
 # Sources and Providers
 
 ExternalDNS supports swapping out endpoint **sources** and DNS **providers** and both sides are pluggable. There currently exist multiple sources for different provider implementations.
@@ -28,6 +35,37 @@ All sources live in package `source`.
 * `ConnectorSource`: returns a list of Endpoint objects which are served by a tcp server configured through `connector-source-server` flag.
 * `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](../sources/crd.md) documentation.
 * `EmptySource`: returns an empty list of Endpoint objects for the purpose of testing and cleaning out entries.
+
+### Adding New Sources
+
+When creating a new source, add the following annotations above the source struct definition:
+
+```go
+// myNewSource is an implementation of Source for MyResource objects.
+//
+// +externaldns:source:name=my-new-source
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries from MyResource objects
+// +externaldns:source:resources=MyResource
+// +externaldns:source:filters=
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+type myNewSource struct {
+    // ... fields
+}
+```
+
+**Annotation Reference:**
+
+* {{backtick 1}}+externaldns:source:name{{backtick 1}} - The CLI name used with {{backtick 1}}--source{{backtick 1}} flag (required)
+* {{backtick 1}}+externaldns:source:category{{backtick 1}} - Category for documentation grouping (required)
+* {{backtick 1}}+externaldns:source:description{{backtick 1}} - Short description of what the source does (required)
+* {{backtick 1}}+externaldns:source:resources{{backtick 1}} - Kubernetes resources watched (comma-separated)
+* {{backtick 1}}+externaldns:source:filters{{backtick 1}} - Supported filter types (annotation, label)
+* {{backtick 1}}+externaldns:source:namespace{{backtick 1}} - Namespace support: comma-separated values (all, single, multiple)
+* {{backtick 1}}+externaldns:source:fqdn-template{{backtick 1}} - FQDN template support (true, false)
+
+After adding annotations, run {{backtick 1}}make generate-sources-documentation{{backtick 1}} to update this file.
 
 ## Providers
 

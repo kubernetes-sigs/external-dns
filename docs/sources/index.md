@@ -28,6 +28,12 @@ Sources are responsible for:
 |:------------|:----------|:--------|:----------|:--------------|
 | **cloudfoundry** | CloudFoundry Routes |  |  | false |
 
+### ExternalDNS
+
+| **Source Name** | Resources | Filters | Namespace | FQDN Template |
+|:------------|:----------|:--------|:----------|:--------------|
+| **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false |
+
 ### Gateway API
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template |
@@ -36,13 +42,13 @@ Sources are responsible for:
 | **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
 | **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
 | **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
+| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
 
 ### Ingress Controllers
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template |
 |:------------|:----------|:--------|:----------|:--------------|
-| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | true |
+| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false |
 | **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true |
 | **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false |
 | **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true |
@@ -52,7 +58,6 @@ Sources are responsible for:
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template |
 |:------------|:----------|:--------|:----------|:--------------|
-| **crd** | DNSEndpoint | annotation,label | all,single | false |
 | **ingress** | Ingress | annotation,label | all,single | true |
 | **node** | Node | annotation,label | all | true |
 | **pod** | Pod | annotation,label | all,single | true |
@@ -104,7 +109,8 @@ Multiple sources can be combined to watch different resource types simultaneousl
 
 ## Source Categories
 
-- **Kubernetes Core**: Native Kubernetes resources (Service, Ingress, Pod, Node, CRD)
+- **Kubernetes Core**: Native Kubernetes resources (Service, Ingress, Pod, Node)
+- **ExternalDNS**: Native ExternalDNS resources
 - **Gateway API**: Kubernetes Gateway API resources (Gateway, HTTPRoute, etc.)
 - **Service Mesh**: Service mesh implementations (Istio, Gloo)
 - **Ingress Controllers**: Third-party ingress controller resources (Contour, Traefik, Ambassador, etc.)
@@ -114,34 +120,3 @@ Multiple sources can be combined to watch different resource types simultaneousl
 - **Wrappers**: Source wrappers that modify or combine other sources
 - **Special**: Special purpose sources (connector, empty)
 - **Testing**: Sources used for testing purposes
-
-## Adding New Sources
-
-When creating a new source, add the following annotations above the source struct definition:
-
-```go
-// myNewSource is an implementation of Source for MyResource objects.
-//
-// +externaldns:source:name=my-new-source
-// +externaldns:source:category=Kubernetes Core
-// +externaldns:source:description=Creates DNS entries from MyResource objects
-// +externaldns:source:resources=MyResource
-// +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=true
-type myNewSource struct {
-    // ... fields
-}
-```
-
-**Annotation Reference:**
-
-- `+externaldns:source:name` - The CLI name used with `--source` flag (required)
-- `+externaldns:source:category` - Category for documentation grouping (required)
-- `+externaldns:source:description` - Short description of what the source does (required)
-- `+externaldns:source:resources` - Kubernetes resources watched (comma-separated)
-- `+externaldns:source:filters` - Supported filter types (annotation, label)
-- `+externaldns:source:namespace` - Namespace support: comma-separated values (all, single, multiple)
-- `+externaldns:source:fqdn-template` - FQDN template support (true, false)
-
-After adding annotations, run `make generate-sources-documentation` to update this file.
