@@ -47,5 +47,6 @@ func FuncMap() template.FuncMap {
 		},
 		"capitalize": cases.Title(language.English, cases.Compact).String,
 		"replace":    strings.ReplaceAll,
+		"lower":      strings.ToLower,
 	}
 }

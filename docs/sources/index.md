@@ -22,80 +22,60 @@ Sources are responsible for:
 
 ## Available Sources
 
-### Cloud Platforms
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **cloudfoundry** | CloudFoundry Routes |  |  | false | cloud platforms |
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **cloudfoundry** | CloudFoundry Routes |  |  | false |
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false | externaldns |
 
-### ExternalDNS
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **gateway-grpcroute** | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
+| **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
+| **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
+| **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false | gateway api |
+| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true | gateway api |
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false |
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | ingress controllers |
+| **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | ingress controllers |
+| **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false | ingress controllers |
+| **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true | ingress controllers |
+| **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false | ingress controllers |
 
-### Gateway API
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **ingress** | Ingress | annotation,label | all,single | true | kubernetes core |
+| **node** | Node | annotation,label | all | true | kubernetes core |
+| **pod** | Pod | annotation,label | all,single | true | kubernetes core |
+| **service** | Service | annotation,label | all,single | true | kubernetes core |
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **gateway-grpcroute** | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false |
-| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true |
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false | load balancers |
+| **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false | load balancers |
 
-### Ingress Controllers
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true | openshift |
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false |
-| **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true |
-| **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false |
-| **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true |
-| **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false |
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false | service mesh |
+| **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true | service mesh |
+| **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true | service mesh |
 
-### Kubernetes Core
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **connector** | Remote TCP Server |  |  | false | special |
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **ingress** | Ingress | annotation,label | all,single | true |
-| **node** | Node | annotation,label | all | true |
-| **pod** | Pod | annotation,label | all,single | true |
-| **service** | Service | annotation,label | all,single | true |
-
-### Load Balancers
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false |
-| **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false |
-
-### OpenShift
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true |
-
-### Service Mesh
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false |
-| **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true |
-| **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true |
-
-### Special
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **connector** | Remote TCP Server |  |  | false |
-
-### Testing
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **empty** | None |  |  | false |
-| **fake** | Fake Endpoints |  |  | true |
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
+| **empty** | None |  |  | false | testing |
+| **fake** | Fake Endpoints |  |  | true | testing |
 
 ## Usage
 

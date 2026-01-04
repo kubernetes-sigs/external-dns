@@ -26,12 +26,10 @@ Sources are responsible for:
 {{- if ne .Category $currentCategory }}
 {{- $currentCategory = .Category }}
 
-### {{ .Category }}
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|
 {{- end }}
-| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} |
+| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} | {{ lower .Category }} |
 {{- end }}
 
 ## Usage
