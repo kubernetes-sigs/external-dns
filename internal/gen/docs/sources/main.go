@@ -98,9 +98,6 @@ func discoverSources(dir string) (Sources, error) {
 
 	// Sort sources by category, then by name
 	slices.SortFunc(sources, func(a, b Source) int {
-		if cmp := strings.Compare(a.Category, b.Category); cmp != 0 {
-			return cmp
-		}
 		return strings.Compare(a.Name, b.Name)
 	})
 

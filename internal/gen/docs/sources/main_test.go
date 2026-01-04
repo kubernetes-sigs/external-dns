@@ -67,12 +67,8 @@ func TestDiscoverSources(t *testing.T) {
 	// Verify sources are sorted by category, then by name
 	for i := range len(sources) - 1 {
 		prev, curr := sources[i], sources[i+1]
-		if prev.Category == curr.Category {
-			if prev.Name > curr.Name {
-				t.Errorf("Sources not sorted correctly: %s should come before %s", curr.Name, prev.Name)
-			}
-		} else if prev.Category > curr.Category {
-			t.Errorf("Categories not sorted correctly: %s should come before %s", curr.Category, prev.Category)
+		if prev.Name > curr.Name {
+			t.Errorf("Sources not sorted correctly: %s should come before %s", curr.Name, prev.Name)
 		}
 	}
 }
