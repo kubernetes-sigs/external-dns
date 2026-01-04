@@ -46,9 +46,9 @@ import (
 // specified CRD and fetching Endpoints embedded in Spec.
 //
 // +externaldns:source:name=crd
-// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:category=ExternalDNS
 // +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
-// +externaldns:source:resources=DNSEndpoint
+// +externaldns:source:resources=DNSEndpoint.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
