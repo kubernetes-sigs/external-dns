@@ -66,7 +66,6 @@ crd:
 #? tools-deps: Update go tools defined in go.tool.mod to latest versions
 tools-deps:
 	@go get -modfile=go.tool.mod tool
-	@go mod tidy -modfile=go.tool.mod
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
