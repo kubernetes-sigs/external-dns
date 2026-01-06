@@ -3575,25 +3575,25 @@ func TestListAllCustomHostnames(t *testing.T) {
 func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 	t.Parallel()
 	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
-"001": {
-{
-ID:       "mx-1",
-Name:     "mx.bar.com",
-Type:     endpoint.RecordTypeMX,
-TTL:      3600,
-Content:  "mail.bar.com",
-Priority: 10,
-},
-{
-ID:       "mx-2",
-Name:     "mx.bar.com",
-Type:     endpoint.RecordTypeMX,
-TTL:      3600,
-Content:  "mail2.bar.com",
-Priority: 20,
-},
-},
-})
+		"001": {
+			{
+				ID:       "mx-1",
+				Name:     "mx.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  "mail.bar.com",
+				Priority: 10,
+			},
+			{
+				ID:       "mx-2",
+				Name:     "mx.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  "mail2.bar.com",
+				Priority: 20,
+			},
+		},
+	})
 	provider := &CloudFlareProvider{
 		Client: client,
 	}
@@ -3704,7 +3704,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.Name, func(t *testing.T) {
-t.Parallel()
+			t.Parallel()
 
 			record := dns.RecordResponse{
 				ID:      "1234567890",
@@ -3717,8 +3717,8 @@ t.Parallel()
 				test.SetupRecord(&record)
 			}
 			client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
-"001": {record},
-})
+				"001": {record},
+			})
 
 			if len(test.CustomHostnames) > 0 {
 				customHostnames := make([]CustomHostname, 0, len(test.CustomHostnames))
