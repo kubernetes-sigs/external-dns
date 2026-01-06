@@ -615,7 +615,6 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 // submitCustomHostnameChanges implements Custom Hostname functionality for the Change, returns false if it fails
 func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zoneID string, change *cloudFlareChange, chs CustomHostnamesMap, logFields log.Fields) bool {
-	failedChange := false
 	// return early if disabled
 	if !p.CustomHostnamesConfig.Enabled {
 		return true
@@ -623,66 +622,86 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 
 	switch change.Action {
 	case cloudFlareUpdate:
-		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] {
-			add, remove, _ := provider.Difference(change.CustomHostnamesPrev, slices.Collect(maps.Keys(change.CustomHostnames)))
+		return p.processCustomHostnameUpdate(ctx, zoneID, change, chs, logFields)
+	case cloudFlareDelete:
+		return p.processCustomHostnameDelete(ctx, zoneID, change, chs, logFields)
+	case cloudFlareCreate:
+		return p.processCustomHostnameCreate(ctx, zoneID, change, chs, logFields)
+	}
 
-			for _, changeCH := range remove {
-				if prevCh, err := getCustomHostname(chs, changeCH); err == nil {
-					prevChID := prevCh.ID
-					if prevChID != "" {
-						log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q", prevChID, changeCH)
-						params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
-						chErr := p.Client.DeleteCustomHostname(ctx, prevChID, params)
-						if chErr != nil {
-							failedChange = true
-							log.WithFields(logFields).Errorf("failed to remove previous custom hostname %q/%q: %v", prevChID, changeCH, chErr)
-						}
-					}
-				}
-			}
-			for _, changeCH := range add {
-				log.WithFields(logFields).Infof("Adding custom hostname %q", changeCH)
-				chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostnames[changeCH])
+	return true
+}
+
+func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zoneID string, change *cloudFlareChange, chs CustomHostnamesMap, logFields log.Fields) bool {
+	if !recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] {
+		return true
+	}
+	failedChange := false
+	add, remove, _ := provider.Difference(change.CustomHostnamesPrev, slices.Collect(maps.Keys(change.CustomHostnames)))
+
+	for _, changeCH := range remove {
+		if prevCh, err := getCustomHostname(chs, changeCH); err == nil {
+			prevChID := prevCh.ID
+			if prevChID != "" {
+				log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q", prevChID, changeCH)
+				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
+				chErr := p.Client.DeleteCustomHostname(ctx, prevChID, params)
 				if chErr != nil {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", changeCH, chErr)
+					log.WithFields(logFields).Errorf("failed to remove previous custom hostname %q/%q: %v", prevChID, changeCH, chErr)
 				}
 			}
 		}
-	case cloudFlareDelete:
-		for _, changeCH := range change.CustomHostnames {
-			if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
-				log.WithFields(logFields).Infof("Deleting custom hostname %q", changeCH.Hostname)
-				if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
-					chID := ch.ID
-					params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
-					chErr := p.Client.DeleteCustomHostname(ctx, chID, params)
-					if chErr != nil {
-						failedChange = true
-						log.WithFields(logFields).Errorf("failed to delete custom hostname %q/%q: %v", chID, changeCH.Hostname, chErr)
-					}
-				} else {
-					log.WithFields(logFields).Warnf("failed to delete custom hostname %q: %v", changeCH.Hostname, err)
+	}
+	for _, changeCH := range add {
+		log.WithFields(logFields).Infof("Adding custom hostname %q", changeCH)
+		chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostnames[changeCH])
+		if chErr != nil {
+			failedChange = true
+			log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", changeCH, chErr)
+		}
+	}
+	return !failedChange
+}
+
+func (p *CloudFlareProvider) processCustomHostnameDelete(ctx context.Context, zoneID string, change *cloudFlareChange, chs CustomHostnamesMap, logFields log.Fields) bool {
+	failedChange := false
+	for _, changeCH := range change.CustomHostnames {
+		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
+			log.WithFields(logFields).Infof("Deleting custom hostname %q", changeCH.Hostname)
+			if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
+				chID := ch.ID
+				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
+				chErr := p.Client.DeleteCustomHostname(ctx, chID, params)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to delete custom hostname %q/%q: %v", chID, changeCH.Hostname, chErr)
 				}
+			} else {
+				log.WithFields(logFields).Warnf("failed to delete custom hostname %q: %v", changeCH.Hostname, err)
 			}
 		}
-	case cloudFlareCreate:
-		for _, changeCH := range change.CustomHostnames {
-			if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
-				log.WithFields(logFields).Infof("Creating custom hostname %q", changeCH.Hostname)
-				if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
-					if changeCH.CustomOriginServer == ch.CustomOriginServer {
-						log.WithFields(logFields).Warnf("custom hostname %q already exists with the same origin %q, continue", changeCH.Hostname, ch.CustomOriginServer)
-					} else {
-						failedChange = true
-						log.WithFields(logFields).Errorf("failed to create custom hostname, %q already exists with origin %q", changeCH.Hostname, ch.CustomOriginServer)
-					}
+	}
+	return !failedChange
+}
+
+func (p *CloudFlareProvider) processCustomHostnameCreate(ctx context.Context, zoneID string, change *cloudFlareChange, chs CustomHostnamesMap, logFields log.Fields) bool {
+	failedChange := false
+	for _, changeCH := range change.CustomHostnames {
+		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
+			log.WithFields(logFields).Infof("Creating custom hostname %q", changeCH.Hostname)
+			if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
+				if changeCH.CustomOriginServer == ch.CustomOriginServer {
+					log.WithFields(logFields).Warnf("custom hostname %q already exists with the same origin %q, continue", changeCH.Hostname, ch.CustomOriginServer)
 				} else {
-					chErr := p.Client.CreateCustomHostname(ctx, zoneID, changeCH)
-					if chErr != nil {
-						failedChange = true
-						log.WithFields(logFields).Errorf("failed to create custom hostname %q: %v", changeCH.Hostname, chErr)
-					}
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to create custom hostname, %q already exists with origin %q", changeCH.Hostname, ch.CustomOriginServer)
+				}
+			} else {
+				chErr := p.Client.CreateCustomHostname(ctx, zoneID, changeCH)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to create custom hostname %q: %v", changeCH.Hostname, chErr)
 				}
 			}
 		}
