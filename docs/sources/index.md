@@ -25,7 +25,6 @@ Sources are responsible for:
 | **Source Name** | Resources | Filters | Namespace | FQDN Template | Category |
 |:----------------|:----------|:--------|:----------|:--------------|:---------|
 | **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | ingress controllers |
-| **cloudfoundry** | CloudFoundry Routes |  |  | false | cloud platforms |
 | **connector** | Remote TCP Server |  |  | false | special |
 | **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | ingress controllers |
 | **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false | externaldns |
