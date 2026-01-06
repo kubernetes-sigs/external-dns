@@ -57,15 +57,16 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	Zones             map[string]string
-	Records           map[string]map[string]dns.RecordResponse
-	Actions           []MockAction
-	listZonesError    error // For v4 ListZones
-	getZoneError      error // For v4 GetZone
-	dnsRecordsError   error
-	customHostnames   map[string][]CustomHostname
-	regionalHostnames map[string][]regionalHostname
-dnsRecordsListParams dns.RecordListParams}
+	Zones                map[string]string
+	Records              map[string]map[string]dns.RecordResponse
+	Actions              []MockAction
+	listZonesError       error // For v4 ListZones
+	getZoneError         error // For v4 GetZone
+	dnsRecordsError      error
+	customHostnames      map[string][]CustomHostname
+	regionalHostnames    map[string][]regionalHostname
+	dnsRecordsListParams dns.RecordListParams
+}
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
@@ -307,8 +308,6 @@ func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zon
 
 	return nil, errors.New("Unknown zoneID: " + zoneID)
 }
-
-
 
 func getCustomHostnameIdxByID(chs []CustomHostname, customHostnameID string) int {
 	for idx, ch := range chs {
@@ -1427,7 +1426,6 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 		assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
 	}
 }
-
 
 func TestCloudflareComplexUpdate(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
@@ -3014,7 +3012,8 @@ func TestZoneIDByNameZoneNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "verify the zone exists and API credentials have access to it")
 }
 
-func TestGetUpdateDNSRecordParam(t *testing.T) {	cfc := cloudFlareChange{
+func TestGetUpdateDNSRecordParam(t *testing.T) {
+	cfc := cloudFlareChange{
 		ResourceRecord: dns.RecordResponse{
 			ID:       "1234",
 			Name:     "example.com",
