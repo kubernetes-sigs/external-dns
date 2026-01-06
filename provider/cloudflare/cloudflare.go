@@ -352,6 +352,9 @@ func convertCloudflareError(err error) error {
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
 			return provider.NewSoftError(err)
 		}
+		// For other structured API errors (4xx), return the error unchanged
+		// Note: We must NOT call err.Error() on v5 cloudflare.Error types with nil internal fields
+		return err
 	}
 
 	// Also check for rate limit indicators in error message strings as a fallback.
@@ -997,6 +1000,9 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	// for faster getRecordID lookup
 	recordsMap := make(DNSRecordsMap)
 	params := dns.RecordListParams{ZoneID: cloudflare.F(zoneID)}
+	if p.DNSRecordsConfig.PerPage > 0 {
+		params.PerPage = cloudflare.F(float64(p.DNSRecordsConfig.PerPage))
+	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
 		recordsMap[newDNSRecordIndex(record)] = record
