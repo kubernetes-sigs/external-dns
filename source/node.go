@@ -34,6 +34,15 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
+// nodeSource is an implementation of Source for Kubernetes Node objects.
+//
+// +externaldns:source:name=node
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Node resources
+// +externaldns:source:resources=Node
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all
+// +externaldns:source:fqdn-template=true
 type nodeSource struct {
 	client                kubernetes.Interface
 	annotationFilter      string
