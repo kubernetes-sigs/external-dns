@@ -3573,6 +3573,7 @@ func TestListAllCustomHostnames(t *testing.T) {
 }
 
 func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
+	t.Parallel()
 	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 "001": {
 {
@@ -3596,7 +3597,7 @@ Priority: 20,
 	provider := &CloudFlareProvider{
 		Client: client,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	chs := CustomHostnamesMap{}
 	records, err := provider.getDNSRecordsMap(ctx, "001")
 	assert.NoError(t, err)
