@@ -43,6 +43,14 @@ import (
 // and the Route status' canonicalHostname field as the target.
 // The annotations.TargetKey can be used to explicitly set an alternative
 // endpoint, if desired.
+//
+// +externaldns:source:name=openshift-route
+// +externaldns:source:category=OpenShift
+// +externaldns:source:description=Creates DNS entries from OpenShift Route resources
+// +externaldns:source:resources=Route.route.openshift.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
