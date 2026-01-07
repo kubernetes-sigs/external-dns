@@ -36,7 +36,6 @@ The template uses the following data from the source object (e.g., a `Service` o
 | Source                 | Description                                                     | FQDN Supported | FQDN Combine |
 |:-----------------------|:----------------------------------------------------------------|:--------------:|:------------:|
 | `ambassador-host`      | Queries Ambassador Host resources for endpoints.                |       ❌        |      ❌       |
-| `cloudfoundry`         | Queries Cloud Foundry resources for endpoints.                  |       ❌        |      ❌       |
 | `connector`            | Queries a custom connector source for endpoints.                |       ❌        |      ❌       |
 | `contour-httpproxy`    | Queries Contour HTTPProxy resources for endpoints.              |       ✅        |      ✅       |
 | `crd`                  | Queries Custom Resource Definitions (CRDs) for endpoints.       |       ❌        |      ❌       |

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -43,7 +42,6 @@ type MockClientGenerator struct {
 	kubeClient              kubernetes.Interface
 	gatewayClient           gateway.Interface
 	istioClient             istioclient.Interface
-	cloudFoundryClient      *cfclient.Client
 	dynamicKubernetesClient dynamic.Interface
 	openshiftClient         openshift.Interface
 }
@@ -71,15 +69,6 @@ func (m *MockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	if args.Error(1) == nil {
 		m.istioClient = args.Get(0).(istioclient.Interface)
 		return m.istioClient, nil
-	}
-	return nil, args.Error(1)
-}
-
-func (m *MockClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	args := m.Called()
-	if args.Error(1) == nil {
-		m.cloudFoundryClient = args.Get(0).(*cfclient.Client)
-		return m.cloudFoundryClient, nil
 	}
 	return nil, args.Error(1)
 }
@@ -256,9 +245,7 @@ func (m *minimalMockClientGenerator) GatewayClient() (gateway.Interface, error) 
 func (m *minimalMockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	return nil, errMock
 }
-func (m *minimalMockClientGenerator) CloudFoundryClient(string, string, string) (*cfclient.Client, error) {
-	return nil, errMock
-}
+
 func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	return nil, errMock
 }
