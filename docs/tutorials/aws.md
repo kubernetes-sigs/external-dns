@@ -412,7 +412,7 @@ Follow the steps under [When using clusters with RBAC enabled](#when-using-clust
 If you deployed ExternalDNS before adding the service account annotation and the corresponding role, you will likely see error with `failed to list hosted zones: AccessDenied: User`.
 You can delete the current running ExternalDNS pod(s) after updating the annotation, so that new pods scheduled will have appropriate configuration to access Route53.
 
-### EKS Pod Identity
+### EKS Pod Identity Associations
 
 Alternatively to [IRSA](#iam-roles-for-service-accounts) on AWS EKS it is possible to use the new native method `EKS Pod Identity`, which associates IAM roles with Kubernetes service accounts, simplifying the process of granting AWS permissions to any Pod.
 
@@ -491,6 +491,20 @@ aws eks create-pod-identity-association \
 The same behaviour above can be achieved using Terraform. Here is a minimal placeholder snippet:
 
 ```hcl
+data "aws_iam_policy_document" "eks_assume_role" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+  }
+}
+
 resource "aws_iam_role" "external_dns_pod_identity" {
   name               = "external-dns-pod-identity"
   assume_role_policy = data.aws_iam_policy_document.eks_assume_role.json
