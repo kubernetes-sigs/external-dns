@@ -17,6 +17,7 @@ on:
       - 'go.tool.mod'
       - 'go.tool.sum'
       - 'scripts/generate-crd.sh'
+      - '**/dnsendpoints.externaldns.k8s.io.yaml'
 
 permissions:
   contents: read
