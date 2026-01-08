@@ -44,6 +44,14 @@ import (
 
 // crdSource is an implementation of Source that provides endpoints by listing
 // specified CRD and fetching Endpoints embedded in Spec.
+//
+// +externaldns:source:name=crd
+// +externaldns:source:category=ExternalDNS
+// +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
+// +externaldns:source:resources=DNSEndpoint.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string

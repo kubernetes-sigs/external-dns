@@ -50,6 +50,14 @@ const IstioMeshGateway = "mesh"
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=istio-virtualservice
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Istio VirtualService resources
+// +externaldns:source:resources=VirtualService.networking.istio.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type virtualServiceSource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
