@@ -49,7 +49,7 @@ func (p *CloudFlareProvider) submitRulesetChanges(ctx context.Context, zoneID st
 		// We assume the annotation value is a JSON representing the Ruleset.
 		// We expect an object that can be unmarshaled into a map
 		// PLUS an "id" field to identify which ruleset to update.
-		var rulesetDef map[string]interface{}
+		var rulesetDef map[string]any
 
 		err := json.Unmarshal([]byte(change.Ruleset), &rulesetDef)
 		if err != nil {

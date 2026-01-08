@@ -39,7 +39,7 @@ func TestSubmitRulesetChanges_Disabled(t *testing.T) {
 		},
 	})
 	assert.True(t, success)
-	assert.Len(t, mockClient.Actions, 0)
+	assert.Empty(t, mockClient.Actions)
 }
 
 func TestSubmitRulesetChanges_Enabled(t *testing.T) {
@@ -86,7 +86,7 @@ func TestSubmitRulesetChanges_InvalidJSON(t *testing.T) {
 
 	success := p.submitRulesetChanges(ctx, "zone-1", changes)
 	assert.False(t, success) // Should return false -> failed
-	assert.Len(t, mockClient.Actions, 0)
+	assert.Empty(t, mockClient.Actions)
 }
 
 func TestSubmitRulesetChanges_MissingID(t *testing.T) {
@@ -107,5 +107,5 @@ func TestSubmitRulesetChanges_MissingID(t *testing.T) {
 
 	success := p.submitRulesetChanges(ctx, "zone-1", changes)
 	assert.False(t, success) // Should return false -> failed
-	assert.Len(t, mockClient.Actions, 0)
+	assert.Empty(t, mockClient.Actions)
 }
