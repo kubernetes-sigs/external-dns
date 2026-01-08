@@ -49,6 +49,7 @@ func (p *CloudFlareProvider) submitRulesetChanges(ctx context.Context, zoneID st
 		// We assume the annotation value is a JSON representing the Ruleset.
 		// We expect an object that can be unmarshaled into a map
 		// PLUS an "id" field to identify which ruleset to update.
+		// AND optionally an "action" field (e.g. "delete").
 		var rulesetDef map[string]any
 
 		err := json.Unmarshal([]byte(change.Ruleset), &rulesetDef)
@@ -69,6 +70,17 @@ func (p *CloudFlareProvider) submitRulesetChanges(ctx context.Context, zoneID st
 		if !ok || id == "" {
 			log.Errorf("Ruleset JSON 'id' field must be a non-empty string for zone %s", zoneID)
 			failed = true
+			continue
+		}
+
+		// Check for deletion action
+		if action, ok := rulesetDef["action"].(string); ok && action == "delete" {
+			log.Infof("Deleting Ruleset %s for zone %s", id, zoneID)
+			err = p.Client.DeleteRuleset(ctx, zoneID, id)
+			if err != nil {
+				log.Errorf("Failed to delete ruleset %s: %v", id, err)
+				failed = true
+			}
 			continue
 		}
 

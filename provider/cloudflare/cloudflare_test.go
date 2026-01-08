@@ -414,6 +414,14 @@ func (m *mockCloudFlareClient) UpdateRuleset(ctx context.Context, rulesetID stri
 	return &rulesets.RulesetUpdateResponse{ID: rulesetID}, nil
 }
 
+func (m *mockCloudFlareClient) DeleteRuleset(ctx context.Context, zoneID, rulesetID string) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "DeleteRuleset",
+		RecordId: rulesetID,
+	})
+	return nil
+}
+
 func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
 	zoneID := params.ZoneID.String()
 	idx := 0

@@ -403,3 +403,57 @@ metadata:
 ## Using CRD source to manage DNS records in Cloudflare
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
+
+### Managed Cloudflare Rulesets
+
+ExternalDNS supports managing Cloudflare Zone Rulesets via the `external-dns.alpha.kubernetes.io/cloudflare-ruleset` annotation on Ingress or Service resources. This allows you to define rulesets (e.g., Custom Rules, WAF) directly alongside your Kubernetes resources.
+
+**Prerequisites:**
+*   You must enable ruleset management by passing the `--cloudflare-rulesets-enabled` flag to ExternalDNS.
+
+**Usage:**
+
+The annotation value must be a JSON string representing the Ruleset definition.
+*   **Create/Update**: Provide the full ruleset definition. You **must** include the `id` of the ruleset you wish to manage. ExternalDNS currently uses `UpdateRuleset` which requires an existing ruleset ID.
+*   **Delete**: Provide a JSON object with `id` and `action: "delete"`.
+
+**Example: creating/updating a Custom Rule (Phase: http_request_firewall_custom)**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-ruleset: |
+      {
+        "id": "2da96c0ac52945d491eb4567890f1234",
+        "description": "Block bad bot",
+        "kind": "zone",
+        "phase": "http_request_firewall_custom",
+        "rules": [
+          {
+            "action": "block",
+            "expression": "http.user_agent contains \"BadBot\"",
+            "description": "Block BadBot user agent"
+          }
+        ]
+      }
+```
+
+**Example: Deleting a Ruleset**
+
+To delete a ruleset configuration associated with a zone, use the `action: "delete"` field:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-ruleset: |
+      {
+        "id": "2da96c0ac52945d491eb4567890f1234",
+        "action": "delete"
+      }
+```

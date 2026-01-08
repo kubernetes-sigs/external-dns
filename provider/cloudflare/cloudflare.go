@@ -130,6 +130,7 @@ type cloudFlareDNS interface {
 	CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflarev0.CustomHostname) (*cloudflarev0.CustomHostnameResponse, error)
 	ListRulesets(ctx context.Context, params rulesets.RulesetListParams) ([]rulesets.RulesetListResponse, error)
 	UpdateRuleset(ctx context.Context, rulesetID string, params rulesets.RulesetUpdateParams, opts ...option.RequestOption) (*rulesets.RulesetUpdateResponse, error)
+	DeleteRuleset(ctx context.Context, zoneID, rulesetID string) error
 }
 
 type zoneService struct {
@@ -212,6 +213,12 @@ func (z zoneService) UpdateRuleset(ctx context.Context, rulesetID string, params
 		return nil, err
 	}
 	return res, nil
+}
+
+func (z zoneService) DeleteRuleset(ctx context.Context, zoneID, rulesetID string) error {
+	return z.service.Rulesets.Delete(ctx, rulesetID, rulesets.RulesetDeleteParams{
+		ZoneID: cloudflare.F(zoneID),
+	})
 }
 
 // listZonesV4Params returns the appropriate Zone List Params for v4 API
