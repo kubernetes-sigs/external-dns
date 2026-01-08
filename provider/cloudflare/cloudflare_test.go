@@ -1174,6 +1174,7 @@ func TestCloudflareProvider(t *testing.T) {
 				RegionalServicesConfig{Enabled: false},
 				CustomHostnamesConfig{Enabled: false},
 				DNSRecordsConfig{PerPage: 5000, Comment: ""},
+				RulesetsConfig{},
 			)
 			if err != nil && !tc.ShouldFail {
 				t.Errorf("should not fail, %s", err)
@@ -1979,6 +1980,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		RegionalServicesConfig{Enabled: false, RegionKey: "us"},
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50, Comment: ""},
+		RulesetsConfig{},
 	)
 	assert.NoError(t, err, "should not fail to create provider")
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")

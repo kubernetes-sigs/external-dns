@@ -253,6 +253,7 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
+	RulesetsConfig         RulesetsConfig
 }
 
 // cloudFlareChange differentiates between ChangeActions
@@ -262,6 +263,7 @@ type cloudFlareChange struct {
 	RegionalHostname    regionalHostname
 	CustomHostnames     map[string]cloudflarev0.CustomHostname
 	CustomHostnamesPrev []string
+	Ruleset             string
 }
 
 // RecordParamsTypes is a typeset of the possible Record Params that can be passed to cloudflare-go library
@@ -329,6 +331,7 @@ func NewCloudFlareProvider(
 	regionalServicesConfig RegionalServicesConfig,
 	customHostnamesConfig CustomHostnamesConfig,
 	dnsRecordsConfig DNSRecordsConfig,
+	rulesetsConfig RulesetsConfig,
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
@@ -373,6 +376,7 @@ func NewCloudFlareProvider(
 		DryRun:                 dryRun,
 		RegionalServicesConfig: regionalServicesConfig,
 		DNSRecordsConfig:       dnsRecordsConfig,
+		RulesetsConfig:         rulesetsConfig,
 	}, nil
 }
 
@@ -715,6 +719,10 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			}
 		}
 
+		if !p.submitRulesetChanges(ctx, zoneID, zoneChanges) {
+			failedChange = true
+		}
+
 		if failedChange {
 			failedZones = append(failedZones, zoneID)
 		}
@@ -774,6 +782,10 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
 				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
 			}
+		}
+
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareRulesetKey); ok {
+			e.SetProviderSpecificProperty(annotations.CloudflareRulesetKey, val)
 		}
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
