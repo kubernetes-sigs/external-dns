@@ -813,10 +813,6 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			}
 		}
 
-		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareRulesetKey); ok {
-			e.SetProviderSpecificProperty(annotations.CloudflareRulesetKey, val)
-		}
-
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
