@@ -412,8 +412,8 @@ ExternalDNS supports managing Cloudflare Zone Rulesets via the `external-dns.alp
 
 The annotation value must be a JSON string representing the Ruleset definition.
 
-*   **Create/Update**: Provide the full ruleset definition. You **must** include the `id` of the ruleset you wish to manage. ExternalDNS currently uses `UpdateRuleset` which requires an existing ruleset ID.
-*   **Delete**: Provide a JSON object with `id` and `action: "delete"`.
+- **Create/Update**: Provide the full ruleset definition. You **must** include the `id` of the ruleset you wish to manage. ExternalDNS currently uses `UpdateRuleset` which requires an existing ruleset ID.
+- **Delete**: Provide a JSON object with `id` and `action: "delete"`.
 
 **Example: creating/updating a Custom Rule (Phase: http_request_firewall_custom)**
 
