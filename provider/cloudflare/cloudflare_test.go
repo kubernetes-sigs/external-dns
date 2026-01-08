@@ -30,6 +30,8 @@ import (
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v5/rulesets"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
@@ -398,6 +400,18 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 	newCustomHostname.ID = fmt.Sprintf("ID-%s", ch.Hostname)
 	m.customHostnames[zoneID] = append(m.customHostnames[zoneID], newCustomHostname)
 	return &cloudflarev0.CustomHostnameResponse{}, nil
+}
+
+func (m *mockCloudFlareClient) ListRulesets(ctx context.Context, params rulesets.RulesetListParams) ([]rulesets.RulesetListResponse, error) {
+	return []rulesets.RulesetListResponse{}, nil
+}
+
+func (m *mockCloudFlareClient) UpdateRuleset(ctx context.Context, rulesetID string, params rulesets.RulesetUpdateParams, opts ...option.RequestOption) (*rulesets.RulesetUpdateResponse, error) {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "UpdateRuleset",
+		RecordId: rulesetID,
+	})
+	return &rulesets.RulesetUpdateResponse{ID: rulesetID}, nil
 }
 
 func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {

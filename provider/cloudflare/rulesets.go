@@ -2,7 +2,11 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v5/rulesets"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,15 +23,52 @@ func (p *CloudFlareProvider) submitRulesetChanges(ctx context.Context, zoneID st
 		return true
 	}
 
-	// Logic to extract rulesets from changes and apply them
-	// This is a placeholder for the actual implementation which would involve:
-	// 1. Listing existing rulesets
-	// 2. Diffing with desired rulesets
-	// 3. Applying changes
+	var failed bool
 
-	// Since we don't have a concrete definition of how the annotation maps to a ruleset structure
-	// (it could be a full JSON blob of the ruleset), we will assume the User provides the full JSON.
+	for _, change := range changes {
+		if change.Ruleset == "" {
+			continue
+		}
 
-	log.Infof("Managing Rulesets for zone %s", zoneID)
-	return true
+		// We assume the annotation value is a JSON representing the Ruleset.
+		// We expect an object that can be unmarshaled into a map
+		// PLUS an "id" field to identify which ruleset to update.
+		var rulesetDef map[string]interface{}
+
+		err := json.Unmarshal([]byte(change.Ruleset), &rulesetDef)
+		if err != nil {
+			log.Errorf("Failed to unmarshal ruleset JSON for zone %s: %v", zoneID, err)
+			failed = true
+			continue
+		}
+
+		idVal, ok := rulesetDef["id"]
+		if !ok {
+			log.Errorf("Ruleset JSON must contain an 'id' field for zone %s", zoneID)
+			failed = true
+			continue
+		}
+
+		id, ok := idVal.(string)
+		if !ok || id == "" {
+			log.Errorf("Ruleset JSON 'id' field must be a non-empty string for zone %s", zoneID)
+			failed = true
+			continue
+		}
+
+		log.Infof("Updating Ruleset %s for zone %s", id, zoneID)
+
+		// Use WithRequestBody to pass the raw JSON (as map) directly, avoiding complex struct mapping
+		// for the union types in Rules.
+		_, err = p.Client.UpdateRuleset(ctx, id, rulesets.RulesetUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+		}, option.WithRequestBody("application/json", rulesetDef))
+
+		if err != nil {
+			log.Errorf("Failed to update ruleset %s: %v", id, err)
+			failed = true
+		}
+	}
+
+	return !failed
 }

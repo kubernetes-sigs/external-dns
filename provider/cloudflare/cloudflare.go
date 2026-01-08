@@ -34,6 +34,7 @@ import (
 	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v5/rulesets"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
@@ -127,6 +128,8 @@ type cloudFlareDNS interface {
 	CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflarev0.CustomHostname) ([]cloudflarev0.CustomHostname, cloudflarev0.ResultInfo, error)
 	DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error
 	CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflarev0.CustomHostname) (*cloudflarev0.CustomHostnameResponse, error)
+	ListRulesets(ctx context.Context, params rulesets.RulesetListParams) ([]rulesets.RulesetListResponse, error)
+	UpdateRuleset(ctx context.Context, rulesetID string, params rulesets.RulesetUpdateParams, opts ...option.RequestOption) (*rulesets.RulesetUpdateResponse, error)
 }
 
 type zoneService struct {
@@ -190,6 +193,25 @@ func (z zoneService) DeleteCustomHostname(ctx context.Context, customHostnameID 
 
 func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflarev0.CustomHostname) (*cloudflarev0.CustomHostnameResponse, error) {
 	return z.serviceV0.CreateCustomHostname(ctx, zoneID, ch)
+}
+
+func (z zoneService) ListRulesets(ctx context.Context, params rulesets.RulesetListParams) ([]rulesets.RulesetListResponse, error) {
+	// Attempt to list rulesets. Note: The SDK generation for List might vary.
+	// Assuming List returns []Ruleset directly or via a wrapper that we simplify here.
+	// Only supporting zone level rulesets for now as per params.
+	res, err := z.service.Rulesets.List(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	return res.Result, nil
+}
+
+func (z zoneService) UpdateRuleset(ctx context.Context, rulesetID string, params rulesets.RulesetUpdateParams, opts ...option.RequestOption) (*rulesets.RulesetUpdateResponse, error) {
+	res, err := z.service.Rulesets.Update(ctx, rulesetID, params, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 // listZonesV4Params returns the appropriate Zone List Params for v4 API
@@ -886,7 +908,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		}
 	}
 
-	return &cloudFlareChange{
+	change := &cloudFlareChange{
 		Action: action,
 		ResourceRecord: dns.RecordResponse{
 			Name:     ep.DNSName,
@@ -901,7 +923,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
 		CustomHostnames:     newCustomHostnames,
-	}, nil
+	}
+
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRulesetKey); ok {
+		change.Ruleset = val
+	}
+
+	return change, nil
 }
 
 func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
