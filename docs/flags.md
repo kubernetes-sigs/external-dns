@@ -92,6 +92,7 @@
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--[no-]cloudflare-regional-services` | When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled) |
 | `--cloudflare-region-key=""` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
+| `--[no-]cloudflare-rulesets-enabled` | When using the Cloudflare provider, specify if the Rulesets feature will be used (default: disabled) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--[no-]coredns-strictly-owned` | When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false) |
