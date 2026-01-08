@@ -62,15 +62,6 @@ type crdSource struct {
 	informer         cache.SharedInformer
 }
 
-func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
-	scheme.AddKnownTypes(groupVersion,
-		&apiv1alpha1.DNSEndpoint{},
-		&apiv1alpha1.DNSEndpointList{},
-	)
-	metav1.AddToGroupVersion(scheme, groupVersion)
-	return nil
-}
-
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
 func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
 	if kubeConfig == "" {
@@ -105,7 +96,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	}
 
 	scheme := runtime.NewScheme()
-	_ = addKnownTypes(scheme, groupVersion)
+	_ = apiv1alpha1.AddToScheme(scheme)
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"

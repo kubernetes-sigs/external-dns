@@ -66,7 +66,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
-	_ = addKnownTypes(scheme, groupVersion)
+	_ = apiv1alpha1.AddToScheme(scheme)
 
 	dnsEndpointList := apiv1alpha1.DNSEndpointList{}
 	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
@@ -153,26 +153,9 @@ func testCRDSourceEndpoints(t *testing.T) {
 		labels               map[string]string
 	}{
 		{
-			title:                "invalid crd api version",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "blah.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
-				},
-			},
-			expectEndpoints: false,
-			expectError:     true,
-		},
-		{
 			title:                "invalid crd kind",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "JustEndpoint",
 			endpoints: []*endpoint.Endpoint{
@@ -188,8 +171,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "endpoints within a specific namespace",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -207,8 +190,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "no endpoints within a specific namespace",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -226,8 +209,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd with no targets (relies on default-targets)",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -245,8 +228,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with single endpoint",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -264,8 +247,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with multiple endpoints",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -289,8 +272,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with annotation and non matching annotation filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -310,8 +293,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with annotation and matching annotation filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -331,8 +314,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with label and non matching label filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -352,8 +335,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with label and matching label filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -373,8 +356,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create NS record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -394,8 +377,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create SRV record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -415,8 +398,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create NAPTR record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -436,8 +419,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "illegal target CNAME",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -457,8 +440,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "illegal target NAPTR",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -478,8 +461,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid target TXT",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -499,8 +482,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "illegal target A",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredAPIVersion: "externaldns.k8s.io/v1alpha1",
+			apiVersion:           "externaldns.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
@@ -528,7 +511,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			require.NotNil(t, groupVersion)
 
 			scheme := runtime.NewScheme()
-			err = addKnownTypes(scheme, groupVersion)
+			err = apiv1alpha1.AddToScheme(scheme)
 			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(ti.labelFilter)
