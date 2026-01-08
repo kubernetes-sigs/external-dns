@@ -408,11 +408,10 @@ Please refer to the [CRD source documentation](../sources/crd.md#example) for mo
 
 ExternalDNS supports managing Cloudflare Zone Rulesets via the `external-dns.alpha.kubernetes.io/cloudflare-ruleset` annotation on Ingress or Service resources. This allows you to define rulesets (e.g., Custom Rules, WAF) directly alongside your Kubernetes resources.
 
-
-
 **Usage:**
 
 The annotation value must be a JSON string representing the Ruleset definition.
+
 *   **Create/Update**: Provide the full ruleset definition. You **must** include the `id` of the ruleset you wish to manage. ExternalDNS currently uses `UpdateRuleset` which requires an existing ruleset ID.
 *   **Delete**: Provide a JSON object with `id` and `action: "delete"`.
 
