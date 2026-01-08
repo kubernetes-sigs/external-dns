@@ -23,32 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSubmitRulesetChanges_Disabled(t *testing.T) {
+func TestSubmitRulesetChanges(t *testing.T) {
 	mockClient := NewMockCloudFlareClient()
 	p := &CloudFlareProvider{
 		Client: mockClient,
-		RulesetsConfig: RulesetsConfig{
-			Enabled: false,
-		},
-	}
-	ctx := context.Background()
-	// Should return true (success) when disabled
-	success := p.submitRulesetChanges(ctx, "zone-1", []*cloudFlareChange{
-		{
-			Ruleset: `{"id": "test-id", "kind": "zone"}`,
-		},
-	})
-	assert.True(t, success)
-	assert.Empty(t, mockClient.Actions)
-}
-
-func TestSubmitRulesetChanges_Enabled(t *testing.T) {
-	mockClient := NewMockCloudFlareClient()
-	p := &CloudFlareProvider{
-		Client: mockClient,
-		RulesetsConfig: RulesetsConfig{
-			Enabled: true,
-		},
 	}
 	ctx := context.Background()
 
@@ -72,9 +50,6 @@ func TestSubmitRulesetChanges_InvalidJSON(t *testing.T) {
 	mockClient := NewMockCloudFlareClient()
 	p := &CloudFlareProvider{
 		Client: mockClient,
-		RulesetsConfig: RulesetsConfig{
-			Enabled: true,
-		},
 	}
 	ctx := context.Background()
 
@@ -93,9 +68,6 @@ func TestSubmitRulesetChanges_MissingID(t *testing.T) {
 	mockClient := NewMockCloudFlareClient()
 	p := &CloudFlareProvider{
 		Client: mockClient,
-		RulesetsConfig: RulesetsConfig{
-			Enabled: true,
-		},
 	}
 	ctx := context.Background()
 
@@ -108,4 +80,23 @@ func TestSubmitRulesetChanges_MissingID(t *testing.T) {
 	success := p.submitRulesetChanges(ctx, "zone-1", changes)
 	assert.False(t, success) // Should return false -> failed
 	assert.Empty(t, mockClient.Actions)
+}
+
+func TestSubmitRulesetChanges_Delete(t *testing.T) {
+	mockClient := &mockCloudFlareClient{}
+	provider := &CloudFlareProvider{
+		Client: mockClient,
+	}
+
+	change := &cloudFlareChange{
+		Ruleset: `{"id": "12345", "action": "delete"}`,
+	}
+	changes := []*cloudFlareChange{change}
+
+	success := provider.submitRulesetChanges(context.Background(), "zone-1", changes)
+
+	assert.True(t, success)
+	assert.Len(t, mockClient.Actions, 1)
+	assert.Equal(t, "DeleteRuleset", mockClient.Actions[0].Name)
+	assert.Equal(t, "12345", mockClient.Actions[0].RecordId)
 }

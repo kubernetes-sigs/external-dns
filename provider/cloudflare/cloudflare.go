@@ -282,7 +282,6 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
-	RulesetsConfig         RulesetsConfig
 }
 
 // cloudFlareChange differentiates between ChangeActions
@@ -360,7 +359,6 @@ func NewCloudFlareProvider(
 	regionalServicesConfig RegionalServicesConfig,
 	customHostnamesConfig CustomHostnamesConfig,
 	dnsRecordsConfig DNSRecordsConfig,
-	rulesetsConfig RulesetsConfig,
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
@@ -370,7 +368,7 @@ func NewCloudFlareProvider(
 	)
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
-		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
+		if trimed, ok := strings.CutPrefix(token, "file:"); trimed != "" && ok {
 			tokenBytes, err := os.ReadFile(trimed)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
@@ -405,7 +403,6 @@ func NewCloudFlareProvider(
 		DryRun:                 dryRun,
 		RegionalServicesConfig: regionalServicesConfig,
 		DNSRecordsConfig:       dnsRecordsConfig,
-		RulesetsConfig:         rulesetsConfig,
 	}, nil
 }
 

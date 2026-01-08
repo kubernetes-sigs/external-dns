@@ -118,7 +118,6 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
-	CloudflareRulesets                            bool
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
 	AkamaiServiceConsumerDomain                   string
@@ -260,7 +259,6 @@ var defaultConfig = &Config{
 	CloudflareProxied:                             false,
 	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
-	CloudflareRulesets:                            false,
 
 	CombineFQDNAndAnnotation:     false,
 	Compatibility:                "",
@@ -588,7 +586,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.IntVar("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)", defaultConfig.CloudflareDNSRecordsPerPage, &cfg.CloudflareDNSRecordsPerPage)
 	b.BoolVar("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)", defaultConfig.CloudflareRegionalServices, &cfg.CloudflareRegionalServices)
 	b.StringVar("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)", "", &cfg.CloudflareRegionKey)
-	b.BoolVar("cloudflare-rulesets-enabled", "When using the Cloudflare provider, specify if the Rulesets feature will be used (default: disabled)", defaultConfig.CloudflareRulesets, &cfg.CloudflareRulesets)
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)

@@ -26,19 +26,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RulesetsConfig contains configuration for Ruleset management
-type RulesetsConfig struct {
-	Enabled bool
-}
-
 // submitRulesetChanges handles the creation/update/deletion of Rulesets
 // For this MVP, we will only support creating/updating rulesets based on the annotation value.
 // The value is expected to be a JSON string or a reference.
 func (p *CloudFlareProvider) submitRulesetChanges(ctx context.Context, zoneID string, changes []*cloudFlareChange) bool {
-	if !p.RulesetsConfig.Enabled {
-		return true
-	}
-
 	var failed bool
 
 	for _, change := range changes {
