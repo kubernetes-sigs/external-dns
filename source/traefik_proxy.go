@@ -293,7 +293,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
 
 		ingressEndpoints := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
-		if endpoint.CheckAndLogEmptyEndpoints(ingressEndpoints, types.TraefikProxy, ingressRouteTCP) {
+		if endpoint.HasEmptyEndpoints(ingressEndpoints, types.TraefikProxy, ingressRouteTCP) {
 			continue
 		}
 

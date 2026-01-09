@@ -25,10 +25,9 @@ const (
 	msg = "No endpoints could be generated from %s %s/%s"
 )
 
-// TODO: tests, and rename to IS or HAS prefix
-// CheckAndLogEmptyEndpoints checks if the endpoint list is empty and logs
+// HasEmptyEndpoints checks if the endpoint list is empty and logs
 // a debug message if so. Returns true if empty, false otherwise.
-func CheckAndLogEmptyEndpoints(
+func HasEmptyEndpoints(
 	endpoints []*Endpoint,
 	rType string, entity metav1.ObjectMetaAccessor,
 ) bool {

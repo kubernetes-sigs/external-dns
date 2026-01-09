@@ -178,7 +178,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			log.Warningf("Could not get endpoints for Host %s", err)
 			continue
 		}
-		if endpoint.CheckAndLogEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
+		if endpoint.HasEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
 

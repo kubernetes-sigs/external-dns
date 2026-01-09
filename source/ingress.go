@@ -170,7 +170,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			ingEndpoints = append(ingEndpoints, iEndpoints...)
 		}
 
-		if endpoint.CheckAndLogEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
+		if endpoint.HasEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
 			continue
 		}
 

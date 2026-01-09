@@ -160,7 +160,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			}
 		}
 
-		if endpoint.CheckAndLogEmptyEndpoints(orEndpoints, types.OpenShiftRoute, ocpRoute) {
+		if endpoint.HasEmptyEndpoints(orEndpoints, types.OpenShiftRoute, ocpRoute) {
 			continue
 		}
 

@@ -282,7 +282,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			}
 		}
 
-		// TODO: endpoint.CheckAndLogEmptyEndpoints
+		// TODO: endpoint.HasEmptyEndpoints
 		if len(eps) == 0 {
 			log.Debugf("No endpoints could be generated from routegroup %s/%s", rg.GetNamespace(), rg.GetName())
 			continue

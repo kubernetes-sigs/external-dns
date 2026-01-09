@@ -190,7 +190,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if endpoint.CheckAndLogEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
+		if endpoint.HasEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
 			continue
 		}
 

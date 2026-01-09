@@ -53,9 +53,9 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 	return endpoint.TTL(ttlValue)
 }
 
-// IsControllerMismatch checks if a resource should be processed based on its controller annotation.
-// Returns false if the controller annotation exists but doesn't match the expected value.
-// This ensures that only resources intended for this controller are processed.
+// IsControllerMismatch returns true when the resource should be skipped because
+// the controller annotation is present and does not match the expected controller value.
+// It also logs the reason.
 func IsControllerMismatch(
 	entity metav1.ObjectMetaAccessor,
 	rType string,
