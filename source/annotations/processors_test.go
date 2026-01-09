@@ -23,11 +23,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// func init() {
-// 	// Initialize annotation keys
-// 	SetAnnotationPrefix(DefaultAnnotationPrefix)
-// }
-
 // helper implementing metav1.ObjectMetaAccessor for tests
 type objectUnderTest struct {
 	meta metav1.ObjectMeta
