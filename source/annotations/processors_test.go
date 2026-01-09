@@ -17,10 +17,12 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 // helper implementing metav1.ObjectMetaAccessor for tests
@@ -367,12 +369,17 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 	}
 }
 
+func init() {
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+}
+
 func TestShouldProcessResource(t *testing.T) {
 	tests := []struct {
 		name         string
 		annotations  map[string]string
 		entity       objectUnderTest
 		resourceType string
+		debugMsg     string
 		expected     bool
 	}{
 		{
@@ -398,6 +405,7 @@ func TestShouldProcessResource(t *testing.T) {
 					},
 				},
 			},
+			debugMsg:     fmt.Sprintf("Skipping 'service/default/my-service' because controller '%s' value does not match, found: 'other-controller', required: '%s'", ControllerKey, ControllerValue),
 			resourceType: "service",
 			expected:     true,
 		},
@@ -412,6 +420,7 @@ func TestShouldProcessResource(t *testing.T) {
 					},
 				},
 			},
+			debugMsg:     fmt.Sprintf("Skipping 'ingress/kube-system/test-ingress' because controller '%s' value does not match, found: '', required: '%s'", ControllerKey, ControllerValue),
 			resourceType: "ingress",
 			expected:     true,
 		},
@@ -431,9 +440,16 @@ func TestShouldProcessResource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
 			result := IsControllerMismatch(&tt.entity, tt.resourceType)
 			assert.Equal(t, tt.expected, result)
-			// TODO: tests for logging output
+
+			if tt.debugMsg != "" {
+				testutils.TestHelperLogContains(tt.debugMsg, hook, t)
+			} else {
+				testutils.TestHelperLogNotContains("Skipping", hook, t)
+			}
 		})
 	}
 }

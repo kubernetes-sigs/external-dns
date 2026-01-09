@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	skipCtrlMsg = "Skipping %s %s/%s because controller value does not match, found: %s, required: %s"
+	skipCtrlMsg = "Skipping '%s/%s/%s' because controller '%s' value does not match, found: '%s', required: '%s'"
 )
 
 func hasAliasFromAnnotations(annotations map[string]string) bool {
@@ -60,9 +60,9 @@ func IsControllerMismatch(
 	entity metav1.ObjectMetaAccessor,
 	rType string,
 ) bool {
-	controller, ok := entity.GetObjectMeta().GetAnnotations()[ControllerKey]
-	if ok && controller != ControllerValue {
-		log.Debugf(skipCtrlMsg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName(), controller, ControllerKey)
+	value, ok := entity.GetObjectMeta().GetAnnotations()[ControllerKey]
+	if ok && value != ControllerValue {
+		log.Debugf(skipCtrlMsg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName(), ControllerKey, value, ControllerValue)
 		return true
 	}
 	return false
