@@ -28,18 +28,19 @@ jobs:
         role-to-assume: ${{ vars.ARTIFACTS_DEV_CLOUD_AWS_IAM_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'  # Use a recent Go version
 
-    - name: Build and push Docker image
+    - name: Setup ko
+      uses: ko-build/setup-ko@v0.6
+
+    - name: Build and Push with ko
       env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
+        KO_DOCKER_REPO: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
       run: |
-        # Build explicitly for linux/amd64 to match EKS node architecture
-        docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-        docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        # Build for linux/amd64 explicitly. 
+        # --bare ensures we don't push with the 'ko.local' tag prefix
+        # --tags adds additional tags (sha)
+        ko build --platform=linux/amd64 --bare --tags=latest,${{ github.sha }} .
