@@ -29,7 +29,7 @@ import (
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
-		ObjectMeta: metav1.ObjectMeta{
+		Metadata: metav1.ObjectMeta{
 			Namespace:   ns,
 			Name:        name,
 			Annotations: annotations,
