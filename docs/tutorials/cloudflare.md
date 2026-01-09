@@ -368,6 +368,11 @@ For the most up-to-date list and details, see the [Cloudflare Regional Services 
 
 Currently, requires SuperAdmin or Admin role.
 
+### Conflict Resolution (Data Localization)
+
+When using `--cloudflare-region-key` (or the annotation), ExternalDNS may encounter "Identical record already exists" (81058) errors if a Global record matching the name already exists (since Regional keys cannot "see" Global records).
+ExternalDNS will automatically resolve this conflict by identifying and deleting the conflicting Global record, then creating the new Regional record.
+
 ## Setting cloudflare-custom-hostname
 
 Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.

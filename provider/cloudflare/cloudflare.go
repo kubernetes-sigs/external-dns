@@ -689,8 +689,25 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				recordParam := getCreateDNSRecordParam(zoneID, change)
 				_, err := p.Client.CreateDNSRecord(ctx, recordParam)
 				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create record: %v", err)
+					if p.isIdenticalRecordError(err) {
+						log.WithFields(logFields).Warn("Identical record detected (81058). Attempting to resolve global conflict...")
+						if resolveErr := p.resolveIdenticalRecordConflict(ctx, zoneID, change.ResourceRecord); resolveErr != nil {
+							failedChange = true
+							log.WithFields(logFields).Errorf("failed to resolve conflict: %v", resolveErr)
+						} else {
+							// Retry create
+							_, retryErr := p.Client.CreateDNSRecord(ctx, recordParam)
+							if retryErr != nil {
+								failedChange = true
+								log.WithFields(logFields).Errorf("failed to create record after conflict resolution: %v", retryErr)
+							} else {
+								log.WithFields(logFields).Info("Successfully resolved conflict and created record.")
+							}
+						}
+					} else {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to create record: %v", err)
+					}
 				}
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
@@ -1096,4 +1113,52 @@ func dnsRecordResponseFromLegacyDNSRecord(record cloudflarev0.DNSRecord) dns.Rec
 		Comment:    record.Comment,
 		Tags:       record.Tags,
 	}
+}
+
+func (p *CloudFlareProvider) isIdenticalRecordError(err error) bool {
+	// 81058: An identical record already exists.
+	// Check for the error code or message explicitly
+	if err == nil {
+		return false
+	}
+	// Convert to string and check
+	msg := err.Error()
+	return strings.Contains(msg, "81058") || strings.Contains(msg, "Identical record already exists")
+}
+
+func (p *CloudFlareProvider) resolveIdenticalRecordConflict(ctx context.Context, zoneID string, record dns.RecordResponse) error {
+	// To resolve the conflict, we need to find the existing record (likely Global) and delete it.
+	// Usage of ListDNSRecords here *should* find it if we search by name, assuming the limitation
+	// causing the blind spot was due to how external-dns manages state vs how we query here.
+	// We list all records in the zone (ignoring Name/Type filters in the API call to avoid SDK typing issues or API filtering quirks)
+	// and filter manually.
+
+	log.Infof("Attempting to find and delete conflicting record for %s (%s)", record.Name, record.Type)
+
+	params := dns.RecordListParams{
+		ZoneID: cloudflare.F(zoneID),
+	}
+
+	iter := p.Client.ListDNSRecords(ctx, params)
+	found := false
+	for existing := range autoPagerIterator(iter) {
+		// Strict match check
+		if existing.Name == record.Name && existing.Type == record.Type {
+			log.Infof("Found conflicting record: ID=%s, Content=%s. Deleting...", existing.ID, existing.Content)
+			err := p.Client.DeleteDNSRecord(ctx, existing.ID, dns.RecordDeleteParams{ZoneID: cloudflare.F(zoneID)})
+			if err != nil {
+				return fmt.Errorf("failed to delete conflicting record %s: %w", existing.ID, err)
+			}
+			found = true
+		}
+	}
+	if iter.Err() != nil {
+		return fmt.Errorf("failed to list records for conflict resolution: %w", iter.Err())
+	}
+
+	if !found {
+		return fmt.Errorf("identical record error received, but no conflicting record found via API list")
+	}
+
+	return nil
 }
