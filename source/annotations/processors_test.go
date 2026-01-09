@@ -369,11 +369,9 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 	}
 }
 
-func init() {
-	SetAnnotationPrefix(DefaultAnnotationPrefix)
-}
-
 func TestShouldProcessResource(t *testing.T) {
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+
 	tests := []struct {
 		name         string
 		annotations  map[string]string

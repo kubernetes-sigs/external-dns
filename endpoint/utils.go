@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	msg = "No endpoints could be generated from %s %s/%s"
+	msg = "No endpoints could be generated from '%s/%s/%s'"
 )
 
 // HasEmptyEndpoints checks if the endpoint list is empty and logs
