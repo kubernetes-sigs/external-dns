@@ -145,11 +145,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, hp := range httpProxies {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := hp.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping HTTPProxy %s/%s because controller value does not match, found: %s, required: %s",
-				hp.Namespace, hp.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(hp, types.ContourHTTPProxy) {
 			continue
 		}
 

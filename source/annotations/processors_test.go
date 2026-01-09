@@ -18,9 +18,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/external-dns/endpoint"
 )
+
+// func init() {
+// 	// Initialize annotation keys
+// 	SetAnnotationPrefix(DefaultAnnotationPrefix)
+// }
+
+// helper implementing metav1.ObjectMetaAccessor for tests
+type objectUnderTest struct {
+	meta metav1.ObjectMeta
+}
+
+func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
+
+func assembleObject(annots map[string]string) metav1.ObjectMetaAccessor {
+	return &objectUnderTest{meta: metav1.ObjectMeta{Annotations: annots}}
+}
 
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
@@ -351,6 +368,77 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := InternalHostnamesFromAnnotations(tt.annotations)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestShouldProcessResource(t *testing.T) {
+	tests := []struct {
+		name         string
+		annotations  map[string]string
+		entity       objectUnderTest
+		resourceType string
+		expected     bool
+	}{
+		{
+			name: "no controller annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:        "my-service",
+					Namespace:   "default",
+					Annotations: map[string]string{},
+				},
+			},
+			resourceType: "service",
+			expected:     false,
+		},
+		{
+			name: "non-matching controller annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:      "my-service",
+					Namespace: "default",
+					Annotations: map[string]string{
+						ControllerKey: "other-controller",
+					},
+				},
+			},
+			resourceType: "service",
+			expected:     true,
+		},
+		{
+			name: "empty controller value with annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:      "test-ingress",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						ControllerKey: "",
+					},
+				},
+			},
+			resourceType: "ingress",
+			expected:     true,
+		},
+		{
+			name: "nil annotations",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:        "service",
+					Namespace:   "default",
+					Annotations: nil,
+				},
+			},
+			resourceType: "service",
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsControllerMismatch(&tt.entity, tt.resourceType)
+			assert.Equal(t, tt.expected, result)
+			// TODO: tests for logging output
 		})
 	}
 }

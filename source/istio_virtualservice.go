@@ -159,11 +159,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	log.Debugf("Found %d virtualservice in namespace %s", len(virtualServices), sc.namespace)
 
 	for _, vService := range virtualServices {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := vService.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
-				vService.Namespace, vService.APIVersion, vService.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
 			continue
 		}
 
