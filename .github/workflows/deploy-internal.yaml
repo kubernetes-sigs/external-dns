@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REGISTRY: 744824939882.dkr.ecr.us-east-2.amazonaws.com
+  ECR_REGISTRY: 791996757309.dkr.ecr.us-east-2.amazonaws.com
   ECR_REPOSITORY: external-dns
 
 jobs:
