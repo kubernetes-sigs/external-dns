@@ -14,6 +14,9 @@ jobs:
   deploy:
     name: Build and Push
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     
     steps:
     - name: Checkout
@@ -22,8 +25,7 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        role-to-assume: arn:aws:iam::791996757309:role/GitHubActions-OIDCAdminRole-DevSecOps
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
