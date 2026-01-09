@@ -31,7 +31,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -148,7 +149,7 @@ func NewServiceSource(
 				if serviceName == "" {
 					return nil, nil
 				}
-				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				key := apitypes.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
 				return []string{key}, nil
 			},
 		})
@@ -286,8 +287,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 		}
 
-		if len(svcEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+		if endpoint.CheckAndLogEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
 

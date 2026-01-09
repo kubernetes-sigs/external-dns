@@ -284,6 +284,7 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 			}
 		}
 
+		// TODO: endpoint.CheckAndLogEmptyEndpoints
 		if len(eps) == 0 {
 			log.Debugf("No endpoints could be generated from routegroup %s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
 			continue

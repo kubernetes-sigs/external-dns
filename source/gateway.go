@@ -275,6 +275,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		if err != nil {
 			return nil, err
 		}
+		// TODO: does not follow the pattern of other sources to log empty hostTargets
 		if len(hostTargets) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
