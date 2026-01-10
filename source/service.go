@@ -273,17 +273,14 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if none of the above is found
-		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(svc)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				svcEndpoints = append(svcEndpoints, sEndpoints...)
-			} else {
-				svcEndpoints = sEndpoints
-			}
+		svcEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			svcEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(svc) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(svcEndpoints) == 0 {

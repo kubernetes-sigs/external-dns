@@ -25,6 +25,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func ParseTemplate(input string) (*template.Template, error) {
@@ -93,4 +95,37 @@ func isIPv4String(target string) bool {
 		return false
 	}
 	return netIP.Is4()
+}
+
+// CombineWithTemplatedEndpoints merges annotation-based endpoints with template-based endpoints
+// according to the FQDN template configuration.
+//
+// Logic:
+//   - If fqdnTemplate is nil, returns original endpoints unchanged
+//   - If combineFQDNAnnotation is true, appends templated endpoints to existing
+//   - If combineFQDNAnnotation is false and endpoints is empty, uses templated endpoints
+//   - If combineFQDNAnnotation is false and endpoints exist, returns original unchanged
+func CombineWithTemplatedEndpoints(
+	endpoints []*endpoint.Endpoint,
+	fqdnTemplate *template.Template,
+	combineFQDNAnnotation bool,
+	templateFunc func() ([]*endpoint.Endpoint, error),
+) ([]*endpoint.Endpoint, error) {
+	if fqdnTemplate == nil {
+		return endpoints, nil
+	}
+
+	if !combineFQDNAnnotation && len(endpoints) > 0 {
+		return endpoints, nil
+	}
+
+	templatedEndpoints, err := templateFunc()
+	if err != nil {
+		return nil, err
+	}
+
+	if combineFQDNAnnotation {
+		return append(endpoints, templatedEndpoints...), nil
+	}
+	return templatedEndpoints, nil
 }

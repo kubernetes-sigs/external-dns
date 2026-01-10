@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"maps"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -154,28 +153,50 @@ func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
 
-	endpointMap := make(map[endpoint.EndpointKey][]string)
+	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, key := range indexKeys {
 		pod, err := informers.GetByKey[*corev1.Pod](ps.podInformer.Informer().GetIndexer(), key)
 		if err != nil {
 			continue
 		}
 
-		if ps.fqdnTemplate == nil || ps.combineFQDNAnnotation {
-			ps.addPodEndpointsToEndpointMap(endpointMap, pod)
+		podEndpoints := ps.endpointsFromPodAnnotations(pod)
+
+		podEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			podEndpoints,
+			ps.fqdnTemplate,
+			ps.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if ps.fqdnTemplate != nil {
-			fqdnHosts, err := ps.hostsFromTemplate(pod)
-			if err != nil {
-				return nil, err
-			}
-			maps.Copy(endpointMap, fqdnHosts)
-		}
+		endpoints = append(endpoints, podEndpoints...)
 	}
+
+	return MergeEndpoints(endpoints), nil
+}
+
+func (ps *podSource) endpointsFromPodAnnotations(pod *corev1.Pod) []*endpoint.Endpoint {
+	endpointMap := make(map[endpoint.EndpointKey][]string)
+	ps.addPodEndpointsToEndpointMap(endpointMap, pod)
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
+		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+	}
+	return endpoints
+}
+
+func (ps *podSource) endpointsFromPodTemplate(pod *corev1.Pod) ([]*endpoint.Endpoint, error) {
+	hostsMap, err := ps.hostsFromTemplate(pod)
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for key, targets := range hostsMap {
 		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
 	}
 	return endpoints, nil
