@@ -180,7 +180,7 @@ Breaking changes were introduced in external-dns in the following versions:
 
 ## Running ExternalDNS
 
-The are two ways of running ExternalDNS:
+There are two ways of running ExternalDNS:
 
 - Deploying to a Cluster
 - Running Locally
