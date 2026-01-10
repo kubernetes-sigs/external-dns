@@ -816,7 +816,6 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.244"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-152.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-2",
@@ -858,6 +857,12 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 							Namespace: el.Namespace,
 						},
 						Spec: v1.PodSpec{
+							Hostname: func() string {
+								if ep.Hostname != nil {
+									return *ep.Hostname
+								}
+								return ""
+							}(),
 							NodeName: "test-node",
 						},
 						Status: v1.PodStatus{
