@@ -18,24 +18,10 @@
 # This script generates Kubernetes Custom Resource Definitions (CRDs) and related
 # deepcopy code for external-dns using controller-gen from controller-tools.
 #
-# What this script does:
+## What this script does:
 # 1. Generates DeepCopy methods for types in the endpoint package
-#    - Creates zz_generated.deepcopy.go files with DeepCopy, DeepCopyInto methods
-#    - Required for Kubernetes runtime.Object interface implementation
-#
 # 2. Generates CRD manifests for API types in the apis package
-#    - Creates CRD YAML files in config/crd/standard/
-#    - Formats them using yamlfmt for consistency
-#    - Extracts individual CRD files using yq based on metadata.name
-#
 # 3. Copies CRDs to the Helm chart directory
-#    - Filters metadata.annotations to only include kubernetes.io/* annotations
-#    - Outputs to charts/external-dns/crds/ for Helm chart packaging
-#
-# Dependencies (from go.tool.mod):
-# - sigs.k8s.io/controller-tools/cmd/controller-gen - CRD and deepcopy generation
-# - github.com/google/yamlfmt/cmd/yamlfmt - YAML formatting
-# - github.com/mikefarah/yq/v4 - YAML processing and splitting
 #
 # Usage:
 #   ./scripts/generate-crd.sh
