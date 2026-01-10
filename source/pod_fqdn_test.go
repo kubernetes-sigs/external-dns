@@ -385,6 +385,48 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "pod-1.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
 			},
 		},
+		{
+			title: "fqdn templating with label conditional and kind check",
+			fqdnTemplate: `{{ if eq .Kind "Pod" }}{{ range $k, $v := .Labels }}{{ if and (contains $k "app")
+				(contains $v "my-service-") }}{{ $.Name }}.{{ $v }}.pod.tld.org{{ printf "," }}{{ end }}{{ end }}{{ end }}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "pod-1.my-service-1.pod.tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
+				{DNSName: "pod-2.my-service-2.pod.tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.102"}},
+			},
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app1": "my-service-1",
+						},
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+						PodIP: "100.67.94.101",
+						PodIPs: []v1.PodIP{
+							{IP: "100.67.94.101"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-2",
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app2": "my-service-2",
+						},
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+						PodIPs: []v1.PodIP{
+							{IP: "100.67.94.102"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()

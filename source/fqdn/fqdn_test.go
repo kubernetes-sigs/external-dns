@@ -407,12 +407,13 @@ func TestIsIPv4String(t *testing.T) {
 }
 
 type testObject struct {
+	metav1.TypeMeta
 	metav1.ObjectMeta
-	runtime.Object
 }
 
 func (t *testObject) DeepCopyObject() runtime.Object {
 	return &testObject{
+		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
 }

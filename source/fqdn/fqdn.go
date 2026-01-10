@@ -20,11 +20,14 @@ import (
 	"bytes"
 	"fmt"
 	"net/netip"
+	"reflect"
 	"strings"
 	"text/template"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -55,6 +58,19 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("object is nil")
 	}
+	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
+	// objects via informers. Set it so templates can use .Kind and .APIVersion
+	if obj.GetObjectKind().GroupVersionKind().Kind == "" {
+		gv, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gv) > 0 {
+			obj.GetObjectKind().SetGroupVersionKind(gv[0])
+		} else {
+			// Fallback to reflection for types not in scheme
+			kind := reflect.TypeOf(obj).Elem().Name()
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+		}
+	}
+
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, obj); err != nil {
 		kind := obj.GetObjectKind().GroupVersionKind().Kind
