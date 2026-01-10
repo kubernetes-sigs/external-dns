@@ -162,13 +162,14 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ing)
-			if err != nil {
-				return nil, err
-			}
-
-			ingEndpoints = append(ingEndpoints, iEndpoints...)
+		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			ingEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(ingEndpoints) == 0 {

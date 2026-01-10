@@ -149,17 +149,14 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
-		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
-			oEndpoints, err := ors.endpointsFromTemplate(ocpRoute)
-			if err != nil {
-				return nil, err
-			}
-
-			if ors.combineFQDNAnnotation {
-				orEndpoints = append(orEndpoints, oEndpoints...)
-			} else {
-				orEndpoints = oEndpoints
-			}
+		orEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			orEndpoints,
+			ors.fqdnTemplate,
+			ors.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return ors.endpointsFromTemplate(ocpRoute) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(orEndpoints) == 0 {
