@@ -164,7 +164,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+			return nil, err
 		}
 
 		if len(hpEndpoints) == 0 {

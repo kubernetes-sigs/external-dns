@@ -121,7 +121,7 @@ func CombineWithTemplatedEndpoints(
 
 	templatedEndpoints, err := templateFunc()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
 	}
 
 	if combineFQDNAnnotation {

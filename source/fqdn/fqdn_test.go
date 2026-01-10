@@ -464,31 +464,25 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 		wantErr               bool
 	}{
 		{
-			name:                  "nil template returns original endpoints",
-			endpoints:             annotationEndpoints,
-			fqdnTemplate:          nil,
-			combineFQDNAnnotation: false,
-			templateFunc:          successTemplateFunc,
-			want:                  annotationEndpoints,
-			wantErr:               false,
+			name:         "nil template returns original endpoints",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: nil,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
 		},
 		{
-			name:                  "combine=false with existing endpoints returns original",
-			endpoints:             annotationEndpoints,
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: false,
-			templateFunc:          successTemplateFunc,
-			want:                  annotationEndpoints,
-			wantErr:               false,
+			name:         "combine=false with existing endpoints returns original",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
 		},
 		{
-			name:                  "combine=false with empty endpoints returns templated",
-			endpoints:             []*endpoint.Endpoint{},
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: false,
-			templateFunc:          successTemplateFunc,
-			want:                  templatedEndpoints,
-			wantErr:               false,
+			name:         "combine=false with empty endpoints returns templated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
 		},
 		{
 			name:                  "combine=true appends templated to existing",
@@ -497,7 +491,6 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 			combineFQDNAnnotation: true,
 			templateFunc:          successTemplateFunc,
 			want:                  append(annotationEndpoints, templatedEndpoints...),
-			wantErr:               false,
 		},
 		{
 			name:                  "combine=true with empty endpoints returns templated",
@@ -506,25 +499,21 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 			combineFQDNAnnotation: true,
 			templateFunc:          successTemplateFunc,
 			want:                  templatedEndpoints,
-			wantErr:               false,
 		},
 		{
-			name:                  "template error is propagated",
-			endpoints:             []*endpoint.Endpoint{},
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: false,
-			templateFunc:          errorTemplateFunc,
-			want:                  nil,
-			wantErr:               true,
+			name:         "template error is propagated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: errorTemplateFunc,
+			want:         nil,
+			wantErr:      true,
 		},
 		{
-			name:                  "nil endpoints with combine=false returns templated",
-			endpoints:             nil,
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: false,
-			templateFunc:          successTemplateFunc,
-			want:                  templatedEndpoints,
-			wantErr:               false,
+			name:         "nil endpoints with combine=false returns templated",
+			endpoints:    nil,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
 		},
 	}
 
@@ -538,6 +527,7 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 			)
 			if tt.wantErr {
 				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to get endpoints from template")
 				return
 			}
 			require.NoError(t, err)
