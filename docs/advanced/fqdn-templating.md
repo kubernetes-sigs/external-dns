@@ -19,15 +19,30 @@ ExternalDNS has a flag: `--fqdn-template`, which defines a Go template for rende
 
 The template uses the following data from the source object (e.g., a `Service` or `Ingress`):
 
-| Field         | Description                                                       |
-|:--------------|:------------------------------------------------------------------|
-| `Name`        | Name of the object (e.g., service)                                |
-| `Namespace`   | Namespace of the object                                           |
-| `Labels`      | Map of labels applied to the object                               |
-| `Annotations` | Map of annotations                                                |
-| `TargetName`  | For `Service`, it's the service name; for `Ingress`, the hostname |
-| `Endpoint`    | Contains more contextual endpoint info, such as IP/target         |
-| `Controller`  | Controller type (optional)                                        |
+| Field         | Description                                      | How to Access                                          |
+|:--------------|:-------------------------------------------------|:-------------------------------------------------------|
+| `Kind`        | Object kind (e.g., `Service`, `Pod`, `Ingress`)  | `{{ .Kind }}`                                          |
+| `APIVersion`  | API version (e.g., `v1`, `networking.k8s.io/v1`) | `{{ .APIVersion }}`                                    |
+| `Name`        | Name of the object (e.g., service)               | `{{ .Name }}`                                          |
+| `Namespace`   | Namespace of the object                          | `{{ .Namespace }}`                                     |
+| `Labels`      | Map of labels applied to the object              | `{{ .Labels.key }}` or `{{ index .Labels "key" }}`     |
+| `Annotations` | Map of annotations                               | `{{ index .Annotations "key" }}`                       |
+| `Spec`        | Object spec with type-specific fields            | `{{ .Spec.Type }}`, `{{ index .Spec.Selector "app" }}` |
+| `Status`      | Object status with type-specific fields          | `{{ .Status.LoadBalancer.Ingress }}`                   |
+
+To explore all available fields for an object type, use `kubectl explain`:
+
+```bash
+# View all fields for a Service recursively.
+kubectl explain service --api-version=v1 --recursive
+
+# View all fields for a Ingress recursively.
+kubectl explain ingress --api-version=networking.k8s.io/v1 --recursive
+
+# View a specific field path. The dot notation is for field path.
+kubectl explain service.spec.selector
+kubectl explain pod.spec.containers
+```
 
 ## Supported Sources
 
@@ -213,6 +228,101 @@ args:
 
 This helps automate DNS record migration while maintaining service continuity.
 
+### Using Kind for Conditional Templating
+
+When processing multiple resource types, use `.Kind` to apply templates conditionally:
+
+```yml
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ .Name }}.svc.example.com{{ end }}'
+
+# Only Services will get DNS entries, Pods and other resources will be skipped
+```
+
+You can also handle multiple kinds in one template:
+
+```yml
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ .Name }}.svc.example.com{{ end }}{{ if eq .Kind "Pod" }}{{ .Name }}.pod.example.com{{ end }}'
+```
+
+### Using Spec Fields
+
+Access type-specific spec fields for advanced filtering:
+
+```yml
+# Only ExternalName services
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ if eq .Spec.Type "ExternalName" }}{{ .Name }}.external.example.com{{ end }}{{ end }}'
+```
+
+```yml
+# Services with specific selector
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ if index .Spec.Selector "app" }}{{ .Name }}.{{ index .Spec.Selector "app" }}.example.com{{ end }}{{ end }}'
+```
+
+### Iterating Over Labels with Range
+
+Use `range` to iterate over labels and generate multiple FQDNs:
+
+```yml
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ range $key, $value := .Labels }}{{ if contains $key "app" }}{{ $.Name }}.{{ $value }}.example.com{{ printf "," }}{{ end }}{{ end }}{{ end }}'
+```
+
+This generates an FQDN for each label key containing "app". Note:
+
+- `$key` and `$value` are the label key/value pairs
+- `$.Name` accesses the root object's Name (use `$` inside `range`)
+- `{{ printf "," }}` separates multiple FQDNs
+
+### Working with Annotations
+
+Access a specific annotation:
+
+```yml
+args:
+  --fqdn-template='{{ index .Annotations "dns.example.com/hostname" }}.example.com'
+```
+
+Iterate over annotations and filter by key:
+
+```yml
+args:
+  --fqdn-template='{{ range $key, $value := .Annotations }}{{ if contains $key "dns.example.com/" }}{{ $value }}{{ printf "," }}{{ end }}{{ end }}'
+
+# Captures all annotations with keys containing "dns.example.com/"
+```
+
+Filter annotations by value:
+
+```yml
+args:
+  --fqdn-template='{{ range $key, $value := .Annotations }}{{ if contains $value ".example.com" }}{{ $value }}{{ printf "," }}{{ end }}{{ end }}'
+
+# Captures all annotation values containing ".example.com"
+```
+
+Combine annotation key and value filters:
+
+```yml
+args:
+  --fqdn-template='{{ if eq .Kind "Service" }}{{ range $k, $v := .Annotations }}{{ if and (contains $k "dns/") (contains $v "example.com") }}{{ $v }}{{ printf "," }}{{ end }}{{ end }}{{ end }}'
+```
+
+### Combining Kind and Label Filters
+
+Filter by both Kind and label values:
+
+```yml
+args:
+  --fqdn-template='{{ if eq .Kind "Pod" }}{{ range $k, $v := .Labels }}{{ if and (contains $k "app") (contains $v "my-service-") }}{{ $.Name }}.{{ $v }}.example.com{{ printf "," }}{{ end }}{{ end }}{{ end }}'
+
+# Generates FQDNs only for Pods with labels like app1=my-service-123
+# Result: pod-name.my-service-123.example.com
+```
+
 ### Multi-Variant Domain Support
 
 You can also support regional variants or multi-tenant architectures, where the same service is deployed to different regions or environments:
@@ -248,7 +358,7 @@ Yes, you can. Pass in a comma separated list to --fqdn-template. Beware this wil
 
 ### Where to find template syntax
 
-- [Go template syntax](https://pkg.go.dev/text/template)
+- [Go template syntax](https://pkg.go.dev/text/template) - Official reference for template syntax, actions, and pipelines
 - [Go func builtins](https://github.com/golang/go/blob/master/src/text/template/funcs.go#L39-L63)
 
 ### FQDN Templating, Helm and improper templating syntax
