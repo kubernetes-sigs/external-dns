@@ -149,3 +149,99 @@ func TestSelectorMatchesService(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeEndpoints(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []*endpoint.Endpoint
+		expected []*endpoint.Endpoint
+	}{
+		{
+			name:     "empty input",
+			input:    []*endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "single endpoint unchanged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			name: "different keys not merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+		},
+		{
+			name: "same DNSName different RecordType not merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
+			},
+		},
+		{
+			name: "same key merged with sorted targets",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
+			},
+		},
+		{
+			name: "multiple endpoints same key merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "2.2.2.2", "3.3.3.3"}},
+			},
+		},
+		{
+			name: "mixed merge and no merge",
+			input: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "3.3.3.3"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+			},
+		},
+		{
+			name: "same key with different TTL not merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 300, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 600, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 300, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 600, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input)
+			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}

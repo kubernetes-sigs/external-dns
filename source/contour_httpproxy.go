@@ -157,17 +157,14 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		}
 
 		// apply template if fqdn is missing on HTTPProxy
-		if (sc.combineFQDNAnnotation || len(hpEndpoints) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(hp)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
-			}
-
-			if sc.combineFQDNAnnotation {
-				hpEndpoints = append(hpEndpoints, tmplEndpoints...)
-			} else {
-				hpEndpoints = tmplEndpoints
-			}
+		hpEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			hpEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(hpEndpoints) == 0 {

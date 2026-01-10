@@ -271,17 +271,14 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 
 		eps := sc.endpointsFromRouteGroup(rg)
 
-		if (sc.combineFQDNAnnotation || len(eps) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(rg)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				eps = append(eps, tmplEndpoints...)
-			} else {
-				eps = tmplEndpoints
-			}
+		eps, err = fqdn.CombineWithTemplatedEndpoints(
+			eps,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(rg) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(eps) == 0 {
