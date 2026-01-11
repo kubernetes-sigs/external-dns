@@ -31,6 +31,8 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/source/informers"
 
@@ -59,6 +61,7 @@ const (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
@@ -175,6 +178,11 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		if len(ingEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from ingress %s/%s", ing.Namespace, ing.Name)
 			continue
+		}
+
+		// TODO: test metadata reference
+		for _, ep := range ingEndpoints {
+			ep.WithRefObject(events.NewObjectReference(ing, types.Ingress))
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)

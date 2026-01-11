@@ -25,6 +25,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -45,6 +47,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type podSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -170,6 +173,11 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		// TODO: test metadata reference
+		for _, ep := range podEndpoints {
+			ep.WithRefObject(events.NewObjectReference(pod, types.Pod))
 		}
 
 		endpoints = append(endpoints, podEndpoints...)

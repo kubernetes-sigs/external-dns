@@ -77,6 +77,7 @@ func MatchesServiceSelector(selector, svcSelector map[string]string) bool {
 //
 // TODO: move this to endpoint/utils.go
 // TODO: apply to all sources that generate endpoints (e.g., service, ingress, etc.)
+// TODO: when merging, handle other correctly refObject for event processing
 func MergeEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	endpointMap := make(map[endpoint.EndpointKey]*endpoint.Endpoint)
 
