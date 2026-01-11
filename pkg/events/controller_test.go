@@ -35,6 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
+	eventsclient "k8s.io/client-go/kubernetes/typed/events/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 
 	clienttesting "k8s.io/client-go/testing"
@@ -70,11 +72,15 @@ users:
 	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), os.FileMode(0755))
 	require.NoError(t, err)
 
+	restConfig, err := clientcmd.BuildConfigFromFlags(svr.URL, mockKubeCfgPath)
+	require.NoError(t, err)
+	client, err := eventsclient.NewForConfig(restConfig)
+	require.NoError(t, err)
+
 	cfg := NewConfig(
-		WithKubeConfig(mockKubeCfgPath, svr.URL, 0),
 		WithEmitEvents([]string{string(RecordReady)}),
 	)
-	ctrl, err := NewEventController(cfg)
+	ctrl, err := NewEventController(client, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ctrl)
 	require.False(t, ctrl.dryRun)
