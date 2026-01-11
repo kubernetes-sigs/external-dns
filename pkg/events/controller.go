@@ -152,7 +152,7 @@ func (ec *Controller) emit(event *eventsv1.Event) {
 		log.Debugf("skipping event %s/%s/%s with reason %s as not configured to emit", event.Kind, event.Namespace, event.Name, event.Reason)
 		return
 	}
-	event.ReportingController = controllerName + "-" + ec.hostname
+	event.ReportingController = controllerName
 	ec.queue.Add(event)
 }
 
