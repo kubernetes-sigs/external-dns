@@ -21,13 +21,13 @@ After completing this lab, you will have a Kubernetes environment running as con
 Before you start, ensure you have:
 
 - A running kubernetes cluster.
-  - In this tutorial we are going to use [kind](https://kind.sigs.k8s.io/)
+    - In this tutorial we are going to use [kind](https://kind.sigs.k8s.io/)
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and [`helm`](https://helm.sh/)
 - `external-dns` source code or [helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
 - `CoreDNS` [helm chart](https://github.com/coredns/helm)
 - Optional
-  - `dnstools` container for testing
-  - `etcdctl` to interat with [etcd](https://etcd.io/docs/v3.4/dev-guide/interacting_v3/)
+    - `dnstools` container for testing
+    - `etcdctl` to interat with [etcd](https://etcd.io/docs/v3.4/dev-guide/interacting_v3/)
 
 ## Bootstrap Environment
 

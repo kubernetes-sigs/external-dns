@@ -16,10 +16,10 @@ Upgrading External-DNS involves validating configuration compatibility, testing 
 - Visit the official [External-DNS Releases](https://github.com/kubernetes-sigs/external-dns/releases).
 - Review all versions between your current and target release.
 - Pay attention to:
-  - **Breaking changes** (flags, CRD fields, provider behaviors). Not all changes could be captured as breaking changes.
-  - **Deprecations**
-  - **Provider-specific updates**
-  - **Bug fixes**
+    - **Breaking changes** (flags, CRD fields, provider behaviors). Not all changes could be captured as breaking changes.
+    - **Deprecations**
+    - **Provider-specific updates**
+    - **Bug fixes**
 
 > ⚠️ Breaking CLI flag or annotation changes are common in `0.x` releases.
 
@@ -31,9 +31,9 @@ If using Helm:
 
 - Compare your Helm chart version to the version supporting the new app release.
 - Check for:
-  - `values.yaml` structural changes
-  - Default arguments under `extraArgs`
-  - Updates to RBAC, ServiceAccounts, or Deployment templates
+    - `values.yaml` structural changes
+    - Default arguments under `extraArgs`
+    - Updates to RBAC, ServiceAccounts, or Deployment templates
 
 ---
 

@@ -1013,14 +1013,14 @@ For any given DNS name, only **one** of the following routing policies can be us
 - Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
 - Failover:`external-dns.alpha.kubernetes.io/aws-failover`
 - Geolocation-based routing:
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+    - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+    - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+    - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
 - Geoproximity routing:
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
+    - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
+    - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
+    - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
+    - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
 - Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ### Associating DNS records with healthchecks
@@ -1059,7 +1059,7 @@ args:
 ```
 
 - The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commercial AWS accounts.
-  - If services and ingresses need to make Route 53 entries to an public zone in a commercial account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commercial account that has the sufficient rights.
+    - If services and ingresses need to make Route 53 entries to an public zone in a commercial account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commercial account that has the sufficient rights.
 
 ```yaml
 env:
@@ -1137,33 +1137,33 @@ Route53 has a [5 API requests per second per account hard quota](https://docs.aw
 Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:
 
 - Reduce the polling loop's synchronization interval at the possible cost of slower change propagation (but see `--events` below to reduce the impact).
-  - `--interval=5m` (default `1m`)
+    - `--interval=5m` (default `1m`)
 - Enable a Cache to store the zone records list. It comes with a cost: slower propagation when the zone gets modified from other sources such as the AWS console, terraform, cloudformation or anything similar.
-  - `--provider-cache-time=15m` (default `0m`)
+    - `--provider-cache-time=15m` (default `0m`)
 - Trigger the polling loop on changes to K8s objects, rather than only at `interval` and ensure a minimum of time between events, to have responsive updates with long poll intervals
-  - `--events`
-  - `--min-event-sync-interval=5m` (default `5s`)
+    - `--events`
+    - `--min-event-sync-interval=5m` (default `5s`)
 - Limit the [sources watched](https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L364) when the `--events` flag is specified to specific types, namespaces, labels, or annotations
-  - `--source=ingress --source=service` - specify multiple times for multiple sources
-  - `--namespace=my-app`
-  - `--label-filter=app in (my-app)`
-  - `--ingress-class=nginx-external`
+    - `--source=ingress --source=service` - specify multiple times for multiple sources
+    - `--namespace=my-app`
+    - `--label-filter=app in (my-app)`
+    - `--ingress-class=nginx-external`
 - Limit services watched by type (not applicable to ingress or other types)
-  - `--service-type-filter=LoadBalancer` default `all`
+    - `--service-type-filter=LoadBalancer` default `all`
 - Limit the hosted zones considered
-  - `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
-  - `--domain-filter=example.com` by domain suffix - specify multiple times if needed
-  - `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
-  - `--exclude-domains=ignore.this.example.com` to exclude a domain or subdomain
-  - `--regex-domain-exclusion=ignore*` subtracts it's matches from `regex-domain-filter`'s matches
-  - `--aws-zone-type=public` only sync zones of this type `[public|private]`
-  - `--aws-zone-tags=owner=k8s` only sync zones with this tag
+    - `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
+    - `--domain-filter=example.com` by domain suffix - specify multiple times if needed
+    - `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
+    - `--exclude-domains=ignore.this.example.com` to exclude a domain or subdomain
+    - `--regex-domain-exclusion=ignore*` subtracts it's matches from `regex-domain-filter`'s matches
+    - `--aws-zone-type=public` only sync zones of this type `[public|private]`
+    - `--aws-zone-tags=owner=k8s` only sync zones with this tag
 - If the list of zones managed by ExternalDNS doesn't change frequently, cache it by setting a TTL.
-  - `--aws-zones-cache-duration=3h` (default `0` - disabled)
+    - `--aws-zones-cache-duration=3h` (default `0` - disabled)
 - Increase the number of changes applied to Route53 in each batch
-  - `--aws-batch-change-size=4000` (default `1000`)
+    - `--aws-batch-change-size=4000` (default `1000`)
 - Increase the interval between changes
-  - `--aws-batch-change-interval=10s` (default `1s`)
+    - `--aws-batch-change-interval=10s` (default `1s`)
 - Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.
 
 A simple way to implement randomised startup is with an init container:
@@ -1203,11 +1203,11 @@ If the change can't fit into any batch - *it will be skipped.*
 There are 3 options to control batch size for AWS provider:
 
 - Maximum amount of changes added to one batch
-  - `--aws-batch-change-size` (default `1000`)
+    - `--aws-batch-change-size` (default `1000`)
 - Maximum size of changes in bytes added to one batch
-  - `--aws-batch-change-size-bytes` (default `32000`)
+    - `--aws-batch-change-size-bytes` (default `32000`)
 - Maximum value count of changes added to one batch
-  - `aws-batch-change-size-values` (default `1000`)
+    - `aws-batch-change-size-values` (default `1000`)
 
 `aws-batch-change-size` can be very useful for throttling purposes and can be set to any value.
 
