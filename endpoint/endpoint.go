@@ -245,7 +245,7 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
-	// TODO: should be an array, as endpoints merged from multiple sources may have multiple owners
+	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
 	// +optional
 	refObject *ObjectRef `json:"-"`
 }
