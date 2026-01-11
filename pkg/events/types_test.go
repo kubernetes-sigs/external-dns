@@ -24,14 +24,15 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	runtime "sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestNewObjectReference(t *testing.T) {
 	tests := []struct {
 		name     string
-		obj      runtime.Object
+		obj      ctrlruntime.Object
 		source   string
 		expected *ObjectReference
 	}{
@@ -170,6 +171,41 @@ func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
 	// But the ObjectReference should have the correct values
 	require.Equal(t, "Pod", ref.Kind)
 	require.Equal(t, "v1", ref.ApiVersion)
+}
+
+// customObject is a type not registered in the scheme, used to test reflection fallback
+type customObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+func (c *customObject) DeepCopyObject() runtime.Object {
+	return &customObject{
+		TypeMeta:   c.TypeMeta,
+		ObjectMeta: *c.ObjectMeta.DeepCopy(),
+	}
+}
+
+func TestNewObjectReference_ReflectionFallback(t *testing.T) {
+	// Test that when object type is not in scheme, reflection is used to get Kind
+	obj := &customObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "custom-resource",
+			Namespace: "custom-ns",
+			UID:       "custom-uid-123",
+		},
+	}
+
+	ref := NewObjectReference(obj, "custom")
+
+	// Kind should be derived from reflection (struct name)
+	require.Equal(t, "customObject", ref.Kind)
+	// APIVersion will be empty since it's not in scheme
+	require.Equal(t, "", ref.ApiVersion)
+	require.Equal(t, "custom-ns", ref.Namespace)
+	require.Equal(t, "custom-resource", ref.Name)
+	require.Equal(t, "custom-uid-123", string(ref.UID))
+	require.Equal(t, "custom", ref.Source)
 }
 
 func TestSanitize(t *testing.T) {
@@ -319,12 +355,12 @@ type mockEndpointInfo struct {
 	refObject  *ObjectReference
 }
 
-func (m *mockEndpointInfo) GetDNSName() string           { return m.dnsName }
-func (m *mockEndpointInfo) GetRecordType() string        { return m.recordType }
-func (m *mockEndpointInfo) GetRecordTTL() int64          { return m.recordTTL }
-func (m *mockEndpointInfo) GetTargets() []string         { return m.targets }
-func (m *mockEndpointInfo) GetOwner() string             { return m.owner }
-func (m *mockEndpointInfo) RefObject() *ObjectReference  { return m.refObject }
+func (m *mockEndpointInfo) GetDNSName() string          { return m.dnsName }
+func (m *mockEndpointInfo) GetRecordType() string       { return m.recordType }
+func (m *mockEndpointInfo) GetRecordTTL() int64         { return m.recordTTL }
+func (m *mockEndpointInfo) GetTargets() []string        { return m.targets }
+func (m *mockEndpointInfo) GetOwner() string            { return m.owner }
+func (m *mockEndpointInfo) RefObject() *ObjectReference { return m.refObject }
 
 func TestNewEventFromEndpoint(t *testing.T) {
 	tests := []struct {

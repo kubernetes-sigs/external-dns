@@ -163,7 +163,6 @@ func (e *Event) EventType() EventType {
 }
 
 func (e *Event) event() *eventsv1.Event {
-	// if deletion event, not an issue
 	if e.ref.Name == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
