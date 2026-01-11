@@ -21,6 +21,7 @@ import (
 	"errors"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -28,7 +29,7 @@ import (
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
-		Metadata: itemMetadata{
+		Metadata: metav1.ObjectMeta{
 			Namespace:   ns,
 			Name:        name,
 			Annotations: annotations,
