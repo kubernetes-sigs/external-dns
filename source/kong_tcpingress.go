@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -88,7 +89,7 @@ func NewKongTCPIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 

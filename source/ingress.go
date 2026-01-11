@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
@@ -112,7 +113,7 @@ func NewIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 

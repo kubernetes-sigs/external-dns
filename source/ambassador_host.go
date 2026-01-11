@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	log "github.com/sirupsen/logrus"
@@ -100,7 +101,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 

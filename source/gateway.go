@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -199,14 +200,14 @@ func newGatewayRouteSource(
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := informers.WaitForCacheSync(ctx, rtInformerFactory, time.Minute*2); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 
