@@ -307,8 +307,22 @@ args:
 Combine annotation key and value filters:
 
 ```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    dns/primary: api.example.com
+    dns/secondary: api-backup.example.com
+    other/hostname: internal.other.org  # Won't match - value doesn't contain "example.com"
+    logging/level: debug                # Won't match - key doesn't contain "dns/"
+```
+
+```yml
 args:
   --fqdn-template='{{ if eq .Kind "Service" }}{{ range $k, $v := .Annotations }}{{ if and (contains $k "dns/") (contains $v "example.com") }}{{ $v }}{{ printf "," }}{{ end }}{{ end }}{{ end }}'
+
+# Result: api.example.com, api-backup.example.com
 ```
 
 ### Combining Kind and Label Filters
@@ -329,13 +343,13 @@ You can also support regional variants or multi-tenant architectures, where the 
 
 ```yaml
 --fqdn-template='{{ .Name }}.{{ .Labels.env }}.{{ .Labels.region }}.example.com, {{ if eq .Labels.env "prod" }}{{ .Name }}.my-company.tld{{ end }}'
-```
 
-With additional context (e.g., annotations), this can produce FQDNs like:
+# Generates FQDNs for resources with labels env and region
+# For a Service named "api" with labels env=prod, region=us-east-1:
+# Result: api.prod.us-east-1.example.com, api.my-company.tld
 
-```yml
-api.prod.us-east-1.example.com
-api.my-company.tld
+# For a Service named "api" with labels env=staging, region=eu-west-1:
+# Result: api.staging.eu-west-1.example.com
 ```
 
 This is helpful in scenarios such as:
