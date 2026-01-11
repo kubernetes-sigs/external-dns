@@ -376,7 +376,7 @@ ExternalDNS can resolve this by automatically deleting the conflicting Global re
 
 To enable this automatic conflict resolution, you must explicitly set the following flag:
 
-```
+```text
 --cloudflare-region-key-conflict-resolution
 ```
 
