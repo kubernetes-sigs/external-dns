@@ -1133,6 +1133,12 @@ func (p *CloudFlareProvider) resolveIdenticalRecordConflict(ctx context.Context,
 	// We list all records in the zone (ignoring Name/Type filters in the API call to avoid SDK typing issues or API filtering quirks)
 	// and filter manually.
 
+	// check if the user has enabled the conflicting record deletion feature
+	if !p.RegionalServicesConfig.ConflictingRecordDeletion {
+		log.Warnf("Identical record found for %s (%s) but --cloudflare-region-key-conflict-resolution is not enabled.", record.Name, record.Type)
+		return fmt.Errorf("identical record already exists and conflict resolution is disabled; enable --cloudflare-region-key-conflict-resolution to automatically delete the conflicting global record")
+	}
+
 	log.Infof("Attempting to find and delete conflicting record for %s (%s)", record.Name, record.Type)
 
 	params := dns.RecordListParams{

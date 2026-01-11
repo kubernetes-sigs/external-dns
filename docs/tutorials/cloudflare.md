@@ -368,10 +368,19 @@ For the most up-to-date list and details, see the [Cloudflare Regional Services 
 
 Currently, requires SuperAdmin or Admin role.
 
-### Conflict Resolution (Data Localization)
+### Conflict Resolution with Data Localization
 
-When using `--cloudflare-region-key` (or the annotation), ExternalDNS may encounter "Identical record already exists" (81058) errors if a Global record matching the name already exists (since Regional keys cannot "see" Global records).
-ExternalDNS will automatically resolve this conflict by identifying and deleting the conflicting Global record, then creating the new Regional record.
+When using Data Localization (Region Keys), a conflict may occur if a Global record with the same name and type already exists (Error 81058 "Identical record already exists"). The Cloudflare API does not allow creating a regional record that overlaps with an existing global record.
+
+ExternalDNS can resolve this by automatically deleting the conflicting Global record and replacing it with the new Regional record. **However, this behavior is destructive and disabled by default.**
+
+To enable this automatic conflict resolution, you must explicitly set the following flag:
+
+```
+--cloudflare-region-key-conflict-resolution
+```
+
+**Warning:** Enabling this flag allows ExternalDNS to delete records that it may not have created (if they are existing Global records). Ensure this is the desired behavior for your zone.
 
 ## Setting cloudflare-custom-hostname
 

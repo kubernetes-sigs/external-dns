@@ -100,6 +100,9 @@ func TestResolveIdenticalRecordConflict(t *testing.T) {
 
 	provider := &CloudFlareProvider{
 		Client: mockClient,
+		RegionalServicesConfig: RegionalServicesConfig{
+			ConflictingRecordDeletion: true,
+		},
 	}
 
 	// Define the change
@@ -150,4 +153,53 @@ func TestResolveIdenticalRecordConflict(t *testing.T) {
 
 	// Verify createAttempts
 	assert.Equal(t, 2, mockClient.createAttempts)
+}
+
+func TestResolveIdenticalRecordConflict_Disabled(t *testing.T) {
+	// Setup
+	baseMock := NewMockCloudFlareClient()
+	conflictingRecord := dns.RecordResponse{
+		ID:      "existing-global-id",
+		Name:    "conflict.bar.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     300,
+		Content: "9.9.9.9",
+	}
+	baseMock.Records["001"]["existing-global-id"] = conflictingRecord
+
+	mockClient := &ConflictMockClient{
+		mockCloudFlareClient: baseMock,
+	}
+
+	provider := &CloudFlareProvider{
+		Client: mockClient,
+		RegionalServicesConfig: RegionalServicesConfig{
+			ConflictingRecordDeletion: false, // Explicitly disabled
+		},
+	}
+
+	ep := &endpoint.Endpoint{
+		DNSName:    "conflict.bar.com",
+		RecordType: "A",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+	}
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{ep},
+	}
+
+	// Execute
+	err := provider.ApplyChanges(context.Background(), changes)
+
+	// Verify
+	// Should return error because conflict resolution failed (and thus Create failed)
+	assert.Error(t, err)
+	// We cannot assert exact error message because submitChanges wraps errors into a generic soft error.
+	// But failure is expected.
+
+	// Check actions - Should contain NO Delete
+	actions := mockClient.Actions
+	for _, a := range actions {
+		assert.NotEqual(t, "Delete", a.Name, "Should not delete record when flag is disabled")
+	}
 }

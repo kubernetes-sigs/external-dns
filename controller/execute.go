@@ -229,8 +229,9 @@ func buildProvider(
 			cfg.CloudflareProxied,
 			cfg.DryRun,
 			cloudflare.RegionalServicesConfig{
-				Enabled:   cfg.CloudflareRegionalServices,
-				RegionKey: cfg.CloudflareRegionKey,
+				Enabled:                   cfg.CloudflareRegionalServices,
+				RegionKey:                 cfg.CloudflareRegionKey,
+				ConflictingRecordDeletion: cfg.CloudflareDataLocalizationConflictResolution,
 			},
 			cloudflare.CustomHostnamesConfig{
 				Enabled:              cfg.CloudflareCustomHostnames,

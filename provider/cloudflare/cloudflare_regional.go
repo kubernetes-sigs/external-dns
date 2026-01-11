@@ -32,8 +32,9 @@ import (
 )
 
 type RegionalServicesConfig struct {
-	Enabled   bool
-	RegionKey string
+	Enabled                   bool
+	RegionKey                 string
+	ConflictingRecordDeletion bool
 }
 
 var recordTypeRegionalHostnameSupported = map[string]bool{
