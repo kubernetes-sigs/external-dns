@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -194,10 +193,10 @@ func newGatewayRouteSource(
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
-	informerFactory.Start(wait.NeverStop)
-	kubeInformerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
+	kubeInformerFactory.Start(ctx.Done())
 	if rtInformerFactory != informerFactory {
-		rtInformerFactory.Start(wait.NeverStop)
+		rtInformerFactory.Start(ctx.Done())
 
 		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 			return nil, err
