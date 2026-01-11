@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// TODO:
+// support
+// - set-identifier for endpoints created
+// - set resource aka fmt.Sprintf("pod/%s/%s", pod.Namespace, pod.Name)
 package source
 
 import (

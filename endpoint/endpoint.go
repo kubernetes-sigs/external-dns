@@ -312,7 +312,7 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
-// GetBoolProperty returns a boolean provider-specific property value.
+// GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
 func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 	prop, ok := e.GetProviderSpecificProperty(key)
 	if !ok {
@@ -398,6 +398,18 @@ func (e *Endpoint) String() string {
 
 func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
+}
+
+// TODO: test
+func (e *Endpoint) EventMsg() string {
+	var owner string
+	if val, ok := e.Labels[OwnerLabelKey]; ok {
+		owner = val
+	} else {
+		owner = e.SetIdentifier
+	}
+	return fmt.Sprintf("(external-dns) record:%s,owner:%s,type:%s,ttl:%d,targets:%s",
+		e.DNSName, owner, e.RecordType, e.RecordTTL, strings.Join(e.Targets, ","))
 }
 
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes

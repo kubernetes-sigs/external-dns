@@ -29,12 +29,12 @@ func emitChangeEvent(e events.EventEmitter, ch plan.Changes, reason events.Reaso
 		return
 	}
 	for _, change := range ch.Create {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionCreate, reason))
+		e.Add(events.NewEvent(change.RefObject(), change.EventMsg(), events.ActionCreate, reason))
 	}
 	for _, change := range ch.UpdateNew {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionUpdate, reason))
+		e.Add(events.NewEvent(change.RefObject(), change.EventMsg(), events.ActionUpdate, reason))
 	}
 	for _, change := range ch.Delete {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionDelete, events.RecordDeleted))
+		e.Add(events.NewEvent(change.RefObject(), change.EventMsg(), events.ActionDelete, events.RecordDeleted))
 	}
 }

@@ -18,6 +18,7 @@ package events
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -27,8 +28,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes/scheme"
 	runtime "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -85,6 +88,20 @@ type (
 )
 
 func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
+	// TODO: test me
+	// TODO: most likely should be in common package
+	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
+	// objects via informers. Set it so templates can use .Kind and .APIVersion
+	if obj.GetObjectKind().GroupVersionKind().Kind == "" {
+		gv, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gv) > 0 {
+			obj.GetObjectKind().SetGroupVersionKind(gv[0])
+		} else {
+			// Fallback to reflection for types not in scheme
+			kind := reflect.TypeOf(obj).Elem().Name()
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+		}
+	}
 	return &ObjectReference{
 		Kind:       obj.GetObjectKind().GroupVersionKind().Kind,
 		ApiVersion: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
@@ -126,6 +143,7 @@ func (e *Event) EventType() EventType {
 }
 
 func (e *Event) event() *eventsv1.Event {
+	// if deletion event, not an issue
 	if e.ref.Name == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
@@ -138,10 +156,17 @@ func (e *Event) event() *eventsv1.Event {
 
 	timestamp := metav1.MicroTime{Time: time.Now()}
 
+	// Events are namespaced resources. For cluster-scoped objects like Nodes,
+	// the namespace is empty, so we default to "default" namespace.
+	namespace := e.ref.Namespace
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	event := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sanitize(e.ref.Name),
-			Namespace: e.ref.Namespace,
+			Namespace: namespace,
 		},
 		EventTime:           timestamp,
 		ReportingInstance:   controllerName + "/source/" + e.ref.Source,

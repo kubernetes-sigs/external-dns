@@ -75,8 +75,8 @@ func (ec *Controller) Run(ctx context.Context) {
 }
 
 func (ec *Controller) run(ctx context.Context) {
-	log.Info("event Controller started")
-	defer log.Info("event Controller terminated")
+	log.Debug("event Controller started")
+	defer log.Debug("event Controller terminated")
 	defer utilruntime.HandleCrash()
 	var waitGroup wait.Group
 	for range workers {
@@ -138,6 +138,6 @@ func (ec *Controller) emit(event *eventsv1.Event) {
 		log.Debugf("skipping event %s/%s/%s with reason %s as not configured to emit", event.Kind, event.Namespace, event.Name, event.Reason)
 		return
 	}
-	event.ReportingController = controllerName + "-" + ec.hostname
+	event.ReportingController = controllerName
 	ec.queue.Add(event)
 }
