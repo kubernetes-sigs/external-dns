@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
@@ -198,7 +197,6 @@ type ClientGenerator interface {
 	IstioClient() (istioclient.Interface, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
 	OpenShiftClient() (openshift.Interface, error)
-	EventsClient() (v1.EventsV1Interface, error)
 }
 
 // SingletonClientGenerator stores provider clients and guarantees that only one instance of each client
@@ -284,18 +282,6 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 		p.openshiftClient, err = NewOpenShiftClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.openshiftClient, err
-}
-
-// EventsClient returns the events client from the shared Kubernetes clientset.
-// This ensures the events client shares the same HTTP transport, connection pool,
-// and rate limiter as other Kubernetes API clients, preventing independent rate
-// limit exhaustion.
-func (p *SingletonClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
-	client, err := p.KubeClient()
-	if err != nil {
-		return nil, err
-	}
-	return client.EventsV1(), nil
 }
 
 // ByNames returns multiple Sources given multiple names.

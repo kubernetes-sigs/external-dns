@@ -380,11 +380,11 @@ func buildController(
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventsClient, err := sCfg.ClientGenerator().EventsClient()
+		kubeClient, err := sCfg.ClientGenerator().KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		eventCtrl, err := events.NewEventController(eventsClient, eventsCfg)
+		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
 		if err != nil {
 			return nil, err
 		}

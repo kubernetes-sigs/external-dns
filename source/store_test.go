@@ -35,7 +35,6 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
-	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
 	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -47,7 +46,6 @@ type MockClientGenerator struct {
 	istioClient             istioclient.Interface
 	dynamicKubernetesClient dynamic.Interface
 	openshiftClient         openshift.Interface
-	eventsClient            v1.EventsV1Interface
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -91,15 +89,6 @@ func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	if args.Error(1) == nil {
 		m.openshiftClient = args.Get(0).(openshift.Interface)
 		return m.openshiftClient, nil
-	}
-	return nil, args.Error(1)
-}
-
-func (m *MockClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
-	args := m.Called()
-	if args.Error(1) == nil {
-		m.eventsClient = args.Get(0).(v1.EventsV1Interface)
-		return m.eventsClient, nil
 	}
 	return nil, args.Error(1)
 }
@@ -275,9 +264,6 @@ func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interfac
 	return nil, errMock
 }
 func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
-	return nil, errMock
-}
-func (m *minimalMockClientGenerator) EventsClient() (v1.EventsV1Interface, error) {
 	return nil, errMock
 }
 
