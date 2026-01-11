@@ -35,7 +35,7 @@ import (
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/pkg/kubeclient"
+	"sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/source/types"
 )
 

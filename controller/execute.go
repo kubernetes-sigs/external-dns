@@ -131,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, sourceCfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
