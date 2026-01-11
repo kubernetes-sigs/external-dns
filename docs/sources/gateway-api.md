@@ -37,20 +37,24 @@ requests/connections won't recognize additional hostnames from the annotation.
 
 ## Annotations
 
-### Annotation Placement
+### Annotation Inheritance
 
-ExternalDNS reads different annotations from different Gateway API resources:
+ExternalDNS supports annotation inheritance from Gateway to Route resources. This allows you to:
 
-- **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
-- **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
-  resources (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute)
+- Set **default annotations** on Gateway that apply to all attached Routes
+- **Override** specific annotations on individual Routes when needed
 
-This separation aligns with Gateway API architecture where Gateway defines infrastructure (IP addresses, listeners)
-and Routes define application-level DNS records.
+**Inheritance rules:**
+
+1. Gateway annotations serve as **defaults** for all Routes attached to that Gateway
+2. Route annotations **override** Gateway annotations when both specify the same key
+3. Each Route is independent — one Route's annotations don't affect other Routes
+
+This approach reduces configuration duplication while maintaining flexibility for per-Route customization.
 
 ### Examples
 
-#### Example: Cloudflare Proxied Records
+#### Example: Centralized Defaults with Per-Route Overrides
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -59,8 +63,12 @@ metadata:
   name: my-gateway
   namespace: default
   annotations:
-    # ✅ Correct: target annotation on Gateway
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    # Default target for all Routes (intranet)
+    external-dns.alpha.kubernetes.io/target: "172.16.6.6"
+    # Default TTL for all Routes
+    external-dns.alpha.kubernetes.io/ttl: "300"
+    # Default Cloudflare proxy setting
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
   gatewayClassName: cilium
   listeners:
@@ -72,15 +80,32 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: my-route
-  annotations:
-    # ✅ Correct: provider-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
+  name: internal-api
+  # No annotations — inherits all defaults from Gateway:
+  # target=172.16.6.6, ttl=300, cloudflare-proxied=true
 spec:
   parentRefs:
     - name: my-gateway
-      namespace: default
+  hostnames:
+    - api.internal.example.com
+  rules:
+    - backendRefs:
+        - name: api-service
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: external-api
+  annotations:
+    # Override: use external IP instead of intranet
+    external-dns.alpha.kubernetes.io/target: "1.2.3.4"
+    # Override: shorter TTL for external endpoint
+    external-dns.alpha.kubernetes.io/ttl: "60"
+    # Inherits cloudflare-proxied=true from Gateway
+spec:
+  parentRefs:
+    - name: my-gateway
   hostnames:
     - api.example.com
   rules:
@@ -88,6 +113,40 @@ spec:
         - name: api-service
           port: 8080
 ```
+
+**Result:**
+
+- `api.internal.example.com` → A record `172.16.6.6`, TTL 300, Cloudflare proxied
+- `api.example.com` → A record `1.2.3.4`, TTL 60, Cloudflare proxied
+
+#### Example: Different Record Types (A vs CNAME)
+
+Routes can override Gateway's IP target with a hostname to create CNAME records:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  annotations:
+    # Default: A record pointing to load balancer IP
+    external-dns.alpha.kubernetes.io/target: "10.0.0.1"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cdn-route
+  annotations:
+    # Override: CNAME record pointing to CDN
+    external-dns.alpha.kubernetes.io/target: "cdn.cloudprovider.com"
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - static.example.com
+```
+
+**Result:** `static.example.com` → CNAME record `cdn.cloudprovider.com`
 
 #### Example: AWS Route53 with Routing Policies
 
@@ -97,17 +156,18 @@ kind: Gateway
 metadata:
   name: aws-gateway
   annotations:
-    # ✅ Correct: target annotation on Gateway
     external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+    # Default set-identifier for all Routes
+    external-dns.alpha.kubernetes.io/set-identifier: "default"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: weighted-route
   annotations:
-    # ✅ Correct: AWS-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/aws-weight: "100"
+    # Override set-identifier for this specific Route
     external-dns.alpha.kubernetes.io/set-identifier: "backend-v1"
+    external-dns.alpha.kubernetes.io/aws-weight: "100"
 spec:
   parentRefs:
     - name: aws-gateway
@@ -115,31 +175,8 @@ spec:
     - app.example.com
 ```
 
-### Common Mistakes
-
-❌ **Incorrect**: Placing provider-specific annotations on Gateway
-
-```yaml
-kind: Gateway
-metadata:
-  annotations:
-    # ❌ These annotations are ignored on Gateway
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
-```
-
-❌ **Incorrect**: Placing target annotation on HTTPRoute
-
-```yaml
-kind: HTTPRoute
-metadata:
-  annotations:
-    # ❌ This annotation is ignored on Routes
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
-```
-
 For a complete list of supported annotations, see the
-[annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
+[annotations documentation](../annotations/annotations.md).
 
 ## Manifest with RBAC
 

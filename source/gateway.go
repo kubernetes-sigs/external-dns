@@ -271,21 +271,25 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		}
 
 		// Get Route hostnames and their targets.
-		hostTargets, err := resolver.resolve(rt)
+		result, err := resolver.resolve(rt)
 		if err != nil {
 			return nil, err
 		}
-		if len(hostTargets) == 0 {
+		if len(result.hostTargets) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
 
+		// Merge Gateway and Route annotations.
+		// Route annotations override Gateway annotations.
+		mergedAnnots := mergeAnnotations(result.gwAnnotations, annots)
+
 		// Create endpoints from hostnames and targets.
 		var routeEndpoints []*endpoint.Endpoint
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
-		ttl := annotations.TTLFromAnnotations(annots, resource)
-		for host, targets := range hostTargets {
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(mergedAnnots)
+		ttl := annotations.TTLFromAnnotations(mergedAnnots, resource)
+		for host, targets := range result.hostTargets {
 			routeEndpoints = append(routeEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
@@ -308,6 +312,25 @@ type gatewayRouteResolver struct {
 type gatewayListeners struct {
 	gateway   *v1beta1.Gateway
 	listeners map[v1.SectionName][]v1.Listener
+}
+
+// resolveResult contains the result of resolving a Route to its targets and Gateway annotations.
+type resolveResult struct {
+	hostTargets   map[string]endpoint.Targets
+	gwAnnotations map[string]string
+}
+
+// mergeAnnotations merges Gateway and Route annotations.
+// Route annotations take precedence over Gateway annotations.
+func mergeAnnotations(gateway, route map[string]string) map[string]string {
+	merged := make(map[string]string, len(gateway)+len(route))
+	for k, v := range gateway {
+		merged[k] = v
+	}
+	for k, v := range route {
+		merged[k] = v
+	}
+	return merged
 }
 
 func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
@@ -336,18 +359,19 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gatewa
 	}
 }
 
-func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
+func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (*resolveResult, error) {
 	rtHosts, err := c.hosts(rt)
 	if err != nil {
 		return nil, err
 	}
 	hostTargets := make(map[string]endpoint.Targets)
+	var gwAnnotations map[string]string
 
 	routeParentRefs := rt.ParentRefs()
 
 	if len(routeParentRefs) == 0 {
 		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
-		return hostTargets, nil
+		return &resolveResult{hostTargets: hostTargets, gwAnnotations: gwAnnotations}, nil
 	}
 
 	meta := rt.Metadata()
@@ -385,6 +409,16 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 
+		// Capture Gateway annotations from first matched Gateway for inheritance.
+		// Route annotations will override these in Endpoints().
+		if gwAnnotations == nil {
+			gwAnnotations = gw.gateway.Annotations
+		}
+
+		// Merge Gateway and Route annotations for target resolution.
+		// Route target annotation overrides Gateway target annotation.
+		mergedAnnots := mergeAnnotations(gw.gateway.Annotations, meta.Annotations)
+
 		// Match the Route to all possible Listeners.
 		match := false
 		section := sectionVal(ref.SectionName, "")
@@ -421,7 +455,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
+				override := annotations.TargetsFromTargetAnnotation(mergedAnnots)
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
@@ -440,7 +474,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	for host, targets := range hostTargets {
 		hostTargets[host] = uniqueTargets(targets)
 	}
-	return hostTargets, nil
+	return &resolveResult{hostTargets: hostTargets, gwAnnotations: gwAnnotations}, nil
 }
 
 func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
