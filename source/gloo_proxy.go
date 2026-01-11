@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -165,10 +166,10 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 
