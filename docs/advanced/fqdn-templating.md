@@ -1,3 +1,7 @@
+---
+tags: ["advanced", "area/fqdn", "fqdn", "templating"]
+---
+
 # FQDN Templating Guide
 
 ## What is FQDN Templating?
