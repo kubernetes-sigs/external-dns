@@ -43,6 +43,14 @@ import (
 // and the Route status' canonicalHostname field as the target.
 // The annotations.TargetKey can be used to explicitly set an alternative
 // endpoint, if desired.
+//
+// +externaldns:source:name=openshift-route
+// +externaldns:source:category=OpenShift
+// +externaldns:source:description=Creates DNS entries from OpenShift Route resources
+// +externaldns:source:resources=Route.route.openshift.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
@@ -141,17 +149,14 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
-		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
-			oEndpoints, err := ors.endpointsFromTemplate(ocpRoute)
-			if err != nil {
-				return nil, err
-			}
-
-			if ors.combineFQDNAnnotation {
-				orEndpoints = append(orEndpoints, oEndpoints...)
-			} else {
-				orEndpoints = oEndpoints
-			}
+		orEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			orEndpoints,
+			ors.fqdnTemplate,
+			ors.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return ors.endpointsFromTemplate(ocpRoute) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(orEndpoints) == 0 {

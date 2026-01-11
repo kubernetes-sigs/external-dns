@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -84,9 +83,6 @@ type Config struct {
 	KubeConfig                     string
 	APIServerURL                   string
 	ServiceTypeFilter              []string
-	CFAPIEndpoint                  string
-	CFUsername                     string
-	CFPassword                     string
 	GlooNamespaces                 []string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
@@ -99,11 +95,10 @@ type Config struct {
 	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
-
-	ExcludeTargetNets []string
-	TargetNetFilter   []string
-	NAT64Networks     []string
-	MinTTL            time.Duration
+	ExcludeTargetNets              []string
+	TargetNetFilter                []string
+	NAT64Networks                  []string
+	MinTTL                         time.Duration
 
 	sources []string
 
@@ -141,9 +136,6 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		KubeConfig:                     cfg.KubeConfig,
 		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
-		CFUsername:                     cfg.CFUsername,
-		CFPassword:                     cfg.CFPassword,
 		GlooNamespaces:                 cfg.GlooNamespaces,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
@@ -156,12 +148,11 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
-
-		ExcludeTargetNets: cfg.ExcludeTargetNets,
-		TargetNetFilter:   cfg.TargetNetFilter,
-		NAT64Networks:     cfg.NAT64Networks,
-		MinTTL:            cfg.MinTTL,
-		sources:           cfg.Sources,
+		ExcludeTargetNets:              cfg.ExcludeTargetNets,
+		TargetNetFilter:                cfg.TargetNetFilter,
+		NAT64Networks:                  cfg.NAT64Networks,
+		MinTTL:                         cfg.MinTTL,
+		sources:                        cfg.Sources,
 	}
 }
 
@@ -174,19 +165,17 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 func (cfg *Config) ClientGenerator() *SingletonClientGenerator {
 	cfg.clientGenOnce.Do(func() {
 		cfg.clientGen = &SingletonClientGenerator{
-			KubeConfig:     cfg.KubeConfig,
-			APIServerURL:   cfg.APIServerURL,
-			RequestTimeout: cfg.getClientRequestTimeout(),
+			KubeConfig:   cfg.KubeConfig,
+			APIServerURL: cfg.APIServerURL,
+			RequestTimeout: func() time.Duration {
+				if cfg.UpdateEvents {
+					return 0
+				}
+				return cfg.RequestTimeout
+			}(),
 		}
 	})
 	return cfg.clientGen
-}
-
-func (cfg *Config) getClientRequestTimeout() time.Duration {
-	if cfg.UpdateEvents {
-		return 0
-	}
-	return cfg.RequestTimeout
 }
 
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
@@ -198,7 +187,6 @@ func (cfg *Config) getClientRequestTimeout() time.Duration {
 // - KubeClient: Standard Kubernetes API client
 // - GatewayClient: Gateway API client for Gateway resources
 // - IstioClient: Istio service mesh client
-// - CloudFoundryClient: CloudFoundry platform client
 // - DynamicKubernetesClient: Dynamic client for custom resources
 // - OpenShiftClient: OpenShift-specific client for Route resources
 //
@@ -208,7 +196,6 @@ type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
 	GatewayClient() (gateway.Interface, error)
 	IstioClient() (istioclient.Interface, error)
-	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
 	OpenShiftClient() (openshift.Interface, error)
 	EventsClient() (v1.EventsV1Interface, error)
@@ -232,13 +219,11 @@ type SingletonClientGenerator struct {
 	kubeClient      kubernetes.Interface
 	gatewayClient   gateway.Interface
 	istioClient     *istioclient.Clientset
-	cfClient        *cfclient.Client
 	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
 	gatewayOnce     sync.Once
 	istioOnce       sync.Once
-	cfOnce          sync.Once
 	dynCliOnce      sync.Once
 	openshiftOnce   sync.Once
 }
@@ -283,30 +268,6 @@ func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) 
 	return p.istioClient, err
 }
 
-// CloudFoundryClient generates a cf client if it was not created before
-func (p *SingletonClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	var err error
-	p.cfOnce.Do(func() {
-		p.cfClient, err = NewCFClient(cfAPIEndpoint, cfUsername, cfPassword)
-	})
-	return p.cfClient, err
-}
-
-// NewCFClient return a new CF client object.
-func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	c := &cfclient.Config{
-		ApiAddress: "https://" + cfAPIEndpoint,
-		Username:   cfUsername,
-		Password:   cfPassword,
-	}
-	client, err := cfclient.NewClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
 // DynamicKubernetesClient generates a dynamic client if it was not created before
 func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	var err error
@@ -338,8 +299,8 @@ func (p *SingletonClientGenerator) EventsClient() (v1.EventsV1Interface, error) 
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(ctx context.Context, p ClientGenerator, cfg *Config) ([]Source, error) {
-	sources := make([]Source, len(cfg.sources))
+func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
+	sources := make([]Source, 0, len(cfg.sources))
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
@@ -367,7 +328,6 @@ func ByNames(ctx context.Context, p ClientGenerator, cfg *Config) ([]Source, err
 // - "pod": Kubernetes pods
 // - "gateway-*": Gateway API resources (httproute, grpcroute, tlsroute, tcproute, udproute)
 // - "istio-*": Istio resources (gateway, virtualservice)
-// - "cloudfoundry": CloudFoundry applications
 // - "ambassador-host": Ambassador Host resources
 // - "contour-httpproxy": Contour HTTPProxy resources
 // - "gloo-proxy": Gloo proxy resources
@@ -406,8 +366,6 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildIstioGatewaySource(ctx, p, cfg)
 	case types.IstioVirtualService:
 		return buildIstioVirtualServiceSource(ctx, p, cfg)
-	case types.Cloudfoundry:
-		return buildCloudFoundrySource(ctx, p, cfg)
 	case types.AmbassadorHost:
 		return buildAmbassadorHostSource(ctx, p, cfg)
 	case types.ContourHTTPProxy:
@@ -535,16 +493,6 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 		return nil, err
 	}
 	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
-}
-
-// buildCloudFoundrySource creates a CloudFoundry source for exposing CF applications as DNS records.
-// Uses CloudFoundry client instead of Kubernetes client. Simple constructor with minimal parameters.
-func buildCloudFoundrySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
-	cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
-	if err != nil {
-		return nil, err
-	}
-	return NewCloudFoundrySource(cfClient)
 }
 
 func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {

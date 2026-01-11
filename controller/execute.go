@@ -108,8 +108,8 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	sourceCfg := source.NewSourceConfig(cfg)
-	endpointsSource, err := buildSource(ctx, sourceCfg)
+	sCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -169,8 +169,8 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
-	// TODO: refactor to move this to provider package, conver with tests
 	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: refactor to move this to provider package, cover with tests
 	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
@@ -422,7 +422,7 @@ func configureLogger(cfg *externaldns.Config) {
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
 func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg.ClientGenerator(), cfg)
+	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
 	if err != nil {
 		return nil, err
 	}

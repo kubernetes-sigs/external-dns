@@ -17,12 +17,16 @@ limitations under the License.
 package fqdn
 
 import (
+	"errors"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestParseTemplate(t *testing.T) {
@@ -430,4 +434,104 @@ func TestExecTemplateExecutionError(t *testing.T) {
 	_, err = ExecTemplate(tmpl, obj)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to apply template on TestKind default/test-name")
+}
+
+func TestCombineWithTemplatedEndpoints(t *testing.T) {
+	// Create a dummy template for tests that need one
+	dummyTemplate := template.Must(template.New("test").Parse("{{.Name}}"))
+
+	annotationEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	templatedEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("template.example.com", endpoint.RecordTypeA, "5.6.7.8"),
+	}
+
+	successTemplateFunc := func() ([]*endpoint.Endpoint, error) {
+		return templatedEndpoints, nil
+	}
+	errorTemplateFunc := func() ([]*endpoint.Endpoint, error) {
+		return nil, errors.New("template error")
+	}
+
+	tests := []struct {
+		name                  string
+		endpoints             []*endpoint.Endpoint
+		fqdnTemplate          *template.Template
+		combineFQDNAnnotation bool
+		templateFunc          func() ([]*endpoint.Endpoint, error)
+		want                  []*endpoint.Endpoint
+		wantErr               bool
+	}{
+		{
+			name:         "nil template returns original endpoints",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: nil,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
+		},
+		{
+			name:         "combine=false with existing endpoints returns original",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
+		},
+		{
+			name:         "combine=false with empty endpoints returns templated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
+		},
+		{
+			name:                  "combine=true appends templated to existing",
+			endpoints:             annotationEndpoints,
+			fqdnTemplate:          dummyTemplate,
+			combineFQDNAnnotation: true,
+			templateFunc:          successTemplateFunc,
+			want:                  append(annotationEndpoints, templatedEndpoints...),
+		},
+		{
+			name:                  "combine=true with empty endpoints returns templated",
+			endpoints:             []*endpoint.Endpoint{},
+			fqdnTemplate:          dummyTemplate,
+			combineFQDNAnnotation: true,
+			templateFunc:          successTemplateFunc,
+			want:                  templatedEndpoints,
+		},
+		{
+			name:         "template error is propagated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: errorTemplateFunc,
+			want:         nil,
+			wantErr:      true,
+		},
+		{
+			name:         "nil endpoints with combine=false returns templated",
+			endpoints:    nil,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CombineWithTemplatedEndpoints(
+				tt.endpoints,
+				tt.fqdnTemplate,
+				tt.combineFQDNAnnotation,
+				tt.templateFunc,
+			)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to get endpoints from template")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

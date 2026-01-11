@@ -51,6 +51,14 @@ const (
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Use annotations.TargetKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
+//
+// +externaldns:source:name=ingress
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Ingress resources
+// +externaldns:source:resources=Ingress
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
@@ -154,13 +162,14 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ing)
-			if err != nil {
-				return nil, err
-			}
-
-			ingEndpoints = append(ingEndpoints, iEndpoints...)
+		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			ingEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(ingEndpoints) == 0 {
