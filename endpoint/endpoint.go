@@ -400,16 +400,32 @@ func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
 
-// TODO: test
-func (e *Endpoint) EventMsg() string {
-	var owner string
+// GetDNSName returns the DNS name of the endpoint.
+func (e *Endpoint) GetDNSName() string {
+	return e.DNSName
+}
+
+// GetRecordType returns the record type of the endpoint.
+func (e *Endpoint) GetRecordType() string {
+	return e.RecordType
+}
+
+// GetRecordTTL returns the TTL of the endpoint as int64.
+func (e *Endpoint) GetRecordTTL() int64 {
+	return int64(e.RecordTTL)
+}
+
+// GetTargets returns the targets of the endpoint.
+func (e *Endpoint) GetTargets() []string {
+	return e.Targets
+}
+
+// GetOwner returns the owner of the endpoint from labels or set identifier.
+func (e *Endpoint) GetOwner() string {
 	if val, ok := e.Labels[OwnerLabelKey]; ok {
-		owner = val
-	} else {
-		owner = e.SetIdentifier
+		return val
 	}
-	return fmt.Sprintf("(external-dns) record:%s,owner:%s,type:%s,ttl:%d,targets:%s",
-		e.DNSName, owner, e.RecordType, e.RecordTTL, strings.Join(e.Targets, ","))
+	return e.SetIdentifier
 }
 
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes

@@ -85,26 +85,35 @@ type (
 		emitEvents sets.Set[Reason]
 		dryRun     bool
 	}
+
+	// EndpointInfo defines the interface for endpoint data needed to create events.
+	// This avoids circular imports between endpoint and events packages.
+	EndpointInfo interface {
+		GetDNSName() string
+		GetRecordType() string
+		GetRecordTTL() int64
+		GetTargets() []string
+		GetOwner() string
+		RefObject() *ObjectReference
+	}
 )
 
 func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
-	// TODO: test me
-	// TODO: most likely should be in common package
 	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
-	// objects via informers. Set it so templates can use .Kind and .APIVersion
-	if obj.GetObjectKind().GroupVersionKind().Kind == "" {
-		gv, _, err := scheme.Scheme.ObjectKinds(obj)
-		if err == nil && len(gv) > 0 {
-			obj.GetObjectKind().SetGroupVersionKind(gv[0])
+	// objects via informers. Look up the Kind from the scheme without mutating the object.
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Kind == "" {
+		gvks, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gvks) > 0 {
+			gvk = gvks[0]
 		} else {
 			// Fallback to reflection for types not in scheme
-			kind := reflect.TypeOf(obj).Elem().Name()
-			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+			gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
 		}
 	}
 	return &ObjectReference{
-		Kind:       obj.GetObjectKind().GroupVersionKind().Kind,
-		ApiVersion: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		Kind:       gvk.Kind,
+		ApiVersion: gvk.GroupVersion().String(),
 		Namespace:  obj.GetNamespace(),
 		Name:       obj.GetName(),
 		UID:        obj.GetUID(),
@@ -124,6 +133,17 @@ func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
 		reason:  r,
 		source:  obj.Source,
 	}
+}
+
+// NewEventFromEndpoint creates an Event from an EndpointInfo with formatted message.
+func NewEventFromEndpoint(ep EndpointInfo, a Action, r Reason) Event {
+	if ep == nil || ep.RefObject() == nil {
+		return Event{}
+	}
+	msg := fmt.Sprintf("(external-dns) record:%s,owner:%s,type:%s,ttl:%d,targets:%s",
+		ep.GetDNSName(), ep.GetOwner(), ep.GetRecordType(), ep.GetRecordTTL(),
+		strings.Join(ep.GetTargets(), ","))
+	return NewEvent(ep.RefObject(), msg, a, r)
 }
 
 func (e *Event) description() string {
