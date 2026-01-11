@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
@@ -97,6 +98,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	suite.NoError(err, "should initialize httpproxy source")
 
@@ -194,6 +196,7 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				time.Duration(0),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1062,6 +1065,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -1089,6 +1093,7 @@ func newTestHTTPProxySource() (*httpProxySource, error) {
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	if err != nil {
 		return nil, err

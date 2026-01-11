@@ -16,7 +16,7 @@ package source
 import (
 	"fmt"
 	"testing"
-
+	"time"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -798,6 +798,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				false,
 				true,
 				true,
+                time.Duration(0),
 			)
 			require.NoError(t, err)
 

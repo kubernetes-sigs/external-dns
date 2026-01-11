@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		"",
+		time.Duration(0),
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -152,6 +154,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 				false,
 				labelSelector,
 				"",
+				time.Duration(0),
 			)
 
 			if ti.expectError {
@@ -537,6 +540,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				false,
 				labelSelector,
 				tc.ocpRouterName,
+                time.Duration(0),
 			)
 			require.NoError(t, err)
 
