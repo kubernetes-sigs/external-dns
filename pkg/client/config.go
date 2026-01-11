@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,11 +16,6 @@ limitations under the License.
 
 // Package kubeclient provides shared utilities for creating Kubernetes REST configurations
 // and clients with standardized metrics instrumentation.
-//
-// This package eliminates code duplication by centralizing the logic for:
-// - Building REST configs from kubeconfig files or in-cluster service accounts
-// - Adding Prometheus metrics instrumentation via HTTP transport wrappers
-// - Configuring request timeouts consistently across all clients
 package kubeclient
 
 import (
@@ -42,9 +37,6 @@ import (
 // 1. If kubeConfig is empty, tries the recommended home file (~/.kube/config)
 // 2. If kubeConfig is still empty, uses in-cluster service account
 // 3. Otherwise, uses the specified kubeConfig file
-//
-// API Server Override: The apiServerURL parameter can override the server URL
-// from the kubeconfig file, useful for proxy scenarios or custom endpoints.
 func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
