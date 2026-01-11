@@ -257,9 +257,35 @@ args:
 ```
 
 ```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-frontend
+spec:
+  selector:
+    app: nginx        # This selector will be used in the FQDN
+    tier: frontend
+  ports:
+    - port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  selector:
+    tier: backend     # Won't generate FQDN - no "app" key in selector
+  ports:
+    - port: 5432
+```
+
+```yml
 # Services with specific selector
 args:
   --fqdn-template='{{ if eq .Kind "Service" }}{{ if index .Spec.Selector "app" }}{{ .Name }}.{{ index .Spec.Selector "app" }}.example.com{{ end }}{{ end }}'
+
+# Result for web-frontend: web-frontend.nginx.example.com
+# Result for database: (no FQDN generated - selector has no "app" key)
 ```
 
 ### Iterating Over Labels with Range
@@ -289,19 +315,43 @@ args:
 Iterate over annotations and filter by key:
 
 ```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    dns.example.com/primary: api.example.com
+    dns.example.com/secondary: api-backup.example.com
+    kubernetes.io/ingress-class: nginx  # Won't match - key doesn't contain "dns.example.com/"
+```
+
+```yml
 args:
   --fqdn-template='{{ range $key, $value := .Annotations }}{{ if contains $key "dns.example.com/" }}{{ $value }}{{ printf "," }}{{ end }}{{ end }}'
 
 # Captures all annotations with keys containing "dns.example.com/"
+# Result: api.example.com, api-backup.example.com
 ```
 
 Filter annotations by value:
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    custom/hostname: api.example.com
+    custom/alias: www.example.com
+    custom/internal: internal.local  # Won't match - value doesn't contain ".example.com"
+```
 
 ```yml
 args:
   --fqdn-template='{{ range $key, $value := .Annotations }}{{ if contains $value ".example.com" }}{{ $value }}{{ printf "," }}{{ end }}{{ end }}'
 
 # Captures all annotation values containing ".example.com"
+# Result: api.example.com, www.example.com
 ```
 
 Combine annotation key and value filters:
