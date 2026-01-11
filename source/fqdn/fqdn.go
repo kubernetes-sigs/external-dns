@@ -59,16 +59,19 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		return nil, fmt.Errorf("object is nil")
 	}
 	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
-	// objects via informers. Set it so templates can use .Kind and .APIVersion
-	if obj.GetObjectKind().GroupVersionKind().Kind == "" {
-		gv, _, err := scheme.Scheme.ObjectKinds(obj)
-		if err == nil && len(gv) > 0 {
-			obj.GetObjectKind().SetGroupVersionKind(gv[0])
+	// objects via informers. because the client already knows what type it requested. This reduces payload size.
+	// Set it so templates can use .Kind and .APIVersion
+	// TODO: all sources to transform Informer().SetTransform()
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Kind == "" {
+		gvks, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gvks) > 0 {
+			gvk = gvks[0]
 		} else {
 			// Fallback to reflection for types not in scheme
-			kind := reflect.TypeOf(obj).Elem().Name()
-			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+			gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
 		}
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
 	}
 
 	var buf bytes.Buffer
