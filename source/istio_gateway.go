@@ -168,7 +168,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
 
-		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
+		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				if err != nil {
 					return nil, err
 				}
-				return sc.endpointsFromGateway(ctx, hostnames, gateway)
+				return sc.endpointsFromGateway(hostnames, gateway)
 			},
 		)
 		if err != nil {
