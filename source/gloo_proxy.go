@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -145,7 +146,7 @@ type glooSource struct {
 
 // NewGlooSource creates a new glooSource with the given config
 func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
-	glooNamespaces []string) (Source, error) {
+	glooNamespaces []string, timeout time.Duration) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
@@ -165,10 +166,10 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory, timeout); err != nil {
 		return nil, err
 	}
 

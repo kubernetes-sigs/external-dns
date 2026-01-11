@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -71,6 +72,7 @@ func NewKongTCPIngressSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
 	namespace, annotationFilter string, ignoreHostnameAnnotation bool,
+	timeout time.Duration,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
@@ -88,7 +90,7 @@ func NewKongTCPIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

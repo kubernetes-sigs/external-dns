@@ -418,7 +418,7 @@ func buildNodeSource(ctx context.Context, p ClientGenerator, cfg *Config) (Sourc
 	if err != nil {
 		return nil, err
 	}
-	return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable, cfg.CombineFQDNAndAnnotation)
+	return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable, cfg.CombineFQDNAndAnnotation, cfg.RequestTimeout)
 }
 
 // buildServiceSource creates a Service source for exposing Kubernetes services as DNS records.
@@ -433,7 +433,7 @@ func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 		cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP,
 		cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation,
 		cfg.LabelFilter, cfg.ResolveLoadBalancerHostname, cfg.ListenEndpointEvents,
-		cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
+		cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable, cfg.RequestTimeout)
 }
 
 // buildIngressSource creates an Ingress source for exposing Kubernetes ingresses as DNS records.
@@ -443,7 +443,7 @@ func buildIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 	if err != nil {
 		return nil, err
 	}
-	return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.IngressClassNames)
+	return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.IngressClassNames, cfg.RequestTimeout)
 }
 
 // buildPodSource creates a Pod source for exposing Kubernetes pods as DNS records.
@@ -453,7 +453,7 @@ func buildPodSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNonHostNetworkPods, cfg.PodSourceDomain, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.AnnotationFilter, cfg.LabelFilter)
+	return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNonHostNetworkPods, cfg.PodSourceDomain, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.AnnotationFilter, cfg.LabelFilter, cfg.RequestTimeout)
 }
 
 // buildIstioGatewaySource creates an Istio Gateway source for exposing Istio gateways as DNS records.
@@ -467,7 +467,7 @@ func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.RequestTimeout)
 }
 
 // buildIstioVirtualServiceSource creates an Istio VirtualService source for exposing virtual services as DNS records.
@@ -481,7 +481,7 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.RequestTimeout)
 }
 
 func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -493,7 +493,7 @@ func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	if err != nil {
 		return nil, err
 	}
-	return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter)
+	return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter, cfg.RequestTimeout)
 }
 
 func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -501,7 +501,7 @@ func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *Co
 	if err != nil {
 		return nil, err
 	}
-	return NewContourHTTPProxySource(ctx, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	return NewContourHTTPProxySource(ctx, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.RequestTimeout)
 }
 
 // buildGlooProxySource creates a Gloo source for exposing Gloo proxies as DNS records.
@@ -516,7 +516,7 @@ func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (
 	if err != nil {
 		return nil, err
 	}
-	return NewGlooSource(ctx, dynamicClient, kubernetesClient, cfg.GlooNamespaces)
+	return NewGlooSource(ctx, dynamicClient, kubernetesClient, cfg.GlooNamespaces, cfg.RequestTimeout)
 }
 
 func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -528,7 +528,7 @@ func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *Config
 	if err != nil {
 		return nil, err
 	}
-	return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation, cfg.TraefikEnableLegacy, cfg.TraefikDisableNew)
+	return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation, cfg.TraefikEnableLegacy, cfg.TraefikDisableNew, cfg.RequestTimeout)
 }
 
 func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -536,7 +536,7 @@ func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	if err != nil {
 		return nil, err
 	}
-	return NewOcpRouteSource(ctx, ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.OCPRouterName)
+	return NewOcpRouteSource(ctx, ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.OCPRouterName, cfg.RequestTimeout)
 }
 
 // buildCRDSource creates a CRD source for exposing custom resources as DNS records.
@@ -547,7 +547,7 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind)
+	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind, cfg.RequestTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -579,7 +579,7 @@ func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	if err != nil {
 		return nil, err
 	}
-	return NewKongTCPIngressSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation)
+	return NewKongTCPIngressSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation, cfg.RequestTimeout)
 }
 
 func buildF5VirtualServerSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -591,7 +591,7 @@ func buildF5VirtualServerSource(ctx context.Context, p ClientGenerator, cfg *Con
 	if err != nil {
 		return nil, err
 	}
-	return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.RequestTimeout)
 }
 
 func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
@@ -603,7 +603,7 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 	if err != nil {
 		return nil, err
 	}
-	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.RequestTimeout)
 }
 
 // instrumentedRESTConfig creates a REST config with request instrumentation for monitoring.
