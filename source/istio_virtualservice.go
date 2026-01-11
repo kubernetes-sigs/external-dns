@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -118,10 +119,10 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 

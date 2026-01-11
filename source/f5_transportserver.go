@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -86,7 +87,7 @@ func NewF5TransportServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 

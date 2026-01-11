@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"text/template"
+	"time"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	log "github.com/sirupsen/logrus"
@@ -91,7 +92,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
 		return nil, err
 	}
 
