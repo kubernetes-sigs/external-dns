@@ -71,6 +71,7 @@ type Config struct {
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
 	ListenEndpointEvents           bool
+	GatewayEnableExperimental      bool
 	GatewayName                    string
 	GatewayNamespace               string
 	GatewayLabelFilter             string
@@ -124,6 +125,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
 		ListenEndpointEvents:           cfg.ListenEndpointEvents,
+		GatewayEnableExperimental:      cfg.GatewayEnableExperimental,
 		GatewayName:                    cfg.GatewayName,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
