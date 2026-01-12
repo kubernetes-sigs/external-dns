@@ -119,7 +119,7 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 		for pager.More() {
 			nextResult, err := pager.NextPage(ctx)
 			if err != nil {
-				return nil, provider.NewSoftError(fmt.Errorf("failed to fetch dns records: %w", err))
+				return nil, provider.NewSoftErrorf("failed to fetch dns records: %w", err)
 			}
 			for _, recordSet := range nextResult.Value {
 				if recordSet.Name == nil || recordSet.Type == nil {

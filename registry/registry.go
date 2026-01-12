@@ -18,9 +18,26 @@ package registry
 
 import (
 	"context"
+	"fmt"
+
+	aws_dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/aws"
+	"sigs.k8s.io/external-dns/registry/awssd"
+	"sigs.k8s.io/external-dns/registry/dynamodb"
+	"sigs.k8s.io/external-dns/registry/noop"
+	"sigs.k8s.io/external-dns/registry/txt"
+)
+
+const (
+	DYNAMODB = "dynamodb"
+	NOOP     = "noop"
+	TXT      = "txt"
+	AWSSD    = "aws-sd"
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
@@ -33,4 +50,32 @@ type Registry interface {
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	GetDomainFilter() endpoint.DomainFilterInterface
 	OwnerID() string
+}
+
+// SelectRegistry selects the appropriate registry implementation based on the configuration in cfg.
+// It initializes and returns a registry along with any error encountered during setup.
+// Supported registry types include: dynamodb, noop, txt, and aws-sd.
+func SelectRegistry(cfg *externaldns.Config, p provider.Provider) (Registry, error) {
+	var r Registry
+	var err error
+	switch cfg.Registry {
+	case DYNAMODB:
+		r, err = dynamodb.NewDynamoDBRegistry(
+			p, cfg.TXTOwnerID, aws_dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodb.WithRegion(cfg.AWSDynamoDBRegion)),
+			cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes,
+			cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+	case NOOP:
+		r, err = noop.NewNoopRegistry(p)
+	case TXT:
+		r, err = txt.NewTXTRegistry(
+			p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
+			cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
+			cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
+			cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
+	case AWSSD:
+		r, err = awssd.NewAWSSDRegistry(p, cfg.TXTOwnerID)
+	default:
+		err = fmt.Errorf("unknown registry: %s", cfg.Registry)
+	}
+	return r, err
 }

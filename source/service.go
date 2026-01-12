@@ -62,6 +62,13 @@ var (
 // desired hostname and matching or no controller annotation. For each of the
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
+// +externaldns:source:name=service
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Service resources
+// +externaldns:source:resources=Service
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -82,6 +89,7 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
+	excludeUnschedulable           bool
 
 	// process Services with legacy annotations
 	compatibility string
@@ -98,7 +106,7 @@ func NewServiceSource(
 	ignoreHostnameAnnotation bool,
 	labelSelector labels.Selector,
 	resolveLoadBalancerHostname,
-	listenEndpointEvents, exposeInternalIPv6 bool,
+	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -151,7 +159,7 @@ func NewServiceSource(
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		_ = podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
 			pod, ok := i.(*v1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -200,7 +208,7 @@ func NewServiceSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -224,6 +232,7 @@ func NewServiceSource(
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
 		exposeInternalIPv6:             exposeInternalIPv6,
+		excludeUnschedulable:           excludeUnschedulable,
 	}, nil
 }
 
@@ -237,7 +246,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	// filter on service types if at least one has been provided
 	services = sc.filterByServiceType(services)
 
-	services, err = sc.filterByAnnotations(services)
+	services, err = annotations.Filter(services, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -264,17 +273,14 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if none of the above is found
-		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(svc)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				svcEndpoints = append(svcEndpoints, sEndpoints...)
-			} else {
-				svcEndpoints = sEndpoints
-			}
+		svcEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			svcEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(svc) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(svcEndpoints) == 0 {
@@ -366,7 +372,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 // Helper to convert raw objects to EndpointSlice
-func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.EndpointSlice {
+func convertToEndpointSlices(rawEndpointSlices []any) []*discoveryv1.EndpointSlice {
 	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
 	for _, obj := range rawEndpointSlices {
 		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
@@ -568,30 +574,6 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
-}
-
-// filterByAnnotations filters a list of services by a given annotation selector.
-func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Service, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return services, nil
-	}
-
-	var filteredList []*v1.Service
-
-	for _, service := range services {
-		// include service if its annotations match the selector
-		if selector.Matches(labels.Set(service.Annotations)) {
-			filteredList = append(filteredList, service)
-		}
-	}
-	log.Debugf("filtered %d services out of %d with annotation filter", len(filteredList), len(services))
-	return filteredList, nil
 }
 
 // filterByServiceType filters services according to their types
@@ -812,6 +794,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	for _, node := range nodes {
+		if node.Spec.Unschedulable && sc.excludeUnschedulable {
+			log.Debugf("Skipping node %s - unschedulable", node.Name)
+			continue
+		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:

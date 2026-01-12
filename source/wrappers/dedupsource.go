@@ -40,7 +40,7 @@ func NewDedupSource(source source.Source) source.Source {
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
 	result := make([]*endpoint.Endpoint, 0)
-	collected := map[string]bool{}
+	collected := make(map[string]struct{})
 
 	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
@@ -49,6 +49,12 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 	for _, ep := range endpoints {
 		if ep == nil {
+			continue
+		}
+
+		// validate endpoint before normalization
+		if ok := ep.CheckEndpoint(); !ok {
+			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))
 			continue
 		}
 
@@ -63,7 +69,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		collected[identifier] = true
+		collected[identifier] = struct{}{}
 		result = append(result, ep)
 	}
 

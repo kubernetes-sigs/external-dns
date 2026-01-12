@@ -22,10 +22,11 @@ import (
 	"net/netip"
 	"strings"
 	"text/template"
-	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func ParseTemplate(input string) (*template.Template, error) {
@@ -59,11 +60,14 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		kind := obj.GetObjectKind().GroupVersionKind().Kind
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
-	var hostnames []string
-	for _, name := range strings.Split(buf.String(), ",") {
-		name = strings.TrimFunc(name, unicode.IsSpace)
+	hosts := strings.Split(buf.String(), ",")
+	hostnames := make([]string, 0, len(hosts))
+	for _, name := range hosts {
+		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
-		hostnames = append(hostnames, name)
+		if name != "" {
+			hostnames = append(hostnames, name)
+		}
 	}
 	return hostnames, nil
 }
@@ -91,4 +95,37 @@ func isIPv4String(target string) bool {
 		return false
 	}
 	return netIP.Is4()
+}
+
+// CombineWithTemplatedEndpoints merges annotation-based endpoints with template-based endpoints
+// according to the FQDN template configuration.
+//
+// Logic:
+//   - If fqdnTemplate is nil, returns original endpoints unchanged
+//   - If combineFQDNAnnotation is true, appends templated endpoints to existing
+//   - If combineFQDNAnnotation is false and endpoints is empty, uses templated endpoints
+//   - If combineFQDNAnnotation is false and endpoints exist, returns original unchanged
+func CombineWithTemplatedEndpoints(
+	endpoints []*endpoint.Endpoint,
+	fqdnTemplate *template.Template,
+	combineFQDNAnnotation bool,
+	templateFunc func() ([]*endpoint.Endpoint, error),
+) ([]*endpoint.Endpoint, error) {
+	if fqdnTemplate == nil {
+		return endpoints, nil
+	}
+
+	if !combineFQDNAnnotation && len(endpoints) > 0 {
+		return endpoints, nil
+	}
+
+	templatedEndpoints, err := templateFunc()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+	}
+
+	if combineFQDNAnnotation {
+		return append(endpoints, templatedEndpoints...), nil
+	}
+	return templatedEndpoints, nil
 }

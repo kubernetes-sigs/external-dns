@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package dynamodb
 
 import (
 	"context"
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
 // DynamoDBAPI is the subset of the AWS DynamoDB API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -52,7 +54,7 @@ type DynamoDBRegistry struct {
 	table       string
 
 	// For migration from TXT registry
-	mapper              nameMapper
+	mapper              mapper.NameMapper
 	wildcardReplacement string
 	managedRecordTypes  []string
 	excludeRecordTypes  []string
@@ -74,7 +76,12 @@ const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 var dynamodbMaxBatchSize uint8 = 25
 
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
+func NewDynamoDBRegistry(
+	provider provider.Provider,
+	ownerID string, dynamodbAPI DynamoDBAPI,
+	table, txtPrefix, txtSuffix, txtWildcardReplacement string,
+	managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte,
+	cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -82,6 +89,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("table cannot be empty")
 	}
 
+	// TODO: encryption logic duplicated in TXT registry; refactor into common utility function.
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
@@ -94,14 +102,12 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
-
 	return &DynamoDBRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
 		dynamodbAPI:         dynamodbAPI,
 		table:               table,
-		mapper:              mapper,
+		mapper:              mapper.NewAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement),
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
 		excludeRecordTypes:  excludeRecordTypes,
@@ -153,7 +159,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 			if record.RecordType == endpoint.RecordTypeTXT {
 				// We simply assume that TXT records for the TXT registry will always have only one target.
 				if labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey); err == nil {
-					endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
+					endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)
 					key := endpoint.EndpointKey{
 						DNSName:       endpointName,
 						SetIdentifier: record.SetIdentifier,
@@ -194,9 +200,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				key.RecordType = ep.RecordType
 			}
 			if labels, ok := labelMap[key]; ok {
-				for k, v := range labels {
-					ep.Labels[k] = v
-				}
+				maps.Copy(ep.Labels, labels)
 				ep.SetProviderSpecificProperty(dynamodbAttributeMigrate, "true")
 				delete(txtRecordsMap, key)
 			}
@@ -573,5 +577,14 @@ func (im *DynamoDBRegistry) removeFromCache(ep *endpoint.Endpoint) {
 			im.recordsCache = append(im.recordsCache[:i], im.recordsCache[i+1:]...)
 			return
 		}
+	}
+}
+
+func WithRegion(region string) func(*dynamodb.Options) {
+	if region == "" {
+		return nil
+	}
+	return func(opts *dynamodb.Options) {
+		opts.Region = region
 	}
 }

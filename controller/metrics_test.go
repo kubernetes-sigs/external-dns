@@ -342,6 +342,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	})
 
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
 
 	source := new(testutils.MockSource)
@@ -350,7 +351,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.NewNoopRegistry(provider)
+	r, err := registry.SelectRegistry(cfg, provider)
 
 	require.NoError(t, err)
 

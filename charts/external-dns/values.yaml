@@ -296,11 +296,11 @@ provider:  # @schema type: [object, string]
     # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
     # @default -- See _values.yaml_
     serviceMonitor:
-      interval:
-      scheme:
+      interval:  # @schema type:[string, null]; default: null
+      scheme:  # @schema type:[string, null]; default: null
       tlsConfig: {}
-      bearerTokenFile:
-      scrapeTimeout:
+      bearerTokenFile:  # @schema type:[string, null]; default: null
+      scrapeTimeout:  # @schema type:[string, null]; default: null
       metricRelabelings: []
       relabelings: []
 

@@ -311,6 +311,22 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
+// GetBoolProperty returns a boolean provider-specific property value.
+func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
+	prop, ok := e.GetProviderSpecificProperty(key)
+	if !ok {
+		return false, false
+	}
+	switch prop {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, true
+	}
+}
+
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 	for i, providerSpecific := range e.ProviderSpecific {
@@ -423,6 +439,7 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {

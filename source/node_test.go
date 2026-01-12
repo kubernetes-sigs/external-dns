@@ -25,7 +25,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/client-go/kubernetes"
 	corev1lister "k8s.io/client-go/listers/core/v1"
@@ -549,11 +548,6 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		var hook *test.Hook
-		if tc.exposeInternalIPv6 {
-			hook = testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-		}
-
 		// Create our object under test and get the endpoints.
 		client, err := NewNodeSource(
 			t.Context(),
@@ -572,10 +566,6 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-
-			if tc.exposeInternalIPv6 && hook != nil {
-				testutils.TestHelperLogContainsWithLogLevel(warningMsg, log.WarnLevel, hook, t)
-			}
 		}
 
 		// Validate returned endpoints against desired endpoints.
