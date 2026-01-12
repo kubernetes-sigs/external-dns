@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -123,6 +124,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	suite.NoError(err, "should initialize virtualservice source")
 }
@@ -200,6 +202,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				time.Duration(0),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1997,6 +2000,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -2083,6 +2087,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	if err != nil {
 		return nil, err
@@ -2326,6 +2331,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				"",
 				false,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -2410,7 +2416,8 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		"",
 		"",
 		false,
-		false)
+		false,
+		time.Duration(0))
 	require.NoError(t, err)
 	gwSource, ok := src.(*virtualServiceSource)
 	require.True(t, ok)

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -574,7 +575,7 @@ func TestGlooSource(t *testing.T) {
 	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(context.Background(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	source, err := NewGlooSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
+	source, err := NewGlooSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace}, time.Duration(0))
 	assert.NoError(t, err)
 	assert.NotNil(t, source)
 

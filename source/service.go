@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -107,6 +108,7 @@ func NewServiceSource(
 	labelSelector labels.Selector,
 	resolveLoadBalancerHostname,
 	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+	timeout time.Duration,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -121,6 +123,12 @@ func NewServiceSource(
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
+	// wait for the local cache to be populated.
+	err = informers.WaitForCacheSync(context.Background(), informerFactory, timeout)
+	if err != nil {
+		return nil, err
+	}
+
 	// Transform the slice into a map so it will be way much easier and fast to filter later
 	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
 	if err != nil {
@@ -132,6 +140,11 @@ func NewServiceSource(
 	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
 		podInformer = informerFactory.Core().V1().Pods()
+
+		err := informers.WaitForCacheSync(context.Background(), informerFactory, timeout)
+		if err != nil {
+			return nil, err
+		}
 
 		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
@@ -208,7 +221,7 @@ func NewServiceSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

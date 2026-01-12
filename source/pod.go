@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -70,6 +71,7 @@ func NewPodSource(
 	combineFqdnAnnotation bool,
 	annotationFilter string,
 	labelSelector labels.Selector,
+	timeout time.Duration,
 ) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
@@ -124,7 +126,7 @@ func NewPodSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

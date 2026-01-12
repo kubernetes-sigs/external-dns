@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -345,7 +346,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(context.Background(), &transportServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5TransportServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5TransportServerNamespace, tc.annotationFilter)
+			source, err := NewF5TransportServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5TransportServerNamespace, tc.annotationFilter, time.Duration(0))
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
