@@ -20,6 +20,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -71,7 +72,7 @@ func TestWaitForCacheSync(t *testing.T) {
 			ctx := context.Background()
 
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := WaitForCacheSync(ctx, factory)
+			err := WaitForCacheSync(ctx, factory, time.Minute)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -113,7 +114,7 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			ctx := context.Background()
 
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
-			err := WaitForDynamicCacheSync(ctx, factory)
+			err := WaitForDynamicCacheSync(ctx, factory, time.Minute)
 
 			if tt.expectError {
 				assert.Error(t, err)
