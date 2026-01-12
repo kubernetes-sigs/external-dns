@@ -1633,7 +1633,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				"",
 				false,
 				false,
-                time.Duration(0),
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)

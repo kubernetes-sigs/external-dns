@@ -540,7 +540,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				false,
 				labelSelector,
 				tc.ocpRouterName,
-                time.Duration(0),
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 

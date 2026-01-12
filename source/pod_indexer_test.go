@@ -15,17 +15,17 @@ package source
 
 import (
 	"fmt"
-	"math/rand/v2"
-	"net"
-	"strconv"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"math/rand/v2"
+	"net"
+	"strconv"
+	"testing"
+	"time"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 )

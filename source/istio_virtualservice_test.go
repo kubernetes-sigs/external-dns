@@ -202,7 +202,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
-                time.Duration(0),
+				time.Duration(0),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
