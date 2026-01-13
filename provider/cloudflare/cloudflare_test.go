@@ -110,7 +110,7 @@ type mockCloudFlareClient struct {
 	listZonesError       error // For v4 ListZones
 	getZoneError         error // For v4 GetZone
 	dnsRecordsError      error
-	customHostnames      map[string][]CustomHostname
+	customHostnames      map[string][]customHostname
 	regionalHostnames    map[string][]regionalHostname
 	dnsRecordsListParams dns.RecordListParams
 }
@@ -125,7 +125,7 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 			"001": {},
 			"002": {},
 		},
-		customHostnames:   map[string][]CustomHostname{},
+		customHostnames:   map[string][]customHostname{},
 		regionalHostnames: map[string][]regionalHostname{},
 	}
 }
@@ -253,17 +253,17 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 	result := []custom_hostnames.CustomHostnameListResponse{}
 	if chs, ok := m.customHostnames[zoneID]; ok {
 		for _, ch := range chs {
-			if strings.HasPrefix(ch.Hostname, "newerror-list-") {
+			if strings.HasPrefix(ch.hostname, "newerror-list-") {
 				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
-				m.DeleteCustomHostname(ctx, ch.ID, params)
+				m.DeletecustomHostname(ctx, ch.id, params)
 				return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
 					err: errors.New("failed to list erroring custom hostname"),
 				}
 			}
 			result = append(result, custom_hostnames.CustomHostnameListResponse{
-				ID:                 ch.ID,
-				Hostname:           ch.Hostname,
-				CustomOriginServer: ch.CustomOriginServer,
+				ID:                 ch.id,
+				Hostname:           ch.hostname,
+				CustomOriginServer: ch.customOriginServer,
 			})
 		}
 	}
@@ -272,20 +272,20 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 	}
 }
 
-func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID string, ch CustomHostname) error {
-	if ch.Hostname == "" || ch.CustomOriginServer == "" || ch.Hostname == "newerror-create.foo.fancybar.com" {
+func (m *mockCloudFlareClient) CreatecustomHostname(ctx context.Context, zoneID string, ch customHostname) error {
+	if ch.hostname == "" || ch.customOriginServer == "" || ch.hostname == "newerror-create.foo.fancybar.com" {
 		return fmt.Errorf("Invalid custom hostname or origin hostname")
 	}
 	if _, ok := m.customHostnames[zoneID]; !ok {
-		m.customHostnames[zoneID] = []CustomHostname{}
+		m.customHostnames[zoneID] = []customHostname{}
 	}
 	newCustomHostname := ch
-	newCustomHostname.ID = fmt.Sprintf("ID-%s", ch.Hostname)
+	newCustomHostname.id = fmt.Sprintf("ID-%s", ch.hostname)
 	m.customHostnames[zoneID] = append(m.customHostnames[zoneID], newCustomHostname)
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
+func (m *mockCloudFlareClient) DeletecustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
 	zoneID := params.ZoneID.String()
 	idx := 0
 	if idx = getCustomHostnameIdxByID(m.customHostnames[zoneID], customHostnameID); idx < 0 {
@@ -356,9 +356,9 @@ func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zon
 	return nil, errors.New("Unknown zoneID: " + zoneID)
 }
 
-func getCustomHostnameIdxByID(chs []CustomHostname, customHostnameID string) int {
+func getCustomHostnameIdxByID(chs []customHostname, customHostnameID string) int {
 	for idx, ch := range chs {
-		if ch.ID == customHostnameID {
+		if ch.id == customHostnameID {
 			return idx
 		}
 	}
@@ -1454,7 +1454,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 		for _, r := range tc.Records {
 			records[newDNSRecordIndex(r)] = r
 		}
-		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
+		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, customHostnamesMap{})
 		// Targets order could be random with underlying map
 		for _, ep := range endpoints {
 			slices.Sort(ep.Targets)
@@ -1492,7 +1492,7 @@ func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 		Client: client,
 	}
 	ctx := t.Context()
-	chs := CustomHostnamesMap{}
+	chs := customHostnamesMap{}
 	records, err := provider.getDNSRecordsMap(ctx, "001")
 	assert.NoError(t, err)
 
@@ -1512,7 +1512,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 		Name                  string
 		SetupProvider         func(*CloudFlareProvider)
 		SetupRecord           func(*dns.RecordResponse)
-		CustomHostnames       []CustomHostname
+		CustomHostnames       []customHostname
 		RegionKey             string
 		ShouldBeUpdated       bool
 		PropertyKey           string
@@ -1615,12 +1615,12 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			})
 
 			if len(test.CustomHostnames) > 0 {
-				customHostnames := make([]CustomHostname, 0, len(test.CustomHostnames))
+				customHostnames := make([]customHostname, 0, len(test.CustomHostnames))
 				for _, ch := range test.CustomHostnames {
-					ch.CustomOriginServer = record.Name
+					ch.customOriginServer = record.Name
 					customHostnames = append(customHostnames, ch)
 				}
-				client.customHostnames = map[string][]CustomHostname{
+				client.customHostnames = map[string][]customHostname{
 					"001": customHostnames,
 				}
 			}
@@ -2098,7 +2098,7 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 			"newerror-001": "bar.com",
 		},
 		Records:         map[string]map[string]dns.RecordResponse{},
-		customHostnames: map[string][]CustomHostname{},
+		customHostnames: map[string][]customHostname{},
 	}
 	failingProvider := &CloudFlareProvider{
 		Client:                client,
@@ -2311,7 +2311,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 
 		actualCustomHostnames := map[string]string{}
 		for _, ch := range chs {
-			actualCustomHostnames[ch.Hostname] = ch.CustomOriginServer
+			actualCustomHostnames[ch.hostname] = ch.customOriginServer
 		}
 		if len(actualCustomHostnames) == 0 {
 			actualCustomHostnames = nil
@@ -2538,23 +2538,23 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			t.Error(e)
 		}
 		if tc.preApplyHook == "corrupt" {
-			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
-				chID := ch.ID
+			if ch, err := getcustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
+				chID := ch.id
 				t.Logf("corrupting custom hostname %q", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
 				oldCh := client.customHostnames[zoneID][oldIdx]
-				ch := CustomHostname{
-					Hostname:           "corrupted-newerror-getCustomHostnameOrigin.foo.fancybar.com",
-					CustomOriginServer: oldCh.CustomOriginServer,
-					SSL:                oldCh.SSL,
+				ch := customHostname{
+					hostname:           "corrupted-newerror-getCustomHostnameOrigin.foo.fancybar.com",
+					customOriginServer: oldCh.customOriginServer,
+					ssl:                oldCh.ssl,
 				}
 				client.customHostnames[zoneID][oldIdx] = ch
 			}
 		} else if tc.preApplyHook == "duplicate" { // manually inject duplicating custom hostname with the same name and origin
-			ch := CustomHostname{
-				ID:                 "ID-random-123",
-				Hostname:           "a.foo.fancybar.com",
-				CustomOriginServer: "a.foo.bar.com",
+			ch := customHostname{
+				id:                 "ID-random-123",
+				hostname:           "a.foo.fancybar.com",
+				customOriginServer: "a.foo.bar.com",
 			}
 			client.customHostnames[zoneID] = append(client.customHostnames[zoneID], ch)
 		}
@@ -3400,18 +3400,18 @@ func TestZoneService(t *testing.T) {
 		assert.ErrorIs(t, iter.Err(), context.Canceled)
 	})
 
-	t.Run("CreateCustomHostname", func(t *testing.T) {
+	t.Run("CreatecustomHostname", func(t *testing.T) {
 		t.Parallel()
-		err := client.CreateCustomHostname(ctx, zoneID, CustomHostname{})
+		err := client.CreatecustomHostname(ctx, zoneID, customHostname{})
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 }
 
 func TestBuildCustomHostnameNewParams(t *testing.T) {
 	t.Run("Minimal custom hostname without SSL", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
 		}
 
 		params := buildCustomHostnameNewParams("zone-123", ch)
@@ -3422,16 +3422,16 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 	})
 
 	t.Run("Custom hostname with full SSL configuration", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-			SSL: &CustomHostnameSSL{
-				Type:                 "dv",
-				Method:               "http",
-				BundleMethod:         "ubiquitous",
-				CertificateAuthority: "digicert",
-				Settings: CustomHostnameSSLSettings{
-					MinTLSVersion: "1.2",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
+			ssl: &customHostnameSSL{
+				sslType:                 "dv",
+				method:               "http",
+				bundleMethod:         "ubiquitous",
+				certificateAuthority: "digicert",
+				settings: customHostnameSSLSettings{
+					minTLSVersion: "1.2",
 				},
 			},
 		}
@@ -3451,12 +3451,12 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 	})
 
 	t.Run("Custom hostname with partial SSL configuration", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-			SSL: &CustomHostnameSSL{
-				Type:   "dv",
-				Method: "http",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
+			ssl: &customHostnameSSL{
+				sslType:   "dv",
+				method: "http",
 			},
 		}
 
@@ -3472,13 +3472,13 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 	})
 
 	t.Run("Custom hostname with 'none' certificate authority", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-			SSL: &CustomHostnameSSL{
-				Type:                 "dv",
-				Method:               "http",
-				CertificateAuthority: "none",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
+			ssl: &customHostnameSSL{
+				sslType:                 "dv",
+				method:               "http",
+				certificateAuthority: "none",
 			},
 		}
 
@@ -3491,13 +3491,13 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 	})
 
 	t.Run("Custom hostname with empty certificate authority", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-			SSL: &CustomHostnameSSL{
-				Type:                 "dv",
-				Method:               "http",
-				CertificateAuthority: "",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
+			ssl: &customHostnameSSL{
+				sslType:                 "dv",
+				method:               "http",
+				certificateAuthority: "",
 			},
 		}
 
@@ -3510,12 +3510,12 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 	})
 
 	t.Run("Custom hostname with only MinTLSVersion", func(t *testing.T) {
-		ch := CustomHostname{
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-			SSL: &CustomHostnameSSL{
-				Settings: CustomHostnameSSLSettings{
-					MinTLSVersion: "1.3",
+		ch := customHostname{
+			hostname:           "test.example.com",
+			customOriginServer: "origin.example.com",
+			ssl: &customHostnameSSL{
+				settings: customHostnameSSLSettings{
+					minTLSVersion: "1.3",
 				},
 			},
 		}
@@ -3563,23 +3563,23 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			ResourceRecord: dns.RecordResponse{
 				Type: "A",
 			},
-			CustomHostnames: map[string]CustomHostname{
+			CustomHostnames: map[string]customHostname{
 				"new.example.com": {
-					Hostname:           "new.example.com",
-					CustomOriginServer: "origin.example.com",
+					hostname:           "new.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
 
-		chs := make(CustomHostnamesMap)
+		chs := make(customHostnamesMap)
 		result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
 		assert.True(t, result, "Should successfully create custom hostname")
 		assert.Len(t, client.customHostnames["zone1"], 1, "One custom hostname should be created")
 		assert.Contains(t, client.customHostnames["zone1"],
-			CustomHostname{
-				ID:                 "ID-new.example.com",
-				Hostname:           "new.example.com",
-				CustomOriginServer: "origin.example.com",
+			customHostname{
+				id:                 "ID-new.example.com",
+				hostname:           "new.example.com",
+				customOriginServer: "origin.example.com",
 			},
 			"Custom hostname should be created in mock client",
 		)
@@ -3599,28 +3599,28 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			ResourceRecord: dns.RecordResponse{
 				Type: "A",
 			},
-			CustomHostnames: map[string]CustomHostname{
+			CustomHostnames: map[string]customHostname{
 				"exists.example.com": {
-					Hostname:           "exists.example.com",
-					CustomOriginServer: "origin.example.com",
+					hostname:           "exists.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
 
-		chs := CustomHostnamesMap{
-			CustomHostnameIndex{Hostname: "exists.example.com"}: {
-				ID:                 "ch1",
-				Hostname:           "exists.example.com",
-				CustomOriginServer: "origin.example.com",
+		chs := customHostnamesMap{
+			customHostnameIndex{hostname: "exists.example.com"}: {
+				id:                 "ch1",
+				hostname:           "exists.example.com",
+				customOriginServer: "origin.example.com",
 			},
 		}
 
-		client.customHostnames = map[string][]CustomHostname{
+		client.customHostnames = map[string][]customHostname{
 			"zone1": {
 				{
-					ID:                 "ch1",
-					Hostname:           "exists.example.com",
-					CustomOriginServer: "origin.example.com",
+					id:                 "ch1",
+					hostname:           "exists.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
@@ -3629,10 +3629,10 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 		assert.True(t, result, "Should succeed when custom hostname already exists with same origin")
 		assert.Len(t, client.customHostnames["zone1"], 1, "No new custom hostname should be created")
 		assert.Contains(t, client.customHostnames["zone1"],
-			CustomHostname{
-				ID:                 "ch1",
-				Hostname:           "exists.example.com",
-				CustomOriginServer: "origin.example.com",
+			customHostname{
+				id:                 "ch1",
+				hostname:           "exists.example.com",
+				customOriginServer: "origin.example.com",
 			},
 			"Existing custom hostname should remain unchanged in mock client",
 		)
@@ -3640,12 +3640,12 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 
 	t.Run("CustomHostnames_Delete", func(t *testing.T) {
 		client := NewMockCloudFlareClient()
-		client.customHostnames = map[string][]CustomHostname{
+		client.customHostnames = map[string][]customHostname{
 			"zone1": {
 				{
-					ID:                 "ch1",
-					Hostname:           "delete.example.com",
-					CustomOriginServer: "origin.example.com",
+					id:                 "ch1",
+					hostname:           "delete.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
@@ -3661,18 +3661,18 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			ResourceRecord: dns.RecordResponse{
 				Type: "A",
 			},
-			CustomHostnames: map[string]CustomHostname{
+			CustomHostnames: map[string]customHostname{
 				"delete.example.com": {
-					Hostname: "delete.example.com",
+					hostname: "delete.example.com",
 				},
 			},
 		}
 
-		chs := CustomHostnamesMap{
-			CustomHostnameIndex{Hostname: "delete.example.com"}: {
-				ID:                 "ch1",
-				Hostname:           "delete.example.com",
-				CustomOriginServer: "origin.example.com",
+		chs := customHostnamesMap{
+			customHostnameIndex{hostname: "delete.example.com"}: {
+				id:                 "ch1",
+				hostname:           "delete.example.com",
+				customOriginServer: "origin.example.com",
 			},
 		}
 
@@ -3685,12 +3685,12 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 
 	t.Run("CustomHostnames_Update", func(t *testing.T) {
 		client := NewMockCloudFlareClient()
-		client.customHostnames = map[string][]CustomHostname{
+		client.customHostnames = map[string][]customHostname{
 			"zone1": {
 				{
-					ID:                 "ch1",
-					Hostname:           "old.example.com",
-					CustomOriginServer: "origin.example.com",
+					id:                 "ch1",
+					hostname:           "old.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
@@ -3706,29 +3706,29 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			ResourceRecord: dns.RecordResponse{
 				Type: "A",
 			},
-			CustomHostnames: map[string]CustomHostname{
+			CustomHostnames: map[string]customHostname{
 				"new.example.com": {
-					Hostname:           "new.example.com",
-					CustomOriginServer: "origin.example.com",
+					hostname:           "new.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 			CustomHostnamesPrev: []string{"old.example.com"},
 		}
 
-		chs := CustomHostnamesMap{
-			CustomHostnameIndex{Hostname: "old.example.com"}: {
-				ID:                 "ch1",
-				Hostname:           "old.example.com",
-				CustomOriginServer: "origin.example.com",
+		chs := customHostnamesMap{
+			customHostnameIndex{hostname: "old.example.com"}: {
+				id:                 "ch1",
+				hostname:           "old.example.com",
+				customOriginServer: "origin.example.com",
 			},
 		}
 
-		client.customHostnames = map[string][]CustomHostname{
+		client.customHostnames = map[string][]customHostname{
 			"zone1": {
 				{
-					ID:                 "ch1",
-					Hostname:           "old.example.com",
-					CustomOriginServer: "origin.example.com",
+					id:                 "ch1",
+					hostname:           "old.example.com",
+					customOriginServer: "origin.example.com",
 				},
 			},
 		}
@@ -3737,14 +3737,13 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 		assert.True(t, result, "Should successfully update custom hostname")
 		assert.Len(t, client.customHostnames["zone1"], 1, "One custom hostname should exist after update")
 		assert.Contains(t, client.customHostnames["zone1"],
-			CustomHostname{
-				ID:                 "ID-new.example.com",
-				Hostname:           "new.example.com",
-				CustomOriginServer: "origin.example.com",
+			customHostname{
+				id:                 "ID-new.example.com",
+				hostname:           "new.example.com",
+				customOriginServer: "origin.example.com",
 			},
 			"Custom hostname should be updated in mock client",
 		)
-	})
 	})
 }
 
