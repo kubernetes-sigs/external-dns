@@ -3263,7 +3263,7 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 }
 
 func TestSubmitCustomHostnameChanges(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("CustomHostnames_Disabled", func(t *testing.T) {
 		client := NewMockCloudFlareClient()
