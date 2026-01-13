@@ -21,8 +21,10 @@ import (
 	"testing"
 
 	egoscale "github.com/exoscale/egoscale/v2"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 
@@ -342,4 +344,144 @@ func TestExoscaleMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 
 	merged := merge(updateOld, updateNew)
 	assert.Equal(t, 0, len(merged))
+}
+
+func TestZones(t *testing.T) {
+	tests := []struct {
+		name     string
+		domain   string
+		input    map[string]string
+		expected map[string]string
+	}{
+		{
+			name:   "single matching zone",
+			domain: "example.com",
+			input: map[string]string{
+				"1": "example.com",
+			},
+			expected: map[string]string{
+				"1": "example.com",
+			},
+		},
+		{
+			name:   "non matching zone",
+			domain: "example.com",
+			input: map[string]string{
+				"1": "other.com",
+			},
+			expected: map[string]string{},
+		},
+		{
+			name:   "multiple zones mixed match",
+			domain: "example.com",
+			input: map[string]string{
+				"1": "example.com",
+				"2": "sub.example.com",
+				"3": "other.com",
+			},
+			expected: map[string]string{
+				"1": "example.com",
+				"2": "sub.example.com",
+			},
+		},
+		{
+			name:     "empty input",
+			domain:   "example.com",
+			input:    map[string]string{},
+			expected: map[string]string{},
+		},
+		{
+			name:   "empty domain matches all",
+			domain: "",
+			input: map[string]string{
+				"1": "example.com",
+				"2": "other.com",
+			},
+			expected: map[string]string{
+				"1": "example.com",
+				"2": "other.com",
+			},
+		},
+		{
+			name:   "suffix must be exact",
+			domain: "ample.com",
+			input: map[string]string{
+				"1": "example.com",
+				"2": "sample.com",
+			},
+			expected: map[string]string{
+				"1": "example.com",
+				"2": "sample.com",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			zoneFilter := zoneFilter{
+				domain: test.domain,
+			}
+			result := zoneFilter.Zones(test.input)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExoscaleWithDomain_SetsDomain(t *testing.T) {
+	tests := []struct {
+		name         string
+		domainFilter []string
+	}{
+		{
+			name:         "domain filter",
+			domainFilter: []string{"example.com", "apple.xyz"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p := &ExoscaleProvider{}
+
+			df := endpoint.NewDomainFilter(test.domainFilter)
+
+			ExoscaleWithDomain(df)(p)
+		})
+	}
+}
+
+func TestInMemoryWithLogging_LogsChanges(t *testing.T) {
+	t.Run("exoscaleWithlogging", func(t *testing.T) {
+		logger, hook := test.NewNullLogger()
+		log.SetFormatter(logger.Formatter)
+		log.SetLevel(log.InfoLevel)
+		log.AddHook(hook)
+
+		p := &ExoscaleProvider{}
+		ExoscaleWithLogging()(p)
+
+		changes := &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{DNSName: "create.example.com", RecordType: "A"},
+			},
+			UpdateOld: []*endpoint.Endpoint{
+				{DNSName: "old.example.com", RecordType: "A"},
+			},
+			UpdateNew: []*endpoint.Endpoint{
+				{DNSName: "new.example.com", RecordType: "A"},
+			},
+			Delete: []*endpoint.Endpoint{
+				{DNSName: "delete.example.com", RecordType: "A"},
+			},
+		}
+
+		p.OnApplyChanges(changes)
+
+		entries := hook.AllEntries()
+
+		assert.Contains(t, entries[0].Message, "CREATE")
+		assert.Contains(t, entries[1].Message, "UPDATE (old)")
+		assert.Contains(t, entries[2].Message, "UPDATE (new)")
+		assert.Contains(t, entries[3].Message, "DELETE")
+
+	})
 }
