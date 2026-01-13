@@ -9,7 +9,7 @@ The `--informer-sync-timeout` flag allows you to configure the timeout duration 
 !!! warning "Investigate Root Causes First"
     Timeout errors during informer sync are typically **symptoms** of underlying issues, not the root cause.
     Before increasing this timeout, investigate:
-    
+
     1. **RBAC Permissions**: Verify the ServiceAccount has proper permissions for all watched resources
     2. **API Server Health**: Check if the Kubernetes API server is overloaded or slow
     3. **Network Issues**: Ensure network connectivity between ExternalDNS and the API server
@@ -98,6 +98,7 @@ external-dns \
 If you encounter timeout warnings during startup:
 
 1. **Check RBAC Permissions First**: This is the most common cause. Verify that the ExternalDNS ServiceAccount has the necessary permissions:
+
    ```yaml
    rules:
    - apiGroups: [""]
@@ -112,6 +113,7 @@ If you encounter timeout warnings during startup:
    ```
 
 2. **Check API Server Health**: Ensure the Kubernetes API server is responding normally:
+
    ```bash
    kubectl get --raw /healthz
    ```
