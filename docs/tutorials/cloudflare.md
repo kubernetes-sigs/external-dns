@@ -4,31 +4,6 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 
 Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 
-## CloudFlare SDK Migration Status
-
-Since v0.20.0, ExternalDNS has been fully migrated from the legacy CloudFlare Go SDK v0 to the modern v5 SDK to improve performance, reliability, and access to newer CloudFlare features.
-
-**✅ Fully migrated to v5 SDK:**
-
-- Zone management (listing, filtering, pagination)
-- Zone details retrieval (`GetZone`)
-- Zone ID lookup by name (`ZoneIDByName`)
-- Zone plan detection
-- Regional services (data localization)
-- DNS record management (create, update, delete records)
-- Custom hostnames
-- Proxied records
-
-The migration to v5 provides improved performance, better error handling, and simplified authentication patterns.
-
-### SDK Dependencies
-
-ExternalDNS currently uses:
-
-- **cloudflare-go v5.1.0+**: Modern SDK for all Cloudflare API operations
-
-The SDK is automatically managed as a Go module dependency and requires no special configuration from users.
-
 ## Creating a Cloudflare DNS zone
 
 We highly recommend to read this tutorial if you haven't used Cloudflare before:

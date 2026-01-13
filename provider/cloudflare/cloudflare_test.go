@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"slices"
 	"strings"
@@ -46,6 +48,51 @@ import (
 func TestMain(m *testing.M) {
 	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
 	m.Run()
+}
+
+// newCloudflareError creates a cloudflare.Error suitable for testing.
+// The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
+// so this helper initializes them properly.
+func newCloudflareError(statusCode int) *cloudflare.Error {
+	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
+	resp := &http.Response{
+		StatusCode: statusCode,
+		Status:     http.StatusText(statusCode),
+		Request:    req,
+	}
+	return &cloudflare.Error{
+		StatusCode: statusCode,
+		Request:    req,
+		Response:   resp,
+	}
+}
+
+var ExampleDomain = []dns.RecordResponse{
+	{
+		ID:      "1234567890",
+		Name:    "foobar.bar.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     120,
+		Content: "1.2.3.4",
+		Proxied: false,
+		Comment: "valid comment",
+	},
+	{
+		ID:      "2345678901",
+		Name:    "foobar.bar.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     120,
+		Content: "3.4.5.6",
+		Proxied: false,
+	},
+	{
+		ID:      "1231231233",
+		Name:    "bar.foo.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     1,
+		Content: "2.3.4.5",
+		Proxied: false,
+	},
 }
 
 type MockAction struct {
@@ -799,9 +846,7 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 func TestCloudflareListZonesRateLimited(t *testing.T) {
 	// Create a mock client that returns a rate limit error
 	client := NewMockCloudFlareClient()
-	client.listZonesError = &cloudflare.Error{
-		StatusCode: 429,
-	}
+	client.listZonesError = newCloudflareError(429)
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
@@ -829,9 +874,7 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	// Create a mock client that returns a internal server error
 	client := NewMockCloudFlareClient()
-	client.listZonesError = &cloudflare.Error{
-		StatusCode: 500,
-	}
+	client.listZonesError = newCloudflareError(500)
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
@@ -867,18 +910,14 @@ func TestCloudflareRecords(t *testing.T) {
 		t.Errorf("expected to fail")
 	}
 	client.dnsRecordsError = nil
-	client.listZonesError = &cloudflare.Error{
-		StatusCode: 429,
-	}
+	client.listZonesError = newCloudflareError(429)
 	_, err = p.Records(ctx)
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
 		t.Error("expected a rate limit error")
 	}
 
-	client.listZonesError = &cloudflare.Error{
-		StatusCode: 500,
-	}
+	client.listZonesError = newCloudflareError(500)
 	_, err = p.Records(ctx)
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
@@ -1424,6 +1463,237 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 			slices.Sort(ep.Targets)
 		}
 		assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
+	}
+}
+
+func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
+	t.Parallel()
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {
+			{
+				ID:       "mx-1",
+				Name:     "mx.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  "mail.bar.com",
+				Priority: 10,
+			},
+			{
+				ID:       "mx-2",
+				Name:     "mx.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  "mail2.bar.com",
+				Priority: 20,
+			},
+		},
+	})
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+	ctx := t.Context()
+	chs := CustomHostnamesMap{}
+	records, err := provider.getDNSRecordsMap(ctx, "001")
+	assert.NoError(t, err)
+
+	endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)
+	assert.Len(t, endpoints, 1)
+	mxEndpoint := endpoints[0]
+	assert.Equal(t, "mx.bar.com", mxEndpoint.DNSName)
+	assert.Equal(t, endpoint.RecordTypeMX, mxEndpoint.RecordType)
+	assert.ElementsMatch(t, []string{"10 mail.bar.com", "20 mail2.bar.com"}, mxEndpoint.Targets)
+	assert.Equal(t, endpoint.TTL(3600), mxEndpoint.RecordTTL)
+}
+
+func TestProviderPropertiesIdempotency(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		Name                  string
+		SetupProvider         func(*CloudFlareProvider)
+		SetupRecord           func(*dns.RecordResponse)
+		CustomHostnames       []CustomHostname
+		RegionKey             string
+		ShouldBeUpdated       bool
+		PropertyKey           string
+		ExpectPropertyPresent bool
+		ExpectPropertyValue   string
+	}{
+		{
+			Name:            "No custom properties, ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) {},
+			SetupRecord:     func(r *dns.RecordResponse) {},
+			ShouldBeUpdated: false,
+		},
+		// Proxied tests
+		{
+			Name:            "ProxiedByDefault: true, ProxiedRecord: true, ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) { p.proxiedByDefault = true },
+			SetupRecord:     func(r *dns.RecordResponse) { r.Proxied = true },
+			ShouldBeUpdated: false,
+		},
+		{
+			Name:                "ProxiedByDefault: true, ProxiedRecord: false, ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = true },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = false },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareProxiedKey,
+			ExpectPropertyValue: "true",
+		},
+		{
+			Name:                "ProxiedByDefault: false, ProxiedRecord: true, ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = false },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = true },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareProxiedKey,
+			ExpectPropertyValue: "false",
+		},
+		// Comment tests
+		{
+			Name:            "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
+			SetupRecord:     func(r *dns.RecordResponse) { r.Comment = "foo" },
+			ShouldBeUpdated: false,
+		},
+		{
+			Name:                  "DefaultComment: '', RecordComment: none, ExpectUpdates: true",
+			SetupProvider:         func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "" },
+			SetupRecord:           func(r *dns.RecordResponse) { r.Comment = "foo" },
+			ShouldBeUpdated:       true,
+			PropertyKey:           annotations.CloudflareRecordCommentKey,
+			ExpectPropertyPresent: false,
+		},
+		{
+			Name:                "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Comment = "" },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareRecordCommentKey,
+			ExpectPropertyValue: "foo",
+		},
+		// Regional Hostname tests
+		{
+			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
+			SetupProvider: func(p *CloudFlareProvider) {
+				p.RegionalServicesConfig.Enabled = true
+				p.RegionalServicesConfig.RegionKey = "us"
+			},
+			RegionKey:       "us",
+			ShouldBeUpdated: false,
+		},
+		{
+			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
+			SetupProvider: func(p *CloudFlareProvider) {
+				p.RegionalServicesConfig.Enabled = true
+				p.RegionalServicesConfig.RegionKey = "us"
+			},
+			RegionKey:           "eu",
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareRegionKey,
+			ExpectPropertyValue: "us",
+		},
+		// Custom Hostname tests
+		// TODO: add tests for custom hostnames when properly supported
+	}
+
+	for _, test := range testCases {
+		t.Run(test.Name, func(t *testing.T) {
+			t.Parallel()
+
+			record := dns.RecordResponse{
+				ID:      "1234567890",
+				Name:    "foobar.bar.com",
+				Type:    endpoint.RecordTypeA,
+				TTL:     120,
+				Content: "1.2.3.4",
+			}
+			if test.SetupRecord != nil {
+				test.SetupRecord(&record)
+			}
+			client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+				"001": {record},
+			})
+
+			if len(test.CustomHostnames) > 0 {
+				customHostnames := make([]CustomHostname, 0, len(test.CustomHostnames))
+				for _, ch := range test.CustomHostnames {
+					ch.CustomOriginServer = record.Name
+					customHostnames = append(customHostnames, ch)
+				}
+				client.customHostnames = map[string][]CustomHostname{
+					"001": customHostnames,
+				}
+			}
+
+			if test.RegionKey != "" {
+				client.regionalHostnames = map[string][]regionalHostname{
+					"001": {{hostname: record.Name, regionKey: test.RegionKey}},
+				}
+			}
+
+			provider := &CloudFlareProvider{
+				Client: client,
+			}
+			if test.SetupProvider != nil {
+				test.SetupProvider(provider)
+			}
+
+			current, err := provider.Records(t.Context())
+			if err != nil {
+				t.Errorf("should not fail, %s", err)
+			}
+			assert.Len(t, current, 1)
+
+			desired := []*endpoint.Endpoint{}
+			for _, c := range current {
+				// Copy all except ProviderSpecific fields
+				desired = append(desired, &endpoint.Endpoint{
+					DNSName:       c.DNSName,
+					Targets:       c.Targets,
+					RecordType:    c.RecordType,
+					SetIdentifier: c.SetIdentifier,
+					RecordTTL:     c.RecordTTL,
+					Labels:        c.Labels,
+				})
+			}
+
+			desired, err = provider.AdjustEndpoints(desired)
+			assert.NoError(t, err)
+
+			plan := plan.Plan{
+				Current:        current,
+				Desired:        desired,
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			}
+
+			plan = *plan.Calculate()
+			require.NotNil(t, plan.Changes, "should have plan")
+			assert.Empty(t, plan.Changes.Create, "should not have creates")
+			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
+
+			if test.ShouldBeUpdated {
+				assert.Len(t, plan.Changes.UpdateOld, 1, "should have old updates")
+				require.Len(t, plan.Changes.UpdateNew, 1, "should have new updates")
+				if test.PropertyKey != "" {
+					value, ok := plan.Changes.UpdateNew[0].GetProviderSpecificProperty(test.PropertyKey)
+					if test.ExpectPropertyPresent || test.ExpectPropertyValue != "" {
+						assert.Truef(t, ok, "should have property %s", test.PropertyKey)
+						assert.Equal(t, test.ExpectPropertyValue, value)
+					} else {
+						assert.Falsef(t, ok, "should not have property %s", test.PropertyKey)
+					}
+				} else {
+					assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no property key set")
+					assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no property key set")
+				}
+			} else {
+				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
+				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
+				assert.Empty(t, test.PropertyKey, "test misconfigured, should not expect property if no update expected")
+				assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no update expected")
+				assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no update expected")
+			}
+		})
 	}
 }
 
@@ -2754,31 +3024,31 @@ func TestConvertCloudflareError(t *testing.T) {
 	}{
 		{
 			name:            "Rate limit error via Error type",
-			inputError:      &cloudflare.Error{StatusCode: 429},
+			inputError:      newCloudflareError(429),
 			expectSoftError: true,
 			description:     "CloudFlare API rate limit error should be converted to soft error",
 		},
 		{
 			name:            "Rate limit error via ClientRateLimited",
-			inputError:      &cloudflare.Error{StatusCode: 429}, // Complete rate limit error
+			inputError:      newCloudflareError(429), // Complete rate limit error
 			expectSoftError: true,
 			description:     "CloudFlare client rate limited error should be converted to soft error",
 		},
 		{
 			name:            "Server error 500",
-			inputError:      &cloudflare.Error{StatusCode: 500},
+			inputError:      newCloudflareError(500),
 			expectSoftError: true,
 			description:     "Server error (500+) should be converted to soft error",
 		},
 		{
 			name:            "Server error 502",
-			inputError:      &cloudflare.Error{StatusCode: 502},
+			inputError:      newCloudflareError(502),
 			expectSoftError: true,
 			description:     "Server error (502) should be converted to soft error",
 		},
 		{
 			name:            "Server error 503",
-			inputError:      &cloudflare.Error{StatusCode: 503},
+			inputError:      newCloudflareError(503),
 			expectSoftError: true,
 			description:     "Server error (503) should be converted to soft error",
 		},
@@ -2796,19 +3066,19 @@ func TestConvertCloudflareError(t *testing.T) {
 		},
 		{
 			name:            "Client error 400",
-			inputError:      &cloudflare.Error{StatusCode: 400},
+			inputError:      newCloudflareError(400),
 			expectSoftError: false,
 			description:     "Client error (400) should not be converted to soft error",
 		},
 		{
 			name:            "Client error 401",
-			inputError:      &cloudflare.Error{StatusCode: 401},
+			inputError:      newCloudflareError(401),
 			expectSoftError: false,
 			description:     "Client error (401) should not be converted to soft error",
 		},
 		{
 			name:            "Client error 404",
-			inputError:      &cloudflare.Error{StatusCode: 404},
+			inputError:      newCloudflareError(404),
 			expectSoftError: false,
 			description:     "Client error (404) should not be converted to soft error",
 		},
@@ -2834,13 +3104,10 @@ func TestConvertCloudflareError(t *testing.T) {
 				assert.ErrorIs(t, result, provider.SoftError,
 					"Expected soft error for %s: %s", tt.name, tt.description)
 
-				// Only verify error message preservation for non-structured errors
-				// The v5 cloudflare.Error panics when .Error() is called with nil internal fields
-				var cfErr *cloudflare.Error
-				if !errors.As(tt.inputError, &cfErr) {
-					assert.Contains(t, result.Error(), tt.inputError.Error(),
-						"Original error message should be preserved")
-				}
+				// Verify error message preservation for all errors now that newCloudflareError
+				// properly initializes the Request/Response fields
+				assert.Contains(t, result.Error(), tt.inputError.Error(),
+					"Original error message should be preserved")
 			} else {
 				assert.NotErrorIs(t, result, provider.SoftError,
 					"Expected non-soft error for %s: %s", tt.name, tt.description)
@@ -2863,7 +3130,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			name: "Zones with GetZone rate limit error",
 			setupMock: func(client *mockCloudFlareClient) {
 				client.Zones = map[string]string{"zone1": "example.com"}
-				client.getZoneError = &cloudflare.Error{StatusCode: 429}
+				client.getZoneError = newCloudflareError(429)
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
@@ -2877,7 +3144,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			name: "Zones with GetZone server error",
 			setupMock: func(client *mockCloudFlareClient) {
 				client.Zones = map[string]string{"zone1": "example.com"}
-				client.getZoneError = &cloudflare.Error{StatusCode: 500}
+				client.getZoneError = newCloudflareError(500)
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
@@ -2891,7 +3158,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			name: "Zones with GetZone client error",
 			setupMock: func(client *mockCloudFlareClient) {
 				client.Zones = map[string]string{"zone1": "example.com"}
-				client.getZoneError = &cloudflare.Error{StatusCode: 404}
+				client.getZoneError = newCloudflareError(404)
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
@@ -2916,7 +3183,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 		{
 			name: "Zones with ListZones server error",
 			setupMock: func(client *mockCloudFlareClient) {
-				client.listZonesError = &cloudflare.Error{StatusCode: 503}
+				client.listZonesError = newCloudflareError(503)
 			},
 			function: func(p *CloudFlareProvider) error {
 				_, err := p.Zones(context.Background())
@@ -3463,265 +3730,6 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 	})
 }
 
-func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
-	t.Parallel()
-	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
-		"001": {
-			{
-				ID:       "mx-1",
-				Name:     "mx.bar.com",
-				Type:     endpoint.RecordTypeMX,
-				TTL:      3600,
-				Content:  "mail.bar.com",
-				Priority: 10,
-			},
-			{
-				ID:       "mx-2",
-				Name:     "mx.bar.com",
-				Type:     endpoint.RecordTypeMX,
-				TTL:      3600,
-				Content:  "mail2.bar.com",
-				Priority: 20,
-			},
-		},
-	})
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
-	ctx := t.Context()
-	chs := CustomHostnamesMap{}
-	records, err := provider.getDNSRecordsMap(ctx, "001")
-	assert.NoError(t, err)
-
-	endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)
-	assert.Len(t, endpoints, 1)
-	mxEndpoint := endpoints[0]
-	assert.Equal(t, "mx.bar.com", mxEndpoint.DNSName)
-	assert.Equal(t, endpoint.RecordTypeMX, mxEndpoint.RecordType)
-	assert.ElementsMatch(t, []string{"10 mail.bar.com", "20 mail2.bar.com"}, mxEndpoint.Targets)
-	assert.Equal(t, endpoint.TTL(3600), mxEndpoint.RecordTTL)
-}
-
-func TestProviderPropertiesIdempotency(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		Name                  string
-		SetupProvider         func(*CloudFlareProvider)
-		SetupRecord           func(*dns.RecordResponse)
-		CustomHostnames       []CustomHostname
-		RegionKey             string
-		ShouldBeUpdated       bool
-		PropertyKey           string
-		ExpectPropertyPresent bool
-		ExpectPropertyValue   string
-	}{
-		{
-			Name:            "No custom properties, ExpectUpdates: false",
-			SetupProvider:   func(p *CloudFlareProvider) {},
-			SetupRecord:     func(r *dns.RecordResponse) {},
-			ShouldBeUpdated: false,
-		},
-		// Proxied tests
-		{
-			Name:            "ProxiedByDefault: true, ProxiedRecord: true, ExpectUpdates: false",
-			SetupProvider:   func(p *CloudFlareProvider) { p.proxiedByDefault = true },
-			SetupRecord:     func(r *dns.RecordResponse) { r.Proxied = true },
-			ShouldBeUpdated: false,
-		},
-		{
-			Name:                "ProxiedByDefault: true, ProxiedRecord: false, ExpectUpdates: true",
-			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = true },
-			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = false },
-			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareProxiedKey,
-			ExpectPropertyValue: "true",
-		},
-		{
-			Name:                "ProxiedByDefault: false, ProxiedRecord: true, ExpectUpdates: true",
-			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = false },
-			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = true },
-			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareProxiedKey,
-			ExpectPropertyValue: "false",
-		},
-		// Comment tests
-		{
-			Name:            "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: false",
-			SetupProvider:   func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
-			SetupRecord:     func(r *dns.RecordResponse) { r.Comment = "foo" },
-			ShouldBeUpdated: false,
-		},
-		{
-			Name:                  "DefaultComment: '', RecordComment: none, ExpectUpdates: true",
-			SetupProvider:         func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "" },
-			SetupRecord:           func(r *dns.RecordResponse) { r.Comment = "foo" },
-			ShouldBeUpdated:       true,
-			PropertyKey:           annotations.CloudflareRecordCommentKey,
-			ExpectPropertyPresent: false,
-		},
-		{
-			Name:                "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: true",
-			SetupProvider:       func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
-			SetupRecord:         func(r *dns.RecordResponse) { r.Comment = "" },
-			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareRecordCommentKey,
-			ExpectPropertyValue: "foo",
-		},
-		// Regional Hostname tests
-		{
-			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
-			SetupProvider: func(p *CloudFlareProvider) {
-				p.RegionalServicesConfig.Enabled = true
-				p.RegionalServicesConfig.RegionKey = "us"
-			},
-			RegionKey:       "us",
-			ShouldBeUpdated: false,
-		},
-		{
-			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
-			SetupProvider: func(p *CloudFlareProvider) {
-				p.RegionalServicesConfig.Enabled = true
-				p.RegionalServicesConfig.RegionKey = "us"
-			},
-			RegionKey:           "eu",
-			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareRegionKey,
-			ExpectPropertyValue: "us",
-		},
-		// Custom Hostname tests
-		// TODO: add tests for custom hostnames when properly supported
-	}
-
-	for _, test := range testCases {
-		t.Run(test.Name, func(t *testing.T) {
-			t.Parallel()
-
-			record := dns.RecordResponse{
-				ID:      "1234567890",
-				Name:    "foobar.bar.com",
-				Type:    endpoint.RecordTypeA,
-				TTL:     120,
-				Content: "1.2.3.4",
-			}
-			if test.SetupRecord != nil {
-				test.SetupRecord(&record)
-			}
-			client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
-				"001": {record},
-			})
-
-			if len(test.CustomHostnames) > 0 {
-				customHostnames := make([]CustomHostname, 0, len(test.CustomHostnames))
-				for _, ch := range test.CustomHostnames {
-					ch.CustomOriginServer = record.Name
-					customHostnames = append(customHostnames, ch)
-				}
-				client.customHostnames = map[string][]CustomHostname{
-					"001": customHostnames,
-				}
-			}
-
-			if test.RegionKey != "" {
-				client.regionalHostnames = map[string][]regionalHostname{
-					"001": {{hostname: record.Name, regionKey: test.RegionKey}},
-				}
-			}
-
-			provider := &CloudFlareProvider{
-				Client: client,
-			}
-			if test.SetupProvider != nil {
-				test.SetupProvider(provider)
-			}
-
-			current, err := provider.Records(t.Context())
-			if err != nil {
-				t.Errorf("should not fail, %s", err)
-			}
-			assert.Len(t, current, 1)
-
-			desired := []*endpoint.Endpoint{}
-			for _, c := range current {
-				// Copy all except ProviderSpecific fields
-				desired = append(desired, &endpoint.Endpoint{
-					DNSName:       c.DNSName,
-					Targets:       c.Targets,
-					RecordType:    c.RecordType,
-					SetIdentifier: c.SetIdentifier,
-					RecordTTL:     c.RecordTTL,
-					Labels:        c.Labels,
-				})
-			}
-
-			desired, err = provider.AdjustEndpoints(desired)
-			assert.NoError(t, err)
-
-			plan := plan.Plan{
-				Current:        current,
-				Desired:        desired,
-				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-			}
-
-			plan = *plan.Calculate()
-			require.NotNil(t, plan.Changes, "should have plan")
-			assert.Empty(t, plan.Changes.Create, "should not have creates")
-			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
-
-			if test.ShouldBeUpdated {
-				assert.Len(t, plan.Changes.UpdateOld, 1, "should have old updates")
-				require.Len(t, plan.Changes.UpdateNew, 1, "should have new updates")
-				if test.PropertyKey != "" {
-					value, ok := plan.Changes.UpdateNew[0].GetProviderSpecificProperty(test.PropertyKey)
-					if test.ExpectPropertyPresent || test.ExpectPropertyValue != "" {
-						assert.Truef(t, ok, "should have property %s", test.PropertyKey)
-						assert.Equal(t, test.ExpectPropertyValue, value)
-					} else {
-						assert.Falsef(t, ok, "should not have property %s", test.PropertyKey)
-					}
-				} else {
-					assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no property key set")
-					assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no property key set")
-				}
-			} else {
-				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
-				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
-				assert.Empty(t, test.PropertyKey, "test misconfigured, should not expect property if no update expected")
-				assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no update expected")
-				assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no update expected")
-			}
-		})
-	}
-}
-
 func generateDNSRecordID(rrtype string, name string, content string) string {
 	return fmt.Sprintf("%s-%s-%s", name, rrtype, content)
-}
-
-var ExampleDomain = []dns.RecordResponse{
-	{
-		ID:      "1234567890",
-		Name:    "foobar.bar.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     120,
-		Content: "1.2.3.4",
-		Proxied: false,
-		Comment: "valid comment",
-	},
-	{
-		ID:      "2345678901",
-		Name:    "foobar.bar.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     120,
-		Content: "3.4.5.6",
-		Proxied: false,
-	},
-	{
-		ID:      "1231231233",
-		Name:    "bar.foo.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     1,
-		Content: "2.3.4.5",
-		Proxied: false,
-	},
 }
