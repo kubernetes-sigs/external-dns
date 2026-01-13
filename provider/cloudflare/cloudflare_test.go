@@ -3723,10 +3723,28 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			},
 		}
 
-		// submitCustomHostnameChanges will try to delete old and create new
-		// Result may vary based on mock behavior, but we verify it doesn't panic
+		client.customHostnames = map[string][]CustomHostname{
+			"zone1": {
+				{
+					ID:                 "ch1",
+					Hostname:           "old.example.com",
+					CustomOriginServer: "origin.example.com",
+				},
+			},
+		}
+
 		result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
-		_ = result
+		assert.True(t, result, "Should successfully update custom hostname")
+		assert.Len(t, client.customHostnames["zone1"], 1, "One custom hostname should exist after update")
+		assert.Contains(t, client.customHostnames["zone1"],
+			CustomHostname{
+				ID:                 "ID-new.example.com",
+				Hostname:           "new.example.com",
+				CustomOriginServer: "origin.example.com",
+			},
+			"Custom hostname should be updated in mock client",
+		)
+	})
 	})
 }
 
