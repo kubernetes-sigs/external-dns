@@ -40,11 +40,12 @@ const (
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                                  string
-	KubeConfig                                    string
-	InformerSyncTimeout                           time.Duration
-	// Deprecated: Use InformerSyncTimeout instead. RequestTimeout is kept for backward compatibility.
-	RequestTimeout time.Duration
+	APIServerURL        string
+	KubeConfig          string
+	InformerSyncTimeout time.Duration
+	// RequestTimeout is used for HTTP client requests to the Kubernetes API server.
+	// For informer cache sync timeout, use InformerSyncTimeout instead.
+	RequestTimeout                                time.Duration
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
 	SkipperRouteGroupVersion                      string

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "23"
+    kubectl.kubernetes.io/last-applied-configuration: |
+    meta.helm.sh/release-name: external-dns
+    meta.helm.sh/release-namespace: core-system
+  creationTimestamp: "2024-07-22T18:33:16Z"
+  generation: 23
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: external-dns
+  namespace: core-system
+  resourceVersion: "292405967"
+  uid: 853c0c30-030d-4df3-be79-cd904735ce3d
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter= benchmarkanalytics.dev
+        - --zone-id-filter=e5257e9b68b1303ce4b1bd052ac1cec1
+        - --provider=cloudflare
+        - --cloudflare-proxied
+        - --cloudflare-dns-records-per-page=5000
+        - --cloudflare-region-key=us
+        - --request-timeout=2m
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        imagePullPolicy: IfNotPresent
+        name: external-dns
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: external-dns
+      serviceAccountName: external-dns
+      terminationGracePeriodSeconds: 30
+status:
+  conditions:
+  - lastTransitionTime: "2025-05-19T17:12:20Z"
+    lastUpdateTime: "2026-01-11T15:35:39Z"
+    message: ReplicaSet "external-dns-65f69df554" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-01-12T15:57:22Z"
+    lastUpdateTime: "2026-01-12T15:57:22Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  observedGeneration: 23
+  replicas: 1
+  unavailableReplicas: 1
+  updatedReplicas: 1
