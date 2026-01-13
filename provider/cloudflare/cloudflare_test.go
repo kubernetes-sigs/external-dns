@@ -232,7 +232,7 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 	if _, ok := m.customHostnames[zoneID]; !ok {
 		m.customHostnames[zoneID] = []CustomHostname{}
 	}
-	var newCustomHostname CustomHostname = ch
+	newCustomHostname := ch
 	newCustomHostname.ID = fmt.Sprintf("ID-%s", ch.Hostname)
 	m.customHostnames[zoneID] = append(m.customHostnames[zoneID], newCustomHostname)
 	return nil
