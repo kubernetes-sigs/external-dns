@@ -3426,7 +3426,7 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 			hostname:           "test.example.com",
 			customOriginServer: "origin.example.com",
 			ssl: &customHostnameSSL{
-				sslType:                 "dv",
+				sslType:              "dv",
 				method:               "http",
 				bundleMethod:         "ubiquitous",
 				certificateAuthority: "digicert",
@@ -3455,8 +3455,8 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 			hostname:           "test.example.com",
 			customOriginServer: "origin.example.com",
 			ssl: &customHostnameSSL{
-				sslType:   "dv",
-				method: "http",
+				sslType: "dv",
+				method:  "http",
 			},
 		}
 
@@ -3476,7 +3476,7 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 			hostname:           "test.example.com",
 			customOriginServer: "origin.example.com",
 			ssl: &customHostnameSSL{
-				sslType:                 "dv",
+				sslType:              "dv",
 				method:               "http",
 				certificateAuthority: "none",
 			},
@@ -3495,7 +3495,7 @@ func TestBuildCustomHostnameNewParams(t *testing.T) {
 			hostname:           "test.example.com",
 			customOriginServer: "origin.example.com",
 			ssl: &customHostnameSSL{
-				sslType:                 "dv",
+				sslType:              "dv",
 				method:               "http",
 				certificateAuthority: "",
 			},
