@@ -3307,6 +3307,15 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 		chs := make(CustomHostnamesMap)
 		result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
 		assert.True(t, result, "Should successfully create custom hostname")
+		assert.Len(t, client.customHostnames["zone1"], 1, "One custom hostname should be created")
+		assert.Contains(t, client.customHostnames["zone1"],
+			CustomHostname{
+				ID:                 "ID-new.example.com",
+				Hostname:           "new.example.com",
+				CustomOriginServer: "origin.example.com",
+			},
+			"Custom hostname should be created in mock client",
+		)
 	})
 
 	t.Run("CustomHostnames_Create_AlreadyExists", func(t *testing.T) {
