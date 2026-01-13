@@ -3339,8 +3339,27 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			},
 		}
 
+		client.customHostnames = map[string][]CustomHostname{
+			"zone1": {
+				{
+					ID:                 "ch1",
+					Hostname:           "exists.example.com",
+					CustomOriginServer: "origin.example.com",
+				},
+			},
+		}
+
 		result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
 		assert.True(t, result, "Should succeed when custom hostname already exists with same origin")
+		assert.Len(t, client.customHostnames["zone1"], 1, "No new custom hostname should be created")
+		assert.Contains(t, client.customHostnames["zone1"],
+			CustomHostname{
+				ID:                 "ch1",
+				Hostname:           "exists.example.com",
+				CustomOriginServer: "origin.example.com",
+			},
+			"Existing custom hostname should remain unchanged in mock client",
+		)
 	})
 
 	t.Run("CustomHostnames_Delete", func(t *testing.T) {
