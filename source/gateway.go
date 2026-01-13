@@ -201,14 +201,14 @@ func newGatewayRouteSource(
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := informers.WaitForCacheSync(ctx, rtInformerFactory, config.RequestTimeout); err != nil {
+		if err := informers.WaitForCacheSync(ctx, rtInformerFactory, config.InformerSyncTimeout); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, informerFactory, config.RequestTimeout); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, config.InformerSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory, config.RequestTimeout); err != nil {
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory, config.InformerSyncTimeout); err != nil {
 		return nil, err
 	}
 
