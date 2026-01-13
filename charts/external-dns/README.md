@@ -126,7 +126,15 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | managedRecordTypes | list | `[]` | Record types to manage (default: A, AAAA, CNAME) |
 | nameOverride | string | `nil` | Override the name of the chart. |
 | namespaced | bool | `false` | if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too). |
+| networkPolicy.allowExternalEgress | bool | `true` | Allow the pod to access any range of port and all destinations. |
+| networkPolicy.enabled | bool | `true` | If `true`, create a [`NetworkPolicy`](https://kubernetes.io/docs/concepts/services-networking/network-policies/) resource. |
+| networkPolicy.extraEgress | list | `[]` | Extra egress rules. |
+| networkPolicy.extraIngress | list | `[]` | Extra ingress rules. |
+| networkPolicy.kubeAPIServerPorts | list | `[443,6443,8443]` | List of possible kube-apiserver endpoints to allow egress to when `allowExternalEgress` is set to `false`. |
 | nodeSelector | object | `{}` | Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
+| pdb.create | bool | `false` | If `true`, create a [`PodDisruptionBudget`](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets) resource. |
+| pdb.maxUnavailable | string | `nil` | Maximum number or percentage of pods that may be made unavailable, defaults to `1` if both `pdb.minAvailable` and `pdb.maxUnavailable` are empty. |
+| pdb.minAvailable | string | `nil` | Minimum number or percentage of pods that should remain scheduled. |
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
 | podLabels | object | `{}` | Labels to add to the `Pod`. |
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
