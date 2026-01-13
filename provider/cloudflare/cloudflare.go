@@ -18,6 +18,7 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -896,6 +897,24 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
 }
 
+// getMXRecordPriority extracts the MX record priority from the SDK's union type.
+// Workaround for cloudflare-go v5/v6 issue #4180 where RecordResponse.Priority
+// always returns 0 for MX records. The correct value is in the union type.
+// TODO: Remove this workaround when cloudflare-go fixes the bug.
+func getMXRecordPriority(record dns.RecordResponse) float64 {
+	// Workaround: parse priority from raw JSON since SDK doesn't populate it correctly
+	rawJSON := record.JSON.RawJSON()
+	if rawJSON != "" {
+		var parsed struct {
+			Priority float64 `json:"priority"`
+		}
+		if err := json.Unmarshal([]byte(rawJSON), &parsed); err == nil {
+			return parsed.Priority
+		}
+	}
+	return record.Priority
+}
+
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
 func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
@@ -906,6 +925,10 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
+		// Workaround for cloudflare-go v5/v6 issue #4180
+		if record.Type == dns.RecordResponseTypeMX {
+			record.Priority = getMXRecordPriority(record)
+		}
 		recordsMap[newDNSRecordIndex(record)] = record
 	}
 	if iter.Err() != nil {
