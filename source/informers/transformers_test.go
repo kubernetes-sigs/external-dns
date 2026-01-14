@@ -15,6 +15,7 @@ package informers
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -133,7 +134,7 @@ func TestTransformer_Service_WithFakeClient(t *testing.T) {
 		require.NoError(t, err)
 
 		factory.Start(ctx.Done())
-		err = WaitForCacheSync(ctx, factory)
+		err = WaitForCacheSync(ctx, factory, time.Minute)
 		require.NoError(t, err)
 
 		got, err := serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
@@ -161,7 +162,7 @@ func TestTransformer_Service_WithFakeClient(t *testing.T) {
 		require.NoError(t, err)
 
 		factory.Start(ctx.Done())
-		err = WaitForCacheSync(ctx, factory)
+		err = WaitForCacheSync(ctx, factory, time.Minute)
 		require.NoError(t, err)
 
 		got, err := serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)

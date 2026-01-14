@@ -118,6 +118,7 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
+	CloudflareDataLocalizationConflictResolution  bool
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
 	AkamaiServiceConsumerDomain                   string
@@ -586,6 +587,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.IntVar("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)", defaultConfig.CloudflareDNSRecordsPerPage, &cfg.CloudflareDNSRecordsPerPage)
 	b.BoolVar("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)", defaultConfig.CloudflareRegionalServices, &cfg.CloudflareRegionalServices)
 	b.StringVar("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)", "", &cfg.CloudflareRegionKey)
+	b.BoolVar("cloudflare-region-key-conflict-resolution", "When using the Cloudflare provider with Regional Services, delete Global records that conflict with the new Region-specific records (destructive, default: disabled)", false, &cfg.CloudflareDataLocalizationConflictResolution)
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
