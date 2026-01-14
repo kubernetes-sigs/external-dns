@@ -63,8 +63,8 @@ crd:
 	@./scripts/generate-crd.sh
 
 # Required while depedabot is not supporting go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
-#? tools-deps: Update go tools defined in go.tool.mod to latest versions
-tools-deps:
+#? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
+update-tools-deps:
 	@go get -modfile=go.tool.mod tool
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
