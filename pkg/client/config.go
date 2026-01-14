@@ -34,9 +34,9 @@ import (
 // Supports both in-cluster and external cluster configurations.
 //
 // Configuration Priority:
-// 1. If kubeConfig is empty, tries the recommended home file (~/.kube/config)
-// 2. If kubeConfig is still empty, uses in-cluster service account
-// 3. Otherwise, uses the specified kubeConfig file
+// 1. KubeConfig file if specified
+// 2. Recommended home file (~/.kube/config)
+// 3. In-cluster config
 func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
