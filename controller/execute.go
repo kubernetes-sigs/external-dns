@@ -244,7 +244,8 @@ func buildProvider(
 			cloudflare.DNSRecordsConfig{
 				PerPage: cfg.CloudflareDNSRecordsPerPage,
 				Comment: cfg.CloudflareDNSRecordsComment,
-			})
+			},
+		)
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":

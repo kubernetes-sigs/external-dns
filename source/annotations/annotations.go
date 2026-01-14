@@ -36,6 +36,7 @@ var (
 	CloudflareRegionKey         string
 	CloudflareRecordCommentKey  string
 	CloudflareTagsKey           string
+	CloudflareRulesetKey        string
 
 	AWSPrefix        string
 	CoreDNSPrefix    string
@@ -80,6 +81,7 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflareRegionKey = AnnotationKeyPrefix + "cloudflare-region-key"
 	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
+	CloudflareRulesetKey = AnnotationKeyPrefix + "cloudflare-ruleset"
 
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
