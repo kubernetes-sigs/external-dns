@@ -367,7 +367,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 534, sourceRecords.Gauge, map[string]string{"record_type": "a"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, sourceRecords.Gauge, map[string]string{"record_type": "cname"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, sourceRecords.Gauge, map[string]string{"record_type": "cname"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 11, sourceRecords.Gauge, map[string]string{"record_type": "srv"})
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 5334, registryRecords.Gauge, map[string]string{"record_type": "a"})

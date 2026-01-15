@@ -54,6 +54,7 @@ var (
 	KnownRecordTypes = []string{
 		RecordTypeA,
 		RecordTypeAAAA,
+		RecordTypeCNAME,
 		RecordTypeTXT,
 		RecordTypeSRV,
 		RecordTypeNS,
