@@ -15,6 +15,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,6 +73,7 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 				false,
 				labels.Everything(),
 				[]string{},
+				time.Duration(0),
 			)
 
 			if tt.expectError {
@@ -334,6 +336,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 				false,
 				labels.Everything(),
 				[]string{},
+				time.Duration(0),
 			)
 
 			require.NoError(t, err)

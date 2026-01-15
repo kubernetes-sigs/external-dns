@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,6 +105,7 @@ func (suite *GatewaySuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	suite.NoError(err, "should initialize gateway source")
 	suite.NoError(err, "should succeed")
@@ -178,6 +180,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				time.Duration(0),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1516,6 +1519,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -1629,6 +1633,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				"",
 				false,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -1713,7 +1718,8 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		"",
 		"",
 		false,
-		false)
+		false,
+		time.Duration(0))
 	require.NoError(t, err)
 	gwSource, ok := src.(*gatewaySource)
 	require.True(t, ok)
@@ -1871,6 +1877,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		"",
 		false,
 		false,
+		time.Duration(0),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, src)
@@ -1913,6 +1920,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 		"{{.Name}}",
 		false,
 		false,
+		time.Duration(0),
 	)
 	if err != nil {
 		return nil, err

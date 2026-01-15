@@ -18,6 +18,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,6 +66,7 @@ func TestNodeSourceNewNodeSourceWithFqdn(t *testing.T) {
 				true,
 				true,
 				false,
+				time.Duration(0),
 			)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -339,6 +341,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				true,
 				true,
 				tt.combineFQDN,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 

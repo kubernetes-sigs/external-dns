@@ -36,6 +36,7 @@ nav:
       - MultiTarget: docs/proposal/multi-target.md
       - NAT64: docs/advanced/nat64.md
       - Rate Limits: docs/advanced/rate-limits.md
+      - Informer Sync Timeout: docs/advanced/informer-sync-timeout.md
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md
       - Configuration Precedence: docs/advanced/configuration-precedence.md

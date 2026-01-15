@@ -15,17 +15,17 @@ package source
 
 import (
 	"fmt"
-	"math/rand/v2"
-	"net"
-	"strconv"
-	"testing"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"math/rand/v2"
+	"net"
+	"strconv"
+	"testing"
+	"time"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -221,7 +221,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				tt.namespace, "",
 				false, "",
 				"{{ .Name }}.tld.org", false,
-				tt.annotationFilter, selector)
+				tt.annotationFilter, selector, time.Duration(0))
 			require.NoError(t, err)
 
 			endpoints, err := pSource.Endpoints(t.Context())

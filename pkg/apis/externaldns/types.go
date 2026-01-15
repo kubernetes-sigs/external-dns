@@ -40,8 +40,11 @@ const (
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                                  string
-	KubeConfig                                    string
+	APIServerURL        string
+	KubeConfig          string
+	InformerSyncTimeout time.Duration
+	// RequestTimeout is used for HTTP client requests to the Kubernetes API server.
+	// For informer cache sync timeout, use InformerSyncTimeout instead.
 	RequestTimeout                                time.Duration
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
@@ -338,6 +341,7 @@ var defaultConfig = &Config{
 	RegexDomainExclude:           regexp.MustCompile(""),
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     "txt",
+	InformerSyncTimeout:          time.Second * 60,
 	RequestTimeout:               time.Second * 30,
 	RFC2136BatchChangeSize:       50,
 	RFC2136GSSTSIG:               false,
@@ -493,7 +497,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
-	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
+	b.DurationVar("informer-sync-timeout", "Timeout for waiting for Kubernetes informer caches to sync during startup. This affects cache synchronization, not individual API requests. 0s means use the default (60s). Increase only after ruling out RBAC, network, or API server issues.", defaultConfig.InformerSyncTimeout, &cfg.InformerSyncTimeout)
+	b.DurationVar("request-timeout", "DEPRECATED: Use --informer-sync-timeout instead. Request timeout when calling Kubernetes APIs.", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 

@@ -17,14 +17,14 @@ limitations under the License.
 package source
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+	"testing"
+	"time"
 )
 
 func TestNewPodSourceWithFqdn(t *testing.T) {
@@ -60,7 +60,8 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 				tt.fqdnTemplate,
 				false,
 				"",
-				nil)
+				nil,
+				time.Duration(0))
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -409,7 +410,8 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil,
+				time.Duration(0))
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -473,7 +475,7 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil, time.Duration(0))
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())

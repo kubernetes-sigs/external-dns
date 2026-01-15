@@ -36,6 +36,7 @@ var (
 	minimalConfig = &Config{
 		APIServerURL:                           "",
 		KubeConfig:                             "",
+		InformerSyncTimeout:                    time.Second * 60,
 		RequestTimeout:                         time.Second * 30,
 		GlooNamespaces:                         []string{"gloo-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v1",
@@ -139,6 +140,7 @@ var (
 	overriddenConfig = &Config{
 		APIServerURL:                           "http://127.0.0.1:8080",
 		KubeConfig:                             "/some/path",
+		InformerSyncTimeout:                    time.Second * 60,
 		RequestTimeout:                         time.Second * 77,
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v2",

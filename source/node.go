@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -63,7 +64,9 @@ func NewNodeSource(
 	labelSelector labels.Selector,
 	exposeInternalIPv6,
 	excludeUnschedulable bool,
-	combineFQDNAnnotation bool) (Source, error) {
+	combineFQDNAnnotation bool,
+	timeout time.Duration,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -80,7 +83,7 @@ func NewNodeSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

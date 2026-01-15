@@ -41,28 +41,26 @@ func (m *mockDynamicInformerFactory) WaitForCacheSync(_ <-chan struct{}) map[sch
 	return m.syncResults
 }
 
+// TestWaitForCacheSync verifies that WaitForCacheSync uses soft error handling.
+// Instead of returning errors, it logs warnings and returns nil to prevent crash loops.
 func TestWaitForCacheSync(t *testing.T) {
 	tests := []struct {
 		name        string
 		syncResults map[reflect.Type]bool
-		expectError bool
-		errorMsg    string
 	}{
 		{
 			name:        "all caches synced",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): true},
 		},
 		{
-			name:        "some caches not synced",
+			// Soft error: logs warning but returns nil to prevent crash loops
+			name:        "some caches not synced - soft error",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 		{
-			name:        "context timeout",
+			// Soft error: logs warning but returns nil to prevent crash loops
+			name:        "context timeout - soft error",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 	}
 
@@ -71,40 +69,35 @@ func TestWaitForCacheSync(t *testing.T) {
 			ctx := context.Background()
 
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := WaitForCacheSync(ctx, factory)
+			err := WaitForCacheSync(ctx, factory, 0)
 
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Errorf(t, err, tt.errorMsg)
-			} else {
-				assert.NoError(t, err)
-			}
+			// All cases should return nil due to soft error handling.
+			// This prevents crash loops that can overwhelm the API server.
+			assert.NoError(t, err, "WaitForCacheSync should return nil for soft error handling")
 		})
 	}
 }
 
+// TestWaitForDynamicCacheSync verifies that WaitForDynamicCacheSync uses soft error handling.
+// Instead of returning errors, it logs warnings and returns nil to prevent crash loops.
 func TestWaitForDynamicCacheSync(t *testing.T) {
 	tests := []struct {
 		name        string
 		syncResults map[schema.GroupVersionResource]bool
-		expectError bool
-		errorMsg    string
 	}{
 		{
 			name:        "all caches synced",
 			syncResults: map[schema.GroupVersionResource]bool{{}: true},
 		},
 		{
-			name:        "some caches not synced",
+			// Soft error: logs warning but returns nil to prevent crash loops
+			name:        "some caches not synced - soft error",
 			syncResults: map[schema.GroupVersionResource]bool{{}: false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 		{
-			name:        "context timeout",
+			// Soft error: logs warning but returns nil to prevent crash loops
+			name:        "context timeout - soft error",
 			syncResults: map[schema.GroupVersionResource]bool{{}: false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 	}
 
@@ -113,14 +106,11 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			ctx := context.Background()
 
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
-			err := WaitForDynamicCacheSync(ctx, factory)
+			err := WaitForDynamicCacheSync(ctx, factory, 0)
 
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Errorf(t, err, tt.errorMsg)
-			} else {
-				assert.NoError(t, err)
-			}
+			// All cases should return nil due to soft error handling.
+			// This prevents crash loops that can overwhelm the API server.
+			assert.NoError(t, err, "WaitForDynamicCacheSync should return nil for soft error handling")
 		})
 	}
 }

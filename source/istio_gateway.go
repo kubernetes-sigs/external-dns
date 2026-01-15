@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -80,6 +81,7 @@ func NewIstioGatewaySource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	timeout time.Duration,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -113,10 +115,10 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory, timeout); err != nil {
 		return nil, err
 	}
 
