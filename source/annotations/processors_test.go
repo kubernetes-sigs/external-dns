@@ -32,9 +32,7 @@ type objectUnderTest struct {
 
 func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
 
-func assembleObject(annots map[string]string) metav1.ObjectMetaAccessor {
-	return &objectUnderTest{meta: metav1.ObjectMeta{Annotations: annots}}
-}
+
 
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
