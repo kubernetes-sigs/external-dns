@@ -62,7 +62,7 @@ lint: licensecheck go-lint
 crd:
 	@./scripts/generate-crd.sh
 
-# Required while depedabot is not supporting go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
 update-tools-deps:
 	@go get -modfile=go.tool.mod tool
