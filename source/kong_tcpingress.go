@@ -158,7 +158,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		if err != nil {
 			return nil, err
 		}
-		if endpoint.HasEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
+		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
 

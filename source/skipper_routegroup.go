@@ -283,7 +283,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			}
 		}
 
-		if endpoint.HasEmptyEndpoints(eps, types.OpenShiftRoute, rg) {
+		if endpoint.HasNoEmptyEndpoints(eps, types.OpenShiftRoute, rg) {
 			continue
 		}
 

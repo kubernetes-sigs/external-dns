@@ -283,7 +283,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 		}
 
-		if endpoint.HasEmptyEndpoints(svcEndpoints, types.Service, svc) {
+		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
 

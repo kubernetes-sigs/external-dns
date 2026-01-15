@@ -80,8 +80,9 @@ func TestHasEmptyEndpoints(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := HasEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
+			result := HasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
 			assert.Equal(t, tc.expected, result)
+			// TODO: Add log capture and verification
 		})
 	}
 }
