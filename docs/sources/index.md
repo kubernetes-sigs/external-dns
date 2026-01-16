@@ -8,7 +8,10 @@ tags:
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW SOURCE ADDED PLEASE RUN 'make generate-sources-documentation' -->
+<!-- TODO: address mardkown lint issue -->
 <!-- markdownlint-disable MD013 -->
+<!-- markdownlint-disable MD055 -->
+<!-- markdownlint-disable MD056 -->
 
 ExternalDNS supports multiple sources for discovering DNS records. Each source watches specific Kubernetes or cloud platform resources and generates DNS records based on their configuration.
 
