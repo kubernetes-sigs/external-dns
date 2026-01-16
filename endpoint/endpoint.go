@@ -54,6 +54,7 @@ var (
 	KnownRecordTypes = []string{
 		RecordTypeA,
 		RecordTypeAAAA,
+		RecordTypeCNAME,
 		RecordTypeTXT,
 		RecordTypeSRV,
 		RecordTypeNS,
@@ -245,7 +246,7 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
-	// TODO: should be an array, as endpoints merged from multiple sources may have multiple owners
+	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
 	// +optional
 	refObject *ObjectRef `json:"-"`
 }
@@ -552,4 +553,32 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// GetDNSName returns the DNS name of the endpoint.
+func (e *Endpoint) GetDNSName() string {
+	return e.DNSName
+}
+
+// GetRecordType returns the record type of the endpoint.
+func (e *Endpoint) GetRecordType() string {
+	return e.RecordType
+}
+
+// GetRecordTTL returns the TTL of the endpoint as int64.
+func (e *Endpoint) GetRecordTTL() int64 {
+	return int64(e.RecordTTL)
+}
+
+// GetTargets returns the targets of the endpoint.
+func (e *Endpoint) GetTargets() []string {
+	return e.Targets
+}
+
+// GetOwner returns the owner of the endpoint from labels or set identifier.
+func (e *Endpoint) GetOwner() string {
+	if val, ok := e.Labels[OwnerLabelKey]; ok {
+		return val
+	}
+	return e.SetIdentifier
 }

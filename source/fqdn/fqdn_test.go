@@ -243,6 +243,54 @@ func TestExecTemplateEmptyObject(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestExecTemplatePopulatesEmptyKind(t *testing.T) {
+	// Test that Kind is populated when initially empty (simulates informer behavior)
+	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	require.NoError(t, err)
+
+	// Create object with empty TypeMeta (Kind == "")
+	obj := &testObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+		},
+	}
+
+	// Kind should be empty initially
+	assert.Empty(t, obj.GetObjectKind().GroupVersionKind().Kind)
+
+	got, err := ExecTemplate(tmpl, obj)
+	require.NoError(t, err)
+
+	// Kind should now be populated via reflection
+	assert.Equal(t, "testObject", obj.GetObjectKind().GroupVersionKind().Kind)
+	assert.Equal(t, []string{"testObject.test.example.com"}, got)
+}
+
+func TestExecTemplatePreservesExistingKind(t *testing.T) {
+	// Test that existing Kind is not overwritten
+	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	require.NoError(t, err)
+
+	obj := &testObject{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CustomKind",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+		},
+	}
+
+	got, err := ExecTemplate(tmpl, obj)
+	require.NoError(t, err)
+
+	// Kind should remain unchanged
+	assert.Equal(t, "CustomKind", obj.GetObjectKind().GroupVersionKind().Kind)
+	assert.Equal(t, []string{"CustomKind.test.example.com"}, got)
+}
+
 func TestFqdnTemplate(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -407,12 +455,13 @@ func TestIsIPv4String(t *testing.T) {
 }
 
 type testObject struct {
+	metav1.TypeMeta
 	metav1.ObjectMeta
-	runtime.Object
 }
 
 func (t *testObject) DeepCopyObject() runtime.Object {
 	return &testObject{
+		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
 }

@@ -96,6 +96,16 @@ type (
 		GetOwner() string
 		RefObject() *ObjectReference
 	}
+
+	// EndpointInfo defines the interface for endpoint data needed to create events.
+	EndpointInfo interface {
+		GetDNSName() string
+		GetRecordType() string
+		GetRecordTTL() int64
+		GetTargets() []string
+		GetOwner() string
+		RefObject() *ObjectReference
+	}
 )
 
 func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
