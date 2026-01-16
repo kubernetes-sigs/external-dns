@@ -72,6 +72,8 @@ markdown_extensions:
   - admonition
   - smarty
   - nl2br
+  - mdx_truly_sane_lists:
+      nested_indent: 2
   - attr_list
   - def_list
   - footnotes
