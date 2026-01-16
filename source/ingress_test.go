@@ -1605,6 +1605,82 @@ func TestIngressWithConfiguration(t *testing.T) {
 				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
 			},
 		},
+		{
+			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: endpoint.Targets{
+						"internal-k8s-some-domain.us-east-1.elb.amazonaws.com",
+						"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+					},
+				},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB with target annotation and CNAME with single target",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+							annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()

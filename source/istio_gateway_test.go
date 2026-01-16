@@ -504,7 +504,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				require.NoError(t, err)
 			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGateway(context.Background(), hostnames, gatewayCfg); err != nil {
+			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)

@@ -922,8 +922,8 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-			evalTargetHealth = prop == "true"
+		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+			evalTargetHealth = prop
 		}
 		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
@@ -955,48 +955,47 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues *= 2
 	}
 
-	setIdentifier := ep.SetIdentifier
-	if setIdentifier != "" {
-		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
-			weight, err := strconv.ParseInt(prop, 10, 64)
-			if err != nil {
-				log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
-				weight = 0
-			}
-			change.ResourceRecordSet.Weight = aws.Int64(weight)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
-			change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
-			change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
-		}
-		if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
-			change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
-		}
-
-		geolocation := &route53types.GeoLocation{}
-		useGeolocation := false
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
-			geolocation.ContinentCode = aws.String(prop)
-			useGeolocation = true
-		} else {
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
-				geolocation.CountryCode = aws.String(prop)
-				useGeolocation = true
-			}
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
-				geolocation.SubdivisionCode = aws.String(prop)
-				useGeolocation = true
-			}
-		}
-		if useGeolocation {
-			change.ResourceRecordSet.GeoLocation = geolocation
-		}
-
-		withChangeForGeoProximityEndpoint(change, ep)
+	if ep.SetIdentifier != "" {
+		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
 	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
+		weight, err := strconv.ParseInt(prop, 10, 64)
+		if err != nil {
+			log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
+			weight = 0
+		}
+		change.ResourceRecordSet.Weight = aws.Int64(weight)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
+		change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
+		change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
+	}
+	if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
+		change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
+	}
+
+	geolocation := &route53types.GeoLocation{}
+	useGeolocation := false
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
+		geolocation.ContinentCode = aws.String(prop)
+		useGeolocation = true
+	} else {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
+			geolocation.CountryCode = aws.String(prop)
+			useGeolocation = true
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
+			geolocation.SubdivisionCode = aws.String(prop)
+			useGeolocation = true
+		}
+	}
+	if useGeolocation {
+		change.ResourceRecordSet.GeoLocation = geolocation
+	}
+
+	withChangeForGeoProximityEndpoint(change, ep)
 
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
 		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
@@ -1346,8 +1345,8 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
-	isAlias, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && isAlias == "true" && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {

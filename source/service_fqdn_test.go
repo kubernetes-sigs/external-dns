@@ -738,6 +738,94 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "minecraft.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
 			},
 		},
+		{
+			title: "templating resolves headless services with Kind check and label contains",
+			fqdnTemplate: `{{ if eq .Kind "Service" }}{{ range $key, $value := .Labels }}
+				{{ if and (contains $key "app") (contains $value "my-service-") }}
+				{{ $.Name }}.{{ $value }}.example.com,{{ end }}{{ end }}{{ end }}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "service-one.my-service-123.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.66.2.241"}},
+				{DNSName: "service-two.my-service-345.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.66.2.244"}},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-one",
+						Labels: map[string]string{
+							"app1": "my-service-123",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
+						Ports: []v1.ServicePort{
+							{Name: "http", Port: 8080},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-two",
+						Labels: map[string]string{
+							"app2": "my-service-345",
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
+						Ports: []v1.ServicePort{
+							{Name: "http", Port: 8080},
+						},
+					},
+				},
+			},
+			endpointSlices: []*discoveryv1.EndpointSlice{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-one-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-one",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.241"},
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "default",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-two-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-two",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.244"},
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "default",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -769,7 +857,12 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 							Namespace: el.Namespace,
 						},
 						Spec: v1.PodSpec{
-							Hostname: *ep.Hostname,
+							Hostname: func() string {
+								if ep.Hostname != nil {
+									return *ep.Hostname
+								}
+								return ""
+							}(),
 							NodeName: "test-node",
 						},
 						Status: v1.PodStatus{

@@ -98,6 +98,9 @@ linters:
       - linters:
           - gochecknoinits
         path: ^(.*/controller\.go|internal/.*/init\.go|pkg/.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+      - linters:
+          - modernize
+        path: ^(apis/.*\.go)$
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$

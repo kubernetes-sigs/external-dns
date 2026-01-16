@@ -1,3 +1,6 @@
+---
+tags: ["advanced", "area/events", "events"]
+---
 # Kubernetes Events in External-DNS
 
 External-DNS manages DNS records dynamically based on Kubernetes resources like Services and Ingresses.
@@ -31,6 +34,7 @@ kubectl describe service <name>
 kubectl get events --field-selector involvedObject.kind=Service
 kubectl get events --field-selector type=Normal|Warning
 kubectl get events --field-selector reason=RecordReady|RecordDeleted|RecordError
+kubectl get events --field-selector reportingComponent=external-dns
 ```
 
 Or integrate with tools like:
@@ -114,7 +118,6 @@ If a source does not emit events, it may in the future.
 | Source                 | Supported |
 |:-----------------------|:---------:|
 | `ambassador-host`      |           |
-| `cloudfoundry`         |           |
 | `connector`            |           |
 | `contour-httpproxy`    |           |
 | `crd`                  |           |

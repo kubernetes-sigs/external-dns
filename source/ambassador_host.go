@@ -56,6 +56,14 @@ var (
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=ambassador-host
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Ambassador Host resources
+// +externaldns:source:resources=Host.getambassador.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface

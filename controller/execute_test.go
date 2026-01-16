@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Logger
@@ -267,7 +268,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), tt.cfg)
+			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
 			require.NoError(t, err)
 		})
 	}
@@ -297,14 +298,21 @@ func TestHelperProcess(t *testing.T) {
 // runExecuteSubprocess runs Execute in a separate process and returns exit code and output.
 func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	t.Helper()
+	// make sure the subprocess does not run forever
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
-	cmd := exec.Command(os.Args[0], cmdArgs...)
+	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
 	output := buf.String()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return -1, output, ctx.Err()
+	}
 	if err == nil {
 		return 0, output, nil
 	}
@@ -440,7 +448,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	src, err := buildSource(ctx, cfg)
+	src, err := buildSource(ctx, source.NewSourceConfig(cfg))
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),

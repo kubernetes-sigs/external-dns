@@ -40,6 +40,14 @@ import (
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
 // The HTTPProxy implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=contour-httpproxy
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Contour HTTPProxy resources
+// +externaldns:source:resources=HTTPProxy.projectcontour.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
@@ -139,17 +147,14 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		}
 
 		// apply template if fqdn is missing on HTTPProxy
-		if (sc.combineFQDNAnnotation || len(hpEndpoints) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(hp)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
-			}
-
-			if sc.combineFQDNAnnotation {
-				hpEndpoints = append(hpEndpoints, tmplEndpoints...)
-			} else {
-				hpEndpoints = tmplEndpoints
-			}
+		hpEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			hpEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(hpEndpoints) == 0 {

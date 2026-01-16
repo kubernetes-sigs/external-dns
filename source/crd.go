@@ -44,6 +44,14 @@ import (
 
 // crdSource is an implementation of Source that provides endpoints by listing
 // specified CRD and fetching Endpoints embedded in Spec.
+//
+// +externaldns:source:name=crd
+// +externaldns:source:category=ExternalDNS
+// +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
+// +externaldns:source:resources=DNSEndpoint.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string
@@ -52,15 +60,6 @@ type crdSource struct {
 	annotationFilter string
 	labelSelector    labels.Selector
 	informer         cache.SharedInformer
-}
-
-func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
-	scheme.AddKnownTypes(groupVersion,
-		&apiv1alpha1.DNSEndpoint{},
-		&apiv1alpha1.DNSEndpointList{},
-	)
-	metav1.AddToGroupVersion(scheme, groupVersion)
-	return nil
 }
 
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
@@ -102,7 +101,7 @@ func NewCRDClientForAPIVersionKind(
 	}
 
 	scheme := runtime.NewScheme()
-	_ = addKnownTypes(scheme, groupVersion)
+	_ = apiv1alpha1.AddToScheme(scheme)
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"

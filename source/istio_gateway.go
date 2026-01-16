@@ -49,6 +49,14 @@ var IstioGatewayIngressSource = annotations.Ingress
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=istio-gateway
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Istio Gateway resources
+// +externaldns:source:resources=Gateway.networking.istio.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type gatewaySource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
@@ -154,28 +162,26 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		// apply template if host is missing on gateway
-		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				gwHostnames = append(gwHostnames, iHostnames...)
-			} else {
-				gwHostnames = iHostnames
-			}
-		}
-
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
 
-		if len(gwHostnames) == 0 {
-			log.Debugf("No hostnames could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
-			continue
+		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
+		if err != nil {
+			return nil, err
 		}
 
-		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
+		// apply template if host is missing on gateway
+		gwEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			gwEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) {
+				hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
+				if err != nil {
+					return nil, err
+				}
+				return sc.endpointsFromGateway(hostnames, gateway)
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +236,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -245,11 +251,11 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	targets, err := sc.targetsFromGateway(ctx, gateway)
+	targets, err := sc.targetsFromGateway(gateway)
 	if err != nil {
 		return nil, err
 	}
