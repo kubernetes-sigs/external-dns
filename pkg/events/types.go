@@ -87,17 +87,6 @@ type (
 	}
 
 	// EndpointInfo defines the interface for endpoint data needed to create events.
-	// This avoids circular imports between endpoint and events packages.
-	EndpointInfo interface {
-		GetDNSName() string
-		GetRecordType() string
-		GetRecordTTL() int64
-		GetTargets() []string
-		GetOwner() string
-		RefObject() *ObjectReference
-	}
-
-	// EndpointInfo defines the interface for endpoint data needed to create events.
 	EndpointInfo interface {
 		GetDNSName() string
 		GetRecordType() string
