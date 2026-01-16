@@ -52,6 +52,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string
