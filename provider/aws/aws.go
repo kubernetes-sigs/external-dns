@@ -31,6 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -365,7 +366,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
-	if p.zonesCache.Expired() {
+	if !p.zonesCache.Expired() {
 		log.Debug("Using cached zones list")
 		return p.zonesCache.Get(), nil
 	}

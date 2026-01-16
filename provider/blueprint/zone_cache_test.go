@@ -80,7 +80,7 @@ func TestZoneCache_ThreadSafety(t *testing.T) {
 
 	// Writer goroutine
 	go func() {
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			cache.Reset([]int{i})
 		}
 		done <- true
@@ -88,7 +88,7 @@ func TestZoneCache_ThreadSafety(t *testing.T) {
 
 	// Reader goroutine
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			_ = cache.Get()
 			_ = cache.Expired()
 		}
