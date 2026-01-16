@@ -338,13 +338,14 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewOcpRouteSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				!tt.combineFqdn,
-				false,
-				labels.Everything(),
-				"",
+				&Config{
+					Namespace:                "",
+					AnnotationFilter:         "",
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: !tt.combineFqdn,
+					LabelFilter:              labels.Everything(),
+					OCPRouterName:            "",
+				},
 			)
 			require.NoError(t, err)
 
