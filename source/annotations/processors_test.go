@@ -32,8 +32,6 @@ type objectUnderTest struct {
 
 func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
 
-
-
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
 		name             string
