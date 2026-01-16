@@ -256,9 +256,10 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 
 			// Start new source
 			currentSource = &Source{
-				Type: typeName,
-				File: filePath,
-				Name: strings.TrimPrefix(line, annotationName),
+				Type:   typeName,
+				File:   filePath,
+				Name:   strings.TrimPrefix(line, annotationName),
+				Events: "false",
 			}
 		case currentSource == nil:
 			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
