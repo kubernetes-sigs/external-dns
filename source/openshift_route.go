@@ -41,8 +41,16 @@ import (
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
 // The Route implementation will use the Route spec.host field for the hostname,
 // and the Route status' canonicalHostname field as the target.
-// The targetAnnotationKey can be used to explicitly set an alternative
+// The annotations.TargetKey can be used to explicitly set an alternative
 // endpoint, if desired.
+//
+// +externaldns:source:name=openshift-route
+// +externaldns:source:category=OpenShift
+// +externaldns:source:description=Creates DNS entries from OpenShift Route resources
+// +externaldns:source:resources=Route.route.openshift.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
@@ -74,13 +82,13 @@ func NewOcpRouteSource(
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewFilteredSharedInformerFactory(ocpClient, 0*time.Second, namespace, nil)
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(namespace))
 	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	informer.Informer().AddEventHandler(
+	_, _ = informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -88,7 +96,7 @@ func NewOcpRouteSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -105,24 +113,24 @@ func NewOcpRouteSource(
 	}, nil
 }
 
-func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ors *ocpRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for openshift route")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all OpenShift Route resources on all namespaces, unless an explicit namespace
 // is specified in ocpRouteSource.
-func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(ors.labelSelector)
 	if err != nil {
 		return nil, err
 	}
 
-	ocpRoutes, err = ors.filterByAnnotations(ocpRoutes)
+	ocpRoutes, err = annotations.Filter(ocpRoutes, ors.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -131,27 +139,24 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 	for _, ocpRoute := range ocpRoutes {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := ocpRoute.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := ocpRoute.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping OpenShift Route %s/%s because controller value does not match, found: %s, required: %s",
-				ocpRoute.Namespace, ocpRoute.Name, controller, controllerAnnotationValue)
+				ocpRoute.Namespace, ocpRoute.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
 		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
-		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
-			oEndpoints, err := ors.endpointsFromTemplate(ocpRoute)
-			if err != nil {
-				return nil, err
-			}
-
-			if ors.combineFQDNAnnotation {
-				orEndpoints = append(orEndpoints, oEndpoints...)
-			} else {
-				orEndpoints = oEndpoints
-			}
+		orEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			orEndpoints,
+			ors.fqdnTemplate,
+			ors.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return ors.endpointsFromTemplate(ocpRoute) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(orEndpoints) == 0 {
@@ -193,29 +198,6 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
-	selector, err := annotations.ParseFilter(ors.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ocpRoutes, nil
-	}
-
-	var filteredList []*routev1.Route
-
-	for _, ocpRoute := range ocpRoutes {
-		// include ocpRoute if its annotations match the selector
-		if selector.Matches(labels.Set(ocpRoute.Annotations)) {
-			filteredList = append(filteredList, ocpRoute)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object

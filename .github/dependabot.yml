@@ -27,3 +27,18 @@ updates:
       dev-dependencies:
         patterns:
           - "*"
+
+  # Dependencies listed in requirements.txt
+  - package-ecosystem: "pip"
+    directory: "docs/scripts"
+    schedule:
+      interval: "monthly"
+    groups:
+      mkdocs-deps:
+        patterns:
+          - "*"
+    labels:
+      - python
+      - dependencies
+      - ok-to-test
+      - release-note-none

@@ -526,3 +526,27 @@ tests:
               resources: ["virtualservices"]
               verbs: ["get","watch","list"]
         template: clusterrole.yaml
+  - it: should create default RBAC rules for 'GlooEdge' when 'gloo-proxy' is set
+    set:
+      sources:
+        - gloo-proxy
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["list","watch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gloo.solo.io","gateway.solo.io"]
+              resources: ["proxies","virtualservices","gateways"]
+              verbs: ["get","watch","list"]

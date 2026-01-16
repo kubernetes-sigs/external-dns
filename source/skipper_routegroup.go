@@ -48,6 +48,13 @@ const (
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
 )
 
+// +externaldns:source:name=skipper-routegroup
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
+// +externaldns:source:resources=RouteGroup.zalando.org
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type routeGroupSource struct {
 	cli                      routeGroupListClient
 	apiServer                string
@@ -246,34 +253,32 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		log.Errorf("Failed to get RouteGroup list: %v", err)
 		return nil, err
 	}
-	rgList, err = sc.filterByAnnotations(rgList)
+
+	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	for _, rg := range rgList.Items {
+	for _, rg := range filtered {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := rg.Metadata.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := rg.Metadata.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping routegroup %s/%s because controller value does not match, found: %s, required: %s",
-				rg.Metadata.Namespace, rg.Metadata.Name, controller, controllerAnnotationValue)
+				rg.Metadata.Namespace, rg.Metadata.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
 		eps := sc.endpointsFromRouteGroup(rg)
 
-		if (sc.combineFQDNAnnotation || len(eps) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(rg)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				eps = append(eps, tmplEndpoints...)
-			} else {
-				eps = tmplEndpoints
-			}
+		eps, err = fqdn.CombineWithTemplatedEndpoints(
+			eps,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(rg) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(eps) == 0 {
@@ -317,15 +322,15 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.ReplaceAll(hostnames, " ", ""), ",")
-	for _, hostname := range hostnameList {
+	hostnameList := strings.SplitSeq(strings.ReplaceAll(hostnames, " ", ""), ",")
+	for hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
 
-// annotation logic ported from source/ingress.go without Spec.TLS part, because it'S not supported in RouteGroup
+// annotation logic ported from source/ingress.go without Spec.TLS part, because it's not supported in RouteGroup
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
@@ -362,30 +367,6 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		}
 	}
 	return endpoints
-}
-
-// filterByAnnotations filters a list of routeGroupList by a given annotation selector.
-func (sc *routeGroupSource) filterByAnnotations(rgs *routeGroupList) (*routeGroupList, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return rgs, nil
-	}
-
-	var filteredList []*routeGroup
-	for _, rg := range rgs.Items {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, rg.Metadata.Annotations) {
-			filteredList = append(filteredList, rg)
-		}
-	}
-	rgs.Items = filteredList
-
-	return rgs, nil
 }
 
 func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
@@ -442,4 +423,8 @@ type routeGroupLoadBalancerStatus struct {
 type routeGroupLoadBalancer struct {
 	IP       string `json:"ip,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+}
+
+func (rg *routeGroup) GetAnnotations() map[string]string {
+	return rg.Metadata.Annotations
 }

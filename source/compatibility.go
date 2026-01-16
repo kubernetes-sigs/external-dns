@@ -89,9 +89,9 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 		return nil
 	}
 
-	hostnameList := strings.Split(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
+	hostnameList := strings.SplitSeq(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
 
-	for _, hostname := range hostnameList {
+	for hostname := range hostnameList {
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {

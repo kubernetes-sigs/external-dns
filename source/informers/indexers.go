@@ -76,7 +76,7 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 	}
 
 	return cache.Indexers{
-		IndexWithSelectors: func(obj interface{}) ([]string, error) {
+		IndexWithSelectors: func(obj any) ([]string, error) {
 			entity, ok := obj.(T)
 			if !ok {
 				return nil, fmt.Errorf("object is not of type %T", new(T))

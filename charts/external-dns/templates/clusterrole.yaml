@@ -26,7 +26,7 @@ rules:
     resources: ["endpointslices"]
     verbs: ["get","watch","list"]
 {{- end }}
-{{- if or (has "ingress" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+{{- if or (has "ingress" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) (has "gloo-proxy" .Values.sources) }}
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get","watch","list"]
@@ -99,7 +99,7 @@ rules:
 {{- end }}
 {{- if has "gloo-proxy" .Values.sources }}
   - apiGroups: ["gloo.solo.io","gateway.solo.io"]
-    resources: ["proxies","virtualservices"]
+    resources: ["proxies","virtualservices","gateways"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "kong-tcpingress" .Values.sources }}

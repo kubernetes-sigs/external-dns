@@ -14,14 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package externaldns
+package flags
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/spf13/cobra"
 )
 
 // FlagBinder abstracts flag registration for different CLI backends.
@@ -33,6 +34,13 @@ type FlagBinder interface {
 	Int64Var(name, help string, def int64, target *int64)
 	StringsVar(name, help string, def []string, target *[]string)
 	EnumVar(name, help, def string, target *string, allowed ...string)
+	// StringsEnumVar binds a repeatable string flag with an allowed set.
+	// Implementations may not enforce allowed values.
+	StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string)
+	// StringMapVar binds key=value repeatable flags into a map.
+	StringMapVar(name, help string, target *map[string]string)
+	// RegexpVar binds a regular expression value.
+	RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp)
 }
 
 // KingpinBinder implements FlagBinder using github.com/alecthomas/kingpin/v2.
@@ -81,41 +89,56 @@ func (b *KingpinBinder) EnumVar(name, help, def string, target *string, allowed 
 	b.App.Flag(name, help).Default(def).EnumVar(target, allowed...)
 }
 
-// CobraBinder implements FlagBinder using github.com/spf13/cobra.
-type CobraBinder struct {
-	Cmd *cobra.Command
+func (b *KingpinBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
+	if len(def) > 0 {
+		b.App.Flag(name, help).Default(def...).EnumsVar(target, allowed...)
+		return
+	}
+	b.App.Flag(name, help).EnumsVar(target, allowed...)
 }
 
-// NewCobraBinder creates a FlagBinder backed by a Cobra command.
-func NewCobraBinder(cmd *cobra.Command) *CobraBinder {
-	return &CobraBinder{Cmd: cmd}
+func (b *KingpinBinder) StringMapVar(name, help string, target *map[string]string) {
+	b.App.Flag(name, help).StringMapVar(target)
 }
 
-func (b *CobraBinder) StringVar(name, help, def string, target *string) {
-	b.Cmd.Flags().StringVar(target, name, def, help)
+func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
+	defStr := ""
+	if def != nil {
+		defStr = def.String()
+	}
+	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
 }
 
-func (b *CobraBinder) BoolVar(name, help string, def bool, target *bool) {
-	b.Cmd.Flags().BoolVar(target, name, def, help)
+type regexpValue struct {
+	target **regexp.Regexp
 }
 
-func (b *CobraBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
-	b.Cmd.Flags().DurationVar(target, name, def, help)
+func (rv *regexpValue) String() string {
+	if rv == nil || rv.target == nil || *rv.target == nil {
+		return ""
+	}
+	return (*rv.target).String()
 }
 
-func (b *CobraBinder) IntVar(name, help string, def int, target *int) {
-	b.Cmd.Flags().IntVar(target, name, def, help)
+func (rv *regexpValue) Set(s string) error {
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return err
+	}
+	*rv.target = re
+	return nil
 }
 
-func (b *CobraBinder) Int64Var(name, help string, def int64, target *int64) {
-	b.Cmd.Flags().Int64Var(target, name, def, help)
+func (rv *regexpValue) Type() string { return "regexp" }
+
+type regexpSetter interface {
+	Set(string) error
 }
 
-func (b *CobraBinder) StringsVar(name, help string, def []string, target *[]string) {
-	// Preserve repeatable flag semantics.
-	b.Cmd.Flags().StringArrayVar(target, name, def, help)
-}
-
-func (b *CobraBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
-	b.Cmd.Flags().StringVar(target, name, def, help)
+func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
+	if def != nil {
+		if err := rs.Set(def.String()); err != nil {
+			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
+		}
+	}
 }

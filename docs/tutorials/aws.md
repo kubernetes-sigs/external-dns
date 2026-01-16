@@ -59,7 +59,7 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
           "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
-          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
         }
       }
     },
@@ -391,7 +391,7 @@ aws iam attach-role-policy --role-name $IRSA_ROLE --policy-arn $POLICY_ARN
 
 ROLE_ARN=$(aws iam get-role --role-name $IRSA_ROLE --query Role.Arn --output text)
 
-# Create service account (skip is already created)
+# Create service account (skip if already created)
 kubectl create serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"default"}
 
 # Add annotation referencing IRSA role
@@ -411,6 +411,124 @@ Follow the steps under [When using clusters with RBAC enabled](#when-using-clust
 
 If you deployed ExternalDNS before adding the service account annotation and the corresponding role, you will likely see error with `failed to list hosted zones: AccessDenied: User`.
 You can delete the current running ExternalDNS pod(s) after updating the annotation, so that new pods scheduled will have appropriate configuration to access Route53.
+
+### EKS Pod Identity Associations
+
+Alternatively to [IRSA](#iam-roles-for-service-accounts) on AWS EKS it is possible to use the new native method `EKS Pod Identity`, which associates IAM roles with Kubernetes service accounts, simplifying the process of granting AWS permissions to any Pod.
+
+> [!IMPORTANT]
+> Differently from `IRSA`, this method is only available on AWS EKS clusters.
+> This feature also eliminates the need for third-party solutions such as [kiam](https://github.com/uswitch/kiam) or [kube2iam](https://github.com/jtblin/kube2iam).
+
+#### Check Pod Identity Agent is enabled
+
+This method requires the `Pod Identity Agent` installed on the cluster, hence the AWS EKS add-on `eks-pod-identity-agent`.
+Pod identity associations is running an agent as a daemonset on the worker nodes.
+
+It is also possible to create the add-on using `eksctl`
+
+```bash
+eksctl create addon --cluster $EKS_CLUSTER_NAME --name eks-pod-identity-agent
+```
+
+#### Create an IAM role bound to a service account
+
+##### Use eksctl with eksctl created EKS cluster
+
+If `eksctl` was used to provision the EKS cluster, you can perform all of these steps with the following command:
+
+```bash
+eksctl create podidentityassociation \
+  --cluster $EKS_CLUSTER_NAME \
+  --namespace ${EXTERNALDNS_NS:-"default"} \
+  --service-account-name external-dns \
+  --role-name external-dns-pod-identity-role \
+  --permission-policy-arns $POLICY_ARN \
+  --approve
+```
+
+##### Use aws cli with any EKS cluster
+
+```bash
+cat <<-EOF > assume_role.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "pods.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+  ]
+}
+EOF
+
+POD_IDENTITY_ROLE="external-dns-pod-identity-role"
+
+aws iam create-role --role-name $POD_IDENTITY_ROLE --assume-role-policy-document file://assume_role.json
+aws iam attach-role-policy --role-name $POD_IDENTITY_ROLE --policy-arn $POLICY_ARN
+
+ROLE_ARN=$(aws iam get-role --role-name $POD_IDENTITY_ROLE --query Role.Arn --output text)
+
+# Create service account (skip if already created)
+kubectl create serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"default"}
+
+# Create Pod Identity association
+aws eks create-pod-identity-association \
+  --cluster-name $EKS_CLUSTER_NAME \
+  --namespace ${EXTERNALDNS_NS:-"default"} \
+  --service-account external-dns \
+  --role-arn $ROLE_ARN
+```
+
+##### Use Terraform
+
+The same behaviour above can be achieved using Terraform. Here is a minimal placeholder snippet:
+
+```hcl
+data "aws_iam_policy_document" "eks_assume_role" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+  }
+}
+
+resource "aws_iam_role" "external_dns_pod_identity" {
+  name               = "external-dns-pod-identity"
+  assume_role_policy = data.aws_iam_policy_document.eks_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "external_dns_route53" {
+  role       = aws_iam_role.external_dns_pod_identity.name
+  policy_arn = aws_iam_policy.external_dns_access.arn
+}
+
+# EKS Pod Identity for External DNS operator
+# connects Service Account and EDO Namespace (even if not created yet)
+resource "aws_eks_pod_identity_association" "external_dns_pod_identity" {
+  cluster_name    = aws_eks_cluster.eks.name
+  namespace       = "external-dns"
+  service_account = "external-dns"
+  role_arn        = aws_iam_role.external_dns_pod_identity.arn
+}
+```
+
+#### Deploy ExternalDNS using Pod Identity
+
+Unlike the IRSA method, Pod Identity requires no further steps, nor service account annotations, since the pod identity association will bind the service account to the given IAM role, hence to a policy holding the requested set of permissions.
+The EKS Pod Identity Agent handles credential injection at runtime.
 
 ## Set up a hosted zone
 
@@ -504,7 +622,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.19.0
+          image: registry.k8s.io/external-dns/external-dns:v0.20.0
           args:
             - --source=service
             - --source=ingress
@@ -1055,7 +1173,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         command:
         - /bin/sh
         - -c

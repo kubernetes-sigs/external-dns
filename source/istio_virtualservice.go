@@ -49,7 +49,15 @@ const IstioMeshGateway = "mesh"
 
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
-// Use targetAnnotationKey to explicitly set Endpoint.
+// Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=istio-virtualservice
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Istio VirtualService resources
+// +externaldns:source:resources=VirtualService.networking.istio.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type virtualServiceSource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
@@ -139,7 +147,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	if err != nil {
 		return nil, err
 	}
-	virtualServices, err = sc.filterByAnnotations(virtualServices)
+	virtualServices, err = annotations.Filter(virtualServices, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -150,10 +158,10 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	for _, vService := range virtualServices {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := vService.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := vService.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
-				vService.Namespace, vService.APIVersion, vService.Name, controller, controllerAnnotationValue)
+				vService.Namespace, vService.APIVersion, vService.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
@@ -163,17 +171,14 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		// apply template if host is missing on VirtualService
-		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ctx, vService)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				gwEndpoints = append(gwEndpoints, iEndpoints...)
-			} else {
-				gwEndpoints = iEndpoints
-			}
+		gwEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			gwEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ctx, vService) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(gwEndpoints) == 0 {
@@ -249,30 +254,6 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *virtualServiceSource) filterByAnnotations(vServices []*v1beta1.VirtualService) ([]*v1beta1.VirtualService, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return vServices, nil
-	}
-
-	var filteredList []*v1beta1.VirtualService
-
-	for _, vs := range vServices {
-		// include if the annotations match the selector
-		if selector.Matches(labels.Set(vs.Annotations)) {
-			filteredList = append(filteredList, vs)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // append a target to the list of targets unless it's already in the list

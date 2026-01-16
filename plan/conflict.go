@@ -66,7 +66,7 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 }
 
 // ResolveRecordTypes attempts to detect and resolve record type conflicts in desired
-// endpoints for a domain. For eample if the there is more than 1 candidate and at lease one
+// endpoints for a domain. For example if there is more than 1 candidate and at least one
 // of them is a CNAME. Per [RFC 1034 3.6.2] domains that contain a CNAME can not contain any
 // other record types. The default policy will prefer A and AAAA record types when a conflict is
 // detected (consistent with [endpoint.Targets.Less]).

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
@@ -103,7 +104,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					hostnameAnnotationKey: "my.example",
+					annotations.HostnameKey: "my.example",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -132,7 +133,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					hostnameAnnotationKey: "my.example",
+					annotations.HostnameKey: "my.example",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -156,7 +157,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					ttlAnnotationKey: "2189",
+					annotations.TtlKey: "2189",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -448,7 +449,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg1",
 								map[string]string{
-									ttlAnnotationKey: "2189",
+									annotations.TtlKey: "2189",
 								},
 								[]string{"rg1.k8s.example"},
 								[]routeGroupLoadBalancer{
@@ -735,7 +736,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg1",
 								map[string]string{
-									controllerAnnotationKey: controllerAnnotationValue,
+									annotations.ControllerKey: annotations.ControllerValue,
 								},
 								[]string{"rg1.k8s.example"},
 								[]routeGroupLoadBalancer{
@@ -748,7 +749,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg2",
 								map[string]string{
-									controllerAnnotationKey: "dns",
+									annotations.ControllerKey: "dns",
 								},
 								[]string{"rg2.k8s.example"},
 								[]routeGroupLoadBalancer{

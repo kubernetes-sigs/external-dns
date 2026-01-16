@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -582,7 +583,7 @@ func TestIsOwnedBy(t *testing.T) {
 				Labels: tt.fields.Labels,
 			}
 			if got := e.IsOwnedBy(tt.args.ownerID); got != tt.want {
-				t.Errorf("Endpoint.IsOwnedBy() = %v, want %v", got, tt.want)
+				t.Errorf("Endpoint.isOwnedBy() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -786,7 +787,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tls.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 20 5060 service.example.com"},
+				Targets:    Targets{"10 20 5060 service.example.com."},
 			},
 			expected: true,
 		},
@@ -804,7 +805,16 @@ func TestPDNScheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tls.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 20 abc service.example.com"},
+				Targets:    Targets{"10 20 abc service.example.com."},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid SRV record with missing dot for target host",
+			endpoint: Endpoint{
+				DNSName:    "_service._tls.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 20 5060 service.example.com"},
 			},
 			expected: false,
 		},
@@ -894,7 +904,7 @@ func TestCheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tcp.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 5 5060 example.com"},
+				Targets:    Targets{"10 5 5060 example.com."},
 			},
 			expected: true,
 		},
@@ -903,7 +913,7 @@ func TestCheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tcp.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 5 example.com"},
+				Targets:    Targets{"10 5 example.com."},
 			},
 			expected: false,
 		},
@@ -1033,6 +1043,126 @@ func TestEndpoint_WithMinTTL(t *testing.T) {
 			ep.WithMinTTL(tt.inputTTL)
 			assert.Equal(t, tt.expectedTTL, ep.RecordTTL)
 			assert.Equal(t, tt.isConfigured, ep.RecordTTL.IsConfigured())
+		})
+	}
+}
+
+// TestNewEndpointWithTTLPreservesDotsInTXTRecords tests that trailing dots are preserved in TXT records
+func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
+	// TXT records should preserve trailing dots (and any arbitrary text)
+	txtEndpoint := NewEndpointWithTTL("example.com", RecordTypeTXT, TTL(300),
+		"v=1;some_signature=aBx3d5..",
+		"text.with.dots...",
+		"simple-text")
+
+	require.NotNil(t, txtEndpoint, "TXT endpoint should be created")
+	require.Len(t, txtEndpoint.Targets, 3, "should have 3 targets")
+
+	// All dots should be preserved in TXT targets
+	assert.Equal(t, "v=1;some_signature=aBx3d5..", txtEndpoint.Targets[0])
+	assert.Equal(t, "text.with.dots...", txtEndpoint.Targets[1])
+	assert.Equal(t, "simple-text", txtEndpoint.Targets[2])
+
+	// Domain name record types should still have trailing dots trimmed
+	aEndpoint := NewEndpointWithTTL("example.com", RecordTypeA, TTL(300), "1.2.3.4.")
+	require.NotNil(t, aEndpoint, "A endpoint should be created")
+	assert.Equal(t, "1.2.3.4", aEndpoint.Targets[0], "A record should have trailing dot trimmed")
+
+	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
+	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
+	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+func TestGetBoolProviderSpecificProperty(t *testing.T) {
+	tests := []struct {
+		name           string
+		endpoint       Endpoint
+		key            string
+		expectedValue  bool
+		expectedExists bool
+	}{
+		{
+			name:           "key does not exist",
+			endpoint:       Endpoint{},
+			key:            "nonexistent",
+			expectedValue:  false,
+			expectedExists: false,
+		},
+		{
+			name: "key exists with true value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "enabled", Value: "true"},
+				},
+			},
+			key:            "enabled",
+			expectedValue:  true,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with false value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "disabled", Value: "false"},
+				},
+			},
+			key:            "disabled",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with invalid boolean value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "invalid", Value: "maybe"},
+				},
+			},
+			key:            "invalid",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with empty value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "empty", Value: ""},
+				},
+			},
+			key:            "empty",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "key exists with numeric value",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "numeric", Value: "1"},
+				},
+			},
+			key:            "numeric",
+			expectedValue:  false,
+			expectedExists: true,
+		},
+		{
+			name: "multiple properties, find correct one",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "first", Value: "invalid"},
+					{Name: "second", Value: "true"},
+					{Name: "third", Value: "false"},
+				},
+			},
+			key:            "second",
+			expectedValue:  true,
+			expectedExists: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, exists := tt.endpoint.GetBoolProviderSpecificProperty(tt.key)
+			assert.Equal(t, tt.expectedValue, value)
+			assert.Equal(t, tt.expectedExists, exists)
 		})
 	}
 }

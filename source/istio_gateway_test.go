@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -424,7 +425,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 		{
-			title: "one gateway, ingress in seperate namespace",
+			title: "one gateway, ingress in separate namespace",
 			ingresses: []fakeIngress{
 				{
 					hostnames: []string{"lb.com"},
@@ -505,7 +506,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				require.NoError(t, err)
 			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGateway(context.Background(), hostnames, gatewayCfg); err != nil {
+			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -817,7 +818,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -843,7 +844,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -864,7 +865,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames: [][]string{},
 				},
@@ -896,7 +897,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
+						annotations.ControllerKey: "other-controller",
 					},
 					dnsnames: [][]string{},
 				},
@@ -953,7 +954,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1001,7 +1002,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1009,7 +1010,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example2.org"}},
 				},
@@ -1018,7 +1019,7 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "",
 					annotations: map[string]string{
 						IstioGatewayIngressSource: "not-real/ingress1",
-						targetAnnotationKey:       "1.2.3.4",
+						annotations.TargetKey:     "1.2.3.4",
 					},
 					dnsnames: [][]string{{"example3.org"}},
 				},
@@ -1054,7 +1055,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1085,7 +1086,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1121,8 +1122,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "gateway-target.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1160,8 +1161,8 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "",
 					annotations: map[string]string{
 						IstioGatewayIngressSource: "ingress1",
-						hostnameAnnotationKey:     "dns-through-hostname.com",
-						targetAnnotationKey:       "gateway-target.com",
+						annotations.HostnameKey:   "dns-through-hostname.com",
+						annotations.TargetKey:     "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1192,8 +1193,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "6",
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "6",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1201,8 +1202,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "1",
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "1",
 					},
 					dnsnames: [][]string{{"example2.org"}},
 				},
@@ -1210,8 +1211,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "10s",
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "10s",
 					},
 					dnsnames: [][]string{{"example3.org"}},
 				},
@@ -1251,7 +1252,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1259,7 +1260,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1267,7 +1268,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1305,7 +1306,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						targetAnnotationKey: "",
+						annotations.TargetKey: "",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1356,7 +1357,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me",
+						annotations.HostnameKey: "ignore.me",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1364,7 +1365,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me.too",
+						annotations.HostnameKey: "ignore.me.too",
 					},
 					dnsnames: [][]string{{"new.org"}},
 				},
@@ -1428,7 +1429,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "fake1.dns-through-hostname.com",
+						annotations.HostnameKey: "fake1.dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"*"}},
 				},
@@ -1436,7 +1437,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: "",
 					annotations: map[string]string{
-						hostnameAnnotationKey: "fake2.dns-through-hostname.com",
+						annotations.HostnameKey: "fake2.dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"some-namespace/*"}},
 				},

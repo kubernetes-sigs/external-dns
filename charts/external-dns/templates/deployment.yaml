@@ -126,6 +126,9 @@ spec:
             {{- if .Values.annotationFilter }}
             - --annotation-filter={{ .Values.annotationFilter }}
             {{- end }}
+            {{- if .Values.annotationPrefix }}
+            - --annotation-prefix={{ .Values.annotationPrefix }}
+            {{- end }}
             {{- range .Values.managedRecordTypes }}
             - --managed-record-types={{ . }}
             {{- end }}
@@ -291,7 +294,7 @@ spec:
           {{- if not (hasKey . "labelSelector") }}
           labelSelector:
             matchLabels:
-              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+              {{- include "external-dns.selectorLabels" $ | nindent 14 }}
           {{- end }}
         {{- end }}
       {{- end }}

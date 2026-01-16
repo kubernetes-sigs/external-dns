@@ -25,13 +25,13 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/client-go/kubernetes"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -330,7 +330,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				controllerAnnotationKey: controllerAnnotationValue,
+				annotations.ControllerKey: annotations.ControllerValue,
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
@@ -342,7 +342,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				controllerAnnotationKey: "not-dns-controller",
+				annotations.ControllerKey: "not-dns-controller",
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -361,7 +361,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				ttlAnnotationKey: "foo",
+				annotations.TtlKey: "foo",
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
@@ -373,7 +373,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				ttlAnnotationKey: "10",
+				annotations.TtlKey: "10",
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
@@ -548,11 +548,6 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		var hook *test.Hook
-		if tc.exposeInternalIPv6 {
-			hook = testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-		}
-
 		// Create our object under test and get the endpoints.
 		client, err := NewNodeSource(
 			t.Context(),
@@ -571,10 +566,6 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-
-			if tc.exposeInternalIPv6 && hook != nil {
-				testutils.TestHelperLogContainsWithLogLevel(warningMsg, log.WarnLevel, hook, t)
-			}
 		}
 
 		// Validate returned endpoints against desired endpoints.

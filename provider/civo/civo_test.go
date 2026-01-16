@@ -66,7 +66,6 @@ func TestCivoProviderZones(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check if the return is a DNSDomain type
-	assert.Equal(t, reflect.TypeOf(zones), reflect.TypeOf(expected))
 	assert.ElementsMatch(t, zones, expected)
 }
 
@@ -1169,12 +1168,13 @@ func TestCivoChangesEmpty(t *testing.T) {
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.
-func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) bool {
-	if listA == nil && listB == nil {
+func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
+	switch {
+	case listA == nil && listB == nil:
 		return true
-	} else if listA == nil {
+	case listA == nil:
 		return isEmpty(listB)
-	} else if listB == nil {
+	case listB == nil:
 		return isEmpty(listA)
 	}
 
@@ -1201,10 +1201,10 @@ func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interfa
 
 	// Mark indexes in bValue that we already used
 	visited := make([]bool, bLen)
-	for i := 0; i < aLen; i++ {
+	for i := range aLen {
 		element := aValue.Index(i).Interface()
 		found := false
-		for j := 0; j < bLen; j++ {
+		for j := range bLen {
 			if visited[j] {
 				continue
 			}
@@ -1222,7 +1222,7 @@ func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interfa
 	return true
 }
 
-func isEmpty(xs interface{}) bool {
+func isEmpty(xs any) bool {
 	if xs != nil {
 		objValue := reflect.ValueOf(xs)
 		return objValue.Len() == 0

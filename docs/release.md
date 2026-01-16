@@ -14,7 +14,7 @@ A new staging image is released weekly and can be found at [gcr.io/k8s-staging-e
 Example command to fetch `10` most recent staging images:
 
 ```sh
-export EXT_DNS_VERSION="v0.19.0"
+export EXT_DNS_VERSION="v0.20.0"
 curl -sLk https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list | jq | grep "$EXT_DNS_VERSION" | tail -n 10
 ```
 
@@ -27,6 +27,17 @@ These are the conventions that we will be using for releases following `0.7.6`:
 - **Minor** version should be updated if new features are implemented in existing providers or new provider get introduced.
 
 - **Major** version should be upgraded if we introduce breaking changes.
+
+### Semantic Versioning Discipline
+
+External-DNS follows semantic versioning principles:
+
+- `0.x` → pre-stable, APIs subject to change.
+- `1.x` → not yet considered.
+
+> **Versioning & Releases**
+> External-DNS opts to stay within `0.x` versioning scheme.
+> We strive for stability, but reserve the right to introduce breaking changes in minor version bumps when necessary.
 
 ## How to release a new image
 

@@ -27,8 +27,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // Validates that ingressSource is a Source
@@ -276,7 +278,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -310,7 +312,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -330,7 +332,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "Ingress-hostname-source=defined-hosts-only, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "defined-hosts-only"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "defined-hosts-only"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -345,7 +347,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "Ingress-hostname-source=annotation-only, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "annotation-only"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "annotation-only"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -641,7 +643,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"8.8.8.8"},
@@ -663,7 +665,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"8.8.8.8"},
@@ -679,7 +681,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames:  []string{},
 					ips:       []string{"8.8.8.8"},
@@ -708,7 +710,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
+						annotations.ControllerKey: "other-controller",
 					},
 					dnsnames: []string{},
 					ips:      []string{"8.8.8.8"},
@@ -758,7 +760,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -802,7 +804,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -811,7 +813,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
@@ -820,7 +822,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: []string{"example3.org"},
 					ips:      []string{},
@@ -929,7 +931,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"1.2.3.4"},
@@ -956,7 +958,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"1.2.3.4"},
@@ -988,8 +990,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "ingress-target.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1016,8 +1018,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "6",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "6",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1026,8 +1028,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "1",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "1",
 					},
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
@@ -1036,8 +1038,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "10s",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "10s",
 					},
 					dnsnames: []string{"example3.org"},
 					ips:      []string{"8.8.4.4"},
@@ -1072,8 +1074,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						aliasAnnotationKey:  "true",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "true",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1098,8 +1100,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						aliasAnnotationKey:  "false",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "false",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1121,7 +1123,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1131,7 +1133,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{},
 					ips:      []string{"8.8.8.8"},
@@ -1140,7 +1142,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1174,7 +1176,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "",
+						annotations.TargetKey: "",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1199,7 +1201,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames:  []string{"new.org"},
 					hostnames: []string{"lb.com"},
@@ -1496,4 +1498,225 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 		})
 	}
 	return ingress
+}
+
+func TestIngressWithConfiguration(t *testing.T) {
+	for _, tt := range []struct {
+		title     string
+		ingresses []*networkv1.Ingress
+		cfg       *Config
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title: "hostname and targets configured as annotations",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.HostnameKey: "bla.example.org",
+							annotations.TargetKey:   "target.example.org",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("nginx"),
+						Rules: []networkv1.IngressRule{
+							{Host: "app.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "app.example.com", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+				{DNSName: "bla.example.org", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls not ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: false,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "my-ingress",
+						Namespace:   "default",
+						Annotations: map[string]string{},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "*.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls is ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: true,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: endpoint.Targets{
+						"internal-k8s-some-domain.us-east-1.elb.amazonaws.com",
+						"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+					},
+				},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB with target annotation and CNAME with single target",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+							annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+				},
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+
+			for _, el := range tt.ingresses {
+				_, err := kubeClient.NetworkingV1().Ingresses(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			if tt.cfg == nil {
+				tt.cfg = &Config{}
+			}
+
+			src, err := NewIngressSource(
+				t.Context(),
+				kubeClient,
+				tt.cfg.Namespace,
+				tt.cfg.AnnotationFilter,
+				tt.cfg.FQDNTemplate,
+				tt.cfg.CombineFQDNAndAnnotation,
+				tt.cfg.IgnoreHostnameAnnotation,
+				tt.cfg.IgnoreIngressTLSSpec,
+				tt.cfg.IgnoreIngressRulesSpec,
+				labels.Everything(),
+				tt.cfg.IngressClassNames,
+			)
+			require.NoError(t, err)
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			validateEndpoints(t, endpoints, tt.expected)
+		})
+	}
 }

@@ -711,7 +711,7 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 }
 
 // TestNoCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
-// This could be the result of multiple sources generating conflicting records types. In this case there the
+// This could be the result of multiple sources generating conflicting records types. In this case, the
 // conflict resolver should prefer the A and AAAA record and drop the other candidate record types.
 func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 	current := []*endpoint.Endpoint{}
@@ -1017,6 +1017,32 @@ func (suite *PlanTestSuite) TestDualStackToSingleStack() {
 	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
 }
 
+func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
+	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "bar"
+	current := []*endpoint.Endpoint{suite.fooA5}
+	desired := []*endpoint.Endpoint{suite.fooA5}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooA5}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
+		OldOwnerId:     "foo",
+	}
+
+	changes := p.Calculate().Changes
+
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
 func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
@@ -1025,104 +1051,6 @@ func TestPlan(t *testing.T) {
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(entries, expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
-	}
-}
-
-func TestNormalizeDNSName(tt *testing.T) {
-	records := []struct {
-		dnsName string
-		expect  string
-	}{
-		{
-			"3AAAA.FOO.BAR.COM    ",
-			"3aaaa.foo.bar.com.",
-		},
-		{
-			"   example.foo.com.",
-			"example.foo.com.",
-		},
-		{
-			"example123.foo.com ",
-			"example123.foo.com.",
-		},
-		{
-			"foo",
-			"foo.",
-		},
-		{
-			"123foo.bar",
-			"123foo.bar.",
-		},
-		{
-			"foo.com",
-			"foo.com.",
-		},
-		{
-			"foo.com.",
-			"foo.com.",
-		},
-		{
-			"_foo.com.",
-			"_foo.com.",
-		},
-		{
-			"\u005Ffoo.com.",
-			"_foo.com.",
-		},
-		{
-			".foo.com.",
-			".foo.com.",
-		},
-		{
-			"foo123.COM",
-			"foo123.com.",
-		},
-		{
-			"my-exaMple3.FOO.BAR.COM",
-			"my-example3.foo.bar.com.",
-		},
-		{
-			"   my-example1214.FOO-1235.BAR-foo.COM   ",
-			"my-example1214.foo-1235.bar-foo.com.",
-		},
-		{
-			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
-			"my-example-my-example-1214.foo-1235.bar-foo.com.",
-		},
-		{
-			"點看.org.",
-			"xn--c1yn36f.org.",
-		},
-		{
-			"nordic-ø.xn--kitty-點看pd34d.com",
-			"xn--nordic--w1a.xn--xn--kitty-pd34d-hn01b3542b.com.",
-		},
-		{
-			"nordic-ø.kitty😸.com.",
-			"xn--nordic--w1a.xn--kitty-pd34d.com.",
-		},
-		{
-			"  nordic-ø.kitty😸.COM",
-			"xn--nordic--w1a.xn--kitty-pd34d.com.",
-		},
-		{
-			"xn--nordic--w1a.kitty😸.com.",
-			"xn--nordic--w1a.xn--kitty-pd34d.com.",
-		},
-		{
-			"*.example.com.",
-			"*.example.com.",
-		},
-		{
-			"*.example.com",
-			"*.example.com.",
-		},
-	}
-	for _, r := range records {
-		tt.Run(r.dnsName, func(t *testing.T) {
-			gotName := normalizeDNSName(r.dnsName)
-			assert.Equal(t, r.expect, gotName)
-		})
 	}
 }
 

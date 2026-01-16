@@ -94,7 +94,7 @@ func svcInformerWithServices(toLookup, underTest int) (coreinformers.ServiceInfo
 
 	_, err := svcInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -155,19 +155,19 @@ func fixturesSvcWithLabels(toLookup, underTest int) []*corev1.Service {
 	}
 
 	// services with specific labels
-	for i := 0; i < toLookup; i++ {
+	for i := range toLookup {
 		svc := createService("nginx-svc-"+strconv.Itoa(i), "default", map[string]string{"app": "nginx", "env": "prod"})
 		services = append(services, svc)
 	}
 
 	// services with random labels
-	for i := 0; i < underTest; i++ {
+	for i := range underTest {
 		svc := createService("random-svc-"+strconv.Itoa(i), "default", randomLabels(i))
 		services = append(services, svc)
 	}
 
 	// Shuffle the services to ensure randomness
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		rand.Shuffle(len(services), func(i, j int) {
 			services[i], services[j] = services[j], services[i]
 		})
@@ -211,19 +211,19 @@ func fixturesIstioGatewaySvcWithLabels(toLookup, underTest int) []*istiov1a.Gate
 		}
 	}
 	// services with specific labels
-	for i := 0; i < toLookup; i++ {
+	for i := range toLookup {
 		svc := createGateway("istio-gw-"+strconv.Itoa(i), "default", map[string]string{"app": "nginx", "env": "prod"})
 		result = append(result, svc)
 	}
 
 	// services with random labels
-	for i := 0; i < underTest; i++ {
+	for i := range underTest {
 		svc := createGateway("istio-random-svc-"+strconv.Itoa(i), "default", randomLabels(i))
 		result = append(result, svc)
 	}
 
 	// Shuffle the services to ensure randomness
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		rand.Shuffle(len(result), func(i, j int) {
 			result[i], result[j] = result[j], result[i]
 		})

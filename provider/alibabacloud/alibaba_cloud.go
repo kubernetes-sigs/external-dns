@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -601,13 +602,9 @@ func (p *AlibabaCloudProvider) deleteRecords(recordMap map[string][]alidns.Recor
 				value = p.unescapeTXTRecordValue(value)
 			}
 
-			for _, target := range endpoint.Targets {
-				// Find matched record to delete
-				if value == target {
-					p.deleteRecord(record.RecordId)
-					found = true
-					break
-				}
+			if slices.Contains(endpoint.Targets, value) {
+				p.deleteRecord(record.RecordId)
+				found = true
 			}
 		}
 		if !found {
@@ -955,13 +952,9 @@ func (p *AlibabaCloudProvider) deletePrivateZoneRecords(zones map[string]*alibab
 				if record.Type == "TXT" {
 					value = p.unescapeTXTRecordValue(value)
 				}
-				for _, target := range endpoint.Targets {
-					// Find matched record to delete
-					if value == target {
-						p.deletePrivateZoneRecord(record.RecordId)
-						found = true
-						break
-					}
+				if slices.Contains(endpoint.Targets, value) {
+					p.deletePrivateZoneRecord(record.RecordId)
+					found = true
 				}
 			}
 		}
@@ -1047,14 +1040,7 @@ func (p *AlibabaCloudProvider) updatePrivateZoneRecords(zones map[string]*alibab
 			if record.Type == "TXT" {
 				value = p.unescapeTXTRecordValue(value)
 			}
-			found := false
-			for _, target := range endpoint.Targets {
-				// Find matched record to delete
-				if value == target {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(endpoint.Targets, value)
 			if found {
 				if !p.equalsPrivateZone(record, endpoint) {
 					// Update record

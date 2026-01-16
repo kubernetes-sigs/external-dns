@@ -4,37 +4,6 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 
 Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 
-## CloudFlare SDK Migration Status
-
-ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the modern v4 SDK to improve performance, reliability, and access to newer CloudFlare features. The migration status is:
-
-**✅ Fully migrated to v4 SDK:**
-
-- Zone management (listing, filtering, pagination)
-- Zone details retrieval (`GetZone`)
-- Zone ID lookup by name (`ZoneIDByName`)
-- Zone plan detection (fully v4 implementation)
-- Regional services (data localization)
-
-**🔄 Still using legacy v0 SDK:**
-
-- DNS record management (create, update, delete records)
-- Custom hostnames
-- Proxied records
-
-This mixed approach ensures continued functionality while gradually modernizing the codebase. Users should not experience any breaking changes during this transition.
-
-### SDK Dependencies
-
-ExternalDNS currently uses:
-
-- **cloudflare-go v0.115.0+**: Legacy SDK for DNS records, custom hostnames, and proxied record features
-- **cloudflare-go/v4 v4.6.0+**: Modern SDK for all zone management and regional services operations
-
-Zone management has been fully migrated to the v4 SDK, providing improved performance and reliability.
-
-Both SDKs are automatically managed as Go module dependencies and require no special configuration from users.
-
 ## Creating a Cloudflare DNS zone
 
 We highly recommend to read this tutorial if you haven't used Cloudflare before:
@@ -151,7 +120,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.19.0
+          image: registry.k8s.io/external-dns/external-dns:v0.20.0
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -232,7 +201,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.19.0
+          image: registry.k8s.io/external-dns/external-dns:v0.20.0
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -304,7 +273,7 @@ By setting the TTL annotation on the service, you have to pass a valid TTL, whic
 This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
 For Cloudflare proxied entries, set the TTL annotation to 1 (automatic), or do not set it.
 
-ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
+ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
@@ -339,7 +308,7 @@ kubectl delete -f externaldns.yaml
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
 
-## Setting cloudlfare regional services
+## Setting cloudflare regional services
 
 With Cloudflare regional services you can restrict which data centers can decrypt and serve HTTPS traffic.
 
@@ -384,7 +353,19 @@ The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
 
-**Note:** Due to using the legacy cloudflare-go v0 API for custom hostname management, the custom hostname page size is fixed at 50. This limitation will be addressed in a future migration to the v4 SDK.
+## Setting Cloudflare DNS Record Tags
+
+Cloudflare allows you to add descriptive tags to DNS records. This can be useful for organizing your records.
+For example one can apply tags by environment (`production`, `staging`) or by the team that owns them (`frontend-team`, `backend-team`). ExternalDNS can manage these tags for you.
+
+To assign tags to a DNS record, add the `external-dns.alpha.kubernetes.io/cloudflare-tags` annotation to your Kubernetes resource (like a Service or Ingress). The value should be a comma-separated list of your desired tags.
+
+```yaml
+metadata:
+  annotations:
+    # Assigns three tags to the DNS record created from this resource
+    external-dns.alpha.kubernetes.io/cloudflare-tags: "owner:frontend-team, env:dev, component:api"
+```
 
 ## Using CRD source to manage DNS records in Cloudflare
 

@@ -150,57 +150,57 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 //
 
 // Get is a wrapper for the GET method
-func (c *Client) Get(url string, resType interface{}) error {
+func (c *Client) Get(url string, resType any) error {
 	return c.CallAPI("GET", url, nil, resType)
 }
 
 // Patch is a wrapper for the PATCH method
-func (c *Client) Patch(url string, reqBody, resType interface{}) error {
+func (c *Client) Patch(url string, reqBody, resType any) error {
 	return c.CallAPI("PATCH", url, reqBody, resType)
 }
 
 // Post is a wrapper for the POST method
-func (c *Client) Post(url string, reqBody, resType interface{}) error {
+func (c *Client) Post(url string, reqBody, resType any) error {
 	return c.CallAPI("POST", url, reqBody, resType)
 }
 
 // Put is a wrapper for the PUT method
-func (c *Client) Put(url string, reqBody, resType interface{}) error {
+func (c *Client) Put(url string, reqBody, resType any) error {
 	return c.CallAPI("PUT", url, reqBody, resType)
 }
 
 // Delete is a wrapper for the DELETE method
-func (c *Client) Delete(url string, resType interface{}) error {
+func (c *Client) Delete(url string, resType any) error {
 	return c.CallAPI("DELETE", url, nil, resType)
 }
 
 // GetWithContext is a wrapper for the GET method
-func (c *Client) GetWithContext(ctx context.Context, url string, resType interface{}) error {
+func (c *Client) GetWithContext(ctx context.Context, url string, resType any) error {
 	return c.CallAPIWithContext(ctx, "GET", url, nil, resType)
 }
 
 // PatchWithContext is a wrapper for the PATCH method
-func (c *Client) PatchWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
+func (c *Client) PatchWithContext(ctx context.Context, url string, reqBody, resType any) error {
 	return c.CallAPIWithContext(ctx, "PATCH", url, reqBody, resType)
 }
 
 // PostWithContext is a wrapper for the POST method
-func (c *Client) PostWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
+func (c *Client) PostWithContext(ctx context.Context, url string, reqBody, resType any) error {
 	return c.CallAPIWithContext(ctx, "POST", url, reqBody, resType)
 }
 
 // PutWithContext is a wrapper for the PUT method
-func (c *Client) PutWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
+func (c *Client) PutWithContext(ctx context.Context, url string, reqBody, resType any) error {
 	return c.CallAPIWithContext(ctx, "PUT", url, reqBody, resType)
 }
 
 // DeleteWithContext is a wrapper for the DELETE method
-func (c *Client) DeleteWithContext(ctx context.Context, url string, resType interface{}) error {
+func (c *Client) DeleteWithContext(ctx context.Context, url string, resType any) error {
 	return c.CallAPIWithContext(ctx, "DELETE", url, nil, resType)
 }
 
 // NewRequest returns a new HTTP request
-func (c *Client) NewRequest(method, path string, reqBody interface{}) (*http.Request, error) {
+func (c *Client) NewRequest(method, path string, reqBody any) (*http.Request, error) {
 	var body []byte
 	var err error
 
@@ -286,7 +286,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 //
 // If everything went fine, unmarshall response into resType and return nil
 // otherwise, return the error
-func (c *Client) CallAPI(method, path string, reqBody, resType interface{}) error {
+func (c *Client) CallAPI(method, path string, reqBody, resType any) error {
 	return c.CallAPIWithContext(context.Background(), method, path, reqBody, resType)
 }
 
@@ -310,7 +310,7 @@ func (c *Client) CallAPI(method, path string, reqBody, resType interface{}) erro
 //
 // If everything went fine, unmarshall response into resType and return nil
 // otherwise, return the error
-func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, reqBody, resType interface{}) error {
+func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, reqBody, resType any) error {
 	req, err := c.NewRequest(method, path, reqBody)
 	if err != nil {
 		return err
@@ -325,7 +325,7 @@ func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, re
 
 // UnmarshalResponse checks the response and unmarshals it into the response
 // type if needed Helper function, called from CallAPI
-func (c *Client) UnmarshalResponse(response *http.Response, resType interface{}) error {
+func (c *Client) UnmarshalResponse(response *http.Response, resType any) error {
 	// Read all the response body
 	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
@@ -355,7 +355,7 @@ func (c *Client) UnmarshalResponse(response *http.Response, resType interface{})
 }
 
 func (c *Client) validate() error {
-	var response interface{}
+	var response any
 
 	if err := c.Get(domainsURI, response); err != nil {
 		return err

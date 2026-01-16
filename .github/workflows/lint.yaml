@@ -6,19 +6,17 @@ on:
 
 jobs:
   lint:
-    name: Markdown, Go and OAS
+    name: Markdown and Go
     runs-on: ubuntu-latest
     permissions:
       # Required: allow read access to the content for analysis.
       contents: read
-      # For OAS check
-      checks: write
       # For go lang linter
       pull-requests: read
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
     - name: Lint markdown
       uses: nosborn/github-action-markdown-cli@v3.5.0
@@ -41,21 +39,13 @@ jobs:
           exit 1
         fi
 
-
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
-      uses: golangci/golangci-lint-action@v8
+      uses: golangci/golangci-lint-action@v9
       with:
         verify: true
         args: --timeout=30m
-        version: v2.2
-
-      # https://github.com/daveshanley/vacuum
-    - name: Lint OpenAPI spec
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Increases rate limit from 60 to 5000 requests
-      run: |
-        go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
+        version: v2.7
 
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action

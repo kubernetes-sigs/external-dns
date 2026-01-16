@@ -17,6 +17,7 @@ nav:
       - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
       - Providers: docs/providers.md
+      - Version Update: docs/version-update-playbook.md
   - Tutorials: docs/tutorials/*
   - Annotations:
       - About: docs/annotations/annotations.md
@@ -37,6 +38,8 @@ nav:
       - Rate Limits: docs/advanced/rate-limits.md
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md
+      - Configuration Precedence: docs/advanced/configuration-precedence.md
+      - Split Horizon DNS: docs/advanced/split-horizon.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.md

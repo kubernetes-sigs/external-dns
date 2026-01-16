@@ -28,6 +28,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
@@ -41,19 +42,21 @@ const (
 	priority    = 10 // default priority when nothing is set
 	etcdTimeout = 5 * time.Second
 
-	randomPrefixLabel = "prefix"
+	randomPrefixLabel     = "prefix"
+	providerSpecificGroup = "coredns/group"
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
-	GetServices(prefix string) ([]*Service, error)
-	SaveService(value *Service) error
-	DeleteService(key string) error
+	GetServices(ctx context.Context, prefix string) ([]*Service, error)
+	SaveService(ctx context.Context, value *Service) error
+	DeleteService(ctx context.Context, key string) error
 }
 
 type coreDNSProvider struct {
 	provider.BaseProvider
 	dryRun        bool
+	strictlyOwned bool
 	coreDNSPrefix string
 	domainFilter  *endpoint.DomainFilter
 	client        coreDNSClient
@@ -83,18 +86,22 @@ type Service struct {
 
 	// Etcd key where we found this service and ignored from json un-/marshaling
 	Key string `json:"-"`
+
+	// Owner is used to prevent service to be added by different external-dns (only used by external-dns)
+	Owner string `json:"owner,omitempty"`
 }
 
 type etcdClient struct {
-	client *etcdcv3.Client
-	ctx    context.Context
+	client        *etcdcv3.Client
+	owner         string
+	strictlyOwned bool
 }
 
 var _ coreDNSClient = etcdClient{}
 
 // GetServices GetService return all Service records stored in etcd stored anywhere under the given key (recursively)
-func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service, error) {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
 	path := prefix
@@ -106,11 +113,21 @@ func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 	var svcs []*Service
 	bx := make(map[Service]bool)
 	for _, n := range r.Kvs {
-		svc := new(Service)
-		if err := json.Unmarshal(n.Value, svc); err != nil {
-			return nil, fmt.Errorf("%s: %w", n.Key, err)
+		svc, err := c.unmarshalService(n)
+		if err != nil {
+			return nil, err
 		}
-		b := Service{Host: svc.Host, Port: svc.Port, Priority: svc.Priority, Weight: svc.Weight, Text: svc.Text, Key: string(n.Key)}
+		if c.strictlyOwned && svc.Owner != c.owner {
+			continue
+		}
+		b := Service{
+			Host:     svc.Host,
+			Port:     svc.Port,
+			Priority: svc.Priority,
+			Weight:   svc.Weight,
+			Text:     svc.Text,
+			Key:      string(n.Key),
+		}
 		if _, ok := bx[b]; ok {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
@@ -128,9 +145,28 @@ func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 }
 
 // SaveService persists service data into etcd
-func (c etcdClient) SaveService(service *Service) error {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
+
+	// check only for empty OwnedBy
+	if c.strictlyOwned && service.Owner != c.owner {
+		r, err := c.client.Get(ctx, service.Key)
+		if err != nil {
+			return fmt.Errorf("etcd get %q: %w", service.Key, err)
+		}
+		// Key missing -> treat as owned (safe to create)
+		if r != nil && len(r.Kvs) != 0 {
+			svc, err := c.unmarshalService(r.Kvs[0])
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
+			}
+			if svc.Owner != c.owner {
+				return fmt.Errorf("key %q is not owned by this provider", service.Key)
+			}
+		}
+		service.Owner = c.owner
+	}
 
 	value, err := json.Marshal(&service)
 	if err != nil {
@@ -144,12 +180,42 @@ func (c etcdClient) SaveService(service *Service) error {
 }
 
 // DeleteService deletes service record from etcd
-func (c etcdClient) DeleteService(key string) error {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) DeleteService(ctx context.Context, key string) error {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
-	return err
+	if c.strictlyOwned {
+		rs, err := c.client.Get(ctx, key, etcdcv3.WithPrefix())
+		if err != nil {
+			return err
+		}
+		for _, r := range rs.Kvs {
+			svc, err := c.unmarshalService(r)
+			if err != nil {
+				return err
+			}
+			if svc.Owner != c.owner {
+				continue
+			}
+
+			_, err = c.client.Delete(ctx, string(r.Key))
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	} else {
+		_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
+		return err
+	}
+}
+
+func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
+	svc := new(Service)
+	if err := json.Unmarshal(n.Value, svc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %q: %w", n.Key, err)
+	}
+	return svc, nil
 }
 
 // builds etcd client config depending on connection scheme and TLS parameters
@@ -162,9 +228,10 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	firstURL := strings.ToLower(etcdURLs[0])
 	etcdUsername := os.Getenv("ETCD_USERNAME")
 	etcdPassword := os.Getenv("ETCD_PASSWORD")
-	if strings.HasPrefix(firstURL, "http://") {
+	switch {
+	case strings.HasPrefix(firstURL, "http://"):
 		return &etcdcv3.Config{Endpoints: etcdURLs, Username: etcdUsername, Password: etcdPassword}, nil
-	} else if strings.HasPrefix(firstURL, "https://") {
+	case strings.HasPrefix(firstURL, "https://"):
 		tlsConfig, err := tlsutils.CreateTLSConfig("ETCD")
 		if err != nil {
 			return nil, err
@@ -176,13 +243,13 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 			Username:  etcdUsername,
 			Password:  etcdPassword,
 		}, nil
-	} else {
+	default:
 		return nil, errors.New("etcd URLs must start with either http:// or https://")
 	}
 }
 
 // the newETCDClient is an etcd client constructor
-func newETCDClient() (coreDNSClient, error) {
+func newETCDClient(owner string, strictlyOwned bool) (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {
 		return nil, err
@@ -191,12 +258,12 @@ func newETCDClient() (coreDNSClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return etcdClient{c, context.Background()}, nil
+	return etcdClient{c, owner, strictlyOwned}, nil
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
-	client, err := newETCDClient()
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+	client, err := newETCDClient(owner, strictlyOwned)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +271,7 @@ func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryR
 	return coreDNSProvider{
 		client:        client,
 		dryRun:        dryRun,
+		strictlyOwned: strictlyOwned,
 		coreDNSPrefix: prefix,
 		domainFilter:  domainFilter,
 	}, nil
@@ -233,9 +301,9 @@ func findLabelInTargets(targets []string, label string) (string, bool) {
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
-	services, err := p.client.GetServices(p.coreDNSPrefix)
+	services, err := p.client.GetServices(ctx, p.coreDNSPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +328,13 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 					endpoint.TTL(service.TTL),
 					service.Host,
 				)
+				if service.Group != "" {
+					ep.WithProviderSpecific(providerSpecificGroup, service.Group)
+				}
 				log.Debugf("Creating new ep (%s) with new service host (%s)", ep, service.Host)
+			}
+			if p.strictlyOwned {
+				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
 			}
 			ep.Labels["originalText"] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
@@ -273,6 +347,9 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 				endpoint.RecordTypeTXT,
 				service.Text,
 			)
+			if p.strictlyOwned {
+				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
+			}
 			ep.Labels[randomPrefixLabel] = prefix
 			result = append(result, ep)
 		}
@@ -280,7 +357,7 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return result, nil
 }
 
-func (p coreDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	grouped := p.groupEndpoints(changes)
 
 	for dnsName, group := range grouped {
@@ -288,12 +365,12 @@ func (p coreDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 			log.Debugf("Skipping record %q due to domain filter", dnsName)
 			continue
 		}
-		if err := p.applyGroup(dnsName, group); err != nil {
+		if err := p.applyGroup(ctx, dnsName, group); err != nil {
 			return err
 		}
 	}
 
-	return p.deleteEndpoints(changes.Delete)
+	return p.deleteEndpoints(ctx, changes.Delete)
 }
 
 func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*endpoint.Endpoint {
@@ -309,12 +386,12 @@ func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*end
 	return grouped
 }
 
-func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) error {
+func (p coreDNSProvider) applyGroup(ctx context.Context, dnsName string, group []*endpoint.Endpoint) error {
 	var services []*Service
 
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
-			srvs, err := p.createServicesForEndpoint(dnsName, ep)
+			srvs, err := p.createServicesForEndpoint(ctx, dnsName, ep)
 			if err != nil {
 				return err
 			}
@@ -329,7 +406,7 @@ func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) 
 		if p.dryRun {
 			continue
 		}
-		if err := p.client.SaveService(service); err != nil {
+		if err := p.client.SaveService(ctx, service); err != nil {
 			return err
 		}
 	}
@@ -337,7 +414,7 @@ func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) 
 	return nil
 }
 
-func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.Endpoint) ([]*Service, error) {
+func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName string, ep *endpoint.Endpoint) ([]*Service, error) {
 	var services []*Service
 
 	for _, target := range ep.Targets {
@@ -346,12 +423,17 @@ func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.
 			prefix = fmt.Sprintf("%08x", rand.Int31())
 			log.Infof("Generating new prefix: (%s)", prefix)
 		}
+		group := ""
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGroup); ok {
+			group = prop
+		}
 		service := Service{
 			Host:        target,
 			Text:        ep.Labels["originalText"],
 			Key:         p.etcdKeyFor(prefix + "." + dnsName),
 			TargetStrip: strings.Count(prefix, ".") + 1,
 			TTL:         uint32(ep.RecordTTL),
+			Group:       group,
 		}
 		services = append(services, &service)
 		ep.Labels[target] = prefix
@@ -368,7 +450,7 @@ func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.
 			if p.dryRun {
 				continue
 			}
-			if err := p.client.DeleteService(key); err != nil {
+			if err := p.client.DeleteService(ctx, key); err != nil {
 				return nil, err
 			}
 		}
@@ -410,7 +492,7 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	return services
 }
 
-func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
+func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
@@ -421,7 +503,7 @@ func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
 		if p.dryRun {
 			continue
 		}
-		if err := p.client.DeleteService(key); err != nil {
+		if err := p.client.DeleteService(ctx, key); err != nil {
 			return err
 		}
 	}
