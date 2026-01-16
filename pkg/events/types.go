@@ -18,6 +18,7 @@ package events
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -27,8 +28,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes/scheme"
 	runtime "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -82,12 +85,34 @@ type (
 		emitEvents sets.Set[Reason]
 		dryRun     bool
 	}
+
+	// EndpointInfo defines the interface for endpoint data needed to create events.
+	EndpointInfo interface {
+		GetDNSName() string
+		GetRecordType() string
+		GetRecordTTL() int64
+		GetTargets() []string
+		GetOwner() string
+		RefObject() *ObjectReference
+	}
 )
 
 func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
+	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
+	// objects via informers. Look up the Kind from the scheme without mutating the object.
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Kind == "" {
+		gvks, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gvks) > 0 {
+			gvk = gvks[0]
+		} else {
+			// Fallback to reflection for types not in scheme
+			gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
+		}
+	}
 	return &ObjectReference{
-		Kind:       obj.GetObjectKind().GroupVersionKind().Kind,
-		ApiVersion: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		Kind:       gvk.Kind,
+		ApiVersion: gvk.GroupVersion().String(),
 		Namespace:  obj.GetNamespace(),
 		Name:       obj.GetName(),
 		UID:        obj.GetUID(),
@@ -107,6 +132,17 @@ func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
 		reason:  r,
 		source:  obj.Source,
 	}
+}
+
+// NewEventFromEndpoint creates an Event from an EndpointInfo with formatted message.
+func NewEventFromEndpoint(ep EndpointInfo, a Action, r Reason) Event {
+	if ep == nil || ep.RefObject() == nil {
+		return Event{}
+	}
+	msg := fmt.Sprintf("(external-dns) record:%s,owner:%s,type:%s,ttl:%d,targets:%s",
+		ep.GetDNSName(), ep.GetOwner(), ep.GetRecordType(), ep.GetRecordTTL(),
+		strings.Join(ep.GetTargets(), ","))
+	return NewEvent(ep.RefObject(), msg, a, r)
 }
 
 func (e *Event) description() string {
@@ -138,10 +174,17 @@ func (e *Event) event() *eventsv1.Event {
 
 	timestamp := metav1.MicroTime{Time: time.Now()}
 
+	// Events are namespaced resources. For cluster-scoped objects like Nodes,
+	// the namespace is empty, so we default to "default" namespace.
+	namespace := e.ref.Namespace
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	event := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sanitize(e.ref.Name),
-			Namespace: e.ref.Namespace,
+			Namespace: namespace,
 		},
 		EventTime:           timestamp,
 		ReportingInstance:   controllerName + "/source/" + e.ref.Source,
