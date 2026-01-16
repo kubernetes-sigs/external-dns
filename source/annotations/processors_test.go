@@ -365,7 +365,7 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 	}
 }
 
-func TestShouldProcessResource(t *testing.T) {
+func TestIsControllerMismatch(t *testing.T) {
 	SetAnnotationPrefix(DefaultAnnotationPrefix)
 
 	tests := []struct {
