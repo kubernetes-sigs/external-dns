@@ -50,6 +50,7 @@ When creating a new source, add the following annotations above the source struc
 // +externaldns:source:filters=
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false|true
 type myNewSource struct {
     // ... fields
 }

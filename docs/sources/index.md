@@ -8,10 +8,7 @@ tags:
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW SOURCE ADDED PLEASE RUN 'make generate-sources-documentation' -->
-<!-- TODO: address mardkown lint issue -->
 <!-- markdownlint-disable MD013 -->
-<!-- markdownlint-disable MD055 -->
-<!-- markdownlint-disable MD056 -->
 
 ExternalDNS supports multiple sources for discovering DNS records. Each source watches specific Kubernetes or cloud platform resources and generates DNS records based on their configuration.
 
@@ -27,54 +24,30 @@ Sources are responsible for:
 
 | **Source Name** | Resources | Filters | Namespace | FQDN Template | Events | Category |
 |:----------------|:----------|:--------|:----------|:--------------|:---------|:---------|
-| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false
-  | false | ingress controllers |
-| **connector** | Remote TCP Server |  |  | false
-  | false | special |
-| **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true
-  | false | ingress controllers |
-| **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false
-  | false | externaldns |
-| **empty** | None |  |  | false
-  | false | testing |
-| **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false
-  | false | load balancers |
-| **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false
-  | false | load balancers |
-| **fake** | Fake Endpoints |  |  | true
-  | true | testing |
-| **gateway-grpcroute** | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false
-  | false | gateway api |
-| **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false
-  | false | gateway api |
-| **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false
-  | false | gateway api |
-| **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false
-  | false | gateway api |
-| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true
-  | false | gateway api |
-| **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false
-  | false | service mesh |
-| **ingress** | Ingress | annotation,label | all,single | true
-  | false | kubernetes core |
-| **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true
-  | false | service mesh |
-| **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true
-  | false | service mesh |
-| **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false
-  | false | ingress controllers |
-| **node** | Node | annotation,label | all | true
-  | false | kubernetes core |
-| **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true
-  | false | openshift |
-| **pod** | Pod | annotation,label | all,single | true
-  | false | kubernetes core |
-| **service** | Service | annotation,label | all,single | true
-  | false | kubernetes core |
-| **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true
-  | false | ingress controllers |
-| **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false
-  | false | ingress controllers |
+| **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | false | ingress controllers |
+| **connector** | Remote TCP Server |  |  | false | false | special |
+| **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | false | ingress controllers |
+| **crd** | DNSEndpoint.k8s.io | annotation,label | all,single | false | false | externaldns |
+| **empty** | None |  |  | false | false | testing |
+| **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false | false | load balancers |
+| **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false | false | load balancers |
+| **fake** | Fake Endpoints |  |  | true | true | testing |
+| **gateway-grpcroute** | GRPCRoute.gateway.networking.k8s.io | annotation,label | all,single | false | false | gateway api |
+| **gateway-httproute** | HTTPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | false | gateway api |
+| **gateway-tcproute** | TCPRoute.gateway.networking.k8s.io | annotation,label | all,single | false | false | gateway api |
+| **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false | false | gateway api |
+| **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true | false | gateway api |
+| **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false | false | service mesh |
+| **ingress** | Ingress | annotation,label | all,single | true | false | kubernetes core |
+| **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true | false | service mesh |
+| **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true | false | service mesh |
+| **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false | false | ingress controllers |
+| **node** | Node | annotation,label | all | true | false | kubernetes core |
+| **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true | false | openshift |
+| **pod** | Pod | annotation,label | all,single | true | false | kubernetes core |
+| **service** | Service | annotation,label | all,single | true | false | kubernetes core |
+| **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true | false | ingress controllers |
+| **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false | false | ingress controllers |
 
 ## Usage
 
