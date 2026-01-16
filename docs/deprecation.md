@@ -69,7 +69,7 @@ Votes may be conducted asynchronously, with a reasonable deadline for responses 
 Upon approval, the proposing maintainer is responsible for implementing the changes required to mark the feature as deprecated. This includes:
 
 * Updating the codebase with deprecation warnings where applicable.
-    * log.Warn("The XXX is on the path of ***DEPRECATION***. We recommend that you use YYY (link to docs)")
+  * log.Warn("The XXX is on the path of ***DEPRECATION***. We recommend that you use YYY (link to docs)")
 * Documenting the deprecation in release notes and relevant documentation.
 * Updating APIs, metrics, or behaviors per the Kubernetes Deprecation Policy if in scope.
 * If the feature is entirely deprecated, archival of any associated repositories (external provider as example).
@@ -80,7 +80,7 @@ Deprecation must be introduced in the next release. The release must follow sema
 
 * If the project is in the 0.x stage, a `minor` version `bump` is required.
 * For projects 1.x and beyond, a major version bump is required. For the features completely removed.
-    * If it's a flag change/flip, the `minor` version `bump` is acceptable
+  * If it's a flag change/flip, the `minor` version `bump` is acceptable
 
 ### Full Deprecation and Removal
 
