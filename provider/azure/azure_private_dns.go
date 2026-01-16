@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -56,7 +57,7 @@ type AzurePrivateDNSProvider struct {
 	userAssignedIdentityClientID string
 	activeDirectoryAuthorityHost string
 	zonesClient                  PrivateZonesClient
-	zonesCache                   *zonesCache[privatedns.PrivateZone]
+	zonesCache                   *blueprint.ZoneCache[[]privatedns.PrivateZone]
 	recordSetsClient             PrivateRecordSetsClient
 	maxRetriesCount              int
 }
@@ -92,7 +93,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter *endpoint.Domain
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   &zonesCache[privatedns.PrivateZone]{duration: zonesCacheDuration},
+		zonesCache:                   blueprint.NewSliceZoneCache[privatedns.PrivateZone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil

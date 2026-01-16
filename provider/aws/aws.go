@@ -31,6 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -282,12 +283,6 @@ func (z zoneTags) append(id string, tags []route53types.Tag) {
 	}
 }
 
-type zonesListCache struct {
-	age      time.Time
-	duration time.Duration
-	zones    map[string]*profiledZone
-}
-
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
@@ -309,7 +304,7 @@ type AWSProvider struct {
 	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
 	zoneMatchParent bool
 	preferCNAME     bool
-	zonesCache      *zonesListCache
+	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
 }
@@ -347,7 +342,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
-		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		zonesCache:            blueprint.NewMapZoneCache[string, *profiledZone](awsConfig.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
@@ -370,9 +365,9 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
-	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
+	if p.zonesCache.Expired() {
 		log.Debug("Using cached zones list")
-		return p.zonesCache.zones, nil
+		return p.zonesCache.Get(), nil
 	}
 	log.Debug("Refreshing zones list cache")
 
@@ -437,11 +432,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		}
 	}
 
-	if p.zonesCache.duration > time.Duration(0) {
-		p.zonesCache.zones = zones
-		p.zonesCache.age = time.Now()
-	}
-
+	p.zonesCache.Reset(zones)
 	return zones, nil
 }
 

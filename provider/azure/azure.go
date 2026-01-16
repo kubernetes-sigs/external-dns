@@ -24,6 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -61,7 +62,7 @@ type AzureProvider struct {
 	userAssignedIdentityClientID string
 	activeDirectoryAuthorityHost string
 	zonesClient                  ZonesClient
-	zonesCache                   *zonesCache[dns.Zone]
+	zonesCache                   *blueprint.ZoneCache[[]dns.Zone]
 	recordSetsClient             RecordSetsClient
 	maxRetriesCount              int
 }
@@ -97,7 +98,7 @@ func NewAzureProvider(configFile string, domainFilter *endpoint.DomainFilter, zo
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   &zonesCache[dns.Zone]{duration: zonesCacheDuration},
+		zonesCache:                   blueprint.NewSliceZoneCache[dns.Zone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil
