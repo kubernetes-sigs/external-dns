@@ -48,7 +48,7 @@ import (
 // +externaldns:source:name=crd
 // +externaldns:source:category=ExternalDNS
 // +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
-// +externaldns:source:resources=DNSEndpoint.k8s.io
+// +externaldns:source:resources=DNSEndpoint.externaldns.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
