@@ -20,8 +20,6 @@ import (
 	"context"
 	"sync"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // ZoneCache is a generic cache for DNS zones with TTL-based expiration.
@@ -92,45 +90,3 @@ func (c *ZoneCache[T]) Duration() time.Duration {
 // ZoneFetcher is a function type that fetches zones from a provider.
 // It's used by CachedZoneProvider to fetch zones when the cache is expired.
 type ZoneFetcher[T any] func(ctx context.Context) (T, error)
-
-// CachedZoneProvider wraps a zone fetcher with caching logic.
-// It automatically handles cache expiration and refresh.
-type CachedZoneProvider[T any] struct {
-	cache   *ZoneCache[T]
-	fetcher ZoneFetcher[T]
-	name    string // provider name for logging
-}
-
-// NewCachedZoneProvider creates a new CachedZoneProvider.
-func NewCachedZoneProvider[T any](cache *ZoneCache[T], fetcher ZoneFetcher[T], name string) *CachedZoneProvider[T] {
-	return &CachedZoneProvider[T]{
-		cache:   cache,
-		fetcher: fetcher,
-		name:    name,
-	}
-}
-
-// Zones returns cached zones if available, otherwise fetches fresh zones.
-func (p *CachedZoneProvider[T]) Zones(ctx context.Context) (T, error) {
-	if !p.cache.Expired() {
-		log.Debugf("%s: using cached zones", p.name)
-		return p.cache.Get(), nil
-	}
-
-	log.Debugf("%s: refreshing zones cache", p.name)
-	zones, err := p.fetcher(ctx)
-	if err != nil {
-		var zero T
-		return zero, err
-	}
-
-	p.cache.Reset(zones)
-	return zones, nil
-}
-
-// Invalidate clears the cache, forcing a refresh on next access.
-func (p *CachedZoneProvider[T]) Invalidate() {
-	p.cache.mu.Lock()
-	defer p.cache.mu.Unlock()
-	p.cache.age = time.Time{} // zero time = expired
-}

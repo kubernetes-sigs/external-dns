@@ -17,13 +17,10 @@ limitations under the License.
 package blueprint
 
 import (
-	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestZoneCache_SliceCache(t *testing.T) {
@@ -97,135 +94,4 @@ func TestZoneCache_ThreadSafety(t *testing.T) {
 
 	<-done
 	<-done
-}
-
-func TestCachedZoneProvider_UsesCacheWhenNotExpired(t *testing.T) {
-	cache := NewSliceZoneCache[string](time.Hour)
-	fetchCount := 0
-
-	fetcher := func(ctx context.Context) ([]string, error) {
-		fetchCount++
-		return []string{"zone1", "zone2"}, nil
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	// First call fetches
-	zones, err := provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, []string{"zone1", "zone2"}, zones)
-	assert.Equal(t, 1, fetchCount)
-
-	// Second call uses cache
-	zones, err = provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, []string{"zone1", "zone2"}, zones)
-	assert.Equal(t, 1, fetchCount) // Still 1, no new fetch
-}
-
-func TestCachedZoneProvider_RefreshesOnExpiration(t *testing.T) {
-	cache := NewSliceZoneCache[string](10 * time.Millisecond)
-	fetchCount := 0
-
-	fetcher := func(ctx context.Context) ([]string, error) {
-		fetchCount++
-		return []string{"zone1"}, nil
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	// First call
-	_, err := provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 1, fetchCount)
-
-	// Wait for expiration
-	time.Sleep(20 * time.Millisecond)
-
-	// Should fetch again
-	_, err = provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 2, fetchCount)
-}
-
-func TestCachedZoneProvider_PropagatesErrors(t *testing.T) {
-	cache := NewSliceZoneCache[string](time.Hour)
-	expectedErr := errors.New("fetch error")
-
-	fetcher := func(ctx context.Context) ([]string, error) {
-		return nil, expectedErr
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	zones, err := provider.Zones(context.Background())
-	assert.Error(t, err)
-	assert.Equal(t, expectedErr, err)
-	assert.Nil(t, zones)
-}
-
-func TestCachedZoneProvider_Invalidate(t *testing.T) {
-	cache := NewSliceZoneCache[string](time.Hour)
-	fetchCount := 0
-
-	fetcher := func(ctx context.Context) ([]string, error) {
-		fetchCount++
-		return []string{"zone1"}, nil
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	// First call
-	_, err := provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 1, fetchCount)
-
-	// Invalidate cache
-	provider.Invalidate()
-
-	// Should fetch again
-	_, err = provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 2, fetchCount)
-}
-
-type testZone struct {
-	ID   string
-	Name string
-}
-
-func TestCachedZoneProvider_WithStructSlice(t *testing.T) {
-	cache := NewSliceZoneCache[testZone](time.Hour)
-
-	fetcher := func(ctx context.Context) ([]testZone, error) {
-		return []testZone{
-			{ID: "1", Name: "zone1.example.com"},
-			{ID: "2", Name: "zone2.example.com"},
-		}, nil
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	zones, err := provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Len(t, zones, 2)
-	assert.Equal(t, "zone1.example.com", zones[0].Name)
-}
-
-func TestCachedZoneProvider_WithMap(t *testing.T) {
-	cache := NewMapZoneCache[string, *testZone](time.Hour)
-
-	fetcher := func(ctx context.Context) (map[string]*testZone, error) {
-		return map[string]*testZone{
-			"zone1": {ID: "1", Name: "zone1.example.com"},
-			"zone2": {ID: "2", Name: "zone2.example.com"},
-		}, nil
-	}
-
-	provider := NewCachedZoneProvider(cache, fetcher, "test")
-
-	zones, err := provider.Zones(context.Background())
-	require.NoError(t, err)
-	assert.Len(t, zones, 2)
-	assert.Equal(t, "zone1.example.com", zones["zone1"].Name)
 }
