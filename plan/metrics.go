@@ -23,6 +23,10 @@ import (
 )
 
 var (
+	// registryOwnerMismatchTotal tracks records skipped due to owner mismatch.
+	// The "domain" label uses the naked/apex domain (e.g., "example.com") rather than
+	// full FQDNs to prevent cardinality explosion. With thousands of subdomains under
+	// one apex domain, using full FQDNs would create excessive metric series.
 	registryOwnerMismatchTotal = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
 			Subsystem: "registry",

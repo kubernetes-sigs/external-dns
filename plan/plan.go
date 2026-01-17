@@ -278,7 +278,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 					recordType:   current.RecordType,
 					owner:        p.OwnerID,
 					foreignOwner: current.GetOwner(),
-					domain:       current.GetNakedDomain(),
+					domain:       current.GetNakedDomain(), // use naked domain to limit metric cardinality
 				}]++
 			}
 		}
