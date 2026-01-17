@@ -89,6 +89,9 @@ func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
 
 // AddWithLabels adds the value to the Gauge metric for the specified label values.
 // All label values are converted to lowercase before being applied.
+//
+// Without Reset(), values accumulate and reset only on process restart.
+// Use Reset() + AddWithLabels() pattern for per-cycle counts.
 func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
 	for i, v := range lvs {
 		lvs[i] = strings.ToLower(v)

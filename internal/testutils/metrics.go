@@ -32,11 +32,11 @@ import (
 //
 // Example usage:
 //
-//	// Exact match (all labels)
+//	Exact match (all labels)
 //	labels := map[string]string{"method": "GET", "status": "200"}
 //	TestHelperVerifyMetricsGaugeVectorWithLabels(t, 42.0, myGaugeVec, labels)
 //
-//	// Partial match (sum all metrics with method=GET)
+//	Partial match (sum all metrics with method=GET)
 //	labels := map[string]string{"method": "GET"}
 //	TestHelperVerifyMetricsGaugeVectorWithLabels(t, 100.0, myGaugeVec, labels)
 func TestHelperVerifyMetricsGaugeVectorWithLabels(t *testing.T, expected float64, metric prometheus.GaugeVec, labels map[string]string) {
