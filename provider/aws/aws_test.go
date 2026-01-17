@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -352,7 +353,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 		clients:       map[string]Route53API{defaultAWSProfile: client},
 		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
 		dryRun:        false,
-		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
+		zonesCache:    blueprint.NewMapZoneCache[string, *profiledZone](1 * time.Minute),
 	}
 	createAWSZone(t, provider, &route53types.HostedZone{
 		Id:     aws.String("/hostedzone/zone-1.ext-dns-test-ok.example.com."),
@@ -1079,7 +1080,7 @@ func TestAWSApplyChanges(t *testing.T) {
 
 		ctx := tt.setup(provider)
 
-		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
+		provider.zonesCache = blueprint.NewMapZoneCache[string, *profiledZone](0 * time.Minute)
 		counter := NewRoute53APICounter(provider.clients[defaultAWSProfile])
 		provider.clients[defaultAWSProfile] = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
@@ -2371,7 +2372,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilt
 		zoneTypeFilter:        zoneTypeFilter,
 		zoneTagFilter:         zoneTagFilter,
 		dryRun:                false,
-		zonesCache:            &zonesListCache{duration: 1 * time.Minute},
+		zonesCache:            blueprint.NewMapZoneCache[string, *profiledZone](1 * time.Minute),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
