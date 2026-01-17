@@ -32,6 +32,8 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -143,11 +145,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, hp := range httpProxies {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := hp.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping HTTPProxy %s/%s because controller value does not match, found: %s, required: %s",
-				hp.Namespace, hp.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(hp, types.ContourHTTPProxy) {
 			continue
 		}
 
@@ -167,8 +165,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if len(hpEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from HTTPProxy %s/%s", hp.Namespace, hp.Name)
+		if endpoint.HasNoEmptyEndpoints(hpEndpoints, types.ContourHTTPProxy, hp) {
 			continue
 		}
 

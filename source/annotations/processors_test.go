@@ -17,10 +17,20 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
+
+// helper implementing metav1.ObjectMetaAccessor for tests
+type objectUnderTest struct {
+	meta metav1.ObjectMeta
+}
+
+func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
 
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
@@ -351,6 +361,89 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := InternalHostnamesFromAnnotations(tt.annotations)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsControllerMismatch(t *testing.T) {
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+
+	tests := []struct {
+		name         string
+		annotations  map[string]string
+		entity       objectUnderTest
+		resourceType string
+		debugMsg     string
+		expected     bool
+	}{
+		{
+			name: "no controller annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:        "my-service",
+					Namespace:   "default",
+					Annotations: map[string]string{},
+				},
+			},
+			resourceType: "service",
+			expected:     false,
+		},
+		{
+			name: "non-matching controller annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:      "my-service",
+					Namespace: "default",
+					Annotations: map[string]string{
+						ControllerKey: "other-controller",
+					},
+				},
+			},
+			debugMsg:     fmt.Sprintf("Skipping 'service/default/my-service' because controller '%s' value does not match, found: 'other-controller', required: '%s'", ControllerKey, ControllerValue),
+			resourceType: "service",
+			expected:     true,
+		},
+		{
+			name: "empty controller value with annotation",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:      "test-ingress",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						ControllerKey: "",
+					},
+				},
+			},
+			debugMsg:     fmt.Sprintf("Skipping 'ingress/kube-system/test-ingress' because controller '%s' value does not match, found: '', required: '%s'", ControllerKey, ControllerValue),
+			resourceType: "ingress",
+			expected:     true,
+		},
+		{
+			name: "nil annotations",
+			entity: objectUnderTest{
+				meta: metav1.ObjectMeta{
+					Name:        "service",
+					Namespace:   "default",
+					Annotations: nil,
+				},
+			},
+			resourceType: "service",
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			result := IsControllerMismatch(&tt.entity, tt.resourceType)
+			assert.Equal(t, tt.expected, result)
+
+			if tt.debugMsg != "" {
+				testutils.TestHelperLogContains(tt.debugMsg, hook, t)
+			} else {
+				testutils.TestHelperLogNotContains("Skipping", hook, t)
+			}
 		})
 	}
 }
