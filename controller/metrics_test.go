@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -287,46 +286,7 @@ func TestAAAARecords(t *testing.T) {
 }
 
 func TestGaugeMetricsWithMixedRecords(t *testing.T) {
-	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
-		endpoint.RecordTypeA:     534,
-		endpoint.RecordTypeAAAA:  324,
-		endpoint.RecordTypeCNAME: 2,
-		endpoint.RecordTypeTXT:   56,
-		endpoint.RecordTypeSRV:   11,
-		endpoint.RecordTypeNS:    3,
-	})
-
-	providerEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
-		endpoint.RecordTypeA:     5334,
-		endpoint.RecordTypeAAAA:  324,
-		endpoint.RecordTypeCNAME: 23,
-		endpoint.RecordTypeTXT:   6,
-		endpoint.RecordTypeSRV:   25,
-		endpoint.RecordTypeNS:    1,
-		endpoint.RecordTypePTR:   43,
-	})
-
-	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
-	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
-
-	source := new(testutils.MockSource)
-	source.On("Endpoints").Return(configuredEndpoints, nil)
-
-	provider := &filteredMockProvider{
-		RecordsStore: providerEndpoints,
-	}
-	r, err := registry.SelectRegistry(cfg, provider)
-
-	require.NoError(t, err)
-
-	ctrl := &Controller{
-		Source:             source,
-		Registry:           r,
-		Policy:             &plan.SyncPolicy{},
-		DomainFilter:       endpoint.NewDomainFilter([]string{}),
-		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-	}
+	ctrl := newMixedRecordsFixture()
 
 	assert.NoError(t, ctrl.RunOnce(t.Context()))
 
@@ -345,9 +305,7 @@ type mixedRecordsFixture struct {
 	ctrl *Controller
 }
 
-func newMixedRecordsFixture(tb testing.TB) *mixedRecordsFixture {
-	tb.Helper()
-
+func newMixedRecordsFixture() *Controller {
 	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
 		endpoint.RecordTypeA:     534,
 		endpoint.RecordTypeAAAA:  324,
@@ -377,27 +335,22 @@ func newMixedRecordsFixture(tb testing.TB) *mixedRecordsFixture {
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.SelectRegistry(cfg, provider)
-	if err != nil {
-		tb.Fatal(err)
-	}
+	r, _ := registry.SelectRegistry(cfg, provider)
 
-	return &mixedRecordsFixture{
-		ctrl: &Controller{
-			Source:             source,
-			Registry:           r,
-			Policy:             &plan.SyncPolicy{},
-			DomainFilter:       endpoint.NewDomainFilter([]string{}),
-			ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-		},
+	return &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		DomainFilter:       endpoint.NewDomainFilter([]string{}),
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 }
 
 func BenchmarkGaugeMetricsWithMixedRecords(b *testing.B) {
-	fixture := newMixedRecordsFixture(b)
+	ctrl := newMixedRecordsFixture()
 
 	for b.Loop() {
-		if err := fixture.ctrl.RunOnce(b.Context()); err != nil {
+		if err := ctrl.RunOnce(b.Context()); err != nil {
 			b.Fatal(err)
 		}
 	}
