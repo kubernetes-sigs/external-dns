@@ -61,11 +61,13 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				"",
-				tt.annotationFilter,
-				tt.fqdnTemplate,
-				false,
-				false,
+				&Config{
+					Namespace:                "",
+					AnnotationFilter:         "",
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: false,
+					IgnoreHostnameAnnotation: false,
+				},
 			)
 
 			if tt.expectError {
@@ -653,11 +655,13 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				istioClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				!tt.combineFqdn,
-				false,
+				&Config{
+					Namespace:                "",
+					AnnotationFilter:         "",
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: !tt.combineFqdn,
+					IgnoreHostnameAnnotation: false,
+				},
 			)
 			require.NoError(t, err)
 
