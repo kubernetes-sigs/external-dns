@@ -102,39 +102,7 @@ func TestCalculateOwnerMismatchDetection(t *testing.T) {
 }
 
 func TestOwnerMismatchMetricDistribution(t *testing.T) {
-	current := testutils.GenerateTestEndpointsWithDistribution(
-		map[string]int{
-			endpoint.RecordTypeA:     12,
-			endpoint.RecordTypeAAAA:  27,
-			endpoint.RecordTypeCNAME: 42,
-			endpoint.RecordTypeSRV:   44,
-		},
-		map[string]int{
-			"example.com": 1,
-			"tld.org":     2,
-			"open.net":    3,
-		},
-		map[string]int{"owner1": 1, "owner2": 1, "owner3": 1},
-	)
-
-	// Desired: TXT records for the same DNS names (triggers Create path)
-	var desired []*endpoint.Endpoint
-	for _, ep := range current {
-		desired = append(desired, &endpoint.Endpoint{
-			DNSName:    ep.DNSName,
-			Targets:    endpoint.Targets{"txt-value"},
-			RecordType: endpoint.RecordTypeTXT,
-			RecordTTL:  300,
-		})
-	}
-
-	p := &Plan{
-		Policies:       []Policy{&SyncPolicy{}},
-		Current:        current,
-		Desired:        desired,
-		ManagedRecords: endpoint.KnownRecordTypes,
-		OwnerID:        "my-owner",
-	}
+	p := newOwnerMismatchFixture()
 
 	p.Calculate()
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 44, registryOwnerMismatchTotal.Gauge,
@@ -149,13 +117,25 @@ func TestOwnerMismatchMetricDistribution(t *testing.T) {
 		map[string]string{"record_type": endpoint.RecordTypeCNAME, "foreign_owner": "owner1", "domain": "open.net"})
 }
 
-func newOwnerMismatchFixture() *Plan {
+func BenchmarkOwnerMismatchMetricDistribution(b *testing.B) {
+	p := newOwnerMismatchFixture(1000)
+
+	for b.Loop() {
+		p.Calculate()
+	}
+}
+
+func newOwnerMismatchFixture(scale ...int) *Plan {
+	factor := 1
+	if len(scale) > 0 && scale[0] > 1 {
+		factor = scale[0]
+	}
 	current := testutils.GenerateTestEndpointsWithDistribution(
 		map[string]int{
-			endpoint.RecordTypeA:     1200,
-			endpoint.RecordTypeAAAA:  2700,
-			endpoint.RecordTypeCNAME: 4002,
-			endpoint.RecordTypeSRV:   4400,
+			endpoint.RecordTypeA:     12 * factor,
+			endpoint.RecordTypeAAAA:  27 * factor,
+			endpoint.RecordTypeCNAME: 42 * factor,
+			endpoint.RecordTypeSRV:   44 * factor,
 		},
 		map[string]int{
 			"example.com": 1,
@@ -181,13 +161,5 @@ func newOwnerMismatchFixture() *Plan {
 		Desired:        desired,
 		ManagedRecords: endpoint.KnownRecordTypes,
 		OwnerID:        "my-owner",
-	}
-}
-
-func BenchmarkOwnerMismatchMetricDistribution(b *testing.B) {
-	plan := newOwnerMismatchFixture()
-
-	for b.Loop() {
-		plan.Calculate()
 	}
 }

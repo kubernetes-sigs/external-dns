@@ -18,9 +18,11 @@ package testutils
 
 import (
 	"fmt"
+	"maps"
 	"math/rand"
 	"net/netip"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -173,27 +175,15 @@ func GenerateTestEndpointsWithDistribution(
 	}
 
 	// Build domain distribution (sorted keys for determinism)
-	var domainKeys []string
-	for domain := range domainWeights {
-		domainKeys = append(domainKeys, domain)
-	}
-	sort.Strings(domainKeys)
+	domainKeys := slices.Sorted(maps.Keys(domainWeights))
 	domains := distributeByWeight(domainKeys, domainWeights, totalEndpoints)
 
 	// Build owner distribution (sorted keys for determinism)
-	var ownerKeys []string
-	for owner := range ownerWeights {
-		ownerKeys = append(ownerKeys, owner)
-	}
-	sort.Strings(ownerKeys)
+	ownerKeys := slices.Sorted(maps.Keys(ownerWeights))
 	owners := distributeByWeight(ownerKeys, ownerWeights, totalEndpoints)
 
 	// Sort record types for deterministic iteration
-	var typeKeys []string
-	for rt := range typeCounts {
-		typeKeys = append(typeKeys, rt)
-	}
-	sort.Strings(typeKeys)
+	typeKeys := slices.Sorted(maps.Keys(typeCounts))
 
 	var result []*endpoint.Endpoint
 	idx := 0
