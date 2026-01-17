@@ -21,7 +21,10 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -78,6 +81,42 @@ func TestNewPiholeProvider(t *testing.T) {
 	_, err = NewPiholeProvider(PiholeConfig{Server: "test.example.com"})
 	if err != nil {
 		t.Error("Expected no error from valid configuration, got:", err)
+	}
+}
+
+func TestNewPiholeProvider_APIVersions(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  PiholeConfig
+		wantMsg bool
+	}{
+		{
+			name: "API version 5 with server",
+			config: PiholeConfig{
+				APIVersion: "5",
+				Server:     "test.example.com",
+			},
+			wantMsg: true,
+		},
+		{
+			name: "API version 6 with server",
+			config: PiholeConfig{
+				APIVersion: "6",
+				Server:     "test.example.com",
+			},
+			wantMsg: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			_, err := NewPiholeProvider(tt.config)
+			require.NoError(t, err)
+			if tt.wantMsg {
+				testutils.TestHelperLogContains(warningMsg, hook, t)
+			}
+		})
 	}
 }
 
