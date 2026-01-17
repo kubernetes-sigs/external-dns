@@ -600,7 +600,7 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 		t.Context(),
 		kubeClient,
 		&Config{
-			LabelFilter:          labels.Everything(),
+			LabelFilter: labels.Everything(),
 		},
 	)
 	require.NoError(t, err)
