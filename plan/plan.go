@@ -167,6 +167,13 @@ func (c *Changes) HasChanges() bool {
 	return !cmp.Equal(c.UpdateNew, c.UpdateOld, cmpopts.IgnoreUnexported(endpoint.Endpoint{}))
 }
 
+type mismatchKey struct {
+	recordType   string
+	owner        string
+	foreignOwner string
+	domain       string
+}
+
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
@@ -187,7 +194,13 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
-	changes := p.calculateChanges(t)
+	mismatches := make(map[mismatchKey]float64)
+	changes := p.calculateChanges(t, mismatches)
+
+	// Write aggregated mismatch metrics
+	for key, count := range mismatches {
+		registryOwnerMismatchTotal.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
+	}
 
 	plan := &Plan{
 		Current: p.Current,
@@ -201,7 +214,7 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func (p *Plan) calculateChanges(t planTable) *Changes {
+func (p *Plan) calculateChanges(t planTable, mismatches map[mismatchKey]float64) *Changes {
 	changes := &Changes{}
 
 	for key, row := range t.rows {
@@ -221,7 +234,7 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 
 		// dns name is taken
 		case len(row.candidates) > 0:
-			p.appendTakenDNSNameChanges(t, changes, key, row)
+			p.appendTakenDNSNameChanges(t, changes, key, row, mismatches)
 		}
 	}
 
@@ -240,7 +253,12 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 	return changes
 }
 
-func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key planKey, row *planTableRow) {
+func (p *Plan) appendTakenDNSNameChanges(
+	t planTable,
+	changes *Changes,
+	key planKey,
+	row *planTableRow,
+	mismatches map[mismatchKey]float64) {
 	// apply changes for each record type
 	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
 	changes.Delete = append(changes.Delete, rowChanges.Delete...)
@@ -256,13 +274,12 @@ func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key plan
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				registryOwnerMismatchTotal.AddWithLabels(
-					1.0,
-					current.RecordType,
-					p.OwnerID,
-					current.GetOwner(),
-					current.GetNakedDomain(),
-				)
+				mismatches[mismatchKey{
+					recordType:   current.RecordType,
+					owner:        p.OwnerID,
+					foreignOwner: current.GetOwner(),
+					domain:       current.GetNakedDomain(),
+				}]++
 			}
 		}
 	}
