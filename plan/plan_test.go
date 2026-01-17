@@ -1249,6 +1249,8 @@ func TestOwnerMismatchMetricDistribution(t *testing.T) {
 		map[string]string{"record_type": endpoint.RecordTypeSRV})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 41, registryOwnerMismatchTotal.Gauge,
 		map[string]string{"foreign_owner": "owner1"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 125, registryOwnerMismatchTotal.Gauge,
+		map[string]string{"owner": "my-owner"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 21, registryOwnerMismatchTotal.Gauge,
 		map[string]string{"foreign_owner": "owner1", "domain": "open.net"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, registryOwnerMismatchTotal.Gauge,

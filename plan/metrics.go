@@ -10,10 +10,10 @@ var (
 	registryOwnerMismatchTotal = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
 			Subsystem: "registry",
-			Name:      "skipped_records_owner_mismatch_total",
+			Name:      "skipped_records_owner_mismatch_per_sync",
 			Help:      "Number of records skipped with owner mismatch for each record type, owner mismatch ID and domain (vector).",
 		},
-		[]string{"record_type", "foreign_owner", "domain"},
+		[]string{"record_type", "owner", "foreign_owner", "domain"},
 	)
 )
 

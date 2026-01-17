@@ -171,6 +171,9 @@ func (c *Changes) HasChanges() bool {
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
+	// Reset mismatch metrics at start of each calculation cycle
+	registryOwnerMismatchTotal.Gauge.Reset()
+
 	t := newPlanTable()
 
 	if p.DomainFilter == nil {
@@ -256,6 +259,7 @@ func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key plan
 				registryOwnerMismatchTotal.AddWithLabels(
 					1.0,
 					current.RecordType,
+					p.OwnerID,
 					current.GetOwner(),
 					current.GetNakedDomain(),
 				)
