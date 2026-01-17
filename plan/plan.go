@@ -178,9 +178,6 @@ type mismatchKey struct {
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	// Reset mismatch metrics at start of each calculation cycle
-	registryOwnerMismatchPerSync.Gauge.Reset()
-
 	t := newPlanTable()
 
 	if p.DomainFilter == nil {
@@ -197,6 +194,8 @@ func (p *Plan) Calculate() *Plan {
 	mismatches := make(map[mismatchKey]float64)
 	changes := p.calculateChanges(t, mismatches)
 
+	// Reset mismatch metrics at start of each calculation cycle
+	registryOwnerMismatchPerSync.Gauge.Reset()
 	// Write aggregated mismatch metrics
 	for key, count := range mismatches {
 		registryOwnerMismatchPerSync.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
