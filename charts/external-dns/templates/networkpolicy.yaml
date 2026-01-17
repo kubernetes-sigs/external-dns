@@ -1,0 +1,42 @@
+{{- if .Values.networkPolicy.enabled }}
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "external-dns.selectorLabels" . | nindent 6 }}
+      {{- with dig "external-dns" "podLabels" nil .Values.AsMap }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+  policyTypes:
+    - Ingress
+    - Egress
+  {{- if .Values.networkPolicy.allowExternalEgress }}
+  egress:
+    - {}
+  {{- else }}
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+        {{- range $port := .Values.networkPolicy.kubeAPIServerPorts }}
+        - port: {{ $port }}
+        {{- end }}
+    {{- if .Values.networkPolicy.extraEgress }}
+    {{- toYaml .Values.networkPolicy.extraEgress | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  ingress:
+    - ports:
+        - port: 7979
+    {{- if .Values.networkPolicy.extraIngress }}
+    {{- toYaml .Values.networkPolicy.extraIngress | nindent 4 }}
+    {{- end }}
+{{- end }}

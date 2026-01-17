@@ -1,0 +1,22 @@
+{{- if .Values.pdb.create }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.pdb.minAvailable }}
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  {{- end }}
+  {{- if or .Values.pdb.maxUnavailable (not .Values.pdb.minAvailable) }}
+  maxUnavailable: {{ .Values.pdb.maxUnavailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "external-dns.selectorLabels" . | nindent 6 }}
+      {{- with dig "external-dns" "podLabels" nil .Values.AsMap }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+{{- end -}}
