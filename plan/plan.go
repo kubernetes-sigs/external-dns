@@ -179,7 +179,7 @@ type mismatchKey struct {
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
 	// Reset mismatch metrics at start of each calculation cycle
-	registryOwnerMismatchTotal.Gauge.Reset()
+	registryOwnerMismatchPerSync.Gauge.Reset()
 
 	t := newPlanTable()
 
@@ -199,7 +199,7 @@ func (p *Plan) Calculate() *Plan {
 
 	// Write aggregated mismatch metrics
 	for key, count := range mismatches {
-		registryOwnerMismatchTotal.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
+		registryOwnerMismatchPerSync.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
 	}
 
 	plan := &Plan{

@@ -57,7 +57,7 @@ func TestOwnerMismatchMetric(t *testing.T) {
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
 		t,
 		1.0,
-		registryOwnerMismatchTotal.Gauge,
+		registryOwnerMismatchPerSync.Gauge,
 		map[string]string{
 			"record_type":   endpoint.RecordTypeA,
 			"foreign_owner": "other-owner",
@@ -105,15 +105,15 @@ func TestOwnerMismatchMetricDistribution(t *testing.T) {
 	p := newOwnerMismatchFixture()
 
 	p.Calculate()
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 44, registryOwnerMismatchTotal.Gauge,
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 44, registryOwnerMismatchPerSync.Gauge,
 		map[string]string{"record_type": endpoint.RecordTypeSRV})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 41, registryOwnerMismatchTotal.Gauge,
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 41, registryOwnerMismatchPerSync.Gauge,
 		map[string]string{"foreign_owner": "owner1"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 125, registryOwnerMismatchTotal.Gauge,
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 125, registryOwnerMismatchPerSync.Gauge,
 		map[string]string{"owner": "my-owner"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 21, registryOwnerMismatchTotal.Gauge,
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 21, registryOwnerMismatchPerSync.Gauge,
 		map[string]string{"foreign_owner": "owner1", "domain": "open.net"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, registryOwnerMismatchTotal.Gauge,
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, registryOwnerMismatchPerSync.Gauge,
 		map[string]string{"record_type": endpoint.RecordTypeCNAME, "foreign_owner": "owner1", "domain": "open.net"})
 }
 
