@@ -81,10 +81,7 @@ func (g GaugeVecMetric) Get() *Metric {
 // SetWithLabels sets the value of the Gauge metric for the specified label values.
 // All label values are converted to lowercase before being applied.
 func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
-	for i, v := range lvs {
-		lvs[i] = strings.ToLower(v)
-	}
-	g.Gauge.WithLabelValues(lvs...).Set(value)
+	g.Gauge.WithLabelValues(toLower(lvs)...).Set(value)
 }
 
 // AddWithLabels adds the value to the Gauge metric for the specified label values.
@@ -93,10 +90,7 @@ func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
 // Without Reset(), values accumulate and reset only on process restart.
 // Use Reset() + AddWithLabels() pattern for per-cycle counts.
 func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
-	for i, v := range lvs {
-		lvs[i] = strings.ToLower(v)
-	}
-	g.Gauge.WithLabelValues(lvs...).Add(value)
+	g.Gauge.WithLabelValues(toLower(lvs)...).Add(value)
 }
 
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
@@ -220,4 +214,14 @@ func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) Summary
 func PathProcessor(path string) string {
 	parts := strings.Split(path, "/")
 	return parts[len(parts)-1]
+}
+
+// toLower converts all label values to lowercase.
+// The Prometheus maintainers have intentionally avoided magic transformations to keep label handling explicit and predictable.
+// We expect consistent casing, normalizing at ingestion is the standard practice.
+func toLower(lvs []string) []string {
+	for i := range lvs {
+		lvs[i] = strings.ToLower(lvs[i])
+	}
+	return lvs
 }
