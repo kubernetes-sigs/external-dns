@@ -28,41 +28,6 @@ import (
 	"sigs.k8s.io/external-dns/registry"
 )
 
-func TestRecordKnownEndpointType(t *testing.T) {
-	mr := newMetricsRecorder()
-
-	// Recording a built-in type should start at 1 and increment
-	mr.recordEndpointType(endpoint.RecordTypeA)
-	assert.Equal(t, 1, mr.getEndpointTypeCount(endpoint.RecordTypeA))
-
-	mr.recordEndpointType(endpoint.RecordTypeA)
-	assert.Equal(t, 2, mr.getEndpointTypeCount(endpoint.RecordTypeA))
-}
-
-func TestRecordUnknownEndpointType(t *testing.T) {
-	mr := newMetricsRecorder()
-	const customType = "CUSTOM"
-
-	// Unknown types start at zero
-	assert.Equal(t, 0, mr.getEndpointTypeCount(customType))
-
-	// First record sets to 1
-	mr.recordEndpointType(customType)
-	assert.Equal(t, 1, mr.getEndpointTypeCount(customType))
-
-	// Subsequent records increment
-	mr.recordEndpointType(customType)
-	assert.Equal(t, 2, mr.getEndpointTypeCount(customType))
-}
-
-func TestLoadFloat64(t *testing.T) {
-	mr := newMetricsRecorder()
-
-	// loadFloat64 should return the float64 representation of the count
-	mr.recordEndpointType(endpoint.RecordTypeAAAA)
-	assert.InDelta(t, float64(1), mr.loadFloat64(endpoint.RecordTypeAAAA), 0.0001)
-}
-
 func TestVerifyARecords(t *testing.T) {
 	testControllerFiltersDomains(
 		t,
@@ -374,4 +339,66 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, registryRecords.Gauge, map[string]string{"record_type": "aaaa"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, registryRecords.Gauge, map[string]string{"record_type": "mx"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 43, registryRecords.Gauge, map[string]string{"record_type": "ptr"})
+}
+
+type mixedRecordsFixture struct {
+	ctrl *Controller
+}
+
+func newMixedRecordsFixture(tb testing.TB) *mixedRecordsFixture {
+	tb.Helper()
+
+	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+		endpoint.RecordTypeA:     534,
+		endpoint.RecordTypeAAAA:  324,
+		endpoint.RecordTypeCNAME: 2,
+		endpoint.RecordTypeTXT:   56,
+		endpoint.RecordTypeSRV:   11,
+		endpoint.RecordTypeNS:    3,
+	})
+
+	providerEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+		endpoint.RecordTypeA:     5334,
+		endpoint.RecordTypeAAAA:  324,
+		endpoint.RecordTypeCNAME: 23,
+		endpoint.RecordTypeTXT:   6,
+		endpoint.RecordTypeSRV:   25,
+		endpoint.RecordTypeNS:    1,
+		endpoint.RecordTypePTR:   43,
+	})
+
+	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
+	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
+
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return(configuredEndpoints, nil)
+
+	provider := &filteredMockProvider{
+		RecordsStore: providerEndpoints,
+	}
+	r, err := registry.SelectRegistry(cfg, provider)
+	if err != nil {
+		tb.Fatal(err)
+	}
+
+	return &mixedRecordsFixture{
+		ctrl: &Controller{
+			Source:             source,
+			Registry:           r,
+			Policy:             &plan.SyncPolicy{},
+			DomainFilter:       endpoint.NewDomainFilter([]string{}),
+			ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		},
+	}
+}
+
+func BenchmarkGaugeMetricsWithMixedRecords(b *testing.B) {
+	fixture := newMixedRecordsFixture(b)
+
+	for b.Loop() {
+		if err := fixture.ctrl.RunOnce(b.Context()); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
