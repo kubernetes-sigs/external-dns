@@ -80,7 +80,7 @@ func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]st
 
 		matches := true
 		for k, v := range matchLabels {
-			if strings.ToLower(metricLabels[k]) != strings.ToLower(v) {
+			if !strings.EqualFold(metricLabels[k], v) {
 				matches = false
 				break
 			}

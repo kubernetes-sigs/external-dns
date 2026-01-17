@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -540,7 +541,7 @@ func TestGenerateTestEndpointsWithDistribution(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			eps := GenerateTestEndpointsWithDistribution(tt.typeCounts, tt.domainWeights, tt.ownerWeights)
 
-			assert.Equal(t, tt.wantTotal, len(eps), "total endpoint count")
+			assert.Len(t, eps, tt.wantTotal, "total endpoint count")
 
 			// Count actual distributions
 			gotTypes := make(map[string]int)

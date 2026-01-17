@@ -32,6 +32,7 @@ curl https://localhost:7979/metrics
 | endpoints_total | Gauge | registry | Number of Endpoints in the registry |
 | errors_total | Counter | registry | Number of Registry errors. |
 | records | Gauge | registry | Number of registry records partitioned by label name (vector). |
+| skipped_records_owner_mismatch_total | Gauge | registry | Number of records skipped with owner mismatch for each record type, owner mismatch ID and domain (vector). |
 | endpoints_total | Gauge | source | Number of Endpoints in all sources |
 | errors_total | Counter | source | Number of Source errors. |
 | records | Gauge | source | Number of source records partitioned by label name (vector). |
