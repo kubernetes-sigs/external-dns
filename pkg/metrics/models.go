@@ -87,6 +87,15 @@ func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
 	g.Gauge.WithLabelValues(lvs...).Set(value)
 }
 
+// AddWithLabels adds the value to the Gauge metric for the specified label values.
+// All label values are converted to lowercase before being applied.
+func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
+	for i, v := range lvs {
+		lvs[i] = strings.ToLower(v)
+	}
+	g.Gauge.WithLabelValues(lvs...).Add(value)
+}
+
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace
 	return GaugeMetric{

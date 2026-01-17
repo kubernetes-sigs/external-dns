@@ -160,3 +160,120 @@ func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint
 	})
 	return result
 }
+
+// GenerateTestEndpointsWithDistribution generates test endpoints with specified distributions
+// of record types, domains, and owners.
+// - typeCounts: maps record type (e.g., "A", "CNAME") to how many endpoints of that type to create
+// - domainWeights: maps domain suffix to weight; domains are distributed proportionally
+// - ownerWeights: maps owner ID to weight; owners are distributed proportionally
+//
+// The total number of endpoints equals the sum of typeCounts values.
+// Weights represent ratios: {"example.com": 2, "test.org": 1} means ~66% example.com, ~33% test.org
+//
+// Example:
+//
+//	endpoints := GenerateTestEndpointsWithDistribution(
+//	    map[string]int{"A": 6, "CNAME": 4},       // 10 endpoints total
+//	    map[string]int{"example.com": 2, "test.org": 1},  // ~66% example.com, ~33% test.org
+//	    map[string]int{"owner1": 3, "owner2": 1},         // ~75% owner1, ~25% owner2
+//	)
+func GenerateTestEndpointsWithDistribution(
+	typeCounts map[string]int,
+	domainWeights map[string]int,
+	ownerWeights map[string]int,
+) []*endpoint.Endpoint {
+	// Calculate total endpoints
+	totalEndpoints := 0
+	for _, count := range typeCounts {
+		totalEndpoints += count
+	}
+
+	// Build domain distribution (sorted keys for determinism)
+	var domainKeys []string
+	for domain := range domainWeights {
+		domainKeys = append(domainKeys, domain)
+	}
+	sort.Strings(domainKeys)
+	domains := distributeByWeight(domainKeys, domainWeights, totalEndpoints)
+
+	// Build owner distribution (sorted keys for determinism)
+	var ownerKeys []string
+	for owner := range ownerWeights {
+		ownerKeys = append(ownerKeys, owner)
+	}
+	sort.Strings(ownerKeys)
+	owners := distributeByWeight(ownerKeys, ownerWeights, totalEndpoints)
+
+	// Sort record types for deterministic iteration
+	var typeKeys []string
+	for rt := range typeCounts {
+		typeKeys = append(typeKeys, rt)
+	}
+	sort.Strings(typeKeys)
+
+	var result []*endpoint.Endpoint
+	idx := 0
+	for _, rt := range typeKeys {
+		count := typeCounts[rt]
+		for range count {
+			// Determine domain from distribution or use default
+			domain := "example.com"
+			if idx < len(domains) {
+				domain = domains[idx]
+			}
+
+			// Create endpoint with labels
+			ep := &endpoint.Endpoint{
+				DNSName:    fmt.Sprintf("%s-%d.%s", strings.ToLower(rt), idx, domain),
+				Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
+				RecordType: rt,
+				RecordTTL:  300,
+				Labels:     endpoint.Labels{},
+			}
+
+			// Assign owner from distribution
+			if idx < len(owners) {
+				ep.Labels[endpoint.OwnerLabelKey] = owners[idx]
+			}
+
+			result = append(result, ep)
+			idx++
+		}
+	}
+
+	rand.Shuffle(len(result), func(i, j int) {
+		result[i], result[j] = result[j], result[i]
+	})
+	return result
+}
+
+// distributeByWeight distributes n items according to weights.
+// Returns a slice of length n with items distributed proportionally.
+func distributeByWeight(keys []string, weights map[string]int, n int) []string {
+	if len(keys) == 0 || n == 0 {
+		return nil
+	}
+
+	totalWeight := 0
+	for _, key := range keys {
+		totalWeight += weights[key]
+	}
+	if totalWeight == 0 {
+		return nil
+	}
+
+	result := make([]string, 0, n)
+	for _, key := range keys {
+		count := (weights[key] * n) / totalWeight
+		for range count {
+			result = append(result, key)
+		}
+	}
+
+	// Fill any remaining slots due to rounding with the last key
+	for len(result) < n {
+		result = append(result, keys[len(keys)-1])
+	}
+
+	return result
+}
