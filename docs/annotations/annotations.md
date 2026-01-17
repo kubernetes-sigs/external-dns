@@ -295,6 +295,7 @@ Some providers define their own annotations. Cloud-specific annotations have key
 | Cloud      | Annotation prefix                              |
 |------------|------------------------------------------------|
 | AWS        | `external-dns.alpha.kubernetes.io/aws-`        |
+| Azure      | `external-dns.alpha.kubernetes.io/azure-`      |
 | CloudFlare | `external-dns.alpha.kubernetes.io/cloudflare-` |
 | Scaleway   | `external-dns.alpha.kubernetes.io/scw-`        |
 
