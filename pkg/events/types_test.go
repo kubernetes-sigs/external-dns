@@ -19,7 +19,6 @@ package events
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -29,6 +28,185 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func TestNewObjectReference(t *testing.T) {
+	tests := []struct {
+		name     string
+		obj      ctrlruntime.Object
+		source   string
+		expected *ObjectReference
+	}{
+		{
+			name: "Pod with TypeMeta already set",
+			obj: &apiv1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-pod",
+					Namespace: "default",
+					UID:       "pod-uid-123",
+				},
+			},
+			source: "pod",
+			expected: &ObjectReference{
+				Kind:       "Pod",
+				ApiVersion: "v1",
+				Namespace:  "default",
+				Name:       "my-pod",
+				UID:        "pod-uid-123",
+				Source:     "pod",
+			},
+		},
+		{
+			name: "Pod without TypeMeta (simulating informer behavior)",
+			obj: &apiv1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "informer-pod",
+					Namespace: "kube-system",
+					UID:       "informer-uid-456",
+				},
+			},
+			source: "pod",
+			expected: &ObjectReference{
+				Kind:       "Pod",
+				ApiVersion: "v1",
+				Namespace:  "kube-system",
+				Name:       "informer-pod",
+				UID:        "informer-uid-456",
+				Source:     "pod",
+			},
+		},
+		{
+			name: "Service without TypeMeta",
+			obj: &apiv1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-service",
+					Namespace: "prod",
+					UID:       "svc-uid-789",
+				},
+			},
+			source: "service",
+			expected: &ObjectReference{
+				Kind:       "Service",
+				ApiVersion: "v1",
+				Namespace:  "prod",
+				Name:       "my-service",
+				UID:        "svc-uid-789",
+				Source:     "service",
+			},
+		},
+		{
+			name: "Node (cluster-scoped, no namespace)",
+			obj: &apiv1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "worker-node-1",
+					UID:  "node-uid-abc",
+				},
+			},
+			source: "node",
+			expected: &ObjectReference{
+				Kind:       "Node",
+				ApiVersion: "v1",
+				Namespace:  "",
+				Name:       "worker-node-1",
+				UID:        "node-uid-abc",
+				Source:     "node",
+			},
+		},
+		{
+			name: "Endpoints without TypeMeta",
+			obj: &apiv1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-endpoints",
+					Namespace: "default",
+					UID:       "ep-uid-def",
+				},
+			},
+			source: "endpoints",
+			expected: &ObjectReference{
+				Kind:       "Endpoints",
+				ApiVersion: "v1",
+				Namespace:  "default",
+				Name:       "my-endpoints",
+				UID:        "ep-uid-def",
+				Source:     "endpoints",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NewObjectReference(tt.obj, tt.source)
+			require.Equal(t, tt.expected.Kind, result.Kind)
+			require.Equal(t, tt.expected.ApiVersion, result.ApiVersion)
+			require.Equal(t, tt.expected.Namespace, result.Namespace)
+			require.Equal(t, tt.expected.Name, result.Name)
+			require.Equal(t, tt.expected.UID, result.UID)
+			require.Equal(t, tt.expected.Source, result.Source)
+		})
+	}
+}
+
+func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
+	// Verify that NewObjectReference does NOT mutate the original object
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+	}
+
+	// Before: TypeMeta is empty
+	require.Empty(t, pod.Kind)
+	require.Empty(t, pod.APIVersion)
+
+	ref := NewObjectReference(pod, "test")
+
+	// After: TypeMeta should still be empty (no mutation)
+	require.Empty(t, pod.Kind)
+	require.Empty(t, pod.APIVersion)
+
+	// But the ObjectReference should have the correct values
+	require.Equal(t, "Pod", ref.Kind)
+	require.Equal(t, "v1", ref.ApiVersion)
+}
+
+// customObject is a type not registered in the scheme, used to test reflection fallback
+type customObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+func (c *customObject) DeepCopyObject() runtime.Object {
+	return &customObject{
+		TypeMeta:   c.TypeMeta,
+		ObjectMeta: *c.ObjectMeta.DeepCopy(),
+	}
+}
+
+func TestNewObjectReference_ReflectionFallback(t *testing.T) {
+	// Test that when object type is not in scheme, reflection is used to get Kind
+	obj := &customObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "custom-resource",
+			Namespace: "custom-ns",
+			UID:       "custom-uid-123",
+		},
+	}
+
+	ref := NewObjectReference(obj, "custom")
+
+	// Kind should be derived from reflection (struct name)
+	require.Equal(t, "customObject", ref.Kind)
+	// APIVersion will be empty since it's not in scheme
+	require.Empty(t, ref.ApiVersion)
+	require.Equal(t, "custom-ns", ref.Namespace)
+	require.Equal(t, "custom-resource", ref.Name)
+	require.Equal(t, "custom-uid-123", string(ref.UID))
+	require.Equal(t, "custom", ref.Source)
+}
 
 func TestSanitize(t *testing.T) {
 	tests := []struct {
@@ -167,75 +345,6 @@ func TestEvent_Transpose(t *testing.T) {
 	require.Nil(t, ev.event())
 }
 
-func TestWithEmitEvents(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []string
-		expected sets.Set[Reason]
-		assert   func(c *Config)
-	}{
-		{
-			name:     "valid events",
-			input:    []string{string(RecordReady), string(RecordError)},
-			expected: sets.New[Reason](RecordReady, RecordError),
-			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady, RecordError), c.emitEvents)
-				require.True(t, c.IsEnabled())
-			},
-		},
-		{
-			name:     "invalid event",
-			input:    []string{"InvalidEvent"},
-			expected: sets.New[Reason](),
-			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](), c.emitEvents)
-				require.False(t, c.IsEnabled())
-			},
-		},
-		{
-			name:     "mixed valid and invalid",
-			input:    []string{string(RecordReady), "InvalidEvent"},
-			expected: sets.New[Reason](RecordReady),
-			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady), c.emitEvents)
-				require.True(t, c.IsEnabled())
-			},
-		},
-		{
-			name:     "empty input",
-			input:    []string{},
-			expected: nil,
-			assert: func(c *Config) {
-				require.NotNil(t, c)
-				require.False(t, c.IsEnabled())
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{}
-			opt := WithEmitEvents(tt.input)
-			opt(cfg)
-			tt.assert(cfg)
-		})
-	}
-}
-
-func TestWithKubeConfig(t *testing.T) {
-	kubeConfig := "/path/to/kubeconfig"
-	apiServerURL := "https://api.server"
-	timeout := 5 * time.Second
-
-	cfg := &Config{}
-	opt := WithKubeConfig(kubeConfig, apiServerURL, timeout)
-	opt(cfg)
-
-	require.Equal(t, kubeConfig, cfg.kubeConfig)
-	require.Equal(t, apiServerURL, cfg.apiServerURL)
-	require.Equal(t, timeout, cfg.timeout)
-}
-
 // mockEndpointInfo implements EndpointInfo for testing
 type mockEndpointInfo struct {
 	dnsName    string
@@ -344,7 +453,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "endpoint for cluster-scoped resource (Node) should handle empty namespace",
+			name: "endpoint for cluster-scoped resource (Node)",
 			ep: &mockEndpointInfo{
 				dnsName:    "node1.example.com",
 				recordType: "A",
@@ -363,9 +472,10 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			asserts: func(t *testing.T, ev Event) {
 				require.Equal(t, ActionCreate, ev.action)
 				require.Empty(t, ev.ref.Namespace)
+				// Verify that event() handles empty namespace
 				k8sEvent := ev.event()
 				require.NotNil(t, k8sEvent)
-				require.Equal(t, "default", k8sEvent.Namespace)
+				require.Equal(t, "default", k8sEvent.Namespace) // should default to "default"
 			},
 		},
 	}
@@ -378,157 +488,57 @@ func TestNewEventFromEndpoint(t *testing.T) {
 	}
 }
 
-func TestNewObjectReference(t *testing.T) {
+func TestWithEmitEvents(t *testing.T) {
 	tests := []struct {
 		name     string
-		obj      ctrlruntime.Object
-		source   string
-		expected *ObjectReference
+		input    []string
+		expected sets.Set[Reason]
+		assert   func(c *Config)
 	}{
 		{
-			name: "Pod with TypeMeta already set",
-			obj: &apiv1.Pod{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Pod",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-pod",
-					Namespace: "default",
-					UID:       "pod-uid-123",
-				},
-			},
-			source: "pod",
-			expected: &ObjectReference{
-				Kind:       "Pod",
-				ApiVersion: "v1",
-				Namespace:  "default",
-				Name:       "my-pod",
-				UID:        "pod-uid-123",
-				Source:     "pod",
+			name:     "valid events",
+			input:    []string{string(RecordReady), string(RecordError)},
+			expected: sets.New[Reason](RecordReady, RecordError),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](RecordReady, RecordError), c.emitEvents)
+				require.True(t, c.IsEnabled())
 			},
 		},
 		{
-			name: "Pod without TypeMeta (simulating informer behavior)",
-			obj: &apiv1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "informer-pod",
-					Namespace: "kube-system",
-					UID:       "informer-uid-456",
-				},
-			},
-			source: "pod",
-			expected: &ObjectReference{
-				Kind:       "Pod",
-				ApiVersion: "v1",
-				Namespace:  "kube-system",
-				Name:       "informer-pod",
-				UID:        "informer-uid-456",
-				Source:     "pod",
+			name:     "invalid event",
+			input:    []string{"InvalidEvent"},
+			expected: sets.New[Reason](),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](), c.emitEvents)
+				require.False(t, c.IsEnabled())
 			},
 		},
 		{
-			name: "Service without TypeMeta",
-			obj: &apiv1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-service",
-					Namespace: "prod",
-					UID:       "svc-uid-789",
-				},
-			},
-			source: "service",
-			expected: &ObjectReference{
-				Kind:       "Service",
-				ApiVersion: "v1",
-				Namespace:  "prod",
-				Name:       "my-service",
-				UID:        "svc-uid-789",
-				Source:     "service",
+			name:     "mixed valid and invalid",
+			input:    []string{string(RecordReady), "InvalidEvent"},
+			expected: sets.New[Reason](RecordReady),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](RecordReady), c.emitEvents)
+				require.True(t, c.IsEnabled())
 			},
 		},
 		{
-			name: "Node (cluster-scoped, no namespace)",
-			obj: &apiv1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "worker-node-1",
-					UID:  "node-uid-abc",
-				},
-			},
-			source: "node",
-			expected: &ObjectReference{
-				Kind:       "Node",
-				ApiVersion: "v1",
-				Namespace:  "",
-				Name:       "worker-node-1",
-				UID:        "node-uid-abc",
-				Source:     "node",
-			},
-		},
-		{
-			name: "Endpoints without TypeMeta",
-			obj: &apiv1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-endpoints",
-					Namespace: "default",
-					UID:       "ep-uid-def",
-				},
-			},
-			source: "endpoints",
-			expected: &ObjectReference{
-				Kind:       "Endpoints",
-				ApiVersion: "v1",
-				Namespace:  "default",
-				Name:       "my-endpoints",
-				UID:        "ep-uid-def",
-				Source:     "endpoints",
+			name:     "empty input",
+			input:    []string{},
+			expected: nil,
+			assert: func(c *Config) {
+				require.NotNil(t, c)
+				require.False(t, c.IsEnabled())
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewObjectReference(tt.obj, tt.source)
-			require.Equal(t, tt.expected.Kind, result.Kind)
-			require.Equal(t, tt.expected.ApiVersion, result.ApiVersion)
-			require.Equal(t, tt.expected.Namespace, result.Namespace)
-			require.Equal(t, tt.expected.Name, result.Name)
-			require.Equal(t, tt.expected.UID, result.UID)
-			require.Equal(t, tt.expected.Source, result.Source)
+			cfg := &Config{}
+			opt := WithEmitEvents(tt.input)
+			opt(cfg)
+			tt.assert(cfg)
 		})
 	}
-}
-
-// customObject is a type not registered in the scheme, used to test reflection fallback
-type customObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-}
-
-func (c *customObject) DeepCopyObject() runtime.Object {
-	return &customObject{
-		TypeMeta:   c.TypeMeta,
-		ObjectMeta: *c.ObjectMeta.DeepCopy(),
-	}
-}
-
-func TestNewObjectReference_ReflectionFallback(t *testing.T) {
-	// Test that when object type is not in scheme, reflection is used to get Kind
-	obj := &customObject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "custom-resource",
-			Namespace: "custom-ns",
-			UID:       "custom-uid-123",
-		},
-	}
-
-	ref := NewObjectReference(obj, "custom")
-
-	// Kind should be derived from reflection (struct name)
-	require.Equal(t, "customObject", ref.Kind)
-	// APIVersion will be empty since it's not in scheme
-	require.Empty(t, ref.ApiVersion)
-	require.Equal(t, "custom-ns", ref.Namespace)
-	require.Equal(t, "custom-resource", ref.Name)
-	require.Equal(t, "custom-uid-123", string(ref.UID))
-	require.Equal(t, "custom", ref.Source)
 }
