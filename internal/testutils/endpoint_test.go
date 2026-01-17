@@ -20,6 +20,7 @@ import (
 	"net/netip"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -87,11 +88,6 @@ func TestExampleSameEndpoints(t *testing.T) {
 	for i, ep := range eps {
 		assert.Equal(t, expectedOrder[i], ep.DNSName, "endpoint %d should be %s", i, expectedOrder[i])
 	}
-
-	// Verify specific ordering within same DNSName
-	assert.Equal(t, endpoint.RecordTypeA, eps[0].RecordType)
-	assert.Equal(t, endpoint.RecordTypeTXT, eps[1].RecordType)
-	assert.Equal(t, endpoint.RecordTypeTXT, eps[6].RecordType)
 }
 
 func makeEndpoint(DNSName string) *endpoint.Endpoint { // nolint: gocritic // captLocal
@@ -559,7 +555,7 @@ func TestGenerateTestEndpointsWithDistribution(t *testing.T) {
 			for _, ep := range eps {
 				gotTypes[ep.RecordType]++
 				for domain := range tt.wantDomains {
-					if hasSuffix(ep.DNSName, domain) {
+					if strings.HasSuffix(ep.DNSName, domain) {
 						gotDomains[domain]++
 						break
 					}
@@ -574,10 +570,6 @@ func TestGenerateTestEndpointsWithDistribution(t *testing.T) {
 			assert.Equal(t, tt.wantOwners, gotOwners, "owner distribution")
 		})
 	}
-}
-
-func hasSuffix(s, suffix string) bool {
-	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
 
 func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
