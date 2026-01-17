@@ -28,6 +28,41 @@ import (
 	"sigs.k8s.io/external-dns/registry"
 )
 
+func TestRecordKnownEndpointType(t *testing.T) {
+	mr := newMetricsRecorder()
+
+	// Recording a built-in type should start at 1 and increment
+	mr.recordEndpointType(endpoint.RecordTypeA)
+	assert.Equal(t, 1, mr.getEndpointTypeCount(endpoint.RecordTypeA))
+
+	mr.recordEndpointType(endpoint.RecordTypeA)
+	assert.Equal(t, 2, mr.getEndpointTypeCount(endpoint.RecordTypeA))
+}
+
+func TestRecordUnknownEndpointType(t *testing.T) {
+	mr := newMetricsRecorder()
+	const customType = "CUSTOM"
+
+	// Unknown types start at zero
+	assert.Equal(t, 0, mr.getEndpointTypeCount(customType))
+
+	// First record sets to 1
+	mr.recordEndpointType(customType)
+	assert.Equal(t, 1, mr.getEndpointTypeCount(customType))
+
+	// Subsequent records increment
+	mr.recordEndpointType(customType)
+	assert.Equal(t, 2, mr.getEndpointTypeCount(customType))
+}
+
+func TestLoadFloat64(t *testing.T) {
+	mr := newMetricsRecorder()
+
+	// loadFloat64 should return the float64 representation of the count
+	mr.recordEndpointType(endpoint.RecordTypeAAAA)
+	assert.InDelta(t, float64(1), mr.loadFloat64(endpoint.RecordTypeAAAA), 0.0001)
+}
+
 func TestVerifyARecords(t *testing.T) {
 	testControllerFiltersDomains(
 		t,
