@@ -97,7 +97,7 @@ linters:
         path: istio_virtualservice.go|fqdn.go|cloudflare.go
       - linters:
           - gochecknoinits
-        path: ^(.*/controller\.go|internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+        path: ^(internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
       - linters:
           - modernize
         path: ^(apis/.*\.go)$
