@@ -1167,9 +1167,9 @@ func TestOwnerMismatchMetric(t *testing.T) {
 		1.0,
 		registryOwnerMismatchTotal.Gauge,
 		map[string]string{
-			"record_type":       "a",
-			"owner_mismatch_id": "other-owner",
-			"domain":            "domain.com",
+			"record_type":   endpoint.RecordTypeA,
+			"foreign_owner": "other-owner",
+			"domain":        "domain.com",
 		},
 	)
 }

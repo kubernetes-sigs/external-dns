@@ -142,23 +142,7 @@ func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
 //	endpoints := GenerateTestEndpointsByType(map[string]int{"A": 2, "CNAME": 1})
 //	// endpoints will contain 2 A records and 1 CNAME record with unique DNS names and targets.
 func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint {
-	var result []*endpoint.Endpoint
-	idx := 0
-	for rt, count := range typeCounts {
-		for range count {
-			result = append(result, &endpoint.Endpoint{
-				DNSName:    fmt.Sprintf("%s-%d.example.com", strings.ToLower(rt), idx),
-				Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
-				RecordType: rt,
-				RecordTTL:  300,
-			})
-			idx++
-		}
-	}
-	rand.Shuffle(len(result), func(i, j int) {
-		result[i], result[j] = result[j], result[i]
-	})
-	return result
+	return GenerateTestEndpointsWithDistribution(typeCounts, map[string]int{"example.com": 1}, nil)
 }
 
 // GenerateTestEndpointsWithDistribution generates test endpoints with specified distributions
