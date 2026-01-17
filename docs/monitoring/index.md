@@ -86,3 +86,10 @@ Consider alerting on:
 - `external_dns_source_errors_total` or `external_dns_registry_errors_total` increasing - indicates connectivity or permission issues.
 - `external_dns_controller_last_sync_timestamp_seconds` not updating - indicates the sync loop may be stuck.
 - `external_dns_registry_skipped_records_owner_mismatch_per_sync` non-zero - indicates ownership conflicts that may need investigation.
+
+## Resources
+
+- [Prometheus Instrumentation](https://prometheus.io/docs/practices/instrumentation/)
+- [Prometheus Alerting Best Practices](https://prometheus.io/docs/practices/alerting/)
+- [Prometheus Recording Rules](https://prometheus.io/docs/practices/rules/)
+- [Grafana: How to Manage High Cardinality Metrics](https://grafana.com/blog/2022/02/15/what-are-cardinality-spikes-and-why-do-they-matter/)
