@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -162,4 +163,106 @@ func newOwnerMismatchFixture(scale ...int) *Plan {
 		ManagedRecords: endpoint.KnownRecordTypes,
 		OwnerID:        "my-owner",
 	}
+}
+
+func TestFlushMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		mismatches map[mismatchKey]float64
+		expected   map[string]float64
+	}{
+		{
+			name:       "empty mismatches",
+			mismatches: map[mismatchKey]float64{},
+			expected:   map[string]float64{},
+		},
+		{
+			name: "single mismatch",
+			mismatches: map[mismatchKey]float64{
+				{recordType: endpoint.RecordTypeA, owner: "owner1", foreignOwner: "foreign1", domain: "example.com"}: 5,
+			},
+			expected: map[string]float64{
+				"A|owner1|foreign1|example.com": 5,
+			},
+		},
+		{
+			name: "multiple mismatches",
+			mismatches: map[mismatchKey]float64{
+				{recordType: endpoint.RecordTypeA, owner: "owner1", foreignOwner: "foreign1", domain: "example.com"}:    3,
+				{recordType: endpoint.RecordTypeCNAME, owner: "owner2", foreignOwner: "foreign2", domain: "test.org"}:   7,
+				{recordType: endpoint.RecordTypeAAAA, owner: "owner1", foreignOwner: "foreign3", domain: "example.com"}: 2,
+			},
+			expected: map[string]float64{
+				"A|owner1|foreign1|example.com":    3,
+				"CNAME|owner2|foreign2|test.org":   7,
+				"AAAA|owner1|foreign3|example.com": 2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset gauge before test
+			registryOwnerMismatchPerSync.Gauge.Reset()
+
+			pm := &planMetric{mismatches: tt.mismatches}
+			pm.flushMetrics()
+
+			// Verify each expected metric
+			for key, expectedCount := range tt.expected {
+				parts := strings.Split(key, "|")
+				testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+					t,
+					expectedCount,
+					registryOwnerMismatchPerSync.Gauge,
+					map[string]string{
+						"record_type":   parts[0],
+						"owner":         parts[1],
+						"foreign_owner": parts[2],
+						"domain":        parts[3],
+					},
+				)
+			}
+		})
+	}
+}
+
+func TestFlushMetricsResetsGauge(t *testing.T) {
+	// Pre-populate gauge with old data
+	registryOwnerMismatchPerSync.Gauge.Reset()
+	registryOwnerMismatchPerSync.AddWithLabels(10, endpoint.RecordTypeA, "old-owner", "old-foreign", "old.com")
+
+	// Flush with new data
+	pm := &planMetric{
+		mismatches: map[mismatchKey]float64{
+			{recordType: endpoint.RecordTypeCNAME, owner: "new-owner", foreignOwner: "new-foreign", domain: "new.com"}: 5,
+		},
+	}
+	pm.flushMetrics()
+
+	// Verify old metric is gone (gauge was reset)
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t,
+		0,
+		registryOwnerMismatchPerSync.Gauge,
+		map[string]string{
+			"record_type":   endpoint.RecordTypeA,
+			"owner":         "old-owner",
+			"foreign_owner": "old-foreign",
+			"domain":        "old.com",
+		},
+	)
+
+	// Verify new metric exists
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t,
+		5,
+		registryOwnerMismatchPerSync.Gauge,
+		map[string]string{
+			"record_type":   endpoint.RecordTypeCNAME,
+			"owner":         "new-owner",
+			"foreign_owner": "new-foreign",
+			"domain":        "new.com",
+		},
+	)
 }

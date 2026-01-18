@@ -18,6 +18,7 @@ package plan
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"sigs.k8s.io/external-dns/endpoint"
 
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
@@ -37,11 +38,37 @@ var (
 	)
 )
 
+// planMetric holds aggregated metrics collected during a planning cycle.
+// It tracks owner mismatch counts keyed by record type, owner, and domain.
+type planMetric struct {
+	mismatches map[mismatchKey]float64
+}
+
+// flushMetrics resets the owner mismatch gauge and writes the aggregated
+// mismatch counts from the current planning cycle to Prometheus.
+func (p *planMetric) flushMetrics() {
+	// Reset mismatch metrics at start of each calculation cycle
+	registryOwnerMismatchPerSync.Gauge.Reset()
+	// Write aggregated mismatch metrics
+	for key, count := range p.mismatches {
+		registryOwnerMismatchPerSync.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
+	}
+}
+
 type mismatchKey struct {
 	recordType   string
 	owner        string
 	foreignOwner string
 	domain       string
+}
+
+func newMismatch(owner string, current *endpoint.Endpoint) mismatchKey {
+	return mismatchKey{
+		recordType:   current.RecordType,
+		owner:        owner,
+		foreignOwner: current.GetOwner(),
+		domain:       current.GetNakedDomain(), // use naked domain to limit metric cardinality
+	}
 }
 
 func init() {

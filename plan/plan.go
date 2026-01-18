@@ -185,12 +185,7 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	changes, mismatches := p.calculateChanges(t)
-	// Reset mismatch metrics at start of each calculation cycle
-	registryOwnerMismatchPerSync.Gauge.Reset()
-	// Write aggregated mismatch metrics
-	for key, count := range mismatches {
-		registryOwnerMismatchPerSync.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
-	}
+	mismatches.flushMetrics()
 
 	plan := &Plan{
 		Current: p.Current,
@@ -204,9 +199,9 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func (p *Plan) calculateChanges(t planTable) (*Changes, map[mismatchKey]float64) {
+func (p *Plan) calculateChanges(t planTable) (*Changes, planMetric) {
 	changes := &Changes{}
-	mismatches := make(map[mismatchKey]float64)
+	metrics := planMetric{make(map[mismatchKey]float64)}
 
 	for key, row := range t.rows {
 		switch {
@@ -225,7 +220,7 @@ func (p *Plan) calculateChanges(t planTable) (*Changes, map[mismatchKey]float64)
 
 		// dns name is taken
 		case len(row.candidates) > 0:
-			p.appendTakenDNSNameChanges(t, changes, key, row, mismatches)
+			p.appendTakenDNSNameChanges(t, changes, key, row, metrics)
 		}
 	}
 
@@ -241,7 +236,7 @@ func (p *Plan) calculateChanges(t planTable) (*Changes, map[mismatchKey]float64)
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
-	return changes, mismatches
+	return changes, metrics
 }
 
 func (p *Plan) appendTakenDNSNameChanges(
@@ -249,7 +244,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 	changes *Changes,
 	key planKey,
 	row *planTableRow,
-	mismatches map[mismatchKey]float64) {
+	metrics planMetric) {
 	// apply changes for each record type
 	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
 	changes.Delete = append(changes.Delete, rowChanges.Delete...)
@@ -265,12 +260,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				mismatches[mismatchKey{
-					recordType:   current.RecordType,
-					owner:        p.OwnerID,
-					foreignOwner: current.GetOwner(),
-					domain:       current.GetNakedDomain(), // use naked domain to limit metric cardinality
-				}]++
+				metrics.mismatches[newMismatch(p.OwnerID, current)]++
 			}
 		}
 	}
