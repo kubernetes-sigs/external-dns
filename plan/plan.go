@@ -191,9 +191,7 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
-	mismatches := make(map[mismatchKey]float64)
-	changes := p.calculateChanges(t, mismatches)
-
+	changes, mismatches := p.calculateChanges(t)
 	// Reset mismatch metrics at start of each calculation cycle
 	registryOwnerMismatchPerSync.Gauge.Reset()
 	// Write aggregated mismatch metrics
@@ -213,8 +211,9 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func (p *Plan) calculateChanges(t planTable, mismatches map[mismatchKey]float64) *Changes {
+func (p *Plan) calculateChanges(t planTable) (*Changes, map[mismatchKey]float64) {
 	changes := &Changes{}
+	mismatches := make(map[mismatchKey]float64)
 
 	for key, row := range t.rows {
 		switch {
@@ -249,7 +248,7 @@ func (p *Plan) calculateChanges(t planTable, mismatches map[mismatchKey]float64)
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
-	return changes
+	return changes, mismatches
 }
 
 func (p *Plan) appendTakenDNSNameChanges(
