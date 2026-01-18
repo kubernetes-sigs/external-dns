@@ -186,7 +186,6 @@ func (p *Plan) Calculate() *Plan {
 
 	registryOwnerMismatchPerSync.Gauge.Reset()
 	changes := p.calculateChanges(t)
-	// metrics.flush()
 
 	plan := &Plan{
 		Current: p.Current,
