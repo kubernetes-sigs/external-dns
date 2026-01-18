@@ -52,7 +52,7 @@ type mismatchKey struct {
 }
 
 // flush resets the owner mismatch gauge and writes the aggregated
-// mismatch counts from the current planning cycle to Prometheus.
+// mismatch counts from the current planning cycle to metrics registry.
 func (p *planMetric) flush() {
 	// Reset mismatch metrics at start of each calculation cycle
 	registryOwnerMismatchPerSync.Gauge.Reset()
