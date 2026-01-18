@@ -17,7 +17,6 @@ limitations under the License.
 package plan
 
 import (
-	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -165,200 +164,49 @@ func newOwnerMismatchFixture(scale ...int) *Plan {
 	}
 }
 
-func TestFlushMetrics(t *testing.T) {
+func TestFlushOwnerMismatch(t *testing.T) {
 	tests := []struct {
-		name       string
-		mismatches map[mismatchKey]float64
-		expected   map[string]float64
+		name         string
+		owner        string
+		current      *endpoint.Endpoint
+		calls        int
+		expected     float64
+		expectedTags map[string]string
 	}{
 		{
-			name:       "empty mismatches",
-			mismatches: map[mismatchKey]float64{},
-			expected:   map[string]float64{},
-		},
-		{
-			name: "single mismatch",
-			mismatches: map[mismatchKey]float64{
-				{recordType: endpoint.RecordTypeA, owner: "owner1", foreignOwner: "foreign1", domain: "example.com"}: 5,
-			},
-			expected: map[string]float64{
-				"A|owner1|foreign1|example.com": 5,
-			},
-		},
-		{
-			name: "multiple mismatches",
-			mismatches: map[mismatchKey]float64{
-				{recordType: endpoint.RecordTypeA, owner: "owner1", foreignOwner: "foreign1", domain: "example.com"}:    3,
-				{recordType: endpoint.RecordTypeCNAME, owner: "owner2", foreignOwner: "foreign2", domain: "test.org"}:   7,
-				{recordType: endpoint.RecordTypeAAAA, owner: "owner1", foreignOwner: "foreign3", domain: "example.com"}: 2,
-			},
-			expected: map[string]float64{
-				"A|owner1|foreign1|example.com":    3,
-				"CNAME|owner2|foreign2|test.org":   7,
-				"AAAA|owner1|foreign3|example.com": 2,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset gauge before test
-			registryOwnerMismatchPerSync.Gauge.Reset()
-
-			pm := &planMetric{mismatches: tt.mismatches}
-			pm.flush()
-
-			// Verify each expected metric
-			for key, expectedCount := range tt.expected {
-				parts := strings.Split(key, "|")
-				testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-					t,
-					expectedCount,
-					registryOwnerMismatchPerSync.Gauge,
-					map[string]string{
-						"record_type":   parts[0],
-						"owner":         parts[1],
-						"foreign_owner": parts[2],
-						"domain":        parts[3],
-					},
-				)
-			}
-		})
-	}
-}
-
-func TestFlushMetricsResetsGauge(t *testing.T) {
-	// Pre-populate gauge with old data
-	registryOwnerMismatchPerSync.Gauge.Reset()
-	registryOwnerMismatchPerSync.AddWithLabels(10, endpoint.RecordTypeA, "old-owner", "old-foreign", "old.com")
-
-	// Flush with new data
-	pm := &planMetric{
-		mismatches: map[mismatchKey]float64{
-			{recordType: endpoint.RecordTypeCNAME, owner: "new-owner", foreignOwner: "new-foreign", domain: "new.com"}: 5,
-		},
-	}
-	pm.flush()
-
-	// Verify old metric is gone (gauge was reset)
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-		t,
-		0,
-		registryOwnerMismatchPerSync.Gauge,
-		map[string]string{
-			"record_type":   endpoint.RecordTypeA,
-			"owner":         "old-owner",
-			"foreign_owner": "old-foreign",
-			"domain":        "old.com",
-		},
-	)
-
-	// Verify new metric exists
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-		t,
-		5,
-		registryOwnerMismatchPerSync.Gauge,
-		map[string]string{
-			"record_type":   endpoint.RecordTypeCNAME,
-			"owner":         "new-owner",
-			"foreign_owner": "new-foreign",
-			"domain":        "new.com",
-		},
-	)
-}
-
-func TestTrackMismatch(t *testing.T) {
-	tests := []struct {
-		name          string
-		owner         string
-		endpoint      *endpoint.Endpoint
-		initialState  map[mismatchKey]float64
-		expectedKey   mismatchKey
-		expectedCount float64
-	}{
-		{
-			name:  "tracks new mismatch",
-			owner: "my-owner",
-			endpoint: &endpoint.Endpoint{
-				DNSName:    "sub.example.com",
-				RecordType: endpoint.RecordTypeA,
-				Labels:     map[string]string{endpoint.OwnerLabelKey: "foreign-owner"},
-			},
-			initialState:  map[mismatchKey]float64{},
-			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"},
-			expectedCount: 1,
-		},
-		{
-			name:  "increments existing mismatch count",
-			owner: "my-owner",
-			endpoint: &endpoint.Endpoint{
-				DNSName:    "other.example.com",
-				RecordType: endpoint.RecordTypeA,
-				Labels:     map[string]string{endpoint.OwnerLabelKey: "foreign-owner"},
-			},
-			initialState: map[mismatchKey]float64{
-				{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"}: 5,
-			},
-			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"},
-			expectedCount: 6,
-		},
-		{
-			name:  "tracks CNAME mismatch",
-			owner: "owner1",
-			endpoint: &endpoint.Endpoint{
-				DNSName:    "app.test.org",
-				RecordType: endpoint.RecordTypeCNAME,
-				Labels:     map[string]string{endpoint.OwnerLabelKey: "owner2"},
-			},
-			initialState:  map[mismatchKey]float64{},
-			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeCNAME, owner: "owner1", foreignOwner: "owner2", domain: "test.org"},
-			expectedCount: 1,
-		},
-		{
-			name:  "handles empty foreign owner",
-			owner: "my-owner",
-			endpoint: &endpoint.Endpoint{
+			name:  "handles_missing_foreign_owner_label",
+			owner: "me",
+			current: &endpoint.Endpoint{
 				DNSName:    "sub.domain.net",
 				RecordType: endpoint.RecordTypeTXT,
 				Labels:     map[string]string{},
 			},
-			initialState:  map[mismatchKey]float64{},
-			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeTXT, owner: "my-owner", foreignOwner: "", domain: "domain.net"},
-			expectedCount: 1,
+			calls:    1,
+			expected: 1.0,
+			expectedTags: map[string]string{
+				"record_type":   endpoint.RecordTypeTXT,
+				"owner":         "me",
+				"foreign_owner": "",
+				"domain":        "domain.net",
+			},
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			pm := &planMetric{mismatches: tt.initialState}
-			pm.trackMismatch(tt.owner, tt.endpoint)
+			registryOwnerMismatchPerSync.Gauge.Reset()
 
-			assert.Equal(t, tt.expectedCount, pm.mismatches[tt.expectedKey])
+			for i := 0; i < tt.calls; i++ {
+				flushOwnerMismatch(tt.owner, tt.current)
+			}
+
+			testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+				t,
+				tt.expected,
+				registryOwnerMismatchPerSync.Gauge,
+				tt.expectedTags,
+			)
 		})
 	}
-}
-
-func TestTrackMismatchMultipleCalls(t *testing.T) {
-	pm := &planMetric{mismatches: make(map[mismatchKey]float64)}
-
-	endpoints := []*endpoint.Endpoint{
-		{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
-		{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
-		{DNSName: "c.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
-		{DNSName: "d.other.org", RecordType: endpoint.RecordTypeCNAME, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign2"}},
-	}
-
-	for _, ep := range endpoints {
-		pm.trackMismatch("my-owner", ep)
-	}
-
-	// Same domain and record type should aggregate
-	keyA := mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign1", domain: "example.com"}
-	assert.Equal(t, float64(3), pm.mismatches[keyA])
-
-	// Different domain creates separate key
-	keyCNAME := mismatchKey{recordType: endpoint.RecordTypeCNAME, owner: "my-owner", foreignOwner: "foreign2", domain: "other.org"}
-	assert.Equal(t, float64(1), pm.mismatches[keyCNAME])
-
-	assert.Len(t, pm.mismatches, 2)
 }

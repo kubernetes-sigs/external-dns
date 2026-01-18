@@ -19,7 +19,6 @@ package plan
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/external-dns/endpoint"
-
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
@@ -38,43 +37,20 @@ var (
 	)
 )
 
-// planMetric holds aggregated metrics collected during a planning cycle.
-// It tracks owner mismatch counts keyed by record type, owner, and domain.
-type planMetric struct {
-	mismatches map[mismatchKey]float64
-}
-
-type mismatchKey struct {
-	recordType   string
-	owner        string
-	foreignOwner string
-	domain       string
-}
-
-// flush resets the owner mismatch gauge and writes the aggregated
-// mismatch counts from the current planning cycle to metrics registry.
-func (p *planMetric) flush() {
-	// Reset mismatch metrics at start of each calculation cycle
-	registryOwnerMismatchPerSync.Gauge.Reset()
-	// Write aggregated mismatch metrics
-	for key, count := range p.mismatches {
-		registryOwnerMismatchPerSync.AddWithLabels(count, key.recordType, key.owner, key.foreignOwner, key.domain)
-	}
-}
-
-// trackMismatch increments the mismatch counter for a record that has a different
-// owner than expected. It aggregates counts by record type, owner, foreign owner,
-// and naked domain to limit metric cardinality.
-func (p *planMetric) trackMismatch(owner string, current *endpoint.Endpoint) {
-	key := mismatchKey{
-		recordType:   current.RecordType,
-		owner:        owner,
-		foreignOwner: current.GetOwner(),
-		domain:       current.GetNakedDomain(), // use naked domain to limit metric cardinality
-	}
-	p.mismatches[key]++
-}
-
 func init() {
 	metrics.RegisterMetric.MustRegister(registryOwnerMismatchPerSync)
+}
+
+// flushOwnerMismatch records a single skipped record due to an owner mismatch.
+// It increments the per\-sync gauge with labels for record type, expected owner,
+// actual (foreign\) owner, and the record's naked/apex domain.
+// Using the naked domain instead of the full FQDN helps prevent metric cardinality explosion.
+func flushOwnerMismatch(owner string, current *endpoint.Endpoint) {
+	registryOwnerMismatchPerSync.AddWithLabels(
+		1.0,
+		current.RecordType,
+		owner,
+		current.GetOwner(),
+		current.GetNakedDomain(),
+	)
 }

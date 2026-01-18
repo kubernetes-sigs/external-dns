@@ -184,8 +184,9 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
-	changes, metrics := p.calculateChanges(t)
-	metrics.flush()
+	registryOwnerMismatchPerSync.Gauge.Reset()
+	changes := p.calculateChanges(t)
+	// metrics.flush()
 
 	plan := &Plan{
 		Current: p.Current,
@@ -199,9 +200,8 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func (p *Plan) calculateChanges(t planTable) (*Changes, planMetric) {
+func (p *Plan) calculateChanges(t planTable) *Changes {
 	changes := &Changes{}
-	metrics := planMetric{make(map[mismatchKey]float64)}
 
 	for key, row := range t.rows {
 		switch {
@@ -220,7 +220,7 @@ func (p *Plan) calculateChanges(t planTable) (*Changes, planMetric) {
 
 		// dns name is taken
 		case len(row.candidates) > 0:
-			p.appendTakenDNSNameChanges(t, changes, key, row, metrics)
+			p.appendTakenDNSNameChanges(t, changes, key, row)
 		}
 	}
 
@@ -236,15 +236,14 @@ func (p *Plan) calculateChanges(t planTable) (*Changes, planMetric) {
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
-	return changes, metrics
+	return changes
 }
 
 func (p *Plan) appendTakenDNSNameChanges(
 	t planTable,
 	changes *Changes,
 	key planKey,
-	row *planTableRow,
-	metrics planMetric) {
+	row *planTableRow) {
 	// apply changes for each record type
 	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
 	changes.Delete = append(changes.Delete, rowChanges.Delete...)
@@ -260,7 +259,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				metrics.trackMismatch(p.OwnerID, current)
+				flushOwnerMismatch(p.OwnerID, current)
 			}
 		}
 	}
