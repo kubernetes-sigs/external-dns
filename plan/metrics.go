@@ -37,6 +37,13 @@ var (
 	)
 )
 
+type mismatchKey struct {
+	recordType   string
+	owner        string
+	foreignOwner string
+	domain       string
+}
+
 func init() {
 	metrics.RegisterMetric.MustRegister(registryOwnerMismatchPerSync)
 }

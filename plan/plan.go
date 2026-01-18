@@ -167,13 +167,6 @@ func (c *Changes) HasChanges() bool {
 	return !cmp.Equal(c.UpdateNew, c.UpdateOld, cmpopts.IgnoreUnexported(endpoint.Endpoint{}))
 }
 
-type mismatchKey struct {
-	recordType   string
-	owner        string
-	foreignOwner string
-	domain       string
-}
-
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
