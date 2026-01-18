@@ -21,6 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
@@ -193,11 +194,10 @@ func TestFlushOwnerMismatch(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			registryOwnerMismatchPerSync.Gauge.Reset()
 
-			for i := 0; i < tt.calls; i++ {
+			for range tt.calls {
 				flushOwnerMismatch(tt.owner, tt.current)
 			}
 
