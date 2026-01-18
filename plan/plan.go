@@ -184,8 +184,8 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
-	changes, mismatches := p.calculateChanges(t)
-	mismatches.flushMetrics()
+	changes, metrics := p.calculateChanges(t)
+	metrics.flush()
 
 	plan := &Plan{
 		Current: p.Current,
@@ -260,7 +260,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				metrics.mismatches[newMismatch(p.OwnerID, current)]++
+				metrics.trackMismatch(p.OwnerID, current)
 			}
 		}
 	}

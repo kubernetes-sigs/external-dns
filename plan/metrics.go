@@ -44,9 +44,16 @@ type planMetric struct {
 	mismatches map[mismatchKey]float64
 }
 
-// flushMetrics resets the owner mismatch gauge and writes the aggregated
+type mismatchKey struct {
+	recordType   string
+	owner        string
+	foreignOwner string
+	domain       string
+}
+
+// flush resets the owner mismatch gauge and writes the aggregated
 // mismatch counts from the current planning cycle to Prometheus.
-func (p *planMetric) flushMetrics() {
+func (p *planMetric) flush() {
 	// Reset mismatch metrics at start of each calculation cycle
 	registryOwnerMismatchPerSync.Gauge.Reset()
 	// Write aggregated mismatch metrics
@@ -55,20 +62,17 @@ func (p *planMetric) flushMetrics() {
 	}
 }
 
-type mismatchKey struct {
-	recordType   string
-	owner        string
-	foreignOwner string
-	domain       string
-}
-
-func newMismatch(owner string, current *endpoint.Endpoint) mismatchKey {
-	return mismatchKey{
+// trackMismatch increments the mismatch counter for a record that has a different
+// owner than expected. It aggregates counts by record type, owner, foreign owner,
+// and naked domain to limit metric cardinality.
+func (p *planMetric) trackMismatch(owner string, current *endpoint.Endpoint) {
+	key := mismatchKey{
 		recordType:   current.RecordType,
 		owner:        owner,
 		foreignOwner: current.GetOwner(),
 		domain:       current.GetNakedDomain(), // use naked domain to limit metric cardinality
 	}
+	p.mismatches[key]++
 }
 
 func init() {

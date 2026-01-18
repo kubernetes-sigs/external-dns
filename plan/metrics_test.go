@@ -206,7 +206,7 @@ func TestFlushMetrics(t *testing.T) {
 			registryOwnerMismatchPerSync.Gauge.Reset()
 
 			pm := &planMetric{mismatches: tt.mismatches}
-			pm.flushMetrics()
+			pm.flush()
 
 			// Verify each expected metric
 			for key, expectedCount := range tt.expected {
@@ -238,7 +238,7 @@ func TestFlushMetricsResetsGauge(t *testing.T) {
 			{recordType: endpoint.RecordTypeCNAME, owner: "new-owner", foreignOwner: "new-foreign", domain: "new.com"}: 5,
 		},
 	}
-	pm.flushMetrics()
+	pm.flush()
 
 	// Verify old metric is gone (gauge was reset)
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
@@ -265,4 +265,100 @@ func TestFlushMetricsResetsGauge(t *testing.T) {
 			"domain":        "new.com",
 		},
 	)
+}
+
+func TestTrackMismatch(t *testing.T) {
+	tests := []struct {
+		name          string
+		owner         string
+		endpoint      *endpoint.Endpoint
+		initialState  map[mismatchKey]float64
+		expectedKey   mismatchKey
+		expectedCount float64
+	}{
+		{
+			name:  "tracks new mismatch",
+			owner: "my-owner",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "sub.example.com",
+				RecordType: endpoint.RecordTypeA,
+				Labels:     map[string]string{endpoint.OwnerLabelKey: "foreign-owner"},
+			},
+			initialState:  map[mismatchKey]float64{},
+			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"},
+			expectedCount: 1,
+		},
+		{
+			name:  "increments existing mismatch count",
+			owner: "my-owner",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "other.example.com",
+				RecordType: endpoint.RecordTypeA,
+				Labels:     map[string]string{endpoint.OwnerLabelKey: "foreign-owner"},
+			},
+			initialState: map[mismatchKey]float64{
+				{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"}: 5,
+			},
+			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign-owner", domain: "example.com"},
+			expectedCount: 6,
+		},
+		{
+			name:  "tracks CNAME mismatch",
+			owner: "owner1",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "app.test.org",
+				RecordType: endpoint.RecordTypeCNAME,
+				Labels:     map[string]string{endpoint.OwnerLabelKey: "owner2"},
+			},
+			initialState:  map[mismatchKey]float64{},
+			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeCNAME, owner: "owner1", foreignOwner: "owner2", domain: "test.org"},
+			expectedCount: 1,
+		},
+		{
+			name:  "handles empty foreign owner",
+			owner: "my-owner",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "sub.domain.net",
+				RecordType: endpoint.RecordTypeTXT,
+				Labels:     map[string]string{},
+			},
+			initialState:  map[mismatchKey]float64{},
+			expectedKey:   mismatchKey{recordType: endpoint.RecordTypeTXT, owner: "my-owner", foreignOwner: "", domain: "domain.net"},
+			expectedCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pm := &planMetric{mismatches: tt.initialState}
+			pm.trackMismatch(tt.owner, tt.endpoint)
+
+			assert.Equal(t, tt.expectedCount, pm.mismatches[tt.expectedKey])
+		})
+	}
+}
+
+func TestTrackMismatchMultipleCalls(t *testing.T) {
+	pm := &planMetric{mismatches: make(map[mismatchKey]float64)}
+
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
+		{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
+		{DNSName: "c.example.com", RecordType: endpoint.RecordTypeA, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign1"}},
+		{DNSName: "d.other.org", RecordType: endpoint.RecordTypeCNAME, Labels: map[string]string{endpoint.OwnerLabelKey: "foreign2"}},
+	}
+
+	for _, ep := range endpoints {
+		pm.trackMismatch("my-owner", ep)
+	}
+
+	// Same domain and record type should aggregate
+	keyA := mismatchKey{recordType: endpoint.RecordTypeA, owner: "my-owner", foreignOwner: "foreign1", domain: "example.com"}
+	assert.Equal(t, float64(3), pm.mismatches[keyA])
+
+	// Different domain creates separate key
+	keyCNAME := mismatchKey{recordType: endpoint.RecordTypeCNAME, owner: "my-owner", foreignOwner: "foreign2", domain: "other.org"}
+	assert.Equal(t, float64(1), pm.mismatches[keyCNAME])
+
+	assert.Len(t, pm.mismatches, 2)
 }
