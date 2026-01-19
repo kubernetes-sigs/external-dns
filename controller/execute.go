@@ -131,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -362,6 +362,7 @@ func buildProvider(
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
+	sCfg *source.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -375,14 +376,17 @@ func buildController(
 		return nil, err
 	}
 	eventsCfg := events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventCtrl, err := events.NewEventController(eventsCfg)
+		kubeClient, err := sCfg.ClientGenerator().KubeClient()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
+		}
+		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
+		if err != nil {
+			return nil, err
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
