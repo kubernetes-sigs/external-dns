@@ -114,6 +114,42 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	assert.Len(t, m.Label, 2)
 }
 
+func TestGaugeV_AddWithLabels(t *testing.T) {
+	opts := prometheus.GaugeOpts{
+		Name:      "test_gauge_add",
+		Namespace: "test_ns",
+		Subsystem: "test_sub",
+		Help:      "help text",
+	}
+	gv := NewGaugedVectorOpts(opts, []string{"label1", "label2"})
+
+	// Add with mixed case labels - should be lowercased
+	gv.AddWithLabels(1.0, "Alpha", "BETA")
+
+	g, err := gv.Gauge.GetMetricWithLabelValues("alpha", "beta")
+	assert.NoError(t, err)
+
+	var m dto.Metric
+	err = g.Write(&m)
+	assert.NoError(t, err)
+	assert.NotNil(t, m.Gauge)
+	assert.InDelta(t, 1.0, *m.Gauge.Value, 0.01)
+
+	// Add again - should increment, not override
+	gv.AddWithLabels(2.0, "ALPHA", "beta")
+	err = g.Write(&m)
+	assert.NoError(t, err)
+	assert.InDelta(t, 3.0, *m.Gauge.Value, 0.01) // 1.0 + 2.0 = 3.0
+
+	// Add one more time
+	gv.AddWithLabels(0.5, "alpha", "Beta")
+	err = g.Write(&m)
+	assert.NoError(t, err)
+	assert.InDelta(t, 3.5, *m.Gauge.Value, 0.01) // 3.0 + 0.5 = 3.5
+
+	assert.Len(t, m.Label, 2)
+}
+
 func TestNewGaugeFuncMetric(t *testing.T) {
 	tests := []struct {
 		name                    string
