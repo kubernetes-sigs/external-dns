@@ -114,6 +114,7 @@
 | `--pdns-server-id="localhost"` | When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost) |
 | `--pdns-api-key=""` | When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns) |
 | `--[no-]pdns-skip-tls-verify` | When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false) |
+| `--[no-]pdns-prefer-alias` | When using the PowerDNS/PDNS provider, prefer using ALIAS instead of CNAME (default: disabled) |
 | `--ns1-endpoint=""` | When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/) |
 | `--[no-]ns1-ignoressl` | When using the NS1 provider, specify whether to verify the SSL certificate (default: false) |
 | `--ns1-min-ttl=0` | Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this. |

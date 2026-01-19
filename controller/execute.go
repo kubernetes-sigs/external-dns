@@ -284,6 +284,7 @@ func buildProvider(
 					ClientCertFilePath:    cfg.TLSClientCert,
 					ClientCertKeyFilePath: cfg.TLSClientCertKey,
 				},
+				PreferAlias: cfg.PDNSPreferAlias,
 			},
 		)
 	case "oci":
