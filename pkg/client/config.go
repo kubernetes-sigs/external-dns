@@ -37,6 +37,7 @@ import (
 // 1. KubeConfig file if specified
 // 2. Recommended home file (~/.kube/config)
 // 3. In-cluster config
+// TODO: consider clientcmd.NewDefaultClientConfigLoadingRules() with clientcmd.NewNonInteractiveDeferredLoadingClientConfig
 func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
@@ -99,4 +100,19 @@ func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration
 	}
 	log.Infof("Created Kubernetes client %s", config.Host)
 	return client, nil
+}
+
+func GetRestConfig1(kubeConfig, apiServerURL string) (*rest.Config, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeConfig != "" {
+		loadingRules.ExplicitPath = kubeConfig
+	}
+
+	configOverrides := &clientcmd.ConfigOverrides{}
+	if apiServerURL != "" {
+		configOverrides.ClusterInfo.Server = apiServerURL
+	}
+
+	kubeClientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	return kubeClientConfig.ClientConfig()
 }
