@@ -77,6 +77,7 @@ type PDNSConfig struct {
 	ServerID     string
 	APIKey       string
 	TLSConfig    TLSConfig
+	PreferAlias  bool
 }
 
 // TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
@@ -229,7 +230,8 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Res
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	client PDNSAPIProvider
+	client      PDNSAPIProvider
+	preferAlias bool
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
@@ -264,8 +266,19 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},
+		preferAlias: config.PreferAlias,
 	}
 	return provider, nil
+}
+
+// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
+func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
+	for _, ps := range ep.ProviderSpecific {
+		if ps.Name == "alias" && ps.Value == "true" {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
@@ -335,9 +348,16 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
-					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
-					RecordType_ = "ALIAS"
+				// Check if we should use ALIAS instead of CNAME:
+				// 1. APEX records (dnsname == zone.Name) always use ALIAS
+				// 2. If --pdns-prefer-alias flag is set, all CNAMEs become ALIAS
+				// 3. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				if ep.RecordType == endpoint.RecordTypeCNAME {
+					useAlias := dnsname == zone.Name || p.preferAlias || p.hasAliasAnnotation(ep)
+					if useAlias {
+						log.Debugf("Converting CNAME record %s to ALIAS", dnsname)
+						RecordType_ = "ALIAS"
+					}
 				}
 
 				rrset := pgo.RrSet{

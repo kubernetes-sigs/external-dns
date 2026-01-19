@@ -139,6 +139,7 @@ type Config struct {
 	PDNSServerID                                  string
 	PDNSAPIKey                                    string `secure:"yes"`
 	PDNSSkipTLSVerify                             bool
+	PDNSPreferAlias                               bool
 	TLSCA                                         string
 	TLSClientCert                                 string
 	TLSClientCertKey                              string
@@ -323,6 +324,7 @@ var defaultConfig = &Config{
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSSkipTLSVerify:            false,
+	PDNSPreferAlias:              false,
 	PiholeApiVersion:             "5",
 	PiholePassword:               "",
 	PiholeServer:                 "",
@@ -609,6 +611,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)", defaultConfig.PDNSServerID, &cfg.PDNSServerID)
 	b.StringVar("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)", defaultConfig.PDNSAPIKey, &cfg.PDNSAPIKey)
 	b.BoolVar("pdns-skip-tls-verify", "When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false)", defaultConfig.PDNSSkipTLSVerify, &cfg.PDNSSkipTLSVerify)
+	b.BoolVar("pdns-prefer-alias", "When using the PowerDNS/PDNS provider, prefer using ALIAS instead of CNAME (default: disabled)", defaultConfig.PDNSPreferAlias, &cfg.PDNSPreferAlias)
 	b.StringVar("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)", defaultConfig.NS1Endpoint, &cfg.NS1Endpoint)
 	b.BoolVar("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)", defaultConfig.NS1IgnoreSSL, &cfg.NS1IgnoreSSL)
 	b.IntVar("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.", cfg.NS1MinTTLSeconds, &cfg.NS1MinTTLSeconds)
