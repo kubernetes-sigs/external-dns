@@ -45,7 +45,7 @@ linters:
         - name: confusing-naming
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
+      max-complexity: 32 # provider/rfc2136/rfc2136.go:350:1: calculated cyclomatic complexity for function ApplyChanges is 32. See https://github.com/kubernetes-sigs/external-dns/issues/5419
     goconst:
       min-occurrences: 3
       # Ignore well-known DNS record types, boolean strings, and common values
