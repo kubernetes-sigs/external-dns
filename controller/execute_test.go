@@ -230,6 +230,30 @@ func TestBuildProvider(t *testing.T) {
 	}
 }
 
+func TestBuildProvider_Coverage(t *testing.T) {
+	// this test ensures that all providers are registered in the factory map
+	// and that the buildProvider function does not return an "unknown provider" error
+	knownProviders := []string{
+		"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns",
+		"civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi",
+		"godaddy", "google", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole",
+		"plural", "rfc2136", "scaleway", "skydns", "transip", "webhook",
+	}
+
+	for _, providerName := range knownProviders {
+		t.Run(providerName, func(t *testing.T) {
+			cfg := &externaldns.Config{
+				Provider: providerName,
+			}
+			// We don't care about the specific error (missing config), just that it's NOT "unknown provider"
+			_, err := buildProvider(context.Background(), cfg, nil)
+			if err != nil {
+				assert.NotContains(t, err.Error(), "unknown dns provider")
+			}
+		})
+	}
+}
+
 func TestBuildSourceWithWrappers(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
