@@ -216,7 +216,7 @@ func TestBuildProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 
-			p, err := buildProvider(context.Background(), tt.cfg, domainFilter)
+			p, err := buildProvider(t.Context(), tt.cfg, domainFilter)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
@@ -292,7 +292,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(context.Background(), source.NewSourceConfig(tt.cfg))
+			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
 			require.NoError(t, err)
 		})
 	}
@@ -323,7 +323,7 @@ func TestHelperProcess(t *testing.T) {
 func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
@@ -470,7 +470,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	src, err := buildSource(ctx, source.NewSourceConfig(cfg))
 	require.NoError(t, err)
