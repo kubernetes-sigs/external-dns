@@ -109,6 +109,7 @@ func Execute() {
 	go handleSigterm(cancel)
 
 	sCfg := source.NewSourceConfig(cfg)
+	// TODO: Move source construction to the source package
 	endpointsSource, err := buildSource(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
@@ -121,6 +122,7 @@ func Execute() {
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
 
+	// TODO: Move provider construction to the provider package
 	prvdr, err := buildProvider(ctx, cfg, domainFilter)
 	if err != nil {
 		log.Fatal(err)

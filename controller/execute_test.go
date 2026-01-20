@@ -216,7 +216,7 @@ func TestBuildProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 
-			p, err := buildProvider(t.Context(), tt.cfg, domainFilter)
+			p, err := buildProvider(context.Background(), tt.cfg, domainFilter)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
@@ -292,7 +292,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
+			_, err := buildSource(context.Background(), source.NewSourceConfig(tt.cfg))
 			require.NoError(t, err)
 		})
 	}
