@@ -246,7 +246,7 @@ func TestBuildProvider_Coverage(t *testing.T) {
 				Provider: providerName,
 			}
 			// We don't care about the specific error (missing config), just that it's NOT "unknown provider"
-			_, err := buildProvider(context.Background(), cfg, nil)
+			_, err := buildProvider(t.Context(), cfg, nil)
 			if err != nil {
 				assert.NotContains(t, err.Error(), "unknown dns provider")
 			}
