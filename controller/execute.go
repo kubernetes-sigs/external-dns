@@ -161,23 +161,32 @@ func buildProvider(
 	cfg *externaldns.Config,
 	domainFilter *endpoint.DomainFilter,
 ) (provider.Provider, error) {
-	var p provider.Provider
-	var err error
+	factory, ok := providerFactories[cfg.Provider]
+	if !ok {
+		return nil, fmt.Errorf("unknown dns provider: %s", cfg.Provider)
+	}
+	p, err := factory(ctx, cfg, domainFilter)
+	if err != nil {
+		return nil, err
+	}
 
-	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+	if p != nil && cfg.ProviderCacheTime > 0 {
+		p = provider.NewCachedProvider(
+			p,
+			cfg.ProviderCacheTime,
+		)
+	}
+	return p, nil
+}
 
-	// TODO: Controller focuses on orchestration, not provider construction
-	// TODO: refactor to move this to provider package, cover with tests
-	// TODO: example provider.SelectProvider(cfg, ...)
-	switch cfg.Provider {
-	case "akamai":
-		p, err = akamai.NewAkamaiProvider(
+type providerFactory func(context.Context, *externaldns.Config, *endpoint.DomainFilter) (provider.Provider, error)
+
+var providerFactories = map[string]providerFactory{
+	"akamai": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return akamai.NewAkamaiProvider(
 			akamai.AkamaiConfig{
 				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
+				ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
 				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
 				ClientToken:           cfg.AkamaiClientToken,
 				ClientSecret:          cfg.AkamaiClientSecret,
@@ -186,21 +195,23 @@ func buildProvider(
 				EdgercSection:         cfg.AkamaiEdgercSection,
 				DryRun:                cfg.DryRun,
 			}, nil)
-	case "alibabacloud":
-		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
-	case "aws":
+	},
+	"alibabacloud": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.AlibabaCloudZoneType, cfg.DryRun)
+	},
+	"aws": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 		configs := aws.CreateV2Configs(cfg)
 		clients := make(map[string]aws.Route53API, len(configs))
 		for profile, config := range configs {
 			clients[profile] = route53.NewFromConfig(config)
 		}
 
-		p, err = aws.NewAWSProvider(
+		return aws.NewAWSProvider(
 			aws.AWSConfig{
 				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
-				ZoneTypeFilter:        zoneTypeFilter,
-				ZoneTagFilter:         zoneTagFilter,
+				ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+				ZoneTypeFilter:        provider.NewZoneTypeFilter(cfg.AWSZoneType),
+				ZoneTagFilter:         provider.NewZoneTagFilter(cfg.AWSZoneTagFilter),
 				ZoneMatchParent:       cfg.AWSZoneMatchParent,
 				BatchChangeSize:       cfg.AWSBatchChangeSize,
 				BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
@@ -213,23 +224,31 @@ func buildProvider(
 			},
 			clients,
 		)
-	case "aws-sd":
+	},
+	"aws-sd": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 		// Check that only compatible Registry is used with AWS-SD
 		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(aws.CreateDefaultV2Config(cfg)))
-	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
-	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
-	case "civo":
-		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
-	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(
+		return awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(aws.CreateDefaultV2Config(cfg)))
+	},
+	"azure-dns": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, endpoint.NewDomainFilter(cfg.ZoneNameFilter), provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
+	},
+	"azure": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, endpoint.NewDomainFilter(cfg.ZoneNameFilter), provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
+	},
+	"azure-private-dns": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, endpoint.NewDomainFilter(cfg.ZoneNameFilter), provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
+	},
+	"civo": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return civo.NewCivoProvider(domainFilter, cfg.DryRun)
+	},
+	"cloudflare": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return cloudflare.NewCloudFlareProvider(
 			domainFilter,
-			zoneIDFilter,
+			provider.NewZoneIDFilter(cfg.ZoneIDFilter),
 			cfg.CloudflareProxied,
 			cfg.DryRun,
 			cloudflare.RegionalServicesConfig{
@@ -245,20 +264,30 @@ func buildProvider(
 				PerPage: cfg.CloudflareDNSRecordsPerPage,
 				Comment: cfg.CloudflareDNSRecordsComment,
 			})
-	case "google":
-		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
-	case "digitalocean":
-		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
-	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
-	case "linode":
-		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
-	case "dnsimple":
-		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "coredns", "skydns":
-		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
-	case "exoscale":
-		p, err = exoscale.NewExoscaleProvider(
+	},
+	"google": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
+	},
+	"digitalocean": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
+	},
+	"ovh": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+	},
+	"linode": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return linode.NewLinodeProvider(domainFilter, cfg.DryRun)
+	},
+	"dnsimple": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return dnsimple.NewDnsimpleProvider(domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.DryRun)
+	},
+	"coredns": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
+	},
+	"skydns": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
+	},
+	"exoscale": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return exoscale.NewExoscaleProvider(
 			cfg.ExoscaleAPIEnvironment,
 			cfg.ExoscaleAPIZone,
 			cfg.ExoscaleAPIKey,
@@ -267,10 +296,12 @@ func buildProvider(
 			exoscale.ExoscaleWithDomain(domainFilter),
 			exoscale.ExoscaleWithLogging(),
 		)
-	case "inmemory":
-		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
-	case "pdns":
-		p, err = pdns.NewPDNSProvider(
+	},
+	"inmemory": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
+	},
+	"pdns": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return pdns.NewPDNSProvider(
 			ctx,
 			pdns.PDNSConfig{
 				DomainFilter: domainFilter,
@@ -286,25 +317,27 @@ func buildProvider(
 				},
 			},
 		)
-	case "oci":
+	},
+	"oci": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 		var config *oci.OCIConfig
+		var err error
 		// if the instance-principals flag was set, and a compartment OCID was provided, then ignore the
 		// OCI config file, and provide a config that uses instance principal authentication.
 		if cfg.OCIAuthInstancePrincipal {
 			if len(cfg.OCICompartmentOCID) == 0 {
-				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-				break
+				return nil, fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
 			}
 			authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
 			config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
 		} else {
 			if config, err = oci.LoadOCIConfig(cfg.OCIConfigFile); err != nil {
-				break
+				return nil, err
 			}
 		}
 		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-	case "rfc2136":
+		return oci.NewOCIProvider(*config, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.OCIZoneScope, cfg.DryRun)
+	},
+	"rfc2136": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 		tlsConfig := rfc2136.TLSConfig{
 			UseTLS:                cfg.RFC2136UseTLS,
 			SkipTLSVerify:         cfg.RFC2136SkipTLSVerify,
@@ -312,28 +345,34 @@ func buildProvider(
 			ClientCertFilePath:    cfg.TLSClientCert,
 			ClientCertKeyFilePath: cfg.TLSClientCertKey,
 		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
-	case "ns1":
-		p, err = ns1.NewNS1Provider(
+		return rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	},
+	"ns1": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return ns1.NewNS1Provider(
 			ns1.NS1Config{
 				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
+				ZoneIDFilter:  provider.NewZoneIDFilter(cfg.ZoneIDFilter),
 				NS1Endpoint:   cfg.NS1Endpoint,
 				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
 				DryRun:        cfg.DryRun,
 				MinTTLSeconds: cfg.NS1MinTTLSeconds,
 			},
 		)
-	case "transip":
-		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
-	case "scaleway":
-		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
-	case "godaddy":
-		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
-	case "gandi":
-		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
-	case "pihole":
-		p, err = pihole.NewPiholeProvider(
+	},
+	"transip": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
+	},
+	"scaleway": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+	},
+	"godaddy": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
+	},
+	"gandi": func(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+	},
+	"pihole": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return pihole.NewPiholeProvider(
 			pihole.PiholeConfig{
 				Server:                cfg.PiholeServer,
 				Password:              cfg.PiholePassword,
@@ -343,20 +382,13 @@ func buildProvider(
 				APIVersion:            cfg.PiholeApiVersion,
 			},
 		)
-	case "plural":
-		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-	case "webhook":
-		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
-	default:
-		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
-	}
-	if p != nil && cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(
-			p,
-			cfg.ProviderCacheTime,
-		)
-	}
-	return p, err
+	},
+	"plural": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
+	},
+	"webhook": func(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+		return webhook.NewWebhookProvider(cfg.WebhookProviderURL)
+	},
 }
 
 func buildController(
