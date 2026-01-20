@@ -82,11 +82,6 @@ func (c *ZoneCache[T]) Expired() bool {
 	return c.isEmpty(c.data) || time.Since(c.age) > c.duration
 }
 
-// Duration returns the cache TTL duration.
-func (c *ZoneCache[T]) Duration() time.Duration {
-	return c.duration
-}
-
 // ZoneFetcher is a function type that fetches zones from a provider.
 // It's used by CachedZoneProvider to fetch zones when the cache is expired.
 type ZoneFetcher[T any] func(ctx context.Context) (T, error)
