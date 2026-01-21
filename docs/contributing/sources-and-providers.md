@@ -65,6 +65,7 @@ type myNewSource struct {
 * `+externaldns:source:filters` - Supported filter types (annotation, label)
 * `+externaldns:source:namespace` - Namespace support: comma-separated values (all, single, multiple)
 * `+externaldns:source:fqdn-template` - FQDN template support (true, false)
+* `+externaldns:source:events` - Kubernetes [`events`](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/) support  (true, false)
 
 After adding annotations, run `make generate-sources-documentation` to update sources file.
 
