@@ -128,6 +128,7 @@ type testSource struct {
 	assert.Equal(t, "annotation,label", source.Filters)
 	assert.Equal(t, "all,single", source.Namespace)
 	assert.Equal(t, "true", source.FQDNTemplate)
+	assert.Equal(t, "false", source.Events)
 }
 
 func TestParseSourceAnnotations_SkipsTestFiles(t *testing.T) {
@@ -168,6 +169,7 @@ type firstSource struct {}
 // +externaldns:source:name=second
 // +externaldns:source:category=Testing
 // +externaldns:source:description=Second source
+// +externaldns:source:events=true
 type secondSource struct {}
 `
 	err := os.WriteFile(testFile, []byte(content), 0644)
@@ -177,7 +179,9 @@ type secondSource struct {}
 	require.NoError(t, err)
 	assert.Len(t, sources, 2)
 	assert.Equal(t, "first", sources[0].Name)
+	assert.Equal(t, "false", sources[0].Events)
 	assert.Equal(t, "second", sources[1].Name)
+	assert.Equal(t, "true", sources[1].Events)
 }
 
 func TestParseFile_IgnoresNonSourceTypes(t *testing.T) {
