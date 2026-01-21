@@ -185,11 +185,12 @@ func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *pla
 }
 
 func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.PrivateZone, error) {
-	log.Debugf("Retrieving Azure Private DNS zones for Resource Group '%s'", p.resourceGroup)
 	if !p.zonesCache.Expired() {
-		log.Debugf("Using cached Azure Private DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(p.zonesCache.Get()))
-		return p.zonesCache.Get(), nil
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached Azure Private DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(cachedZones))
+		return cachedZones, nil
 	}
+	log.Debugf("Retrieving Azure Private DNS zones for resource group: %s.", p.resourceGroup)
 	var zones []privatedns.PrivateZone
 
 	pager := p.zonesClient.NewListByResourceGroupPager(p.resourceGroup, &privatedns.PrivateZonesClientListByResourceGroupOptions{Top: nil})
@@ -199,8 +200,6 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 			return nil, err
 		}
 		for _, zone := range nextResult.Value {
-			log.Debugf("Validating Zone: %v", *zone.Name)
-
 			if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 				zones = append(zones, *zone)
 			} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
@@ -210,7 +209,6 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 		}
 	}
 
-	log.Debugf("Found %d Azure Private DNS zone(s). Updating zones cache", len(zones))
 	p.zonesCache.Reset(zones)
 	return zones, nil
 }

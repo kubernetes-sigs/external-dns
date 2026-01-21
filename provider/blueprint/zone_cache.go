@@ -19,6 +19,8 @@ package blueprint
 import (
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ZoneCache is a generic cache for DNS zones with TTL-based expiration.
@@ -52,6 +54,7 @@ func (c *ZoneCache[T]) Reset(data T) {
 	defer c.mu.Unlock()
 	c.data = data
 	c.age = time.Now()
+	log.WithField("duration", c.duration).Debug("zone cache reset")
 }
 
 // Expired returns true if the cache has expired or is empty.

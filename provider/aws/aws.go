@@ -367,10 +367,11 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
 	if !p.zonesCache.Expired() {
-		log.Debug("Using cached zones list")
-		return p.zonesCache.Get(), nil
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached AWS zones, zone count: %d.", len(cachedZones))
+		return cachedZones, nil
 	}
-	log.Debug("Refreshing zones list cache")
+	log.Debug("Retrieving AWS zones.")
 
 	zones := make(map[string]*profiledZone)
 
