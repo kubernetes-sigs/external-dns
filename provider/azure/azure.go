@@ -99,7 +99,7 @@ func NewAzureProvider(configFile string, domainFilter *endpoint.DomainFilter, zo
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   blueprint.NewSliceZoneCache[dns.Zone](zonesCacheDuration),
+		zonesCache:                   blueprint.NewZoneCache[[]dns.Zone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil

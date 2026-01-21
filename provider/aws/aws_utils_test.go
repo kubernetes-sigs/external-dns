@@ -58,7 +58,7 @@ func providerFilters(client *Route53APIFixtureStub, options ...func(awsProvider 
 		zoneIDFilter:         provider.NewZoneIDFilter([]string{}),
 		zoneTypeFilter:       provider.NewZoneTypeFilter(""),
 		zoneTagFilter:        provider.NewZoneTagFilter([]string{}),
-		zonesCache:           blueprint.NewMapZoneCache[string, *profiledZone](1 * time.Second),
+		zonesCache:           blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Second),
 	}
 	for _, o := range options {
 		o(p)

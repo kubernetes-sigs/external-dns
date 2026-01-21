@@ -343,7 +343,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
-		zonesCache:            blueprint.NewMapZoneCache[string, *profiledZone](awsConfig.ZoneCacheDuration),
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](awsConfig.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 

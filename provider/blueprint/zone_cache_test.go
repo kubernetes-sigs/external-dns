@@ -24,7 +24,7 @@ import (
 )
 
 func TestZoneCache_SliceCache(t *testing.T) {
-	cache := NewSliceZoneCache[string](time.Hour)
+	cache := NewZoneCache[[]string](time.Hour)
 
 	// Initially expired (empty)
 	assert.True(t, cache.Expired())
@@ -36,7 +36,7 @@ func TestZoneCache_SliceCache(t *testing.T) {
 }
 
 func TestZoneCache_MapCache(t *testing.T) {
-	cache := NewMapZoneCache[string, int](time.Hour)
+	cache := NewZoneCache[map[string]int](time.Hour)
 
 	// Initially expired (empty)
 	assert.True(t, cache.Expired())
@@ -49,7 +49,7 @@ func TestZoneCache_MapCache(t *testing.T) {
 
 func TestZoneCache_Expiration(t *testing.T) {
 	// Very short duration for testing
-	cache := NewSliceZoneCache[string](10 * time.Millisecond)
+	cache := NewZoneCache[[]string](10 * time.Millisecond)
 
 	cache.Reset([]string{"zone1"})
 	assert.False(t, cache.Expired())
@@ -61,7 +61,7 @@ func TestZoneCache_Expiration(t *testing.T) {
 
 func TestZoneCache_ZeroDuration(t *testing.T) {
 	// Zero duration means caching is disabled
-	cache := NewSliceZoneCache[string](0)
+	cache := NewZoneCache[[]string](0)
 
 	cache.Reset([]string{"zone1"})
 	// Should still be expired because caching is disabled
@@ -71,7 +71,7 @@ func TestZoneCache_ZeroDuration(t *testing.T) {
 }
 
 func TestZoneCache_ThreadSafety(t *testing.T) {
-	cache := NewSliceZoneCache[int](time.Hour)
+	cache := NewZoneCache[[]int](time.Hour)
 
 	done := make(chan bool)
 

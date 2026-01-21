@@ -94,7 +94,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter *endpoint.Domain
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   blueprint.NewSliceZoneCache[privatedns.PrivateZone](zonesCacheDuration),
+		zonesCache:                   blueprint.NewZoneCache[[]privatedns.PrivateZone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil

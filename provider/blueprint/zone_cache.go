@@ -17,7 +17,6 @@ limitations under the License.
 package blueprint
 
 import (
-	"context"
 	"sync"
 	"time"
 )
@@ -29,31 +28,11 @@ type ZoneCache[T any] struct {
 	age      time.Time
 	duration time.Duration
 	data     T
-	isEmpty  func(T) bool
 }
 
 // NewZoneCache creates a new ZoneCache with the specified TTL duration.
-// The isEmpty function is used to determine if the cached data is empty
-// (which forces a refresh on first access).
-func NewZoneCache[T any](duration time.Duration, isEmpty func(T) bool) *ZoneCache[T] {
-	return &ZoneCache[T]{
-		duration: duration,
-		isEmpty:  isEmpty,
-	}
-}
-
-// NewSliceZoneCache creates a ZoneCache for slice types.
-func NewSliceZoneCache[T any](duration time.Duration) *ZoneCache[[]T] {
-	return NewZoneCache(duration, func(data []T) bool {
-		return len(data) == 0
-	})
-}
-
-// NewMapZoneCache creates a ZoneCache for map types.
-func NewMapZoneCache[K comparable, V any](duration time.Duration) *ZoneCache[map[K]V] {
-	return NewZoneCache(duration, func(data map[K]V) bool {
-		return len(data) == 0
-	})
+func NewZoneCache[T any](duration time.Duration) *ZoneCache[T] {
+	return &ZoneCache[T]{duration: duration}
 }
 
 // Get returns the cached data. Returns the zero value if cache is empty.
@@ -79,9 +58,5 @@ func (c *ZoneCache[T]) Reset(data T) {
 func (c *ZoneCache[T]) Expired() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.isEmpty(c.data) || time.Since(c.age) > c.duration
+	return c.age.IsZero() || time.Since(c.age) > c.duration
 }
-
-// ZoneFetcher is a function type that fetches zones from a provider.
-// It's used by CachedZoneProvider to fetch zones when the cache is expired.
-type ZoneFetcher[T any] func(ctx context.Context) (T, error)

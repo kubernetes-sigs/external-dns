@@ -353,7 +353,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 		clients:       map[string]Route53API{defaultAWSProfile: client},
 		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
 		dryRun:        false,
-		zonesCache:    blueprint.NewMapZoneCache[string, *profiledZone](1 * time.Minute),
+		zonesCache:    blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute),
 	}
 	createAWSZone(t, provider, &route53types.HostedZone{
 		Id:     aws.String("/hostedzone/zone-1.ext-dns-test-ok.example.com."),
@@ -1080,7 +1080,7 @@ func TestAWSApplyChanges(t *testing.T) {
 
 		ctx := tt.setup(provider)
 
-		provider.zonesCache = blueprint.NewMapZoneCache[string, *profiledZone](0 * time.Minute)
+		provider.zonesCache = blueprint.NewZoneCache[map[string]*profiledZone](0 * time.Minute)
 		counter := NewRoute53APICounter(provider.clients[defaultAWSProfile])
 		provider.clients[defaultAWSProfile] = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
@@ -2372,7 +2372,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilt
 		zoneTypeFilter:        zoneTypeFilter,
 		zoneTagFilter:         zoneTagFilter,
 		dryRun:                false,
-		zonesCache:            blueprint.NewMapZoneCache[string, *profiledZone](1 * time.Minute),
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 

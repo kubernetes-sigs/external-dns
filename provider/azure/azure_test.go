@@ -254,7 +254,7 @@ func newAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpo
 		userAssignedIdentityClientID: userAssignedIdentityClientID,
 		activeDirectoryAuthorityHost: activeDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   blueprint.NewSliceZoneCache[dns.Zone](0),
+		zonesCache:                   blueprint.NewZoneCache[[]dns.Zone](0),
 		recordSetsClient:             recordsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}
