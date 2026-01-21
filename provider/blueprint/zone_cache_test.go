@@ -59,8 +59,7 @@ func TestZoneCache_Expiration(t *testing.T) {
 	assert.True(t, cache.Expired())
 }
 
-func TestZoneCache_ZeroDuration(t *testing.T) {
-	// Zero duration means caching is disabled
+func TestZoneCache_CachingDisabled(t *testing.T) {
 	cache := NewZoneCache[[]string](0)
 
 	cache.Reset([]string{"zone1"})
