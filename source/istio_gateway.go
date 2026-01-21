@@ -35,6 +35,8 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -153,11 +155,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	log.Debugf("Found %d gateways in namespace %s", len(gateways), sc.namespace)
 
 	for _, gateway := range gateways {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := gateway.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping gateway %s/%s,%s because controller value does not match, found: %s, required: %s",
-				gateway.Namespace, gateway.APIVersion, gateway.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
 			continue
 		}
 
@@ -190,8 +188,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
 			continue
 		}
 
