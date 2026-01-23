@@ -117,6 +117,7 @@ func Execute() {
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
 		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithIncludeDomains(cfg.IncludeDomains),
 		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
