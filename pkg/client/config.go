@@ -53,10 +53,10 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 		err    error
 	)
 	if kubeConfig == "" {
-		log.Infof("Using inCluster-config based on serviceaccount-token")
+		log.Debug("Using inCluster-config based on serviceaccount-token")
 		config, err = rest.InClusterConfig()
 	} else {
-		log.Infof("Using kubeConfig")
+		log.Debug("Using kubeConfig")
 		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	}
 	if err != nil {

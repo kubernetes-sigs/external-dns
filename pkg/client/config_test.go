@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestGetRestConfig_WithKubeConfig(t *testing.T) {
@@ -100,4 +101,41 @@ users:
 
 	assert.Equal(t, timeout, config.Timeout)
 	assert.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
+}
+
+func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer svr.Close()
+
+	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
+	mockKubeCfgPath := filepath.Join(mockKubeCfgDir, "config")
+	err := os.MkdirAll(mockKubeCfgDir, 0755)
+	require.NoError(t, err)
+
+	kubeCfgTemplate := `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: %s
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+`
+	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), 0644)
+	require.NoError(t, err)
+
+	prevRecommendedHomeFile := clientcmd.RecommendedHomeFile
+	t.Cleanup(func() {
+		clientcmd.RecommendedHomeFile = prevRecommendedHomeFile
+	})
+	clientcmd.RecommendedHomeFile = mockKubeCfgPath
+
+	config, err := GetRestConfig("", "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, svr.URL, config.Host)
 }
