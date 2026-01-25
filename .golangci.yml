@@ -94,7 +94,7 @@ linters:
       # TODO: skiip as will require design changes
       - linters:
           - nilnil
-        path: istio_virtualservice.go|fqdn.go|cloudflare.go
+        path: istio_virtualservice.go|fqdn.go|cloudflare_custom_hostnames.go
       - linters:
           - gochecknoinits
         path: ^(internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
