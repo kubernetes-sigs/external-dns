@@ -10,7 +10,7 @@ linters:
     - govet
     - ineffassign
     - misspell
-    - revive
+    - revive # https://golangci-lint.run/docs/linters/configuration/#revive
     - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/docs/linters/configuration/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/docs/linters/configuration/#errchkjson
@@ -86,7 +86,6 @@ linters:
           - staticcheck
           - structcheck
           - unconvert
-          - unused
           - varcheck
           - whitespace
           - goconst
