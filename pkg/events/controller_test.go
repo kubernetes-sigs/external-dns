@@ -41,7 +41,7 @@ import (
 )
 
 func TestNewEventController_Success(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
 	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
@@ -98,7 +98,7 @@ func TestController_Run_EmitEvents(t *testing.T) {
 
 	eventCreated := make(chan struct{})
 	kubeClient := fake.NewClientset()
-	kubeClient.PrependReactor("create", "events", func(action clienttesting.Action) (bool, runtime.Object, error) {
+	kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
 		eventCreated <- struct{}{}
 		return true, nil, nil
 	})

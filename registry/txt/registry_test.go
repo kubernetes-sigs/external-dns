@@ -675,13 +675,13 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	p.CreateZone(testZone)
+	_ = p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
-	p.ApplyChanges(ctx, &plan.Changes{
+	_ = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -777,7 +777,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
 	p.ApplyChanges(ctx, &plan.Changes{
@@ -820,10 +820,10 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 
 func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	p.CreateZone(testZone)
+	_ = p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
 	r, _ := NewTXTRegistry(p, "", "-%{record_type}suffix", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
@@ -866,7 +866,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
 	p.ApplyChanges(ctx, &plan.Changes{
@@ -968,7 +968,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
 	p.ApplyChanges(ctx, &plan.Changes{
@@ -1331,7 +1331,7 @@ func TestNewTXTScheme(t *testing.T) {
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
 	p.ApplyChanges(ctx, &plan.Changes{
@@ -1570,7 +1570,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	}
 
 	changes := pl.Calculate()
-	p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
 		got := map[string][]*endpoint.Endpoint{
 			"Create":    changes.Create,
 			"UpdateNew": changes.UpdateNew,
@@ -1897,7 +1897,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					// The first ApplyChanges call should create the expected records.
 					// Subsequent calls are expected to be no-ops (i.e., no additional creates).
 					isCalled := false
-					p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+					p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
 						if isCalled {
 							assert.Empty(t, changes.Create, "ApplyChanges should not be called multiple times with new changes")
 						} else {

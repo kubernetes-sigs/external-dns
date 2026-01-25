@@ -144,7 +144,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civogo.DNSRecord, error) {
+func (p *CivoProvider) fetchRecords(_ context.Context, domainID string) ([]civogo.DNSRecord, error) {
 	records, err := p.Client.ListDNSRecords(domainID)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civ
 	return records, nil
 }
 
-func (p *CivoProvider) fetchZones(ctx context.Context) ([]civogo.DNSDomain, error) {
+func (p *CivoProvider) fetchZones(_ context.Context) ([]civogo.DNSDomain, error) {
 	var zones []civogo.DNSDomain
 
 	allZones, err := p.Client.ListDNSDomains()
@@ -173,7 +173,7 @@ func (p *CivoProvider) fetchZones(ctx context.Context) ([]civogo.DNSDomain, erro
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) error {
+func (p *CivoProvider) submitChanges(_ context.Context, changes CivoChanges) error {
 	if changes.Empty() {
 		log.Info("All records are already up to date")
 		return nil

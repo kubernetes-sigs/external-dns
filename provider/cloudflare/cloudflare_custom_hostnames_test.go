@@ -62,7 +62,7 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 	}
 }
 
-func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID string, ch customHostname) error {
+func (m *mockCloudFlareClient) CreateCustomHostname(_ context.Context, zoneID string, ch customHostname) error {
 	if ch.hostname == "" || ch.customOriginServer == "" || ch.hostname == "newerror-create.foo.fancybar.com" {
 		return fmt.Errorf("Invalid custom hostname or origin hostname")
 	}
@@ -75,7 +75,7 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
+func (m *mockCloudFlareClient) DeleteCustomHostname(_ context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
 	zoneID := params.ZoneID.String()
 	idx := 0
 	if idx = getCustomHostnameIdxByID(m.customHostnames[zoneID], customHostnameID); idx < 0 {
@@ -690,7 +690,7 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 		)
 	})
 
-	t.Run("CustomHostnames_Delete", func(t *testing.T) {
+	t.Run("CustomHostnames_Delete", func(_ *testing.T) {
 		client := NewMockCloudFlareClient()
 		client.customHostnames = map[string][]customHostname{
 			"zone1": {

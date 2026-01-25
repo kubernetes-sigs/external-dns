@@ -35,7 +35,7 @@ type mockScalewayDomain struct {
 	*domain.API
 }
 
-func (m *mockScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
+func (m *mockScalewayDomain) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
 	return &domain.ListDNSZonesResponse{
 		DNSZones: []*domain.DNSZone{
 			{
@@ -58,7 +58,7 @@ func (m *mockScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts 
 	}, nil
 }
 
-func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRequest, opts ...scw.RequestOption) (*domain.ListDNSZoneRecordsResponse, error) {
+func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRequest, _ ...scw.RequestOption) (*domain.ListDNSZoneRecordsResponse, error) {
 	records := []*domain.Record{}
 	if req.DNSZone == "example.com" {
 		records = []*domain.Record{

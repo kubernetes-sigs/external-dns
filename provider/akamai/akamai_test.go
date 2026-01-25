@@ -81,7 +81,7 @@ func (r *edgednsStub) setOutput(objtype string, output []any) {
 	return
 }
 
-func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
+func (r *edgednsStub) ListZones(_ dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
 	log.Debugf("Entering ListZones")
 	// Ignore Metadata`
 	resp := &dns.ZoneListResponse{}
@@ -96,7 +96,7 @@ func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListR
 	return resp, nil
 }
 
-func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
+func (r *edgednsStub) GetRecordsets(_ string, _ dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
 	log.Debugf("Entering GetRecordsets")
 	// Ignore Metadata`
 	resp := &dns.RecordSetResponse{}
@@ -110,21 +110,21 @@ func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArg
 	return resp, nil
 }
 
-func (r *edgednsStub) CreateRecordsets(recordsets *dns.Recordsets, zone string, reclock bool) error {
+func (r *edgednsStub) CreateRecordsets(_ *dns.Recordsets, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error) {
+func (r *edgednsStub) GetRecord(_ string, _ string, _ string) (*dns.RecordBody, error) {
 	resp := &dns.RecordBody{}
 
 	return resp, nil
 }
 
-func (r *edgednsStub) DeleteRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) DeleteRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) UpdateRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) UpdateRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 

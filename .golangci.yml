@@ -44,7 +44,7 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
-        - name: unused-parameter
+        - name: unused-parameter # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-parameter
           disabled: false
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
