@@ -38,6 +38,8 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -153,11 +155,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	log.Debugf("Found %d virtualservice in namespace %s", len(virtualServices), sc.namespace)
 
 	for _, vService := range virtualServices {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := vService.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
-				vService.Namespace, vService.APIVersion, vService.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
 			continue
 		}
 
@@ -177,8 +175,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			return nil, err
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from VirtualService %s/%s", vService.Namespace, vService.Name)
+		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
 

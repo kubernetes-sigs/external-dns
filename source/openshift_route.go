@@ -31,6 +31,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -126,11 +128,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ocpRoute := range ocpRoutes {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := ocpRoute.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping OpenShift Route %s/%s because controller value does not match, found: %s, required: %s",
-				ocpRoute.Namespace, ocpRoute.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(ocpRoute, types.OpenShiftRoute) {
 			continue
 		}
 
@@ -147,8 +145,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if len(orEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from OpenShift Route %s/%s", ocpRoute.Namespace, ocpRoute.Name)
+		if endpoint.HasNoEmptyEndpoints(orEndpoints, types.OpenShiftRoute, ocpRoute) {
 			continue
 		}
 
