@@ -33,10 +33,8 @@ import (
 )
 
 type edgednsStubData struct {
-	objType       string // zone, record, recordsets
-	output        []any
-	updateRecords []any
-	createRecords []any
+	objType string // zone, record, recordsets
+	output  []any
 }
 
 type edgednsStub struct {
@@ -78,26 +76,6 @@ func (r *edgednsStub) setOutput(objtype string, output []any) {
 	r.createStubDataEntry(objtype)
 	stubdata := r.stubData[objtype]
 	stubdata.output = output
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) setUpdateRecords(objtype string, records []any) {
-	log.Debugf("Setting updaterecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.updateRecords = records
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) setCreateRecords(objtype string, records []any) {
-	log.Debugf("Setting createrecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.createRecords = records
 	r.stubData[objtype] = stubdata
 
 	return
