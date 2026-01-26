@@ -56,6 +56,8 @@ For set up for a specific provider using the Helm chart, see the following links
 external-dns supports running on a namespaced only scope, too.
 If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
 
+Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
+
 ### Limited Supported
 
 Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
