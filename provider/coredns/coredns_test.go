@@ -43,7 +43,7 @@ type fakeETCDClient struct {
 	services map[string]Service
 }
 
-func (c fakeETCDClient) GetServices(prefix string) ([]*Service, error) {
+func (c fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Service, error) {
 	var result []*Service
 	for key, value := range c.services {
 		if strings.HasPrefix(key, prefix) {
@@ -55,12 +55,12 @@ func (c fakeETCDClient) GetServices(prefix string) ([]*Service, error) {
 	return result, nil
 }
 
-func (c fakeETCDClient) SaveService(service *Service) error {
+func (c fakeETCDClient) SaveService(_ context.Context, service *Service) error {
 	c.services[service.Key] = *service
 	return nil
 }
 
-func (c fakeETCDClient) DeleteService(key string) error {
+func (c fakeETCDClient) DeleteService(_ context.Context, key string) error {
 	delete(c.services, key)
 	return nil
 }
@@ -75,14 +75,24 @@ func (m *MockEtcdKV) Put(ctx context.Context, key, input string, _ ...etcdcv3.Op
 	return args.Get(0).(*etcdcv3.PutResponse), args.Error(1)
 }
 
-func (m *MockEtcdKV) Get(ctx context.Context, key string, _ ...etcdcv3.OpOption) (*etcdcv3.GetResponse, error) {
-	args := m.Called(ctx, key)
-	return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+func (m *MockEtcdKV) Get(ctx context.Context, key string, opts ...etcdcv3.OpOption) (*etcdcv3.GetResponse, error) {
+	if len(opts) == 0 {
+		args := m.Called(ctx, key)
+		return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+	} else {
+		args := m.Called(ctx, key, opts[0])
+		return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+	}
 }
 
 func (m *MockEtcdKV) Delete(ctx context.Context, key string, opts ...etcdcv3.OpOption) (*etcdcv3.DeleteResponse, error) {
-	args := m.Called(ctx, key, opts[0])
-	return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	if len(opts) == 0 {
+		args := m.Called(ctx, key)
+		return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	} else {
+		args := m.Called(ctx, key, opts[0])
+		return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	}
 }
 
 func TestETCDConfig(t *testing.T) {
@@ -494,23 +504,23 @@ func TestGetServices_Success(t *testing.T) {
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
 	mockKV := new(MockEtcdKV)
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
 			},
-		},
-	}, nil)
+		}, nil)
 
 	c := etcdClient{
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "example.com", result[0].Host)
@@ -522,27 +532,27 @@ func TestGetServices_Duplicate(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello"}
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
 			},
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
-			},
-		},
-	}, nil)
+		}, nil)
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 }
@@ -553,7 +563,6 @@ func TestGetServices_Multiple(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello"}
@@ -563,23 +572,111 @@ func TestGetServices_Multiple(t *testing.T) {
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
 			},
-			{
-				Key:   []byte("/prefix/2"),
-				Value: value2,
-			},
-		},
-	}, nil)
+		}, nil)
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, priority, result[1].Priority)
+}
+
+func TestGetServices_FilterOutOtherServicesOwnerSetButNothingChanged(t *testing.T) {
+	mockKV := new(MockEtcdKV)
+	c := etcdClient{
+		client: &etcdcv3.Client{
+			KV: mockKV,
+		},
+		owner:         "owner",
+		strictlyOwned: false,
+	}
+
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", Owner: "owner"}
+	value, err := json.Marshal(svc)
+	require.NoError(t, err)
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: ""}
+	value2, err := json.Marshal(svc2)
+	require.NoError(t, err)
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: "different-owner"}
+	value3, err := json.Marshal(svc3)
+	require.NoError(t, err)
+
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
+				{
+					Key:   []byte("/prefix/3"),
+					Value: value3,
+				},
+			},
+		}, nil)
+
+	result, err := c.GetServices(context.Background(), "/prefix")
+	assert.NoError(t, err)
+	assert.Len(t, result, 3)
+}
+
+func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
+	mockKV := new(MockEtcdKV)
+	c := etcdClient{
+		client: &etcdcv3.Client{
+			KV: mockKV,
+		},
+		owner:         "owner",
+		strictlyOwned: true,
+	}
+
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", Owner: "owner"}
+	value, err := json.Marshal(svc)
+	require.NoError(t, err)
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: ""}
+	value2, err := json.Marshal(svc2)
+	require.NoError(t, err)
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: "different-owner"}
+	value3, err := json.Marshal(svc3)
+	require.NoError(t, err)
+
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
+				{
+					Key:   []byte("/prefix/3"),
+					Value: value3,
+				},
+			},
+		}, nil)
+
+	result, err := c.GetServices(context.Background(), "/prefix")
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "owner", result[0].Owner)
 }
 
 func TestGetServices_UnmarshalError(t *testing.T) {
@@ -588,23 +685,23 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: []byte("invalid-json"),
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: []byte("invalid-json"),
+				},
+				{
+					Key:   []byte("/prefix/1"),
+					Value: []byte("invalid-json"),
+				},
 			},
-			{
-				Key:   []byte("/prefix/1"),
-				Value: []byte("invalid-json"),
-			},
-		},
-	}, nil)
+		}, nil)
 
-	_, err := c.GetServices("/prefix")
+	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "/prefix/1")
 }
@@ -615,12 +712,12 @@ func TestGetServices_GetError(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
-	_, err := c.GetServices("/prefix")
+	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
 	assert.EqualError(t, err, "etcd failure")
 }
@@ -654,10 +751,9 @@ func TestDeleteService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ctx: context.Background(),
 			}
 
-			err := c.DeleteService(tt.key)
+			err := c.DeleteService(context.Background(), tt.key)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -670,12 +766,151 @@ func TestDeleteService(t *testing.T) {
 	}
 }
 
+func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
+	tests := []struct {
+		name             string
+		owner            string
+		key              string
+		existingServices []Service
+		deletedKeys      []string
+	}{
+		{
+			name:  "successful deletion with the same owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				Owner:    "owner",
+			}},
+			deletedKeys: []string{"/skydns/local/test"},
+		},
+		{
+			name:  "prevent deletion of a service without an owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+			}},
+			deletedKeys: []string{},
+		},
+		{
+			name:  "prevent deletion with different owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				Owner:    "other-owner",
+			}},
+			deletedKeys: []string{},
+		},
+		{
+			name:  "successful partial deletion for same owners with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
+			existingServices: []Service{
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/1",
+					Owner:    "owner",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/2",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/3",
+					Owner:    "different-owner",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/4",
+					Owner:    "owner",
+				},
+			},
+			deletedKeys: []string{"/skydns/local/test/1", "/skydns/local/test/4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockKV := new(MockEtcdKV)
+			for _, key := range tt.deletedKeys {
+				mockKV.On("Delete", mock.Anything, key).
+					Return(&etcdcv3.DeleteResponse{}, nil)
+			}
+			kvs := []*mvccpb.KeyValue{}
+			for _, service := range tt.existingServices {
+				actualValue, err := json.Marshal(&service)
+				require.NoError(t, err)
+				kvs = append(kvs, &mvccpb.KeyValue{
+					Key:   []byte(service.Key),
+					Value: actualValue,
+				})
+			}
+
+			mockKV.On("Get", mock.Anything, tt.key, mock.AnythingOfType("clientv3.OpOption")).Return(&etcdcv3.GetResponse{
+				Kvs: kvs,
+			}, nil)
+
+			c := etcdClient{
+				client: &etcdcv3.Client{
+					KV: mockKV,
+				},
+				owner:         tt.owner,
+				strictlyOwned: true,
+			}
+
+			err := c.DeleteService(context.Background(), tt.key)
+
+			require.NoError(t, err)
+			mockKV.AssertExpectations(t)
+		})
+	}
+}
+
 func TestSaveService(t *testing.T) {
 	type testCase struct {
-		name       string
-		service    *Service
-		mockPutErr error
-		wantErr    bool
+		name            string
+		owner           string
+		strictlyOwned   bool
+		service         *Service
+		expectedService *Service
+		exists          bool
+		ignoreGetCall   bool
+		mockPutErr      error
+		wantErr         bool
 	}
 	tests := []testCase{
 		{
@@ -688,10 +923,189 @@ func TestSaveService(t *testing.T) {
 				Text:     "hello",
 				Key:      "/prefix/1",
 			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+		},
+		{
+			name:   "success with 'owner' without strictly owned",
+			owner:  "owner",
+			exists: true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+		},
+		{
+			name:   "success with 'owner' (creation) without strictly owned",
+			owner:  "owner",
+			exists: false,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+		},
+		{
+			name:   "success with 'owner' (update) without strictly owned (owner not changed)",
+			owner:  "owner",
+			exists: true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "owner",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "owner",
+			},
+		},
+		{
+			name:   "success with different 'owner' without strictly owned",
+			owner:  "owner",
+			exists: true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "other-owner",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "other-owner",
+			},
+		},
+		{
+			name:          "failed with 'owner' is empty with strictly owned",
+			owner:         "owner",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			wantErr: true,
+		},
+		{
+			name:          "success with 'owner' (creation) with strictly owned",
+			owner:         "owner",
+			strictlyOwned: true,
+			exists:        false,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "owner",
+			},
+		},
+		{
+			name:          "success with 'owner' (update) with strictly owned (owner not changed)",
+			owner:         "owner",
+			strictlyOwned: true,
+			exists:        true,
+			ignoreGetCall: true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "owner",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "owner",
+			},
+		},
+		{
+			name:          "failed with different 'owner' with strictly owned",
+			owner:         "owner",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				Owner:    "other-owner",
+			},
+			wantErr: true,
 		},
 		{
 			name: "etcd put error",
 			service: &Service{
+				Host: "example.com",
+				Key:  "/prefix/2",
+			},
+			expectedService: &Service{
 				Host: "example.com",
 				Key:  "/prefix/2",
 			},
@@ -703,19 +1117,40 @@ func TestSaveService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockKV := new(MockEtcdKV)
-			value, err := json.Marshal(&tt.service)
+			value, err := json.Marshal(&tt.expectedService)
 			require.NoError(t, err)
-			mockKV.On("Put", mock.Anything, tt.service.Key, string(value)).
-				Return(&etcdcv3.PutResponse{}, tt.mockPutErr)
+			if tt.expectedService != nil {
+				mockKV.On("Put", mock.Anything, tt.service.Key, string(value)).
+					Return(&etcdcv3.PutResponse{}, tt.mockPutErr)
+			}
+			actualValue, err := json.Marshal(&tt.service)
+			require.NoError(t, err)
+			if tt.strictlyOwned && !tt.ignoreGetCall {
+				if tt.exists {
+					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
+						Kvs: []*mvccpb.KeyValue{
+							{
+								Key:   []byte(tt.service.Key),
+								Value: actualValue,
+							},
+						},
+					}, nil)
+				} else {
+					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
+						Kvs: []*mvccpb.KeyValue{},
+					}, nil)
+				}
+			}
 
 			c := etcdClient{
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ctx: context.TODO(),
+				owner:         tt.owner,
+				strictlyOwned: tt.strictlyOwned,
 			}
 
-			err = c.SaveService(tt.service)
+			err = c.SaveService(context.Background(), tt.service)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -753,7 +1188,7 @@ func TestNewCoreDNSProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.TestHelperEnvSetter(t, tt.envs)
 
-			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", false)
+			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.errMsg)
@@ -906,5 +1341,43 @@ func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 		t.Error("go no Group name")
 	} else if prop != "test1" {
 		t.Errorf("got unexpected Group name: %s != %s", prop, "test1")
+	}
+}
+
+func TestRecordsIncludeLabelOwnerWithStrictlyOwned(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+		strictlyOwned: true,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	for _, ep := range endpoints {
+		assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
+	}
+}
+
+func TestRecordsIncludeOwnerASLabelWithoutStrictlyOwned(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+		strictlyOwned: false,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	for _, ep := range endpoints {
+		assert.Empty(t, ep.Labels[endpoint.OwnerLabelKey])
 	}
 }

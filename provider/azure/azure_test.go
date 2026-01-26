@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -253,7 +254,7 @@ func newAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpo
 		userAssignedIdentityClientID: userAssignedIdentityClientID,
 		activeDirectoryAuthorityHost: activeDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   &zonesCache[dns.Zone]{duration: 0},
+		zonesCache:                   blueprint.NewZoneCache[[]dns.Zone](0),
 		recordSetsClient:             recordsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}

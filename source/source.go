@@ -28,17 +28,6 @@ import (
 )
 
 const (
-	controllerAnnotationKey       = annotations.ControllerKey
-	hostnameAnnotationKey         = annotations.HostnameKey
-	accessAnnotationKey           = annotations.AccessKey
-	endpointsTypeAnnotationKey    = annotations.EndpointsTypeKey
-	targetAnnotationKey           = annotations.TargetKey
-	ttlAnnotationKey              = annotations.TtlKey
-	aliasAnnotationKey            = annotations.AliasKey
-	ingressHostnameSourceKey      = annotations.IngressHostnameSourceKey
-	controllerAnnotationValue     = annotations.ControllerValue
-	internalHostnameAnnotationKey = annotations.InternalHostnameKey
-
 	EndpointsTypeNodeExternalIP = "NodeExternalIP"
 	EndpointsTypeHostIP         = "HostIP"
 )
@@ -56,11 +45,11 @@ type kubeObject interface {
 }
 
 func getAccessFromAnnotations(input map[string]string) string {
-	return input[accessAnnotationKey]
+	return input[annotations.AccessKey]
 }
 
-func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
-	return annotations[endpointsTypeAnnotationKey]
+func getEndpointsTypeFromAnnotations(annots map[string]string) string {
+	return annots[annotations.EndpointsTypeKey]
 }
 
 func getLabelSelector(annotationFilter string) (labels.Selector, error) {
@@ -77,6 +66,6 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 
 type eventHandlerFunc func()
 
-func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
-func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
-func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
+func (fn eventHandlerFunc) OnAdd(obj any, isInInitialList bool) { fn() }
+func (fn eventHandlerFunc) OnUpdate(oldObj, newObj any)         { fn() }
+func (fn eventHandlerFunc) OnDelete(obj any)                    { fn() }

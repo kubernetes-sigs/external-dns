@@ -205,3 +205,123 @@ The TXT registry can optionally cache DNS records read from the provider. This c
 rate limits imposed by the provider.
 
 Caching is enabled by specifying a cache duration with the `--txt-cache-interval` flag.
+
+## OwnerID migration
+
+> Automating DNS migrations with third-party tools can be risky. DNS is often business-critical, and without deep understanding of the environment, 3rd party automation tools can do more harm than good.
+
+The owner ID of the TXT records managed by external-dns instance can be updated.
+
+When `--migrate-from-txt-owner` is set, it will enable the migration checks
+in the run loop using `--txt-owner-id=new-owner-id` and the value you defined for this flag.
+
+If you want to test the outputs of a migration beforehand, you can use the `--dry-run` flag
+along with `--migrate-from-txt-owner`.
+
+Example, if you had a standard deployment like so:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        imagePullPolicy: Always
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=old-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+You can update your deployment to migrate like so :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        imagePullPolicy: Always
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=new-owner"
+        - "--migrate-from-txt-owner=old-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
+`--migrate-from-txt-owner` flag to `default` to migrate the associated records.
+
+### OwnerID migration: multi-cluster considerations
+
+> Warning: The `--migrate-from-txt-owner` flag combined with `policy=sync` can be unsafe in shared hosted zones when multiple clusters previously used the same TXT owner value (for example `default`).
+
+In a shared hosted zone, if one cluster runs ExternalDNS with `policy=sync` and `--migrate-from-txt-owner=default`, it may attempt to delete DNS records that belong to other clusters which still use `owner=default`.
+To avoid this, do not share the same TXT owner value across clusters in any zone where `policy=sync` or migration flags will be used.
+
+#### Per-cluster owner IDs
+
+For multi-cluster setups sharing a hosted zone:
+
+- Assign a **unique** `--txt-owner-id` to each cluster (for example `cluster1`, `cluster2`) and document this convention clearly in your platform configuration.
+- Avoid using a common owner such as `default` across clusters in a shared zone if any cluster will run with `policy=sync` or use `--migrate-from-txt-owner`.
+
+#### Example migration sequence for shared zones
+
+When migrating from a shared owner (such as `default`) in a shared hosted zone:
+
+1. While still using `policy=upsert-only` (or equivalent), roll out cluster-specific `--txt-owner-id` values and ensure *new* records are created with the cluster’s own owner ID.
+2. Avoid `--migrate-from-txt-owner=<old-owner>` unless you can guarantee that only a single cluster has records with `<old-owner>` in that hosted zone, or perform the migration in an isolated zone where only that cluster writes records.
+
+### When to avoid owner migration
+
+The following pattern is **not recommended** and may cause record deletion for other clusters:
+
+- Multiple clusters share a Route53 hosted zone and all existing records use `owner=default`.
+- Only one cluster is upgraded to use `policy=sync`, `--txt-owner-id=<cluster-name>`, and `--migrate-from-txt-owner=default`, while other clusters still use `owner=default`.
+
+In this situation, the upgraded cluster can treat other clusters’ records as orphans and schedule them for deletion during synchronization. Prefer per-cluster zones, manual TXT record adjustment, or fully coordinated migration of all clusters if the migration flag must be used.

@@ -195,26 +195,24 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sdtypes.NamespaceSummary, srv *s
 	}
 
 	for _, inst := range instances {
+		switch {
 		// CNAME
-		if inst.Attributes[sdInstanceAttrCname] != "" && srv.DnsConfig.DnsRecords[0].Type == sdtypes.RecordTypeCname {
+		case inst.Attributes[sdInstanceAttrCname] != "" && srv.DnsConfig.DnsRecords[0].Type == sdtypes.RecordTypeCname:
 			newEndpoint.RecordType = endpoint.RecordTypeCNAME
 			newEndpoint.Targets = append(newEndpoint.Targets, inst.Attributes[sdInstanceAttrCname])
-
-			// ALIAS
-		} else if inst.Attributes[sdInstanceAttrAlias] != "" {
+		// ALIAS
+		case inst.Attributes[sdInstanceAttrAlias] != "":
 			newEndpoint.RecordType = endpoint.RecordTypeCNAME
 			newEndpoint.Targets = append(newEndpoint.Targets, inst.Attributes[sdInstanceAttrAlias])
-
-			// IPv4-based target
-		} else if inst.Attributes[sdInstanceAttrIPV4] != "" {
+		// IPv4-based target
+		case inst.Attributes[sdInstanceAttrIPV4] != "":
 			newEndpoint.RecordType = endpoint.RecordTypeA
 			newEndpoint.Targets = append(newEndpoint.Targets, inst.Attributes[sdInstanceAttrIPV4])
-
-			// IPv6-based target
-		} else if inst.Attributes[sdInstanceAttrIPV6] != "" {
+		// IPv6-based target
+		case inst.Attributes[sdInstanceAttrIPV6] != "":
 			newEndpoint.RecordType = endpoint.RecordTypeAAAA
 			newEndpoint.Targets = append(newEndpoint.Targets, inst.Attributes[sdInstanceAttrIPV6])
-		} else {
+		default:
 			log.Warnf("Invalid instance \"%v\" found in service \"%v\"", inst, srv.Name)
 		}
 	}

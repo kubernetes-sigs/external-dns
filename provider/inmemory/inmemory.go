@@ -19,6 +19,7 @@ package inmemory
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -204,9 +205,7 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	for _, ep := range endpoints {
 		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
-		for k, v := range ep.Labels {
-			newEp.Labels[k] = v
-		}
+		maps.Copy(newEp.Labels, ep.Labels)
 		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)
 		records = append(records, newEp)
 	}

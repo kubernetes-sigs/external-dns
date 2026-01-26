@@ -179,8 +179,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:   hostAnnotation,
-						targetAnnotationKey: "3.3.3.3",
+						ambHostAnnotation:     hostAnnotation,
+						annotations.TargetKey: "3.3.3.3",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -213,8 +213,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation: hostAnnotation,
-						ttlAnnotationKey:  "180",
+						ambHostAnnotation:  hostAnnotation,
+						annotations.TtlKey: "180",
 					},
 				},
 				Spec: &ambassador.HostSpec{

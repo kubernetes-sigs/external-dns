@@ -240,6 +240,9 @@ labelFilter:  # @schema type: [string,null]; default: null
 # -- Filter resources queried for endpoints by annotation selector.
 annotationFilter:  # @schema type: [string,null]; default: null
 
+# -- Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances).
+annotationPrefix:  # @schema type: [string,null]; default: null
+
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true
 
@@ -293,11 +296,11 @@ provider:  # @schema type: [object, string]
     # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
     # @default -- See _values.yaml_
     serviceMonitor:
-      interval:
-      scheme:
+      interval:  # @schema type:[string, null]; default: null
+      scheme:  # @schema type:[string, null]; default: null
       tlsConfig: {}
-      bearerTokenFile:
-      scrapeTimeout:
+      bearerTokenFile:  # @schema type:[string, null]; default: null
+      scrapeTimeout:  # @schema type:[string, null]; default: null
       metricRelabelings: []
       relabelings: []
 

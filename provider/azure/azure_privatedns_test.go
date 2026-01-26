@@ -23,6 +23,8 @@ import (
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	"sigs.k8s.io/external-dns/provider/blueprint"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -117,7 +119,6 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(ctx context.Context, r
 		),
 	)
 	return privatedns.RecordSetsClientCreateOrUpdateResponse{}, nil
-	//return parameters, nil
 }
 
 func createMockPrivateZone(zone string, id string) *privatedns.PrivateZone {
@@ -238,7 +239,7 @@ func newAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFil
 		dryRun:           dryRun,
 		resourceGroup:    resourceGroup,
 		zonesClient:      privateZonesClient,
-		zonesCache:       &zonesCache[privatedns.PrivateZone]{duration: 0},
+		zonesCache:       blueprint.NewZoneCache[[]privatedns.PrivateZone](0),
 		recordSetsClient: privateRecordsClient,
 		maxRetriesCount:  maxRetriesCount,
 	}

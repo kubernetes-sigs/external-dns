@@ -12,13 +12,11 @@
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
 | `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |
-| `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
-| `--cf-username=""` | The username to log into the cloud foundry API |
-| `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
+| `--annotation-prefix="external-dns.alpha.kubernetes.io/"` | Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/) |
 | `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--connector-source-server="localhost:8080"` | The server to connect for connector source, valid only when using connector source |
@@ -56,7 +54,7 @@
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
 | `--regex-domain-filter=` | Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional) |
-| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require 'regex-domain-filter'  |
+| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional) |
 | `--zone-name-filter=` | Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional) |
 | `--zone-id-filter=` | Filter target zones by hosted zone id; specify multiple times for multiple zones (optional) |
 | `--google-project=""` | When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP. |
@@ -96,6 +94,7 @@
 | `--cloudflare-region-key=""` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
+| `--[no-]coredns-strictly-owned` | When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false) |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-token=""` | When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-secret=""` | When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified) |
@@ -164,6 +163,7 @@
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |
+| `--migrate-from-txt-owner=""` | Old txt-owner-id that needs to be overwritten (default: default) |
 | `--dynamodb-region=""` | When using the DynamoDB registry, the AWS region of the DynamoDB table (optional) |
 | `--dynamodb-table="external-dns"` | When using the DynamoDB registry, the name of the DynamoDB table (default: "external-dns") |
 | `--txt-cache-interval=0s` | The interval between cache synchronizations in duration format (default: disabled) |
@@ -172,6 +172,7 @@
 | `--[no-]once` | When enabled, exits the synchronization loop after the first iteration (default: disabled) |
 | `--[no-]dry-run` | When enabled, prints DNS record changes rather than actually performing them (default: disabled) |
 | `--[no-]events` | When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled) |
+| `--min-ttl=0s` | Configure global TTL for records in duration format. This value is used when the TTL for a source is not set or set to 0. (optional; examples: 1m12s, 72s, 72) |
 | `--log-format=text` | The format in which log messages are printed (default: text, options: text, json) |
 | `--metrics-address=":7979"` | Specify where to serve the metrics and health check endpoint (default: :7979) |
 | `--log-level=info` | Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal) |
@@ -180,4 +181,4 @@
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, contour-httpproxy, gloo-proxy, fake, connector, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |

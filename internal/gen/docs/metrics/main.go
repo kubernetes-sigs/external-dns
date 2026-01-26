@@ -54,7 +54,7 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
 		os.Exit(1)
 	}
-	content = content + "\n"
+	content += "\n"
 	_ = utils.WriteToFile(path, content)
 }
 
@@ -119,6 +119,7 @@ func getRuntimeMetrics(reg prometheus.Registerer) []string {
 				runtimeMetrics = append(runtimeMetrics, k)
 			}
 		}
+	default:
 	}
 	sort.Strings(runtimeMetrics)
 	return runtimeMetrics

@@ -12,6 +12,16 @@ We have full documentation on how to get started contributing here:
 - [Kubernetes Contributor Guide](https://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](https://git.k8s.io/community/contributors/guide#contributing)
 - [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet) - Common resources for existing developers
 
+## Developer Documentation
+
+For more detailed contribution guides, see [Developer Documentation](docs/contributing) which includes:
+
+- [Development Guide](docs/contributing/dev-guide.md) - Setting up development environment, building, and testing
+- [Chart Development](docs/contributing/chart.md) - Working with Helm charts
+- [Design Documentation](docs/contributing/design.md) - Architecture and design decisions
+- [Sources and Providers](docs/contributing/sources-and-providers.md) - Adding new sources and providers
+- [Source Wrappers](docs/contributing/source-wrappers.md) - Source wrapper implementation details
+
 This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification on PR title. The explicit commit history is used, among other things, to provide a readable changelog in release notes.
 
 ## How to test a PR

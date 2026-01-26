@@ -54,6 +54,7 @@ var (
 	KnownRecordTypes = []string{
 		RecordTypeA,
 		RecordTypeAAAA,
+		RecordTypeCNAME,
 		RecordTypeTXT,
 		RecordTypeSRV,
 		RecordTypeNS,
@@ -223,6 +224,8 @@ type EndpointKey struct {
 	RecordTTL     TTL
 }
 
+type ObjectRef = events.ObjectReference
+
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
 type Endpoint struct {
@@ -243,8 +246,9 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
+	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
 	// +optional
-	refObject *events.ObjectReference
+	refObject *ObjectRef `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -258,8 +262,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
 		// TXT records can contain arbitrary text including multiple dots
+		// SRV can contain dots in their target part (RFC2782)
 		switch recordType {
-		case RecordTypeTXT, RecordTypeNAPTR:
+		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
 			cleanTargets[idx] = target
 		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
@@ -306,6 +311,22 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
+func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
+	prop, ok := e.GetProviderSpecificProperty(key)
+	if !ok {
+		return false, false
+	}
+	switch prop {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, true
+	}
 }
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
@@ -386,11 +407,12 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
 		endpointOwner, ok := ep.Labels[OwnerLabelKey]
-		if !ok {
+		switch {
+		case !ok:
 			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
-		} else if endpointOwner != ownerID {
+		case endpointOwner != ownerID:
 			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
-		} else {
+		default:
 			filtered = append(filtered, ep)
 		}
 	}
@@ -419,6 +441,7 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
@@ -481,11 +504,15 @@ func (t Targets) ValidateMXRecord() bool {
 
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
-		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
+		// SRV records must have a priority, weight, a port value and a target e.g. "10 5 5060 example.com."
+		// as per https://www.rfc-editor.org/rfc/rfc2782.txt the target host has to end with a dot.
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 4 {
-			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, a port value and a target host, e.g. '10 5 5060 example.com.'", target)
+			return false
+		}
+		if !strings.HasSuffix(targetParts[3], ".") {
+			log.Debugf("Invalid SRV record target: %s. Target host does not end with a dot.'", target)
 			return false
 		}
 
@@ -498,4 +525,32 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// GetDNSName returns the DNS name of the endpoint.
+func (e *Endpoint) GetDNSName() string {
+	return e.DNSName
+}
+
+// GetRecordType returns the record type of the endpoint.
+func (e *Endpoint) GetRecordType() string {
+	return e.RecordType
+}
+
+// GetRecordTTL returns the TTL of the endpoint as int64.
+func (e *Endpoint) GetRecordTTL() int64 {
+	return int64(e.RecordTTL)
+}
+
+// GetTargets returns the targets of the endpoint.
+func (e *Endpoint) GetTargets() []string {
+	return e.Targets
+}
+
+// GetOwner returns the owner of the endpoint from labels or set identifier.
+func (e *Endpoint) GetOwner() string {
+	if val, ok := e.Labels[OwnerLabelKey]; ok {
+		return val
+	}
+	return e.SetIdentifier
 }

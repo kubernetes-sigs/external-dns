@@ -31,14 +31,16 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -61,6 +63,13 @@ var (
 // desired hostname and matching or no controller annotation. For each of the
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
+// +externaldns:source:name=service
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Service resources
+// +externaldns:source:resources=Service
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -81,13 +90,25 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
+	excludeUnschedulable           bool
 
 	// process Services with legacy annotations
 	compatibility string
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
+func NewServiceSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter, fqdnTemplate string,
+	combineFqdnAnnotation bool, compatibility string,
+	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
+	serviceTypeFilter []string,
+	ignoreHostnameAnnotation bool,
+	labelSelector labels.Selector,
+	resolveLoadBalancerHostname,
+	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -128,7 +149,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 				if serviceName == "" {
 					return nil, nil
 				}
-				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				key := apitypes.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
 				return []string{key}, nil
 			},
 		})
@@ -139,7 +160,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
 			pod, ok := i.(*v1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -188,7 +209,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -212,6 +233,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
 		exposeInternalIPv6:             exposeInternalIPv6,
+		excludeUnschedulable:           excludeUnschedulable,
 	}, nil
 }
 
@@ -225,7 +247,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	// filter on service types if at least one has been provided
 	services = sc.filterByServiceType(services)
 
-	services, err = sc.filterByAnnotations(services)
+	services, err = annotations.Filter(services, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -233,11 +255,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := svc.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
-				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
+		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
 			continue
 		}
 
@@ -252,21 +270,17 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if none of the above is found
-		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(svc)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				svcEndpoints = append(svcEndpoints, sEndpoints...)
-			} else {
-				svcEndpoints = sEndpoints
-			}
+		svcEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			svcEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(svc) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if len(svcEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
 
@@ -349,11 +363,12 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
 		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
+
 	return endpoints
 }
 
 // Helper to convert raw objects to EndpointSlice
-func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.EndpointSlice {
+func convertToEndpointSlices(rawEndpointSlices []any) []*discoveryv1.EndpointSlice {
 	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
 	for _, obj := range rawEndpointSlices {
 		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
@@ -436,10 +451,15 @@ func findPodForEndpoint(ep discoveryv1.Endpoint, pods []*v1.Pod) *v1.Pod {
 }
 
 // Helper to get targets for domain
-func (sc *serviceSource) getTargetsForDomain(pod *v1.Pod, ep discoveryv1.Endpoint, endpointSlice *discoveryv1.EndpointSlice, endpointsType string, headlessDomain string) endpoint.Targets {
+func (sc *serviceSource) getTargetsForDomain(
+	pod *v1.Pod,
+	ep discoveryv1.Endpoint,
+	endpointSlice *discoveryv1.EndpointSlice,
+	endpointsType, headlessDomain string) endpoint.Targets {
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 	if len(targets) == 0 {
-		if endpointsType == EndpointsTypeNodeExternalIP {
+		switch {
+		case endpointsType == EndpointsTypeNodeExternalIP:
 			if sc.nodeInformer == nil {
 				log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
 				return nil
@@ -455,10 +475,10 @@ func (sc *serviceSource) getTargetsForDomain(pod *v1.Pod, ep discoveryv1.Endpoin
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
 			}
-		} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
+		case endpointsType == EndpointsTypeHostIP || sc.publishHostIP:
 			targets = endpoint.Targets{pod.Status.HostIP}
 			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
-		} else {
+		default:
 			if len(ep.Addresses) == 0 {
 				log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
 				return nil
@@ -550,30 +570,6 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
-}
-
-// filterByAnnotations filters a list of services by a given annotation selector.
-func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Service, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return services, nil
-	}
-
-	var filteredList []*v1.Service
-
-	for _, service := range services {
-		// include service if its annotations match the selector
-		if selector.Matches(labels.Set(service.Annotations)) {
-			filteredList = append(filteredList, service)
-		}
-	}
-	log.Debugf("filtered %d services out of %d with annotation filter", len(filteredList), len(services))
-	return filteredList, nil
 }
 
 // filterByServiceType filters services according to their types
@@ -728,7 +724,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			}
 
 			if _, ok := nodesMap[node]; !ok {
-				nodesMap[node] = *new(struct{})
+				nodesMap[node] = struct{}{}
 				nodesRunning = append(nodesRunning, node)
 
 				if isPodStatusReady(v.Status) {
@@ -745,14 +741,15 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	// Prioritize nodes with non-terminating ready pods
 	// If none available, fall back to nodes with ready pods
 	// If still none, use nodes with any running pods
-	if len(nodes) > 0 {
+	switch {
+	case len(nodes) > 0:
 		// Works the same as service endpoints
-	} else if len(nodesReady) > 0 {
+	case len(nodesReady) > 0:
 		// 2 level of panic modes as safeguard, because old wrong behavior can be used by someone
 		// Publish all endpoints not always a bad thing
 		log.Debugf("All pods in terminating state, use ready")
 		nodes = nodesReady
-	} else {
+	default:
 		log.Debugf("All pods not ready, use all running")
 		nodes = nodesRunning
 	}
@@ -793,6 +790,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	for _, node := range nodes {
+		if node.Spec.Unschedulable && sc.excludeUnschedulable {
+			log.Debugf("Skipping node %s - unschedulable", node.Name)
+			continue
+		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
@@ -837,7 +838,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// see https://en.wikipedia.org/wiki/SRV_record
 
 			// build a target with a priority of 0, weight of 50, and pointing the given port on the given host
-			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
+			target := fmt.Sprintf("0 50 %d %s", port.NodePort, provider.EnsureTrailingDot(hostname))
 
 			// take the service name from the K8s Service object
 			// it is safe to use since it is DNS compatible
@@ -877,9 +878,6 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	}
-	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
-		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
 

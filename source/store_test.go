@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
-	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -43,7 +44,6 @@ type MockClientGenerator struct {
 	kubeClient              kubernetes.Interface
 	gatewayClient           gateway.Interface
 	istioClient             istioclient.Interface
-	cloudFoundryClient      *cfclient.Client
 	dynamicKubernetesClient dynamic.Interface
 	openshiftClient         openshift.Interface
 }
@@ -71,15 +71,6 @@ func (m *MockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	if args.Error(1) == nil {
 		m.istioClient = args.Get(0).(istioclient.Interface)
 		return m.istioClient, nil
-	}
-	return nil, args.Error(1)
-}
-
-func (m *MockClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
-	args := m.Called()
-	if args.Error(1) == nil {
-		m.cloudFoundryClient = args.Get(0).(*cfclient.Client)
-		return m.cloudFoundryClient, nil
 	}
 	return nil, args.Error(1)
 }
@@ -169,19 +160,24 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{
+	ss := []string{
 		types.Service, types.Ingress, types.IstioGateway, types.ContourHTTPProxy,
 		types.KongTCPIngress, types.F5VirtualServer, types.F5TransportServer, types.TraefikProxy, types.Fake,
-	}, &Config{})
+	}
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: ss,
+	}, mockClientGenerator)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 9, "should generate all nine sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
 	mockClientGenerator := new(MockClientGenerator)
-	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{types.Fake}, &Config{})
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Fake},
+	}, mockClientGenerator)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
 	suite.Nil(mockClientGenerator.kubeClient, "client should not be created")
@@ -189,9 +185,10 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 
 func (suite *ByNamesTestSuite) TestSourceNotFound() {
 	mockClientGenerator := new(MockClientGenerator)
-	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
-
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"foo"}, &Config{})
+	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: []string{"foo"},
+	}, mockClientGenerator)
 	suite.Equal(err, ErrSourceNotFound, "should return source not found")
 	suite.Empty(sources, "should not returns any source")
 }
@@ -200,14 +197,16 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	sourcesDependentOnKubeClient := []string{
+	sourceUnderTest := []string{
 		types.Node, types.Service, types.Ingress, types.Pod, types.IstioGateway, types.IstioVirtualService,
 		types.AmbassadorHost, types.GlooProxy, types.TraefikProxy, types.CRD, types.KongTCPIngress,
 		types.F5VirtualServer, types.F5TransportServer,
 	}
 
-	for _, source := range sourcesDependentOnKubeClient {
-		_, err := ByNames(context.TODO(), mockClientGenerator, []string{source}, &Config{})
+	for _, source := range sourceUnderTest {
+		_, err := ByNames(context.TODO(), &Config{
+			sources: []string{source},
+		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if kubernetes client cannot be created")
 	}
 }
@@ -221,14 +220,16 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	sourcesDependentOnIstioClient := []string{types.IstioGateway, types.IstioVirtualService}
 
 	for _, source := range sourcesDependentOnIstioClient {
-		_, err := ByNames(context.TODO(), mockClientGenerator, []string{source}, &Config{})
+		_, err := ByNames(context.TODO(), &Config{
+			sources: []string{source},
+		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if istio client cannot be created")
 	}
 }
 
 func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
-	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(nil, errors.New("foo"))
 
@@ -238,7 +239,9 @@ func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 	}
 
 	for _, source := range sourcesDependentOnDynamicKubernetesClient {
-		_, err := ByNames(context.TODO(), mockClientGenerator, []string{source}, &Config{})
+		_, err := ByNames(context.TODO(), &Config{
+			sources: []string{source},
+		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if dynamic kubernetes client cannot be created")
 	}
 }
@@ -256,9 +259,7 @@ func (m *minimalMockClientGenerator) GatewayClient() (gateway.Interface, error) 
 func (m *minimalMockClientGenerator) IstioClient() (istioclient.Interface, error) {
 	return nil, errMock
 }
-func (m *minimalMockClientGenerator) CloudFoundryClient(string, string, string) (*cfclient.Client, error) {
-	return nil, errMock
-}
+
 func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	return nil, errMock
 }
@@ -278,4 +279,48 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	if !errors.Is(err, ErrSourceNotFound) {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
+}
+
+func TestConfig_ClientGenerator(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, "/path/to/kubeconfig", gen.KubeConfig)
+	assert.Equal(t, "https://api.example.com", gen.APIServerURL)
+	assert.Equal(t, 30*time.Second, gen.RequestTimeout)
+}
+
+func TestConfig_ClientGenerator_UpdateEvents(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   true, // Special case
+	}
+
+	gen := cfg.ClientGenerator()
+
+	assert.Equal(t, time.Duration(0), gen.RequestTimeout, "UpdateEvents should set timeout to 0")
+}
+
+func TestConfig_ClientGenerator_Caching(t *testing.T) {
+	cfg := &Config{
+		KubeConfig:     "/path/to/kubeconfig",
+		APIServerURL:   "https://api.example.com",
+		RequestTimeout: 30 * time.Second,
+		UpdateEvents:   false,
+	}
+
+	// Call ClientGenerator twice
+	gen1 := cfg.ClientGenerator()
+	gen2 := cfg.ClientGenerator()
+
+	// Should return the same instance (cached)
+	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
 }

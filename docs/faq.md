@@ -168,7 +168,7 @@ Under certain circumstances you want to force ExternalDNS to create CNAME record
 Why should I want to force ExternalDNS to create CNAME records for ELB/ALB? Some motivations of users were:
 
 > "Our hosted zones records are synchronized with our enterprise DNS. The record type ALIAS is an AWS proprietary record type and AWS allows you to set a DNS record directly on AWS resources.
-> Since this is not a DNS RfC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
+> Since this is not a DNS RFC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
 
 or
 
@@ -193,7 +193,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.19.0
+  registry.k8s.io/external-dns/external-dns:v0.20.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -251,14 +251,14 @@ If you need to search for multiple ingress classes, you can specify the flag mul
 `--ingress-class=internal --ingress-class=external`.
 
 The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
-The `spec.ingressClassName` tasks precedence over the annotation if both are supplied.
+The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
 
 **Backward compatibility**
 
 The previous `--annotation-filter` flag can still be used to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
 
 However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
-If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source` and `--annotation-filter`.
 
 Note: the `--ingress-class` flag cannot be used at the same time as the `--annotation-filter=kubernetes.io/ingress.class in (...)` flag; if you do this an error will be raised.
 
@@ -268,6 +268,31 @@ Filtering based on ingress class name or annotations means that the external-dns
 In larger clusters with many resources which change frequently this can cause performance issues.
 If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering).
 This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
+
+**Split horizon DNS with custom annotation prefixes**
+
+For more advanced split horizon scenarios, you can use the `--annotation-prefix` flag to configure different instances to read different sets of annotations from the same resources. This is useful when you want a single Service or Ingress to create records in multiple DNS zones (e.g., internal and external).
+
+For example:
+
+```bash
+# Internal DNS instance
+--annotation-prefix=internal.company.io/ --provider=aws --aws-zone-type=private
+
+# External DNS instance
+--annotation-prefix=external-dns.alpha.kubernetes.io/ --provider=aws --aws-zone-type=public
+```
+
+Then annotate your resources with both prefixes:
+
+```yaml
+metadata:
+  annotations:
+    internal.company.io/hostname: app.internal.company.com
+    external-dns.alpha.kubernetes.io/hostname: app.company.com
+```
+
+See the [Split Horizon DNS guide](advanced/split-horizon.md) for detailed examples and configuration.
 
 ## How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
@@ -320,3 +345,18 @@ FATA[0060] failed to sync cache: timed out waiting for the condition
 
 You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in.
 By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.
+
+## When we plan to release a v1.0, our first `major` release?
+
+> We should really get away from 0.x only if we have APIs that we can declare stable.
+
+The jump to `1.0` isn’t just symbolic—it’s a promise. If the `External-DNS` maintainers can confidently say that config structures, CRDs, and flags won’t break unexpectedly, that’s the moment to move to `1.0`
+
+Before moving to `1.0`, review and lock down:
+
+- CRD schemas (especially DNSEndpoint if applicable)
+- Annotations support
+- Command-line flags and configuration behavior
+- Environment variables and metrics
+- Provider interface stability
+- Once these are considered stable and documented, then a `1.0` tag makes sense.

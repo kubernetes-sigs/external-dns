@@ -25,7 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/go-logr/logr"
@@ -69,6 +68,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -80,6 +80,12 @@ func Execute() {
 	log.Infof("config: %s", cfg)
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
+	}
+
+	// Set annotation prefix (required since init() was removed)
+	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
+	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
+		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)
@@ -102,12 +108,18 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	endpointsSource, err := buildSource(ctx, cfg)
+	sCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sCfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 
 	prvdr, err := buildProvider(ctx, cfg, domainFilter)
 	if err != nil {
@@ -157,6 +169,9 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: refactor to move this to provider package, cover with tests
+	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -241,7 +256,7 @@ func buildProvider(
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":
-		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
+		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
 	case "exoscale":
 		p, err = exoscale.NewExoscaleProvider(
 			cfg.ExoscaleAPIEnvironment,
@@ -278,17 +293,17 @@ func buildProvider(
 		if cfg.OCIAuthInstancePrincipal {
 			if len(cfg.OCICompartmentOCID) == 0 {
 				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-			} else {
-				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
-				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+				break
 			}
+			authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+			config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
 		} else {
-			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+			if config, err = oci.LoadOCIConfig(cfg.OCIConfigFile); err != nil {
+				break
+			}
 		}
 		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		if err == nil {
-			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-		}
+		p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
 	case "rfc2136":
 		tlsConfig := rfc2136.TLSConfig{
 			UseTLS:                cfg.RFC2136UseTLS,
@@ -355,7 +370,7 @@ func buildController(
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
 	}
-	reg, err := selectRegistry(cfg, p)
+	reg, err := registry.SelectRegistry(cfg, p)
 	if err != nil {
 		return nil, err
 	}
@@ -382,6 +397,7 @@ func buildController(
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
 	}, nil
 }
@@ -398,80 +414,22 @@ func configureLogger(cfg *externaldns.Config) {
 	log.SetLevel(ll)
 }
 
-// selectRegistry selects the appropriate registry implementation based on the configuration in cfg.
-// It initializes and returns a registry along with any error encountered during setup.
-// Supported registry types include: dynamodb, noop, txt, and aws-sd.
-func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	var r registry.Registry
-	var err error
-	switch cfg.Registry {
-	case "dynamodb":
-		var dynamodbOpts []func(*dynamodb.Options)
-		if cfg.AWSDynamoDBRegion != "" {
-			dynamodbOpts = []func(*dynamodb.Options){
-				func(opts *dynamodb.Options) {
-					opts.Region = cfg.AWSDynamoDBRegion
-				},
-			}
-		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
-	case "noop":
-		r, err = registry.NewNoopRegistry(p)
-	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
-	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
-	default:
-		log.Fatalf("unknown registry: %s", cfg.Registry)
-	}
-	return r, err
-}
-
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}, cfg.Sources, sourceCfg)
+func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
 	if err != nil {
 		return nil, err
 	}
-	// Combine multiple sources into a single, deduplicated source.
-	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
-	cfg.AddSourceWrapper("dedup")
-	if len(cfg.NAT64Networks) > 0 {
-		combinedSource, err = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create NAT64 source wrapper: %w", err)
-		}
-		cfg.AddSourceWrapper("nat64")
-	}
-	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	if targetFilter.IsEnabled() {
-		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
-		cfg.AddSourceWrapper("target-filter")
-	}
-	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
-	return combinedSource, nil
-}
-
-// RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
-	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
-		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
-	} else {
-		return endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	}
+	opts := wrappers.NewConfig(
+		wrappers.WithDefaultTargets(cfg.DefaultTargets),
+		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
+		wrappers.WithNAT64Networks(cfg.NAT64Networks),
+		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
+		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
+		wrappers.WithMinTTL(cfg.MinTTL))
+	return wrappers.WrapSources(sources, opts)
 }
 
 // handleSigterm listens for a SIGTERM signal and triggers the provided cancel function

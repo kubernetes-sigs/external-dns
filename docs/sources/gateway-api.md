@@ -35,6 +35,142 @@ for HTTPRoutes and TLSRoutes by ExternalDNS, but it's _strongly_ recommended tha
 specs to provide all intended hostnames, since the Gateway that ultimately routes their
 requests/connections won't recognize additional hostnames from the annotation.
 
+## Annotations
+
+### Annotation Placement
+
+ExternalDNS reads different annotations from different Gateway API resources:
+
+- **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
+- **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
+  resources (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute)
+
+This separation aligns with Gateway API architecture where Gateway defines infrastructure (IP addresses, listeners)
+and Routes define application-level DNS records.
+
+### Examples
+
+#### Example: Cloudflare Proxied Records
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  namespace: default
+  annotations:
+    # ✅ Correct: target annotation on Gateway
+    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      hostname: "*.example.com"
+      protocol: HTTPS
+      port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    # ✅ Correct: provider-specific annotations on HTTPRoute
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: default
+  hostnames:
+    - api.example.com
+  rules:
+    - backendRefs:
+        - name: api-service
+          port: 8080
+```
+
+#### Example: AWS Route53 with Routing Policies
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: aws-gateway
+  annotations:
+    # ✅ Correct: target annotation on Gateway
+    external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-route
+  annotations:
+    # ✅ Correct: AWS-specific annotations on HTTPRoute
+    external-dns.alpha.kubernetes.io/aws-weight: "100"
+    external-dns.alpha.kubernetes.io/set-identifier: "backend-v1"
+spec:
+  parentRefs:
+    - name: aws-gateway
+  hostnames:
+    - app.example.com
+```
+
+### Common Mistakes
+
+❌ **Incorrect**: Placing provider-specific annotations on Gateway
+
+```yaml
+kind: Gateway
+metadata:
+  annotations:
+    # ❌ These annotations are ignored on Gateway
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+```
+
+❌ **Incorrect**: Placing target annotation on HTTPRoute
+
+```yaml
+kind: HTTPRoute
+metadata:
+  annotations:
+    # ❌ This annotation is ignored on Routes
+    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+```
+
+### external-dns.alpha.kubernetes.io/gateway-hostname-source
+
+**Why is this needed:**
+In certain scenarios, conflicting DNS records can arise when External DNS processes both the hostname annotations and the hostnames defined in the `*Route` spec. For example:
+
+- A CNAME record (`company.public.example.com -> company.private.example.com`) is used to direct traffic to private endpoints (e.g., AWS PrivateLink).
+- Some third-party services require traffic to resolve publicly to the Gateway API load balancer, but the hostname (`company.public.example.com`) must remain unchanged to avoid breaking the CNAME setup.
+- Without this annotation, External DNS may override the CNAME record with an A record due to conflicting hostname definitions.
+
+**Usage:**
+By setting the annotation `external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS
+to ignore hostnames defined in the `HTTPRoute` spec and use only the hostnames specified in annotations. This ensures
+compatibility with complex DNS configurations and avoids record conflicts.
+
+**Example:**
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only
+    external-dns.alpha.kubernetes.io/hostname: company.private.example.com
+spec:
+  hostnames:
+    - company.public.example.com
+```
+
+In this example, External DNS will create DNS records only for `company.private.example.com` based on the annotation, ignoring the `hostnames` field in the `HTTPRoute` spec. This prevents conflicts with existing CNAME records while enabling public resolution for specific endpoints.
+
+For a complete list of supported annotations, see the
+[annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
+
 ## Manifest with RBAC
 
 ```yaml
@@ -88,7 +224,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute

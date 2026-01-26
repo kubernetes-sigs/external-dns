@@ -18,7 +18,7 @@
 
 [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) is a project that synchronizes Kubernetes' Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
 
-The projects was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
+The project was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
 
 ## Motivation
 
@@ -62,7 +62,7 @@ Given that the kubernetes-sigs organization will eventually be shut down, the po
 
 - Move the project elsewhere
 
-We believe that those alternatives would result in a worse outcome for the community compared to moving the project to the any of the other official Kubernetes organizations.
+We believe that those alternatives would result in a worse outcome for the community compared to moving the project to any of the other official Kubernetes organizations.
 In fact, shutting down ExternalDNS can cause:
 
 - The community to rebuild the same solution as already happened multiple times before the project was launched. Currently ExternalDNS is easy to be found, referenced in many articles/tutorials and for that reason not exposed to that risk.
@@ -89,7 +89,7 @@ We have evidence that many companies are using ExternalDNS in production, but it
 
 The project was quoted by a number of tutorials on the web, including the [official tutorials from AWS](https://aws.amazon.com/blogs/opensource/unified-service-discovery-ecs-kubernetes/).
 
-ExternalDNS can't be consider to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
+ExternalDNS can't be considered to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
 
 Those are identified in the project roadmap, which is roughly made of the following items:
 
@@ -132,7 +132,7 @@ The release pipeline for the project is currently fully owned by Zalando. It run
 
 The docker registry service is provided as best effort with no sort of SLA and the maintainers team openly suggests the users to build and maintain their own docker image based on the provided Dockerfiles.
 
-Providing a vanity URL for the docker images was consider a non goal till now, but the community seems to be wanting official images from a GCR domain, similarly to what is available for other parts of official Kubernetes projects.
+Providing a vanity URL for the docker images was considered a non goal till now, but the community seems to be wanting official images from a GCR domain, similarly to what is available for other parts of official Kubernetes projects.
 
 ExternalDNS does not follow a specific release cycle. Releases are made often when there are major contributions (i.e. new providers) or important bug fixes. That said, the default branch is considered stable and can be used as well to build images.
 

@@ -116,7 +116,7 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 			break
 		}
 
-		line = strings.Replace(line, "\t", " ", -1)
+		line = strings.ReplaceAll(line, "\t", " ")
 		log.Info(line)
 		record := strings.Split(line, " ")[0]
 		if !strings.HasSuffix(record, zone) {
@@ -547,7 +547,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 }
 
 // Make sure the test version of SendMessage raises an error
-// if a zone update ever contains records outside of it's zone
+// if a zone update ever contains records outside of its zone
 // as the TestRfc2136ApplyChanges tests all assume this
 func TestRfc2136SendMessage(t *testing.T) {
 	stub := newStub()
@@ -891,7 +891,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 func TestChunkBy(t *testing.T) {
 	var records []*endpoint.Endpoint
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		records = append(records, &endpoint.Endpoint{
 			DNSName:    "v1.foo.com",
 			RecordType: "A",
@@ -941,7 +941,7 @@ func TestRoundRobinLoadBalancing(t *testing.T) {
 	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.foo.com.", 0, "A", "1.2.3.4"))
 	m.Insert([]dns.RR{rr})
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := stub.SendMessage(m)
 		assert.NoError(t, err)
 		expectedNameserver := "rfc2136-host" + strconv.Itoa((i%3)+1)
@@ -962,7 +962,7 @@ func TestRandomLoadBalancing(t *testing.T) {
 
 	nameserverCounts := map[string]int{}
 
-	for i := 0; i < 25; i++ {
+	for range 25 {
 		err := stub.SendMessage(m)
 		assert.NoError(t, err)
 		nameserverCounts[stub.lastNameserver]++

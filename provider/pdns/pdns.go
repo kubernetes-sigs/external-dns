@@ -22,10 +22,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -59,6 +59,15 @@ const (
 	// time in milliseconds
 	retryAfterTime = 250 * time.Millisecond
 )
+
+// record types which require to have trailing dot
+var trailingTypes = []string{
+	endpoint.RecordTypeCNAME,
+	endpoint.RecordTypeMX,
+	endpoint.RecordTypeSRV,
+	endpoint.RecordTypeNS,
+	"ALIAS",
+}
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
@@ -148,7 +157,7 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	var zones []pgo.Zone
 	var resp *http.Response
 	var err error
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		zones, resp, err = c.client.ZonesApi.ListZones(c.authCtx, c.serverID)
 		if err != nil {
 			log.Debugf("Unable to fetch zones %v", err)
@@ -184,7 +193,7 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone
 // ListZone : Method returns the details of a specific zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		zone, resp, err := c.client.ZonesApi.ListZone(c.authCtx, c.serverID, zoneID)
 		if err != nil {
 			log.Debugf("Unable to fetch zone %v", err)
@@ -203,7 +212,7 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (pgo.Zone, *http.Response, error
 func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
 	var resp *http.Response
 	var err error
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		resp, err = c.client.ZonesApi.PatchZone(c.authCtx, c.serverID, zoneID, zoneStruct)
 		if err != nil {
 			log.Debugf("Unable to patch zone %v", err)
@@ -271,7 +280,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		}
 	}
 	if rr.Type_ == "ALIAS" {
-		rrType_ = "CNAME"
+		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
 	return endpoints, nil
@@ -320,13 +329,13 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
-					if ep.RecordType == "CNAME" || ep.RecordType == "ALIAS" || ep.RecordType == "MX" || ep.RecordType == "SRV" {
+					if slices.Contains(trailingTypes, ep.RecordType) {
 						t = provider.EnsureTrailingDot(t)
 					}
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == "CNAME" {
+				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
 					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
 					RecordType_ = "ALIAS"
 				}
@@ -341,7 +350,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// DELETEs explicitly forbid a TTL, therefore only PATCHes need the TTL
 				if changetype == PdnsReplace {
 					if int64(ep.RecordTTL) > int64(math.MaxInt32) {
-						return nil, provider.NewSoftError(fmt.Errorf("value of record TTL overflows, limited to int32"))
+						return nil, provider.NewSoftErrorf("value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
 						// No TTL was specified for the record, we use the default
@@ -445,7 +454,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 // AdjustEndpoints performs checks on the provided endpoints and will skip any potentially failing changes.
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var validEndpoints []*endpoint.Endpoint
-	for i := 0; i < len(endpoints); i++ {
+	for i := range endpoints {
 		if !endpoints[i].CheckEndpoint() {
 			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
 			continue

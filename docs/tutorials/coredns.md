@@ -1,265 +1,47 @@
-# CoreDNS with minikube
+# CoreDNS
 
-:warning: This tutorial is out of date.
+- [Documentation](https://coredns.io/)
 
-:information_source: PRs to update it are welcome !
+## Multi cluster support options
 
-This tutorial describes how to setup ExternalDNS for usage within a [minikube](https://github.com/kubernetes/minikube) cluster that makes use of [CoreDNS](https://github.com/coredns/coredns) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).
+The CoreDNS provider allows records from different CoreDNS providers to be separated in a single etcd
+by activating the setting `--coredns-strictly-owned` flag and set `txt-owner-id`. It will prevent any
+override (update/create/delete) of records by a different owner and prevent loading of records by a
+different owner.
 
-You need to:
+Flow:
 
-* install CoreDNS with [etcd](https://github.com/etcd-io/etcd) enabled
-* install external-dns with coredns as a provider
-* enable ingress controller for the minikube cluster
-
-## Creating a cluster
-
-```shell
-minikube start
+```mermaid
+graph TD
+  subgraph ETCD
+    store--> E(services from Cluster A)
+    store--> F(services from Cluster B)
+    store--> G(services from someone else)
+  end
+  subgraph Cluster A
+  A(external-dns with stictly-owned)
+  end
+  A --> E
+  subgraph Cluster B
+  B(external-dns with stictly-owned)
+  end
+  B --> F
+  store --> CoreDNS
 ```
 
-## Installing CoreDNS with etcd enabled
+This features works directly without any change to CoreDNS. CoreDNS will ignore this field inside the etcd record.
 
-Helm chart is used to install etcd and CoreDNS.
+### Other entries inside etcd
 
-### Initializing helm chart
+Service entries in etcd without an `owner` field will be filtered out by the provider if `strictly-owned` is activated.
+Warning: If you activate `strictly-owned` afterwards, these entries will be ignored as the `owner` field is empty.
 
-```shell
-helm init
-```
+### Ways to migrate to a multi cluster setup
 
-### Installing etcd
+Ways:
 
-[etcd operator](https://github.com/coreos/etcd-operator) is used to manage etcd clusters.
-
-```sh
-helm install stable/etcd-operator --name my-etcd-op
-```
-
-etcd cluster is installed with example yaml from etcd operator website.
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
-```
-
-### Installing CoreDNS
-
-In order to make CoreDNS work with etcd backend, values.yaml of the chart should be changed with corresponding configurations.
-
-```sh
-wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.yaml
-```
-
-You need to edit/patch the file with below diff
-
-```diff
-diff --git a/values.yaml b/values.yaml
-index 964e72b..e2fa934 100644
---- a/values.yaml
-+++ b/values.yaml
-@@ -27,12 +27,12 @@ service:
-
- rbac:
-   # If true, create & use RBAC resources
--  create: false
-+  create: true
-   # Ignored if rbac.create is true
-   serviceAccountName: default
-
- # isClusterService specifies whether chart should be deployed as cluster-service or normal k8s app.
--isClusterService: true
-+isClusterService: false
-
- servers:
- - zones:
-@@ -51,6 +51,12 @@ servers:
-     parameters: 0.0.0.0:9153
-   - name: proxy
-     parameters: . /etc/resolv.conf
-+  - name: etcd
-+    parameters: example.org
-+    configBlock: |-
-+      stubzones
-+      path /skydns
-+      endpoint http://10.105.68.165:2379
-
- # Complete example with all the options:
- # - zones:                 # the `zones` block can be left out entirely, defaults to "."
-```
-
-**Note**:
-
-* IP address of etcd's endpoint should be get from etcd client service. It should be "example-etcd-cluster-client" in this example. This IP address is used through this document for etcd endpoint configuration.
-
-```shell
-$ kubectl get svc example-etcd-cluster-client
-NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-example-etcd-cluster-client   ClusterIP   10.105.68.165   <none>        2379/TCP   16m
-```
-
-* Parameters should configure your own domain. "example.org" is used in this example.
-
-After configuration done in values.yaml, you can install coredns chart.
-
-```shell
-helm install --name my-coredns --values values.yaml stable/coredns
-```
-
-## Installing ExternalDNS
-
-### Install external ExternalDNS
-
-ETCD_URLS is configured to etcd client service address.
-Optionally, you can configure ETCD_USERNAME and ETCD_PASSWORD for authenticating to etcd. It is also possible to connect to the etcd cluster via HTTPS using the following environment variables: ETCD_CA_FILE, ETCD_CERT_FILE, ETCD_KEY_FILE, ETCD_TLS_SERVER_NAME, ETCD_TLS_INSECURE.
-
-#### Manifest (for clusters without RBAC enabled)
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: external-dns
-  namespace: kube-system
-spec:
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
-  template:
-    metadata:
-      labels:
-        app: external-dns
-    spec:
-      containers:
-      - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
-        args:
-        - --source=ingress
-        - --provider=coredns
-        - --log-level=debug # debug only
-        env:
-        - name: ETCD_URLS
-          value: http://10.105.68.165:2379
-```
-
-#### Manifest (for clusters with RBAC enabled)
-
-```yaml
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: external-dns
-rules:
-- apiGroups: [""]
-  resources: ["services","pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["discovery.k8s.io"]
-  resources: ["endpointslices"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["list"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: external-dns-viewer
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: external-dns
-subjects:
-- kind: ServiceAccount
-  name: external-dns
-  namespace: kube-system
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: external-dns
-  namespace: kube-system
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: external-dns
-  namespace: kube-system
-spec:
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
-  template:
-    metadata:
-      labels:
-        app: external-dns
-    spec:
-      serviceAccountName: external-dns
-      containers:
-      - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
-        args:
-        - --source=ingress
-        - --provider=coredns
-        - --log-level=debug # debug only
-        env:
-        - name: ETCD_URLS
-          value: http://10.105.68.165:2379
-```
-
-## Enable the ingress controller
-
-You can use the ingress controller in minikube cluster. It needs to enable ingress addon in the cluster.
-
-```shell
-minikube addons enable ingress
-```
-
-## Testing ingress example
-
-```shell
-$ cat ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: nginx.example.org
-    http:
-      paths:
-      - backend:
-          serviceName: nginx
-          servicePort: 80
-
-$ kubectl apply -f ingress.yaml
-ingress.extensions "nginx" created
-```
-
-Wait a moment until DNS has the ingress IP. The DNS service IP is from CoreDNS service. It is "my-coredns-coredns" in this example.
-
-```shell
-$ kubectl get svc my-coredns-coredns
-NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-my-coredns-coredns   ClusterIP   10.100.4.143   <none>        53/UDP    12m
-
-$ kubectl get ingress
-NAME      HOSTS               ADDRESS     PORTS     AGE
-nginx     nginx.example.org   10.0.2.15   80        2m
-
-$ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools
-If you don't see a command prompt, try pressing enter.
-dnstools# dig @10.100.4.143 nginx.example.org +short
-10.0.2.15
-dnstools#
-```
+1. Add the correct owner to all services inside etcd by adding the field `owner` to the JSON.
+2. Remove all services and allow them to be required again after restarting the provider. (Possible downtime.)
 
 ## Specific service annotation options
 
@@ -269,66 +51,7 @@ Groups can be used to group set of services together. The main use of this is to
 i.e. don't return all records, but only a subset. Let's say we have a configuration like this:
 
 ```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: a
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: a.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
-spec:
-  type: LoadBalancer
-  ...
-status:
-  loadBalancer:
-    ingress:
-      - ip: 127.0.0.1
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: b
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: b.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
-spec:
-  type: LoadBalancer
-  ...
-status:
-  loadBalancer:
-    ingress:
-      - ip: 127.0.0.2
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: c
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: c.subdom.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g2"
-spec:
-  type: LoadBalancer
-  ...
-status:
-  loadBalancer:
-    ingress:
-      - ip: 127.0.0.3
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: d
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: d.subdom.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g2"
-spec:
-  type: LoadBalancer
-  ...
-status:
-  loadBalancer:
-    ingress:
-      - ip: 127.0.0.4
-
+[[% include 'tutorials/coredns/coredns-groups.yaml' %]]
 ```
 
 And we want domain.local to return (127.0.0.1 and 127.0.0.2) and subdom.domain.local to return (127.0.0.3 and 127.0.0.4).

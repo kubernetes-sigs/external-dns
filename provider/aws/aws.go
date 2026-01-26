@@ -32,6 +32,8 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/provider/blueprint"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -282,12 +284,6 @@ func (z zoneTags) append(id string, tags []route53types.Tag) {
 	}
 }
 
-type zonesListCache struct {
-	age      time.Time
-	duration time.Duration
-	zones    map[string]*profiledZone
-}
-
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
@@ -309,7 +305,7 @@ type AWSProvider struct {
 	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
 	zoneMatchParent bool
 	preferCNAME     bool
-	zonesCache      *zonesListCache
+	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
 }
@@ -347,7 +343,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
-		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](awsConfig.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
@@ -370,11 +366,12 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
-	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
-		log.Debug("Using cached zones list")
-		return p.zonesCache.zones, nil
+	if !p.zonesCache.Expired() {
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached AWS zones, zone count: %d.", len(cachedZones))
+		return cachedZones, nil
 	}
-	log.Debug("Refreshing zones list cache")
+	log.Debug("Retrieving AWS zones.")
 
 	zones := make(map[string]*profiledZone)
 
@@ -390,7 +387,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 				// nothing to do here. Falling through to general error handling
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+				return nil, provider.NewSoftErrorf("failed to list hosted zones: %w", err)
 			}
 			var zonesToTagFilter []string
 			for _, zone := range resp.HostedZones {
@@ -437,11 +434,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		}
 	}
 
-	if p.zonesCache.duration > time.Duration(0) {
-		p.zonesCache.zones = zones
-		p.zonesCache.age = time.Now()
-	}
-
+	p.zonesCache.Reset(zones)
 	return zones, nil
 }
 
@@ -772,7 +765,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
-							successfulChanges = successfulChanges + len(changes)
+							successfulChanges += len(changes)
 						}
 					}
 				} else {
@@ -922,8 +915,8 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-			evalTargetHealth = prop == "true"
+		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+			evalTargetHealth = prop
 		}
 		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
@@ -955,48 +948,47 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues *= 2
 	}
 
-	setIdentifier := ep.SetIdentifier
-	if setIdentifier != "" {
-		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
-			weight, err := strconv.ParseInt(prop, 10, 64)
-			if err != nil {
-				log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
-				weight = 0
-			}
-			change.ResourceRecordSet.Weight = aws.Int64(weight)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
-			change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
-			change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
-		}
-		if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
-			change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
-		}
-
-		geolocation := &route53types.GeoLocation{}
-		useGeolocation := false
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
-			geolocation.ContinentCode = aws.String(prop)
-			useGeolocation = true
-		} else {
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
-				geolocation.CountryCode = aws.String(prop)
-				useGeolocation = true
-			}
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
-				geolocation.SubdivisionCode = aws.String(prop)
-				useGeolocation = true
-			}
-		}
-		if useGeolocation {
-			change.ResourceRecordSet.GeoLocation = geolocation
-		}
-
-		withChangeForGeoProximityEndpoint(change, ep)
+	if ep.SetIdentifier != "" {
+		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
 	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
+		weight, err := strconv.ParseInt(prop, 10, 64)
+		if err != nil {
+			log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
+			weight = 0
+		}
+		change.ResourceRecordSet.Weight = aws.Int64(weight)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
+		change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
+		change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
+	}
+	if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
+		change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
+	}
+
+	geolocation := &route53types.GeoLocation{}
+	useGeolocation := false
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
+		geolocation.ContinentCode = aws.String(prop)
+		useGeolocation = true
+	} else {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
+			geolocation.CountryCode = aws.String(prop)
+			useGeolocation = true
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
+			geolocation.SubdivisionCode = aws.String(prop)
+			useGeolocation = true
+		}
+	}
+	if useGeolocation {
+		change.ResourceRecordSet.GeoLocation = geolocation
+	}
+
+	withChangeForGeoProximityEndpoint(change, ep)
 
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
 		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
@@ -1112,12 +1104,9 @@ func findChangesInQueue(changes Route53Changes, queue Route53Changes) (Route53Ch
 
 	for _, c := range changes {
 		found := false
-		for _, qc := range queue {
-			if c == qc {
-				foundChanges = append(foundChanges, c)
-				found = true
-				break
-			}
+		if slices.Contains(queue, c) {
+			foundChanges = append(foundChanges, c)
+			found = true
 		}
 		if !found {
 			notFoundChanges = append(notFoundChanges, c)
@@ -1349,8 +1338,8 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
-	isAlias, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && isAlias == "true" && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
@@ -1399,7 +1388,7 @@ func cleanZoneID(id string) string {
 
 func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	switch recordType {
-	case route53types.RRTypeMx:
+	case route53types.RRTypeMx, route53types.RRTypeNaptr:
 		return true
 	default:
 		return provider.SupportedRecordType(string(recordType))

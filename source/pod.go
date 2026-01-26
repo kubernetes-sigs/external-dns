@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"maps"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -37,6 +36,15 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
+// podSource is an implementation of Source for Kubernetes Pod objects.
+//
+// +externaldns:source:name=pod
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Pod resources
+// +externaldns:source:resources=Pod
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type podSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -83,7 +91,7 @@ func NewPodSource(
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
 		// When fqdnTemplate is used the entire pod needs to be provided to the rendering call, but the informer itself becomes unneeded.
-		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
 			pod, ok := i.(*corev1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -116,7 +124,7 @@ func NewPodSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -145,28 +153,50 @@ func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
 
-	endpointMap := make(map[endpoint.EndpointKey][]string)
+	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, key := range indexKeys {
 		pod, err := informers.GetByKey[*corev1.Pod](ps.podInformer.Informer().GetIndexer(), key)
 		if err != nil {
 			continue
 		}
 
-		if ps.fqdnTemplate == nil || ps.combineFQDNAnnotation {
-			ps.addPodEndpointsToEndpointMap(endpointMap, pod)
+		podEndpoints := ps.endpointsFromPodAnnotations(pod)
+
+		podEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			podEndpoints,
+			ps.fqdnTemplate,
+			ps.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if ps.fqdnTemplate != nil {
-			fqdnHosts, err := ps.hostsFromTemplate(pod)
-			if err != nil {
-				return nil, err
-			}
-			maps.Copy(endpointMap, fqdnHosts)
-		}
+		endpoints = append(endpoints, podEndpoints...)
 	}
+
+	return MergeEndpoints(endpoints), nil
+}
+
+func (ps *podSource) endpointsFromPodAnnotations(pod *corev1.Pod) []*endpoint.Endpoint {
+	endpointMap := make(map[endpoint.EndpointKey][]string)
+	ps.addPodEndpointsToEndpointMap(endpointMap, pod)
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
+		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+	}
+	return endpoints
+}
+
+func (ps *podSource) endpointsFromPodTemplate(pod *corev1.Pod) ([]*endpoint.Endpoint, error) {
+	hostsMap, err := ps.hostsFromTemplate(pod)
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for key, targets := range hostsMap {
 		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
 	}
 	return endpoints, nil
@@ -187,7 +217,7 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 }
 
 func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
-	if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
+	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		for _, domain := range domainList {
 			if len(targets) == 0 {
@@ -200,7 +230,7 @@ func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endp
 }
 
 func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
-	if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
+	if domainAnnotation, ok := pod.Annotations[annotations.HostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		if len(targets) == 0 {
 			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)

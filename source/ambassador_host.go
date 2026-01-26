@@ -37,6 +37,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -49,13 +51,23 @@ const (
 	groupName = "getambassador.io"
 )
 
-var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
-
-var ambHostGVR = schemeGroupVersion.WithResource("hosts")
+var (
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
+	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
+)
 
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
-// Use targetAnnotationKey to explicitly set Endpoint.
+// Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=ambassador-host
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Ambassador Host resources
+// +externaldns:source:resources=Host.getambassador.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false
 type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
@@ -75,17 +87,15 @@ func NewAmbassadorHostSource(
 	annotationFilter string,
 	labelSelector labels.Selector,
 ) (Source, error) {
-	var err error
-
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	ambassadorHostInformer.Informer().AddEventHandler(
+	_, _ = ambassadorHostInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -93,7 +103,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -138,7 +148,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Filter Ambassador Hosts
-	ambassadorHosts, err = sc.filterByAnnotations(ambassadorHosts)
+	ambassadorHosts, err = annotations.Filter(ambassadorHosts, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter Ambassador Hosts by annotation: %w", err)
 	}
@@ -148,7 +158,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	for _, host := range ambassadorHosts {
 		fullname := fmt.Sprintf("%s/%s", host.Namespace, host.Name)
 
-		// look for the "exernal-dns.ambassador-service" annotation. If it is not there then just ignore this `Host`
+		// look for the "external-dns.ambassador-service" annotation. If it is not there then just ignore this `Host`
 		service, found := host.Annotations[ambHostAnnotation]
 		if !found {
 			log.Debugf("Host %s ignored: no annotation %q found", fullname, ambHostAnnotation)
@@ -169,8 +179,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			log.Warningf("Could not get endpoints for Host %s", err)
 			continue
 		}
-		if len(hostEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
+		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
 
@@ -289,29 +298,4 @@ func newUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// Filter a list of Ambassador Host Resources to only return the ones that
-// contain the required External-DNS annotation filter
-func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassador.Host) ([]*ambassador.Host, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list of Ambassador Hosts
-	if selector.Empty() {
-		return ambassadorHosts, nil
-	}
-
-	// Return a filtered list of Ambassador Hosts
-	filteredList := []*ambassador.Host{}
-	for _, host := range ambassadorHosts {
-		// include Ambassador Host if its annotations match the annotation filter
-		if selector.Matches(labels.Set(host.Annotations)) {
-			filteredList = append(filteredList, host)
-		}
-	}
-
-	return filteredList, nil
 }

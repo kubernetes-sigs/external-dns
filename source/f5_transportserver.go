@@ -49,6 +49,14 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 }
 
 // transportServerSource is an implementation of Source for F5 TransportServer objects.
+//
+// +externaldns:source:name=f5-transportserver
+// +externaldns:source:category=Load Balancers
+// +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
+// +externaldns:source:resources=TransportServer.cis.f5.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
@@ -68,9 +76,9 @@ func NewF5TransportServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
-	transportServerInformer.Informer().AddEventHandler(
+	_, _ = transportServerInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -78,7 +86,7 @@ func NewF5TransportServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +107,7 @@ func NewF5TransportServerSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
-func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -120,7 +128,7 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 		transportServers = append(transportServers, transportServer)
 	}
 
-	transportServers, err = ts.filterByAnnotations(transportServers)
+	transportServers, err = annotations.Filter(transportServers, ts.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
@@ -133,10 +141,10 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 	return endpoints, nil
 }
 
-func (ts *f5TransportServerSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TransportServer")
 
-	ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
@@ -181,30 +189,6 @@ func newTSUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// filterByAnnotations filters a list of TransportServers by a given annotation selector.
-func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.TransportServer) ([]*f5.TransportServer, error) {
-	selector, err := annotations.ParseFilter(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return transportServers, nil
-	}
-
-	filteredList := []*f5.TransportServer{}
-
-	for _, ts := range transportServers {
-		// include TransportServer if its annotations match the selector
-		if selector.Matches(labels.Set(ts.Annotations)) {
-			filteredList = append(filteredList, ts)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func hasValidTransportServerIP(vs *f5.TransportServer) bool {

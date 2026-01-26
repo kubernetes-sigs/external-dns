@@ -32,6 +32,8 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -49,8 +51,16 @@ const (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
+// Use annotations.TargetKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
+//
+// +externaldns:source:name=ingress
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Ingress resources
+// +externaldns:source:resources=Ingress
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
@@ -104,7 +114,7 @@ func NewIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +141,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	if err != nil {
 		return nil, err
 	}
-	ingresses, err = sc.filterByAnnotations(ingresses)
+	ingresses, err = annotations.Filter(ingresses, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -144,27 +154,24 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		// Check the controller annotation to see if we are responsible.
-		if controller, ok := ing.Annotations[controllerAnnotationKey]; ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
-				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
+		if annotations.IsControllerMismatch(ing, types.Ingress) {
 			continue
 		}
 
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ing)
-			if err != nil {
-				return nil, err
-			}
-
-			ingEndpoints = append(ingEndpoints, iEndpoints...)
+		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			ingEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if len(ingEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from ingress %s/%s", ing.Namespace, ing.Name)
+		if endpoint.HasNoEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
 			continue
 		}
 
@@ -201,30 +208,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of ingresses by a given annotation selector.
-func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ingresses, nil
-	}
-
-	filteredList := []*networkv1.Ingress{}
-
-	for _, ingress := range ingresses {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, ingress.Annotations) {
-			filteredList = append(filteredList, ingress)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // filterByIngressClass filters a list of ingresses based on a required ingress
@@ -318,7 +301,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	}
 
 	// Determine which hostnames to consider in our final list
-	hostnameSourceAnnotation, hostnameSourceAnnotationExists := ing.Annotations[ingressHostnameSourceKey]
+	hostnameSourceAnnotation, hostnameSourceAnnotationExists := ing.Annotations[annotations.IngressHostnameSourceKey]
 	if !hostnameSourceAnnotationExists {
 		return append(definedHostsEndpoints, annotationEndpoints...)
 	}
@@ -349,7 +332,7 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 	return targets
 }
 
-func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for ingress")
 
 	// Right now there is no way to remove event handler from informer, see:

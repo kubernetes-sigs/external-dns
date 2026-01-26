@@ -188,3 +188,83 @@ func TestNewNAT64Source(t *testing.T) {
 		})
 	}
 }
+
+func TestNat64SourceEndpoints_VariousCases(t *testing.T) {
+	tests := []struct {
+		name       string
+		mockReturn []*endpoint.Endpoint
+		mockError  error
+		setup      func()
+		asserts    func([]*endpoint.Endpoint, error)
+	}{
+		{
+			name:      "expect source error propagation",
+			mockError: assert.AnError,
+			asserts: func(eps []*endpoint.Endpoint, err error) {
+				assert.Nil(t, eps)
+				require.Error(t, err)
+				require.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name: "skip nat64 processing for non-AAAA records",
+			mockReturn: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.10.10.11"}},
+			},
+			asserts: func(eps []*endpoint.Endpoint, err error) {
+				assert.NotNil(t, eps)
+				assert.Len(t, eps, 1)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "target is not a valid IPv6 address",
+			mockReturn: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"not-an-ip"}},
+			},
+			asserts: func(eps []*endpoint.Endpoint, err error) {
+				assert.Nil(t, eps)
+				require.Error(t, err)
+				assert.EqualError(t, err, "ParseAddr(\"not-an-ip\"): unable to parse IP")
+			},
+		},
+		{
+			name: "addr from slice fails",
+			mockReturn: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::192.0.2.42"}},
+			},
+			setup: func() {
+				originalAddrFromSlice := addrFromSlice
+				addrFromSlice = func([]byte) (netip.Addr, bool) {
+					return netip.Addr{}, false
+				}
+				t.Cleanup(func() {
+					addrFromSlice = originalAddrFromSlice
+				})
+			},
+			asserts: func(eps []*endpoint.Endpoint, err error) {
+				assert.Nil(t, eps)
+				require.Error(t, err)
+				assert.EqualError(t, err, "could not parse [192 0 2 42] to IPv4 address")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.setup != nil {
+				tc.setup()
+			}
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return(tc.mockReturn, tc.mockError)
+
+			src, err := NewNAT64Source(mockSource, []string{"2001:db8::/96"})
+			require.NoError(t, err)
+
+			eps, err := src.Endpoints(context.Background())
+			tc.asserts(eps, err)
+
+			mockSource.AssertExpectations(t)
+		})
+	}
+}

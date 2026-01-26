@@ -30,7 +30,7 @@ tests:
       enabled: "abrakadabra"
     asserts:
       - failedTemplate:
-          errorPattern: "Invalid type. Expected: [boolean,null], given: string"
+          errorPattern: "got string, want null or boolean"
 
   - it: should fail if provider is null
     set:
@@ -60,5 +60,14 @@ tests:
   - it: should not fail when readinessProbe is null
     set:
       readinessProbe: null
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when provider webhook serviceMonitor interval is not null
+    set:
+      provider:
+        webhook:
+          serviceMonitor:
+            interval: 30s
     asserts:
       - notFailedTemplate: {}

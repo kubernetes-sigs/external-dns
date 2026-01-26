@@ -13,6 +13,13 @@
         "null"
       ]
     },
+    "annotationPrefix": {
+      "description": "Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "automountServiceAccountToken": {
       "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.",
       "type": "boolean"
@@ -495,10 +502,16 @@
               "type": "object",
               "properties": {
                 "bearerTokenFile": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "interval": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "metricRelabelings": {
                   "type": "array"
@@ -507,10 +520,16 @@
                   "type": "array"
                 },
                 "scheme": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "scrapeTimeout": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "tlsConfig": {
                   "type": "object"

@@ -57,15 +57,21 @@ func TestNewPiholeClient(t *testing.T) {
 
 	// Create a test server for auth tests
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			t.Fatal(err)
+		}
 		pw := r.Form.Get("pw")
 		if pw != "correct" {
 			// Pihole actually server side renders the fact that you failed, normal 200
-			w.Write([]byte("Invalid"))
+			_, err = w.Write([]byte("Invalid"))
+			if err != nil {
+				t.Fatal(err)
+			}
 			return
 		}
 		// This is a subset of what happens on successful login
-		w.Write([]byte(`
+		_, err = w.Write([]byte(`
 		<!doctype html>
 		<html lang="en">
 			<body>
@@ -73,6 +79,9 @@ func TestNewPiholeClient(t *testing.T) {
 			</body>
 		</html>
 		`))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 	defer srvr.Close()
 
@@ -124,12 +133,15 @@ func CheckRecordRetrieval(t *testing.T, cl *piholeClient, recordType string, exp
 
 func TestListRecords(t *testing.T) {
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			t.Fatal(err)
+		}
 		if r.Form.Get("action") != "get" {
 			t.Error("Expected 'get' action in form from client")
 		}
 		if strings.Contains(r.URL.Path, "cname") {
-			w.Write([]byte(`
+			_, err = w.Write([]byte(`
 			{
 				"data": [
 					["test4.example.com", "cname.example.com"],
@@ -138,10 +150,13 @@ func TestListRecords(t *testing.T) {
 				]
 			}
 			`))
+			if err != nil {
+				t.Fatal(err)
+			}
 			return
 		}
 		// Pihole makes no distinction between A and AAAA records
-		w.Write([]byte(`
+		_, err = w.Write([]byte(`
 		{
 			"data": [
 				["test1.example.com", "192.168.1.1"],
@@ -153,6 +168,9 @@ func TestListRecords(t *testing.T) {
 			]
 		}
 		`))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 	defer srvr.Close()
 
@@ -220,7 +238,7 @@ func testErrorScenarios(t *testing.T, srvrErr *httptest.Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//set clExpired.token to a valid token
+	// set clExpired.token to a valid token
 	clExpired.(*piholeClient).token = "expired"
 	clExpired.(*piholeClient).cfg.Password = "notcorrect"
 
@@ -243,41 +261,32 @@ func testErrorScenarios(t *testing.T, srvrErr *httptest.Server) {
 func TestErrorScenarios(t *testing.T) {
 	// Test errors token
 	srvrErr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			t.Fatal(err)
+		}
 		pw := r.Form.Get("pw")
 		if pw != "" {
 			if pw != "correct" {
-				// Pihole actually server side renders the fact that you failed, normal 200
-				w.Write([]byte("Invalid"))
+				_, err = w.Write([]byte("Invalid"))
+				if err != nil {
+					t.Fatal(err)
+				}
 				return
 			}
 		}
 		if strings.Contains(r.URL.Path, "admin/scripts/pi-hole/php/customcname.php") && r.Form.Get("token") == "correct" {
-			w.Write([]byte(`
+			_, err = w.Write([]byte(`
 				{
 					"nodata": [
 						["nodata", "no"]
 					]
 				}
-				`))
-			return
-		}
-		if strings.Contains(r.URL.Path, "admin/index.php?login") {
-			w.Write([]byte(`
-			<!doctype html>
-			<html lang="en">
-				<body>
-					<div id="token" hidden>supersecret</div>
-				</body>
-			</html>
 			`))
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
-		// Token Expired
-		w.Write([]byte(`
-		{
-			"auth": "expired"
-		}
-		`))
 	})
 	defer srvrErr.Close()
 
@@ -288,7 +297,7 @@ func TestErrorScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//set clExpired.token to a valid token
+	// set clExpired.token to a valid token
 	clExpired.(*piholeClient).token = "expired"
 	clExpired.(*piholeClient).cfg.Password = "notcorrect"
 
