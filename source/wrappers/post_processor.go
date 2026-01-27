@@ -33,6 +33,7 @@ type postProcessor struct {
 
 type PostProcessorConfig struct {
 	ttl          int64
+	preferAlias  bool
 	isConfigured bool
 }
 
@@ -43,6 +44,18 @@ func WithTTL(ttl time.Duration) PostProcessorOption {
 		if int64(ttl.Seconds()) > 0 {
 			cfg.isConfigured = true
 			cfg.ttl = int64(ttl.Seconds())
+		}
+	}
+}
+
+// WithPostProcessorPreferAlias enables setting alias=true on CNAME endpoints.
+// This signals to providers that support ALIAS records (like PowerDNS, AWS)
+// to create ALIAS records instead of CNAMEs.
+func WithPostProcessorPreferAlias(enabled bool) PostProcessorOption {
+	return func(cfg *PostProcessorConfig) {
+		cfg.preferAlias = enabled
+		if enabled {
+			cfg.isConfigured = true
 		}
 	}
 }
@@ -69,8 +82,13 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		if ep == nil {
 			continue
 		}
-		ep.WithMinTTL(pp.cfg.ttl)
-		// Additional post-processing can be added here.
+		if pp.cfg.ttl > 0 {
+			ep.WithMinTTL(pp.cfg.ttl)
+		}
+		// Set alias annotation for CNAME records when preferAlias is enabled
+		if pp.cfg.preferAlias && ep.RecordType == endpoint.RecordTypeCNAME {
+			ep.WithProviderSpecific("alias", "true")
+		}
 	}
 
 	return endpoints, nil

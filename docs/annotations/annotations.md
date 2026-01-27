@@ -310,7 +310,7 @@ resource should instead be alias records.
 - **AWS**: This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
 - **PowerDNS**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
-  on the authoritative server side. Alternatively, use the `--pdns-prefer-alias` flag to convert all
+  on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all
   CNAME records to ALIAS globally.
 
 ### external-dns.alpha.kubernetes.io/set-identifier

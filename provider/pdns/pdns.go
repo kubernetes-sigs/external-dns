@@ -77,7 +77,6 @@ type PDNSConfig struct {
 	ServerID     string
 	APIKey       string
 	TLSConfig    TLSConfig
-	PreferAlias  bool
 }
 
 // TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
@@ -230,8 +229,7 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Res
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	client      PDNSAPIProvider
-	preferAlias bool
+	client PDNSAPIProvider
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
@@ -266,7 +264,6 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},
-		preferAlias: config.PreferAlias,
 	}
 	return provider, nil
 }
@@ -346,10 +343,10 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 
 				// Check if we should use ALIAS instead of CNAME:
 				// 1. APEX records (dnsname == zone.Name) always use ALIAS
-				// 2. If --pdns-prefer-alias flag is set, all CNAMEs become ALIAS
-				// 3. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				//    (can be set via --prefer-alias flag globally or per-resource annotation)
 				if ep.RecordType == endpoint.RecordTypeCNAME {
-					useAlias := dnsname == zone.Name || p.preferAlias || p.hasAliasAnnotation(ep)
+					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
 					if useAlias {
 						log.Debugf("Converting CNAME record %s to ALIAS", dnsname)
 						RecordType_ = "ALIAS"

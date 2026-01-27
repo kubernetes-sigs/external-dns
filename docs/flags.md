@@ -24,6 +24,7 @@
 | `--crd-source-kind="DNSEndpoint"` | Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion |
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
 | `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state) |
+| `--[no-]prefer-alias` | When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (default: disabled) |
 | `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
@@ -114,7 +115,6 @@
 | `--pdns-server-id="localhost"` | When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost) |
 | `--pdns-api-key=""` | When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns) |
 | `--[no-]pdns-skip-tls-verify` | When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false) |
-| `--[no-]pdns-prefer-alias` | When using the PowerDNS/PDNS provider, prefer using ALIAS instead of CNAME (default: disabled) |
 | `--ns1-endpoint=""` | When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/) |
 | `--[no-]ns1-ignoressl` | When using the NS1 provider, specify whether to verify the SSL certificate (default: false) |
 | `--ns1-min-ttl=0` | Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this. |

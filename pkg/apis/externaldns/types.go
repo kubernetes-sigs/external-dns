@@ -139,7 +139,6 @@ type Config struct {
 	PDNSServerID                                  string
 	PDNSAPIKey                                    string `secure:"yes"`
 	PDNSSkipTLSVerify                             bool
-	PDNSPreferAlias                               bool
 	TLSCA                                         string
 	TLSClientCert                                 string
 	TLSClientCertKey                              string
@@ -218,6 +217,7 @@ type Config struct {
 	ExcludeUnschedulable                          bool
 	EmitEvents                                    []string
 	ForceDefaultTargets                           bool
+	PreferAlias                                   bool
 }
 
 var defaultConfig = &Config{
@@ -324,7 +324,6 @@ var defaultConfig = &Config{
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSSkipTLSVerify:            false,
-	PDNSPreferAlias:              false,
 	PiholeApiVersion:             "5",
 	PiholePassword:               "",
 	PiholeServer:                 "",
@@ -384,6 +383,7 @@ var defaultConfig = &Config{
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
 	ForceDefaultTargets:          false,
+	PreferAlias:                  false,
 }
 
 var providerNames = []string{
@@ -516,6 +516,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
+	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled)", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
 	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
 	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
@@ -611,7 +612,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)", defaultConfig.PDNSServerID, &cfg.PDNSServerID)
 	b.StringVar("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)", defaultConfig.PDNSAPIKey, &cfg.PDNSAPIKey)
 	b.BoolVar("pdns-skip-tls-verify", "When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false)", defaultConfig.PDNSSkipTLSVerify, &cfg.PDNSSkipTLSVerify)
-	b.BoolVar("pdns-prefer-alias", "When using the PowerDNS/PDNS provider, prefer using ALIAS instead of CNAME (default: disabled)", defaultConfig.PDNSPreferAlias, &cfg.PDNSPreferAlias)
 	b.StringVar("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)", defaultConfig.NS1Endpoint, &cfg.NS1Endpoint)
 	b.BoolVar("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)", defaultConfig.NS1IgnoreSSL, &cfg.NS1IgnoreSSL)
 	b.IntVar("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.", cfg.NS1MinTTLSeconds, &cfg.NS1MinTTLSeconds)
