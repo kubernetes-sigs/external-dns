@@ -101,6 +101,7 @@ type Config struct {
 	TargetNetFilter                []string
 	NAT64Networks                  []string
 	MinTTL                         time.Duration
+	PreferAlias                    bool
 
 	sources []string
 
@@ -154,6 +155,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TargetNetFilter:                cfg.TargetNetFilter,
 		NAT64Networks:                  cfg.NAT64Networks,
 		MinTTL:                         cfg.MinTTL,
+		PreferAlias:                    cfg.PreferAlias,
 		sources:                        cfg.Sources,
 	}
 }

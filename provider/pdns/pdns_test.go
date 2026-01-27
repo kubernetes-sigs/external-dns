@@ -880,18 +880,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
 	suite.NoError(err, "Regular case should raise no error")
-
-	// Test with PreferAlias flag
-	p, err := NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			PreferAlias:  true,
-		})
-	suite.NoError(err, "--pdns-prefer-alias should raise no error")
-	suite.True(p.preferAlias, "preferAlias should be set to true")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
@@ -1090,21 +1078,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToApexPatch}, zlist)
 
-	// Check endpoints of type CNAME remain CNAME when preferAlias is false (default)
+	// Check endpoints of type CNAME remain CNAME when no alias annotation is set
 	zlist, err = p.ConvertEndpointsToZones(endpointsPreferAlias, PdnsReplace)
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToCNAMEPatch}, zlist)
 
-	// Check endpoints of type CNAME are converted to ALIAS when preferAlias is true
-	pWithPreferAlias := &PDNSProvider{
-		client:      &PDNSAPIClientStubEmptyZones{},
-		preferAlias: true,
-	}
-	zlist, err = pWithPreferAlias.ConvertEndpointsToZones(endpointsPreferAlias, PdnsReplace)
-	suite.NoError(err)
-	suite.Equal([]pgo.Zone{ZoneEmptyToPreferAliasPatch}, zlist)
-
 	// Check endpoints with alias annotation are converted to ALIAS
+	// Note: The --prefer-alias flag now works via PostProcessor wrapper which sets the alias annotation
 	zlist, err = p.ConvertEndpointsToZones([]*endpoint.Endpoint{endpointWithAliasAnnotation}, PdnsReplace)
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToPreferAliasPatch}, zlist)
