@@ -275,9 +275,9 @@ func buildProvider(
 			pdns.PDNSConfig{
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
-				Server:   cfg.PDNSServer,
-				ServerID: cfg.PDNSServerID,
-				APIKey:   cfg.PDNSAPIKey,
+				Server:       cfg.PDNSServer,
+				ServerID:     cfg.PDNSServerID,
+				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: pdns.TLSConfig{
 					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
 					CAFilePath:            cfg.TLSCA,
