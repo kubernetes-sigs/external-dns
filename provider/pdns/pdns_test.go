@@ -238,13 +238,8 @@ var (
 	}
 
 	// Endpoint with alias annotation
-	endpointWithAliasAnnotation = func() *endpoint.Endpoint {
-		ep := endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com")
-		ep.ProviderSpecific = endpoint.ProviderSpecific{
-			{Name: "alias", Value: "true"},
-		}
-		return ep
-	}()
+	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").
+		WithProviderSpecific("alias", "true")
 
 	// Endpoints for preferAlias test
 	endpointsPreferAlias = []*endpoint.Endpoint{

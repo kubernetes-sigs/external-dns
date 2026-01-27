@@ -273,12 +273,8 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 
 // hasAliasAnnotation checks if the endpoint has the alias annotation set to true
 func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
-	for _, ps := range ep.ProviderSpecific {
-		if ps.Name == "alias" && ps.Value == "true" {
-			return true
-		}
-	}
-	return false
+	value, exists := ep.GetProviderSpecificProperty("alias")
+	return exists && value == "true"
 }
 
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
