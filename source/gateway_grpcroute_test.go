@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -34,13 +35,15 @@ import (
 func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
 	gwClient := gatewayfake.NewSimpleClientset()
-	kubeClient := kubefake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
 	clients := new(MockClientGenerator)
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
-	ctx := context.Background()
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "default",
@@ -88,7 +91,7 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	_, err = gwClient.GatewayV1().GRPCRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create GRPCRoute")
 
-	src, err := NewGatewayGRPCRouteSource(clients, &Config{
+	src, err := NewGatewayGRPCRouteSource(ctx, clients, &Config{
 		FQDNTemplate:             "{{.Name}}-template.foobar.internal",
 		CombineFQDNAndAnnotation: true,
 	})

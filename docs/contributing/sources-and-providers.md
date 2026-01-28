@@ -1,3 +1,10 @@
+---
+tags:
+  - sources
+  - providers
+  - contributing
+---
+
 # Sources and Providers
 
 ExternalDNS supports swapping out endpoint **sources** and DNS **providers** and both sides are pluggable. There currently exist multiple sources for different provider implementations.
@@ -28,6 +35,39 @@ All sources live in package `source`.
 * `ConnectorSource`: returns a list of Endpoint objects which are served by a tcp server configured through `connector-source-server` flag.
 * `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](../sources/crd.md) documentation.
 * `EmptySource`: returns an empty list of Endpoint objects for the purpose of testing and cleaning out entries.
+
+### Adding New Sources
+
+When creating a new source, add the following annotations above the source struct definition:
+
+```go
+// myNewSource is an implementation of Source for MyResource objects.
+//
+// +externaldns:source:name=my-new-source
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries from MyResource objects
+// +externaldns:source:resources=MyResource<Kind.apigroup.subdomain.domain>
+// +externaldns:source:filters=
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false|true
+type myNewSource struct {
+    // ... fields
+}
+```
+
+**Annotation Reference:**
+
+* `+externaldns:source:name` - The CLI name used with `--source` flag (required)
+* `+externaldns:source:category` - Category for documentation grouping (required)
+* `+externaldns:source:description` - Short description of what the source does (required)
+* `+externaldns:source:resources` - Kubernetes resources watched (comma-separated). Convention `Kind.apigroup.subdomain.domain`
+* `+externaldns:source:filters` - Supported filter types (annotation, label)
+* `+externaldns:source:namespace` - Namespace support: comma-separated values (all, single, multiple)
+* `+externaldns:source:fqdn-template` - FQDN template support (true, false)
+* `+externaldns:source:events` - Kubernetes [`events`](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/) support  (true, false)
+
+After adding annotations, run `make generate-sources-documentation` to update sources file.
 
 ## Providers
 

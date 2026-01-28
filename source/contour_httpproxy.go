@@ -32,6 +32,8 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -41,6 +43,14 @@ import (
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
 // The HTTPProxy implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=contour-httpproxy
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Contour HTTPProxy resources
+// +externaldns:source:resources=HTTPProxy.projectcontour.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
@@ -73,9 +83,9 @@ func NewContourHTTPProxySource(
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	httpProxyInformer.Informer().AddEventHandler(
+	_, _ = httpProxyInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -83,7 +93,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +116,7 @@ func NewContourHTTPProxySource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all HTTPProxy resources in the source's namespace(s).
-func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	hps, err := sc.httpProxyInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -127,7 +137,7 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
-	httpProxies, err = sc.filterByAnnotations(httpProxies)
+	httpProxies, err = annotations.Filter(httpProxies, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter HTTPProxies: %w", err)
 	}
@@ -135,11 +145,7 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, hp := range httpProxies {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := hp.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping HTTPProxy %s/%s because controller value does not match, found: %s, required: %s",
-				hp.Namespace, hp.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(hp, types.ContourHTTPProxy) {
 			continue
 		}
 
@@ -149,21 +155,17 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		}
 
 		// apply template if fqdn is missing on HTTPProxy
-		if (sc.combineFQDNAnnotation || len(hpEndpoints) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(hp)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
-			}
-
-			if sc.combineFQDNAnnotation {
-				hpEndpoints = append(hpEndpoints, tmplEndpoints...)
-			} else {
-				hpEndpoints = tmplEndpoints
-			}
+		hpEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+			hpEndpoints,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if len(hpEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from HTTPProxy %s/%s", hp.Namespace, hp.Name)
+		if endpoint.HasNoEmptyEndpoints(hpEndpoints, types.ContourHTTPProxy, hp) {
 			continue
 		}
 
@@ -209,30 +211,6 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	return endpoints, nil
 }
 
-// filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *httpProxySource) filterByAnnotations(httpProxies []*projectcontour.HTTPProxy) ([]*projectcontour.HTTPProxy, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return httpProxies, nil
-	}
-
-	var filteredList []*projectcontour.HTTPProxy
-
-	for _, httpProxy := range httpProxies {
-		// include HTTPProxy if its annotations match the selector
-		if selector.Matches(labels.Set(httpProxy.Annotations)) {
-			filteredList = append(filteredList, httpProxy)
-		}
-	}
-
-	return filteredList, nil
-}
-
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
 func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
@@ -273,10 +251,10 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 	return endpoints, nil
 }
 
-func (sc *httpProxySource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for httpproxy")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.httpProxyInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.httpProxyInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

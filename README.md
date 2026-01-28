@@ -62,7 +62,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 - [GoDaddy](https://www.godaddy.com)
 - [Gandi](https://www.gandi.net)
-- [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
 - [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
@@ -181,7 +180,7 @@ Breaking changes were introduced in external-dns in the following versions:
 
 ## Running ExternalDNS
 
-The are two ways of running ExternalDNS:
+There are two ways of running ExternalDNS:
 
 - Deploying to a Cluster
 - Running Locally

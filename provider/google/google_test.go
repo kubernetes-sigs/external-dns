@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -192,10 +193,8 @@ func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
 			}
 		}
 	case endpoint.RecordTypeA, endpoint.RecordTypeTXT:
-		for _, rrd := range recordSet.Rrdatas {
-			if hasTrailingDot(rrd) {
-				return false
-			}
+		if slices.ContainsFunc(recordSet.Rrdatas, hasTrailingDot) {
+			return false
 		}
 	default:
 		panic("unhandled record type")
@@ -614,7 +613,7 @@ func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 }
 
 func TestSoftErrListZonesConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftError(fmt.Errorf("failed to list zones")), nil)
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to list zones"), nil)
 
 	zones, err := p.Zones(context.Background())
 	require.Error(t, err)
@@ -624,7 +623,7 @@ func TestSoftErrListZonesConflict(t *testing.T) {
 }
 
 func TestSoftErrListRecordsConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone")))
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftErrorf("failed to list records in zone"))
 
 	records, err := p.Records(context.Background())
 	require.Error(t, err)

@@ -25,7 +25,7 @@ jobs:
         config_file: ".markdownlint.json"
 
     - name: Set up Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v6.2.0
       with:
         go-version-file: go.mod
 
@@ -39,14 +39,13 @@ jobs:
           exit 1
         fi
 
-
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
       uses: golangci/golangci-lint-action@v9
       with:
         verify: true
         args: --timeout=30m
-        version: v2.5
+        version: v2.7
 
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action

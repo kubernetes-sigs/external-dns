@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package txt
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/registry/mapper"
 
 	log "github.com/sirupsen/logrus"
 
@@ -65,7 +66,7 @@ func testTXTRegistryNew(t *testing.T) {
 	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	_, ok := r.mapper.(affixNameMapper)
+	_, ok := r.mapper.(mapper.AffixNameMapper)
 	require.True(t, ok)
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
@@ -83,7 +84,7 @@ func testTXTRegistryNew(t *testing.T) {
 	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
 	require.NoError(t, err)
 
-	_, ok = r.mapper.(affixNameMapper)
+	_, ok = r.mapper.(mapper.AffixNameMapper)
 	assert.True(t, ok)
 }
 
@@ -122,6 +123,15 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			newEndpointWithOwner("txt.aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("txt.mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("txt._sip._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("txt.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -226,6 +236,25 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
@@ -265,6 +294,15 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			newEndpointWithOwner("aaaa-dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("_sip-txt._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("sip1-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -361,6 +399,25 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
@@ -398,6 +455,15 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("_sip._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -484,6 +550,25 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			DNSName:    "mail.test-zone.example.org",
 			Targets:    endpoint.Targets{"10 onemail.example.com"},
 			RecordType: endpoint.RecordTypeMX,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
@@ -1238,206 +1323,6 @@ func TestCacheMethods(t *testing.T) {
 	// ensure it was deleted
 	if !reflect.DeepEqual(expectedCacheAfterDelete, registry.recordsCache) {
 		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterDelete, registry.recordsCache)
-	}
-}
-
-func TestDropPrefix(t *testing.T) {
-	mapper := newaffixNameMapper("foo-%{record_type}-", "", "")
-	expectedOutput := "test.example.com"
-
-	tests := []string{
-		"foo-cname-test.example.com",
-		"foo-a-test.example.com",
-		"foo--test.example.com",
-	}
-
-	for _, tc := range tests {
-		t.Run(tc, func(t *testing.T) {
-			actualOutput, _ := mapper.dropAffixExtractType(tc)
-			assert.Equal(t, expectedOutput, actualOutput)
-		})
-	}
-}
-
-func TestDropSuffix(t *testing.T) {
-	mapper := newaffixNameMapper("", "-%{record_type}-foo", "")
-	expectedOutput := "test.example.com"
-
-	tests := []string{
-		"test-a-foo.example.com",
-		"test--foo.example.com",
-	}
-
-	for _, tc := range tests {
-		t.Run(tc, func(t *testing.T) {
-			r := strings.SplitN(tc, ".", 2)
-			rClean, _ := mapper.dropAffixExtractType(r[0])
-			actualOutput := rClean + "." + r[1]
-			assert.Equal(t, expectedOutput, actualOutput)
-		})
-	}
-}
-
-func TestExtractRecordTypeDefaultPosition(t *testing.T) {
-	tests := []struct {
-		input        string
-		expectedName string
-		expectedType string
-	}{
-		{
-			input:        "ns-zone.example.com",
-			expectedName: "zone.example.com",
-			expectedType: "NS",
-		},
-		{
-			input:        "aaaa-zone.example.com",
-			expectedName: "zone.example.com",
-			expectedType: "AAAA",
-		},
-		{
-			input:        "ptr-zone.example.com",
-			expectedName: "ptr-zone.example.com",
-			expectedType: "",
-		},
-		{
-			input:        "zone.example.com",
-			expectedName: "zone.example.com",
-			expectedType: "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.input, func(t *testing.T) {
-			actualName, actualType := extractRecordTypeDefaultPosition(tc.input)
-			assert.Equal(t, tc.expectedName, actualName)
-			assert.Equal(t, tc.expectedType, actualType)
-		})
-	}
-}
-
-func TestToEndpointNameNewTXT(t *testing.T) {
-	tests := []struct {
-		name       string
-		mapper     affixNameMapper
-		domain     string
-		txtDomain  string
-		recordType string
-	}{
-		{
-			name:       "prefix",
-			mapper:     newaffixNameMapper("foo", "", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "fooa-example.com",
-		},
-		{
-			name:       "suffix",
-			mapper:     newaffixNameMapper("", "foo", ""),
-			domain:     "example",
-			recordType: "AAAA",
-			txtDomain:  "aaaa-examplefoo",
-		},
-		{
-			name:       "suffix",
-			mapper:     newaffixNameMapper("", "foo", ""),
-			domain:     "example.com",
-			recordType: "AAAA",
-			txtDomain:  "aaaa-examplefoo.com",
-		},
-		{
-			name:       "prefix with dash",
-			mapper:     newaffixNameMapper("foo-", "", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "foo-a-example.com",
-		},
-		{
-			name:       "suffix with dash",
-			mapper:     newaffixNameMapper("", "-foo", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "cname-example-foo.com",
-		},
-		{
-			name:       "prefix with dot",
-			mapper:     newaffixNameMapper("foo.", "", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "foo.cname-example.com",
-		},
-		{
-			name:       "suffix with dot",
-			mapper:     newaffixNameMapper("", ".foo", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "cname-example.foo.com",
-		},
-		{
-			name:       "prefix with multiple dots",
-			mapper:     newaffixNameMapper("foo.bar.", "", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "foo.bar.cname-example.com",
-		},
-		{
-			name:       "suffix with multiple dots",
-			mapper:     newaffixNameMapper("", ".foo.bar.test", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "cname-example.foo.bar.test.com",
-		},
-		{
-			name:       "templated prefix",
-			mapper:     newaffixNameMapper("%{record_type}-foo", "", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "a-fooexample.com",
-		},
-		{
-			name:       "templated suffix",
-			mapper:     newaffixNameMapper("", "foo-%{record_type}", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "examplefoo-a.com",
-		},
-		{
-			name:       "templated prefix with dot",
-			mapper:     newaffixNameMapper("%{record_type}foo.", "", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "cnamefoo.example.com",
-		},
-		{
-			name:       "templated suffix with dot",
-			mapper:     newaffixNameMapper("", ".foo%{record_type}", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "example.fooa.com",
-		},
-		{
-			name:       "templated prefix with multiple dots",
-			mapper:     newaffixNameMapper("bar.%{record_type}.foo.", "", ""),
-			domain:     "example.com",
-			recordType: "CNAME",
-			txtDomain:  "bar.cname.foo.example.com",
-		},
-		{
-			name:       "templated suffix with multiple dots",
-			mapper:     newaffixNameMapper("", ".foo%{record_type}.bar", ""),
-			domain:     "example.com",
-			recordType: "A",
-			txtDomain:  "example.fooa.bar.com",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			txtDomain := tc.mapper.toTXTName(tc.domain, tc.recordType)
-			assert.Equal(t, tc.txtDomain, txtDomain)
-
-			domain, _ := tc.mapper.toEndpointName(txtDomain)
-			assert.Equal(t, tc.domain, domain)
-		})
 	}
 }
 

@@ -33,6 +33,14 @@ const (
 
 // connectorSource is an implementation of Source that provides endpoints by connecting
 // to a remote tcp server. The encoding/decoding is done using encoder/gob package.
+//
+// +externaldns:source:name=connector
+// +externaldns:source:category=Special
+// +externaldns:source:description=Connects to a remote TCP server to receive DNS endpoints
+// +externaldns:source:resources=Remote TCP Server
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
 type connectorSource struct {
 	remoteServer string
 }

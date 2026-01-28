@@ -47,11 +47,11 @@ var actionNames = []string{
 }
 
 type gdClient interface {
-	Patch(string, interface{}, interface{}) error
-	Post(string, interface{}, interface{}) error
-	Put(string, interface{}, interface{}) error
-	Get(string, interface{}) error
-	Delete(string, interface{}) error
+	Patch(string, any, any) error
+	Post(string, any, any) error
+	Put(string, any, any) error
+	Get(string, any) error
+	Delete(string, any) error
 }
 
 // GDProvider declare GoDaddy provider
@@ -596,7 +596,7 @@ func maxOf(vars ...int64) int64 {
 	return slices.Max(vars)
 }
 
-func toString(obj interface{}) string {
+func toString(obj any) string {
 	b, err := json.MarshalIndent(obj, "", "	")
 	if err != nil {
 		return fmt.Sprintf("<%v>", err)

@@ -31,6 +31,7 @@ linters:
     - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
     - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/docs/linters/configuration/#gochecknoinits
     - goconst # Finds repeated strings that could be replaced by a constant. https://golangci-lint.run/docs/linters/configuration/#goconst
+    - modernize # A suite of analyzers that suggest simplifications to Go code, using modern language and library features. https://golangci-lint.run/docs/linters/configuration/#modernize
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
@@ -93,10 +94,13 @@ linters:
       # TODO: skiip as will require design changes
       - linters:
           - nilnil
-        path: istio_virtualservice.go|fqdn.go|cloudflare.go
+        path: istio_virtualservice.go|fqdn.go|cloudflare_custom_hostnames.go
       - linters:
           - gochecknoinits
-        path: ^(.*/controller\.go|internal/.*/init\.go|pkg/.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+        path: ^(internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+      - linters:
+          - modernize
+        path: ^(apis/.*\.go)$
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$

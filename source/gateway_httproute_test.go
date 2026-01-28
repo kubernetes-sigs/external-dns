@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -1329,7 +1330,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			gateways: []*v1beta1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "overriden-gateway",
+						Name:      "overridden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
 							annotations.TargetKey: "4.3.2.1",
@@ -1350,12 +1351,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "overriden-gateway"),
+							gwParentRef("gateway-namespace", "overridden-gateway"),
 						},
 					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
-					gwParentRef("gateway-namespace", "overriden-gateway"),
+					gwParentRef("gateway-namespace", "overridden-gateway"),
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
@@ -1371,7 +1372,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			gateways: []*v1beta1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "overriden-gateway",
+						Name:      "overridden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
 							annotations.TargetKey: "4.3.2.1",
@@ -1402,13 +1403,13 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "overriden-gateway"),
+							gwParentRef("gateway-namespace", "overridden-gateway"),
 							gwParentRef("gateway-namespace", "test"),
 						},
 					},
 				},
 				Status: httpRouteStatus(
-					gwParentRef("gateway-namespace", "overriden-gateway"),
+					gwParentRef("gateway-namespace", "overridden-gateway"),
 					gwParentRef("gateway-namespace", "test"),
 				),
 			}},
@@ -1540,6 +1541,124 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
+		{
+			title: "SourceAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "route-test",
+						Namespace:   "test",
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "defined-hosts-only", annotations.HostnameKey: "test.org.internal"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
+					},
+					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title: "OnlyAnnotationHost",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "route-test",
+						Namespace:   "test",
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "test.org.internal"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
+					},
+					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.org.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "InvalidSourceAnnotation",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-annotation",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.GatewayHostnameSourceKey: "invalid-value",
+						annotations.HostnameKey:              "annotation.invalid.internal",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("route.invalid.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("route.invalid.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotation.invalid.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
@@ -1547,7 +1666,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				t.Parallel()
 			}
 
-			ctx := context.Background()
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
 			gwClient := gatewayfake.NewSimpleClientset()
 			for _, gw := range tt.gateways {
 				_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
@@ -1558,7 +1679,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				_, err := gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 				require.NoError(t, err, "failed to create HTTPRoute")
 			}
-			kubeClient := kubefake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
 			for _, ns := range tt.namespaces {
 				_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 				require.NoError(t, err, "failed to create Namespace")
@@ -1568,7 +1689,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
-			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
+			src, err := NewGatewayHTTPRouteSource(ctx, clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)

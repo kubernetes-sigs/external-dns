@@ -16,6 +16,7 @@ package source
 import (
 	"fmt"
 	"net/netip"
+	"sort"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -68,4 +69,35 @@ func MatchesServiceSelector(selector, svcSelector map[string]string) bool {
 		}
 	}
 	return true
+}
+
+// MergeEndpoints merges endpoints with the same key (DNSName + RecordType + RecordTTL)
+// by combining their targets. This is useful when multiple resources (e.g., pods, nodes)
+// contribute targets to the same DNS record.
+//
+// TODO: move this to endpoint/utils.go
+// TODO: apply to all sources that generate endpoints (e.g., service, ingress, etc.)
+func MergeEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	endpointMap := make(map[endpoint.EndpointKey]*endpoint.Endpoint)
+
+	for _, ep := range endpoints {
+		key := endpoint.EndpointKey{
+			DNSName:    ep.DNSName,
+			RecordType: ep.RecordType,
+			RecordTTL:  ep.RecordTTL,
+		}
+		if existing, ok := endpointMap[key]; ok {
+			existing.Targets = append(existing.Targets, ep.Targets...)
+		} else {
+			endpointMap[key] = ep
+		}
+	}
+
+	result := make([]*endpoint.Endpoint, 0, len(endpointMap))
+	for _, ep := range endpointMap {
+		sort.Sort(ep.Targets)
+		result = append(result, ep)
+	}
+
+	return result
 }

@@ -36,6 +36,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -48,6 +50,14 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 }
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
+//
+// +externaldns:source:name=kong-tcpingress
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Kong TCPIngress resources
+// +externaldns:source:resources=TCPIngress.configuration.konghq.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool
@@ -59,18 +69,20 @@ type kongTCPIngressSource struct {
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
-func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
-	var err error
-
+func NewKongTCPIngressSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
+	namespace, annotationFilter string, ignoreHostnameAnnotation bool,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
 	// Add default resource event handlers to properly initialize informer.
-	kongTCPIngressInformer.Informer().AddEventHandler(
+	_, _ = kongTCPIngressInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -78,7 +90,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -100,7 +112,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TCPIngresses in the source's namespace(s).
-func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	tis, err := sc.kongTCPIngressInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -121,7 +133,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		tcpIngresses = append(tcpIngresses, tcpIngress)
 	}
 
-	tcpIngresses, err = sc.filterByAnnotations(tcpIngresses)
+	tcpIngresses, err = annotations.Filter(tcpIngresses, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
 	}
@@ -146,8 +158,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if err != nil {
 			return nil, err
 		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
+		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
 
@@ -160,30 +171,6 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
-func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return tcpIngresses, nil
-	}
-
-	var filteredList []*TCPIngress
-
-	for _, tcpIngress := range tcpIngresses {
-		// include TCPIngress if its annotations match the selector
-		if selector.Matches(labels.Set(tcpIngress.Annotations)) {
-			filteredList = append(filteredList, tcpIngress)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
@@ -214,12 +201,12 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 	return endpoints, nil
 }
 
-func (sc *kongTCPIngressSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TCPIngress")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
@@ -243,15 +230,15 @@ func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 // If that is dealt with at some point the below can be removed and replaced with an actual import
 type TCPIngress struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   tcpIngressSpec   `json:"spec,omitempty"`
-	Status tcpIngressStatus `json:"status,omitempty"`
+	Spec   tcpIngressSpec   `json:"spec"`
+	Status tcpIngressStatus `json:"status"`
 }
 
 type TCPIngressList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []TCPIngress `json:"items"`
 }
 
@@ -266,7 +253,7 @@ type tcpIngressTLS struct {
 }
 
 type tcpIngressStatus struct {
-	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer,omitempty"`
+	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer"`
 }
 
 type tcpIngressRule struct {
