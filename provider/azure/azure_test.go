@@ -701,6 +701,16 @@ func TestAzureAdjustEndpoints(t *testing.T) {
 					t.Errorf("property %s: expected %q, got %q", exp.Name, exp.Value, val)
 				}
 			}
+
+			// Verify metadata keys tracking property is set when there are metadata properties
+			if len(tt.expected) > 0 {
+				keysVal, ok := adjusted[0].GetProviderSpecificProperty("azure/metadata-keys")
+				if !ok {
+					t.Error("azure/metadata-keys property should be set when metadata exists")
+				} else if keysVal == "" {
+					t.Error("azure/metadata-keys property should not be empty")
+				}
+			}
 		})
 	}
 }

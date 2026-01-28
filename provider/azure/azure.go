@@ -41,6 +41,7 @@ const (
 	defaultTTL = 300
 	// Azure-specific provider properties
 	providerSpecificMetadataPrefix = "azure/metadata-"
+	providerSpecificMetadataKeys   = "azure/metadata-keys"
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -518,25 +519,29 @@ func extractMetadataFromRecordSet(ep *endpoint.Endpoint, recordSet *dns.RecordSe
 	if recordSet.Properties == nil || recordSet.Properties.Metadata == nil {
 		return
 	}
+	keys := make([]string, 0, len(recordSet.Properties.Metadata))
 	for key, value := range recordSet.Properties.Metadata {
 		if value != nil {
 			ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, *value)
+			keys = append(keys, key)
 		}
+	}
+	if len(keys) > 0 {
+		ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
 	}
 }
 
 // extractMetadataFromEndpoint extracts Azure metadata from endpoint ProviderSpecific properties.
-// Properties with prefix "azure/metadata-" are converted to Azure RecordSet metadata.
+// Uses the tracked metadata keys list to retrieve values via GetProviderSpecificProperty.
 func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
-	if len(ep.ProviderSpecific) == 0 {
+	keysStr, ok := ep.GetProviderSpecificProperty(providerSpecificMetadataKeys)
+	if !ok || keysStr == "" {
 		return nil
 	}
 	metadata := make(map[string]*string)
-	for _, ps := range ep.ProviderSpecific {
-		if key, ok := strings.CutPrefix(ps.Name, providerSpecificMetadataPrefix); ok {
-			if key != "" && ps.Value != "" {
-				metadata[key] = to.Ptr(ps.Value)
-			}
+	for key := range strings.SplitSeq(keysStr, ",") {
+		if value, ok := ep.GetProviderSpecificProperty(providerSpecificMetadataPrefix + key); ok && value != "" {
+			metadata[key] = to.Ptr(value)
 		}
 	}
 	if len(metadata) == 0 {
@@ -547,7 +552,9 @@ func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
 
 // parseAzureTagsAnnotation parses the azure-tags annotation value (key1=value1,key2=value2)
 // and adds individual metadata properties to the endpoint.
-func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) {
+// Returns the list of unique metadata keys that were parsed.
+func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string {
+	keys := make(map[string]struct{})
 	for tag := range strings.SplitSeq(tagString, ",") {
 		tag = strings.TrimSpace(tag)
 		if tag == "" {
@@ -559,9 +566,15 @@ func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) {
 			value := strings.TrimSpace(parts[1])
 			if key != "" && value != "" {
 				ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, value)
+				keys[key] = struct{}{}
 			}
 		}
 	}
+	result := make([]string, 0, len(keys))
+	for k := range keys {
+		result = append(result, k)
+	}
+	return result
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the Azure provider.
@@ -569,7 +582,10 @@ func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) {
 func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		if val, ok := ep.GetProviderSpecificProperty(annotations.AzureTagsKey); ok {
-			parseAzureTagsAnnotation(ep, val)
+			keys := parseAzureTagsAnnotation(ep, val)
+			if len(keys) > 0 {
+				ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
+			}
 			// Remove the original azure-tags property as it's now expanded
 			ep.DeleteProviderSpecificProperty(annotations.AzureTagsKey)
 		}
