@@ -262,6 +262,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		}
 
+		// TODO: remove this migration logic in some future release
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {

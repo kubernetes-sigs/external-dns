@@ -780,7 +780,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
-	p.ApplyChanges(ctx, &plan.Changes{
+	_ = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{},
 	})
 	r, _ := NewTXTRegistry(p, "prefix%{record_type}.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")

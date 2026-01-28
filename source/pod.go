@@ -212,7 +212,7 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 
 	ps.addInternalHostnameAnnotationEndpoints(endpointMap, pod, targets)
 	ps.addHostnameAnnotationEndpoints(endpointMap, pod, targets)
-	ps.addKopsDNSControllerEndpoints(endpointMap, pod, targets)
+	ps.addKopsDNSControllerEndpoints(endpointMap, pod)
 	ps.addPodSourceDomainEndpoints(endpointMap, pod, targets)
 }
 
