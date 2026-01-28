@@ -271,7 +271,7 @@ func (m *mockCloudFlareClient) ListZones(_ context.Context, _ zones.ZoneListPara
 		results = append(results, zones.Zone{
 			ID:   id,
 			Name: zoneName,
-			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 		})
 	}
 
@@ -290,7 +290,7 @@ func (m *mockCloudFlareClient) GetZone(_ context.Context, zoneID string) (*zones
 			return &zones.Zone{
 				ID:   zoneID,
 				Name: zoneName,
-				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 			}, nil
 		}
 	}
@@ -2953,7 +2953,7 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("DeleteDataLocalizationRegionalHostname", func(t *testing.T) {
 		t.Parallel()
-		params := deleteDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID)
 		err := client.DeleteDataLocalizationRegionalHostname(ctx, "foo", params)
 		assert.ErrorIs(t, err, context.Canceled)
 	})

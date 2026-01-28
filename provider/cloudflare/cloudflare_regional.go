@@ -147,7 +147,7 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, z
 		}
 	case cloudFlareDelete:
 		changeLog.Debug("Deleting regional hostname")
-		params := deleteDataLocalizationRegionalHostnameParams(zoneID, rhChange)
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID)
 		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, rhChange.hostname, params); err != nil {
 			changeLog.Errorf("failed to delete regional hostname: %v", err)
 			return false

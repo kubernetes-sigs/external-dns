@@ -644,13 +644,13 @@ func TestOvhRecordString(t *testing.T) {
 
 func TestNewOvhProvider(t *testing.T) {
 	domainFilter := &endpoint.DomainFilter{}
-	_, err := NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err := NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpError(t, err)
 
 	t.Setenv("OVH_APPLICATION_KEY", "aaaaaa")
 	t.Setenv("OVH_APPLICATION_SECRET", "bbbbbb")
 	t.Setenv("OVH_CONSUMER_KEY", "cccccc")
 
-	_, err = NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err = NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpNoError(t, err)
 }
