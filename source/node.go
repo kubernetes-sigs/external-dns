@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/types"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -116,10 +118,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
-		// Check the controller annotation to see if we are responsible.
-		if controller, ok := node.Annotations[annotations.ControllerKey]; ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping node %s because controller value does not match, found: %s, required: %s",
-				node.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(node, types.Node) {
 			continue
 		}
 

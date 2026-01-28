@@ -5,6 +5,7 @@ set -e
 KO_VERSION="0.18.0"
 KIND_VERSION="0.30.0"
 ALPINE_VERSION="3.22"
+KUBECTL_VERSION="1.35.0"
 
 echo "Starting end-to-end tests for external-dns with local provider..."
 
@@ -20,7 +21,7 @@ kind create cluster
 
 # Install kubectl
 echo "Installing kubectl..."
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/kubectl
 

@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 type HostedZones struct {
@@ -57,7 +58,7 @@ func providerFilters(client *Route53APIFixtureStub, options ...func(awsProvider 
 		zoneIDFilter:         provider.NewZoneIDFilter([]string{}),
 		zoneTypeFilter:       provider.NewZoneTypeFilter(""),
 		zoneTagFilter:        provider.NewZoneTagFilter([]string{}),
-		zonesCache:           &zonesListCache{duration: 1 * time.Second},
+		zonesCache:           blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Second),
 	}
 	for _, o := range options {
 		o(p)

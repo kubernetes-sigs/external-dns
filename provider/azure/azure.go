@@ -25,6 +25,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/provider/blueprint"
+
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
@@ -61,7 +63,7 @@ type AzureProvider struct {
 	userAssignedIdentityClientID string
 	activeDirectoryAuthorityHost string
 	zonesClient                  ZonesClient
-	zonesCache                   *zonesCache[dns.Zone]
+	zonesCache                   *blueprint.ZoneCache[[]dns.Zone]
 	recordSetsClient             RecordSetsClient
 	maxRetriesCount              int
 }
@@ -97,7 +99,7 @@ func NewAzureProvider(configFile string, domainFilter *endpoint.DomainFilter, zo
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   &zonesCache[dns.Zone]{duration: zonesCacheDuration},
+		zonesCache:                   blueprint.NewZoneCache[[]dns.Zone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil
@@ -174,11 +176,12 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 }
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
-	log.Debugf("Retrieving Azure DNS zones for resource group: %s.", p.resourceGroup)
 	if !p.zonesCache.Expired() {
-		log.Debugf("Using cached Azure DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(p.zonesCache.Get()))
-		return p.zonesCache.Get(), nil
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached Azure DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(cachedZones))
+		return cachedZones, nil
 	}
+	log.Debugf("Retrieving Azure DNS zones for resource group: %s.", p.resourceGroup)
 	var zones []dns.Zone
 	pager := p.zonesClient.NewListByResourceGroupPager(p.resourceGroup, &dns.ZonesClientListByResourceGroupOptions{Top: nil})
 	for pager.More() {
@@ -195,7 +198,6 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 			}
 		}
 	}
-	log.Debugf("Found %d Azure DNS zone(s). Updating zones cache", len(zones))
 	p.zonesCache.Reset(zones)
 	return zones, nil
 }

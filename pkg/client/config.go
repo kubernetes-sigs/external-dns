@@ -34,9 +34,10 @@ import (
 // Supports both in-cluster and external cluster configurations.
 //
 // Configuration Priority:
-// 1. If kubeConfig is empty, tries the recommended home file (~/.kube/config)
-// 2. If kubeConfig is still empty, uses in-cluster service account
-// 3. Otherwise, uses the specified kubeConfig file
+// 1. KubeConfig file if specified
+// 2. Recommended home file (~/.kube/config)
+// 3. In-cluster config
+// TODO: consider clientcmd.NewDefaultClientConfigLoadingRules() with clientcmd.NewNonInteractiveDeferredLoadingClientConfig
 func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
@@ -52,10 +53,10 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 		err    error
 	)
 	if kubeConfig == "" {
-		log.Infof("Using inCluster-config based on serviceaccount-token")
+		log.Debug("Using inCluster-config based on serviceaccount-token")
 		config, err = rest.InClusterConfig()
 	} else {
-		log.Infof("Using kubeConfig")
+		log.Debug("Using kubeConfig")
 		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	}
 	if err != nil {
