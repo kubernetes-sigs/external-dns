@@ -28,8 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -53,23 +51,11 @@ type Controller struct {
 	hostname        string
 }
 
-func NewEventController(cfg *Config) (*Controller, error) {
+func NewEventController(client v1.EventsV1Interface, cfg *Config) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig[any](
 		workqueue.DefaultTypedControllerRateLimiter[any](),
 		workqueue.TypedRateLimitingQueueConfig[any]{Name: controllerName},
 	)
-	// TODO: to externalize this as similar to source.GetRestConfig
-	// TODO: instrument with metrics
-	rConfig, err := GetRestConfig(cfg.kubeConfig, cfg.apiServerURL)
-	if err != nil {
-		return nil, err
-	}
-	rConfig.Timeout = cfg.timeout
-
-	client, err := v1.NewForConfig(rConfig)
-	if err != nil {
-		return nil, err
-	}
 	hostname, _ := os.Hostname()
 	return &Controller{
 		client:          client,
@@ -154,29 +140,4 @@ func (ec *Controller) emit(event *eventsv1.Event) {
 	}
 	event.ReportingController = controllerName
 	ec.queue.Add(event)
-}
-
-// GetRestConfig TODO: copy of source.GetRestConfig, consider moving to a common package
-func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	var (
-		config *rest.Config
-		err    error
-	)
-	if kubeConfig == "" {
-		log.Debug("Using inCluster-config based on serviceaccount-token")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Debug("Using kubeConfig")
-		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }

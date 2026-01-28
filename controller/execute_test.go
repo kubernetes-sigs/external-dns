@@ -447,9 +447,10 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
+	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	src, err := buildSource(ctx, source.NewSourceConfig(cfg))
+	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
@@ -459,7 +460,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
-	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
 
 	done := make(chan struct{})
