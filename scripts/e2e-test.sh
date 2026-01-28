@@ -174,7 +174,7 @@ spec:
           echo "Testing DNS server at $NODE_IP:5353"
 
           echo "=== Testing DNS server with dig ==="
-          echo "Querying: externaldns-e2e.external.dns A record"
+          echo "Querying: externaldns-e2e.extedsjhdrnal.dns A record"
           if dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5; then
             echo "DNS query successful"
             exit 0
