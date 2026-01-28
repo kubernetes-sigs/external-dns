@@ -40,7 +40,7 @@ type mockOvhClient struct {
 	mock.Mock
 }
 
-func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, input any, output any) error {
+func (c *mockOvhClient) PostWithContext(_ context.Context, endpoint string, input any, output any) error {
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -50,7 +50,7 @@ func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, in
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, input any, output any) error {
+func (c *mockOvhClient) PutWithContext(_ context.Context, endpoint string, input any, output any) error {
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, inp
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, output any) error {
+func (c *mockOvhClient) GetWithContext(_ context.Context, endpoint string, output any) error {
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, out
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) DeleteWithContext(ctx context.Context, endpoint string, output any) error {
+func (c *mockOvhClient) DeleteWithContext(_ context.Context, endpoint string, output any) error {
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -644,13 +644,13 @@ func TestOvhRecordString(t *testing.T) {
 
 func TestNewOvhProvider(t *testing.T) {
 	domainFilter := &endpoint.DomainFilter{}
-	_, err := NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err := NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpError(t, err)
 
 	t.Setenv("OVH_APPLICATION_KEY", "aaaaaa")
 	t.Setenv("OVH_APPLICATION_SECRET", "bbbbbb")
 	t.Setenv("OVH_CONSUMER_KEY", "cccccc")
 
-	_, err = NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err = NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpNoError(t, err)
 }

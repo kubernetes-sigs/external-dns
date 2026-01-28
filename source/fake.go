@@ -64,7 +64,7 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
-func (sc *fakeSource) AddEventHandler(_ context.Context, handler func()) {
+func (sc *fakeSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects.

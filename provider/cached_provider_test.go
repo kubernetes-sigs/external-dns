@@ -56,21 +56,21 @@ func (p *testProviderFunc) GetDomainFilter() endpoint.DomainFilterInterface {
 }
 
 func recordsNotCalled(t *testing.T) func(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	return func(_ context.Context) ([]*endpoint.Endpoint, error) {
 		t.Errorf("unexpected call to Records")
 		return nil, nil
 	}
 }
 
-func applyChangesNotCalled(t *testing.T) func(ctx context.Context, changes *plan.Changes) error {
-	return func(ctx context.Context, changes *plan.Changes) error {
+func applyChangesNotCalled(t *testing.T) func(_ context.Context, _ *plan.Changes) error {
+	return func(_ context.Context, _ *plan.Changes) error {
 		t.Errorf("unexpected call to ApplyChanges")
 		return nil
 	}
 }
 
 func propertyValuesEqualNotCalled(t *testing.T) func(name string, previous string, current string) bool {
-	return func(name string, previous string, current string) bool {
+	return func(_ string, _ string, _ string) bool {
 		t.Errorf("unexpected call to PropertyValuesEqual")
 		return false
 	}
@@ -94,7 +94,7 @@ func newTestProviderFunc(t *testing.T) *testProviderFunc {
 
 func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 	testProvider := newTestProviderFunc(t)
-	testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 		return []*endpoint.Endpoint{{DNSName: "domain.fqdn"}}, nil
 	}
 	provider := CachedProvider{
@@ -110,7 +110,7 @@ func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 
 func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 	testProvider := newTestProviderFunc(t)
-	testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 		return []*endpoint.Endpoint{{DNSName: "domain.fqdn"}}, nil
 	}
 	provider := CachedProvider{
@@ -131,7 +131,7 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 	})
 
 	t.Run("When the caching time frame is exceeded", func(t *testing.T) {
-		testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+		testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 			return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 		}
 		provider.lastRead = time.Now().Add(-20 * time.Minute)
@@ -146,7 +146,7 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 
 func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 	testProvider := newTestProviderFunc(t)
-	testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 		return []*endpoint.Endpoint{{DNSName: "domain.fqdn"}}, nil
 	}
 	provider := CachedProvider{
@@ -158,14 +158,14 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 
 	t.Run("When empty changes are applied", func(t *testing.T) {
 		testProvider.records = recordsNotCalled(t)
-		testProvider.applyChanges = func(ctx context.Context, changes *plan.Changes) error {
+		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
 			return nil
 		}
 		err := provider.ApplyChanges(context.Background(), &plan.Changes{})
 		assert.NoError(t, err)
 		t.Run("Next call to Records is cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
-			testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 				return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 			}
 			endpoints, err := provider.Records(context.Background())
@@ -180,7 +180,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 
 	t.Run("When changes are applied", func(t *testing.T) {
 		testProvider.records = recordsNotCalled(t)
-		testProvider.applyChanges = func(ctx context.Context, changes *plan.Changes) error {
+		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
 			return nil
 		}
 		err := provider.ApplyChanges(context.Background(), &plan.Changes{
@@ -191,7 +191,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		t.Run("Next call to Records is not cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
-			testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 				return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 			}
 			endpoints, err := provider.Records(context.Background())

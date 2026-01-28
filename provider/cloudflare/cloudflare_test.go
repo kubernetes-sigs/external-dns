@@ -143,7 +143,7 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
 	body := params.Body.(dns.RecordNewParamsBody)
 
 	record := dns.RecordResponse{
@@ -191,7 +191,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 	return iter
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+func (m *mockCloudFlareClient) UpdateDNSRecord(_ context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
 	zoneID := params.ZoneID.String()
 	body := params.Body.(dns.RecordUpdateParamsBody)
 
@@ -222,7 +222,7 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID str
 	return &record, nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(_ context.Context, recordID string, params dns.RecordDeleteParams) error {
 	zoneID := params.ZoneID.String()
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
@@ -258,7 +258,7 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
-func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
+func (m *mockCloudFlareClient) ListZones(_ context.Context, _ zones.ZoneListParams) autoPager[zones.Zone] {
 	if m.listZonesError != nil {
 		return &mockAutoPager[zones.Zone]{
 			err: m.listZonesError,
@@ -271,7 +271,7 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneL
 		results = append(results, zones.Zone{
 			ID:   id,
 			Name: zoneName,
-			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 		})
 	}
 
@@ -280,7 +280,7 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneL
 	}
 }
 
-func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zones.Zone, error) {
+func (m *mockCloudFlareClient) GetZone(_ context.Context, zoneID string) (*zones.Zone, error) {
 	if m.getZoneError != nil {
 		return nil, m.getZoneError
 	}
@@ -290,7 +290,7 @@ func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zon
 			return &zones.Zone{
 				ID:   zoneID,
 				Name: zoneName,
-				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 			}, nil
 		}
 	}
@@ -1458,8 +1458,8 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 	}{
 		{
 			Name:            "No custom properties, ExpectUpdates: false",
-			SetupProvider:   func(p *CloudFlareProvider) {},
-			SetupRecord:     func(r *dns.RecordResponse) {},
+			SetupProvider:   func(_ *CloudFlareProvider) {},
+			SetupRecord:     func(_ *dns.RecordResponse) {},
 			ShouldBeUpdated: false,
 		},
 		// Proxied tests
@@ -2961,7 +2961,7 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("DeleteDataLocalizationRegionalHostname", func(t *testing.T) {
 		t.Parallel()
-		params := deleteDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID)
 		err := client.DeleteDataLocalizationRegionalHostname(ctx, "foo", params)
 		assert.ErrorIs(t, err, context.Canceled)
 	})

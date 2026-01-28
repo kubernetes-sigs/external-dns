@@ -466,7 +466,7 @@ func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	startTime := time.Now()
 
 	// Create

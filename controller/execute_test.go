@@ -231,7 +231,7 @@ func TestBuildProvider(t *testing.T) {
 }
 
 func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 	}))
 	defer svr.Close()
@@ -275,7 +275,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 }
 
 // Helper used by runExecuteSubprocess.
-func TestHelperProcess(t *testing.T) {
+func TestHelperProcess(_ *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
@@ -302,6 +302,7 @@ func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// TODO: investigate why -test.run=TestHelperProcess
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
 	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")

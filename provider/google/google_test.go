@@ -48,7 +48,7 @@ type mockManagedZonesCreateCall struct {
 	managedZone *dns.ManagedZone
 }
 
-func (m *mockManagedZonesCreateCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)
 
 	if _, ok := testZones[zoneKey]; ok {
@@ -65,7 +65,7 @@ type mockManagedZonesListCall struct {
 	zonesListSoftErr error
 }
 
-func (m *mockManagedZonesListCall) Pages(ctx context.Context, f func(*dns.ManagedZonesListResponse) error) error {
+func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZonesListResponse) error) error {
 	zones := []*dns.ManagedZone{}
 
 	for k, v := range testZones {
@@ -99,7 +99,7 @@ type mockResourceRecordSetsListCall struct {
 	recordsListSoftErr error
 }
 
-func (m *mockResourceRecordSetsListCall) Pages(ctx context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
+func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -133,7 +133,7 @@ type mockChangesCreateCall struct {
 	change      *dns.Change
 }
 
-func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
+func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {

@@ -27,11 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-type mockSource struct {
-	endpoints []*endpoint.Endpoint
-	err       error
-}
-
 func TestWithTTL(t *testing.T) {
 	tests := []struct {
 		name         string
