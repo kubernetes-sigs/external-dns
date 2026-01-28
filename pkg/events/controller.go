@@ -75,8 +75,8 @@ func (ec *Controller) Run(ctx context.Context) {
 }
 
 func (ec *Controller) run(ctx context.Context) {
-	log.Debug("event Controller started")
-	defer log.Debug("event Controller terminated")
+	log.Info("event Controller started")
+	defer log.Info("event Controller terminated")
 	defer utilruntime.HandleCrash()
 	var waitGroup wait.Group
 	for range workers {
