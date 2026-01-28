@@ -317,7 +317,7 @@ func TestMaxRetriesCount(t *testing.T) {
 }
 
 // Helper function to parse max retries value
-func parseMaxRetries(value string, _ int) (int, error) {
+func parseMaxRetries(value string) (int, error) {
 	// Trim whitespace
 	value = strings.TrimSpace(value)
 

@@ -99,7 +99,7 @@ func updateDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHos
 }
 
 // deleteDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
-func deleteDataLocalizationRegionalHostnameParams(zoneID string, _ regionalHostnameChange) addressing.RegionalHostnameDeleteParams {
+func deleteDataLocalizationRegionalHostnameParams(zoneID string) addressing.RegionalHostnameDeleteParams {
 	return addressing.RegionalHostnameDeleteParams{
 		ZoneID: cloudflare.F(zoneID),
 	}

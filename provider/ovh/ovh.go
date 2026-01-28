@@ -125,7 +125,6 @@ type ovhChange struct {
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
 func NewOVHProvider(
-	_ context.Context,
 	domainFilter *endpoint.DomainFilter,
 	endpoint string,
 	apiRateLimit int,
