@@ -35,8 +35,10 @@ type PropertyComparator func(name string, previous string, current string) bool
 // update and delete actions.
 type Plan struct {
 	// List of current records
+	// Records that already exist in the DNS provider (e.g., Route53, Cloudflare, etc.). These are fetched from the provider's registry.
 	Current []*endpoint.Endpoint
 	// List of desired records
+	// Records that should exist based on Kubernetes resources (Ingress, Service, etc.). These are computed from the source.
 	Desired []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
@@ -182,6 +184,7 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
+	registryOwnerMismatchPerSync.Gauge.Reset()
 	changes := p.calculateChanges(t)
 
 	plan := &Plan{
@@ -235,7 +238,11 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 	return changes
 }
 
-func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key planKey, row *planTableRow) {
+func (p *Plan) appendTakenDNSNameChanges(
+	t planTable,
+	changes *Changes,
+	key planKey,
+	row *planTableRow) {
 	// apply changes for each record type
 	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
 	changes.Delete = append(changes.Delete, rowChanges.Delete...)
@@ -251,7 +258,7 @@ func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key plan
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				break
+				flushOwnerMismatch(p.OwnerID, current)
 			}
 		}
 	}
