@@ -38,17 +38,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
-	"sigs.k8s.io/external-dns/source/types"
-
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
-
-	"sigs.k8s.io/external-dns/source/annotations"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 var (
