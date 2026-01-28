@@ -14,6 +14,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
     - name: e2e
       run: |
         ./scripts/e2e-test.sh
