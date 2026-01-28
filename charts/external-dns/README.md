@@ -56,21 +56,21 @@ For set up for a specific provider using the Helm chart, see the following links
 * [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
 * [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
 
-## Namespaced Scoped Installation
+## Namespace Scoped Installation
 
-external-dns supports running on a namespaced only scope, too.
-If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
+`external-dns` supports running on a namespace-only scope, too.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
 
-### Limited Supported
+### Namespace-only limitations
 
-Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
+Not all sources are supported in namespace-only scope, since some sources depend on cluster-wide resources.
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
-Sources like `istio-virtualservice` only work, if all resources like `Gateway` and `VirtualService` are present in the same
-namespaces as `external-dns`.
+Sources like `istio-virtualservice` only work if all resources like `Gateway` and `VirtualService` are present in the same
+namespace as `external-dns`.
 
 The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
-If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`).
+If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
 ### Support Matrix
 
