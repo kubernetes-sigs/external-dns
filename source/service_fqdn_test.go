@@ -873,24 +873,22 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				}
 			}
 
+			cfg := &Config{
+				FQDNTemplate:                   tt.fqdnTemplate,
+				CombineFQDNAndAnnotation:       tt.combineFQDN,
+				PublishHostIP:                  tt.publishHostIp,
+				ServiceTypeFilter:              tt.serviceTypesFilter,
+				PublishInternal:                true,
+				AlwaysPublishNotReadyAddresses: true,
+				ExposeInternalIPv6:             true,
+				ExcludeUnschedulable:           true,
+				LabelFilter:                    labels.Everything(),
+			}
+
 			src, err := NewServiceSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				true,
-				tt.publishHostIp,
-				true,
-				tt.serviceTypesFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				true,
-				true,
+				cfg,
 			)
 			require.NoError(t, err)
 
