@@ -527,10 +527,10 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			asserts: func(t *testing.T, ev Event) {
 				require.Equal(t, ActionCreate, ev.action)
 				require.Empty(t, ev.ref.Namespace)
-				// Verify that event() handles empty namespace
+
 				k8sEvent := ev.event()
 				require.NotNil(t, k8sEvent)
-				require.Equal(t, "default", k8sEvent.Namespace) // should default to "default"
+				require.Equal(t, "default", k8sEvent.Namespace)
 			},
 		},
 	}

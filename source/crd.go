@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -52,7 +54,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
-// +externaldns:source:events=false
+// +externaldns:source:events=true
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string
@@ -214,6 +216,11 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
 
 			crdEndpoints = append(crdEndpoints, ep)
+		}
+
+		// TODO: test metadata reference
+		for _, ep := range crdEndpoints {
+			ep.WithRefObject(events.NewObjectReference(dnsEndpoint, types.CRD))
 		}
 
 		endpoints = append(endpoints, crdEndpoints...)
