@@ -50,7 +50,7 @@ type InMemoryProvider struct {
 	domain         endpoint.DomainFilterInterface
 	client         *inMemoryClient
 	filter         *filter
-	OnApplyChanges func(ctx context.Context, changes *plan.Changes)
+	OnApplyChanges func(changes *plan.Changes)
 	OnRecords      func()
 }
 
@@ -60,7 +60,7 @@ type InMemoryOption func(*InMemoryProvider)
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+		p.OnApplyChanges = func(changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -99,7 +99,7 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
-		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},
+		OnApplyChanges: func(_ *plan.Changes) {},
 		OnRecords:      func() {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
@@ -146,7 +146,7 @@ func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, er
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
 func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	defer im.OnApplyChanges(ctx, changes)
+	defer im.OnApplyChanges(changes)
 
 	perZoneChanges := map[string]*plan.Changes{}
 
