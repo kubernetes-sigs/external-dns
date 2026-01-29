@@ -751,17 +751,11 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		}
 	}
 
-	scheme := runtime.NewScheme()
-	err := apiv1alpha1.AddToScheme(scheme)
-	require.NoError(t, err)
-
 	fakeClient := &fakeListDNSEndpointClient{list: &crds}
 
 	cs := &crdSource{
 		client:        fakeClient,
 		namespace:     "test-ns",
-		crdResource:   "dnsendpoints",
-		codec:         runtime.NewParameterCodec(scheme),
 		labelSelector: labels.Everything(),
 	}
 

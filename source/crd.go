@@ -52,8 +52,6 @@ import (
 type crdSource struct {
 	client           crd.DNSEndpointClient
 	namespace        string
-	crdResource      string
-	codec            runtime.ParameterCodec
 	annotationFilter string
 	labelSelector    labels.Selector
 	informer         cache.SharedInformer

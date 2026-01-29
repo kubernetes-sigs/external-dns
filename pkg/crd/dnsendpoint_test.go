@@ -87,7 +87,7 @@ func TestNewDNSEndpointClient(t *testing.T) {
 				NegotiatedSerializer: codecFactory,
 			}
 
-			client := NewDNSEndpointClient(restClient, tt.kind, runtime.NewParameterCodec(scheme))
+			client := NewDNSEndpointClient(restClient, tt.kind)
 
 			require.NotNil(t, client)
 			impl, ok := client.(*dnsEndpointClient)
@@ -141,7 +141,7 @@ func TestDNSEndpointClient_Get(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	result, err := client.Get(ctx, "test-ns", "test-endpoint")
 
@@ -172,7 +172,7 @@ func TestDNSEndpointClient_Get_NotFound(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	_, err := client.Get(ctx, "test-ns", "nonexistent")
 
@@ -233,7 +233,7 @@ func TestDNSEndpointClient_List(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	result, err := client.List(ctx, "test-ns", &metav1.ListOptions{})
 
@@ -275,7 +275,7 @@ func TestDNSEndpointClient_List_AllNamespaces(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	result, err := client.List(ctx, "", &metav1.ListOptions{})
 
@@ -311,7 +311,7 @@ func TestDNSEndpointClient_List_WithLabelSelector(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	_, err := client.List(ctx, "test-ns", &metav1.ListOptions{
 		LabelSelector: "app=external-dns",
@@ -361,7 +361,7 @@ func TestDNSEndpointClient_UpdateStatus(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	result, err := client.UpdateStatus(ctx, inputEndpoint)
 
@@ -396,7 +396,7 @@ func TestDNSEndpointClient_Watch(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	opts := &metav1.ListOptions{}
 	_, _ = client.Watch(ctx, "test-ns", opts)
@@ -425,7 +425,7 @@ func TestDNSEndpointClient_Watch_SetsWatchFlag(t *testing.T) {
 		}),
 	}
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind, runtime.NewParameterCodec(scheme))
+	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
 
 	opts := &metav1.ListOptions{Watch: false}
 	_, _ = client.Watch(ctx, "test-ns", opts)
@@ -460,7 +460,7 @@ func TestDNSEndpointClient_ResourcePluralization(t *testing.T) {
 				NegotiatedSerializer: codecFactory,
 			}
 
-			client := NewDNSEndpointClient(restClient, tt.kind, runtime.NewParameterCodec(scheme))
+			client := NewDNSEndpointClient(restClient, tt.kind)
 			impl := client.(*dnsEndpointClient)
 
 			assert.Equal(t, tt.expectedResource, impl.resource)

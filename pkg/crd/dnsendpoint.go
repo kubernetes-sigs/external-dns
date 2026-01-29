@@ -54,17 +54,14 @@ type dnsEndpointClient struct {
 // NewDNSEndpointClient creates a new DNSEndpointClient.
 // Parameters:
 //   - restClient: Kubernetes REST client configured for the DNSEndpoint API group
-//   - namespace: Namespace to operate in (empty string for all namespaces)
 //   - kind: The Kind name (e.g., "DNSEndpoint") - will be pluralized to resource name
-//   - codec: Parameter codec for encoding list options
 func NewDNSEndpointClient(
 	restClient rest.Interface,
-	kind string,
-	codec runtime.ParameterCodec) DNSEndpointClient {
+	kind string) DNSEndpointClient {
 	return &dnsEndpointClient{
 		restClient: restClient,
 		resource:   strings.ToLower(kind) + "s", // e.g., "DNSEndpoint" -> "dnsendpoints"
-		codec:      codec,
+		codec:      metav1.ParameterCodec,
 	}
 }
 

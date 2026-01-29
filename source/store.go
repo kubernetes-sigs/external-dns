@@ -27,7 +27,6 @@ import (
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -559,7 +558,6 @@ func buildCRDSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, 
 	crdClient := crd.NewDNSEndpointClient(
 		crdApiClient,
 		cfg.CRDSourceKind,
-		metav1.ParameterCodec,
 	)
 	return NewCRDSource(crdClient, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter, cfg.UpdateEvents)
 }
