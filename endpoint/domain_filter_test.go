@@ -1170,3 +1170,165 @@ func TestNewDomainFilterFromConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestIncludeDomainsFilter(t *testing.T) {
+	tests := []struct {
+		name           string
+		includeDomains []string
+		testDomains    []string
+		expectedMatch  []bool
+	}{
+		{
+			name:           "ExactMatchSingleDomain",
+			includeDomains: []string{"api.example.com"},
+			testDomains:    []string{"api.example.com", "api.example.com.", "app.example.com", "example.com", "test.api.example.com"},
+			expectedMatch:  []bool{true, true, false, false, false},
+		},
+		{
+			name:           "ExactMatchMultipleDomains",
+			includeDomains: []string{"api.example.com", "app.example.com", "grafana.test.org"},
+			testDomains:    []string{"api.example.com", "app.example.com", "grafana.test.org", "other.example.com", "example.com"},
+			expectedMatch:  []bool{true, true, true, false, false},
+		},
+		{
+			name:           "NoSubdomainMatching",
+			includeDomains: []string{"example.com"},
+			testDomains:    []string{"example.com", "api.example.com", "test.example.com"},
+			expectedMatch:  []bool{true, false, false},
+		},
+		{
+			name:           "TrailingDotNormalization",
+			includeDomains: []string{"api.example.com."},
+			testDomains:    []string{"api.example.com", "api.example.com."},
+			expectedMatch:  []bool{true, true},
+		},
+		{
+			name:           "WhitespaceHandling",
+			includeDomains: []string{"  api.example.com  ", "app.example.com"},
+			testDomains:    []string{"api.example.com", "app.example.com"},
+			expectedMatch:  []bool{true, true},
+		},
+		{
+			name:           "EmptyIncludeDomains",
+			includeDomains: []string{""},
+			testDomains:    []string{"api.example.com"},
+			expectedMatch:  []bool{true}, // Empty filter matches everything
+		},
+		{
+			name:           "CaseSensitivity",
+			includeDomains: []string{"API.Example.COM"},
+			testDomains:    []string{"api.example.com", "API.Example.COM"},
+			expectedMatch:  []bool{true, true}, // DNS is case-insensitive
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := NewIncludeDomainsFilter(tt.includeDomains)
+
+			for i, domain := range tt.testDomains {
+				result := filter.Match(domain)
+				assert.Equal(t, tt.expectedMatch[i], result, "domain %s expected %v but got %v", domain, tt.expectedMatch[i], result)
+			}
+		})
+	}
+}
+
+func TestIncludeDomainsWithOptions(t *testing.T) {
+	tests := []struct {
+		name           string
+		includeDomains []string
+		domainFilter   []string
+		regexFilter    *regexp.Regexp
+		testDomain     string
+		expectedMatch  bool
+	}{
+		{
+			name:           "IncludeDomainsHasPrecedence",
+			includeDomains: []string{"api.example.com"},
+			domainFilter:   []string{"example.com"},
+			testDomain:     "app.example.com",
+			expectedMatch:  false, // includeDomains takes precedence, and app.example.com is not in the list
+		},
+		{
+			name:           "IncludeDomainsOverRegex",
+			includeDomains: []string{"api.example.com"},
+			regexFilter:    regexp.MustCompile(`.*\.example\.com$`),
+			testDomain:     "app.example.com",
+			expectedMatch:  false, // includeDomains takes precedence
+		},
+		{
+			name:          "FallbackToDomainFilter",
+			domainFilter:  []string{"example.com"},
+			testDomain:    "api.example.com",
+			expectedMatch: true, // domainFilter suffix matching
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := NewDomainFilterWithOptions(
+				WithIncludeDomains(tt.includeDomains),
+				WithDomainFilter(tt.domainFilter),
+				WithRegexDomainFilter(tt.regexFilter))
+
+			result := filter.Match(tt.testDomain)
+			assert.Equal(t, tt.expectedMatch, result)
+		})
+	}
+}
+
+func TestIncludeDomainsIsConfigured(t *testing.T) {
+	tests := []struct {
+		name           string
+		includeDomains []string
+		expected       bool
+	}{
+		{
+			name:           "WithIncludeDomains",
+			includeDomains: []string{"api.example.com"},
+			expected:       true,
+		},
+		{
+			name:           "EmptyIncludeDomains",
+			includeDomains: []string{},
+			expected:       false,
+		},
+		{
+			name:           "OnlyEmptyStrings",
+			includeDomains: []string{"", "  "},
+			expected:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := NewIncludeDomainsFilter(tt.includeDomains)
+			assert.Equal(t, tt.expected, filter.IsConfigured())
+		})
+	}
+}
+
+func TestIncludeDomainsJSONSerialization(t *testing.T) {
+	filter := NewIncludeDomainsFilter([]string{"api.example.com", "app.example.com"})
+
+	data, err := json.Marshal(filter)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	require.NoError(t, err)
+
+	includeDomains, ok := result["includeDomains"].([]interface{})
+	require.True(t, ok, "expected includeDomains field in JSON")
+	require.Len(t, includeDomains, 2)
+
+	// Verify deserialization
+	var deserializedFilter DomainFilter
+	err = json.Unmarshal(data, &deserializedFilter)
+	require.NoError(t, err)
+
+	assert.True(t, deserializedFilter.Match("api.example.com"))
+	assert.True(t, deserializedFilter.Match("app.example.com"))
+	assert.False(t, deserializedFilter.Match("other.example.com"))
+}
