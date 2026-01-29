@@ -548,6 +548,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			// At present, client-go's fake.RESTClient (used by crd_test.go) is known to cause race conditions when used
 			// with informers: https://github.com/kubernetes/kubernetes/issues/95372
 			// So don't start the informer during testing.
+			// TODO: revisit this when we move to controller-runtime based clients or 1.36+ client-go.
 			cs, err := NewCRDSource(fakeClient, ti.namespace, ti.annotationFilter, labelSelector, false)
 			require.NoError(t, err)
 
