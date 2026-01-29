@@ -147,7 +147,7 @@ func TestExecTemplate(t *testing.T) {
 		},
 		{
 			name: "trim prefix",
-			tmpl: `{{ trimSuffix .Name "the-" }}.example.com`,
+			tmpl: `{{ trimPrefix .Name "the-" }}.example.com`,
 			obj: &testObject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "the-test",
