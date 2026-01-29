@@ -164,6 +164,26 @@ topologySpreadConstraints: []
 # -- Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
 tolerations: []
 
+pdb:
+  # -- If `true`, create a [`PodDisruptionBudget`](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets) resource.
+  create: false
+  # -- Minimum number or percentage of pods that should remain scheduled.
+  minAvailable:  # @schema type:[integer, null]; minimum:0; default: null
+  # -- Maximum number or percentage of pods that may be made unavailable, defaults to `1` if both `pdb.minAvailable` and `pdb.maxUnavailable` are empty.
+  maxUnavailable:  # @schema type:[integer, null]; minimum:0; default: null
+
+networkPolicy:
+  # -- If `true`, create a [`NetworkPolicy`](https://kubernetes.io/docs/concepts/services-networking/network-policies/) resource.
+  enabled: true
+  # -- Allow the pod to access any range of port and all destinations.
+  allowExternalEgress: true
+  # -- List of possible kube-apiserver endpoints to allow egress to when `allowExternalEgress` is set to `false`.
+  kubeAPIServerPorts: [443, 6443, 8443]
+  # -- Extra ingress rules.
+  extraIngress: []
+  # -- Extra egress rules.
+  extraEgress: []
+
 serviceMonitor:
   # -- If `true`, create a `ServiceMonitor` resource to support the _Prometheus Operator_.
   enabled: false
