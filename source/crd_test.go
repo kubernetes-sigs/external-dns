@@ -60,7 +60,7 @@ type fakeDNSEndpointClient struct {
 func newFakeDNSEndpointClient(
 	endpoints []*endpoint.Endpoint,
 	apiVersion, kind, namespace, name string,
-	annotations , lbls map[string]string) crd.DNSEndpointClient {
+	annotations, lbls map[string]string) crd.DNSEndpointClient {
 	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: apiVersion,
