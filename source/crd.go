@@ -170,7 +170,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		// Update the ObservedGeneration
 		_, err = cs.client.UpdateStatus(ctx, dnsEndpoint)
 		if err != nil {
-			log.Warnf("Could not update ObservedGeneration of the CRD: %v", err)
+			log.Warnf("Could not update status of the CRD: %v", err)
 		}
 	}
 
