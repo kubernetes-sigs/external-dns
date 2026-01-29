@@ -899,15 +899,9 @@ func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
 }
 
 func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
-	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
-	// This will be fixed in another PR.
-	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
-		p.adjustAliasRecord(ep)
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
-	}
+	// if not A, AAAA, CNAME, ensure alias properties are removed
+	ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+	ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set
