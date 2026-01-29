@@ -151,7 +151,6 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			continue
 		}
 
-		// TODO: test metadata reference
 		for _, ep := range nodeEndpoints {
 			ep.WithRefObject(events.NewObjectReference(node, types.Node))
 		}

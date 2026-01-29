@@ -41,9 +41,11 @@ import (
 	"k8s.io/client-go/rest/fake"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
+	"sigs.k8s.io/external-dns/source/types"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type CRDSuite struct {
@@ -762,6 +764,49 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	for _, ep := range res {
 		require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 	}
+}
+
+func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
+	typeCounts := map[string]int{
+		endpoint.RecordTypeA:    2,
+		endpoint.RecordTypeAAAA: 3,
+	}
+
+	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
+
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	// TODO: reduce duplication and move to pkg/client/fakes
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       objBody(codecFactory.LegacyCodec(apiv1alpha1.GroupVersion), &elements),
+			}, nil
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:     client,
+		namespace:     "test-ns",
+		crdResource:   "dnsendpoints",
+		codec:         runtime.NewParameterCodec(scheme),
+		labelSelector: labels.Everything(),
+	}
+
+	endpoints, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.CRD, len(elements.Items))
 }
 
 func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeControllerSource, crdSource) {

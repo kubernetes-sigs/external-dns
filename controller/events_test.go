@@ -105,3 +105,24 @@ func TestEmit_NilEmitter(t *testing.T) {
 		emitChangeEvent(nil, plan.Changes{}, events.RecordError)
 	})
 }
+
+func TestEmit_RecordError(t *testing.T) {
+	refObj := &events.ObjectReference{}
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").
+				WithRefObject(refObj),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").
+				WithRefObject(refObj),
+		},
+	}
+	emitter := fake.NewFakeEventEmitter()
+
+	emitChangeEvent(emitter, changes, events.RecordError)
+
+	emitter.AssertCalled(t, "Add", events.NewEventFromEndpoint(changes.Create[0], events.ActionCreate, events.RecordError))
+	emitter.AssertCalled(t, "Add", events.NewEventFromEndpoint(changes.UpdateNew[0], events.ActionUpdate, events.RecordError))
+	emitter.AssertNumberOfCalls(t, "Add", 2)
+}

@@ -29,8 +29,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -1083,7 +1085,6 @@ func TestPodTransformerInPodSource(t *testing.T) {
 	})
 
 	t.Run("transformer is not used when fqdnTemplate is set", func(t *testing.T) {
-		ctx := t.Context()
 		fakeClient := fake.NewClientset()
 
 		pod := &v1.Pod{
@@ -1128,7 +1129,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "template", false, "", nil)
+		src, err := NewPodSource(t.Context(), fakeClient, "", "", false, "", "template", false, "", nil)
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1142,4 +1143,49 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		assert.NotEmpty(t, retrieved.UID)
 		assert.NotEmpty(t, retrieved.Labels)
 	})
+}
+
+func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "01",
+				Name:      "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+			},
+		},
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "02",
+				Name:      "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewPodSource(
+		t.Context(),
+		fakeClient,
+		"",
+		"",
+		false,
+		"",
+		"",
+		false,
+		"",
+		nil,
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Pod, len(elements))
 }

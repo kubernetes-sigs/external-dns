@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -218,7 +219,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
-		// TODO: test metadata reference
 		for _, ep := range crdEndpoints {
 			ep.WithRefObject(events.NewObjectReference(dnsEndpoint, types.CRD))
 		}

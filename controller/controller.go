@@ -122,7 +122,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
-			// TODO: test that events are emitted on error
 			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordError)
 			return err
 		}

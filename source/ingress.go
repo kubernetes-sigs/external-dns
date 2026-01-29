@@ -176,7 +176,6 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		// TODO: test metadata reference
 		for _, ep := range ingEndpoints {
 			ep.WithRefObject(events.NewObjectReference(ing, types.Ingress))
 		}

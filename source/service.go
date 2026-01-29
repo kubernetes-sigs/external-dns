@@ -284,7 +284,6 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		// TODO: test metadata reference
 		for _, ep := range svcEndpoints {
 			ep.WithRefObject(events.NewObjectReference(svc, types.Service))
 		}

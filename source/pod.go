@@ -180,7 +180,6 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 			return nil, err
 		}
 
-		// TODO: test metadata reference
 		for _, ep := range podEndpoints {
 			ep.WithRefObject(events.NewObjectReference(pod, types.Pod))
 		}

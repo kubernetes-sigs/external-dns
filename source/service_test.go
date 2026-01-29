@@ -35,9 +35,11 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -5713,6 +5715,60 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 
 	assert.True(t, foundBaseHostname, "Should create endpoint for base hostname")
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
+}
+
+func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "01",
+				Name:      "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "123",
+			},
+		},
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "02",
+				Name:      "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "345",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewServiceSource(
+		t.Context(),
+		fakeClient,
+		"",
+		"",
+		"",
+		false,
+		"",
+		true,
+		false,
+		false,
+		[]string{},
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+		false,
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Service, len(elements))
 }
 
 // Helper function to find endpoint by record type
