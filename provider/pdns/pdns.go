@@ -268,6 +268,12 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 	return provider, nil
 }
 
+// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
+func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
+	value, exists := ep.GetProviderSpecificProperty("alias")
+	return exists && value == "true"
+}
+
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	targets := make([]string, 0)
@@ -335,9 +341,16 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
-					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
-					RecordType_ = "ALIAS"
+				// Check if we should use ALIAS instead of CNAME:
+				// 1. APEX records (dnsname == zone.Name) always use ALIAS
+				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				//    (can be set via --prefer-alias flag globally or per-resource annotation)
+				if ep.RecordType == endpoint.RecordTypeCNAME {
+					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
+					if useAlias {
+						log.Debugf("Converting CNAME record %s to ALIAS", dnsname)
+						RecordType_ = "ALIAS"
+					}
 				}
 
 				rrset := pgo.RrSet{
