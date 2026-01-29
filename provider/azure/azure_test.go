@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // mockZonesClient implements the methods of the Azure DNS Zones Client which are used in the Azure Provider
@@ -387,6 +388,7 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 	})
 }
 
@@ -440,6 +442,9 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").
+			WithProviderSpecific("azure/metadata-foo", "bar").
+			WithProviderSpecific("azure/metadata-baz", "qux"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
@@ -611,5 +616,101 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAzureAdjustEndpoints(t *testing.T) {
+	zonesClient := newMockZonesClient([]*dns.Zone{
+		createMockZone("example.com", "/dnszones/example.com"),
+	})
+	recordSetsClient := newMockRecordSetsClient([]*dns.RecordSet{})
+	azureProvider := newAzureProvider(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{}),
+		provider.NewZoneIDFilter([]string{}),
+		false,
+		"k8s",
+		"",
+		"",
+		&zonesClient,
+		&recordSetsClient,
+		0,
+	)
+
+	tests := []struct {
+		name     string
+		endpoint *endpoint.Endpoint
+		expected endpoint.ProviderSpecific
+	}{
+		{
+			name: "Azure tags annotation is parsed",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific(annotations.AzureTagsKey, "cost-center=12345,owner=backend-team"),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-cost-center", Value: "12345"},
+				{Name: "azure/metadata-owner", Value: "backend-team"},
+			},
+		},
+		{
+			name: "Azure tags annotation with spaces is parsed correctly",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific(annotations.AzureTagsKey, "environment=production, app=myapp "),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-environment", Value: "production"},
+				{Name: "azure/metadata-app", Value: "myapp"},
+			},
+		},
+		{
+			name: "Azure tags annotation with empty tags is handled",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific(annotations.AzureTagsKey, "key=value,,other=test"),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-key", Value: "value"},
+				{Name: "azure/metadata-other", Value: "test"},
+			},
+		},
+		{
+			name:     "Endpoint without Azure tags is unchanged",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			expected: endpoint.ProviderSpecific{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoints := []*endpoint.Endpoint{tt.endpoint}
+			adjusted, err := azureProvider.AdjustEndpoints(endpoints)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(adjusted) != 1 {
+				t.Fatalf("expected 1 endpoint, got %d", len(adjusted))
+			}
+
+			// Check that the azure-tags property was removed
+			if _, ok := adjusted[0].GetProviderSpecificProperty(annotations.AzureTagsKey); ok {
+				t.Error("azure-tags property should have been removed after parsing")
+			}
+
+			// Check that the expected metadata properties are present
+			for _, exp := range tt.expected {
+				val, ok := adjusted[0].GetProviderSpecificProperty(exp.Name)
+				if !ok {
+					t.Errorf("expected property %s not found", exp.Name)
+				} else if val != exp.Value {
+					t.Errorf("property %s: expected %q, got %q", exp.Name, exp.Value, val)
+				}
+			}
+
+			// Verify metadata keys tracking property is set when there are metadata properties
+			if len(tt.expected) > 0 {
+				keysVal, ok := adjusted[0].GetProviderSpecificProperty("azure/metadata-keys")
+				if !ok {
+					t.Error("azure/metadata-keys property should be set when metadata exists")
+				} else if keysVal == "" {
+					t.Error("azure/metadata-keys property should not be empty")
+				}
+			}
+		})
 	}
 }
