@@ -87,6 +87,7 @@ func (suite *ServiceSuite) SetupTest() {
 		fakeClient,
 		"",
 		"",
+		"",
 		"{{.Name}}",
 		false,
 		"",
@@ -170,6 +171,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				context.TODO(),
 				fake.NewClientset(),
 				"",
+				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				false,
@@ -207,6 +209,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title                       string
 		targetNamespace             string
+		namespaceSelector           string
 		annotationFilter            string
 		svcNamespace                string
 		svcName                     string
@@ -1155,6 +1158,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				tc.combineFQDNAndAnnotation,
@@ -1193,6 +1197,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		annotationFilter         string
 		svcNamespace             string
 		svcName                  string
@@ -1210,6 +1215,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 	}{
 		{
 			"test service returns a correct end point",
+			"",
 			"",
 			"",
 			"testing",
@@ -1234,6 +1240,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			"multiple services that share same DNS should be merged into one endpoint",
 			"",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
@@ -1256,6 +1263,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 		},
 		{
 			"test that services with different hostnames do not get merged together",
+			"",
 			"",
 			"",
 			"testing",
@@ -1288,6 +1296,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			"test that services with different set-identifier do not get merged together",
 			"",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
@@ -1310,6 +1319,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 		},
 		{
 			"test that services with CNAME types do not get merged together",
+			"",
 			"",
 			"",
 			"testing",
@@ -1372,6 +1382,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				tc.combineFQDNAndAnnotation,
@@ -1422,6 +1433,7 @@ func TestClusterIpServices(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		annotationFilter         string
 		svcNamespace             string
 		svcName                  string
@@ -1678,6 +1690,7 @@ func TestClusterIpServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				false,
@@ -1715,6 +1728,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		annotationFilter         string
 		svcNamespace             string
 		svcName                  string
@@ -2506,6 +2520,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				false,
@@ -2543,6 +2558,7 @@ func TestHeadlessServices(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		svcNamespace             string
 		svcName                  string
 		svcType                  v1.ServiceType
@@ -2569,6 +2585,7 @@ func TestHeadlessServices(t *testing.T) {
 	}{
 		{
 			"annotated Headless services return IPv4 endpoints for each selected Pod",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -2605,6 +2622,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 endpoints for each selected Pod",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2640,6 +2658,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"hostname annotated Headless services are ignored",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2670,6 +2689,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return IPv4 endpoints with TTL for each selected Pod",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -2707,6 +2727,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 endpoints with TTL for each selected Pod",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2743,6 +2764,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return endpoints for each selected Pod, which are in running state",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2776,6 +2798,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return endpoints for all Pod if publishNotReadyAddresses is set",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -2812,6 +2835,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return endpoints for pods missing hostname",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2844,6 +2868,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return only a unique set of IPv4 targets",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -2878,6 +2903,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return only a unique set of IPv6 targets",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2910,6 +2936,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return IPv4 targets from pod annotation",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -2946,6 +2973,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 targets from pod annotation",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -2980,6 +3008,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return IPv4 targets from node external IP if endpoints-type annotation is set",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -3025,6 +3054,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return only external IPv6 targets from node IP if endpoints-type annotation is set and exposeInternalIPv6 flag is unset",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -3075,6 +3105,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 targets from node external IP if endpoints-type annotation is set and exposeInternalIPv6 flag set",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -3119,6 +3150,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"annotated Headless services return dual-stack targets from node external IP if endpoints-type annotation is set and exposeInternalIPv6 flag set",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -3170,6 +3202,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv4 targets from hostIP if endpoints-type annotation is set",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -3204,6 +3237,7 @@ func TestHeadlessServices(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 targets from hostIP if endpoints-type annotation is set",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -3237,6 +3271,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"headless service with endpoints-type annotation is outside of serviceTypeFilter scope",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -3284,6 +3319,7 @@ func TestHeadlessServices(t *testing.T) {
 		},
 		{
 			"headless service with endpoints-type annotation is in the scope of serviceTypeFilter",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -3415,6 +3451,7 @@ func TestHeadlessServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				"",
 				tc.fqdnTemplate,
 				false,
@@ -3552,6 +3589,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		kubernetes,
 		v1.NamespaceAll,
+		"",
 		"",
 		"",
 		false,
@@ -3921,6 +3959,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		v1.NamespaceAll,
 		"",
 		"",
+		"",
 		false,
 		"",
 		false,
@@ -3958,6 +3997,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		svcNamespace             string
 		svcName                  string
 		svcType                  v1.ServiceType
@@ -3980,6 +4020,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 	}{
 		{
 			"annotated Headless services return IPv4 endpoints for each selected Pod",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4015,6 +4056,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 endpoints for each selected Pod",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4049,6 +4091,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"hostname annotated Headless services are ignored",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4078,6 +4121,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		},
 		{
 			"annotated Headless services return IPv4 endpoints with TTL for each selected Pod",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4114,6 +4158,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 endpoints with TTL for each selected Pod",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4149,6 +4194,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"annotated Headless services return endpoints for each selected Pod, which are in running state",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4181,6 +4227,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		},
 		{
 			"annotated Headless services return endpoints for all Pod if publishNotReadyAddresses is set",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4216,6 +4263,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"annotated Headless services return IPv4 endpoints for pods missing hostname",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4248,6 +4296,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		{
 			"annotated Headless services return IPv6 endpoints for pods missing hostname",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
@@ -4279,6 +4328,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		},
 		{
 			"annotated Headless services without a targetRef has no endpoints",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4378,6 +4428,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				"",
 				tc.fqdnTemplate,
 				false,
@@ -4420,6 +4471,7 @@ func TestExternalServices(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
+		namespaceSelector        string
 		svcNamespace             string
 		svcName                  string
 		svcType                  v1.ServiceType
@@ -4436,6 +4488,7 @@ func TestExternalServices(t *testing.T) {
 	}{
 		{
 			"external services return an A endpoint for the external name that is an IPv4 address",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4458,6 +4511,7 @@ func TestExternalServices(t *testing.T) {
 		{
 			"external services return an AAAA endpoint for the external name that is an IPv6 address",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeExternalName,
@@ -4478,6 +4532,7 @@ func TestExternalServices(t *testing.T) {
 		},
 		{
 			"external services return a CNAME endpoint for the external name that is a domain",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4500,6 +4555,7 @@ func TestExternalServices(t *testing.T) {
 		{
 			"annotated ExternalName service with externalIPs returns a single endpoint with multiple targets",
 			"",
+			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeExternalName,
@@ -4520,6 +4576,7 @@ func TestExternalServices(t *testing.T) {
 		},
 		{
 			"annotated ExternalName service with externalIPs of dualstack addresses returns 2 endpoints with multiple targets",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4542,6 +4599,7 @@ func TestExternalServices(t *testing.T) {
 		},
 		{
 			"annotated ExternalName service with externalIPs of dualstack and excluded in serviceTypeFilter",
+			"",
 			"",
 			"testing",
 			"foo",
@@ -4589,6 +4647,7 @@ func TestExternalServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				tc.namespaceSelector,
 				"",
 				tc.fqdnTemplate,
 				false,
@@ -4652,6 +4711,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		context.TODO(),
 		kubernetes,
 		v1.NamespaceAll,
+		"",
 		"",
 		"",
 		false,
@@ -4754,6 +4814,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				"default",
 				"",
 				"",
+				"",
 				false,
 				"",
 				true,
@@ -4784,6 +4845,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		context.TODO(),
 		fake.NewClientset(),
 		"default",
+		"",
 		"",
 		"",
 		false,
@@ -4965,6 +5027,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		fakeClient,
 		"default",
 		"",
+		"",
 		"{{.Name}}",
 		false,
 		"",
@@ -5051,6 +5114,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	src, err := NewServiceSource(
 		ctx,
 		fakeClient,
+		"",
 		"",
 		"",
 		"{{.Name}}",

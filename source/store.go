@@ -61,6 +61,8 @@ var ErrSourceNotFound = errors.New("source not found")
 // type conversions and validation.
 type Config struct {
 	Namespace                      string
+	NamespaceLabelSelector         string
+	Namespaces                     []string
 	AnnotationFilter               string
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -114,6 +116,8 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
 	return &Config{
 		Namespace:                      cfg.Namespace,
+		NamespaceLabelSelector:         cfg.NamespaceLabelSelector,
+		Namespaces:                     cfg.Namespaces,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
@@ -428,10 +432,10 @@ func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 	if err != nil {
 		return nil, err
 	}
-	return NewServiceSource(ctx, client, cfg.Namespace,
+	return NewServiceSource(ctx, client, cfg.Namespace, cfg.NamespaceLabelSelector,
 		cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation,
 		cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP,
-		cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation,
+		cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.Namespaces, cfg.IgnoreHostnameAnnotation,
 		cfg.LabelFilter, cfg.ResolveLoadBalancerHostname, cfg.ListenEndpointEvents,
 		cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
 }

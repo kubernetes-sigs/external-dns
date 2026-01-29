@@ -40,6 +40,8 @@
 | `--label-filter=""` | Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host |
 | `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
 | `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
+| `--namespace-label-selector=""` | Label selector to filter namespaces when querying resources for endpoints (Can only be used while cluster-wide) |
+| `--namespaces=NAMESPACES` | Limit resources queried for endpoints to specific namespaces; specify multiple times for multiple namespaces |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
 | `--openshift-router-name=""` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
 | `--pod-source-domain=""` | Domain to use for pods records (optional) |

@@ -48,6 +48,8 @@ type Config struct {
 	SkipperRouteGroupVersion                      string
 	Sources                                       []string
 	Namespace                                     string
+	NamespaceLabelSelector                        string
+	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
 	LabelFilter                                   string
@@ -309,6 +311,7 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:         5 * time.Second,
 	MinTTL:                       0,
 	Namespace:                    "",
+	NamespaceLabelSelector:       "",
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
@@ -531,6 +534,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
 	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
+	b.StringVar("namespace-label-selector", "Label selector to filter namespaces when querying resources for endpoints (Can only be used while cluster-wide)", defaultConfig.NamespaceLabelSelector, &cfg.NamespaceLabelSelector)
+	b.StringsVar("namespaces", "Limit resources queried for endpoints to specific namespaces; specify multiple times for multiple namespaces", defaultConfig.Namespaces, &cfg.Namespaces)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
 	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.", defaultConfig.OCPRouterName, &cfg.OCPRouterName)
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)

@@ -878,6 +878,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				kubeClient,
 				"",
 				"",
+				"",
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
