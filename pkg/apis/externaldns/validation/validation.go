@@ -58,6 +58,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-prefix must end with '/'")
 	}
 
+	if cfg.Namespace != "" && cfg.NamespaceLabelSelector != "" {
+		return errors.New("cannot specify both --namespace and --namespace-label-selector")
+	}
+
 	return nil
 }
 

@@ -39,6 +39,8 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -87,12 +89,14 @@ func (suite *ServiceSuite) SetupTest() {
 		fakeClient,
 		"",
 		"",
+		"",
 		"{{.Name}}",
 		false,
 		"",
 		false,
 		false,
 		false,
+		[]string{},
 		[]string{},
 		false,
 		labels.Everything(),
@@ -170,6 +174,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				context.TODO(),
 				fake.NewClientset(),
 				"",
+				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				false,
@@ -178,6 +183,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				false,
 				ti.serviceTypesFilter,
+				[]string{},
 				false,
 				labels.Everything(),
 				false,
@@ -1155,6 +1161,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				"",
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				tc.combineFQDNAndAnnotation,
@@ -1163,6 +1170,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				false,
 				false,
 				tc.serviceTypesFilter,
+				[]string{},
 				tc.ignoreHostnameAnnotation,
 				sourceLabel,
 				tc.resolveLoadBalancerHostname,
@@ -1372,6 +1380,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				"",
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				tc.combineFQDNAndAnnotation,
@@ -1380,6 +1389,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				false,
 				false,
 				tc.serviceTypesFilter,
+				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
@@ -1678,6 +1688,7 @@ func TestClusterIpServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				"",
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				false,
@@ -1685,6 +1696,7 @@ func TestClusterIpServices(t *testing.T) {
 				true,
 				false,
 				false,
+				[]string{},
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labelSelector,
@@ -2506,6 +2518,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
+				"",
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				false,
@@ -2513,6 +2526,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				true,
 				false,
 				false,
+				[]string{},
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
@@ -3416,6 +3430,7 @@ func TestHeadlessServices(t *testing.T) {
 				kubernetes,
 				tc.targetNamespace,
 				"",
+				"",
 				tc.fqdnTemplate,
 				false,
 				tc.compatibility,
@@ -3423,6 +3438,7 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				false,
 				tc.serviceTypesFilter,
+				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
@@ -3554,11 +3570,13 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		v1.NamespaceAll,
 		"",
 		"",
+		"",
 		false,
 		"",
 		false,
 		false,
 		false,
+		[]string{},
 		[]string{},
 		false,
 		labels.Everything(),
@@ -3921,11 +3939,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		v1.NamespaceAll,
 		"",
 		"",
+		"",
 		false,
 		"",
 		false,
 		false,
 		false,
+		[]string{},
 		[]string{},
 		false,
 		labels.Everything(),
@@ -4379,12 +4399,14 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				kubernetes,
 				tc.targetNamespace,
 				"",
+				"",
 				tc.fqdnTemplate,
 				false,
 				tc.compatibility,
 				true,
 				true,
 				false,
+				[]string{},
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
@@ -4590,6 +4612,7 @@ func TestExternalServices(t *testing.T) {
 				kubernetes,
 				tc.targetNamespace,
 				"",
+				"",
 				tc.fqdnTemplate,
 				false,
 				tc.compatibility,
@@ -4597,6 +4620,7 @@ func TestExternalServices(t *testing.T) {
 				false,
 				false,
 				tc.serviceTypeFilter,
+				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
@@ -4654,11 +4678,13 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		v1.NamespaceAll,
 		"",
 		"",
+		"",
 		false,
 		"",
 		false,
 		false,
 		false,
+		[]string{},
 		[]string{},
 		false,
 		labels.Everything(),
@@ -4676,6 +4702,8 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 }
 
 func TestNewServiceSourceInformersEnabled(t *testing.T) {
+	namespace := "default"
+
 	tests := []struct {
 		name      string
 		asserts   func(svc *serviceSource)
@@ -4687,22 +4715,44 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.False(t, svc.serviceTypeFilter.enabled)
+
+				// Node informer should exist (cluster-scoped, created when filter is empty)
 				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
+
+				// Service informer should exist in map
+				assert.Contains(t, svc.serviceInformers, namespace)
+				assert.NotNil(t, svc.serviceInformers[namespace])
+
+				// EndpointSlice and Pod informers should exist (empty filter = all types)
+				assert.Contains(t, svc.endpointSliceInformers, namespace)
+				assert.NotNil(t, svc.endpointSliceInformers[namespace])
+
+				assert.Contains(t, svc.podInformers, namespace)
+				assert.NotNil(t, svc.podInformers[namespace])
 			},
 		},
 		{
-			name:      "serviceTypeFilter contains NodePort",
+			name:      "serviceTypeFilter contains ClusterIP",
 			svcFilter: []string{string(v1.ServiceTypeClusterIP)},
 			asserts: func(svc *serviceSource) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
+
+				// Service informer should exist in map
+				assert.Contains(t, svc.serviceInformers, namespace)
+				assert.NotNil(t, svc.serviceInformers[namespace])
+
+				// Node informer should be nil (ClusterIP doesn't need nodes)
 				assert.Nil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+
+				// EndpointSlice informer should exist (needed for ClusterIP headless)
+				assert.Contains(t, svc.endpointSliceInformers, namespace)
+				assert.NotNil(t, svc.endpointSliceInformers[namespace])
+
+				// Pod informer should exist (needed for ClusterIP headless)
+				assert.Contains(t, svc.podInformers, namespace)
+				assert.NotNil(t, svc.podInformers[namespace])
 			},
 		},
 		{
@@ -4712,36 +4762,65 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
+
+				// Service informer should exist in map
+				assert.Contains(t, svc.serviceInformers, namespace)
+				assert.NotNil(t, svc.serviceInformers[namespace])
+
+				// Node informer should exist (NodePort needs nodes)
 				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+
+				// EndpointSlice informer should exist (needed for NodePort)
+				assert.Contains(t, svc.endpointSliceInformers, namespace)
+				assert.NotNil(t, svc.endpointSliceInformers[namespace])
+
+				// Pod informer should exist (needed for NodePort)
+				assert.Contains(t, svc.podInformers, namespace)
+				assert.NotNil(t, svc.podInformers[namespace])
 			},
 		},
 		{
-			name:      "serviceTypeFilter contains ExternalName",
+			name:      "serviceTypeFilter contains ExternalName only",
 			svcFilter: []string{string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
+
+				// Service informer should exist in map
+				assert.Contains(t, svc.serviceInformers, namespace)
+				assert.NotNil(t, svc.serviceInformers[namespace])
+
+				// Node informer should be nil (ExternalName doesn't need nodes)
 				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+
+				// EndpointSlice informer map should be empty (not needed for ExternalName)
+				assert.Empty(t, svc.endpointSliceInformers)
+
+				// Pod informer map should be empty (not needed for ExternalName)
+				assert.Empty(t, svc.podInformers)
 			},
 		},
 		{
-			name:      "serviceTypeFilter contains LoadBalancer",
+			name:      "serviceTypeFilter contains LoadBalancer only",
 			svcFilter: []string{string(v1.ServiceTypeLoadBalancer)},
 			asserts: func(svc *serviceSource) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
+
+				// Service informer should exist in map
+				assert.Contains(t, svc.serviceInformers, namespace)
+				assert.NotNil(t, svc.serviceInformers[namespace])
+
+				// Node informer should be nil (LoadBalancer doesn't need nodes)
 				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+
+				// EndpointSlice informer map should be empty (not needed for LoadBalancer)
+				assert.Empty(t, svc.endpointSliceInformers)
+
+				// Pod informer map should be empty (not needed for LoadBalancer)
+				assert.Empty(t, svc.podInformers)
 			},
 		},
 	}
@@ -4751,7 +4830,8 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 			svc, err := NewServiceSource(
 				t.Context(),
 				fake.NewClientset(),
-				"default",
+				namespace,
+				"",
 				"",
 				"",
 				false,
@@ -4760,6 +4840,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				false,
 				false,
 				ts.svcFilter,
+				[]string{},
 				false,
 				labels.Everything(),
 				false,
@@ -4786,12 +4867,14 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		"default",
 		"",
 		"",
+		"",
 		false,
 		"",
 		false,
 		false,
 		false,
 		serviceTypeFilter,
+		[]string{},
 		false,
 		labels.Everything(),
 		false,
@@ -4946,24 +5029,28 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 
 func TestEndpointSlicesIndexer(t *testing.T) {
 	ctx := t.Context()
+	namespace := "default"
 	fakeClient := fake.NewClientset()
 
 	// Create a dummy EndpointSlice without the service name label
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-slice",
-			Namespace: "default",
+			Namespace: namespace,
 			Labels:    map[string]string{}, // No discoveryv1.LabelServiceName
 		},
 	}
-	_, err := fakeClient.DiscoveryV1().EndpointSlices("default").Create(ctx, endpointSlice, metav1.CreateOptions{})
+	_, err := fakeClient.DiscoveryV1().EndpointSlices(namespace).Create(ctx, endpointSlice, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// Should not error when creating the source
+	// Note: empty serviceTypeFilter means all types, which includes ClusterIP and NodePort
+	// This should create endpointSlice informers
 	src, err := NewServiceSource(
 		ctx,
 		fakeClient,
-		"default",
+		namespace,
+		"",
 		"",
 		"{{.Name}}",
 		false,
@@ -4971,6 +5058,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		false,
 		false,
 		false,
+		[]string{}, // Empty filter = all service types = creates ES informers
 		[]string{},
 		false,
 		labels.Everything(),
@@ -4983,11 +5071,27 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)
 
+	// Get the endpointSlice informer from the map
+	require.NotEmpty(t, ss.endpointSliceInformers, "endpointSlice informers map should not be empty")
+
+	// Determine the correct key (namespace or metav1.NamespaceAll)
+	key := namespace
+	if namespace == "" {
+		key = metav1.NamespaceAll
+	}
+
+	require.Contains(t, ss.endpointSliceInformers, key, "endpointSlice informers should contain key for namespace")
+	esInformer := ss.endpointSliceInformers[key]
+	require.NotNil(t, esInformer, "endpointSlice informer should not be nil")
+
+	// Get the indexer from the informer
+	indexer := esInformer.Informer().GetIndexer()
+	require.NotNil(t, indexer, "indexer should not be nil")
+
 	// Try to get EndpointSlices by index; should not panic or error, should return empty slice
-	indexer := ss.endpointSlicesInformer.Informer().GetIndexer()
 	slices, err := indexer.ByIndex(serviceNameIndexKey, "default/foo")
 	require.NoError(t, err)
-	require.Empty(t, slices)
+	require.Empty(t, slices, "should return empty slice for non-existent service")
 
 	// Insert an object of the wrong type into the indexer; indexFunc should return an error and Add() should panic
 	require.PanicsWithError(t,
@@ -4997,7 +5101,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 			_ = indexer.Add(&v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "not-an-endpointslice",
-					Namespace: "default",
+					Namespace: namespace,
 				},
 			})
 		})
@@ -5005,6 +5109,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 
 func TestPodTransformerInServiceSource(t *testing.T) {
 	ctx := t.Context()
+	namespace := "test-ns"
 	fakeClient := fake.NewClientset()
 
 	pod := &v1.Pod{
@@ -5016,7 +5121,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 			NodeName: "test-node",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test-ns",
+			Namespace: namespace,
 			Name:      "test-name",
 			Labels: map[string]string{
 				"label1": "value1",
@@ -5048,9 +5153,12 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should not error when creating the source
+	// Using cluster-wide namespace ("") and empty service type filter
+	// This should create pod informers
 	src, err := NewServiceSource(
 		ctx,
 		fakeClient,
+		"", // Empty namespace = cluster-wide
 		"",
 		"",
 		"{{.Name}}",
@@ -5059,6 +5167,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		false,
 		false,
 		false,
+		[]string{}, // Empty filter = all service types = creates pod informers
 		[]string{},
 		false,
 		labels.Everything(),
@@ -5071,19 +5180,28 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)
 
-	retrieved, err := ss.podInformer.Lister().Pods("test-ns").Get("test-name")
+	// Access pod informer from the map
+	// Since namespace is "" (cluster-wide), the key is metav1.NamespaceAll
+	key := metav1.NamespaceAll
+	require.Contains(t, ss.podInformers, key, "podInformers should contain cluster-wide key")
+
+	podInformer := ss.podInformers[key]
+	require.NotNil(t, podInformer, "pod informer should not be nil")
+
+	// Get the pod from the correct informer
+	retrieved, err := podInformer.Lister().Pods(namespace).Get("test-name")
 	require.NoError(t, err)
 
 	// Metadata
 	assert.Equal(t, "test-name", retrieved.Name)
-	assert.Equal(t, "test-ns", retrieved.Namespace)
+	assert.Equal(t, namespace, retrieved.Namespace)
 	assert.Empty(t, retrieved.UID)
 	assert.Equal(t, map[string]string{
 		"label1": "value1",
 		"label2": "value2",
 		"label3": "value3",
 	}, retrieved.Labels)
-	// Filtered
+	// Filtered - only annotations with external-dns prefix should remain
 	assert.Equal(t, map[string]string{
 		"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
 		"external-dns.alpha.kubernetes.io/random":   "value",
@@ -5181,20 +5299,19 @@ func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
 }
 
 func TestServiceSource_AddEventHandler(t *testing.T) {
-	var fakeServiceInformer *informers.FakeServiceInformer
-	var fakeEdpInformer *informers.FakeEndpointSliceInformer
-	var fakeNodeInformer *informers.FakeNodeInformer
+	namespace := "default"
+
 	tests := []struct {
 		name    string
 		filter  []string
 		times   int
-		asserts func(t *testing.T, s *serviceSource)
+		asserts func(t *testing.T, fakeServiceInformer *informers.FakeServiceInformer, fakeEdpInformer *informers.FakeEndpointSliceInformer, fakeNodeInformer *informers.FakeNodeInformer)
 	}{
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T, fakeServiceInformer *informers.FakeServiceInformer, fakeEdpInformer *informers.FakeEndpointSliceInformer, fakeNodeInformer *informers.FakeNodeInformer) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5204,7 +5321,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should trigger only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
 			times:  1,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T, fakeServiceInformer *informers.FakeServiceInformer, fakeEdpInformer *informers.FakeEndpointSliceInformer, fakeNodeInformer *informers.FakeNodeInformer) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 0)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5214,7 +5331,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T, fakeServiceInformer *informers.FakeServiceInformer, fakeEdpInformer *informers.FakeEndpointSliceInformer, fakeNodeInformer *informers.FakeNodeInformer) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5224,7 +5341,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T, fakeServiceInformer *informers.FakeServiceInformer, fakeEdpInformer *informers.FakeEndpointSliceInformer, fakeNodeInformer *informers.FakeNodeInformer) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5233,33 +5350,51 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeServiceInformer = new(informers.FakeServiceInformer)
+			// Create fake informers
+			fakeServiceInformer := new(informers.FakeServiceInformer)
 			infSvc := testInformer{}
 			fakeServiceInformer.On("Informer").Return(&infSvc)
 
-			fakeEdpInformer = new(informers.FakeEndpointSliceInformer)
+			fakeEdpInformer := new(informers.FakeEndpointSliceInformer)
 			infEdp := testInformer{}
 			fakeEdpInformer.On("Informer").Return(&infEdp)
 
-			fakeNodeInformer = new(informers.FakeNodeInformer)
+			fakeNodeInformer := new(informers.FakeNodeInformer)
 			infNode := testInformer{}
 			fakeNodeInformer.On("Informer").Return(&infNode)
 
 			filter, _ := newServiceTypesFilter(tt.filter)
 
+			// Create maps of informers (new structure)
+			serviceInformers := make(map[string]coreinformers.ServiceInformer)
+			serviceInformers[namespace] = fakeServiceInformer
+
+			endpointSliceInformers := make(map[string]discoveryinformers.EndpointSliceInformer)
+			// Only add if filter requires it
+			if filter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+				endpointSliceInformers[namespace] = fakeEdpInformer
+			}
+
+			podInformers := make(map[string]coreinformers.PodInformer)
+
+			// Create serviceSource with map-based structure
 			svcSource := &serviceSource{
-				endpointSlicesInformer: fakeEdpInformer,
-				serviceInformer:        fakeServiceInformer,
+				serviceInformers:       serviceInformers,
+				endpointSliceInformers: endpointSliceInformers,
+				podInformers:           podInformers,
 				nodeInformer:           fakeNodeInformer,
 				serviceTypeFilter:      filter,
 				listenEndpointEvents:   true,
 			}
 
+			// Call AddEventHandler
 			svcSource.AddEventHandler(t.Context(), func() {})
 
+			// Check total times
 			assert.Equal(t, tt.times, infSvc.times+infEdp.times+infNode.times)
 
-			tt.asserts(t, svcSource)
+			// Run specific assertions
+			tt.asserts(t, fakeServiceInformer, fakeEdpInformer, fakeNodeInformer)
 		})
 	}
 }
