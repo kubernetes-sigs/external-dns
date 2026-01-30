@@ -146,6 +146,39 @@ func TestExecTemplate(t *testing.T) {
 			want: []string{"test.example.com"},
 		},
 		{
+			name: "trim prefix",
+			tmpl: `{{ trimPrefix .Name "the-" }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "the-test",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "trim suffix",
+			tmpl: `{{ trimSuffix .Name "-v2" }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-v2",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "replace dash",
+			tmpl: `{{ replace "-" "." .Name }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-v2",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.v2.example.com"},
+		},
+		{
 			name: "annotations and labels",
 			tmpl: "{{.Labels.environment }}.example.com, {{ index .ObjectMeta.Annotations \"alb.ingress.kubernetes.io/scheme\" }}.{{ .Labels.environment }}.{{ index .ObjectMeta.Annotations \"dns.company.com/zone\" }}",
 			obj: &testObject{
