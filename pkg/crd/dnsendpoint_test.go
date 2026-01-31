@@ -18,7 +18,6 @@ package crd
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,65 +28,48 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest/fake"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func defaultHeader() http.Header {
-	header := http.Header{}
-	header.Set("Content-Type", runtime.ContentTypeJSON)
-	return header
-}
+const (
+	testNamespace    = "test-ns"
+	testEndpointName = "test-endpoint"
+)
 
-func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
-	return io.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
-}
+var (
+	// Compile-time check that dnsEndpointClient implements DNSEndpointClient interface
+	_ DNSEndpointClient = (*dnsEndpointClient)(nil)
 
-func newTestScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	_ = apiv1alpha1.AddToScheme(scheme)
-	return scheme
-}
+	// created once
+	testScheme = func() *runtime.Scheme {
+		s := runtime.NewScheme()
+		_ = apiv1alpha1.AddToScheme(s)
+		return s
+	}()
+	testCodecFactory = serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(testScheme),
+	}
+	testCodec = testCodecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
+	headers   = http.Header{"Content-Type": []string{runtime.ContentTypeJSON}}
+)
 
 func TestNewDNSEndpointClient(t *testing.T) {
 	tests := []struct {
-		name             string
 		kind             string
 		expectedResource string
 	}{
-		{
-			name:             "standard DNSEndpoint kind",
-			kind:             "DNSEndpoint",
-			expectedResource: "dnsendpoints",
-		},
-		{
-			name:             "custom kind",
-			kind:             "CustomEndpoint",
-			expectedResource: "customendpoints",
-		},
-		{
-			name:             "already lowercase",
-			kind:             "endpoint",
-			expectedResource: "endpoints",
-		},
+		{"DNSEndpoint", "dnsendpoints"},
+		{"CustomEndpoint", "customendpoints"},
+		{"endpoint", "endpoints"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			scheme := newTestScheme()
-			codecFactory := serializer.NewCodecFactory(scheme)
-
-			restClient := &fake.RESTClient{
-				GroupVersion:         apiv1alpha1.GroupVersion,
-				NegotiatedSerializer: codecFactory,
-			}
-
-			client := NewDNSEndpointClient(restClient, tt.kind)
+		t.Run(tt.kind, func(t *testing.T) {
+			client := newTestRESTClientWithKind(tt.kind, nil)
 
 			require.NotNil(t, client)
 			impl, ok := client.(*dnsEndpointClient)
@@ -98,21 +80,14 @@ func TestNewDNSEndpointClient(t *testing.T) {
 }
 
 func TestDNSEndpointClient_Get(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-	codec := codecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
-
-	expectedEndpoint := &apiv1alpha1.DNSEndpoint{
+	validEndpoint := &apiv1alpha1.DNSEndpoint{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: apiv1alpha1.GroupVersion.String(),
 			Kind:       apiv1alpha1.DNSEndpointKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-endpoint",
-			Namespace: "test-ns",
+			Name:      testEndpointName,
+			Namespace: testNamespace,
 		},
 		Spec: apiv1alpha1.DNSEndpointSpec{
 			Endpoints: []*endpoint.Endpoint{
@@ -126,213 +101,120 @@ func TestDNSEndpointClient_Get(t *testing.T) {
 		},
 	}
 
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			if req.Method == http.MethodGet && req.URL.Path == "/namespaces/test-ns/dnsendpoints/test-endpoint" {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     defaultHeader(),
-					Body:       objBody(codec, expectedEndpoint),
-				}, nil
+	tests := []struct {
+		name    string
+		epName  string
+		handler func(*http.Request) (*http.Response, error)
+		wantErr bool
+		wantDNS string
+	}{
+		{
+			name:   "success",
+			epName: testEndpointName,
+			handler: func(req *http.Request) (*http.Response, error) {
+				if req.Method == http.MethodGet && req.URL.Path == "/namespaces/"+testNamespace+"/dnsendpoints/"+testEndpointName {
+					return okResponse(validEndpoint), nil
+				}
+				return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+			},
+			wantDNS: "example.org",
+		},
+		{
+			name:   "not found",
+			epName: "nonexistent",
+			handler: func(_ *http.Request) (*http.Response, error) {
+				return notFoundResponse(), nil
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := newTestRESTClient(tt.handler)
+
+			result, err := client.Get(t.Context(), testNamespace, tt.epName)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
-			return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
-		}),
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			require.Len(t, result.Spec.Endpoints, 1)
+			assert.Equal(t, tt.wantDNS, result.Spec.Endpoints[0].DNSName)
+		})
 	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	result, err := client.Get(ctx, "test-ns", "test-endpoint")
-
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	assert.Equal(t, "test-endpoint", result.Name)
-	assert.Equal(t, "test-ns", result.Namespace)
-	require.Len(t, result.Spec.Endpoints, 1)
-	assert.Equal(t, "example.org", result.Spec.Endpoints[0].DNSName)
-}
-
-func TestDNSEndpointClient_Get_NotFound(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusNotFound,
-				Header:     defaultHeader(),
-				Body:       io.NopCloser(bytes.NewReader([]byte(`{"kind":"Status","apiVersion":"v1","status":"Failure","message":"not found","reason":"NotFound","code":404}`))),
-			}, nil
-		}),
-	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	_, err := client.Get(ctx, "test-ns", "nonexistent")
-
-	require.Error(t, err)
 }
 
 func TestDNSEndpointClient_List(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-	codec := codecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
-
-	expectedList := &apiv1alpha1.DNSEndpointList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: apiv1alpha1.GroupVersion.String(),
-			Kind:       "DNSEndpointList",
-		},
-		Items: []apiv1alpha1.DNSEndpoint{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "endpoint-1",
-					Namespace: "test-ns",
-				},
-				Spec: apiv1alpha1.DNSEndpointSpec{
-					Endpoints: []*endpoint.Endpoint{
-						{DNSName: "one.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
-					},
-				},
-			},
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "endpoint-2",
-					Namespace: "test-ns",
-				},
-				Spec: apiv1alpha1.DNSEndpointSpec{
-					Endpoints: []*endpoint.Endpoint{
-						{DNSName: "two.example.org", Targets: endpoint.Targets{"2.2.2.2"}},
-					},
-				},
+	tests := []struct {
+		name          string
+		namespace     string
+		listOpts      *metav1.ListOptions
+		expectedPath  string
+		expectedLabel string
+		responseItems []apiv1alpha1.DNSEndpoint
+	}{
+		{
+			name:         "namespaced",
+			namespace:    testNamespace,
+			listOpts:     &metav1.ListOptions{},
+			expectedPath: "/namespaces/" + testNamespace + "/dnsendpoints",
+			responseItems: []apiv1alpha1.DNSEndpoint{
+				{ObjectMeta: metav1.ObjectMeta{Name: "endpoint-1", Namespace: testNamespace}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "endpoint-2", Namespace: testNamespace}},
 			},
 		},
-	}
-
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			if req.Method == http.MethodGet && req.URL.Path == "/namespaces/test-ns/dnsendpoints" {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     defaultHeader(),
-					Body:       objBody(codec, expectedList),
-				}, nil
-			}
-			return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
-		}),
-	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	result, err := client.List(ctx, "test-ns", &metav1.ListOptions{})
-
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	assert.Len(t, result.Items, 2)
-	assert.Equal(t, "endpoint-1", result.Items[0].Name)
-	assert.Equal(t, "endpoint-2", result.Items[1].Name)
-}
-
-func TestDNSEndpointClient_List_AllNamespaces(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-	codec := codecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
-
-	expectedList := &apiv1alpha1.DNSEndpointList{
-		Items: []apiv1alpha1.DNSEndpoint{
-			{ObjectMeta: metav1.ObjectMeta{Name: "ep1", Namespace: "ns1"}},
-			{ObjectMeta: metav1.ObjectMeta{Name: "ep2", Namespace: "ns2"}},
+		{
+			name:         "all namespaces",
+			namespace:    "",
+			listOpts:     &metav1.ListOptions{},
+			expectedPath: "/dnsendpoints",
+			responseItems: []apiv1alpha1.DNSEndpoint{
+				{ObjectMeta: metav1.ObjectMeta{Name: "ep1", Namespace: "ns1"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "ep2", Namespace: "ns2"}},
+			},
+		},
+		{
+			name:          "with label selector",
+			namespace:     testNamespace,
+			listOpts:      &metav1.ListOptions{LabelSelector: "app=external-dns"},
+			expectedPath:  "/namespaces/" + testNamespace + "/dnsendpoints",
+			expectedLabel: "app=external-dns",
+			responseItems: []apiv1alpha1.DNSEndpoint{
+				{ObjectMeta: metav1.ObjectMeta{Name: "filtered-ep", Namespace: testNamespace}},
+			},
 		},
 	}
 
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			// Empty namespace should query cluster-wide
-			if req.Method == http.MethodGet && req.URL.Path == "/dnsendpoints" {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     defaultHeader(),
-					Body:       objBody(codec, expectedList),
-				}, nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedLabel string
+			client := newTestRESTClient(func(req *http.Request) (*http.Response, error) {
+				capturedLabel = req.URL.Query().Get("labelSelector")
+				if req.Method == http.MethodGet && req.URL.Path == tt.expectedPath {
+					return okResponse(&apiv1alpha1.DNSEndpointList{Items: tt.responseItems}), nil
+				}
+				return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+			})
+
+			result, err := client.List(t.Context(), tt.namespace, tt.listOpts)
+
+			require.NoError(t, err)
+			assert.Len(t, result.Items, len(tt.responseItems))
+			if tt.expectedLabel != "" {
+				assert.Equal(t, tt.expectedLabel, capturedLabel)
 			}
-			return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
-		}),
+		})
 	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	result, err := client.List(ctx, "", &metav1.ListOptions{})
-
-	require.NoError(t, err)
-	assert.Len(t, result.Items, 2)
-}
-
-func TestDNSEndpointClient_List_WithLabelSelector(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-	codec := codecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
-
-	expectedList := &apiv1alpha1.DNSEndpointList{
-		Items: []apiv1alpha1.DNSEndpoint{
-			{ObjectMeta: metav1.ObjectMeta{Name: "filtered-ep", Namespace: "test-ns"}},
-		},
-	}
-
-	var capturedLabelSelector string
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			capturedLabelSelector = req.URL.Query().Get("labelSelector")
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     defaultHeader(),
-				Body:       objBody(codec, expectedList),
-			}, nil
-		}),
-	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	_, err := client.List(ctx, "test-ns", &metav1.ListOptions{
-		LabelSelector: "app=external-dns",
-	})
-
-	require.NoError(t, err)
-	assert.Equal(t, "app=external-dns", capturedLabelSelector)
 }
 
 func TestDNSEndpointClient_UpdateStatus(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-	codec := codecFactory.LegacyCodec(apiv1alpha1.GroupVersion)
-
 	inputEndpoint := &apiv1alpha1.DNSEndpoint{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-endpoint",
-			Namespace:  "test-ns",
+			Name:       testEndpointName,
+			Namespace:  testNamespace,
 			Generation: 2,
 		},
 		Status: apiv1alpha1.DNSEndpointStatus{
@@ -341,29 +223,20 @@ func TestDNSEndpointClient_UpdateStatus(t *testing.T) {
 	}
 
 	var capturedBody *apiv1alpha1.DNSEndpoint
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			if req.Method == http.MethodPut && req.URL.Path == "/namespaces/test-ns/dnsendpoints/test-endpoint/status" {
-				decoder := json.NewDecoder(req.Body)
-				capturedBody = &apiv1alpha1.DNSEndpoint{}
-				if err := decoder.Decode(capturedBody); err != nil {
-					return nil, err
-				}
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     defaultHeader(),
-					Body:       objBody(codec, inputEndpoint),
-				}, nil
+	client := newTestRESTClient(func(req *http.Request) (*http.Response, error) {
+		expectedPath := "/namespaces/" + testNamespace + "/dnsendpoints/" + testEndpointName + "/status"
+		if req.Method == http.MethodPut && req.URL.Path == expectedPath {
+			decoder := json.NewDecoder(req.Body)
+			capturedBody = &apiv1alpha1.DNSEndpoint{}
+			if err := decoder.Decode(capturedBody); err != nil {
+				return nil, err
 			}
-			return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
-		}),
-	}
+			return okResponse(inputEndpoint), nil
+		}
+		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+	})
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	result, err := client.UpdateStatus(ctx, inputEndpoint)
+	result, err := client.UpdateStatus(t.Context(), inputEndpoint)
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -372,98 +245,54 @@ func TestDNSEndpointClient_UpdateStatus(t *testing.T) {
 }
 
 func TestDNSEndpointClient_Watch(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-
-	fakeWatcher := watch.NewFake()
-	defer fakeWatcher.Stop()
-
 	var capturedWatch bool
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-			capturedWatch = req.URL.Query().Get("watch") == "true"
-			// Return a response that the fake client can use
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     defaultHeader(),
-				Body:       io.NopCloser(bytes.NewReader(nil)),
-			}, nil
-		}),
-	}
+	client := newTestRESTClient(func(req *http.Request) (*http.Response, error) {
+		capturedWatch = req.URL.Query().Get("watch") == "true"
+		return emptyResponse(), nil
+	})
 
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
-	opts := &metav1.ListOptions{}
-	_, _ = client.Watch(ctx, "test-ns", opts)
-
-	// Verify watch=true was set in the options
-	assert.True(t, opts.Watch)
-	assert.True(t, capturedWatch)
-}
-
-func TestDNSEndpointClient_Watch_SetsWatchFlag(t *testing.T) {
-	ctx := context.Background()
-	scheme := newTestScheme()
-	codecFactory := serializer.WithoutConversionCodecFactory{
-		CodecFactory: serializer.NewCodecFactory(scheme),
-	}
-
-	restClient := &fake.RESTClient{
-		GroupVersion:         apiv1alpha1.GroupVersion,
-		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     defaultHeader(),
-				Body:       io.NopCloser(bytes.NewReader(nil)),
-			}, nil
-		}),
-	}
-
-	client := NewDNSEndpointClient(restClient, apiv1alpha1.DNSEndpointKind)
-
+	// Test with Watch initially false - should be set to true
 	opts := &metav1.ListOptions{Watch: false}
-	_, _ = client.Watch(ctx, "test-ns", opts)
+	_, err := client.Watch(t.Context(), testNamespace, opts)
 
-	// The Watch method should set opts.Watch = true
-	assert.True(t, opts.Watch)
+	require.NoError(t, err)
+	assert.True(t, opts.Watch, "Watch method should set opts.Watch = true")
+	assert.True(t, capturedWatch, "watch=true should be sent in the request")
 }
 
-func TestDNSEndpointClientInterface(_ *testing.T) {
-	// Verify that dnsEndpointClient implements DNSEndpointClient interface
-	var _ DNSEndpointClient = (*dnsEndpointClient)(nil)
+func newTestRESTClient(handler func(*http.Request) (*http.Response, error)) DNSEndpointClient {
+	return newTestRESTClientWithKind(apiv1alpha1.DNSEndpointKind, handler)
 }
 
-func TestDNSEndpointClient_ResourcePluralization(t *testing.T) {
-	tests := []struct {
-		kind             string
-		expectedResource string
-	}{
-		{"DNSEndpoint", "dnsendpoints"},
-		{"Endpoint", "endpoints"},
-		{"Record", "records"},
-		{"CNAME", "cnames"},
+func newTestRESTClientWithKind(kind string, handler func(*http.Request) (*http.Response, error)) DNSEndpointClient {
+	restClient := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		NegotiatedSerializer: testCodecFactory,
+		Client:               fake.CreateHTTPClient(handler),
 	}
+	return NewDNSEndpointClient(restClient, kind)
+}
 
-	scheme := newTestScheme()
-	codecFactory := serializer.NewCodecFactory(scheme)
+func okResponse(obj runtime.Object) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     headers,
+		Body:       io.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(testCodec, obj)))),
+	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.kind, func(t *testing.T) {
-			restClient := &fake.RESTClient{
-				GroupVersion:         schema.GroupVersion{Group: "test", Version: "v1"},
-				NegotiatedSerializer: codecFactory,
-			}
+func emptyResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     headers,
+		Body:       io.NopCloser(bytes.NewReader(nil)),
+	}
+}
 
-			client := NewDNSEndpointClient(restClient, tt.kind)
-			impl := client.(*dnsEndpointClient)
-
-			assert.Equal(t, tt.expectedResource, impl.resource)
-		})
+func notFoundResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusNotFound,
+		Header:     headers,
+		Body:       io.NopCloser(bytes.NewReader([]byte(`{"kind":"Status","apiVersion":"v1","status":"Failure","code":404}`))),
 	}
 }

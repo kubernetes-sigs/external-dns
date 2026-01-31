@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 	"sigs.k8s.io/external-dns/pkg/crd/fakes"
@@ -40,6 +39,10 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/crd"
+)
+
+const (
+	namespace = "test-ns"
 )
 
 type CRDSuite struct {
@@ -607,17 +610,6 @@ func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
 	}, 2*time.Second, 10*time.Millisecond)
 }
 
-// watchTrackingClient wraps fakeDNSEndpointClient to track watch calls
-type watchTrackingClient struct {
-	*fakes.DNSEndpointClient
-	watchCalled bool
-}
-
-func (w *watchTrackingClient) Watch(ctx context.Context, namespace string, opts *metav1.ListOptions) (watch.Interface, error) {
-	w.watchCalled = true
-	return w.DNSEndpointClient.Watch(ctx, namespace, opts)
-}
-
 func TestCRDSource_Watch(t *testing.T) {
 	scheme := runtime.NewScheme()
 	err := apiv1alpha1.AddToScheme(scheme)
@@ -627,21 +619,21 @@ func TestCRDSource_Watch(t *testing.T) {
 		&apiv1alpha1.DNSEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
-				Namespace: "test-ns",
+				Namespace: namespace,
 			},
 		},
-		"test-ns",
+		namespace,
 		"sigs.k8s.io/external-dns/apis/v1alpha1",
 		"DNSEndpoint",
 	)
 
-	trackingClient := &watchTrackingClient{DNSEndpointClient: fake}
+	trackingClient := &fakes.WatchTrackingClient{DNSEndpointClient: fake}
 
 	opts := &metav1.ListOptions{}
 
-	_, err = trackingClient.Watch(t.Context(), "test-ns", opts)
+	_, err = trackingClient.Watch(t.Context(), namespace, opts)
 	require.NoError(t, err)
-	require.True(t, trackingClient.watchCalled)
+	require.True(t, trackingClient.WatchCalled())
 }
 
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
@@ -661,34 +653,6 @@ func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	}
 }
 
-// fakeListDNSEndpointClient is a mock that returns a custom list of DNSEndpoints.
-type fakeListDNSEndpointClient struct {
-	list *apiv1alpha1.DNSEndpointList
-}
-
-func (f *fakeListDNSEndpointClient) Get(_ context.Context, _, _ string) (*apiv1alpha1.DNSEndpoint, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (f *fakeListDNSEndpointClient) List(_ context.Context, _ string, _ *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
-	return f.list, nil
-}
-
-func (f *fakeListDNSEndpointClient) UpdateStatus(_ context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
-	// Update the item in the list
-	for i := range f.list.Items {
-		if f.list.Items[i].Name == dnsEndpoint.Name && f.list.Items[i].Namespace == dnsEndpoint.Namespace {
-			f.list.Items[i].Status.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
-			return &f.list.Items[i], nil
-		}
-	}
-	return dnsEndpoint, nil
-}
-
-func (f *fakeListDNSEndpointClient) Watch(_ context.Context, _ string, _ *metav1.ListOptions) (watch.Interface, error) {
-	return watch.NewFake(), nil
-}
-
 func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	typeCounts := map[string]int{
 		endpoint.RecordTypeA:     3,
@@ -697,7 +661,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		endpoint.RecordTypeNAPTR: 1,
 	}
 
-	crds := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
+	crds := generateTestFixtureDNSEndpointsByType(namespace, typeCounts)
 
 	for _, crdItem := range crds.Items {
 		for _, ep := range crdItem.Spec.Endpoints {
@@ -706,11 +670,11 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		}
 	}
 
-	fakeClient := &fakeListDNSEndpointClient{list: &crds}
+	fakeClient := fakes.NewFakeDNSEndpointClientWithList(&crds, namespace, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind)
 
 	cs := &crdSource{
 		client:        fakeClient,
-		namespace:     "test-ns",
+		namespace:     namespace,
 		labelSelector: labels.Everything(),
 	}
 
