@@ -245,7 +245,7 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 }
 
 // AddEventHandler for routegroup is currently a no op, because we do not implement caching, yet.
-func (sc *routeGroupSource) AddEventHandler(_ context.Context, handler func()) {}
+func (sc *routeGroupSource) AddEventHandler(_ context.Context, _ func()) {}
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.

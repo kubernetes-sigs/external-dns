@@ -820,65 +820,94 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 	var aliasCnameAaaaEndpoints []*endpoint.Endpoint
 
 	for _, ep := range endpoints {
-		alias := false
-
-		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
-			alias = aliasString == "true"
-			if alias {
-				if !slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}, ep.RecordType) {
-					ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-				}
-			} else {
-				if ep.RecordType == endpoint.RecordTypeCNAME {
-					if aliasString != "false" {
-						ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
-					}
-				} else {
-					ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-				}
-			}
-		} else if ep.RecordType == endpoint.RecordTypeCNAME {
-			alias = useAlias(ep, p.preferCNAME)
-			log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, alias)
-			ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(alias))
+		if aaaa := p.adjustEndpointAndNewAaaaIfNeeded(ep); aaaa != nil {
+			aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, aaaa)
 		}
+	}
+	return append(endpoints, aliasCnameAaaaEndpoints...), nil
+}
 
-		if alias {
-			if ep.RecordTTL.IsConfigured() {
-				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
-				ep.RecordTTL = defaultTTL
-			}
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-				if prop != "true" && prop != "false" {
-					ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, "false")
-				}
-			} else {
-				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
-			}
-
-			if ep.RecordType == endpoint.RecordTypeCNAME {
-				// This needs to match two records from Route53, one alias for 'A' (IPv4)
-				// and one alias for 'AAAA' (IPv6).
-				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
-					DNSName:          ep.DNSName,
-					Targets:          ep.Targets,
-					RecordType:       endpoint.RecordTypeAAAA,
-					RecordTTL:        ep.RecordTTL,
-					Labels:           ep.Labels,
-					ProviderSpecific: ep.ProviderSpecific,
-					SetIdentifier:    ep.SetIdentifier,
-				})
-				ep.RecordType = endpoint.RecordTypeA
-			}
-		} else {
-			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
-		}
-
+func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
+	var aaaa *endpoint.Endpoint
+	switch ep.RecordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+		p.adjustAandAAAARecord(ep)
+	case endpoint.RecordTypeCNAME:
+		p.adjustCNAMERecord(ep)
 		adjustGeoProximityLocationEndpoint(ep)
+		if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+			aaaa = ep.DeepCopy()
+			aaaa.RecordType = endpoint.RecordTypeAAAA
+		}
+		return aaaa
+	default:
+		p.adjustOtherRecord(ep)
+	}
+	adjustGeoProximityLocationEndpoint(ep)
+	return aaaa
+}
+
+func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
+	if ep.RecordTTL.IsConfigured() {
+		log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
+		ep.RecordTTL = defaultTTL
 	}
 
-	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
-	return endpoints, nil
+	if enable, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+		// normalize to string "true"/"false"
+		ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(enable))
+	} else {
+		// if not set, use provider default
+		ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
+	}
+}
+
+func (p *AWSProvider) adjustAandAAAARecord(ep *endpoint.Endpoint) {
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias {
+		p.adjustAliasRecord(ep)
+	} else {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
+}
+
+func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
+	isAlias, exists := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+
+	// fallback to determining alias based on preferCNAME if not explicitly set
+	if !exists {
+		isAlias = useAlias(ep, p.preferCNAME)
+		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, isAlias)
+		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(isAlias))
+	}
+
+	// if not an alias, ensure alias properties are adjusted accordingly
+	if !isAlias {
+		if exists {
+			// normalize to string "false" when provider specific alias is set to false or other non-true value
+			ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
+		}
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
+
+	// if an alias, convert to A record and adjust alias properties
+	if isAlias {
+		ep.RecordType = endpoint.RecordTypeA
+		p.adjustAliasRecord(ep)
+	}
+}
+
+func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
+	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
+	// This will be fixed in another PR.
+	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+		p.adjustAliasRecord(ep)
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+	} else {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set

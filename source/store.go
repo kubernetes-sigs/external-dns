@@ -30,15 +30,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
-	"sigs.k8s.io/external-dns/source/types"
-
-	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
-
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
@@ -233,7 +230,7 @@ type SingletonClientGenerator struct {
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.kubeOnce.Do(func() {
-		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
+		p.kubeClient, err = kubeclient.NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.kubeClient, err
 }
@@ -248,7 +245,7 @@ func (p *SingletonClientGenerator) GatewayClient() (gateway.Interface, error) {
 }
 
 func newGatewayClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (gateway.Interface, error) {
-	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	config, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +553,7 @@ func buildSkipperRouteGroupSource(_ context.Context, cfg *Config) (Source, error
 	apiServerURL := cfg.APIServerURL
 	tokenPath := ""
 	token := ""
-	restConfig, err := GetRestConfig(cfg.KubeConfig, cfg.APIServerURL)
+	restConfig, err := kubeclient.GetRestConfig(cfg.KubeConfig, cfg.APIServerURL)
 	if err == nil {
 		apiServerURL = restConfig.Host
 		tokenPath = restConfig.BearerTokenFile
@@ -601,80 +598,6 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-// instrumentedRESTConfig creates a REST config with request instrumentation for monitoring.
-// Adds HTTP transport wrapper for Prometheus metrics collection and request timeout configuration.
-//
-// Path Processing: Simplifies URL paths for metrics by taking the last segment,
-// reducing cardinality of metric labels for better performance.
-//
-// Timeout: Applies the specified request timeout to prevent hanging requests.
-func instrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*rest.Config, error) {
-	config, err := GetRestConfig(kubeConfig, apiServerURL)
-	if err != nil {
-		return nil, err
-	}
-
-	config.WrapTransport = extdnshttp.NewInstrumentedTransport
-
-	config.Timeout = requestTimeout
-	return config, nil
-}
-
-// GetRestConfig returns the REST client configuration for Kubernetes API access.
-// Supports both in-cluster and external cluster configurations.
-//
-// Configuration Priority:
-// 1. If kubeConfig is empty, tries the recommended home file (~/.kube/config)
-// 2. If kubeConfig is still empty, uses in-cluster service account
-// 3. Otherwise, uses the specified kubeConfig file
-//
-// API Server Override: The apiServerURL parameter can override the server URL
-// from the kubeconfig file, useful for proxy scenarios or custom endpoints.
-func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-	log.Debugf("apiServerURL: %s", apiServerURL)
-	log.Debugf("kubeConfig: %s", kubeConfig)
-
-	// evaluate whether to use kubeConfig-file or serviceaccount-token
-	var (
-		config *rest.Config
-		err    error
-	)
-	if kubeConfig == "" {
-		log.Infof("Using inCluster-config based on serviceaccount-token")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Infof("Using kubeConfig")
-		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
-}
-
-// NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
-	log.Infof("Instantiating new Kubernetes client")
-	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
-	if err != nil {
-		return nil, err
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	log.Infof("Created Kubernetes client %s", config.Host)
-	return client, nil
-}
-
 // NewIstioClient returns a new Istio client object. It uses the configured
 // KubeConfig attribute to connect to the cluster. If KubeConfig isn't provided
 // it defaults to using the recommended default.
@@ -707,7 +630,7 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (dynamic.Interface, error) {
-	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	config, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -723,7 +646,7 @@ func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout 
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewOpenShiftClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*openshift.Clientset, error) {
-	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	config, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}

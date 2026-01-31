@@ -186,7 +186,7 @@ func NewGlooSource(
 	}, nil
 }
 
-func (gs *glooSource) AddEventHandler(_ context.Context, handler func()) {
+func (gs *glooSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects

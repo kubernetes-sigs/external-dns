@@ -19,7 +19,6 @@ package events
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -134,7 +133,7 @@ func TestEvent_NewEvents(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			tt.asserts(tt.event.event())
 		})
 	}
@@ -213,27 +212,13 @@ func TestWithEmitEvents(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			cfg := &Config{}
 			opt := WithEmitEvents(tt.input)
 			opt(cfg)
 			tt.assert(cfg)
 		})
 	}
-}
-
-func TestWithKubeConfig(t *testing.T) {
-	kubeConfig := "/path/to/kubeconfig"
-	apiServerURL := "https://api.server"
-	timeout := 5 * time.Second
-
-	cfg := &Config{}
-	opt := WithKubeConfig(kubeConfig, apiServerURL, timeout)
-	opt(cfg)
-
-	require.Equal(t, kubeConfig, cfg.kubeConfig)
-	require.Equal(t, apiServerURL, cfg.apiServerURL)
-	require.Equal(t, timeout, cfg.timeout)
 }
 
 // mockEndpointInfo implements EndpointInfo for testing

@@ -1823,8 +1823,7 @@ func TestAddEventHandler_AllBranches(t *testing.T) {
 
 type FakeInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
-	lister   cache.GenericLister
+	lister cache.GenericLister
 }
 
 func (f *FakeInformer) Informer() cache.SharedIndexInformer {

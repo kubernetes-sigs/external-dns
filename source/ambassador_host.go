@@ -266,7 +266,7 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
-func (sc *ambassadorHostSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types

@@ -121,11 +121,7 @@ func NewTraefikSource(
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
-		_, _ = ingressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
+		_, _ = ingressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
@@ -427,7 +423,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 	return endpoints
 }
 
-func (ts *traefikSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")

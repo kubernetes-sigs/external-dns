@@ -5029,13 +5029,13 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		name    string
 		filter  []string
 		times   int
-		asserts func(t *testing.T, s *serviceSource)
+		asserts func(t *testing.T)
 	}{
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5045,7 +5045,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should trigger only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
 			times:  1,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 0)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5055,7 +5055,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5065,7 +5065,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5100,7 +5100,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 
 			assert.Equal(t, tt.times, infSvc.times+infEdp.times+infNode.times)
 
-			tt.asserts(t, svcSource)
+			tt.asserts(t)
 		})
 	}
 }

@@ -32,7 +32,7 @@ func TestClient_DoWhenQuotaExceeded(t *testing.T) {
 	assert := assert.New(t)
 
 	// Mock server to return 429 with a JSON payload
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
 		_, err := w.Write([]byte(`{"code": "QUOTA_EXCEEDED", "message": "rate limit exceeded"}`))
