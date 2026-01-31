@@ -32,10 +32,11 @@ type TestScenarios struct {
 
 // Scenario represents a single test scenario.
 type Scenario struct {
-	Name      string                     `json:"name"`
-	Config    ScenarioConfig             `json:"config"`
-	Resources []ResourceWithDependencies `json:"resources"`
-	Expected  []*endpoint.Endpoint       `json:"expected"`
+	Name        string                     `json:"name"`
+	Description string                     `json:"description"`
+	Config      ScenarioConfig             `json:"config"`
+	Resources   []ResourceWithDependencies `json:"resources"`
+	Expected    []*endpoint.Endpoint       `json:"expected"`
 }
 
 // ResourceWithDependencies wraps a K8s resource with optional dependencies.

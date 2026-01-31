@@ -34,7 +34,7 @@ func TestParseResources(t *testing.T) {
 	require.NoError(t, err, "failed to load scenarios")
 	require.NotEmpty(t, scenarios.Scenarios, "no scenarios found")
 
-	assert.Len(t, scenarios.Scenarios, 2, "unexpected number of scenarios")
+	assert.Len(t, scenarios.Scenarios, 3, "unexpected number of scenarios")
 	scenario := scenarios.Scenarios[0]
 
 	_, err = toolkit.ParseResources(scenario.Resources)

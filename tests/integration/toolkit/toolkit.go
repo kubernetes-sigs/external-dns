@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
 	"testing"
 
@@ -56,13 +55,14 @@ func LoadScenarios(dir string) (*TestScenarios, error) {
 		return nil, err
 	}
 
-	return &scenarios, nil
-}
+	// Validate scenarios
+	for i, s := range scenarios.Scenarios {
+		if s.Description == "" {
+			return nil, fmt.Errorf("scenario %d (%q) is missing required field: description", i, s.Name)
+		}
+	}
 
-// getScenariosPath returns the absolute path to the scenarios directory.
-func getScenariosPath() string {
-	_, currentFile, _, _ := runtime.Caller(0) //nolint:dogsled
-	return filepath.Join(filepath.Dir(currentFile), "scenarios")
+	return &scenarios, nil
 }
 
 // ParseResources parses the raw resources from a scenario into typed objects.
@@ -268,7 +268,7 @@ func CreateWrappedSource(
 	clientGen := newMockClientGenerator(client)
 	cfg := scenarioToConfig(scenarioCfg)
 
-	// TODO: review controller/execute.go#buildSources
+	// TODO: copied from controller/execute.go#buildSources
 	sources, err := source.ByNames(ctx, cfg, clientGen)
 	if err != nil {
 		return nil, err
