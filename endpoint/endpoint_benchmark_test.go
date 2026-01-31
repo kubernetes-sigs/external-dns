@@ -23,18 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// benchmarkEndpointConfig holds configuration for generating benchmark test endpoints.
-type benchmarkEndpointConfig struct {
-	// Count specifies how many endpoints to create.
-	Count int
-	// ProviderSpecificCount specifies how many provider-specific properties each endpoint should have.
-	ProviderSpecificCount int
-}
-
-// Realistic AWS provider-specific property keys
 var (
-	benchmarkPropertyPrefix = "external-dns.alpha.kubernetes.io/"
-	providerSpecificKeys    = []string{
+	providerSpecificKeys = []string{
 		"alias",
 		"provider/target-hosted-zone",
 		"provider/evaluate-target-health",
@@ -77,14 +67,21 @@ func BenchmarkProviderSpecificRandomAccess(b *testing.B) {
 	setPropsOptions := []int{0, 1, 5, 9, 16}
 	endpointCounts := []int{100, 1000, 10000, 50000, 100000, 200000}
 
+	keys := []string{
+		"provider/weight",
+		"nonexistent",
+		"provider/geoproximity-region",
+		"same-zone",
+	}
+
 	for _, setProps := range setPropsOptions {
 		for _, epCount := range endpointCounts {
 			endpoints := generateBenchmarkEndpoints(epCount, setProps)
 			b.Run(fmt.Sprintf("slice/set=%d/endpoints=%d", setProps, epCount), func(b *testing.B) {
 				for b.Loop() {
 					for _, ep := range endpoints {
-						// Provider checks ALL supported properties
-						for _, key := range providerSpecificKeys {
+						// Provider checks random supported properties
+						for _, key := range keys {
 							ep.GetProviderSpecificProperty(key)
 						}
 					}
@@ -94,17 +91,17 @@ func BenchmarkProviderSpecificRandomAccess(b *testing.B) {
 	}
 }
 
-func BenchmarkProviderSpecificDeleteComparison(b *testing.B) {
+func BenchmarkProviderSpecificDelete(b *testing.B) {
 	propertyCounts := []int{0, 5, 10}
 	endpointCounts := []int{100, 300, 1000, 10000, 50000}
 
+	keys := []string{
+		"provider/weight",
+		"nonexistent",
+	}
+
 	for _, propCount := range propertyCounts {
 		for _, epCount := range endpointCounts {
-			deleteKey := benchmarkPropertyPrefix + "provider/weight"
-			if propCount == 0 {
-				deleteKey = benchmarkPropertyPrefix + "nonexistent"
-			}
-
 			b.Run(fmt.Sprintf("slice/props=%d/endpoints=%d", propCount, epCount), func(b *testing.B) {
 				template := generateBenchmarkEndpoints(epCount, propCount)
 				b.ResetTimer()
@@ -113,7 +110,9 @@ func BenchmarkProviderSpecificDeleteComparison(b *testing.B) {
 					endpoints := make([]*Endpoint, len(template))
 					copy(endpoints, template)
 					for _, ep := range endpoints {
-						ep.DeleteProviderSpecificProperty(deleteKey)
+						for _, key := range keys {
+							ep.DeleteProviderSpecificProperty(key)
+						}
 					}
 				}
 			})
