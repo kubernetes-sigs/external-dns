@@ -42,13 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// TestMain initializes annotation keys before running tests.
-// This is needed because init() was removed from annotations package.
-func TestMain(m *testing.M) {
-	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	m.Run()
-}
-
 // newCloudflareError creates a cloudflare.Error suitable for testing.
 // The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
 // so this helper initializes them properly.
