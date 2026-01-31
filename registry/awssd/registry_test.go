@@ -56,7 +56,7 @@ func TestAWSSDRegistry_NewAWSSDRegistry(t *testing.T) {
 	_, err := NewAWSSDRegistry(p, "")
 	require.Error(t, err)
 
-	_, err = NewAWSSDRegistry(p, "test-owner")
+	_, err = NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)
 }
 
@@ -152,7 +152,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
 	})
-	r, err := NewAWSSDRegistry(p, "apply-changes-owner")
+	r, err := NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)
 
 	err = r.ApplyChanges(context.Background(), changes)
