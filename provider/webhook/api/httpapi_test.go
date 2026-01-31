@@ -43,14 +43,14 @@ type FakeWebhookProvider struct {
 	assertChanges func(*plan.Changes)
 }
 
-func (p FakeWebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p FakeWebhookProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	if p.err != nil {
 		return nil, p.err
 	}
 	return records, nil
 }
 
-func (p FakeWebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p FakeWebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	if p.err != nil {
 		return p.err
 	}

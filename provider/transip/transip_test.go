@@ -202,31 +202,31 @@ func (f *fakeClient) Get(request rest.Request, dest any) error {
 	return f.getFunc(request, dest)
 }
 
-func (f *fakeClient) Put(request rest.Request) error {
+func (f *fakeClient) Put(_ rest.Request) error {
 	return errors.New("PUT not implemented")
 }
 
-func (f *fakeClient) Post(request rest.Request) error {
+func (f *fakeClient) Post(_ rest.Request) error {
 	return errors.New("POST not implemented")
 }
 
-func (f *fakeClient) Delete(request rest.Request) error {
+func (f *fakeClient) Delete(_ rest.Request) error {
 	return errors.New("DELETE not implemented")
 }
 
-func (f *fakeClient) Patch(request rest.Request) error {
+func (f *fakeClient) Patch(_ rest.Request) error {
 	return errors.New("PATCH not implemented")
 }
 
-func (f *fakeClient) PatchWithResponse(request rest.Request) (rest.Response, error) {
+func (f *fakeClient) PatchWithResponse(_ rest.Request) (rest.Response, error) {
 	return rest.Response{}, errors.New("PATCH with response not implemented")
 }
 
-func (f *fakeClient) PostWithResponse(request rest.Request) (rest.Response, error) {
+func (f *fakeClient) PostWithResponse(_ rest.Request) (rest.Response, error) {
 	return rest.Response{}, errors.New("POST with response not implemented")
 }
 
-func (f *fakeClient) PutWithResponse(request rest.Request) (rest.Response, error) {
+func (f *fakeClient) PutWithResponse(_ rest.Request) (rest.Response, error) {
 	return rest.Response{}, errors.New("PUT with response not implemented")
 }
 
@@ -332,7 +332,7 @@ func TestProviderEntriesForEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	// define GET function
-	client.getFunc = func(unused rest.Request, dest any) error {
+	client.getFunc = func(_ rest.Request, dest any) error {
 		// unmarshal the prepared return data into the given dnsEntriesWrapper
 		return json.Unmarshal(returnData, &dest)
 	}

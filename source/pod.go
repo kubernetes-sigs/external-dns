@@ -212,7 +212,7 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 
 	ps.addInternalHostnameAnnotationEndpoints(endpointMap, pod, targets)
 	ps.addHostnameAnnotationEndpoints(endpointMap, pod, targets)
-	ps.addKopsDNSControllerEndpoints(endpointMap, pod, targets)
+	ps.addKopsDNSControllerEndpoints(endpointMap, pod)
 	ps.addPodSourceDomainEndpoints(endpointMap, pod, targets)
 }
 
@@ -240,7 +240,7 @@ func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.End
 	}
 }
 
-func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod) {
 	if ps.compatibility == "kops-dns-controller" {
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)

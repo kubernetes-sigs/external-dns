@@ -75,7 +75,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"",
 			"",
-			func(actual *tls.Config, err error) {
+			func(_ *tls.Config, err error) {
 				assert.Contains(t, err.Error(), "either both cert and key or none must be provided")
 			},
 		},
@@ -87,7 +87,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"invalid-key",
 			"",
 			"",
-			func(actual *tls.Config, err error) {
+			func(_ *tls.Config, err error) {
 				assert.Contains(t, err.Error(), "could not load TLS cert")
 			},
 		},
@@ -115,7 +115,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"",
 			"",
-			func(actual *tls.Config, err error) {
+			func(_ *tls.Config, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "could not read root certs")
 			},
@@ -128,7 +128,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"",
 			"server-name",
-			func(actual *tls.Config, err error) {
+			func(_ *tls.Config, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "error reading /path/does/not/exist")
 			},

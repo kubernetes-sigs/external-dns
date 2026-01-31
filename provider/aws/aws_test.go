@@ -163,7 +163,7 @@ func specialCharactersEscape(s string) string {
 	return result.String()
 }
 
-func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
+func (r *Route53APIStub) ListTagsForResources(_ context.Context, input *route53.ListTagsForResourcesInput, _ ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
 		var sets []route53types.ResourceTagSet
 		for _, el := range input.ResourceIds {
@@ -185,7 +185,7 @@ func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route5
 	return &route53.ListTagsForResourcesOutput{}, nil
 }
 
-func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
+func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *route53.ChangeResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
 	if r.m.isMocked("ChangeResourceRecordSets", input) {
 		return r.m.ChangeResourceRecordSets(input)
 	}
@@ -244,7 +244,7 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 	return output, nil // TODO: We should ideally return status etc, but we don't' use that yet.
 }
 
-func (r *Route53APIStub) ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
+func (r *Route53APIStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
 	output := &route53.ListHostedZonesOutput{}
 	for _, zone := range r.zones {
 		output.HostedZones = append(output.HostedZones, *zone)
@@ -252,7 +252,7 @@ func (r *Route53APIStub) ListHostedZones(ctx context.Context, input *route53.Lis
 	return output, nil
 }
 
-func (r *Route53APIStub) CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(options *route53.Options)) (*route53.CreateHostedZoneOutput, error) {
+func (r *Route53APIStub) CreateHostedZone(_ context.Context, input *route53.CreateHostedZoneInput, _ ...func(options *route53.Options)) (*route53.CreateHostedZoneOutput, error) {
 	name := *input.Name
 	id := "/hostedzone/" + name
 	if _, ok := r.zones[id]; ok {
@@ -270,7 +270,7 @@ type dynamicMock struct {
 	mock.Mock
 }
 
-func (m *dynamicMock) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+func (m *dynamicMock) ListResourceRecordSets(_ context.Context, input *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
 	args := m.Called(input)
 	if args.Get(0) != nil {
 		return args.Get(0).(*route53.ListResourceRecordSetsOutput), args.Error(1)
@@ -742,7 +742,7 @@ func TestAWSApplyChanges(t *testing.T) {
 		setup      func(p *AWSProvider) context.Context
 		listRRSets int
 	}{
-		{"no cache", func(p *AWSProvider) context.Context { return context.Background() }, 0},
+		{"no cache", func(_ *AWSProvider) context.Context { return context.Background() }, 0},
 		{"cached", func(p *AWSProvider) context.Context {
 			ctx := context.Background()
 			records, err := p.Records(ctx)
