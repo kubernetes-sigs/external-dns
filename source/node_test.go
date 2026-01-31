@@ -581,10 +581,10 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	kubeClient := fake.NewClientset()
 
 	nodes := helperNodeBuilder().
-		withNode(nil).
-		withNode(nil).
-		withNode(nil).
-		withNode(nil).
+		withNode(map[string]string{"tenant": "1"}).
+		withNode(map[string]string{"tenant": "2"}).
+		withNode(map[string]string{"tenant": "3"}).
+		withNode(map[string]string{"tenant": "4"}).
 		build()
 
 	for _, node := range nodes.Items {

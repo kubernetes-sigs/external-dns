@@ -290,9 +290,8 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 
 			if source, err := newTestHTTPProxySource(); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy()); err != nil {
-				require.NoError(t, err)
 			} else {
+				endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
 				validateEndpoints(t, endpoints, ti.expected)
 			}
 		})

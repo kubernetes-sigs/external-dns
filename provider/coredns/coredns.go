@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -288,15 +289,9 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, boo
 	return nil, false
 }
 
-// findLabelInTargets takes an ep.Targets string slice and looks for an element in it. If found it will
-// return its string value, otherwise it will return empty string and a bool of false.
-func findLabelInTargets(targets []string, label string) (string, bool) {
-	for _, target := range targets {
-		if target == label {
-			return target, true
-		}
-	}
-	return "", false
+// findLabelInTargets takes an ep.Targets string slice and looks for an element in it.
+func findLabelInTargets(targets []string, label string) bool {
+	return slices.Contains(targets, label)
 }
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
@@ -444,7 +439,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		if shouldSkipLabel(label) {
 			continue
 		}
-		if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+		if !findLabelInTargets(ep.Targets, label) {
 			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
 			log.Infof("Delete key %s", key)
 			if p.dryRun {
@@ -460,8 +455,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 func shouldSkipLabel(label string) bool {
 	skip := []string{"originalText", "prefix", "resource"}
-	_, ok := findLabelInTargets(skip, label)
-	return ok
+	return findLabelInTargets(skip, label)
 }
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
