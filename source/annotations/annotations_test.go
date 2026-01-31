@@ -23,9 +23,7 @@ import (
 )
 
 func TestSetAnnotationPrefix(t *testing.T) {
-	// Save original values
-	originalPrefix := AnnotationKeyPrefix
-	defer SetAnnotationPrefix(originalPrefix)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
 
 	// Test custom prefix
 	customPrefix := "custom.io/"
@@ -59,17 +57,17 @@ func TestSetAnnotationPrefix(t *testing.T) {
 }
 
 func TestDefaultAnnotationPrefix(t *testing.T) {
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/", AnnotationKeyPrefix)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/hostname", HostnameKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/internal-hostname", InternalHostnameKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/ttl", TtlKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/controller", ControllerKey)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"internal-hostname", InternalHostnameKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"ttl", TtlKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"controller", ControllerKey)
 }
 
 func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
-	// Save original values
-	originalPrefix := AnnotationKeyPrefix
-	defer SetAnnotationPrefix(originalPrefix)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
 
 	// Set first custom prefix
 	SetAnnotationPrefix("first.io/")
@@ -82,7 +80,32 @@ func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
 	assert.Equal(t, "second.io/hostname", HostnameKey)
 
 	// Restore to default
-	SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/", AnnotationKeyPrefix)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/hostname", HostnameKey)
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
+}
+
+func TestSetAnnotationPrefix_AllWhitespace_IsIgnored(t *testing.T) {
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+
+	// Set a non-default prefix so we can detect changes
+	SetAnnotationPrefix("nondefault.io/")
+
+	// All whitespace turns into empty after TrimSpace -> early return -> unchanged
+	SetAnnotationPrefix("   \n\t  ")
+
+	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
+}
+
+func TestSetAnnotationPrefix_RequiresTrailingSlash(t *testing.T) {
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+
+	// Start from a known non-default state to catch accidental changes.
+	SetAnnotationPrefix("nondefault.io/")
+	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
+
+	// Does not end with '/' after trimming and should be ignored.
+	SetAnnotationPrefix("  invalid.io  ")
+	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
+	assert.Equal(t, "nondefault.io/hostname", HostnameKey)
 }
