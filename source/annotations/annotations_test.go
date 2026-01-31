@@ -84,28 +84,3 @@ func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
 	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
 }
-
-func TestSetAnnotationPrefix_AllWhitespace_IsIgnored(t *testing.T) {
-	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
-
-	// Set a non-default prefix so we can detect changes
-	SetAnnotationPrefix("nondefault.io/")
-
-	// All whitespace turns into empty after TrimSpace -> early return -> unchanged
-	SetAnnotationPrefix("   \n\t  ")
-
-	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
-}
-
-func TestSetAnnotationPrefix_RequiresTrailingSlash(t *testing.T) {
-	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
-
-	// Start from a known non-default state to catch accidental changes.
-	SetAnnotationPrefix("nondefault.io/")
-	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
-
-	// Does not end with '/' after trimming and should be ignored.
-	SetAnnotationPrefix("  invalid.io  ")
-	assert.Equal(t, "nondefault.io/", AnnotationKeyPrefix)
-	assert.Equal(t, "nondefault.io/hostname", HostnameKey)
-}

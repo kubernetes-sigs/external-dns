@@ -15,7 +15,6 @@ package annotations
 
 import (
 	"math"
-	"strings"
 )
 
 const (
@@ -73,10 +72,6 @@ var (
 // This must be called before any sources are initialized.
 // The prefix must end with '/'.
 func SetAnnotationPrefix(prefix string) {
-	prefix = strings.TrimSpace(prefix)
-	if prefix == "" || !strings.HasSuffix(prefix, "/") {
-		return
-	}
 	AnnotationKeyPrefix = prefix
 
 	// Cloudflare annotations
