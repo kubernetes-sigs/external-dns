@@ -70,7 +70,7 @@ func NewExoscaleProvider(env, zone, key, secret string, dryRun bool, opts ...Exo
 func NewExoscaleProviderWithClient(client EgoscaleClientI, env, zone string, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
 	ep := &ExoscaleProvider{
 		filter:         &zoneFilter{},
-		OnApplyChanges: func(changes *plan.Changes) {},
+		OnApplyChanges: func(_ *plan.Changes) {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         client,
 		apiEnv:         env,

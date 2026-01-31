@@ -55,7 +55,7 @@ type ScalewayChange struct {
 }
 
 // NewScalewayProvider initializes a new Scaleway DNS provider
-func NewScalewayProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayProvider, error) {
+func NewScalewayProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayProvider, error) {
 	var err error
 	defaultPageSize := uint64(1000)
 	if envPageSize, ok := os.LookupEnv("SCW_DEFAULT_PAGE_SIZE"); ok {

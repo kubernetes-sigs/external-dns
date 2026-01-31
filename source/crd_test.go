@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
+	"sigs.k8s.io/external-dns/pkg/crd/fakes"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -46,15 +47,6 @@ type CRDSuite struct {
 }
 
 func (suite *CRDSuite) SetupTest() {
-}
-
-// fakeDNSEndpointClient is a mock implementation of crd.DNSEndpointClient for testing.
-type fakeDNSEndpointClient struct {
-	endpoints   *apiv1alpha1.DNSEndpoint
-	namespace   string
-	apiVersion  string
-	kind        string
-	returnError bool
 }
 
 func newFakeDNSEndpointClient(
@@ -78,50 +70,7 @@ func newFakeDNSEndpointClient(
 		},
 	}
 
-	return &fakeDNSEndpointClient{
-		endpoints:  dnsEndpoint,
-		namespace:  namespace,
-		apiVersion: apiVersion,
-		kind:       kind,
-	}
-}
-
-func (f *fakeDNSEndpointClient) Get(_ context.Context, namespace, name string) (*apiv1alpha1.DNSEndpoint, error) {
-	if f.returnError {
-		return nil, fmt.Errorf("error getting DNSEndpoint")
-	}
-	if f.endpoints.Namespace == namespace && f.endpoints.Name == name {
-		return f.endpoints, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func (f *fakeDNSEndpointClient) List(_ context.Context, namespace string, _ *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
-	if f.returnError {
-		return nil, fmt.Errorf("error listing DNSEndpoints")
-	}
-	// Return empty list if namespace doesn't match
-	if namespace != "" && f.endpoints.Namespace != namespace {
-		return &apiv1alpha1.DNSEndpointList{}, nil
-	}
-	return &apiv1alpha1.DNSEndpointList{
-		Items: []apiv1alpha1.DNSEndpoint{*f.endpoints},
-	}, nil
-}
-
-func (f *fakeDNSEndpointClient) UpdateStatus(_ context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
-	if f.returnError {
-		return nil, fmt.Errorf("error updating status")
-	}
-	f.endpoints.Status.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
-	return f.endpoints, nil
-}
-
-func (f *fakeDNSEndpointClient) Watch(_ context.Context, _ string, _ *metav1.ListOptions) (watch.Interface, error) {
-	if f.returnError {
-		return nil, fmt.Errorf("error watching")
-	}
-	return watch.NewFake(), nil
+	return fakes.NewFakeDNSEndpointClient(dnsEndpoint, namespace, apiVersion, kind)
 }
 
 func TestCRDSource(t *testing.T) {
@@ -660,13 +609,13 @@ func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
 
 // watchTrackingClient wraps fakeDNSEndpointClient to track watch calls
 type watchTrackingClient struct {
-	*fakeDNSEndpointClient
+	*fakes.DNSEndpointClient
 	watchCalled bool
 }
 
 func (w *watchTrackingClient) Watch(ctx context.Context, namespace string, opts *metav1.ListOptions) (watch.Interface, error) {
 	w.watchCalled = true
-	return w.fakeDNSEndpointClient.Watch(ctx, namespace, opts)
+	return w.DNSEndpointClient.Watch(ctx, namespace, opts)
 }
 
 func TestCRDSource_Watch(t *testing.T) {
@@ -674,17 +623,19 @@ func TestCRDSource_Watch(t *testing.T) {
 	err := apiv1alpha1.AddToScheme(scheme)
 	require.NoError(t, err)
 
-	fakeClient := &fakeDNSEndpointClient{
-		endpoints: &apiv1alpha1.DNSEndpoint{
+	fake := fakes.NewFakeDNSEndpointClient(
+		&apiv1alpha1.DNSEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test-ns",
 			},
 		},
-		namespace: "test-ns",
-	}
+		"test-ns",
+		"sigs.k8s.io/external-dns/apis/v1alpha1",
+		"DNSEndpoint",
+	)
 
-	trackingClient := &watchTrackingClient{fakeDNSEndpointClient: fakeClient}
+	trackingClient := &watchTrackingClient{DNSEndpointClient: fake}
 
 	opts := &metav1.ListOptions{}
 

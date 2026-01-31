@@ -163,7 +163,7 @@ func TestDNSEndpointClient_Get_NotFound(t *testing.T) {
 	restClient := &fake.RESTClient{
 		GroupVersion:         apiv1alpha1.GroupVersion,
 		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusNotFound,
 				Header:     defaultHeader(),
@@ -416,7 +416,7 @@ func TestDNSEndpointClient_Watch_SetsWatchFlag(t *testing.T) {
 	restClient := &fake.RESTClient{
 		GroupVersion:         apiv1alpha1.GroupVersion,
 		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Header:     defaultHeader(),
@@ -434,7 +434,7 @@ func TestDNSEndpointClient_Watch_SetsWatchFlag(t *testing.T) {
 	assert.True(t, opts.Watch)
 }
 
-func TestDNSEndpointClientInterface(t *testing.T) {
+func TestDNSEndpointClientInterface(_ *testing.T) {
 	// Verify that dnsEndpointClient implements DNSEndpointClient interface
 	var _ DNSEndpointClient = (*dnsEndpointClient)(nil)
 }

@@ -78,7 +78,7 @@ func TestTargetFilterSource(t *testing.T) {
 }
 
 // TestTargetFilterSourceImplementsSource tests that targetFilterSource is a valid Source.
-func TestTargetFilterSourceImplementsSource(t *testing.T) {
+func TestTargetFilterSourceImplementsSource(_ *testing.T) {
 	var _ source.Source = &targetFilterSource{}
 }
 

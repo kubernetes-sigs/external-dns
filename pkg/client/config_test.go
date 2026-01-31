@@ -31,7 +31,7 @@ import (
 )
 
 func TestGetRestConfig_WithKubeConfig(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
 	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
@@ -66,7 +66,7 @@ users:
 }
 
 func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
 	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
@@ -104,7 +104,7 @@ users:
 }
 
 func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
 	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")

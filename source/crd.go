@@ -95,13 +95,13 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 		// https://github.com/kubernetes/kubernetes/issues/79610
 		_, _ = cs.informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {
+				AddFunc: func(_ any) {
 					handler()
 				},
-				UpdateFunc: func(old any, newI any) {
+				UpdateFunc: func(_ any, _ any) {
 					handler()
 				},
-				DeleteFunc: func(obj any) {
+				DeleteFunc: func(_ any) {
 					handler()
 				},
 			},
