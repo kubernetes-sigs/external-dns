@@ -216,6 +216,9 @@ type ProviderSpecificProperty struct {
 // ProviderSpecific holds configuration which is specific to individual DNS providers
 type ProviderSpecific []ProviderSpecificProperty
 
+// ProviderSpecificMap holds configuration which is specific to individual DNS providers as a map
+type ProviderSpecificMap map[string]string
+
 // EndpointKey is the type of a map key for separating endpoints or targets.
 type EndpointKey struct {
 	DNSName       string
@@ -245,6 +248,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// ProviderSpecificM stores provider specific config as a map (for benchmarking comparison)
+	// +optional
+	ProviderSpecificM ProviderSpecificMap `json:"-"`
 	// refObject stores reference object
 	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
 	// +optional
@@ -352,6 +358,28 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 			return
 		}
 	}
+}
+
+// GetProviderSpecificPropertyM returns the value of a provider-specific property from the map if it exists.
+func (e *Endpoint) GetProviderSpecificPropertyM(key string) (string, bool) {
+	if e.ProviderSpecificM == nil {
+		return "", false
+	}
+	val, ok := e.ProviderSpecificM[key]
+	return val, ok
+}
+
+// SetProviderSpecificPropertyM sets the value of a provider-specific property in the map.
+func (e *Endpoint) SetProviderSpecificPropertyM(key, value string) {
+	if e.ProviderSpecificM == nil {
+		e.ProviderSpecificM = make(ProviderSpecificMap)
+	}
+	e.ProviderSpecificM[key] = value
+}
+
+// DeleteProviderSpecificPropertyM deletes a provider-specific property from the map.
+func (e *Endpoint) DeleteProviderSpecificPropertyM(key string) {
+	delete(e.ProviderSpecificM, key)
 }
 
 // WithLabel adds or updates a label for the Endpoint.
