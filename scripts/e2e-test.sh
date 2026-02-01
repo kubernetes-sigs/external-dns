@@ -48,6 +48,18 @@ echo "Using image reference: $EXTERNAL_DNS_IMAGE"
 echo "Applying etcd"
 kubectl apply -f e2e/provider/etcd.yaml
 
+# wait for etcd to be ready
+echo "Waiting for etcd to be ready..."
+kubectl wait --for=condition=ready --timeout=120s pod -l app=etcd
+
+# apply coredns deployment
+echo "Applying CoreDNS"
+kubectl apply -f e2e/provider/coredns.yaml
+
+# wait for coredns to be ready
+echo "Waiting for CoreDNS to be ready..."
+kubectl wait --for=condition=available --timeout=120s deployment/coredns
+
 # Build a DNS testing image with dig
 echo "Building DNS test image with dig..."
 docker build -t dns-test:v1 -f - . <<EOF
@@ -78,6 +90,7 @@ spec:
   template:
     spec:
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: external-dns
           args:
@@ -175,16 +188,16 @@ spec:
 
           echo "=== Testing DNS server with dig ==="
           echo "Querying: externaldns-e2e.external.dns A record"
-          if dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5; then
-            echo "DNS query successful"
+          RESULT=\$(dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5)
+          if [ -n "\$RESULT" ]; then
+            echo "DNS query successful: \$RESULT"
             exit 0
           else
-            echo "DNS query failed"
+            echo "DNS query returned empty result"
             exit 1
           fi
 
-          echo "DNS server tests completed"
-          exit 0
+
 EOF
 
 # Wait for the job to complete
@@ -210,6 +223,10 @@ fi
 kubectl delete job dns-server-test-job
 
 echo "End-to-end test completed!"
+
+if [ "$TEST_PASSED" != "true" ]; then
+    exit 1
+fi
 
 # Cleanup function
 cleanup() {
