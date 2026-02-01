@@ -58,19 +58,19 @@ func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface 
 }
 
 // Records returns the desired mock endpoints.
-func (p *filteredMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *filteredMockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	p.RecordsCallCount++
 	return p.RecordsStore, nil
 }
 
 // ApplyChanges stores all calls for later check
-func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *filteredMockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	p.ApplyChangesCalls = append(p.ApplyChangesCalls, changes)
 	return nil
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 
@@ -502,7 +502,7 @@ func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return []*endpoint.Endpoint{}, nil
 }
 
-func (r *toggleRegistry) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (r *toggleRegistry) ApplyChanges(_ context.Context, _ *plan.Changes) error {
 	return nil
 }
 

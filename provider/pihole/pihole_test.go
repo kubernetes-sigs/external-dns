@@ -33,7 +33,7 @@ type testPiholeClient struct {
 	requests  *requestTracker
 }
 
-func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (t *testPiholeClient) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
 	for _, ep := range t.endpoints {
 		if ep.RecordType == rtype {
@@ -43,13 +43,13 @@ func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*en
 	return out, nil
 }
 
-func (t *testPiholeClient) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) createRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	t.endpoints = append(t.endpoints, ep)
 	t.requests.createRequests = append(t.requests.createRequests, ep)
 	return nil
 }
 
-func (t *testPiholeClient) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) deleteRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	newEPs := make([]*endpoint.Endpoint, 0)
 	for _, existing := range t.endpoints {
 		if existing.DNSName != ep.DNSName && existing.Targets[0] != ep.Targets[0] {

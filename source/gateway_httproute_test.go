@@ -78,18 +78,6 @@ func omWithGeneration(meta metav1.ObjectMeta, generation int64) metav1.ObjectMet
 	return meta
 }
 
-func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HTTPRouteStatus {
-	for i, parent := range routeStatus.Parents {
-		if len(generation) <= i {
-			break
-		}
-
-		parent.Conditions[0].ObservedGeneration = generation[i]
-	}
-
-	return routeStatus
-}
-
 func rsWithoutAccepted(routeStatus v1.HTTPRouteStatus) v1.HTTPRouteStatus {
 	for _, parent := range routeStatus.Parents {
 		for j := range parent.Conditions {

@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -83,12 +82,7 @@ func NewContourHTTPProxySource(
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = httpProxyInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = httpProxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 

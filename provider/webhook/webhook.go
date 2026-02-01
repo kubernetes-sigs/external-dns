@@ -155,7 +155,7 @@ func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, e
 }
 
 // Records will make a GET call to remoteServerURL/records and return the results
-func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p WebhookProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	recordsRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
 
