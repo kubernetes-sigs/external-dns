@@ -42,7 +42,7 @@ const (
 
 var (
 	// Compile-time check that dnsEndpointClient implements DNSEndpointClient interface
-	_ DNSEndpointClient = (*dnsEndpointClient)(nil)
+	_ DNSEndpointClient = &dnsEndpointClient{}
 
 	// created once
 	testScheme = func() *runtime.Scheme {

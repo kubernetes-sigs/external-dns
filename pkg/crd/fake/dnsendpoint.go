@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 )
 
+// DNSEndpointClient is a fake implementation of a DNS endpoint client for testing purposes.
+// It stores endpoints in memory and supports Get, List, UpdateStatus, and Watch operations.
 type DNSEndpointClient struct {
 	endpoints   []apiv1alpha1.DNSEndpoint
 	namespace   string
@@ -34,7 +36,7 @@ type DNSEndpointClient struct {
 	returnError bool
 }
 
-// watchTrackingClient wraps fakeDNSEndpointClient to track watch calls
+// WatchTrackingClient wraps fakeDNSEndpointClient to track watch calls
 type WatchTrackingClient struct {
 	*DNSEndpointClient
 	watchCalled bool

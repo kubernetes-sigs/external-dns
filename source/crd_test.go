@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
-	"sigs.k8s.io/external-dns/pkg/crd/fakes"
+	fakedns "sigs.k8s.io/external-dns/pkg/crd/fake"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -73,7 +73,7 @@ func newFakeDNSEndpointClient(
 		},
 	}
 
-	return fakes.NewFakeDNSEndpointClient(dnsEndpoint, namespace, apiVersion, kind)
+	return fakedns.NewFakeDNSEndpointClient(dnsEndpoint, namespace, apiVersion, kind)
 }
 
 func TestCRDSource(t *testing.T) {
@@ -615,7 +615,7 @@ func TestCRDSource_Watch(t *testing.T) {
 	err := apiv1alpha1.AddToScheme(scheme)
 	require.NoError(t, err)
 
-	fake := fakes.NewFakeDNSEndpointClient(
+	fake := fakedns.NewFakeDNSEndpointClient(
 		&apiv1alpha1.DNSEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
@@ -627,7 +627,7 @@ func TestCRDSource_Watch(t *testing.T) {
 		"DNSEndpoint",
 	)
 
-	trackingClient := &fakes.WatchTrackingClient{DNSEndpointClient: fake}
+	trackingClient := &fakedns.WatchTrackingClient{DNSEndpointClient: fake}
 
 	opts := &metav1.ListOptions{}
 
@@ -670,7 +670,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		}
 	}
 
-	fakeClient := fakes.NewFakeDNSEndpointClientWithList(&crds, namespace, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind)
+	fakeClient := fakedns.NewFakeDNSEndpointClientWithList(&crds, namespace, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind)
 
 	cs := &crdSource{
 		client:        fakeClient,
