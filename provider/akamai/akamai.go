@@ -255,7 +255,7 @@ func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {

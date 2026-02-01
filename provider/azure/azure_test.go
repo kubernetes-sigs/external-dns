@@ -40,7 +40,7 @@ type mockZonesClient struct {
 
 func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 	pagingHandler := azcoreruntime.PagingHandler[dns.ZonesClientListByResourceGroupResponse]{
-		More: func(resp dns.ZonesClientListByResourceGroupResponse) bool {
+		More: func(_ dns.ZonesClientListByResourceGroupResponse) bool {
 			return false
 		},
 		Fetcher: func(context.Context, *dns.ZonesClientListByResourceGroupResponse) (dns.ZonesClientListByResourceGroupResponse, error) {
@@ -56,7 +56,7 @@ func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 	}
 }
 
-func (client *mockZonesClient) NewListByResourceGroupPager(resourceGroupName string, options *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse] {
+func (client *mockZonesClient) NewListByResourceGroupPager(_ string, _ *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse] {
 	return azcoreruntime.NewPager(client.pagingHandler)
 }
 
@@ -70,7 +70,7 @@ type mockRecordSetsClient struct {
 
 func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
 	pagingHandler := azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]{
-		More: func(resp dns.RecordSetsClientListAllByDNSZoneResponse) bool {
+		More: func(_ dns.RecordSetsClientListAllByDNSZoneResponse) bool {
 			return false
 		},
 		Fetcher: func(context.Context, *dns.RecordSetsClientListAllByDNSZoneResponse) (dns.RecordSetsClientListAllByDNSZoneResponse, error) {
@@ -86,11 +86,11 @@ func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
 	}
 }
 
-func (client *mockRecordSetsClient) NewListAllByDNSZonePager(resourceGroupName string, zoneName string, options *dns.RecordSetsClientListAllByDNSZoneOptions) *azcoreruntime.Pager[dns.RecordSetsClientListAllByDNSZoneResponse] {
+func (client *mockRecordSetsClient) NewListAllByDNSZonePager(_ string, _ string, _ *dns.RecordSetsClientListAllByDNSZoneOptions) *azcoreruntime.Pager[dns.RecordSetsClientListAllByDNSZoneResponse] {
 	return azcoreruntime.NewPager(client.pagingHandler)
 }
 
-func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, options *dns.RecordSetsClientDeleteOptions) (dns.RecordSetsClientDeleteResponse, error) {
+func (client *mockRecordSetsClient) Delete(_ context.Context, _ string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, _ *dns.RecordSetsClientDeleteOptions) (dns.RecordSetsClientDeleteResponse, error) {
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
@@ -102,7 +102,7 @@ func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupNam
 	return dns.RecordSetsClientDeleteResponse{}, nil
 }
 
-func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, options *dns.RecordSetsClientCreateOrUpdateOptions) (dns.RecordSetsClientCreateOrUpdateResponse, error) {
+func (client *mockRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, _ *dns.RecordSetsClientCreateOrUpdateOptions) (dns.RecordSetsClientCreateOrUpdateResponse, error) {
 	var ttl endpoint.TTL
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
@@ -197,7 +197,7 @@ func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 	}
 }
 
-func othersRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
+func othersRecordSetPropertiesGetter(_ []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Ptr(ttl),
 	}

@@ -42,13 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// TestMain initializes annotation keys before running tests.
-// This is needed because init() was removed from annotations package.
-func TestMain(m *testing.M) {
-	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	m.Run()
-}
-
 // newCloudflareError creates a cloudflare.Error suitable for testing.
 // The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
 // so this helper initializes them properly.
@@ -143,7 +136,7 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
 	body := params.Body.(dns.RecordNewParamsBody)
 
 	record := dns.RecordResponse{
@@ -191,7 +184,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 	return iter
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+func (m *mockCloudFlareClient) UpdateDNSRecord(_ context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
 	zoneID := params.ZoneID.String()
 	body := params.Body.(dns.RecordUpdateParamsBody)
 
@@ -222,7 +215,7 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID str
 	return &record, nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(_ context.Context, recordID string, params dns.RecordDeleteParams) error {
 	zoneID := params.ZoneID.String()
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
@@ -258,7 +251,7 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
-func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
+func (m *mockCloudFlareClient) ListZones(_ context.Context, _ zones.ZoneListParams) autoPager[zones.Zone] {
 	if m.listZonesError != nil {
 		return &mockAutoPager[zones.Zone]{
 			err: m.listZonesError,
@@ -271,7 +264,7 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneL
 		results = append(results, zones.Zone{
 			ID:   id,
 			Name: zoneName,
-			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 		})
 	}
 
@@ -280,7 +273,7 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneL
 	}
 }
 
-func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zones.Zone, error) {
+func (m *mockCloudFlareClient) GetZone(_ context.Context, zoneID string) (*zones.Zone, error) {
 	if m.getZoneError != nil {
 		return nil, m.getZoneError
 	}
@@ -290,7 +283,7 @@ func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zon
 			return &zones.Zone{
 				ID:   zoneID,
 				Name: zoneName,
-				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, // nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 			}, nil
 		}
 	}
@@ -310,7 +303,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		client = provider.Client.(*mockCloudFlareClient)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := provider.Records(ctx)
 	if err != nil {
@@ -336,7 +329,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		}
 	}
 
-	err = provider.ApplyChanges(context.Background(), changes)
+	err = provider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Fatalf("cannot apply changes, %s", err)
 	}
@@ -674,52 +667,54 @@ func TestCloudflareSetProxied(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		var targets endpoint.Targets
-		var content string
-		var priority float64
+		t.Run(fmt.Sprint(testCase), func(t *testing.T) {
+			var targets endpoint.Targets
+			var content string
+			var priority float64
 
-		if testCase.recordType == "MX" {
-			targets = endpoint.Targets{"10 mx.example.com"}
-			content = "mx.example.com"
-			priority = 10
-		} else {
-			targets = endpoint.Targets{"127.0.0.1"}
-			content = "127.0.0.1"
-		}
+			if testCase.recordType == "MX" {
+				targets = endpoint.Targets{"10 mx.example.com"}
+				content = "mx.example.com"
+				priority = 10
+			} else {
+				targets = endpoint.Targets{"127.0.0.1"}
+				content = "127.0.0.1"
+			}
 
-		endpoints := []*endpoint.Endpoint{
-			{
-				RecordType: testCase.recordType,
-				DNSName:    testCase.domain,
-				Targets:    endpoint.Targets{targets[0]},
-				ProviderSpecific: endpoint.ProviderSpecific{
-					endpoint.ProviderSpecificProperty{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-						Value: "true",
+			endpoints := []*endpoint.Endpoint{
+				{
+					RecordType: testCase.recordType,
+					DNSName:    testCase.domain,
+					Targets:    endpoint.Targets{targets[0]},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "true",
+						},
 					},
 				},
-			},
-		}
-		expectedID := fmt.Sprintf("%s-%s-%s", testCase.domain, testCase.recordType, content)
-		recordData := dns.RecordResponse{
-			ID:      expectedID,
-			Type:    dns.RecordResponseType(testCase.recordType),
-			Name:    testCase.domain,
-			Content: content,
-			TTL:     1,
-			Proxied: testCase.proxiable,
-		}
-		if testCase.recordType == "MX" {
-			recordData.Priority = priority
-		}
-		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
-			{
-				Name:       "Create",
-				ZoneId:     "001",
-				RecordId:   expectedID,
-				RecordData: recordData,
-			},
-		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX}, testCase.recordType+" record on "+testCase.domain)
+			}
+			expectedID := fmt.Sprintf("%s-%s-%s", testCase.domain, testCase.recordType, content)
+			recordData := dns.RecordResponse{
+				ID:      expectedID,
+				Type:    dns.RecordResponseType(testCase.recordType),
+				Name:    testCase.domain,
+				Content: content,
+				TTL:     1,
+				Proxied: testCase.proxiable,
+			}
+			if testCase.recordType == "MX" {
+				recordData.Priority = priority
+			}
+			AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+				{
+					Name:       "Create",
+					ZoneId:     "001",
+					RecordId:   expectedID,
+					RecordData: recordData,
+				},
+			}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX}, testCase.recordType+" record on "+testCase.domain)
+		})
 	}
 }
 
@@ -730,7 +725,7 @@ func TestCloudflareZones(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -751,7 +746,7 @@ func TestCloudflareZonesFailed(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
 	}
 
-	_, err := provider.Zones(context.Background())
+	_, err := provider.Zones(t.Context())
 	if err == nil {
 		t.Errorf("should fail, %s", err)
 	}
@@ -766,7 +761,7 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
 	}
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -783,7 +778,7 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
-	_, err := p.Zones(context.Background())
+	_, err := p.Zones(t.Context())
 
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
@@ -798,7 +793,7 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
-	_, err := p.Zones(context.Background())
+	_, err := p.Zones(t.Context())
 
 	// Assert that a soft error was returned
 	assert.ErrorIs(t, err, provider.SoftError, "expected a rate limit error")
@@ -811,7 +806,7 @@ func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
-	_, err := p.Zones(context.Background())
+	_, err := p.Zones(t.Context())
 
 	// Assert that a soft error was returned
 	t.Log(err)
@@ -830,7 +825,7 @@ func TestCloudflareRecords(t *testing.T) {
 		Client:           client,
 		DNSRecordsConfig: DNSRecordsConfig{PerPage: 1},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := p.Records(ctx)
 	if err != nil {
@@ -1012,7 +1007,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		DNSName: "foobar.bar.com",
 		Targets: endpoint.Targets{"target-new"},
 	}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1050,7 +1045,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	changes.UpdateOld = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
 
-	err = provider.ApplyChanges(context.Background(), changes)
+	err = provider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1068,11 +1063,11 @@ func TestCloudflareDryRunApplyChanges(t *testing.T) {
 		DNSName: "new.bar.com",
 		Targets: endpoint.Targets{"target"},
 	}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	records, err := provider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -1090,7 +1085,7 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 		DNSName: "newerror.bar.com",
 		Targets: endpoint.Targets{"target"},
 	}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	if err == nil {
 		t.Errorf("should fail, %s", err)
 	}
@@ -1383,19 +1378,21 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		records := make(DNSRecordsMap)
-		for _, r := range tc.Records {
-			records[newDNSRecordIndex(r)] = r
-		}
-		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, customHostnamesMap{})
-		// Targets order could be random with underlying map
-		for _, ep := range endpoints {
-			slices.Sort(ep.Targets)
-		}
-		for _, ep := range tc.ExpectedEndpoints {
-			slices.Sort(ep.Targets)
-		}
-		assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
+		t.Run(tc.Name, func(t *testing.T) {
+			records := make(DNSRecordsMap)
+			for _, r := range tc.Records {
+				records[newDNSRecordIndex(r)] = r
+			}
+			endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, customHostnamesMap{})
+			// Targets order could be random with underlying map
+			for _, ep := range endpoints {
+				slices.Sort(ep.Targets)
+			}
+			for _, ep := range tc.ExpectedEndpoints {
+				slices.Sort(ep.Targets)
+			}
+			assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
+		})
 	}
 }
 
@@ -1454,8 +1451,8 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 	}{
 		{
 			Name:            "No custom properties, ExpectUpdates: false",
-			SetupProvider:   func(p *CloudFlareProvider) {},
-			SetupRecord:     func(r *dns.RecordResponse) {},
+			SetupProvider:   func(_ *CloudFlareProvider) {},
+			SetupRecord:     func(_ *dns.RecordResponse) {},
 			ShouldBeUpdated: false,
 		},
 		// Proxied tests
@@ -1638,7 +1635,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client: client,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := provider.Records(ctx)
 	if err != nil {
@@ -1671,7 +1668,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 
 	planned := plan.Calculate()
 
-	err = provider.ApplyChanges(context.Background(), planned.Changes)
+	err = provider.ApplyChanges(t.Context(), planned.Changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1729,7 +1726,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		Client: client,
 	}
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1956,7 +1953,7 @@ func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
 	}
 
 	// Should not return an error
-	err := provider.submitChanges(context.Background(), changes)
+	err := provider.submitChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -2019,7 +2016,7 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 	}
 
 	// Submit changes and verify no error is returned
-	err := provider.submitChanges(context.Background(), changes)
+	err := provider.submitChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -2037,7 +2034,7 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 		Client:                client,
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := failingProvider.Records(ctx)
 	if err == nil {
@@ -2064,7 +2061,7 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 		Client:                client,
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail - too long record, %s", err)
@@ -2089,7 +2086,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 		Client:                client,
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 
 	testFailCases := []struct {
@@ -2176,26 +2173,28 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 	}
 
 	for _, tc := range testFailCases {
-		var err error
-		var records, endpoints []*endpoint.Endpoint
+		t.Run(tc.Name, func(t *testing.T) {
+			var err error
+			var records, endpoints []*endpoint.Endpoint
 
-		records, err = provider.Records(ctx)
-		if errors.Is(err, nil) {
-			endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
-		}
-		if errors.Is(err, nil) {
-			plan := &plan.Plan{
-				Current:        records,
-				Desired:        endpoints,
-				DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
-				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			records, err = provider.Records(ctx)
+			if errors.Is(err, nil) {
+				endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
 			}
-			planned := plan.Calculate()
-			err = provider.ApplyChanges(context.Background(), planned.Changes)
-		}
-		if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
-			t.Error(e)
-		}
+			if errors.Is(err, nil) {
+				plan := &plan.Plan{
+					Current:        records,
+					Desired:        endpoints,
+					DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+					ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+				}
+				planned := plan.Calculate()
+				err = provider.ApplyChanges(t.Context(), planned.Changes)
+			}
+			if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
+				t.Error(e)
+			}
+		})
 	}
 }
 
@@ -2344,22 +2343,24 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 
 	// Test with custom hostnames enabled and disabled
 	for _, tc := range cases {
-		if tc.customHostnamesEnabled {
-			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: true}
-		} else {
-			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
-		}
-		hook.Reset()
-		err := provider.ApplyChanges(context.Background(), tc.changes)
-		assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
-		errorLogCount := 0
-		for _, entry := range hook.Entries {
-			if entry.Level == log.ErrorLevel &&
-				strings.Contains(entry.Message, "failed to create cloudflare change") {
-				errorLogCount++
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.customHostnamesEnabled {
+				provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: true}
+			} else {
+				provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
 			}
-		}
-		assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+			hook.Reset()
+			err := provider.ApplyChanges(t.Context(), tc.changes)
+			assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			errorLogCount := 0
+			for _, entry := range hook.Entries {
+				if entry.Level == log.ErrorLevel &&
+					strings.Contains(entry.Message, "failed to create cloudflare change") {
+					errorLogCount++
+				}
+			}
+			assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+		})
 	}
 }
 
@@ -2398,7 +2399,7 @@ func TestCloudflareZoneChanges(t *testing.T) {
 	}
 
 	// Test zone listing and filtering
-	zones, err := cfProvider.Zones(context.Background())
+	zones, err := cfProvider.Zones(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, zones, 2)
 
@@ -2417,7 +2418,7 @@ func TestCloudflareZoneChanges(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
 	}
 
-	filteredZones, err := providerWithZoneFilter.Zones(context.Background())
+	filteredZones, err := providerWithZoneFilter.Zones(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, filteredZones, 1)
 	assert.Equal(t, "bar.com", filteredZones[0].Name) // zone 001 is bar.com
@@ -2458,7 +2459,7 @@ func TestCloudflareZoneErrors(t *testing.T) {
 		Client: client,
 	}
 
-	zones, err := cfProvider.Zones(context.Background())
+	zones, err := cfProvider.Zones(t.Context())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list zones")
 	assert.Nil(t, zones)
@@ -2468,7 +2469,7 @@ func TestCloudflareZoneErrors(t *testing.T) {
 	client.getZoneError = errors.New("failed to get zone")
 
 	// This should still work for listing but fail when getting individual zones
-	zones, err = cfProvider.Zones(context.Background())
+	zones, err = cfProvider.Zones(t.Context())
 	assert.NoError(t, err) // List works, individual gets may fail internally
 	assert.NotNil(t, zones)
 }
@@ -2483,7 +2484,7 @@ func TestCloudflareZoneFiltering(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
-	zones, err := cfProvider.Zones(context.Background())
+	zones, err := cfProvider.Zones(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, zones, 1)
 	assert.Equal(t, "foo.com", zones[0].Name)
@@ -2495,7 +2496,7 @@ func TestCloudflareZoneFiltering(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{"002"}),
 	}
 
-	filteredZones, err := providerWithIDFilter.Zones(context.Background())
+	filteredZones, err := providerWithIDFilter.Zones(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, filteredZones, 1)
 	assert.Equal(t, "foo.com", filteredZones[0].Name) // zone 002 is foo.com
@@ -2541,7 +2542,7 @@ func TestCloudflareChangesByZone(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
-	zones, err := cfProvider.Zones(context.Background())
+	zones, err := cfProvider.Zones(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, zones, 2)
 
@@ -2707,7 +2708,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
-				_, err := p.Zones(context.Background())
+				_, err := p.Zones(t.Context())
 				return err
 			},
 			expectSoftError: true,
@@ -2721,7 +2722,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
-				_, err := p.Zones(context.Background())
+				_, err := p.Zones(t.Context())
 				return err
 			},
 			expectSoftError: true,
@@ -2735,7 +2736,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			},
 			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
-				_, err := p.Zones(context.Background())
+				_, err := p.Zones(t.Context())
 				return err
 			},
 			expectSoftError: false,
@@ -2747,7 +2748,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 				client.listZonesError = errors.New("exceeded available rate limit retries")
 			},
 			function: func(p *CloudFlareProvider) error {
-				_, err := p.Zones(context.Background())
+				_, err := p.Zones(t.Context())
 				return err
 			},
 			expectSoftError: true,
@@ -2759,7 +2760,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 				client.listZonesError = newCloudflareError(503)
 			},
 			function: func(p *CloudFlareProvider) error {
-				_, err := p.Zones(context.Background())
+				_, err := p.Zones(t.Context())
 				return err
 			},
 			expectSoftError: true,
@@ -2953,7 +2954,7 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("DeleteDataLocalizationRegionalHostname", func(t *testing.T) {
 		t.Parallel()
-		params := deleteDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID)
 		err := client.DeleteDataLocalizationRegionalHostname(ctx, "foo", params)
 		assert.ErrorIs(t, err, context.Canceled)
 	})

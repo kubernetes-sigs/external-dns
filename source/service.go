@@ -365,7 +365,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
 	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+		pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
 
 	return endpoints
@@ -389,7 +389,6 @@ func convertToEndpointSlices(rawEndpointSlices []any) []*discoveryv1.EndpointSli
 // and returns deduped targets by domain/type.
 // TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
 func (sc *serviceSource) processHeadlessEndpointsFromSlices(
-	svc *v1.Service,
 	pods []*v1.Pod,
 	endpointSlices []*discoveryv1.EndpointSlice,
 	hostname string,

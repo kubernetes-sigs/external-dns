@@ -157,7 +157,7 @@ func TestEvent_NewEvents(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			tt.asserts(tt.event.event())
 		})
 	}
@@ -236,7 +236,7 @@ func TestWithEmitEvents(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			cfg := &Config{}
 			opt := WithEmitEvents(tt.input)
 			opt(cfg)

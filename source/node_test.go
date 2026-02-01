@@ -26,7 +26,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
-	"k8s.io/client-go/kubernetes"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/external-dns/source/types"
@@ -677,7 +676,6 @@ func TestNodeSource_AddEventHandler(t *testing.T) {
 
 type fakeNodeInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
 }
 
 func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
@@ -740,14 +738,6 @@ func (b *nodeListBuilder) build() v1.NodeList {
 		rand.Shuffle(len(b.nodes), func(i, j int) {
 			b.nodes[i], b.nodes[j] = b.nodes[j], b.nodes[i]
 		})
-	}
-	return v1.NodeList{Items: b.nodes}
-}
-
-func (b *nodeListBuilder) apply(t *testing.T, kubeClient kubernetes.Interface) v1.NodeList {
-	for _, node := range b.nodes {
-		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
-		require.NoError(t, err, "Failed to create node %s", node.Name)
 	}
 	return v1.NodeList{Items: b.nodes}
 }

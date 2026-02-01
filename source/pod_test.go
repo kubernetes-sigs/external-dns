@@ -938,7 +938,6 @@ func TestPodSource_AddEventHandler(t *testing.T) {
 
 type fakePodInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
 }
 
 func (f *fakePodInformer) Informer() cache.SharedIndexInformer {
