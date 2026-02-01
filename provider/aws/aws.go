@@ -898,10 +898,22 @@ func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
 	}
 }
 
+// See: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html
 func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
-	// if not A, AAAA, CNAME, ensure alias properties are removed
-	ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-	ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	// NS and SOA records do not support alias
+	if ep.RecordType == endpoint.RecordTypeNS || ep.RecordType == "SOA" {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+		return
+	}
+	// All other record types support alias when pointing to another record in the same hosted zone
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias {
+		p.adjustAliasRecord(ep)
+	} else {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set
