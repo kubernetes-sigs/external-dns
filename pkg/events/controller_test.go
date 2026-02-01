@@ -35,13 +35,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
+	eventsclient "k8s.io/client-go/kubernetes/typed/events/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 
 	clienttesting "k8s.io/client-go/testing"
 )
 
 func TestNewEventController_Success(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
 	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
@@ -70,11 +72,15 @@ users:
 	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), os.FileMode(0755))
 	require.NoError(t, err)
 
+	restConfig, err := clientcmd.BuildConfigFromFlags(svr.URL, mockKubeCfgPath)
+	require.NoError(t, err)
+	client, err := eventsclient.NewForConfig(restConfig)
+	require.NoError(t, err)
+
 	cfg := NewConfig(
-		WithKubeConfig(mockKubeCfgPath, svr.URL, 0),
 		WithEmitEvents([]string{string(RecordReady)}),
 	)
-	ctrl, err := NewEventController(cfg)
+	ctrl, err := NewEventController(client, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ctrl)
 	require.False(t, ctrl.dryRun)
@@ -98,7 +104,7 @@ func TestController_Run_EmitEvents(t *testing.T) {
 
 	eventCreated := make(chan struct{})
 	kubeClient := fake.NewClientset()
-	kubeClient.PrependReactor("create", "events", func(action clienttesting.Action) (bool, runtime.Object, error) {
+	kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
 		eventCreated <- struct{}{}
 		return true, nil, nil
 	})

@@ -105,5 +105,5 @@ func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	_, _ = provider.Zones(ctx)
 
-	testutils.TestHelperLogContainsWithLogLevel("Using cached zones list", log.DebugLevel, hook, t)
+	testutils.TestHelperLogContainsWithLogLevel("Using cached AWS zones", log.DebugLevel, hook, t)
 }

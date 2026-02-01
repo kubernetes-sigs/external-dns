@@ -50,7 +50,7 @@ func (m *mockDigitalOceanClient) RecordsByType(context.Context, string, string, 
 	return nil, nil, nil
 }
 
-func (m *mockDigitalOceanClient) List(ctx context.Context, opt *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
+func (m *mockDigitalOceanClient) List(_ context.Context, opt *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
 	if opt == nil || opt.Page == 0 {
 		return []godo.Domain{{Name: "foo.com"}, {Name: "example.com"}}, &godo.Response{
 			Links: &godo.Links{
@@ -76,23 +76,23 @@ func (m *mockDigitalOceanClient) Delete(context.Context, string) (*godo.Response
 	return nil, fmt.Errorf("failed to delete domain")
 }
 
-func (m *mockDigitalOceanClient) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
+func (m *mockDigitalOceanClient) DeleteRecord(_ context.Context, _ string, _ int) (*godo.Response, error) {
 	return nil, fmt.Errorf("failed to delete record")
 }
 
-func (m *mockDigitalOceanClient) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanClient) EditRecord(_ context.Context, _ string, _ int, _ *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
 
-func (m *mockDigitalOceanClient) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
+func (m *mockDigitalOceanClient) Get(_ context.Context, _ string) (*godo.Domain, *godo.Response, error) {
 	return &godo.Domain{Name: "example.com"}, nil, nil
 }
 
-func (m *mockDigitalOceanClient) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanClient) Record(_ context.Context, _ string, _ int) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
 
-func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanClient) Records(_ context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
 	switch domain {
 	case "foo.com":
 		if opt == nil || opt.Page == 0 {
@@ -163,23 +163,23 @@ func (m *mockDigitalOceanRecordsFail) Delete(context.Context, string) (*godo.Res
 	return nil, fmt.Errorf("failed to delete record")
 }
 
-func (m *mockDigitalOceanRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
+func (m *mockDigitalOceanRecordsFail) DeleteRecord(_ context.Context, _ string, _ int) (*godo.Response, error) {
 	return nil, fmt.Errorf("failed to delete record")
 }
 
-func (m *mockDigitalOceanRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanRecordsFail) EditRecord(_ context.Context, _ string, _ int, _ *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
 
-func (m *mockDigitalOceanRecordsFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
+func (m *mockDigitalOceanRecordsFail) Get(_ context.Context, _ string) (*godo.Domain, *godo.Response, error) {
 	return &godo.Domain{Name: "example.com"}, nil, nil
 }
 
-func (m *mockDigitalOceanRecordsFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanRecordsFail) Record(_ context.Context, _ string, _ int) (*godo.DomainRecord, *godo.Response, error) {
 	return nil, nil, fmt.Errorf("Failed to get records")
 }
 
-func (m *mockDigitalOceanRecordsFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+func (m *mockDigitalOceanRecordsFail) Records(_ context.Context, _ string, _ *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
 	return []godo.DomainRecord{}, nil, fmt.Errorf("Failed to get records")
 }
 

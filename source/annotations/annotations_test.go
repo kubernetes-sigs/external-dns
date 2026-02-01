@@ -23,9 +23,7 @@ import (
 )
 
 func TestSetAnnotationPrefix(t *testing.T) {
-	// Save original values
-	originalPrefix := AnnotationKeyPrefix
-	defer SetAnnotationPrefix(originalPrefix)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
 
 	// Test custom prefix
 	customPrefix := "custom.io/"
@@ -59,17 +57,17 @@ func TestSetAnnotationPrefix(t *testing.T) {
 }
 
 func TestDefaultAnnotationPrefix(t *testing.T) {
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/", AnnotationKeyPrefix)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/hostname", HostnameKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/internal-hostname", InternalHostnameKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/ttl", TtlKey)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/controller", ControllerKey)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"internal-hostname", InternalHostnameKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"ttl", TtlKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"controller", ControllerKey)
 }
 
 func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
-	// Save original values
-	originalPrefix := AnnotationKeyPrefix
-	defer SetAnnotationPrefix(originalPrefix)
+	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
 
 	// Set first custom prefix
 	SetAnnotationPrefix("first.io/")
@@ -82,7 +80,7 @@ func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
 	assert.Equal(t, "second.io/hostname", HostnameKey)
 
 	// Restore to default
-	SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/", AnnotationKeyPrefix)
-	assert.Equal(t, "external-dns.alpha.kubernetes.io/hostname", HostnameKey)
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
+	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
 }

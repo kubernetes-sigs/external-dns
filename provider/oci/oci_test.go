@@ -82,7 +82,7 @@ func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesReq
 	}, nil
 }
 
-func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
+func (c *mockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
 	var response dns.GetZoneRecordsResponse
 	var err error
 	if request.ZoneNameOrId == nil {
@@ -125,7 +125,7 @@ func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZo
 	return response, err
 }
 
-func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, _ dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
 	return dns.PatchZoneRecordsResponse{}, nil
 }
 
@@ -592,7 +592,7 @@ func sortEndpointTargets(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+func (c *mutableMockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
 	var response dns.PatchZoneRecordsResponse
 	if request.ZoneNameOrId == nil {
 		return response, errors.New("no name or id")

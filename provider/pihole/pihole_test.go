@@ -21,7 +21,10 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -30,7 +33,7 @@ type testPiholeClient struct {
 	requests  *requestTracker
 }
 
-func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (t *testPiholeClient) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
 	for _, ep := range t.endpoints {
 		if ep.RecordType == rtype {
@@ -40,13 +43,13 @@ func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*en
 	return out, nil
 }
 
-func (t *testPiholeClient) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) createRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	t.endpoints = append(t.endpoints, ep)
 	t.requests.createRequests = append(t.requests.createRequests, ep)
 	return nil
 }
 
-func (t *testPiholeClient) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) deleteRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	newEPs := make([]*endpoint.Endpoint, 0)
 	for _, existing := range t.endpoints {
 		if existing.DNSName != ep.DNSName && existing.Targets[0] != ep.Targets[0] {
@@ -78,6 +81,42 @@ func TestNewPiholeProvider(t *testing.T) {
 	_, err = NewPiholeProvider(PiholeConfig{Server: "test.example.com"})
 	if err != nil {
 		t.Error("Expected no error from valid configuration, got:", err)
+	}
+}
+
+func TestNewPiholeProvider_APIVersions(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  PiholeConfig
+		wantMsg bool
+	}{
+		{
+			name: "API version 5 with server",
+			config: PiholeConfig{
+				APIVersion: "5",
+				Server:     "test.example.com",
+			},
+			wantMsg: true,
+		},
+		{
+			name: "API version 6 with server",
+			config: PiholeConfig{
+				APIVersion: "6",
+				Server:     "test.example.com",
+			},
+			wantMsg: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			_, err := NewPiholeProvider(tt.config)
+			require.NoError(t, err)
+			if tt.wantMsg {
+				testutils.TestHelperLogContains(warningMsg, hook, t)
+			}
+		})
 	}
 }
 

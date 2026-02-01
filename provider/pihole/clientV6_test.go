@@ -95,7 +95,7 @@ func newTestServerV6(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 
 type errorTransportV6 struct{}
 
-func (t *errorTransportV6) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *errorTransportV6) RoundTrip(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("network error")
 }
 
@@ -414,7 +414,7 @@ func TestErrorsV6(t *testing.T) {
 		t.Fatal("Expected error for nil context")
 	}
 	// Unmarshalling error
-	srvrErrJson := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+	srvrErrJson := newTestServerV6(t, func(w http.ResponseWriter, _ *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -824,7 +824,7 @@ func TestDoV6AdditionalCases(t *testing.T) {
 	})
 
 	t.Run("item already present", func(t *testing.T) {
-		server := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		server := newTestServerV6(t, func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`{
 				"error": {
@@ -852,7 +852,7 @@ func TestDoV6AdditionalCases(t *testing.T) {
 	})
 
 	t.Run("404 on DELETE", func(t *testing.T) {
-		server := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		server := newTestServerV6(t, func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{
 				"error": {

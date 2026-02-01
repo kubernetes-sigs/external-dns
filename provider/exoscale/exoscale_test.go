@@ -82,7 +82,7 @@ func NewExoscaleClientStub() EgoscaleClientI {
 	return ep
 }
 
-func (ep *ExoscaleClientStub) ListDNSDomains(ctx context.Context, _ string) ([]egoscale.DNSDomain, error) {
+func (ep *ExoscaleClientStub) ListDNSDomains(_ context.Context, _ string) ([]egoscale.DNSDomain, error) {
 	domains := []egoscale.DNSDomain{
 		{ID: &domainIDs[0], UnicodeName: strPtr("foo.com")},
 		{ID: &domainIDs[1], UnicodeName: strPtr("bar.com")},
@@ -90,21 +90,21 @@ func (ep *ExoscaleClientStub) ListDNSDomains(ctx context.Context, _ string) ([]e
 	return domains, nil
 }
 
-func (ep *ExoscaleClientStub) ListDNSDomainRecords(ctx context.Context, _, domainID string) ([]egoscale.DNSDomainRecord, error) {
+func (ep *ExoscaleClientStub) ListDNSDomainRecords(_ context.Context, _, domainID string) ([]egoscale.DNSDomainRecord, error) {
 	return groups[domainID], nil
 }
 
-func (ep *ExoscaleClientStub) CreateDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) (*egoscale.DNSDomainRecord, error) {
+func (ep *ExoscaleClientStub) CreateDNSDomainRecord(_ context.Context, _, domainID string, record *egoscale.DNSDomainRecord) (*egoscale.DNSDomainRecord, error) {
 	createExoscale = append(createExoscale, createRecordExoscale{domainID: domainID, record: record})
 	return record, nil
 }
 
-func (ep *ExoscaleClientStub) DeleteDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
+func (ep *ExoscaleClientStub) DeleteDNSDomainRecord(_ context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
 	deleteExoscale = append(deleteExoscale, deleteRecordExoscale{domainID: domainID, recordID: *record.ID})
 	return nil
 }
 
-func (ep *ExoscaleClientStub) UpdateDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
+func (ep *ExoscaleClientStub) UpdateDNSDomainRecord(_ context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
 	updateExoscale = append(updateExoscale, updateRecordExoscale{domainID: domainID, record: record})
 	return nil
 }
@@ -439,7 +439,7 @@ func TestExoscaleWithDomain_SetsDomain(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name, func(_ *testing.T) {
 			p := &ExoscaleProvider{}
 
 			df := endpoint.NewDomainFilter(test.domainFilter)

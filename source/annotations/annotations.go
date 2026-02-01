@@ -31,41 +31,41 @@ var (
 	AnnotationKeyPrefix = DefaultAnnotationPrefix
 
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        string
-	CloudflareCustomHostnameKey string
-	CloudflareRegionKey         string
-	CloudflareRecordCommentKey  string
-	CloudflareTagsKey           string
+	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
+	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
+	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
+	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
+	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
 
-	AWSPrefix        string
-	CoreDNSPrefix    string
-	SCWPrefix        string
-	WebhookPrefix    string
-	CloudflarePrefix string
+	AWSPrefix        = AnnotationKeyPrefix + "aws-"
+	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
+	SCWPrefix        = AnnotationKeyPrefix + "scw-"
+	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
+	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
 
-	TtlKey           string
-	SetIdentifierKey string
-	AliasKey         string
-	TargetKey        string
+	TtlKey           = AnnotationKeyPrefix + "ttl"
+	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
+	AliasKey         = AnnotationKeyPrefix + "alias"
+	TargetKey        = AnnotationKeyPrefix + "target"
 	// ControllerKey The annotation used for figuring out which controller is responsible
-	ControllerKey string
+	ControllerKey = AnnotationKeyPrefix + "controller"
 	// HostnameKey The annotation used for defining the desired hostname
-	HostnameKey string
+	HostnameKey = AnnotationKeyPrefix + "hostname"
 	// AccessKey The annotation used for specifying whether the public or private interface address is used
-	AccessKey string
+	AccessKey = AnnotationKeyPrefix + "access"
 	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
-	EndpointsTypeKey string
+	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
 	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
-	Ingress string
+	Ingress = AnnotationKeyPrefix + "ingress"
 	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
-	IngressHostnameSourceKey string
+	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	// ControllerValue The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
-	InternalHostnameKey string
+	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	// The annotation used for defining the desired hostname source for gateways
-	GatewayHostnameSourceKey string
+	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
 )
 
 // SetAnnotationPrefix sets a custom annotation prefix and rebuilds all annotation keys.

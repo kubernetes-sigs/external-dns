@@ -149,7 +149,7 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 	return nil
 }
 
-func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (chan *dns.Envelope, error) {
+func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {

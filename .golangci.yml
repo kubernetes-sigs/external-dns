@@ -10,7 +10,7 @@ linters:
     - govet
     - ineffassign
     - misspell
-    - revive
+    - revive # https://golangci-lint.run/docs/linters/configuration/#revive
     - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/docs/linters/configuration/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/docs/linters/configuration/#errchkjson
@@ -44,6 +44,8 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+        - name: unused-parameter # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-parameter
+          disabled: false
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
     goconst:
@@ -86,7 +88,6 @@ linters:
           - staticcheck
           - structcheck
           - unconvert
-          - unused
           - varcheck
           - whitespace
           - goconst
@@ -94,7 +95,7 @@ linters:
       # TODO: skiip as will require design changes
       - linters:
           - nilnil
-        path: istio_virtualservice.go|fqdn.go|cloudflare.go
+        path: istio_virtualservice.go|fqdn.go|cloudflare_custom_hostnames.go
       - linters:
           - gochecknoinits
         path: ^(internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$

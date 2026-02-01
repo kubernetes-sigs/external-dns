@@ -78,29 +78,17 @@ func (f transportFunc) Do(req *http.Request) (*http.Response, error) {
 
 func TestCustomHeaderPolicyWithRetries(t *testing.T) {
 	// Set up test environment
-	defaultRetries := 3
-	flagValue := "-6"
-	isSet := true
 
-	retries, err := parseMaxRetries(flagValue, defaultRetries)
+	flagValue := "-6"
+
+	retries, err := parseMaxRetries(flagValue)
 	if err != nil {
 		t.Fatalf("Failed to parse retries: %v", err)
 	}
 	maxRetries := int32(retries)
-	if !isSet || (isSet && flagValue == "0") {
-		// Use default if flag not provided OR if flag is "0"
-		maxRetries = int32(defaultRetries)
-		t.Logf("Using default value: %d (flag provided: %v, value: %q)",
-			defaultRetries, isSet, flagValue)
-	} else {
-		// Flag was provided with non-zero value
-		retries, err := parseMaxRetries(flagValue, defaultRetries)
-		if err != nil {
-			t.Fatalf("Failed to parse retries: %v", err)
-		}
-		maxRetries = int32(retries)
-		t.Logf("Using provided flag value: %d", retries)
-	}
+	// Flag was provided with non-zero value
+	maxRetries = int32(retries)
+	t.Logf("Using provided flag value: %d", retries)
 
 	var attempt int32
 	var firstRequestID string
@@ -293,7 +281,7 @@ func TestMaxRetriesCount(t *testing.T) {
 				return
 			}
 
-			retries, err := parseMaxRetries(tt.input, defaultRetries)
+			retries, err := parseMaxRetries(tt.input)
 
 			// Check error condition
 			if tt.shouldError {
@@ -317,7 +305,7 @@ func TestMaxRetriesCount(t *testing.T) {
 }
 
 // Helper function to parse max retries value
-func parseMaxRetries(value string, defaultValue int) (int, error) {
+func parseMaxRetries(value string) (int, error) {
 	// Trim whitespace
 	value = strings.TrimSpace(value)
 
