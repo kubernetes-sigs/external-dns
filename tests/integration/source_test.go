@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/tests/integration/toolkit"
 )
 
@@ -42,9 +41,6 @@ func TestParseResources(t *testing.T) {
 }
 
 func TestSourceIntegration(t *testing.T) {
-	// TODO: this is required to ensure annotation parsing works as expected. Ideally, should be set differently.
-	annotations.SetAnnotationPrefix(annotations.DefaultAnnotationPrefix)
-
 	dir, _ := os.Getwd()
 	scenarios, err := toolkit.LoadScenarios(dir)
 	require.NoError(t, err, "failed to load scenarios")
