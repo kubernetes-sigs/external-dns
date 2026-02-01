@@ -72,7 +72,7 @@ type (
 		reason  Reason
 	}
 
-	// ObjectReference
+	// ObjectReference holds metadata about a Kubernetes object for event correlation.
 	// TODO: consider make fields private. Ensuring data integrity, encapsulation and immutability.
 	ObjectReference struct {
 		Kind       string

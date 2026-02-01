@@ -25,8 +25,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -583,12 +581,7 @@ func TestRunOnce_EmitChangeEvent(t *testing.T) {
 			source := new(testutils.MockSource)
 			source.On("Endpoints").Return([]*endpoint.Endpoint{
 				endpoint.NewEndpoint("dot.com", endpoint.RecordTypeA, "1.2.3.4").
-					WithRefObject(events.NewObjectReference(&corev1.Pod{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-pod",
-							Namespace: "default",
-						},
-					}, "pod")),
+					WithRefObject(&events.ObjectReference{}),
 			}, nil)
 
 			r, err := registry.SelectRegistry(getTestConfig(), &fakes.MockProvider{ApplyChangesErr: tt.applyErr})

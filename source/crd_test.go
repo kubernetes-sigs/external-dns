@@ -787,7 +787,7 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 		GroupVersion:         apiv1alpha1.GroupVersion,
 		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
 		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Header:     make(http.Header),

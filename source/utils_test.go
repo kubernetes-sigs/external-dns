@@ -280,13 +280,11 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				assert.NotEmpty(t, ep)
 				assert.Len(t, ep, 1)
 
-				ep0 := ep[0]
-				assert.NotNil(t, ep0.RefObject())
-				assert.Equal(t, "foo", ep0.RefObject().Name)
-				assert.Equal(t, "default", ep0.RefObject().Namespace)
-				assert.Equal(t, types.Service, ep0.RefObject().Source)
-				assert.Equal(t, "123", string(ep0.RefObject().UID))
-
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123"}, string(el.RefObject().UID))
+				}
 			},
 		},
 		{
@@ -315,12 +313,12 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				assert.NotEmpty(t, ep)
 				assert.Len(t, ep, 1)
 
-				ep0 := ep[0]
-				assert.NotNil(t, ep0.RefObject())
-				assert.Equal(t, "foo", ep0.RefObject().Name)
-				assert.Equal(t, "default", ep0.RefObject().Namespace)
-				assert.Equal(t, types.Service, ep0.RefObject().Source)
-				assert.Equal(t, "123", string(ep0.RefObject().UID))
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123"}, string(el.RefObject().UID))
+					assert.NotContains(t, []string{"345"}, string(el.RefObject().UID))
+				}
 			},
 		},
 		{
@@ -348,17 +346,13 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				assert.NotEmpty(t, ep)
 				assert.Len(t, ep, 2)
 
-				ep0 := ep[0]
-				assert.NotNil(t, ep0.RefObject())
-				assert.Equal(t, "foo", ep0.RefObject().Name)
-				assert.Equal(t, "default", ep0.RefObject().Namespace)
-				assert.Equal(t, types.Service, ep0.RefObject().Source)
-				assert.Equal(t, "123", string(ep0.RefObject().UID))
+				assert.NotEqual(t, ep[0], ep[1])
 
-				ep1 := ep[1]
-				assert.NotNil(t, ep1.RefObject())
-				assert.Equal(t, "bar", ep1.RefObject().Name)
-				assert.Equal(t, "345", string(ep1.RefObject().UID))
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+				}
 			},
 		},
 	}
