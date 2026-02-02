@@ -182,7 +182,6 @@ spec:
         - |
           echo "Testing DNS server at $NODE_IP:5353"
           echo "=== Testing DNS server with dig (retrying for up to 180s) ==="
-          
           MAX_ATTEMPTS=18
           ATTEMPT=1
           while [ \$ATTEMPT -le \$MAX_ATTEMPTS ]; do
@@ -196,7 +195,6 @@ spec:
             sleep 10
             ATTEMPT=\$((ATTEMPT + 1))
           done
-          
           echo "DNS query failed after \$MAX_ATTEMPTS attempts"
           exit 1
 
