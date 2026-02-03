@@ -48,6 +48,13 @@ import (
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
+const (
+	// NLBDualstackAnnotationKey is the annotation used for determining if an NLB LoadBalancer is dualstack
+	NLBDualstackAnnotationKey = "service.beta.kubernetes.io/aws-load-balancer-ip-address-type"
+	// NLBDualstackAnnotationValue is the value of the NLB dualstack annotation that indicates it is dualstack
+	NLBDualstackAnnotationValue = "dualstack"
+)
+
 var (
 	knownServiceTypes = map[v1.ServiceType]struct{}{
 		v1.ServiceTypeClusterIP:    {}, // Default service type exposes the service on a cluster-internal IP.
@@ -284,6 +291,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
+		sc.setDualstackNLBLabel(svc, svcEndpoints)
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
@@ -932,4 +940,16 @@ func conditionToBool(v *bool) bool {
 		return true // nil should be interpreted as "true" as per EndpointConditions spec
 	}
 	return *v
+}
+
+// setDualstackNLBLabel adds the dualstack label to endpoints when the service
+// has the AWS NLB dualstack annotation set.
+func (sc *serviceSource) setDualstackNLBLabel(svc *v1.Service, endpoints []*endpoint.Endpoint) {
+	val, ok := svc.Annotations[NLBDualstackAnnotationKey]
+	if ok && val == NLBDualstackAnnotationValue {
+		log.Debugf("Adding dualstack label to service %s/%s.", svc.Namespace, svc.Name)
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
+	}
 }

@@ -41,6 +41,9 @@ const (
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
 	AWSSDDescriptionLabel = "aws-sd-description"
 
+	// DualstackLabelKey is the name of the label that identifies dualstack endpoints
+	DualstackLabelKey = "dualstack"
+
 	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
 	txtEncryptionNonce = "txt-encryption-nonce"
 )
