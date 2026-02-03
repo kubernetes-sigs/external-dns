@@ -47,6 +47,11 @@ const (
 	providerSpecificGroup = "coredns/group"
 )
 
+var (
+	// avoids allocating a new slice on every call
+	skipLabels = []string{"originalText", "prefix", "resource"}
+)
+
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(ctx context.Context, prefix string) ([]*Service, error)
@@ -436,7 +441,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 	// Clean outdated labels
 	for label, labelPrefix := range ep.Labels {
-		if shouldSkipLabel(label) {
+		if findLabelInTargets(skipLabels, label) {
 			continue
 		}
 		if !findLabelInTargets(ep.Targets, label) {
@@ -451,11 +456,6 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		}
 	}
 	return services, nil
-}
-
-func shouldSkipLabel(label string) bool {
-	skip := []string{"originalText", "prefix", "resource"}
-	return findLabelInTargets(skip, label)
 }
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
