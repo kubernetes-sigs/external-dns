@@ -294,11 +294,6 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, boo
 	return nil, false
 }
 
-// findLabelInTargets takes an ep.Targets string slice and looks for an element in it.
-func findLabelInTargets(targets []string, label string) bool {
-	return slices.Contains(targets, label)
-}
-
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
 func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -441,10 +436,10 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 	// Clean outdated labels
 	for label, labelPrefix := range ep.Labels {
-		if findLabelInTargets(skipLabels, label) {
+		if slices.Contains(skipLabels, label) {
 			continue
 		}
-		if !findLabelInTargets(ep.Targets, label) {
+		if !slices.Contains(ep.Targets, label) {
 			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
 			log.Infof("Delete key %s", key)
 			if p.dryRun {
