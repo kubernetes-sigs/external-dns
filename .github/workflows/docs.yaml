@@ -7,6 +7,8 @@ on:
   # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
   # Can be used to update doc with latest tag
   workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * *"  # Daily at 10:00 UTC
 
 permissions: {}
 
@@ -39,7 +41,7 @@ jobs:
       - name: build and push
         run: |
           VERSION="${{ github.ref_name }}"
-          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
+          if [[ ${{ github.event_name }} == "workflow_dispatch" || ${{ github.event_name }} == "schedule" ]]; then
             VERSION="latest"
           fi
           mike deploy $VERSION --push --update-aliases
