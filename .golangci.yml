@@ -10,7 +10,7 @@ linters:
     - govet
     - ineffassign
     - misspell
-    - revive
+    - revive # https://golangci-lint.run/docs/linters/configuration/#revive
     - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/docs/linters/configuration/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/docs/linters/configuration/#errchkjson
@@ -31,6 +31,7 @@ linters:
     - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
     - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/docs/linters/configuration/#gochecknoinits
     - goconst # Finds repeated strings that could be replaced by a constant. https://golangci-lint.run/docs/linters/configuration/#goconst
+    - modernize # A suite of analyzers that suggest simplifications to Go code, using modern language and library features. https://golangci-lint.run/docs/linters/configuration/#modernize
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
@@ -43,6 +44,8 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+        - name: unused-parameter # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-parameter
+          disabled: false
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
     goconst:
@@ -85,7 +88,6 @@ linters:
           - staticcheck
           - structcheck
           - unconvert
-          - unused
           - varcheck
           - whitespace
           - goconst
@@ -93,10 +95,13 @@ linters:
       # TODO: skiip as will require design changes
       - linters:
           - nilnil
-        path: istio_virtualservice.go|fqdn.go|cloudflare.go
+        path: istio_virtualservice.go|fqdn.go|cloudflare_custom_hostnames.go
       - linters:
           - gochecknoinits
-        path: ^(.*/controller\.go|internal/.*/init\.go|pkg/.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+        path: ^(internal/.*/init\.go|.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
+      - linters:
+          - modernize
+        path: ^(apis/.*\.go)$
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$

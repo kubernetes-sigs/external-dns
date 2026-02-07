@@ -20,12 +20,16 @@ import (
 	"bytes"
 	"fmt"
 	"net/netip"
+	"reflect"
 	"strings"
 	"text/template"
-	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/scheme"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func ParseTemplate(input string) (*template.Template, error) {
@@ -54,16 +58,35 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("object is nil")
 	}
+	// Kubernetes API doesn't populate TypeMeta (Kind/APIVersion) when retrieving
+	// objects via informers. because the client already knows what type it requested. This reduces payload size.
+	// Set it so templates can use .Kind and .APIVersion
+	// TODO: all sources to transform Informer().SetTransform()
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Kind == "" {
+		gvks, _, err := scheme.Scheme.ObjectKinds(obj)
+		if err == nil && len(gvks) > 0 {
+			gvk = gvks[0]
+		} else {
+			// Fallback to reflection for types not in scheme
+			gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
+		}
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, obj); err != nil {
 		kind := obj.GetObjectKind().GroupVersionKind().Kind
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
-	var hostnames []string
-	for _, name := range strings.Split(buf.String(), ",") {
-		name = strings.TrimFunc(name, unicode.IsSpace)
+	hosts := strings.Split(buf.String(), ",")
+	hostnames := make([]string, 0, len(hosts))
+	for _, name := range hosts {
+		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
-		hostnames = append(hostnames, name)
+		if name != "" {
+			hostnames = append(hostnames, name)
+		}
 	}
 	return hostnames, nil
 }
@@ -91,4 +114,37 @@ func isIPv4String(target string) bool {
 		return false
 	}
 	return netIP.Is4()
+}
+
+// CombineWithTemplatedEndpoints merges annotation-based endpoints with template-based endpoints
+// according to the FQDN template configuration.
+//
+// Logic:
+//   - If fqdnTemplate is nil, returns original endpoints unchanged
+//   - If combineFQDNAnnotation is true, appends templated endpoints to existing
+//   - If combineFQDNAnnotation is false and endpoints is empty, uses templated endpoints
+//   - If combineFQDNAnnotation is false and endpoints exist, returns original unchanged
+func CombineWithTemplatedEndpoints(
+	endpoints []*endpoint.Endpoint,
+	fqdnTemplate *template.Template,
+	combineFQDNAnnotation bool,
+	templateFunc func() ([]*endpoint.Endpoint, error),
+) ([]*endpoint.Endpoint, error) {
+	if fqdnTemplate == nil {
+		return endpoints, nil
+	}
+
+	if !combineFQDNAnnotation && len(endpoints) > 0 {
+		return endpoints, nil
+	}
+
+	templatedEndpoints, err := templateFunc()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+	}
+
+	if combineFQDNAnnotation {
+		return append(endpoints, templatedEndpoints...), nil
+	}
+	return templatedEndpoints, nil
 }

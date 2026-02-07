@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -62,8 +63,8 @@ var (
 // Basic redefinition of "Proxy" CRD : https://github.com/solo-io/gloo/blob/v1.4.6/projects/gloo/pkg/api/v1/proxy.pb.go
 type proxy struct {
 	metav1.TypeMeta `json:",inline"`
-	Metadata        metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec            proxySpec         `json:"spec,omitempty"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
+	Spec            proxySpec         `json:"spec"`
 }
 
 type proxySpec struct {
@@ -71,8 +72,8 @@ type proxySpec struct {
 }
 
 type proxySpecListener struct {
-	HTTPListener   proxySpecHTTPListener `json:"httpListener,omitempty"`
-	MetadataStatic proxyMetadataStatic   `json:"metadataStatic,omitempty"`
+	HTTPListener   proxySpecHTTPListener `json:"httpListener"`
+	MetadataStatic proxyMetadataStatic   `json:"metadataStatic"`
 }
 
 type proxyMetadataStatic struct {
@@ -81,7 +82,7 @@ type proxyMetadataStatic struct {
 
 type proxyMetadataStaticSource struct {
 	ResourceKind string                               `json:"resourceKind,omitempty"`
-	ResourceRef  proxyMetadataStaticSourceResourceRef `json:"resourceRef,omitempty"`
+	ResourceRef  proxyMetadataStaticSourceResourceRef `json:"resourceRef"`
 }
 
 type proxyMetadataStaticSourceResourceRef struct {
@@ -95,8 +96,8 @@ type proxySpecHTTPListener struct {
 
 type proxyVirtualHost struct {
 	Domains        []string                       `json:"domains,omitempty"`
-	Metadata       proxyVirtualHostMetadata       `json:"metadata,omitempty"`
-	MetadataStatic proxyVirtualHostMetadataStatic `json:"metadataStatic,omitempty"`
+	Metadata       proxyVirtualHostMetadata       `json:"metadata"`
+	MetadataStatic proxyVirtualHostMetadataStatic `json:"metadataStatic"`
 }
 
 type proxyVirtualHostMetadata struct {
@@ -104,7 +105,7 @@ type proxyVirtualHostMetadata struct {
 }
 
 type proxyVirtualHostMetadataStatic struct {
-	Source []proxyVirtualHostMetadataStaticSource `json:"sources,omitempty"`
+	Source []proxyVirtualHostMetadataStaticSource `json:"sources"`
 }
 
 type proxyVirtualHostMetadataSource struct {
@@ -114,15 +115,25 @@ type proxyVirtualHostMetadataSource struct {
 }
 
 type proxyVirtualHostMetadataStaticSource struct {
-	ResourceKind string                                    `json:"resourceKind,omitempty"`
-	ResourceRef  proxyVirtualHostMetadataSourceResourceRef `json:"resourceRef,omitempty"`
+	ResourceKind string                                    `json:"resourceKind"`
+	ResourceRef  proxyVirtualHostMetadataSourceResourceRef `json:"resourceRef"`
 }
 
 type proxyVirtualHostMetadataSourceResourceRef struct {
+	proxyVirtualHost
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 }
 
+// glooSource is an implementation of Source for Gloo Proxy objects.
+//
+// +externaldns:source:name=gloo-proxy
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
+// +externaldns:source:resources=Proxy.gloo.solo.io
+// +externaldns:source:filters=
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
 	ingressInformer        netinformers.IngressInformer
@@ -171,11 +182,11 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 	}, nil
 }
 
-func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
+func (gs *glooSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects
-func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ns := range gs.glooNamespaces {
@@ -267,9 +278,7 @@ func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (
 			continue
 		}
 
-		for key, value := range unstructuredVirtualService.GetAnnotations() {
-			ants[key] = value
-		}
+		maps.Copy(ants, unstructuredVirtualService.GetAnnotations())
 	}
 
 	for _, src := range virtualHost.MetadataStatic.Source {
@@ -287,9 +296,7 @@ func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (
 			continue
 		}
 
-		for key, value := range unstructuredVirtualService.GetAnnotations() {
-			ants[key] = value
-		}
+		maps.Copy(ants, unstructuredVirtualService.GetAnnotations())
 	}
 	return ants, nil
 }

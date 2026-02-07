@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/ratelimit"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -39,7 +40,7 @@ type mockOvhClient struct {
 	mock.Mock
 }
 
-func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
+func (c *mockOvhClient) PostWithContext(_ context.Context, endpoint string, input any, output any) error {
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -49,7 +50,7 @@ func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, in
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
+func (c *mockOvhClient) PutWithContext(_ context.Context, endpoint string, input any, output any) error {
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -59,7 +60,7 @@ func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, inp
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, output interface{}) error {
+func (c *mockOvhClient) GetWithContext(_ context.Context, endpoint string, output any) error {
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -69,7 +70,7 @@ func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, out
 	return stub.Error(1)
 }
 
-func (c *mockOvhClient) DeleteWithContext(ctx context.Context, endpoint string, output interface{}) error {
+func (c *mockOvhClient) DeleteWithContext(_ context.Context, endpoint string, output any) error {
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))
 	if err != nil {
@@ -585,6 +586,27 @@ func TestOvhApplyChanges(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+func TestOvhApplyChangesPunyCode(t *testing.T) {
+	client := new(mockOvhClient)
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{DNSName: "example.testécassé.fr", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+		},
+	}
+
+	client.On("GetWithContext", "/domain/zone").Return([]string{"xn--testcass-e1ae.fr"}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/xn--testcass-e1ae.fr/record").Return([]uint64{}, nil).Once()
+	client.On("PostWithContext", "/domain/zone/xn--testcass-e1ae.fr/record", ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "example", TTL: 10, Target: "203.0.113.42"}}).Return(nil, nil).Once()
+	client.On("PostWithContext", "/domain/zone/xn--testcass-e1ae.fr/refresh", nil).Return(nil, nil).Once()
+
+	_, err := provider.Records(t.Context())
+	td.CmpNoError(t, err)
+	// Basic changes
+	td.CmpNoError(t, provider.ApplyChanges(t.Context(), &changes))
+	client.AssertExpectations(t)
+}
+
 func TestOvhChange(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
@@ -622,13 +644,13 @@ func TestOvhRecordString(t *testing.T) {
 
 func TestNewOvhProvider(t *testing.T) {
 	domainFilter := &endpoint.DomainFilter{}
-	_, err := NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err := NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpError(t, err)
 
 	t.Setenv("OVH_APPLICATION_KEY", "aaaaaa")
 	t.Setenv("OVH_APPLICATION_SECRET", "bbbbbb")
 	t.Setenv("OVH_CONSUMER_KEY", "cccccc")
 
-	_, err = NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
+	_, err = NewOVHProvider(domainFilter, "ovh-eu", 20, false, true)
 	td.CmpNoError(t, err)
 }

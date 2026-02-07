@@ -78,6 +78,11 @@ func TestMe(t *testing.T) {
 }
 ```
 
+## Complete test on local env
+
+It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
+See the [related tutorials](../tutorials/coredns-etc.md) for full instructions.
+
 ### Continuous Integration
 
 When submitting a pull request, you'll notice that we run several automated processes on your proposed change. Some of these processes are tests to ensure your contribution aligns with our standards. While we strive for accuracy, some users may find these tests confusing.

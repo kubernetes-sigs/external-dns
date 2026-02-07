@@ -25,7 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/go-logr/logr"
@@ -109,12 +108,18 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	endpointsSource, err := buildSource(ctx, cfg)
+	sCfg := source.NewSourceConfig(cfg)
+	endpointsSource, err := buildSource(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 
 	prvdr, err := buildProvider(ctx, cfg, domainFilter)
 	if err != nil {
@@ -126,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -164,6 +169,9 @@ func buildProvider(
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	// TODO: Controller focuses on orchestration, not provider construction
+	// TODO: refactor to move this to provider package, cover with tests
+	// TODO: example provider.SelectProvider(cfg, ...)
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -242,7 +250,7 @@ func buildProvider(
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
 	case "linode":
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
@@ -319,11 +327,11 @@ func buildProvider(
 	case "transip":
 		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	case "scaleway":
-		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = scaleway.NewScalewayProvider(domainFilter, cfg.DryRun)
 	case "godaddy":
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	case "gandi":
-		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = gandi.NewGandiProvider(domainFilter, cfg.DryRun)
 	case "pihole":
 		p, err = pihole.NewPiholeProvider(
 			pihole.PiholeConfig{
@@ -354,6 +362,7 @@ func buildProvider(
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
+	sCfg *source.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -362,19 +371,22 @@ func buildController(
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
 	}
-	reg, err := selectRegistry(cfg, p)
+	reg, err := registry.SelectRegistry(cfg, p)
 	if err != nil {
 		return nil, err
 	}
 	eventsCfg := events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventCtrl, err := events.NewEventController(eventsCfg)
+		kubeClient, err := sCfg.ClientGenerator().KubeClient()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
+		}
+		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
+		if err != nil {
+			return nil, err
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
@@ -406,50 +418,11 @@ func configureLogger(cfg *externaldns.Config) {
 	log.SetLevel(ll)
 }
 
-// selectRegistry selects the appropriate registry implementation based on the configuration in cfg.
-// It initializes and returns a registry along with any error encountered during setup.
-// Supported registry types include: dynamodb, noop, txt, and aws-sd.
-func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	var r registry.Registry
-	var err error
-	switch cfg.Registry {
-	case "dynamodb":
-		var dynamodbOpts []func(*dynamodb.Options)
-		if cfg.AWSDynamoDBRegion != "" {
-			dynamodbOpts = []func(*dynamodb.Options){
-				func(opts *dynamodb.Options) {
-					opts.Region = cfg.AWSDynamoDBRegion
-				},
-			}
-		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
-	case "noop":
-		r, err = registry.NewNoopRegistry(p)
-	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
-	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
-	default:
-		log.Fatalf("unknown registry: %s", cfg.Registry)
-	}
-	return r, err
-}
-
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
-	sourceCfg := source.NewSourceConfig(cfg)
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}, cfg.Sources, sourceCfg)
+func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
 	if err != nil {
 		return nil, err
 	}
@@ -461,15 +434,6 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL))
 	return wrappers.WrapSources(sources, opts)
-}
-
-// RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
-	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
-		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
-	} else {
-		return endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	}
 }
 
 // handleSigterm listens for a SIGTERM signal and triggers the provided cancel function

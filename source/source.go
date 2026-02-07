@@ -66,6 +66,6 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 
 type eventHandlerFunc func()
 
-func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
-func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
-func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
+func (fn eventHandlerFunc) OnAdd(_ any, _ bool) { fn() }
+func (fn eventHandlerFunc) OnUpdate(_, _ any)   { fn() }
+func (fn eventHandlerFunc) OnDelete(_ any)      { fn() }

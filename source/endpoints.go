@@ -81,6 +81,10 @@ func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	return endpoints
 }
 
+// EndpointTargetsFromServices retrieves endpoint targets from services in a given namespace
+// that match the specified selector. It returns external IPs or load balancer addresses.
+//
+// TODO: add support for service.Spec.Ports (type NodePort) and service.Spec.ClusterIPs (type ClusterIP)
 func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string) (endpoint.Targets, error) {
 	targets := endpoint.Targets{}
 

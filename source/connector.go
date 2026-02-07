@@ -33,6 +33,14 @@ const (
 
 // connectorSource is an implementation of Source that provides endpoints by connecting
 // to a remote tcp server. The encoding/decoding is done using encoder/gob package.
+//
+// +externaldns:source:name=connector
+// +externaldns:source:category=Special
+// +externaldns:source:description=Connects to a remote TCP server to receive DNS endpoints
+// +externaldns:source:resources=Remote TCP Server
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
 type connectorSource struct {
 	remoteServer string
 }
@@ -45,7 +53,7 @@ func NewConnectorSource(remoteServer string) (Source, error) {
 }
 
 // Endpoints returns endpoint objects.
-func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (cs *connectorSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	conn, err := net.DialTimeout("tcp", cs.remoteServer, dialTimeout)
@@ -66,5 +74,4 @@ func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	return endpoints, nil
 }
 
-func (cs *connectorSource) AddEventHandler(ctx context.Context, handler func()) {
-}
+func (cs *connectorSource) AddEventHandler(_ context.Context, _ func()) {}

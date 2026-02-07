@@ -156,35 +156,35 @@ func (m *mockGandiClient) ListDomains() ([]domain.ListResponse, error) {
 
 func TestNewGandiProvider(t *testing.T) {
 	_ = os.Setenv("GANDI_KEY", "myGandiKey")
-	provider, err := NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	provider, err := NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
 	_ = os.Setenv("GANDI_PAT", "myGandiPAT")
-	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_KEY")
-	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
 	_ = os.Setenv("GANDI_SHARING_ID", "aSharingId")
-	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), false)
+	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), false)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.False(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_PAT")
-	_, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

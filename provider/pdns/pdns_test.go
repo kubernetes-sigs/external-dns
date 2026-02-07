@@ -18,7 +18,6 @@ package pdns
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -37,7 +36,7 @@ var (
 	// Simple RRSets that contain 1 A record and 1 TXT record
 	RRSetSimpleARecord = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "A",
+		Type_: endpoint.RecordTypeA,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
@@ -45,7 +44,7 @@ var (
 	}
 	RRSetSimpleTXTRecord = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "TXT",
+		Type_: endpoint.RecordTypeTXT,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "\"heritage=external-dns,external-dns/owner=tower-pdns\"", Disabled: false, SetPtr: false},
@@ -53,7 +52,7 @@ var (
 	}
 	RRSetLongARecord = pgo.RrSet{
 		Name:  "a.very.long.domainname.example.com.",
-		Type_: "A",
+		Type_: endpoint.RecordTypeA,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
@@ -61,7 +60,7 @@ var (
 	}
 	RRSetLongTXTRecord = pgo.RrSet{
 		Name:  "a.very.long.domainname.example.com.",
-		Type_: "TXT",
+		Type_: endpoint.RecordTypeTXT,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "\"heritage=external-dns,external-dns/owner=tower-pdns\"", Disabled: false, SetPtr: false},
@@ -70,7 +69,7 @@ var (
 	// RRSet with one record disabled
 	RRSetDisabledRecord = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "A",
+		Type_: endpoint.RecordTypeA,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
@@ -80,7 +79,7 @@ var (
 
 	RRSetCNAMERecord = pgo.RrSet{
 		Name:  "cname.example.com.",
-		Type_: "CNAME",
+		Type_: endpoint.RecordTypeCNAME,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "example.com.", Disabled: false, SetPtr: false},
@@ -98,7 +97,7 @@ var (
 
 	RRSetTXTRecord = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "TXT",
+		Type_: endpoint.RecordTypeTXT,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "'would smell as sweet'", Disabled: false, SetPtr: false},
@@ -108,7 +107,7 @@ var (
 	// Multiple PDNS records in an RRSet of a single type
 	RRSetMultipleRecords = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "A",
+		Type_: endpoint.RecordTypeA,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
@@ -120,7 +119,7 @@ var (
 	// RRSet with MX record
 	RRSetMXRecord = pgo.RrSet{
 		Name:  "example.com.",
-		Type_: "MX",
+		Type_: endpoint.RecordTypeMX,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "10 mailhost1.example.com", Disabled: false, SetPtr: false},
@@ -131,10 +130,21 @@ var (
 	// RRSet with SRV record
 	RRSetSRVRecord = pgo.RrSet{
 		Name:  "_service._tls.example.com.",
-		Type_: "SRV",
+		Type_: endpoint.RecordTypeSRV,
 		Ttl:   300,
 		Records: []pgo.Record{
 			{Content: "100 1 443 service.example.com", Disabled: false, SetPtr: false},
+		},
+	}
+
+	// RRSet with NS record
+	RRSetNSRecord = pgo.RrSet{
+		Name:  "sub.example.com.",
+		Type_: endpoint.RecordTypeNS,
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "ns1.example.com", Disabled: false, SetPtr: false},
+			{Content: "ns2.example.com", Disabled: false, SetPtr: false},
 		},
 	}
 
@@ -185,6 +195,7 @@ var (
 		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
+		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -274,7 +285,7 @@ var (
 		Type_:  "Zone",
 		Url:    "/api/v1/servers/localhost/zones/example.com.",
 		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord},
+		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
@@ -286,7 +297,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "example.com.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -300,7 +311,7 @@ var (
 			},
 			{
 				Name:       "example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -324,7 +335,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "a.very.long.domainname.example.com.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -338,7 +349,7 @@ var (
 			},
 			{
 				Name:       "a.very.long.domainname.example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -352,7 +363,7 @@ var (
 			},
 			{
 				Name:       "example.com.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -366,7 +377,7 @@ var (
 			},
 			{
 				Name:       "example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -390,7 +401,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "a.very.long.domainname.example.com.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -404,7 +415,7 @@ var (
 			},
 			{
 				Name:       "a.very.long.domainname.example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -428,7 +439,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "mock.test.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -442,7 +453,7 @@ var (
 			},
 			{
 				Name:       "mock.test.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -466,7 +477,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "abcd.mock.test.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -480,7 +491,7 @@ var (
 			},
 			{
 				Name:       "abcd.mock.test.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -504,7 +515,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "example.com.",
-				Type_:      "A",
+				Type_:      endpoint.RecordTypeA,
 				Changetype: "DELETE",
 				Records: []pgo.Record{
 					{
@@ -517,7 +528,7 @@ var (
 			},
 			{
 				Name:       "example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Changetype: "DELETE",
 				Records: []pgo.Record{
 					{
@@ -540,7 +551,7 @@ var (
 		Rrsets: []pgo.RrSet{
 			{
 				Name:       "cname.example.com.",
-				Type_:      "CNAME",
+				Type_:      endpoint.RecordTypeCNAME,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -554,7 +565,7 @@ var (
 			},
 			{
 				Name:       "cname.example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -582,7 +593,7 @@ var (
 			},
 			{
 				Name:       "example.com.",
-				Type_:      "TXT",
+				Type_:      endpoint.RecordTypeTXT,
 				Ttl:        300,
 				Changetype: "REPLACE",
 				Records: []pgo.Record{
@@ -664,11 +675,11 @@ func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.
 	return zones, nil
 }
 
-func (c *PDNSAPIClientStub) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStub) ListZone(_ string) (pgo.Zone, *http.Response, error) {
 	return ZoneMixed, nil, nil
 }
 
-func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+func (c *PDNSAPIClientStub) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
@@ -699,7 +710,7 @@ func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.R
 	return pgo.Zone{}, nil, nil
 }
 
-func (c *PDNSAPIClientStubEmptyZones) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ string, zoneStruct pgo.Zone) (*http.Response, error) {
 	c.patchedZones = append(c.patchedZones, zoneStruct)
 	return &http.Response{}, nil
 }
@@ -712,8 +723,8 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 }
 
 // Just overwrite the PatchZone method to introduce a failure
-func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
-	return nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
+	return nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -724,8 +735,8 @@ type PDNSAPIClientStubListZoneFailure struct {
 }
 
 // Just overwrite the ListZone method to introduce a failure
-func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ string) (pgo.Zone, *http.Response, error) {
+	return pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -737,7 +748,7 @@ type PDNSAPIClientStubListZonesFailure struct {
 
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+	return []pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -766,7 +777,7 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *ht
 }
 
 // Just overwrite the ListZones method to introduce a failure
-func (c *PDNSAPIClientStubPartitionZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClientStubPartitionZones) PartitionZones(_ []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
 }
 
@@ -955,27 +966,21 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToLongPatch}, zlist)
 
-	// Check endpoints of type CNAME always have their target records end with a dot.
+	// Check endpoints of type CNAME, ALIAS, MX, SRV, and NS always have their values end with a trailing dot.
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
 	suite.NoError(err)
 
-	for _, z := range zlist {
-		for _, rs := range z.Rrsets {
-			if rs.Type_ == "CNAME" {
-				for _, r := range rs.Records {
-					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
-				}
-			}
-		}
+	trailingTypes := map[string]bool{
+		endpoint.RecordTypeCNAME: true,
+		"ALIAS":                  true,
+		endpoint.RecordTypeMX:    true,
+		endpoint.RecordTypeSRV:   true,
+		endpoint.RecordTypeNS:    true,
 	}
 
-	// Check endpoints of type MX and SRV always have their values end with a trailing dot.
-	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
-	suite.NoError(err)
-
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
-			if rs.Type_ == "MX" || rs.Type_ == "SRV" {
+			if trailingTypes[rs.Type_] {
 				for _, r := range rs.Records {
 					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
 				}

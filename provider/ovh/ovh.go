@@ -33,6 +33,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -123,7 +124,12 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(
+	domainFilter *endpoint.DomainFilter,
+	endpoint string,
+	apiRateLimit int,
+	enableCNAMERelative,
+	dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
@@ -156,7 +162,7 @@ func (p *OVHProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	return endpoints, nil
 }
 
-func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*plan.Changes {
+func planChangesByZoneName(zones []string, changes *plan.Changes) (map[string]*plan.Changes, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	for _, zone := range zones {
 		zoneNameIDMapper.Add(zone, zone)
@@ -164,35 +170,47 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*pl
 
 	output := map[string]*plan.Changes{}
 	for _, endpt := range changes.Delete {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
+		zoneName, _ := zoneNameIDMapper.FindZone(endpt.DNSName)
+		if zoneName == "" {
+			return nil, provider.NewSoftErrorf("record %q have not found matching DNS zone in OVH provider", endpt.DNSName)
+		}
 		if _, ok := output[zoneName]; !ok {
 			output[zoneName] = &plan.Changes{}
 		}
 		output[zoneName].Delete = append(output[zoneName].Delete, endpt)
 	}
 	for _, endpt := range changes.Create {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
+		zoneName, _ := zoneNameIDMapper.FindZone(endpt.DNSName)
+		if zoneName == "" {
+			return nil, provider.NewSoftErrorf("record %q have not found matching DNS zone in OVH provider", endpt.DNSName)
+		}
 		if _, ok := output[zoneName]; !ok {
 			output[zoneName] = &plan.Changes{}
 		}
 		output[zoneName].Create = append(output[zoneName].Create, endpt)
 	}
 	for _, endpt := range changes.UpdateOld {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
+		zoneName, _ := zoneNameIDMapper.FindZone(endpt.DNSName)
+		if zoneName == "" {
+			return nil, provider.NewSoftErrorf("record %q have not found matching DNS zone in OVH provider", endpt.DNSName)
+		}
 		if _, ok := output[zoneName]; !ok {
 			output[zoneName] = &plan.Changes{}
 		}
 		output[zoneName].UpdateOld = append(output[zoneName].UpdateOld, endpt)
 	}
 	for _, endpt := range changes.UpdateNew {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
+		zoneName, _ := zoneNameIDMapper.FindZone(endpt.DNSName)
+		if zoneName == "" {
+			return nil, provider.NewSoftErrorf("record %q have not found matching DNS zone in OVH provider", endpt.DNSName)
+		}
 		if _, ok := output[zoneName]; !ok {
 			output[zoneName] = &plan.Changes{}
 		}
 		output[zoneName].UpdateNew = append(output[zoneName].UpdateNew, endpt)
 	}
 
-	return output
+	return output, nil
 }
 
 func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
@@ -264,7 +282,10 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		}
 	}
 
-	changesByZoneName := planChangesByZoneName(zones, changes)
+	changesByZoneName, err := planChangesByZoneName(zones, changes)
+	if err != nil {
+		return err
+	}
 	eg, ctx := errgroup.WithContext(ctx)
 
 	for zoneName, changes := range changesByZoneName {
@@ -555,6 +576,13 @@ func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint
 func convertDNSNameIntoSubDomain(DNSName string, zoneName string) string { // nolint: gocritic // captLocal
 	if DNSName == zoneName {
 		return ""
+	}
+
+	if name, err := idna.Profile.ToUnicode(DNSName); err == nil {
+		DNSName = name
+	}
+	if name, err := idna.Profile.ToUnicode(zoneName); err == nil {
+		zoneName = name
 	}
 
 	return strings.TrimSuffix(DNSName, "."+zoneName)

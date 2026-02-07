@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package dynamodb
 
 import (
 	"context"
@@ -35,6 +35,10 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+)
+
+const (
+	testZone = "test-zone.example.org"
 )
 
 func TestDynamoDBRegistryNew(t *testing.T) {
@@ -1172,7 +1176,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	}
 }
 
-func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, opts ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
+func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, _ ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	return &dynamodb.DescribeTableOutput{
@@ -1180,7 +1184,7 @@ func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.Descri
 	}, nil
 }
 
-func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, opts ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
+func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, _ ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	assert.Equal(r.t, "o = :ownerval", *input.FilterExpression)
@@ -1220,7 +1224,7 @@ func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, opts
 	}, nil
 }
 
-func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, option ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
+func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, _ ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
 	assert.NotNil(r.t, context)
 	hasDelete := strings.HasPrefix(strings.ToLower(*input.Statements[0].Statement), "delete")
 	assert.Equal(r.t, hasDelete, r.changesApplied, "delete after provider changes, everything else before")

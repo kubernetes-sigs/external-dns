@@ -19,6 +19,7 @@ package inmemory
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -59,7 +60,7 @@ type InMemoryOption func(*InMemoryProvider)
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+		p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -98,7 +99,7 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
-		OnApplyChanges: func(ctx context.Context, changes *plan.Changes) {},
+		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},
 		OnRecords:      func() {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
@@ -122,7 +123,7 @@ func (im *InMemoryProvider) Zones() map[string]string {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -204,9 +205,7 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	for _, ep := range endpoints {
 		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
-		for k, v := range ep.Labels {
-			newEp.Labels[k] = v
-		}
+		maps.Copy(newEp.Labels, ep.Labels)
 		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)
 		records = append(records, newEp)
 	}
@@ -280,7 +279,7 @@ func (c *inMemoryClient) CreateZone(zone string) error {
 	return nil
 }
 
-func (c *inMemoryClient) ApplyChanges(ctx context.Context, zoneID string, changes *plan.Changes) error {
+func (c *inMemoryClient) ApplyChanges(_ context.Context, zoneID string, changes *plan.Changes) error {
 	if err := c.validateChangeBatch(zoneID, changes); err != nil {
 		return err
 	}

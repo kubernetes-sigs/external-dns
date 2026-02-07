@@ -149,7 +149,7 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 	return nil
 }
 
-func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (chan *dns.Envelope, error) {
+func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
@@ -891,7 +891,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 func TestChunkBy(t *testing.T) {
 	var records []*endpoint.Endpoint
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		records = append(records, &endpoint.Endpoint{
 			DNSName:    "v1.foo.com",
 			RecordType: "A",
@@ -941,7 +941,7 @@ func TestRoundRobinLoadBalancing(t *testing.T) {
 	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.foo.com.", 0, "A", "1.2.3.4"))
 	m.Insert([]dns.RR{rr})
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := stub.SendMessage(m)
 		assert.NoError(t, err)
 		expectedNameserver := "rfc2136-host" + strconv.Itoa((i%3)+1)
@@ -962,7 +962,7 @@ func TestRandomLoadBalancing(t *testing.T) {
 
 	nameserverCounts := map[string]int{}
 
-	for i := 0; i < 25; i++ {
+	for range 25 {
 		err := stub.SendMessage(m)
 		assert.NoError(t, err)
 		nameserverCounts[stub.lastNameserver]++

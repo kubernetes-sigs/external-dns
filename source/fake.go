@@ -36,6 +36,15 @@ import (
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
 // testing/dry-running of dns providers without needing an attached Kubernetes cluster.
+//
+// +externaldns:source:name=fake
+// +externaldns:source:category=Testing
+// +externaldns:source:description=Provides dummy endpoints for testing and dry-running
+// +externaldns:source:resources=Fake Endpoints
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type fakeSource struct {
 	dnsName string
 }
@@ -55,14 +64,14 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
-func (sc *fakeSource) AddEventHandler(_ context.Context, handler func()) {
+func (sc *fakeSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects.
-func (sc *fakeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		endpoints[i] = sc.generateEndpoint()
 	}
 

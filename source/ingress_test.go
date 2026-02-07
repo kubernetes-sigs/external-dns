@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -1497,4 +1498,225 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 		})
 	}
 	return ingress
+}
+
+func TestIngressWithConfiguration(t *testing.T) {
+	for _, tt := range []struct {
+		title     string
+		ingresses []*networkv1.Ingress
+		cfg       *Config
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title: "hostname and targets configured as annotations",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.HostnameKey: "bla.example.org",
+							annotations.TargetKey:   "target.example.org",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("nginx"),
+						Rules: []networkv1.IngressRule{
+							{Host: "app.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "app.example.com", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+				{DNSName: "bla.example.org", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls not ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: false,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "my-ingress",
+						Namespace:   "default",
+						Annotations: map[string]string{},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "*.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls is ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: true,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: endpoint.Targets{
+						"internal-k8s-some-domain.us-east-1.elb.amazonaws.com",
+						"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+					},
+				},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB with target annotation and CNAME with single target",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+							annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+				},
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+
+			for _, el := range tt.ingresses {
+				_, err := kubeClient.NetworkingV1().Ingresses(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			if tt.cfg == nil {
+				tt.cfg = &Config{}
+			}
+
+			src, err := NewIngressSource(
+				t.Context(),
+				kubeClient,
+				tt.cfg.Namespace,
+				tt.cfg.AnnotationFilter,
+				tt.cfg.FQDNTemplate,
+				tt.cfg.CombineFQDNAndAnnotation,
+				tt.cfg.IgnoreHostnameAnnotation,
+				tt.cfg.IgnoreIngressTLSSpec,
+				tt.cfg.IgnoreIngressRulesSpec,
+				labels.Everything(),
+				tt.cfg.IngressClassNames,
+			)
+			require.NoError(t, err)
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			validateEndpoints(t, endpoints, tt.expected)
+		})
+	}
 }

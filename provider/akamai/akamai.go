@@ -234,7 +234,7 @@ func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
 				log.Debugf("Skipping endpoint. Record name %s doesn't match containing zone %s.", recordset.Name, zone)
 				continue
 			}
-			var temp interface{} = int64(recordset.TTL)
+			var temp any = int64(recordset.TTL)
 			ttl := endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
@@ -255,7 +255,7 @@ func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {
@@ -352,7 +352,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 }
 
 func ttlAsInt(src endpoint.TTL) int {
-	var temp interface{} = int64(src)
+	var temp any = int64(src)
 	temp64 := temp.(int64)
 	var ttl = defaultTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {

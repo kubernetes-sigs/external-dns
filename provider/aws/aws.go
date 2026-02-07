@@ -32,6 +32,8 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/provider/blueprint"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -284,12 +286,6 @@ func (z zoneTags) append(id string, tags []route53types.Tag) {
 	}
 }
 
-type zonesListCache struct {
-	age      time.Time
-	duration time.Duration
-	zones    map[string]*profiledZone
-}
-
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
@@ -311,7 +307,7 @@ type AWSProvider struct {
 	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
 	zoneMatchParent bool
 	preferCNAME     bool
-	zonesCache      *zonesListCache
+	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
 }
@@ -349,7 +345,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
-		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](awsConfig.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
@@ -372,11 +368,12 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
-	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
-		log.Debug("Using cached zones list")
-		return p.zonesCache.zones, nil
+	if !p.zonesCache.Expired() {
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached AWS zones, zone count: %d.", len(cachedZones))
+		return cachedZones, nil
 	}
-	log.Debug("Refreshing zones list cache")
+	log.Debug("Retrieving AWS zones.")
 
 	zones := make(map[string]*profiledZone)
 
@@ -392,7 +389,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 				// nothing to do here. Falling through to general error handling
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+				return nil, provider.NewSoftErrorf("failed to list hosted zones: %w", err)
 			}
 			var zonesToTagFilter []string
 			for _, zone := range resp.HostedZones {
@@ -439,11 +436,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		}
 	}
 
-	if p.zonesCache.duration > time.Duration(0) {
-		p.zonesCache.zones = zones
-		p.zonesCache.age = time.Now()
-	}
-
+	p.zonesCache.Reset(zones)
 	return zones, nil
 }
 
@@ -837,85 +830,86 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 }
 
 func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
-	var result *endpoint.Endpoint
-
-	alias := false
-
-	if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
-		alias = aliasString == "true"
-		if alias {
-			if !slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}, ep.RecordType) {
-				ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-			}
-		} else {
-			if ep.RecordType == endpoint.RecordTypeCNAME {
-				if aliasString != "false" {
-					ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
-				}
-			} else {
-				ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-			}
+	var aaaa *endpoint.Endpoint
+	switch ep.RecordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+		p.adjustAandAAAARecord(ep)
+	case endpoint.RecordTypeCNAME:
+		p.adjustCNAMERecord(ep)
+		adjustGeoProximityLocationEndpoint(ep)
+		if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+			aaaa = ep.DeepCopy()
+			aaaa.RecordType = endpoint.RecordTypeAAAA
 		}
-	} else if ep.RecordType == endpoint.RecordTypeCNAME {
-		alias = useAlias(ep, p.preferCNAME)
-		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, alias)
-		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(alias))
+		return aaaa
+	default:
+		p.adjustOtherRecord(ep)
+	}
+	adjustGeoProximityLocationEndpoint(ep)
+	return aaaa
+}
+
+func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
+	if ep.RecordTTL.IsConfigured() {
+		log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
+		ep.RecordTTL = defaultTTL
 	}
 
-	if alias {
-		if ep.RecordTTL.IsConfigured() {
-			log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
-			ep.RecordTTL = defaultTTL
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-			if prop != "true" && prop != "false" {
-				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, "false")
-			}
-		} else {
-			ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
-		}
-
-		disableA := aliasDisableARecord(ep)
-		disableAaaa := aliasDisableAaaaRecord(ep)
-		disableAlias := disableA && disableAaaa
-		enableAandAAAA := !disableA && !disableAaaa
-		if ep.RecordType == endpoint.RecordTypeCNAME && !disableAlias {
-			if disableA {
-				ep.RecordType = endpoint.RecordTypeAAAA
-			}
-			if disableAaaa {
-				ep.RecordType = endpoint.RecordTypeA
-			}
-			if enableAandAAAA {
-				//// Add a new endpoint for the AAAA record
-				result = &endpoint.Endpoint{
-					DNSName:          ep.DNSName,
-					Targets:          ep.Targets,
-					RecordType:       endpoint.RecordTypeAAAA,
-					RecordTTL:        ep.RecordTTL,
-					Labels:           ep.Labels,
-					ProviderSpecific: ep.ProviderSpecific,
-					SetIdentifier:    ep.SetIdentifier,
-				}
-				ep.RecordType = endpoint.RecordTypeA
-			}
-		}
+	if enable, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+		// normalize to string "true"/"false"
+		ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(enable))
 	} else {
+		// if not set, use provider default
+		ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
+	}
+}
+
+func (p *AWSProvider) adjustAandAAAARecord(ep *endpoint.Endpoint) {
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias {
+		p.adjustAliasRecord(ep)
+	} else {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
+}
+
+func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
+	isAlias, exists := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+
+	// fallback to determining alias based on preferCNAME if not explicitly set
+	if !exists {
+		isAlias = useAlias(ep, p.preferCNAME)
+		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, isAlias)
+		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(isAlias))
+	}
+
+	// if not an alias, ensure alias properties are adjusted accordingly
+	if !isAlias {
+		if exists {
+			// normalize to string "false" when provider specific alias is set to false or other non-true value
+			ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
+		}
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 
-	adjustGeoProximityLocationEndpoint(ep)
-	return result
+	// if an alias, convert to A record and adjust alias properties
+	if isAlias {
+		ep.RecordType = endpoint.RecordTypeA
+		p.adjustAliasRecord(ep)
+	}
 }
 
-func aliasDisableARecord(ep *endpoint.Endpoint) bool {
-	disable, ok := ep.GetProviderSpecificProperty(providerSpecificAliasDisableA)
-	return ok && disable == "true"
-}
-
-func aliasDisableAaaaRecord(ep *endpoint.Endpoint) bool {
-	disable, ok := ep.GetProviderSpecificProperty(providerSpecificAliasDisableAAAA)
-	return ok && disable == "true"
+func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
+	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
+	// This will be fixed in another PR.
+	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+		p.adjustAliasRecord(ep)
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+	} else {
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	}
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set
@@ -952,8 +946,8 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-			evalTargetHealth = prop == "true"
+		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+			evalTargetHealth = prop
 		}
 		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
@@ -985,48 +979,47 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues *= 2
 	}
 
-	setIdentifier := ep.SetIdentifier
-	if setIdentifier != "" {
-		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
-			weight, err := strconv.ParseInt(prop, 10, 64)
-			if err != nil {
-				log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
-				weight = 0
-			}
-			change.ResourceRecordSet.Weight = aws.Int64(weight)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
-			change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
-		}
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
-			change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
-		}
-		if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
-			change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
-		}
-
-		geolocation := &route53types.GeoLocation{}
-		useGeolocation := false
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
-			geolocation.ContinentCode = aws.String(prop)
-			useGeolocation = true
-		} else {
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
-				geolocation.CountryCode = aws.String(prop)
-				useGeolocation = true
-			}
-			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
-				geolocation.SubdivisionCode = aws.String(prop)
-				useGeolocation = true
-			}
-		}
-		if useGeolocation {
-			change.ResourceRecordSet.GeoLocation = geolocation
-		}
-
-		withChangeForGeoProximityEndpoint(change, ep)
+	if ep.SetIdentifier != "" {
+		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
 	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
+		weight, err := strconv.ParseInt(prop, 10, 64)
+		if err != nil {
+			log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop, err)
+			weight = 0
+		}
+		change.ResourceRecordSet.Weight = aws.Int64(weight)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
+		change.ResourceRecordSet.Region = route53types.ResourceRecordSetRegion(prop)
+	}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
+		change.ResourceRecordSet.Failover = route53types.ResourceRecordSetFailover(prop)
+	}
+	if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
+		change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
+	}
+
+	geolocation := &route53types.GeoLocation{}
+	useGeolocation := false
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
+		geolocation.ContinentCode = aws.String(prop)
+		useGeolocation = true
+	} else {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
+			geolocation.CountryCode = aws.String(prop)
+			useGeolocation = true
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
+			geolocation.SubdivisionCode = aws.String(prop)
+			useGeolocation = true
+		}
+	}
+	if useGeolocation {
+		change.ResourceRecordSet.GeoLocation = geolocation
+	}
+
+	withChangeForGeoProximityEndpoint(change, ep)
 
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
 		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
@@ -1142,12 +1135,9 @@ func findChangesInQueue(changes Route53Changes, queue Route53Changes) (Route53Ch
 
 	for _, c := range changes {
 		found := false
-		for _, qc := range queue {
-			if c == qc {
-				foundChanges = append(foundChanges, c)
-				found = true
-				break
-			}
+		if slices.Contains(queue, c) {
+			foundChanges = append(foundChanges, c)
+			found = true
 		}
 		if !found {
 			notFoundChanges = append(notFoundChanges, c)
@@ -1379,8 +1369,8 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
-	isAlias, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && isAlias == "true" && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	if isAlias && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
@@ -1429,7 +1419,7 @@ func cleanZoneID(id string) string {
 
 func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	switch recordType {
-	case route53types.RRTypeMx:
+	case route53types.RRTypeMx, route53types.RRTypeNaptr:
 		return true
 	default:
 		return provider.SupportedRecordType(string(recordType))

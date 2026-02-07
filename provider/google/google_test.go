@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -47,7 +48,7 @@ type mockManagedZonesCreateCall struct {
 	managedZone *dns.ManagedZone
 }
 
-func (m *mockManagedZonesCreateCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)
 
 	if _, ok := testZones[zoneKey]; ok {
@@ -64,7 +65,7 @@ type mockManagedZonesListCall struct {
 	zonesListSoftErr error
 }
 
-func (m *mockManagedZonesListCall) Pages(ctx context.Context, f func(*dns.ManagedZonesListResponse) error) error {
+func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZonesListResponse) error) error {
 	zones := []*dns.ManagedZone{}
 
 	for k, v := range testZones {
@@ -98,7 +99,7 @@ type mockResourceRecordSetsListCall struct {
 	recordsListSoftErr error
 }
 
-func (m *mockResourceRecordSetsListCall) Pages(ctx context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
+func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -132,7 +133,7 @@ type mockChangesCreateCall struct {
 	change      *dns.Change
 }
 
-func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
+func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -192,10 +193,8 @@ func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
 			}
 		}
 	case endpoint.RecordTypeA, endpoint.RecordTypeTXT:
-		for _, rrd := range recordSet.Rrdatas {
-			if hasTrailingDot(rrd) {
-				return false
-			}
+		if slices.ContainsFunc(recordSet.Rrdatas, hasTrailingDot) {
+			return false
 		}
 	default:
 		panic("unhandled record type")
@@ -614,7 +613,7 @@ func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 }
 
 func TestSoftErrListZonesConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftError(fmt.Errorf("failed to list zones")), nil)
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to list zones"), nil)
 
 	zones, err := p.Zones(context.Background())
 	require.Error(t, err)
@@ -624,7 +623,7 @@ func TestSoftErrListZonesConflict(t *testing.T) {
 }
 
 func TestSoftErrListRecordsConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone")))
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftErrorf("failed to list records in zone"))
 
 	records, err := p.Records(context.Background())
 	require.Error(t, err)

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,33 +53,25 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
-type errorMockProvider struct {
-	mockProvider
-}
-
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
 
 // Records returns the desired mock endpoints.
-func (p *filteredMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *filteredMockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	p.RecordsCallCount++
 	return p.RecordsStore, nil
 }
 
 // ApplyChanges stores all calls for later check
-func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *filteredMockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	p.ApplyChangesCalls = append(p.ApplyChangesCalls, changes)
 	return nil
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
-}
-
-func (p *errorMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return nil, errors.New("error for testing")
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumptions.
@@ -161,6 +154,7 @@ func getTestSource() *testutils.MockSource {
 
 func getTestConfig() *externaldns.Config {
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	return cfg
 }
@@ -219,7 +213,7 @@ func TestRunOnce(t *testing.T) {
 
 	emitter := fake.NewFakeEventEmitter()
 
-	r, err := registry.NewNoopRegistry(provider)
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -249,7 +243,7 @@ func TestRun(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
-	r, err := registry.NewNoopRegistry(provider)
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -337,6 +331,7 @@ func TestShouldRunOnce(t *testing.T) {
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter *endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 
 	source := new(testutils.MockSource)
@@ -346,8 +341,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.NewNoopRegistry(provider)
-
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	ctrl := &Controller{
@@ -393,7 +387,7 @@ func TestControllerSkipsEmptyChanges(t *testing.T) {
 	)
 }
 
-func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
+func TestWhenNoFilterControllerConsidersAllDomains(t *testing.T) {
 	testControllerFiltersDomains(
 		t,
 		[]*endpoint.Endpoint{
@@ -491,7 +485,7 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 }
 
 type toggleRegistry struct {
-	registry.NoopRegistry
+	noop.NoopRegistry
 	failCount   int
 	failCountMu sync.Mutex // protects failCount
 }
@@ -508,7 +502,7 @@ func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return []*endpoint.Endpoint{}, nil
 }
 
-func (r *toggleRegistry) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (r *toggleRegistry) ApplyChanges(_ context.Context, _ *plan.Changes) error {
 	return nil
 }
 

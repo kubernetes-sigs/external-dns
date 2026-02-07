@@ -145,7 +145,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 }
 
 // Records returns the endpoints this provider knows about
-func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *NS1Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zonesFiltered()
 	if err != nil {
 		return nil, err
@@ -183,10 +183,7 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
-	ttl := defaultTTL
-	if p.minTTLSeconds > ttl {
-		ttl = p.minTTLSeconds
-	}
+	ttl := max(p.minTTLSeconds, defaultTTL)
 	if change.Endpoint.RecordTTL.IsConfigured() {
 		ttl = int(change.Endpoint.RecordTTL)
 	}
@@ -277,7 +274,7 @@ type ns1Change struct {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *NS1Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *NS1Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*ns1Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newNS1Changes(ns1Create, changes.Create)...)

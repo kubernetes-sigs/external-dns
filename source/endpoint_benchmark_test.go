@@ -28,6 +28,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/source/informers"
 
 	v1alpha3 "istio.io/api/networking/v1alpha3"
 	istiov1a "istio.io/client-go/pkg/apis/networking/v1"
@@ -92,12 +93,7 @@ func svcInformerWithServices(toLookup, underTest int) (coreinformers.ServiceInfo
 	svcInformer := informerFactory.Core().V1().Services()
 	ctx := context.Background()
 
-	_, err := svcInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, err := svcInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	if err != nil {
 		return nil, fmt.Errorf("failed to add event handler: %w", err)
 	}
@@ -155,19 +151,19 @@ func fixturesSvcWithLabels(toLookup, underTest int) []*corev1.Service {
 	}
 
 	// services with specific labels
-	for i := 0; i < toLookup; i++ {
+	for i := range toLookup {
 		svc := createService("nginx-svc-"+strconv.Itoa(i), "default", map[string]string{"app": "nginx", "env": "prod"})
 		services = append(services, svc)
 	}
 
 	// services with random labels
-	for i := 0; i < underTest; i++ {
+	for i := range underTest {
 		svc := createService("random-svc-"+strconv.Itoa(i), "default", randomLabels(i))
 		services = append(services, svc)
 	}
 
 	// Shuffle the services to ensure randomness
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		rand.Shuffle(len(services), func(i, j int) {
 			services[i], services[j] = services[j], services[i]
 		})
@@ -211,19 +207,19 @@ func fixturesIstioGatewaySvcWithLabels(toLookup, underTest int) []*istiov1a.Gate
 		}
 	}
 	// services with specific labels
-	for i := 0; i < toLookup; i++ {
+	for i := range toLookup {
 		svc := createGateway("istio-gw-"+strconv.Itoa(i), "default", map[string]string{"app": "nginx", "env": "prod"})
 		result = append(result, svc)
 	}
 
 	// services with random labels
-	for i := 0; i < underTest; i++ {
+	for i := range underTest {
 		svc := createGateway("istio-random-svc-"+strconv.Itoa(i), "default", randomLabels(i))
 		result = append(result, svc)
 	}
 
 	// Shuffle the services to ensure randomness
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		rand.Shuffle(len(result), func(i, j int) {
 			result[i], result[j] = result[j], result[i]
 		})

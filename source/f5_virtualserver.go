@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 
+	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -33,9 +34,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
-
-	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -49,6 +47,14 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 }
 
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
+//
+// +externaldns:source:name=f5-virtualserver
+// +externaldns:source:category=Load Balancers
+// +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
+// +externaldns:source:resources=VirtualServer.cis.f5.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer kubeinformers.GenericInformer
@@ -68,17 +74,12 @@ func NewF5VirtualServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
-	virtualServerInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = virtualServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +100,7 @@ func NewF5VirtualServerSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
-func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -120,7 +121,7 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 		virtualServers = append(virtualServers, virtualServer)
 	}
 
-	virtualServers, err = vs.filterByAnnotations(virtualServers)
+	virtualServers, err = annotations.Filter(virtualServers, vs.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
@@ -138,10 +139,10 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 	return endpoints, nil
 }
 
-func (vs *f5VirtualServerSource) AddEventHandler(ctx context.Context, handler func()) {
+func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for VirtualServer")
 
-	vs.virtualServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = vs.virtualServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers
@@ -193,30 +194,6 @@ func newVSUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// filterByAnnotations filters a list of VirtualServers by a given annotation selector.
-func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.VirtualServer) ([]*f5.VirtualServer, error) {
-	selector, err := annotations.ParseFilter(vs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return virtualServers, nil
-	}
-
-	filteredList := []*f5.VirtualServer{}
-
-	for _, vs := range virtualServers {
-		// include VirtualServer if its annotations match the selector
-		if selector.Matches(labels.Set(vs.Annotations)) {
-			filteredList = append(filteredList, vs)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func hasValidVirtualServerIP(vs *f5.VirtualServer) bool {

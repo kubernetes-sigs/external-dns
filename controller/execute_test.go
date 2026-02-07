@@ -25,18 +25,15 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/provider"
-	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Logger
@@ -116,104 +113,6 @@ func TestConfigureLogger(t *testing.T) {
 				} else {
 					assert.IsType(t, &log.TextFormatter{}, log.StandardLogger().Formatter)
 				}
-			}
-		})
-	}
-}
-
-func TestSelectRegistry(t *testing.T) {
-	tests := []struct {
-		name     string
-		cfg      *externaldns.Config
-		provider provider.Provider
-		wantErr  bool
-		wantType string
-	}{
-		{
-			name: "DynamoDB registry",
-			cfg: &externaldns.Config{
-				Registry:               "dynamodb",
-				AWSDynamoDBRegion:      "us-west-2",
-				AWSDynamoDBTable:       "test-table",
-				TXTOwnerID:             "owner-id",
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-				TXTCacheInterval:       60,
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "DynamoDBRegistry",
-		},
-		{
-			name: "Noop registry",
-			cfg: &externaldns.Config{
-				Registry: "noop",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "NoopRegistry",
-		},
-		{
-			name: "TXT registry",
-			cfg: &externaldns.Config{
-				Registry:               "txt",
-				TXTPrefix:              "prefix",
-				TXTOwnerID:             "owner-id",
-				TXTCacheInterval:       60,
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "TXTRegistry",
-		},
-		{
-			name: "AWS-SD registry",
-			cfg: &externaldns.Config{
-				Registry:   "aws-sd",
-				TXTOwnerID: "owner-id",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "AWSSDRegistry",
-		},
-		{
-			name: "Unknown registry",
-			cfg: &externaldns.Config{
-				Registry: "unknown",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  true,
-			wantType: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				// Capture fatal without exiting; avoid brittle output assertions
-				logger := log.StandardLogger()
-				prevOut := logger.Out
-				prevExit := logger.ExitFunc
-				var fatalCalled bool
-				logger.ExitFunc = func(int) { fatalCalled = true }
-				// Capture log output
-				b := new(bytes.Buffer)
-				logger.SetOutput(b)
-				t.Cleanup(func() {
-					logger.SetOutput(prevOut)
-					logger.ExitFunc = prevExit
-				})
-
-				_, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.True(t, fatalCalled)
-			} else {
-				reg, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.Contains(t, reflect.TypeOf(reg).String(), tt.wantType)
 			}
 		})
 	}
@@ -331,125 +230,8 @@ func TestBuildProvider(t *testing.T) {
 	}
 }
 
-func TestCreateDomainFilter(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cfg                  *externaldns.Config
-		expectedDomainFilter *endpoint.DomainFilter
-		isConfigured         bool
-	}{
-		{
-			name: "RegexDomainFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`example\.com`),
-				RegexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
-			isConfigured:         true,
-		},
-		{
-			name: "RegexDomainWithoutExclusionFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusions",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{"example.com"},
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusionsOnly",
-			cfg: &externaldns.Config{
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "EmptyDomainFilter",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{},
-				ExcludeDomains: []string{},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
-			isConfigured:         false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filter := createDomainFilter(tt.cfg)
-			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
-			assert.Equal(t, tt.expectedDomainFilter, filter)
-		})
-	}
-}
-
-func TestBuildSource(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name          string
-		cfg           *externaldns.Config
-		expectedError bool
-	}{
-		{
-			name: "Valid configuration with sources",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{"fake"},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Empty sources configuration",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Update events enabled",
-			cfg: &externaldns.Config{
-				KubeConfig:   "path-to-kubeconfig-not-exists",
-				APIServerURL: svr.URL,
-				Sources:      []string{"ingress"},
-				UpdateEvents: true,
-			},
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			src, err := buildSource(t.Context(), tt.cfg)
-
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, src)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, src)
-			}
-		})
-	}
-}
-
 func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 	}))
 	defer svr.Close()
@@ -486,14 +268,14 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), tt.cfg)
+			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
 			require.NoError(t, err)
 		})
 	}
 }
 
 // Helper used by runExecuteSubprocess.
-func TestHelperProcess(t *testing.T) {
+func TestHelperProcess(_ *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
@@ -516,14 +298,22 @@ func TestHelperProcess(t *testing.T) {
 // runExecuteSubprocess runs Execute in a separate process and returns exit code and output.
 func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	t.Helper()
+	// make sure the subprocess does not run forever
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// TODO: investigate why -test.run=TestHelperProcess
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
-	cmd := exec.Command(os.Args[0], cmdArgs...)
+	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
 	output := buf.String()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return -1, output, ctx.Err()
+	}
 	if err == nil {
 		return 0, output, nil
 	}
@@ -657,14 +447,20 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
+	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	src, err := buildSource(ctx, cfg)
+	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
-	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
 
 	done := make(chan struct{})

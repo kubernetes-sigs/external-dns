@@ -184,7 +184,7 @@ func (r *rfc2136Provider) KeyData(nameserver string) (string, *gss.Client, error
 }
 
 // Records returns the list of records.
-func (r *rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (r *rfc2136Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (r *rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*e
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	var errs []error
@@ -632,11 +632,7 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	var chunks [][]*endpoint.Endpoint
 
 	for i := 0; i < len(slice); i += chunkSize {
-		end := i + chunkSize
-
-		if end > len(slice) {
-			end = len(slice)
-		}
+		end := min(i+chunkSize, len(slice))
 
 		chunks = append(chunks, slice[i:end])
 	}
