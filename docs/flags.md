@@ -50,7 +50,7 @@
 | `--[no-]traefik-enable-legacy` | Enable legacy listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--unstructured-fqdn-resource=UNSTRUCTURED-FQDN-RESOURCE` | When using the unstructured-fqdn source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io); specify multiple times for multiple resources |
-| `--unstructured-fqdn-target-template=""` | When using the unstructured-fqdn source, specify the target FQDN template for DNS records |
+| `--fqdn-target-template=""` | When using the unstructured source, specify the target FQDN template for DNS records |
 | `--events-emit=EVENTS-EMIT` | Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
