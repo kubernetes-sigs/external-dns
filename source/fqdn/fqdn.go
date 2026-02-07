@@ -135,8 +135,13 @@ func hasKey(m map[string]string, key string) bool {
 	return ok
 }
 
-// toJson converts a Go value to a JSON string representation.
-// Returns an empty string if marshaling fails.
+// fromJson decodes a JSON string into a Go value (map, slice, etc.).
+// This enables templates to work with structured data stored as JSON strings
+// in complex labels or annotations or Configmap data fields, e.g. ranging over a list of entries:
+//
+//	{{ range $entry := (index .Data "entries" | fromJson) }}{{ index $entry "dns" }},{{ end }}
+//
+// Returns nil if the input is not valid JSON.
 func fromJson(v string) any {
 	var output any
 	_ = json.Unmarshal([]byte(v), &output)

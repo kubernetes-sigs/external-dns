@@ -283,6 +283,21 @@ func TestExecTemplate(t *testing.T) {
 			want: []string{"test.example.com"},
 		},
 		{
+			name: "dns entries in labels",
+			tmpl: `
+{{ if hasKey .Labels "records" }}{{ range $entry := (index .Labels "records" | fromJson) }}{{ index $entry "dns" }},{{ end }}{{ end }}`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"records": `
+[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
+					},
+				},
+			},
+			want: []string{"entry1.internal.tld", "entry2.example.tld"},
+		},
+		{
 			name: "configmap with multiple entries",
 			tmpl: `{{ range $entry := (index .Data "entries" | fromJson) }}{{ index $entry "dns" }},{{ end }}`,
 			obj: &corev1.ConfigMap{
