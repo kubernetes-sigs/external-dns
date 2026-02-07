@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,8 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		resources          []string
 		fqdnTemplate       string
 		targetFqdnTemplate string
+		hostTargetTemplate string
+		labelFilter        string
 	}
 	for _, tt := range []struct {
 		title    string
@@ -49,6 +52,39 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		objects  []*unstructured.Unstructured
 		expected []*endpoint.Endpoint
 	}{
+		{
+			title: "ConfigMap with comma-separated hostnames",
+			cfg: cfg{
+				resources:          []string{"configmaps.v1"},
+				fqdnTemplate:       `{{index .Object.data "hostnames"}}`,
+				targetFqdnTemplate: `{{index .Object.data "target"}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "v1",
+						"kind":       "ConfigMap",
+						"metadata": map[string]any{
+							"name":      "multi-dns",
+							"namespace": "default",
+							"annotations": map[string]any{
+								annotations.ControllerKey: annotations.ControllerValue,
+							},
+						},
+						"data": map[string]any{
+							"hostnames": "entry1.internal.tld,entry2.example.tld",
+							"target":    "10.10.10.10",
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("entry1.internal.tld", endpoint.RecordTypeA, "10.10.10.10").
+					WithLabel(endpoint.ResourceLabelKey, "configmap/default/multi-dns"),
+				endpoint.NewEndpoint("entry2.example.tld", endpoint.RecordTypeA, "10.10.10.10").
+					WithLabel(endpoint.ResourceLabelKey, "configmap/default/multi-dns"),
+			},
+		},
 		{
 			title: "with IP address",
 			cfg: cfg{
@@ -393,8 +429,8 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			cfg: cfg{
 				resources: []string{
 					"virtualmachineinstances.v1.kubevirt.io",
-					"targetgroupbindings.v1beta1.elbv2.k8s.aws",
-					"apisixroutes.v2.apisix.apache.org",
+					"targetgroupbinding.v1beta1.elbv2.k8s.aws",
+					"apisixroute.v2.apisix.apache.org",
 				},
 				fqdnTemplate: `
 {{if eq .Kind "VirtualMachineInstance"}}{{.Name}}.vm.com{{end}},
@@ -479,9 +515,215 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/vms/my-vm"),
 			},
 		},
+		{
+			title: "ACK S3 Bucket with FieldExport to ConfigMap",
+			cfg: cfg{
+				resources: []string{
+					"buckets.v1alpha1.s3.services.k8s.aws",
+					"fieldexports.v1alpha1.services.k8s.aws",
+					"configmap.v1"},
+				fqdnTemplate: `{{if eq .Kind "ConfigMap"}}{{.Name}}.s3.example.com{{end}}`,
+				targetFqdnTemplate: `
+{{if eq .Kind "ConfigMap"}}{{$url := index .Object.data "default.export-user-data-bucket"}}{{trimSuffix (trimPrefix $url "https://") "/"}}{{end}}`,
+				labelFilter: "app.kubernetes.io/name=example-app",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "s3.services.k8s.aws/v1alpha1",
+						"kind":       "Bucket",
+						"metadata": map[string]any{
+							"name":      "application-user-data",
+							"namespace": "default",
+							"labels": map[string]any{
+								"app.kubernetes.io/name":    "example-app",
+								"app.kubernetes.io/part-of": "exported-config",
+							},
+							"annotations": map[string]any{
+								annotations.ControllerKey: annotations.ControllerValue,
+							},
+						},
+						"spec": map[string]any{
+							"name": "doc-example-bucket",
+						},
+					},
+				},
+				{
+					Object: map[string]any{
+						"apiVersion": "services.k8s.aws/v1alpha1",
+						"kind":       "FieldExport",
+						"metadata": map[string]any{
+							"name":      "export-user-data-bucket",
+							"namespace": "default",
+							"labels": map[string]any{
+								"app.kubernetes.io/name":    "example-app",
+								"app.kubernetes.io/part-of": "exported-config",
+							},
+							"annotations": map[string]any{
+								annotations.ControllerKey: annotations.ControllerValue,
+							},
+						},
+						"spec": map[string]any{
+							"to": map[string]any{
+								"name":      "application-user-data-cm",
+								"namespace": "default",
+								"kind":      "configmap",
+							},
+							"from": map[string]any{
+								"path": ".status.location",
+								"resource": map[string]any{
+									"group":     "s3.services.k8s.aws",
+									"kind":      "Bucket",
+									"name":      "application-user-data",
+									"namespace": "default",
+								},
+							},
+						},
+					},
+				},
+				{
+					Object: map[string]any{
+						"apiVersion": "v1",
+						"kind":       "ConfigMap",
+						"metadata": map[string]any{
+							"name":      "application-user-data-cm",
+							"namespace": "default",
+							"labels": map[string]any{
+								"app.kubernetes.io/name":    "example-app",
+								"app.kubernetes.io/part-of": "exported-config",
+							},
+							"annotations": map[string]any{
+								annotations.ControllerKey: annotations.ControllerValue,
+							},
+						},
+						"data": map[string]any{
+							"default.export-user-data-bucket": "https://doc-example-bucket.s3.amazonaws.com/",
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("application-user-data-cm.s3.example.com", endpoint.RecordTypeCNAME, "doc-example-bucket.s3.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "configmap/default/application-user-data-cm"),
+			},
+		},
+		{
+			title: "EndpointSlice for headless service with per-pod DNS",
+			cfg: cfg{
+				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
+				hostTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "discovery.k8s.io/v1",
+						"kind":       "EndpointSlice",
+						"metadata": map[string]any{
+							"name":      "test-headless-abc12",
+							"namespace": "default",
+							"labels": map[string]any{
+								"endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+								"kubernetes.io/service-name":             "test-headless",
+								"service.kubernetes.io/headless":         "",
+							},
+						},
+						"addressType": "IPv4",
+						"endpoints": []any{
+							map[string]any{
+								"addresses": []any{"10.244.1.2", "2001:db8::1"},
+								"conditions": map[string]any{
+									"ready": true,
+								},
+								"nodeName": "worker1",
+								"targetRef": map[string]any{
+									"kind":      "Pod",
+									"name":      "app-abc12",
+									"namespace": "default",
+								},
+							},
+							map[string]any{
+								"addresses": []any{"10.244.2.3", "10.244.2.4"},
+								"conditions": map[string]any{
+									"ready": true,
+								},
+								"nodeName": "worker2",
+								"targetRef": map[string]any{
+									"kind":      "Pod",
+									"name":      "app-def34",
+									"namespace": "default",
+								},
+							},
+						},
+						"ports": []any{
+							map[string]any{
+								"name":     "http",
+								"port":     int64(80),
+								"protocol": "TCP",
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("app-abc12.pod.com", endpoint.RecordTypeA, "10.244.1.2").
+					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
+				endpoint.NewEndpoint("app-abc12.pod.com", endpoint.RecordTypeAAAA, "2001:db8::1").
+					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
+				endpoint.NewEndpoint("app-def34.pod.com", endpoint.RecordTypeA, "10.244.2.3", "10.244.2.4").
+					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
+			},
+		},
+		{
+			title: "hostTargetTemplate returns no values when condition not met",
+			cfg: cfg{
+				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
+				hostTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "discovery.k8s.io/v1",
+						"kind":       "EndpointSlice",
+						"metadata": map[string]any{
+							"name":      "regular-service-abc12",
+							"namespace": "default",
+							"labels": map[string]any{
+								"endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+								"kubernetes.io/service-name":             "regular-service",
+								// Note: missing service.kubernetes.io/headless label
+							},
+						},
+						"addressType": "IPv4",
+						"endpoints": []any{
+							map[string]any{
+								"addresses": []any{"10.244.1.2"},
+								"conditions": map[string]any{
+									"ready": true,
+								},
+								"targetRef": map[string]any{
+									"kind":      "Pod",
+									"name":      "app-abc12",
+									"namespace": "default",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
+
+			var selector labels.Selector
+			if tt.cfg.labelFilter != "" {
+				var err error
+				selector, err = labels.Parse(tt.cfg.labelFilter)
+				require.NoError(t, err)
+			} else {
+				selector = labels.Everything()
+			}
 
 			src, err := NewUnstructuredFQDNSource(
 				t.Context(),
@@ -489,10 +731,11 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				kubeClient,
 				"",
 				"",
-				labels.Everything(),
+				selector,
 				tt.cfg.resources,
 				tt.cfg.fqdnTemplate,
 				tt.cfg.targetFqdnTemplate,
+				tt.cfg.hostTargetTemplate,
 				true,
 			)
 			require.NoError(t, err)
@@ -501,10 +744,6 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			require.NoError(t, err)
 
 			validateEndpoints(t, endpoints, tt.expected)
-
-			for _, ep := range endpoints {
-				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
-			}
 		})
 	}
 }
@@ -645,21 +884,6 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			},
 			want: []string{"reviews.bookinfo.svc.cluster.local"},
 		},
-		{
-			name: "full Object access",
-			tmpl: "{{.Object.metadata.name}}.example.com",
-			obj: &unstructured.Unstructured{
-				Object: map[string]any{
-					"apiVersion": "v1",
-					"kind":       "ConfigMap",
-					"metadata": map[string]any{
-						"name":      "test",
-						"namespace": "default",
-					},
-				},
-			},
-			want: []string{"test.example.com"},
-		},
 	}
 
 	for _, tt := range tests {
@@ -693,8 +917,11 @@ func buildAPIResourceLists(t *testing.T, resources []string, objects []*unstruct
 
 	result := make([]*metav1.APIResourceList, 0, len(resources))
 	for _, res := range resources {
-		gvr, err := parseResourceIdentifier(res)
-		require.NoError(t, err)
+		if strings.Count(res, ".") == 1 {
+			res += "."
+		}
+		gvr, _ := schema.ParseResourceArg(res)
+		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
 
 		// Find matching kind from objects
 		kind := gvrToKind[gvr.GroupVersion().String()]
@@ -729,9 +956,13 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 	gvrToListKind := make(map[schema.GroupVersionResource]string)
 	apiVersionToGVR := make(map[string]schema.GroupVersionResource)
 	for _, res := range resources {
-		gvr, err := parseResourceIdentifier(res)
-		require.NoError(t, err)
-		apiVersionToGVR[gvr.GroupVersion().String()] = gvr
+		if strings.Count(res, ".") == 1 {
+			res += "."
+		}
+		gvr, _ := schema.ParseResourceArg(res)
+
+		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
+		apiVersionToGVR[gvr.GroupVersion().String()] = *gvr
 	}
 
 	// Determine list kinds from objects

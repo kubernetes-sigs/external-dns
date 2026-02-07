@@ -19,10 +19,11 @@ package source
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -53,13 +54,11 @@ import (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 type unstructuredSource struct {
-	namespace             string
-	annotationFilter      string
-	labelSelector         labels.Selector
 	combineFqdnAnnotation bool
 	fqdnTemplate          *template.Template
 	targetFqdnTemplate    *template.Template
-	resources             []resourceConfig
+	hostTargetTemplate    *template.Template
+	informers             []kubeinformers.GenericInformer
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -70,7 +69,7 @@ func NewUnstructuredFQDNSource(
 	namespace, annotationFilter string,
 	labelSelector labels.Selector,
 	resources []string,
-	fqdnTemplate, targetFqdnTemplate string,
+	fqdnTemplate, targetFqdnTemplate, hostTargetTemplate string,
 	combineFqdnAnnotation bool,
 ) (Source, error) {
 	fqdnTmpl, err := fqdn.ParseTemplate(fqdnTemplate)
@@ -83,21 +82,14 @@ func NewUnstructuredFQDNSource(
 		return nil, err
 	}
 
-	// Discover and validate all resources using cached discovery client
-	cachedDiscovery := memory.NewMemCacheClient(kubeClient.Discovery())
-	resourceConfigs := make([]resourceConfig, 0, len(resources))
-	for _, r := range resources {
-		gvr, err := parseResourceIdentifier(r)
-		if err != nil {
-			return nil, err
-		}
+	hostTargetTmpl, err := fqdn.ParseTemplate(hostTargetTemplate)
+	if err != nil {
+		return nil, err
+	}
 
-		rc, err := discoverResource(cachedDiscovery, gvr)
-		if err != nil {
-			return nil, err
-		}
-
-		resourceConfigs = append(resourceConfigs, *rc)
+	gvrs, err := discoverResources(kubeClient, resources)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create a single informer factory for all resources
@@ -109,11 +101,12 @@ func NewUnstructuredFQDNSource(
 	)
 
 	// Create informers for each resource
-	for i := range resourceConfigs {
-		resourceConfigs[i].informer = informerFactory.ForResource(resourceConfigs[i].gvr)
+	resourceInformers := make([]kubeinformers.GenericInformer, 0, len(gvrs))
+	for _, gvr := range gvrs {
+		informer := informerFactory.ForResource(gvr)
 
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
-		err := resourceConfigs[i].informer.Informer().AddIndexers(
+		err := informer.Informer().AddIndexers(
 			informers.IndexerWithOptions[*unstructured.Unstructured](
 				informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 				informers.IndexSelectorWithLabelSelector(labelSelector),
@@ -123,7 +116,8 @@ func NewUnstructuredFQDNSource(
 			return nil, err
 		}
 
-		_, _ = resourceConfigs[i].informer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		resourceInformers = append(resourceInformers, informer)
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -132,22 +126,20 @@ func NewUnstructuredFQDNSource(
 	}
 
 	return &unstructuredSource{
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
-		labelSelector:         labelSelector,
 		fqdnTemplate:          fqdnTmpl,
 		targetFqdnTemplate:    targetTmpl,
-		resources:             resourceConfigs,
+		hostTargetTemplate:    hostTargetTmpl,
+		informers:             resourceInformers,
 		combineFqdnAnnotation: combineFqdnAnnotation,
 	}, nil
 }
 
 // Endpoints returns the list of endpoints from unstructured resources.
-func (us *unstructuredSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	for _, rc := range us.resources {
-		resourceEndpoints, err := us.endpointsForResource(ctx, rc)
+	for _, informer := range us.informers {
+		resourceEndpoints, err := us.endpointsFromInformer(informer)
 		if err != nil {
 			return nil, err
 		}
@@ -157,17 +149,16 @@ func (us *unstructuredSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	return endpoints, nil
 }
 
-// endpointsForResource returns endpoints for a single resource type.
-func (us *unstructuredSource) endpointsForResource(_ context.Context, rc resourceConfig) ([]*endpoint.Endpoint, error) {
+// endpointsFromInformer returns endpoints for a single resource type.
+func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.GenericInformer) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	// Get objects that match the indexer filter (annotation and label selectors)
-	indexKeys := rc.informer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	indexKeys := informer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
 
 	for _, key := range indexKeys {
-		obj, err := informers.GetByKey[*unstructured.Unstructured](rc.informer.Informer().GetIndexer(), key)
+		obj, err := informers.GetByKey[*unstructured.Unstructured](informer.Informer().GetIndexer(), key)
 		if err != nil {
-			log.Debugf("failed to get object by key %q: %v", key, err)
 			continue
 		}
 
@@ -186,21 +177,26 @@ func (us *unstructuredSource) endpointsForResource(_ context.Context, rc resourc
 			hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 			addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 
-			edps = endpoint.EndpointsForHostsAndTargets(hosts, addrs)
+			edps = EndpointsForHostsAndTargets(hosts, addrs)
 		}
 
-		if us.targetFqdnTemplate != nil {
+		if us.hostTargetTemplate != nil {
 			edps, err = fqdn.CombineWithTemplatedEndpoints(
-				edps,
-				us.fqdnTemplate,
-				us.combineFqdnAnnotation,
+				edps, us.hostTargetTemplate, us.combineFqdnAnnotation,
+				func() ([]*endpoint.Endpoint, error) {
+					return us.endpointsFromHostTargetTemplate(el)
+				},
+			)
+		} else if us.fqdnTemplate != nil {
+			edps, err = fqdn.CombineWithTemplatedEndpoints(
+				edps, us.fqdnTemplate, us.combineFqdnAnnotation,
 				func() ([]*endpoint.Endpoint, error) {
 					return us.endpointsFromTemplate(el)
 				},
 			)
-			if err != nil {
-				return nil, err
-			}
+		}
+		if err != nil {
+			return nil, err
 		}
 
 		ttl := annotations.TTLFromAnnotations(el.GetAnnotations(),
@@ -235,20 +231,46 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 		return nil, err
 	}
 
-	return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+	return EndpointsForHostsAndTargets(hostnames, targets), nil
+}
+
+// endpointsFromHostTargetTemplate creates endpoints from a template that returns host:target pairs.
+// Each pair creates a single endpoint with 1:1 mapping between host and target.
+func (us *unstructuredSource) endpointsFromHostTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
+	pairs, err := fqdn.ExecTemplate(us.hostTargetTemplate, el)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pairs) == 0 {
+		return nil, nil
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		// Split at first colon (hostnames can't contain colons, IPv6 targets can)
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			continue
+		}
+
+		endpoints = append(endpoints, endpoint.NewEndpoint(host, suitableType(target), target))
+	}
+
+	return MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.
 func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
-	for _, rc := range us.resources {
-		_, _ = rc.informer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	for _, informer := range us.informers {
+		_, _ = informer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-}
-
-// resourceConfig holds the parsed configuration for a single resource type.
-type resourceConfig struct {
-	gvr      schema.GroupVersionResource
-	informer kubeinformers.GenericInformer
 }
 
 // unstructuredWrapper wraps an unstructured.Unstructured to provide both
@@ -312,66 +334,90 @@ func newUnstructuredWrapper(obj runtime.Object) *unstructuredWrapper {
 	return w
 }
 
-// parseResourceIdentifier parses a resource identifier in the format "resource.version.group"
-// (e.g., "virtualmachineinstances.v1.kubevirt.io") and returns a GroupVersionResource.
-//
-// Format: resource.version.group
-// - resource: plural resource name (e.g., "vmachines")
-// - version: API version (e.g., "v1", "v1beta1")
-// - group: API group (e.g., "kubevirt.io", "apps")
-//
-// For core API resources (e.g., pods.v1), the group is empty.
-func parseResourceIdentifier(identifier string) (schema.GroupVersionResource, error) {
-	parts := strings.SplitN(identifier, ".", 3)
-	if len(parts) < 2 {
-		return schema.GroupVersionResource{}, fmt.Errorf("invalid resource identifier %q: expected format resource.version.group (e.g., virtualmachineinstances.v1.kubevirt.io)", identifier)
+// discoverResources parses and validates resource identifiers against the cluster.
+// It uses a cached discovery client to minimize API calls.
+func discoverResources(kubeClient kubernetes.Interface, resources []string) ([]schema.GroupVersionResource, error) {
+	cachedDiscovery := memory.NewMemCacheClient(kubeClient.Discovery())
+	gvrs := make([]schema.GroupVersionResource, 0, len(resources))
+
+	for _, r := range resources {
+		// Handle core API resources (e.g., "configmaps.v1" -> "configmaps.v1.")
+		if strings.Count(r, ".") == 1 {
+			r += "."
+		}
+
+		gvr, _ := schema.ParseResourceArg(r)
+		if gvr == nil {
+			return nil, fmt.Errorf("invalid resource identifier %q: expected format resource.version.group (e.g., certificates.v1.cert-manager.io)", r)
+		}
+
+		if err := validateResource(cachedDiscovery, *gvr); err != nil {
+			return nil, err
+		}
+
+		gvrs = append(gvrs, *gvr)
 	}
 
-	resource := parts[0]
-	version := parts[1]
-	group := ""
-	if len(parts) == 3 {
-		group = parts[2]
-	}
-
-	if resource == "" {
-		return schema.GroupVersionResource{}, fmt.Errorf("invalid resource identifier %q: resource name cannot be empty", identifier)
-	}
-	if version == "" {
-		return schema.GroupVersionResource{}, fmt.Errorf("invalid resource identifier %q: version cannot be empty", identifier)
-	}
-
-	return schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}, nil
+	return gvrs, nil
 }
 
-// discoverResource validates that a resource exists in the cluster and returns its configuration.
-// It uses the Discovery API to verify the resource and determine if it's namespaced.
-func discoverResource(discoveryClient discovery.DiscoveryInterface, gvr schema.GroupVersionResource) (*resourceConfig, error) {
+// validateResource validates that a resource exists in the cluster.
+// It uses the Discovery API to verify the resource is available.
+func validateResource(discoveryClient discovery.DiscoveryInterface, gvr schema.GroupVersionResource) error {
 	gv := gvr.GroupVersion().String()
 
 	apiResourceList, err := discoveryClient.ServerResourcesForGroupVersion(gv)
 	if err != nil {
-		return nil, fmt.Errorf("failed to discover resources for %q: %w", gv, err)
+		return fmt.Errorf("failed to discover resources for %q: %w", gv, err)
 	}
 
-	var apiResource *metav1.APIResource
 	for i := range apiResourceList.APIResources {
-		ar := &apiResourceList.APIResources[i]
-		if ar.Name == gvr.Resource {
-			apiResource = ar
-			break
+		if apiResourceList.APIResources[i].Name == gvr.Resource {
+			return nil
 		}
 	}
 
-	if apiResource == nil {
-		return nil, fmt.Errorf("resource %q not found in %q", gvr.Resource, gv)
+	return fmt.Errorf("resource %q not found in %q", gvr.Resource, gv)
+}
+
+// EndpointsForHostsAndTargets creates endpoints by grouping targets by record type
+// and creating an endpoint for each hostname/record-type combination.
+// The function returns endpoints in deterministic order (sorted by record type).
+func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoint {
+	if len(hostnames) == 0 || len(targets) == 0 {
+		return nil
 	}
 
-	return &resourceConfig{
-		gvr: gvr,
-	}, nil
+	// Deduplicate hostnames
+	hostSet := make(map[string]struct{}, len(hostnames))
+	for _, h := range hostnames {
+		hostSet[h] = struct{}{}
+	}
+	sortedHosts := slices.Sorted(maps.Keys(hostSet))
+
+	// Group and deduplicate targets by record type
+	targetsByType := make(map[string]map[string]struct{})
+	for _, target := range targets {
+		recordType := suitableType(target)
+		if targetsByType[recordType] == nil {
+			targetsByType[recordType] = make(map[string]struct{})
+		}
+		targetsByType[recordType][target] = struct{}{}
+	}
+
+	// Resolve to sorted slices once
+	sortedTypes := slices.Sorted(maps.Keys(targetsByType))
+	sortedTargets := make(map[string][]string, len(targetsByType))
+	for _, recordType := range sortedTypes {
+		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0, len(sortedHosts)*len(sortedTypes))
+	for _, hostname := range sortedHosts {
+		for _, recordType := range sortedTypes {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+		}
+	}
+
+	return endpoints
 }

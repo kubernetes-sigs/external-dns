@@ -62,6 +62,8 @@ type Config struct {
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	FQDNTemplate                   string
+	FQDNTargetTemplate             string
+	FQDNHostTargetTemplate         string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreNonHostNetworkPods       bool
@@ -98,8 +100,7 @@ type Config struct {
 	TargetNetFilter                []string
 	NAT64Networks                  []string
 	MinTTL                         time.Duration
-	UnstructuredFQDNResources      []string
-	UnstructuredFQDNTargetTemplate string
+	UnstructuredResources          []string
 
 	sources []string
 
@@ -153,8 +154,9 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TargetNetFilter:                cfg.TargetNetFilter,
 		NAT64Networks:                  cfg.NAT64Networks,
 		MinTTL:                         cfg.MinTTL,
-		UnstructuredFQDNResources:      cfg.UnstructuredFQDNResources,
-		UnstructuredFQDNTargetTemplate: cfg.UnstructuredFQDNTargetTemplate,
+		UnstructuredResources:          cfg.UnstructuredResources,
+		FQDNTargetTemplate:             cfg.FQDNTargetTemplate,
+		FQDNHostTargetTemplate:         cfg.FQDNHostTargetTemplate,
 		sources:                        cfg.Sources,
 	}
 }
@@ -381,7 +383,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 	case types.F5TransportServer:
 		return buildF5TransportServerSource(ctx, p, cfg)
 	case types.Unstructured:
-		return buildUnstructuredFQDNSource(ctx, p, cfg)
+		return buildUnstructuredSource(ctx, p, cfg)
 	}
 	return nil, ErrSourceNotFound
 }
@@ -609,7 +611,7 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 }
 
-func buildUnstructuredFQDNSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	kubeClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -625,9 +627,10 @@ func buildUnstructuredFQDNSource(ctx context.Context, p ClientGenerator, cfg *Co
 		cfg.Namespace,
 		cfg.AnnotationFilter,
 		cfg.LabelFilter,
-		cfg.UnstructuredFQDNResources,
+		cfg.UnstructuredResources,
 		cfg.FQDNTemplate,
-		cfg.UnstructuredFQDNTargetTemplate,
+		cfg.FQDNTargetTemplate,
+		cfg.FQDNHostTargetTemplate,
 		cfg.CombineFQDNAndAnnotation,
 	)
 }

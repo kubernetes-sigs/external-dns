@@ -32,12 +32,12 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-func TestParseResourceIdentifier(t *testing.T) {
+func TestParseResourceArg(t *testing.T) {
 	tests := []struct {
-		name        string
-		identifier  string
-		expected    schema.GroupVersionResource
-		expectError bool
+		name       string
+		identifier string
+		expected   schema.GroupVersionResource
+		valid      bool
 	}{
 		{
 			name:       "full resource with group",
@@ -47,6 +47,7 @@ func TestParseResourceIdentifier(t *testing.T) {
 				Version:  "v1",
 				Resource: "virtualmachineinstances",
 			},
+			valid: true,
 		},
 		{
 			name:       "resource with multi-part group",
@@ -56,64 +57,38 @@ func TestParseResourceIdentifier(t *testing.T) {
 				Version:  "v1",
 				Resource: "ingresses",
 			},
+			valid: true,
 		},
 		{
-			name:       "core API resource (no group)",
-			identifier: "pods.v1",
+			name:       "core API resource (empty group with trailing dot)",
+			identifier: "pods.v1.",
 			expected: schema.GroupVersionResource{
 				Group:    "",
 				Version:  "v1",
 				Resource: "pods",
 			},
+			valid: true,
 		},
 		{
-			name:       "beta version resource",
-			identifier: "customresources.v1beta1.example.com",
-			expected: schema.GroupVersionResource{
-				Group:    "example.com",
-				Version:  "v1beta1",
-				Resource: "customresources",
-			},
+			name:       "invalid - single part",
+			identifier: "pods",
+			valid:      false,
 		},
 		{
-			name:       "apps group resource",
-			identifier: "deployments.v1.apps",
-			expected: schema.GroupVersionResource{
-				Group:    "apps",
-				Version:  "v1",
-				Resource: "deployments",
-			},
-		},
-		{
-			name:        "invalid - single part",
-			identifier:  "pods",
-			expectError: true,
-		},
-		{
-			name:        "invalid - empty resource",
-			identifier:  ".v1.apps",
-			expectError: true,
-		},
-		{
-			name:        "invalid - empty version",
-			identifier:  "pods..apps",
-			expectError: true,
-		},
-		{
-			name:        "invalid - empty string",
-			identifier:  "",
-			expectError: true,
+			name:       "invalid - empty string",
+			identifier: "",
+			valid:      false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gvr, err := parseResourceIdentifier(tt.identifier)
-			if tt.expectError {
-				assert.Error(t, err)
+			gvr, _ := schema.ParseResourceArg(tt.identifier)
+			if tt.valid {
+				require.NotNil(t, gvr)
+				assert.Equal(t, tt.expected, *gvr)
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, gvr)
+				assert.Nil(t, gvr)
 			}
 		})
 	}
@@ -504,6 +479,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				tt.cfg.resources,
 				"",
 				"",
+				"",
 				false,
 			)
 			require.NoError(t, err)
@@ -556,6 +532,7 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 		resources,
 		"",
 		"",
+		"",
 		false,
 	)
 	require.NoError(t, err)
@@ -563,4 +540,70 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 	endpoints, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Unstructured, len(objects))
+}
+
+func TestEndpointsForHostsAndTargets(t *testing.T) {
+	tests := []struct {
+		name      string
+		hostnames []string
+		targets   []string
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			name:      "empty hostnames returns nil",
+			hostnames: []string{},
+			targets:   []string{"192.168.1.1"},
+			expected:  nil,
+		},
+		{
+			name:      "empty targets returns nil",
+			hostnames: []string{"example.com"},
+			targets:   []string{},
+			expected:  nil,
+		},
+		{
+			name:      "duplicate hostname with IPv4 and IPv6 targets",
+			hostnames: []string{"example.com", "example.com"},
+			targets:   []string{"192.168.1.1", "192.168.1.1", "2001:db8::1"},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+			},
+		},
+		{
+			name:      "multiple hostnames with single target",
+			hostnames: []string{"example.com", "www.example.com"},
+			targets:   []string{"192.168.1.1"},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+			},
+		},
+		{
+			name:      "multiple of each type maintains grouping",
+			hostnames: []string{"example.com"},
+			targets:   []string{"192.168.1.1", "192.168.1.2", "2001:db8::1", "2001:db8::2", "a.example.com", "b.example.com"},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1", "2001:db8::2"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.example.com", "b.example.com"),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := EndpointsForHostsAndTargets(tc.hostnames, tc.targets)
+			if tc.expected == nil {
+				assert.Nil(t, result)
+				return
+			}
+			assert.Len(t, result, len(tc.expected))
+			for i, ep := range result {
+				assert.Equal(t, tc.expected[i].DNSName, ep.DNSName, "DNSName mismatch at index %d", i)
+				assert.Equal(t, tc.expected[i].RecordType, ep.RecordType, "RecordType mismatch at index %d", i)
+				assert.ElementsMatch(t, tc.expected[i].Targets, ep.Targets, "Targets mismatch at index %d", i)
+			}
+		})
+	}
 }

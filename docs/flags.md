@@ -28,7 +28,6 @@
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
 | `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional, default: false) |
-| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--gateway-label-filter=""` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--gateway-name=""` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=""` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
@@ -49,8 +48,7 @@
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]traefik-enable-legacy` | Enable legacy listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
-| `--unstructured-fqdn-resource=UNSTRUCTURED-FQDN-RESOURCE` | When using the unstructured-fqdn source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io); specify multiple times for multiple resources |
-| `--fqdn-target-template=""` | When using the unstructured source, specify the target FQDN template for DNS records |
+| `--unstructured-resource=UNSTRUCTURED-RESOURCE` | When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources |
 | `--events-emit=EVENTS-EMIT` | Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
@@ -182,5 +180,8 @@
 | `--webhook-provider-read-timeout=5s` | The read timeout for the webhook provider in duration format (default: 5s) |
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
+| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
+| `--fqdn-target-template=""` | When using the unstructured source, specify the target FQDN template for DNS records |
+| `--fqdn-host-target-template=""` | When using the unstructured source, specify a template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --fqdn-target-template |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
 | `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, contour-httpproxy, gloo-proxy, fake, connector, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy, unstructured) |
