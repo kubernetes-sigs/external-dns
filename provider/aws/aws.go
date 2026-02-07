@@ -68,8 +68,6 @@ const (
 	providerSpecificGeoProximityLocationLocalZoneGroup = "aws/geoproximity-local-zone-group"
 	providerSpecificMultiValueAnswer                   = "aws/multi-value-answer"
 	providerSpecificHealthCheckID                      = "aws/health-check-id"
-	providerSpecificAliasDisableA                      = "aws/alias-disable-a"
-	providerSpecificAliasDisableAAAA                   = "aws/alias-disable-aaaa"
 	sameZoneAlias                                      = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
