@@ -104,10 +104,6 @@ func NewPodSource(
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
 			}
-			if pod.UID == "" {
-				// Pod was already transformed and we must be idempotent.
-				return pod, nil
-			}
 			return &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					// Name/namespace must always be kept for the informer to work.
@@ -115,6 +111,7 @@ func NewPodSource(
 					Namespace: pod.Namespace,
 					// Used by the controller. This includes non-external-dns prefixed annotations.
 					Annotations: pod.Annotations,
+					UID:         pod.UID,
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork: pod.Spec.HostNetwork,

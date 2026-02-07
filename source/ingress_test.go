@@ -1732,6 +1732,7 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "foo.example.com",
 					annotations.TargetKey:   "1.2.3",
 				},
+				UID: "uid-1",
 			},
 		},
 		&networkv1.Ingress{
@@ -1741,6 +1742,7 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "bar.example.com",
 					annotations.TargetKey:   "3.4.5",
 				},
+				UID: "uid-2",
 			},
 		},
 	}

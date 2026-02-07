@@ -1059,7 +1059,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		// Metadata
 		assert.Equal(t, "test-name", retrieved.Name)
 		assert.Equal(t, "test-ns", retrieved.Namespace)
-		assert.Empty(t, retrieved.UID)
+		assert.NotEmpty(t, retrieved.UID)
 		assert.Empty(t, retrieved.Labels)
 		// Filtered
 		assert.Equal(t, map[string]string{
@@ -1154,6 +1154,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "foo.example.com",
 					annotations.TargetKey:   "1.2.3",
 				},
+				UID: "uid-1",
 			},
 		},
 		&v1.Pod{
@@ -1164,6 +1165,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "bar.example.com",
 					annotations.TargetKey:   "3.4.5",
 				},
+				UID: "uid-2",
 			},
 		},
 	}

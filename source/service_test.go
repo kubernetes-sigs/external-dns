@@ -5705,7 +5705,7 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "foo.example.com",
 					annotations.TargetKey:   "1.2.3",
 				},
-				UID: "123",
+				UID: "uid-1",
 			},
 		},
 		&v1.Service{
@@ -5716,7 +5716,7 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "bar.example.com",
 					annotations.TargetKey:   "3.4.5",
 				},
-				UID: "345",
+				UID: "uid-2",
 			},
 		},
 	}

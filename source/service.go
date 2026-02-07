@@ -255,7 +255,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
+		if annotations.IsControllerMismatch(svc, types.Service) {
 			continue
 		}
 

@@ -623,6 +623,7 @@ func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "foo.example.com",
 					annotations.TargetKey:   "1.2.3",
 				},
+				UID: "uid-1",
 			},
 		},
 		&v1.Node{
@@ -632,6 +633,7 @@ func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 					annotations.HostnameKey: "bar.example.com",
 					annotations.TargetKey:   "3.4.5",
 				},
+				UID: "uid-2",
 			},
 		},
 	}
