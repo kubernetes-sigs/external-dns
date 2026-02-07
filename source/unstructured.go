@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
@@ -83,7 +85,8 @@ func NewUnstructuredFQDNSource(
 		return nil, err
 	}
 
-	// Discover and validate all resources
+	// Discover and validate all resources using cached discovery client
+	cachedDiscovery := memory.NewMemCacheClient(kubeClient.Discovery())
 	resourceConfigs := make([]resourceConfig, 0, len(resources))
 	for _, r := range resources {
 		gvr, err := parseResourceIdentifier(r)
@@ -91,7 +94,7 @@ func NewUnstructuredFQDNSource(
 			return nil, err
 		}
 
-		rc, err := discoverResource(kubeClient, gvr)
+		rc, err := discoverResource(cachedDiscovery, gvr)
 		if err != nil {
 			return nil, err
 		}
@@ -352,10 +355,10 @@ func parseResourceIdentifier(identifier string) (schema.GroupVersionResource, er
 
 // discoverResource validates that a resource exists in the cluster and returns its configuration.
 // It uses the Discovery API to verify the resource and determine if it's namespaced.
-func discoverResource(kubeClient kubernetes.Interface, gvr schema.GroupVersionResource) (*resourceConfig, error) {
+func discoverResource(discoveryClient discovery.DiscoveryInterface, gvr schema.GroupVersionResource) (*resourceConfig, error) {
 	gv := gvr.GroupVersion().String()
 
-	apiResourceList, err := kubeClient.Discovery().ServerResourcesForGroupVersion(gv)
+	apiResourceList, err := discoveryClient.ServerResourcesForGroupVersion(gv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover resources for %q: %w", gv, err)
 	}
