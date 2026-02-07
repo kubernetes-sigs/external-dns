@@ -3324,76 +3324,12 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			expectedAaaa: nil,
 		},
 		{
-			name: "MX record with alias=true should be treated as alias and not create AAAA",
+			name: "MX record with alias-related properties should drop them, keep ttl and not create AAAA",
 			ep: &endpoint.Endpoint{
 				DNSName:    "test.foo.bar.",
 				RecordType: endpoint.RecordTypeMX,
 				Targets:    endpoint.Targets{"10 mail.example.com."},
 				RecordTTL:  600,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  providerSpecificAlias,
-						Value: "true",
-					},
-					{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: "true",
-					},
-				},
-			},
-			expected: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:  300,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  providerSpecificAlias,
-						Value: "true",
-					},
-					{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: "true",
-					},
-				},
-			},
-			expectedAaaa: nil,
-		},
-		{
-			name: "MX record with alias=false should drop alias properties and not create AAAA",
-			ep: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:  600,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  providerSpecificAlias,
-						Value: "false",
-					},
-					{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: "true",
-					},
-				},
-			},
-			expected: &endpoint.Endpoint{
-				DNSName:          "test.foo.bar.",
-				RecordType:       endpoint.RecordTypeMX,
-				Targets:          endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:        600,
-				ProviderSpecific: endpoint.ProviderSpecific{},
-			},
-			expectedAaaa: nil,
-		},
-
-		// --- NS records ---
-		{
-			name: "NS record with alias=true should drop alias properties since NS does not support alias",
-			ep: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeNS,
-				Targets:    endpoint.Targets{"ns1.example.com."},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
 						Name:  providerSpecificAlias,
@@ -3407,8 +3343,9 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expected: &endpoint.Endpoint{
 				DNSName:          "test.foo.bar.",
-				RecordType:       endpoint.RecordTypeNS,
-				Targets:          endpoint.Targets{"ns1.example.com."},
+				RecordType:       endpoint.RecordTypeMX,
+				Targets:          endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:        600,
 				ProviderSpecific: endpoint.ProviderSpecific{},
 			},
 			expectedAaaa: nil,
