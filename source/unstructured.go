@@ -154,7 +154,7 @@ func (us *unstructuredSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	for _, rc := range us.resources {
 		resourceEndpoints, err := us.endpointsForResource(ctx, rc)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get endpoints for %s: %w", rc.gvr.String(), err)
+			return nil, err
 		}
 		endpoints = append(endpoints, resourceEndpoints...)
 	}
