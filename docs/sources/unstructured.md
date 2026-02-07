@@ -10,6 +10,7 @@ Use this source when:
 - Your CRD is not supported by a built-in external-dns source
 - The resource exposes DNS-relevant data (hostnames, IPs, endpoints) in `.spec` or `.status`
 - A built-in source exists but only supports an older API version than you're using
+- You want to experiment with custom controllers or meshes but keep external-dns
 
 Example CRDs:
 
@@ -62,6 +63,39 @@ status:
   conditions:
   - type: Established
     status: "True"
+```
+
+**Rancher Node** - Rancher-managed cluster nodes with external IPs
+
+```yaml
+apiVersion: management.cattle.io/v3
+kind: Node
+metadata:
+  name: my-node-1
+  namespace: cattle-system
+  labels:
+    cattle.io/creator: norman
+    node-role.kubernetes.io/controlplane: "true"
+spec:
+  clusterName: c-abcde
+  hostname: my-node-1
+status:
+  nodeName: worker-01
+  internalNodeStatus:
+    addresses:
+    - type: ExternalIP
+      address: 203.0.113.10
+```
+
+```bash
+external-dns \
+  --source=unstructured \
+  --unstructured-fqdn-resource=nodes.v3.management.cattle.io \
+  --fqdn-template='{{.Spec.hostname}}.nodes.example.com' \
+  --fqdn-target-template='{{(index .Status.internalNodeStatus.addresses 0).address}}'
+
+# Result:
+# my-node-1.nodes.example.com -> 203.0.113.10 (A)
 ```
 
 ## Configuration

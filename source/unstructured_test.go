@@ -188,30 +188,38 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 			},
 		},
 		{
-			title: "with ttl",
+			title: "rancher node with ttl",
 			cfg: cfg{
-				resources: []string{"virtualmachineinstances.v1.kubevirt.io"},
+				resources: []string{"nodes.v3.management.cattle.io"},
 			},
 			objects: []*unstructured.Unstructured{
 				{
 					Object: map[string]any{
-						"apiVersion": "kubevirt.io/v1",
-						"kind":       "VirtualMachineInstance",
+						"apiVersion": "management.cattle.io/v3",
+						"kind":       "Node",
 						"metadata": map[string]any{
-							"name":      "my-vm",
-							"namespace": "default",
+							"name":      "my-node-1",
+							"namespace": "cattle-system",
+							"labels": map[string]any{
+								"cattle.io/creator":                   "norman",
+								"node-role.kubernetes.io/controlplane": "true",
+							},
 							"annotations": map[string]any{
-								annotations.HostnameKey: "my-vm.example.com",
-								annotations.TargetKey:   "1.2.3.0",
+								annotations.HostnameKey: "my-node-1.nodes.example.com",
+								annotations.TargetKey:   "203.0.113.10",
 								annotations.TtlKey:      "300",
 							},
+						},
+						"spec": map[string]any{
+							"clusterName": "c-abcde",
+							"hostname":    "my-node-1",
 						},
 					},
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("my-vm.example.com", endpoint.RecordTypeA, 300, "1.2.3.0").
-					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
+				endpoint.NewEndpointWithTTL("my-node-1.nodes.example.com", endpoint.RecordTypeA, 300, "203.0.113.10").
+					WithLabel(endpoint.ResourceLabelKey, "node/cattle-system/my-node-1"),
 			},
 		},
 		{
