@@ -65,39 +65,6 @@ status:
     status: "True"
 ```
 
-**Rancher Node** - Rancher-managed cluster nodes with external IPs
-
-```yaml
-apiVersion: management.cattle.io/v3
-kind: Node
-metadata:
-  name: my-node-1
-  namespace: cattle-system
-  labels:
-    cattle.io/creator: norman
-    node-role.kubernetes.io/controlplane: "true"
-spec:
-  clusterName: c-abcde
-  hostname: my-node-1
-status:
-  nodeName: worker-01
-  internalNodeStatus:
-    addresses:
-    - type: ExternalIP
-      address: 203.0.113.10
-```
-
-```bash
-external-dns \
-  --source=unstructured \
-  --unstructured-fqdn-resource=nodes.v3.management.cattle.io \
-  --fqdn-template='{{.Spec.hostname}}.nodes.example.com' \
-  --fqdn-target-template='{{(index .Status.internalNodeStatus.addresses 0).address}}'
-
-# Result:
-# my-node-1.nodes.example.com -> 203.0.113.10 (A)
-```
-
 ## Configuration
 
 | Flag                           | Description                                                        |
@@ -112,35 +79,19 @@ external-dns \
 
 Templates have access to typed-style fields and raw object data:
 
-| Field          | Type                     | Description          |
-|----------------|--------------------------|----------------------|
-| `.Name`        | `string`                 | Object name          |
-| `.Namespace`   | `string`                 | Object namespace     |
-| `.Kind`        | `string`                 | Object kind          |
-| `.APIVersion`  | `string`                 | API version          |
-| `.Labels`      | `map[string]string`      | Object labels        |
-| `.Annotations` | `map[string]string`      | Object annotations   |
-| `.Metadata`    | `map[string]interface{}` | Raw metadata section |
-| `.Spec`        | `map[string]interface{}` | Raw spec section     |
-| `.Status`      | `map[string]interface{}` | Raw status section   |
-
-### Template Functions
-
-- `toLower`, `contains`, `trimPrefix`, `trimSuffix`, `trim`
-- `replace <old> <new> <string>` - Replace substrings
-- `index <map/slice> <key/index>...` - Access nested fields/arrays
+| Field          | Description          |
+|----------------|----------------------|
+| `.Name`        | Object name          |
+| `.Namespace`   | Object namespace     |
+| `.Kind`        | Object kind          |
+| `.APIVersion`  | API version          |
+| `.Labels`      | Object labels        |
+| `.Annotations` | Object annotations   |
+| `.Metadata`    | Raw metadata section |
+| `.Spec`        | Raw spec section     |
+| `.Status`      | Raw status section   |
 
 ## Examples
-
-### KubeVirt VirtualMachineInstance
-
-```bash
-external-dns \
-  --source=unstructured \
-  --unstructured-fqdn-resource=virtualmachineinstances.v1.kubevirt.io \
-  --fqdn-template='{{.Name}}.{{.Namespace}}.vmi.example.com' \
-  --fqdn-target-template='{{index .Status.interfaces 0 "ipAddress"}}'
-```
 
 ### Crossplane RDS Instance
 
@@ -161,16 +112,6 @@ external-dns \
   --unstructured-fqdn-resource=rdsinstances.v1alpha1.rds.aws.crossplane.io \
   --fqdn-template='{{.Name}}.{{.Kind}}.example.com' \
   --fqdn-target-template='{{.Status.endpoint}}'
-```
-
-### Using Labels
-
-```bash
-external-dns \
-  --source=unstructured \
-  --unstructured-fqdn-resource=applications.v1alpha1.argoproj.io \
-  --fqdn-template='{{index .Labels "app.kubernetes.io/instance"}}.apps.example.com' \
-  --fqdn-target-template='{{.Status.loadBalancer}}'
 ```
 
 ### MetalLB IPAddressPool
@@ -265,6 +206,40 @@ external-dns \
 # my-app.example.com -> 10.0.0.50 (A)
 ```
 
+### Rancher Node
+
+```yaml
+apiVersion: management.cattle.io/v3
+kind: Node
+metadata:
+  name: my-node-1
+  namespace: cattle-system
+  labels:
+    cattle.io/creator: norman
+    node-role.kubernetes.io/controlplane: "true"
+spec:
+  clusterName: c-abcde
+  hostname: my-node-1
+status:
+  nodeName: worker-01
+  internalNodeStatus:
+    addresses:
+    - type: ExternalIP
+      address: 203.0.113.10
+```
+
+```bash
+external-dns \
+  --source=unstructured \
+  --unstructured-fqdn-resource=nodes.v3.management.cattle.io \
+  --fqdn-template='{{.Spec.hostname}}.nodes.example.com' \
+  --fqdn-target-template='{{(index .Status.internalNodeStatus.addresses 0).address}}' \
+  --label-filter='node-role.kubernetes.io/controlplane=true'
+
+# Result:
+# my-node-1.nodes.example.com -> 203.0.113.10 (A)
+```
+
 ## RBAC
 
 Grant external-dns access to your custom resources:
@@ -276,19 +251,10 @@ metadata:
   name: external-dns
 rules:
   # Add for each resource type
-  - apiGroups: ["kubevirt.io"]
-    resources: ["virtualmachineinstances"]
-    verbs: ["get", "watch", "list"]
   - apiGroups: ["rds.aws.crossplane.io"]
     resources: ["rdsinstances"]
     verbs: ["get", "watch", "list"]
-  - apiGroups: ["metallb.io"]
-    resources: ["ipaddresspools"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: ["apisix.apache.org"]
-    resources: ["apisixroutes"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: ["cert-manager.io"]
-    resources: ["certificates"]
+  - apiGroups: ["<your-api-group>"]
+    resources: ["<your-resources>"]
     verbs: ["get", "watch", "list"]
 ```
