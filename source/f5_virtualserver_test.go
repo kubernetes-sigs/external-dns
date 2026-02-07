@@ -39,7 +39,6 @@ const defaultF5VirtualServerNamespace = "virtualserver"
 
 func TestF5VirtualServerEndpoints(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
 		name             string
 		annotationFilter string
@@ -349,15 +348,6 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.100"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  0,
-					Labels: endpoint.Labels{
-						"resource": "f5-virtualserver/virtualserver/test-vs",
-					},
-				},
-				{
 					DNSName:    "alias1.example.com",
 					Targets:    []string{"192.168.1.100"},
 					RecordType: endpoint.RecordTypeA,
@@ -368,6 +358,15 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "www.example.com",
 					Targets:    []string{"192.168.1.100"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
@@ -600,7 +599,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			assert.Equal(t, tc.expected, endpoints)
+			validateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }

@@ -131,7 +131,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		return nil, err
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {

@@ -236,7 +236,7 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
