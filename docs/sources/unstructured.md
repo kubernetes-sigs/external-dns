@@ -1,6 +1,6 @@
 # Unstructured FQDN Source
 
-The unstructured-fqdn source creates DNS records from any Kubernetes resource using Go templates.
+The `unstructured` source creates DNS records from any Kubernetes resource using Go templates.
 It works with custom resources (CRDs) without requiring typed Go clients.
 
 ## Use Cases
