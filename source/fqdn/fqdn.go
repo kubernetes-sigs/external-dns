@@ -18,9 +18,12 @@ package fqdn
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"net/netip"
 	"reflect"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -45,6 +48,8 @@ func ParseTemplate(input string) (*template.Template, error) {
 		"replace":    replace,
 		"isIPv6":     isIPv6String,
 		"isIPv4":     isIPv4String,
+		"hasKey":     hasKey,
+		"fromJson":   fromJson,
 	}
 	return template.New("endpoint").Funcs(funcs).Parse(input)
 }
@@ -54,6 +59,10 @@ type kubeObject interface {
 	metav1.Object
 }
 
+// ExecTemplate executes the given template against a Kubernetes object and returns
+// a list of hostnames. It handles objects with missing TypeMeta by inferring the
+// Kind from the scheme or via reflection. Returns an error if obj is nil or
+// template execution fails.
 func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("object is nil")
@@ -80,15 +89,15 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
 	hosts := strings.Split(buf.String(), ",")
-	hostnames := make([]string, 0, len(hosts))
+	hostnames := make(map[string]struct{}, len(hosts))
 	for _, name := range hosts {
 		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
 		if name != "" {
-			hostnames = append(hostnames, name)
+			hostnames[name] = struct{}{}
 		}
 	}
-	return hostnames, nil
+	return slices.Sorted(maps.Keys(hostnames)), nil
 }
 
 // replace all instances of oldValue with newValue in target string.
@@ -114,6 +123,24 @@ func isIPv4String(target string) bool {
 		return false
 	}
 	return netIP.Is4()
+}
+
+// hasKey checks if a key exists in a map. This is needed because Go templates'
+// `index` function returns the zero value ("") for missing keys, which is
+// indistinguishable from keys with empty values. Kubernetes uses empty-value
+// labels for markers (e.g., `service.kubernetes.io/headless: ""`), so we need
+// explicit key existence checking.
+func hasKey(m map[string]string, key string) bool {
+	_, ok := m[key]
+	return ok
+}
+
+// toJson converts a Go value to a JSON string representation.
+// Returns an empty string if marshaling fails.
+func fromJson(v string) any {
+	var output any
+	_ = json.Unmarshal([]byte(v), &output)
+	return output
 }
 
 // CombineWithTemplatedEndpoints merges annotation-based endpoints with template-based endpoints
