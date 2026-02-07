@@ -22,6 +22,7 @@ import (
 	"strings"
 	"text/template"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -52,8 +53,6 @@ import (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 type unstructuredSource struct {
-	dynamicClient         dynamic.Interface
-	kubeClient            kubernetes.Interface
 	namespace             string
 	annotationFilter      string
 	labelSelector         labels.Selector
@@ -61,7 +60,6 @@ type unstructuredSource struct {
 	fqdnTemplate          *template.Template
 	targetFqdnTemplate    *template.Template
 	resources             []resourceConfig
-	informerFactory       dynamicinformer.DynamicSharedInformerFactory
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -134,15 +132,12 @@ func NewUnstructuredFQDNSource(
 	}
 
 	return &unstructuredSource{
-		dynamicClient:         dynamicClient,
-		kubeClient:            kubeClient,
 		namespace:             namespace,
 		annotationFilter:      annotationFilter,
 		labelSelector:         labelSelector,
 		fqdnTemplate:          fqdnTmpl,
 		targetFqdnTemplate:    targetTmpl,
 		resources:             resourceConfigs,
-		informerFactory:       informerFactory,
 		combineFqdnAnnotation: combineFqdnAnnotation,
 	}, nil
 }
@@ -172,6 +167,7 @@ func (us *unstructuredSource) endpointsForResource(_ context.Context, rc resourc
 	for _, key := range indexKeys {
 		obj, err := informers.GetByKey[*unstructured.Unstructured](rc.informer.Informer().GetIndexer(), key)
 		if err != nil {
+			log.Debugf("failed to get object by key %q: %v", key, err)
 			continue
 		}
 
@@ -199,7 +195,7 @@ func (us *unstructuredSource) endpointsForResource(_ context.Context, rc resourc
 				us.fqdnTemplate,
 				us.combineFqdnAnnotation,
 				func() ([]*endpoint.Endpoint, error) {
-					return us.endpointsFromNodeTemplate(el)
+					return us.endpointsFromTemplate(el)
 				},
 			)
 			if err != nil {
@@ -223,8 +219,8 @@ func (us *unstructuredSource) endpointsForResource(_ context.Context, rc resourc
 	return MergeEndpoints(endpoints), nil
 }
 
-// endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
-func (us *unstructuredSource) endpointsFromNodeTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
+// endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
+func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
 	hostnames, err := fqdn.ExecTemplate(us.fqdnTemplate, el)
 	if err != nil {
 		return nil, err
@@ -251,9 +247,8 @@ func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func())
 
 // resourceConfig holds the parsed configuration for a single resource type.
 type resourceConfig struct {
-	gvr        schema.GroupVersionResource
-	namespaced bool
-	informer   kubeinformers.GenericInformer
+	gvr      schema.GroupVersionResource
+	informer kubeinformers.GenericInformer
 }
 
 // unstructuredWrapper wraps an unstructured.Unstructured to provide both
@@ -280,7 +275,7 @@ type unstructuredWrapper struct {
 	Object map[string]any
 }
 
-func (u unstructuredWrapper) GetObjectMeta() metav1.Object {
+func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
 	return u.Unstructured
 }
 
@@ -377,7 +372,6 @@ func discoverResource(discoveryClient discovery.DiscoveryInterface, gvr schema.G
 	}
 
 	return &resourceConfig{
-		gvr:        gvr,
-		namespaced: apiResource.Namespaced,
+		gvr: gvr,
 	}, nil
 }
