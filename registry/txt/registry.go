@@ -243,8 +243,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
-		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
+		if shouldUseCNAMEForTxtRecord(ep) {
 			key.RecordType = endpoint.RecordTypeCNAME
 		}
 
@@ -287,6 +286,13 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
+// shouldUseCNAMEForTxtRecord checks if the endpoint is an alias A record converted from CNAME.
+// TXT ownership records use CNAME as the record type for such records.
+func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
+	aliasType := ep.GetAliasProperty()
+	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
+}
+
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
@@ -299,8 +305,8 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 
 	// Always create new format record
 	recordType := r.RecordType
-	// AWS Alias records are encoded as type "cname"
-	if isAlias, found := r.GetBoolProviderSpecificProperty("alias"); found && isAlias && recordType == endpoint.RecordTypeA {
+
+	if shouldUseCNAMEForTxtRecord(r) {
 		recordType = endpoint.RecordTypeCNAME
 	}
 

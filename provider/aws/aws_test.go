@@ -3307,6 +3307,67 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expectedAaaa: nil,
 		},
+		{
+			name: "CNAME record with alias=A should convert to A record only and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "A",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "A",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with alias=AAAA should convert to AAAA record only and not create A",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "AAAA",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "AAAA",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+
 		// --- MX / other records ---
 		{
 			name: "MX record without provider specific should not change and not create AAAA",
