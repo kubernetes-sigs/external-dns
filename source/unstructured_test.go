@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -201,7 +201,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 							"name":      "my-node-1",
 							"namespace": "cattle-system",
 							"labels": map[string]any{
-								"cattle.io/creator":                   "norman",
+								"cattle.io/creator":                    "norman",
 								"node-role.kubernetes.io/controlplane": "true",
 							},
 							"annotations": map[string]any{
