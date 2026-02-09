@@ -6,9 +6,9 @@ release:
 tests:
   - it: should provide expected default flags
     asserts:
-      - exists :
+      - exists:
           path: spec.template.spec.containers[?(@.name == "external-dns")]
-      - equal :
+      - equal:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           value:
             - --log-level=info
@@ -25,9 +25,9 @@ tests:
       txtPrefix: ""
       txtSuffix: "test-suffix"
     asserts:
-      - exists :
+      - exists:
           path: spec.template.spec.containers[?(@.name == "external-dns")]
-      - equal :
+      - equal:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           value:
             - --log-level=info
@@ -50,7 +50,7 @@ tests:
     set:
       txtSuffix: "custom-suffix"
     asserts:
-      - exists :
+      - exists:
           path: spec.template.spec.containers[?(@.name == "external-dns")]
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
@@ -103,14 +103,13 @@ tests:
             - --zone-id-filter=/hostedzone/Z00004
             - --zone-id-filter=/hostedzone/Z00005
 
-
   - it: should allow 'extraArgs' to be a slice
     set:
       extraArgs:
-       - --extraArgA=valueA
-       - --extraArgB=valueB
-       - --extraArgC=valueC-1
-       - --extraArgC=valueC-2
+        - --extraArgA=valueA
+        - --extraArgB=valueB
+        - --extraArgC=valueC-1
+        - --extraArgC=valueC-2
 
     asserts:
       - equal:
@@ -128,7 +127,6 @@ tests:
             - --extraArgB=valueB
             - --extraArgC=valueC-1
             - --extraArgC=valueC-2
-
 
   - it: should allow 'extraArgs' to be a map with its entries potentially being slices (lists) themselves
     set:
@@ -156,13 +154,33 @@ tests:
             - --extraArgC=valueC-1
             - --extraArgC=valueC-2
 
+  - it: should allow 'extraArgs' to be a map with its entries potentially being boolean
+    set:
+      extraArgs:
+        extraArgC: true
+        extraArgD: false
+
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --extraArgC
+            - --no-extraArgD
 
   - it: should throw error when txtPrefix and txtSuffix are set
     set:
-        txtPrefix: "test-prefix"
-        txtSuffix: "test-suffix"
+      txtPrefix: "test-prefix"
+      txtSuffix: "test-suffix"
     asserts:
-     - failedTemplate:
+      - failedTemplate:
           errorMessage: "'txtPrefix' and 'txtSuffix' are mutually exclusive"
 
   - it: should configure custom annotation prefix
