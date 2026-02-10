@@ -23,6 +23,7 @@ import (
 	"time"
 
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -35,6 +36,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -197,17 +199,18 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	sourceUnderTest := []string{
-		types.Node, types.Service, types.Ingress, types.Pod, types.IstioGateway, types.IstioVirtualService,
+	// When a source is the only one requested and fails, "no sources" error is returned
+	for _, source := range []string{
+		types.Node, types.Service, types.Ingress, types.Pod,
+		types.IstioGateway, types.IstioVirtualService,
 		types.AmbassadorHost, types.GlooProxy, types.TraefikProxy, types.CRD, types.KongTCPIngress,
 		types.F5VirtualServer, types.F5TransportServer,
-	}
-
-	for _, source := range sourceUnderTest {
+	} {
 		_, err := ByNames(context.TODO(), &Config{
 			sources: []string{source},
 		}, mockClientGenerator)
-		suite.Error(err, source+" should return an error if kubernetes client cannot be created")
+		suite.Error(err, source+" should return an error when it is the only source and fails")
+		suite.Contains(err.Error(), "no sources could be initialized")
 	}
 }
 
@@ -217,13 +220,13 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	mockClientGenerator.On("IstioClient").Return(nil, errors.New("foo"))
 	mockClientGenerator.On("DynamicKubernetesClient").Return(nil, errors.New("foo"))
 
-	sourcesDependentOnIstioClient := []string{types.IstioGateway, types.IstioVirtualService}
-
-	for _, source := range sourcesDependentOnIstioClient {
+	// Istio sources are optional — when requested alone and failing, "no sources" error
+	for _, source := range []string{types.IstioGateway, types.IstioVirtualService} {
 		_, err := ByNames(context.TODO(), &Config{
 			sources: []string{source},
 		}, mockClientGenerator)
-		suite.Error(err, source+" should return an error if istio client cannot be created")
+		suite.Error(err, source+" should return an error when it is the only source and fails")
+		suite.Contains(err.Error(), "no sources could be initialized")
 	}
 }
 
@@ -233,16 +236,16 @@ func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(nil, errors.New("foo"))
 
-	sourcesDependentOnDynamicKubernetesClient := []string{
+	// All dynamic-client-dependent sources are optional — "no sources" when alone
+	for _, source := range []string{
 		types.AmbassadorHost, types.ContourHTTPProxy, types.GlooProxy, types.TraefikProxy,
 		types.KongTCPIngress, types.F5VirtualServer, types.F5TransportServer,
-	}
-
-	for _, source := range sourcesDependentOnDynamicKubernetesClient {
+	} {
 		_, err := ByNames(context.TODO(), &Config{
 			sources: []string{source},
 		}, mockClientGenerator)
-		suite.Error(err, source+" should return an error if dynamic kubernetes client cannot be created")
+		suite.Error(err, source+" should return an error when it is the only source and fails")
+		suite.Contains(err.Error(), "no sources could be initialized")
 	}
 }
 
@@ -323,4 +326,111 @@ func TestConfig_ClientGenerator_Caching(t *testing.T) {
 
 	// Should return the same instance (cached)
 	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
+}
+
+func TestEmptySourcesList(t *testing.T) {
+	m := new(MockClientGenerator)
+	_, err := ByNames(context.TODO(), &Config{
+		sources: []string{},
+	}, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no sources could be initialized")
+}
+
+func TestOptionalSourceSkipped(t *testing.T) {
+	m := new(MockClientGenerator)
+	m.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+	// GatewayClient will fail — gateway-grpcroute should be skipped
+	m.On("GatewayClient").Return(nil, errors.New("gateway CRD not installed"))
+
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Service, types.GatewayGrpcRoute},
+	}, m)
+	assert.NoError(t, err)
+	assert.Len(t, sources, 1, "service should succeed, gateway-grpcroute should be skipped")
+}
+
+func TestAllOptionalSourcesSkipped(t *testing.T) {
+	m := new(MockClientGenerator)
+	m.On("GatewayClient").Return(nil, errors.New("gateway CRD not installed"))
+
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.GatewayHttpRoute, types.GatewayGrpcRoute},
+	}, m)
+	assert.Error(t, err)
+	assert.Nil(t, sources)
+	assert.Contains(t, err.Error(), "no sources could be initialized")
+}
+
+func TestSingleSourceFailsReturnsError(t *testing.T) {
+	m := new(MockClientGenerator)
+	m.On("KubeClient").Return(nil, errors.New("kube client broken"))
+
+	_, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Service},
+	}, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no sources could be initialized")
+}
+
+func TestMixedSourcesPartialInit(t *testing.T) {
+	m := new(MockClientGenerator)
+	m.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+	m.On("IstioClient").Return(nil, errors.New("istio not installed"))
+
+	sources, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Service, types.IstioGateway},
+	}, m)
+	assert.NoError(t, err)
+	assert.Len(t, sources, 1, "service should succeed, istio-gateway should be skipped")
+}
+
+func TestOptionalSourceSkippedLogsWarning(t *testing.T) {
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	m := new(MockClientGenerator)
+	m.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+	m.On("GatewayClient").Return(nil, errors.New("gateway CRD not installed"))
+
+	_, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Service, types.GatewayGrpcRoute},
+	}, m)
+	assert.NoError(t, err)
+	testutils.TestHelperLogContainsWithLogLevel("Skipping source", log.WarnLevel, hook, t)
+	testutils.TestHelperLogContains("gateway-grpcroute", hook, t)
+}
+
+func TestAllSourceTypesHandled(t *testing.T) {
+	// Every known source type must be handled by BuildWithConfig (not return
+	// ErrSourceNotFound). If a new type constant is added to the types package
+	// without a corresponding case in BuildWithConfig, add it here.
+	allSources := []string{
+		types.Node, types.Service, types.Ingress, types.Pod,
+		types.Fake, types.Connector,
+		types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute,
+		types.GatewayTcpRoute, types.GatewayUdpRoute,
+		types.IstioGateway, types.IstioVirtualService,
+		types.AmbassadorHost, types.ContourHTTPProxy,
+		types.GlooProxy, types.TraefikProxy, types.OpenShiftRoute,
+		types.CRD, types.SkipperRouteGroup, types.KongTCPIngress,
+		types.F5VirtualServer, types.F5TransportServer,
+	}
+
+	p := &minimalMockClientGenerator{}
+	for _, s := range allSources {
+		_, err := BuildWithConfig(context.Background(), s, p, &Config{LabelFilter: labels.NewSelector()})
+		assert.NotErrorIs(t, err, ErrSourceNotFound,
+			"%q should be handled by BuildWithConfig", s)
+	}
+}
+
+func TestUnknownSourceStillFails(t *testing.T) {
+	m := new(MockClientGenerator)
+	m.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
+
+	_, err := ByNames(context.TODO(), &Config{
+		sources: []string{types.Service, "nonexistent-source"},
+	}, m)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrSourceNotFound)
 }
