@@ -269,6 +269,15 @@ Targets that parse as IPv4 addresses are published as A records and
 targets that parse as IPv6 addresses are published as AAAA records. All other targets
 are published as CNAME records.
 
+## external-dns.alpha.kubernetes.io/global-accelerator
+
+References an AWS Global Accelerator resource for Ingress targets.
+
+The value is a `namespace/name` reference (or just `name` to use the Ingress namespace).
+When set, ExternalDNS reads `status.dnsName` from that Global Accelerator and uses it
+as the target for the Ingress record. The `external-dns.alpha.kubernetes.io/target`
+annotation still takes precedence when set.
+
 ## external-dns.alpha.kubernetes.io/ttl
 
 Specifies the TTL (time to live) for the resource's DNS records.

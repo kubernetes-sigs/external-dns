@@ -63,6 +63,7 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
+				nil,
 				"",
 				"",
 				tt.fqdnTemplate,
@@ -325,6 +326,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
+				nil,
 				"",
 				"",
 				tt.fqdnTemplate,
