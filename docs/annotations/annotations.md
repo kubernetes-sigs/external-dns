@@ -310,7 +310,31 @@ Additionally, you can set the value to `A` or `AAAA` to create only one type of 
 - `A`: Creates only an A alias record (IPv4 only)
 - `AAAA`: Creates only an AAAA alias record (IPv6 only)
 
+This is useful when your alias target is IPv4-only (i.e., it does not have an AAAA target),
+and creating an AAAA alias record would fail.
+
 Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
+
+#### Example: IPv4-only alias target
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: app.example.com
+    external-dns.alpha.kubernetes.io/target: ipv4-only-target.example.com
+    # Create only an A (IPv4) alias record to avoid creating an AAAA alias record for an IPv4-only target.
+    external-dns.alpha.kubernetes.io/alias: "A"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+  selector:
+    app: my-app
+```
 
 This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
 
