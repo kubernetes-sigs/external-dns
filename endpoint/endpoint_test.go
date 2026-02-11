@@ -926,6 +926,95 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "A record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "AAAA record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeAAAA,
+				Targets:          Targets{"dualstack.my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "CNAME record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeCNAME,
+				Targets:          Targets{"d111111abcdef8.cloudfront.net"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "MX record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "TXT record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeTXT,
+				Targets:          Targets{"v=spf1 ~all"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "NS record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeNS,
+				Targets:          Targets{"ns1.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "SRV record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "_sip._tcp.example.com",
+				RecordType:       RecordTypeSRV,
+				Targets:          Targets{"10 5 5060 sip.example.com."},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record with alias=false is also invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "false"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record without alias property is valid",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

@@ -444,6 +444,13 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
+	if !e.supportAlias() {
+		if _, ok := e.GetBoolProviderSpecificProperty("alias"); ok {
+			log.Debugf("Endpoint %s of type %s does not support alias records in ExternalDNS", e.DNSName, e.RecordType)
+			return false
+		}
+	}
+
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
@@ -451,6 +458,15 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+func (e *Endpoint) supportAlias() bool {
+	switch e.RecordType {
+	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
+		return true
+	default:
+		return false
+	}
 }
 
 // WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
