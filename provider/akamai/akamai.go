@@ -274,24 +274,35 @@ func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) e
 	}
 	log.Debugf("Processing zones: [%v]", zoneNameIDMapper)
 
+	// Filter changes to only those matching managed zones
+	filteredCreate := filterEndpointsByZone(zoneNameIDMapper, changes.Create)
+	filteredDelete := filterEndpointsByZone(zoneNameIDMapper, changes.Delete)
+	filteredUpdateNew := filterEndpointsByZone(zoneNameIDMapper, changes.UpdateNew)
+
+	// Return early if no changes match any managed zones
+	if len(filteredCreate) == 0 && len(filteredDelete) == 0 && len(filteredUpdateNew) == 0 {
+		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
+		return nil
+	}
+
 	// Create recordsets
-	log.Debugf("Create Changes requested [%v]", changes.Create)
-	if err := p.createRecordsets(zoneNameIDMapper, changes.Create); err != nil {
+	log.Debugf("Create Changes requested [%v]", filteredCreate)
+	if err := p.createRecordsets(zoneNameIDMapper, filteredCreate); err != nil {
 		return err
 	}
 	// Delete recordsets
-	log.Debugf("Delete Changes requested [%v]", changes.Delete)
-	if err := p.deleteRecordsets(zoneNameIDMapper, changes.Delete); err != nil {
+	log.Debugf("Delete Changes requested [%v]", filteredDelete)
+	if err := p.deleteRecordsets(zoneNameIDMapper, filteredDelete); err != nil {
 		return err
 	}
 	// Update recordsets
-	log.Debugf("Update Changes requested [%v]", changes.UpdateNew)
-	if err := p.updateNewRecordsets(zoneNameIDMapper, changes.UpdateNew); err != nil {
+	log.Debugf("Update Changes requested [%v]", filteredUpdateNew)
+	if err := p.updateNewRecordsets(zoneNameIDMapper, filteredUpdateNew); err != nil {
 		return err
 	}
 	// Check that all old endpoints were accounted for
-	revRecs := changes.Delete
-	revRecs = append(revRecs, changes.UpdateNew...)
+	revRecs := filteredDelete
+	revRecs = append(revRecs, filteredUpdateNew...)
 	for _, rec := range changes.UpdateOld {
 		found := false
 		for _, r := range revRecs {
@@ -489,4 +500,16 @@ func edgeChangesByZone(zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoi
 	}
 
 	return createsByZone
+}
+
+// filterEndpointsByZone returns only endpoints that match a zone in the mapper
+func filterEndpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := make([]*endpoint.Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		zoneName, _ := zoneNameIDMapper.FindZone(ep.DNSName)
+		if zoneName != "" {
+			filtered = append(filtered, ep)
+		}
+	}
+	return filtered
 }
