@@ -256,6 +256,12 @@ func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	// return early if there is nothing to change
+	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 {
+		log.Info("All records are already up to date")
+		return nil
+	}
+
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {

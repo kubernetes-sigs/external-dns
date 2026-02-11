@@ -369,3 +369,23 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	apply := c.ApplyChanges(context.Background(), changes)
 	assert.NoError(t, apply)
 }
+
+func TestAkamaiApplyChangesEmpty(t *testing.T) {
+	stub := newStub()
+	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
+	idfilter := provider.ZoneIDFilter{}
+	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
+	require.NoError(t, err)
+
+	// Don't set up any zone output - if fetchZones is called, it would return empty
+	// but we're testing that it's not called at all
+	changes := &plan.Changes{
+		Create:    []*endpoint.Endpoint{},
+		Delete:    []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
+		UpdateNew: []*endpoint.Endpoint{},
+	}
+
+	err = c.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+}
