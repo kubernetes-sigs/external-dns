@@ -230,7 +230,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {

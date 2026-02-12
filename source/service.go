@@ -330,7 +330,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		})
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource
