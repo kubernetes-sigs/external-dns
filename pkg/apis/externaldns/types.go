@@ -77,6 +77,7 @@ type Config struct {
 	GoogleZoneVisibility                          string
 	DomainFilter                                  []string
 	DomainExclude                                 []string
+	IncludeDomains                                []string
 	RegexDomainFilter                             *regexp.Regexp
 	RegexDomainExclude                            *regexp.Regexp
 	ZoneNameFilter                                []string
@@ -273,6 +274,7 @@ var defaultConfig = &Config{
 	DryRun:                       false,
 	ExcludeDNSRecordTypes:        []string{},
 	DomainExclude:                []string{},
+	IncludeDomains:               []string{},
 	ExcludeTargetNets:            []string{},
 	EmitEvents:                   []string{},
 	ExcludeUnschedulable:         true,
@@ -546,6 +548,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.DomainExclude)
+	b.StringsVar("include-domains", "Limit to exact FQDNs; only domains that exactly match one of these will be managed; specify multiple times for multiple domains (optional)", []string{""}, &cfg.IncludeDomains)
 	b.RegexpVar("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)", defaultConfig.RegexDomainFilter, &cfg.RegexDomainFilter)
 	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)", defaultConfig.RegexDomainExclude, &cfg.RegexDomainExclude)
 	b.StringsVar("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneNameFilter)
