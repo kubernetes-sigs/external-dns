@@ -45,6 +45,7 @@ func ParseTemplate(input string) (*template.Template, error) {
 		"replace":    replace,
 		"isIPv6":     isIPv6String,
 		"isIPv4":     isIPv4String,
+		"hasKey":     hasKey,
 	}
 	return template.New("endpoint").Funcs(funcs).Parse(input)
 }
@@ -114,6 +115,16 @@ func isIPv4String(target string) bool {
 		return false
 	}
 	return netIP.Is4()
+}
+
+// hasKey checks if a key exists in a map. This is needed because Go templates'
+// `index` function returns the zero value ("") for missing keys, which is
+// indistinguishable from keys with empty values. Kubernetes uses empty-value
+// labels for markers (e.g., `service.kubernetes.io/headless: ""`), so we need
+// explicit key existence checking.
+func hasKey(m map[string]string, key string) bool {
+	_, ok := m[key]
+	return ok
 }
 
 // CombineWithTemplatedEndpoints merges annotation-based endpoints with template-based endpoints
