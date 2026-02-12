@@ -285,14 +285,27 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 }
 
 // ByNames returns multiple Sources given multiple names.
+// Unknown source names (ErrSourceNotFound) hard-fail immediately. All other
+// initialization errors are logged as warnings and the source is skipped —
+// this handles the common case where a source depends on a CRD that isn't
+// installed in the cluster. If no sources initialize successfully, an error
+// is returned.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
 	sources := make([]Source, 0, len(cfg.sources))
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, ErrSourceNotFound) {
+				return nil, err
+			}
+			log.Warnf("Skipping source %q due to initialization error: %v", name, err)
+			continue
 		}
 		sources = append(sources, source)
+	}
+
+	if len(sources) == 0 {
+		return nil, fmt.Errorf("no sources could be initialized (requested: %q)", cfg.sources)
 	}
 
 	return sources, nil
