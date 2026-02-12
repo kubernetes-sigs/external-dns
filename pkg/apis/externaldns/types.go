@@ -200,6 +200,7 @@ type Config struct {
 	GoDaddySecretKey                              string `secure:"yes"`
 	GoDaddyTTL                                    int64
 	GoDaddyOTE                                    bool
+	GoDaddyValidateOnStartup                      bool
 	OCPRouterName                                 string
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
@@ -290,6 +291,7 @@ var defaultConfig = &Config{
 	GoDaddyOTE:                   false,
 	GoDaddySecretKey:             "",
 	GoDaddyTTL:                   600,
+	GoDaddyValidateOnStartup:     true,
 	GoogleBatchChangeInterval:    time.Second,
 	GoogleBatchChangeSize:        1000,
 	GoogleProject:                "",
@@ -618,6 +620,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)
 	b.Int64Var("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.", cfg.GoDaddyTTL, &cfg.GoDaddyTTL)
 	b.BoolVar("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)", defaultConfig.GoDaddyOTE, &cfg.GoDaddyOTE)
+	b.BoolVar("godaddy-validate-on-startup", "When using the GoDaddy provider, don't validate the API key & secret on startup", defaultConfig.GoDaddyValidateOnStartup, &cfg.GoDaddyValidateOnStartup)
 
 	// Flags related to TLS communication
 	b.StringVar("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)", defaultConfig.TLSCA, &cfg.TLSCA)
