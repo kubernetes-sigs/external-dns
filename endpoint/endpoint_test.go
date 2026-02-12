@@ -191,26 +191,33 @@ func TestIsLess(t *testing.T) {
 }
 
 func TestGetProviderSpecificProperty(t *testing.T) {
-	e := &Endpoint{
-		ProviderSpecific: []ProviderSpecificProperty{
-			{
-				Name:  "name",
-				Value: "value",
-			},
-		},
-	}
+	t.Run("empty provider specific", func(t *testing.T) {
+		e := &Endpoint{}
+		val, ok := e.GetProviderSpecificProperty("any")
+		assert.False(t, ok)
+		assert.Empty(t, val)
+	})
 
 	t.Run("key is not present in provider specific", func(t *testing.T) {
+		e := &Endpoint{
+			ProviderSpecific: []ProviderSpecificProperty{
+				{Name: "name", Value: "value"},
+			},
+		}
 		val, ok := e.GetProviderSpecificProperty("hello")
 		assert.False(t, ok)
 		assert.Empty(t, val)
 	})
 
 	t.Run("key is present in provider specific", func(t *testing.T) {
+		e := &Endpoint{
+			ProviderSpecific: []ProviderSpecificProperty{
+				{Name: "name", Value: "value"},
+			},
+		}
 		val, ok := e.GetProviderSpecificProperty("name")
 		assert.True(t, ok)
-		assert.NotEmpty(t, val)
-
+		assert.Equal(t, "value", val)
 	})
 }
 
@@ -360,6 +367,12 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 		key      string
 		expected []ProviderSpecificProperty
 	}{
+		{
+			name:     "empty provider specific",
+			endpoint: Endpoint{},
+			key:      "any",
+			expected: nil,
+		},
 		{
 			name: "name and key are not matching",
 			endpoint: Endpoint{
