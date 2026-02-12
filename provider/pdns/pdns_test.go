@@ -877,16 +877,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	/* given an RRSet with three records, we test:
 	   - We correctly create corresponding endpoints
 	*/
-	eps, err := p.convertRRSetToEndpoints(RRSetMultipleRecords)
-	suite.Require().NoError(err)
+	eps := p.convertRRSetToEndpoints(RRSetMultipleRecords)
 	suite.Equal(endpointsMultipleRecords, eps)
 
 	/* Given an RRSet with two records, one of which is disabled, we test:
 	   - We can correctly convert the RRSet into a list of valid endpoints
 	   - We correctly discard/ignore the disabled record.
 	*/
-	eps, err = p.convertRRSetToEndpoints(RRSetDisabledRecord)
-	suite.Require().NoError(err)
+	eps = p.convertRRSetToEndpoints(RRSetDisabledRecord)
 	suite.Equal(endpointsDisabledRecord, eps)
 }
 

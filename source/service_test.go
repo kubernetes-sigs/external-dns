@@ -4855,8 +4855,6 @@ func TestNewServiceTypes(t *testing.T) {
 }
 
 func TestFilterByServiceType_WithFixture(t *testing.T) {
-	namespace := "testns"
-
 	tests := []struct {
 		name            string
 		filter          *serviceTypes
@@ -4865,7 +4863,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 	}{
 		{
 			name: "all types of services with filter enabled for ServiceTypeNodePort and ServiceTypeClusterIP",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("kube-system", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4882,7 +4880,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "all types of services with filter enabled for ServiceTypeLoadBalancer",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4898,7 +4896,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "enabled for ServiceTypeLoadBalancer when not all types are present",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
 				v1.ServiceTypeExternalName: 2,
@@ -4913,7 +4911,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "filter disabled returns all services",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -5102,7 +5100,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 }
 
 // createTestServicesByType creates the requested number of services per type in the given namespace.
-func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]int) []*v1.Service {
+func createTestServicesByType(ns string, typeCounts map[v1.ServiceType]int) []*v1.Service {
 	var services []*v1.Service
 	idx := 0
 	for svcType, count := range typeCounts {
@@ -5110,7 +5108,7 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 			svc := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("svc-%s-%d", svcType, idx),
-					Namespace: namespace,
+					Namespace: ns,
 				},
 				Spec: v1.ServiceSpec{
 					Type: svcType,

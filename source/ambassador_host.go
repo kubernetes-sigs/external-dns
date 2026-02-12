@@ -168,11 +168,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			}
 		}
 
-		hostEndpoints, err := sc.endpointsFromHost(host, targets)
-		if err != nil {
-			log.Warningf("Could not get endpoints for Host %s", err)
-			continue
-		}
+		hostEndpoints := sc.endpointsFromHost(host, targets)
 		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
@@ -189,7 +185,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
-func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
@@ -203,7 +199,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {

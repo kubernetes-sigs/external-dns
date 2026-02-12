@@ -126,10 +126,7 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
-	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)
-	if err != nil {
-		return nil, err
-	}
+	endpoints := vs.endpointsFromVirtualServers(virtualServers)
 
 	// Sort endpoints
 	for _, ep := range endpoints {
@@ -146,7 +143,7 @@ func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func
 }
 
 // endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers
-func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f5.VirtualServer) ([]*endpoint.Endpoint, error) {
+func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f5.VirtualServer) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
@@ -178,7 +175,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
