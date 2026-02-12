@@ -369,3 +369,54 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	apply := c.ApplyChanges(context.Background(), changes)
 	assert.NoError(t, apply)
 }
+
+func TestAkamaiApplyChangesEmpty(t *testing.T) {
+	stub := newStub()
+	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
+	idfilter := provider.ZoneIDFilter{}
+	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
+	require.NoError(t, err)
+
+	// Don't set up any zone output - if fetchZones is called, it would return empty
+	// but we're testing that it's not called at all
+	changes := &plan.Changes{
+		Create:    []*endpoint.Endpoint{},
+		Delete:    []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
+		UpdateNew: []*endpoint.Endpoint{},
+	}
+
+	err = c.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+}
+
+func TestAkamaiApplyChangesFilteredByDomain(t *testing.T) {
+	stub := newStub()
+	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
+	idfilter := provider.ZoneIDFilter{}
+	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
+	require.NoError(t, err)
+
+	// Set up zones for example.com only
+	stub.setOutput("zone", []any{"example.com"})
+
+	// All changes are for other.com which doesn't match the domain filter
+	// These should be filtered out and no API calls should be made
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{DNSName: "www.other.com", RecordType: "A", Targets: endpoint.Targets{"10.0.0.1"}, RecordTTL: 300},
+		},
+		Delete: []*endpoint.Endpoint{
+			{DNSName: "delete.other.com", RecordType: "A", Targets: endpoint.Targets{"10.0.0.2"}, RecordTTL: 300},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{DNSName: "update.other.com", RecordType: "A", Targets: endpoint.Targets{"10.0.0.3"}, RecordTTL: 300},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "update.other.com", RecordType: "A", Targets: endpoint.Targets{"10.0.0.4"}, RecordTTL: 300},
+		},
+	}
+
+	err = c.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+}
