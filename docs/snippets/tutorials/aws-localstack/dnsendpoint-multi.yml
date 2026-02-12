@@ -1,0 +1,28 @@
+# ref: docs/snippets/tutorials/aws-localstack/dnsendpoint-multi.yml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: simple-example
+  namespace: default
+  annotations:
+    dns.why/type: aws-localstack-tutorial
+spec:
+  endpoints:
+    - dnsName: dnsendpoint-a.example.com
+      recordTTL: 300
+      recordType: A
+      targets:
+        - 192.168.1.100
+    - dnsName: dnsendpoint-a-lb.example.com
+      recordTTL: 200
+      recordType: A
+      targets:
+        - 10.0.1.1
+        - 10.0.1.2
+        - 10.0.1.3
+    - dnsName: dnsendpoint-aaaa.example.com
+      recordTTL: 600
+      recordType: AAAA
+      targets:
+        - 2001:0db8:85a3:0000:0000:8a2e:0370:7334
