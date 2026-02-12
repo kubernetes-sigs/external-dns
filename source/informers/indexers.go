@@ -31,6 +31,7 @@ const (
 type IndexSelectorOptions struct {
 	annotationFilter labels.Selector
 	labelSelector    labels.Selector
+	namespace        string
 }
 
 func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
@@ -49,6 +50,12 @@ func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelector
 func IndexSelectorWithLabelSelector(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
 		options.labelSelector = input
+	}
+}
+
+func IndexSelectorWithNamespace(input string) func(options *IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		options.namespace = input
 	}
 }
 
@@ -87,6 +94,10 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			}
 
 			if options.labelSelector != nil && !options.labelSelector.Matches(labels.Set(entity.GetLabels())) {
+				return nil, nil
+			}
+
+			if options.namespace != "" && options.namespace != entity.GetNamespace() {
 				return nil, nil
 			}
 			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: entity.GetName()}.String()

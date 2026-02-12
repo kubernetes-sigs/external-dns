@@ -37,12 +37,46 @@ type dynamicInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
+// controllerInformerFactory is the subset of controller-runtime cache.Cache needed for start and sync.
+type controllerInformerFactory interface {
+	Start(ctx context.Context) error
+	WaitForCacheSync(ctx context.Context) bool
+}
+
 func WaitForCacheSync(ctx context.Context, factory informerFactory) error {
 	return waitForCacheSync(ctx, factory.WaitForCacheSync)
 }
 
 func WaitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
 	return waitForCacheSync(ctx, factory.WaitForCacheSync)
+}
+
+// StartAndWaitForCacheSync starts a controller-runtime cache in a goroutine and waits
+// for it to sync with a default timeout. This is the controller-runtime equivalent of
+// WaitForCacheSync / WaitForDynamicCacheSync.
+func StartAndWaitForCacheSync(ctx context.Context, c controllerInformerFactory) error {
+	startErrCh := make(chan error, 1)
+	go func() {
+		startErrCh <- c.Start(ctx)
+	}()
+
+	timeout := defaultRequestTimeout * time.Second
+	syncCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	if !c.WaitForCacheSync(syncCtx) {
+		// Check if Start itself failed (e.g. already started)
+		select {
+		case err := <-startErrCh:
+			if err != nil {
+				return fmt.Errorf("failed to start controller-runtime cache: %w", err)
+			}
+		default:
+		}
+		// Include timeout and context error (if any) in the error message
+		return fmt.Errorf("failed to sync controller-runtime cache after %s: %w", timeout, syncCtx.Err())
+	}
+	return nil
 }
 
 // waitForCacheSync waits for informer caches to sync with a default timeout.
