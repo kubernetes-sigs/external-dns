@@ -1,0 +1,115 @@
+suite: Deployment env configurations
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide expected default env
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - isNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].env
+
+  - it: should copy 'env' into main container
+    set:
+      env:
+        - key: "bla"
+          value: "foo"
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].env
+          value:
+            - key: "bla"
+              value: "foo"
+
+  - it: should provide expected default provider env
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: "test"
+            tag: "test"
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+      - isNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")].env
+
+  - it: should copy 'env' into main container
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: "test"
+            tag: "test"
+          env:
+            - key: "bla"
+              value: "foo"
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "webhook")].env
+          value:
+            - key: "bla"
+              value: "foo"
+
+  - it: should provide expected default envFrom
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - isNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].envFrom
+
+  - it: should copy 'envFrom' into main container
+    set:
+      envFrom:
+        - configMapRef:
+            name: env-configmap
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].envFrom
+          value:
+            - configMapRef:
+                name: env-configmap
+
+  - it: should provide expected default provider envFrom
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: "test"
+            tag: "test"
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+      - isNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")].envFrom
+
+  - it: should copy 'envFrom' into main container
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: "test"
+            tag: "test"
+          envFrom:
+            - configMapRef:
+                name: env-configmap
+    asserts:
+      - isNotNull :
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "webhook")].envFrom
+          value:
+            - configMapRef:
+                name: env-configmap
