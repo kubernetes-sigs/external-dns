@@ -122,10 +122,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
+			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordError)
 			return err
-		} else {
-			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordReady)
 		}
+		emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordReady)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")

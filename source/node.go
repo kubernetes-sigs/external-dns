@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -45,6 +46,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type nodeSource struct {
 	client                kubernetes.Interface
 	annotationFilter      string
@@ -147,6 +149,10 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		if len(nodeEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from node %s", node.Name)
 			continue
+		}
+
+		for _, ep := range nodeEndpoints {
+			ep.WithRefObject(events.NewObjectReference(node, types.Node))
 		}
 
 		endpoints = append(endpoints, nodeEndpoints...)
