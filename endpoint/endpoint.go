@@ -393,6 +393,19 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
+// GetNakedDomain returns the domain portion of the DNS name (without the first label).
+// For example, "www.example.com" returns "example.com".
+func (e *Endpoint) GetNakedDomain() string {
+	if e.DNSName == "" {
+		return ""
+	}
+	parts := strings.SplitN(e.DNSName, ".", 2)
+	if len(parts) < 2 {
+		return e.DNSName
+	}
+	return parts[1]
+}
+
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
