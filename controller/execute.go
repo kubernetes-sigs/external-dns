@@ -432,7 +432,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithNAT64Networks(cfg.NAT64Networks),
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
+		wrappers.WithMinTTL(cfg.MinTTL),
+		wrappers.WithPreferAlias(cfg.PreferAlias))
 	return wrappers.WrapSources(sources, opts)
 }
 
