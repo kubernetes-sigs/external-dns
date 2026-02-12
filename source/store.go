@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"sigs.k8s.io/external-dns/pkg/crd"
+
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/source/types"
@@ -544,11 +546,20 @@ func buildCRDSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, 
 	if err != nil {
 		return nil, err
 	}
-	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind)
+	crdApiClient, err := kubeclient.NewCRDClientForAPIVersionKind(
+		client,
+		cfg.KubeConfig,
+		cfg.APIServerURL,
+		cfg.CRDSourceAPIVersion,
+		cfg.CRDSourceKind)
 	if err != nil {
 		return nil, err
 	}
-	return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, cfg.LabelFilter, scheme, cfg.UpdateEvents)
+	crdClient := crd.NewDNSEndpointClient(
+		crdApiClient,
+		cfg.CRDSourceKind,
+	)
+	return NewCRDSource(crdClient, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter, cfg.UpdateEvents)
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
