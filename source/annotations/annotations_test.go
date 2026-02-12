@@ -51,6 +51,7 @@ func TestSetAnnotationPrefix(t *testing.T) {
 	assert.Equal(t, "custom.io/endpoints-type", EndpointsTypeKey)
 	assert.Equal(t, "custom.io/ingress", Ingress)
 	assert.Equal(t, "custom.io/ingress-hostname-source", IngressHostnameSourceKey)
+	assert.Equal(t, "custom.io/global-accelerator", GlobalAcceleratorKey)
 
 	// ControllerValue should remain constant
 	assert.Equal(t, "dns-controller", ControllerValue)
@@ -64,6 +65,7 @@ func TestDefaultAnnotationPrefix(t *testing.T) {
 	assert.Equal(t, DefaultAnnotationPrefix+"internal-hostname", InternalHostnameKey)
 	assert.Equal(t, DefaultAnnotationPrefix+"ttl", TtlKey)
 	assert.Equal(t, DefaultAnnotationPrefix+"controller", ControllerKey)
+	assert.Equal(t, DefaultAnnotationPrefix+"global-accelerator", GlobalAcceleratorKey)
 }
 
 func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {

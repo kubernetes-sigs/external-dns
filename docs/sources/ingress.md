@@ -44,5 +44,8 @@ The targets of the DNS entries created from an Ingress are sourced from the foll
 1. If the Ingress has an `external-dns.alpha.kubernetes.io/target` annotation, uses
 the values from that.
 
-2. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`,
+2. Otherwise, if the Ingress has an `external-dns.alpha.kubernetes.io/global-accelerator`
+annotation, uses the referenced Global Accelerator `status.dnsName`.
+
+3. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`,
 adding each non-empty `ip` and `hostname`.

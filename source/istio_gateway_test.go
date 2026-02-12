@@ -99,6 +99,7 @@ func (suite *GatewaySuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
+		nil,
 		"",
 		"",
 		"{{.Name}}",
@@ -173,6 +174,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				context.TODO(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
+				nil,
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -506,7 +508,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				require.NoError(t, err)
 			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
+			} else if endpoints, err := source.endpointsFromGateway(t.Context(), hostnames, gatewayCfg); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -1511,6 +1513,7 @@ func testGatewayEndpoints(t *testing.T) {
 				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
+				nil,
 				targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1624,6 +1627,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
+				nil,
 				"",
 				"",
 				"",
@@ -1709,6 +1713,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		t.Context(),
 		fakeClient,
 		istiofake.NewSimpleClientset(),
+		nil,
 		"",
 		"",
 		"",
@@ -1866,6 +1871,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		fakeKubeClient,
 		fakeIstioClient,
+		nil,
 		"",
 		"",
 		"",
@@ -1908,6 +1914,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
+		nil,
 		"",
 		"",
 		"{{.Name}}",

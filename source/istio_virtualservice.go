@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/dynamic"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -63,6 +64,7 @@ const IstioMeshGateway = "mesh"
 type virtualServiceSource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
+	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         string
 	fqdnTemplate             *template.Template
@@ -79,6 +81,7 @@ func NewIstioVirtualServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
+	dynamicKubeClient dynamic.Interface,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -130,6 +133,7 @@ func NewIstioVirtualServiceSource(
 	return &virtualServiceSource{
 		kubeClient:               kubeClient,
 		istioClient:              istioClient,
+		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		fqdnTemplate:             tmpl,
@@ -275,7 +279,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(vService, gw, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gw)
+		tgs, err := sc.targetsFromGateway(ctx, gw)
 		if err != nil {
 			return targets, err
 		}
@@ -390,7 +394,7 @@ func virtualServiceBindsToGateway(vService *v1beta1.VirtualService, gateway *v1b
 	return false
 }
 
-func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -405,19 +409,10 @@ func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *v
 		return nil, err
 	}
 
-	targets := make(endpoint.Targets, 0)
-
-	for _, lb := range ingress.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			targets = append(targets, lb.IP)
-		} else if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
-		}
-	}
-	return targets, nil
+	return ingressTargets(ctx, sc.dynamicKubeClient, ingress), nil
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *v1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -425,7 +420,7 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *v1beta1.Gateway) (en
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ingressStr, gateway)
+		return sc.targetsFromIngress(ctx, ingressStr, gateway)
 	}
 
 	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)

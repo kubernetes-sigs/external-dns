@@ -30,6 +30,7 @@ import (
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -62,6 +63,7 @@ var IstioGatewayIngressSource = annotations.Ingress
 type gatewaySource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
+	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         string
 	fqdnTemplate             *template.Template
@@ -77,6 +79,7 @@ func NewIstioGatewaySource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
+	dynamicKubeClient dynamic.Interface,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -125,6 +128,7 @@ func NewIstioGatewaySource(
 	return &gatewaySource{
 		kubeClient:               kubeClient,
 		istioClient:              istioClient,
+		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		fqdnTemplate:             tmpl,
@@ -166,7 +170,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
 
-		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
+		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +185,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				if err != nil {
 					return nil, err
 				}
-				return sc.endpointsFromGateway(hostnames, gateway)
+				return sc.endpointsFromGateway(ctx, hostnames, gateway)
 			},
 		)
 		if err != nil {
@@ -211,7 +215,7 @@ func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
-func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -220,24 +224,16 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 		namespace = gateway.Namespace
 	}
 
-	targets := make(endpoint.Targets, 0)
-
 	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	for _, lb := range ingress.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			targets = append(targets, lb.IP)
-		} else if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
-		}
-	}
-	return targets, nil
+
+	return ingressTargets(ctx, sc.dynamicKubeClient, ingress), nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -245,18 +241,18 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) 
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ingressStr, gateway)
+		return sc.targetsFromIngress(ctx, ingressStr, gateway)
 	}
 
 	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	targets, err := sc.targetsFromGateway(gateway)
+	targets, err := sc.targetsFromGateway(ctx, gateway)
 	if err != nil {
 		return nil, err
 	}
