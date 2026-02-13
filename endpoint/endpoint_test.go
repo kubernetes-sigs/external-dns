@@ -1073,6 +1073,72 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
 
+func TestGetAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint Endpoint
+		expected AliasType
+	}{
+		{
+			name:     "no alias property returns AliasNone",
+			endpoint: Endpoint{},
+			expected: AliasNone,
+		},
+		{
+			name: "alias=true returns AliasTrue",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+				},
+			},
+			expected: AliasTrue,
+		},
+		{
+			name: "alias=false returns AliasFalse",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "false"},
+				},
+			},
+			expected: AliasFalse,
+		},
+		{
+			name: "alias=A returns AliasA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "A"},
+				},
+			},
+			expected: AliasA,
+		},
+		{
+			name: "alias=AAAA returns AliasAAAA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "AAAA"},
+				},
+			},
+			expected: AliasAAAA,
+		},
+		{
+			name: "alias with invalid value returns AliasNone",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "invalid"},
+				},
+			},
+			expected: AliasNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetAliasProperty()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestGetBoolProviderSpecificProperty(t *testing.T) {
 	tests := []struct {
 		name           string

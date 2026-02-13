@@ -828,23 +828,15 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 }
 
 func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
-	var aaaa *endpoint.Endpoint
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
 		p.adjustAandAAAARecord(ep)
 	case endpoint.RecordTypeCNAME:
-		p.adjustCNAMERecord(ep)
-		adjustGeoProximityLocationEndpoint(ep)
-		if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
-			aaaa = ep.DeepCopy()
-			aaaa.RecordType = endpoint.RecordTypeAAAA
-		}
-		return aaaa
+		return p.adjustCNAMERecordAndNewAaaaIfNeeded(ep)
 	default:
 		p.adjustOtherRecord(ep)
 	}
-	adjustGeoProximityLocationEndpoint(ep)
-	return aaaa
+	return nil
 }
 
 func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
@@ -863,39 +855,43 @@ func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
 }
 
 func (p *AWSProvider) adjustAandAAAARecord(ep *endpoint.Endpoint) {
-	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
-	if isAlias {
+	if ep.GetAliasProperty() == endpoint.AliasTrue {
 		p.adjustAliasRecord(ep)
 	} else {
 		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
+	adjustGeoProximityLocationEndpoint(ep)
 }
 
-func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
-	isAlias, exists := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
-
-	// fallback to determining alias based on preferCNAME if not explicitly set
-	if !exists {
-		isAlias = useAlias(ep, p.preferCNAME)
+func (p *AWSProvider) adjustCNAMERecordAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
+	// ensure alias property is set
+	if ep.GetAliasProperty() == endpoint.AliasNone {
+		isAlias := useAlias(ep, p.preferCNAME)
 		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, isAlias)
 		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(isAlias))
 	}
 
-	// if not an alias, ensure alias properties are adjusted accordingly
-	if !isAlias {
-		if exists {
-			// normalize to string "false" when provider specific alias is set to false or other non-true value
-			ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
-		}
+	switch ep.GetAliasProperty() {
+	case endpoint.AliasTrue:
+		ep.RecordType = endpoint.RecordTypeA
+		p.adjustAliasRecord(ep)
+		adjustGeoProximityLocationEndpoint(ep)
+		aaaa := ep.DeepCopy()
+		aaaa.RecordType = endpoint.RecordTypeAAAA
+		return aaaa
+	case endpoint.AliasA:
+		ep.RecordType = endpoint.RecordTypeA
+		p.adjustAliasRecord(ep)
+	case endpoint.AliasAAAA:
+		ep.RecordType = endpoint.RecordTypeAAAA
+		p.adjustAliasRecord(ep)
+	case endpoint.AliasFalse:
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 
-	// if an alias, convert to A record and adjust alias properties
-	if isAlias {
-		ep.RecordType = endpoint.RecordTypeA
-		p.adjustAliasRecord(ep)
-	}
+	adjustGeoProximityLocationEndpoint(ep)
+	return nil
 }
 
 func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
@@ -908,6 +904,7 @@ func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
 		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
+	adjustGeoProximityLocationEndpoint(ep)
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set

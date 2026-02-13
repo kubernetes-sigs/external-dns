@@ -710,6 +710,13 @@ To make the target an alias, the ingress needs to be configured correctly as des
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
+Additionally, you can set the value to `A` or `AAAA` to create only one type of ALIAS record:
+
+- `A`: Creates only an A ALIAS record (IPv4 only)
+- `AAAA`: Creates only an AAAA ALIAS record (IPv6 only)
+
+Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
+
 ### target-hosted-zone
 
 `external-dns.alpha.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
