@@ -59,10 +59,8 @@ type kubeObject interface {
 	metav1.Object
 }
 
-// ExecTemplate executes the given template against a Kubernetes object and returns
-// a list of hostnames. It handles objects with missing TypeMeta by inferring the
-// Kind from the scheme or via reflection. Returns an error if obj is nil or
-// template execution fails.
+// ExecTemplate executes a template against a Kubernetes object and returns hostnames.
+// It infers Kind if TypeMeta is missing. Returns error if obj is nil or execution fails.
 func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("object is nil")
