@@ -337,7 +337,15 @@ func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 	log.Debugf("Fetching new token from %s", apiUrl)
 
 	// Define the JSON payload
-	jsonData := []byte(`{"password":"` + p.cfg.Password + `"}`)
+	body := struct {
+		Password string `json:"password"`
+	}{
+		Password: p.cfg.Password,
+	}
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
