@@ -311,6 +311,25 @@ func TestExecTemplate(t *testing.T) {
 			},
 			want: []string{"entry1.internal.tld", "entry2.example.tld"},
 		},
+		{
+			name: "rancher publicEndpoints annotation",
+			tmpl: `
+{{ range $entry := (index .Annotations "field.cattle.io/publicEndpoints" | fromJson) }}{{ index $entry "hostname" }},{{ end }}`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Annotations: map[string]string{
+						"field.cattle.io/publicEndpoints": `
+							[{"addresses":[""],"port":80,"protocol":"HTTP",
+								"serviceName":"development:keycloak-ha-service",
+								"ingressName":"development:keycloak-ha-ingress",
+								"hostname":"keycloak.snip.com","allNodes":false
+							}]`,
+					},
+				},
+			},
+			want: []string{"keycloak.snip.com"},
+		},
 	}
 
 	for _, tt := range tests {
