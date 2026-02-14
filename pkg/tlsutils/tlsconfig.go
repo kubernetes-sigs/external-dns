@@ -25,7 +25,10 @@ import (
 	"strings"
 )
 
-const defaultMinVersion = 0
+const (
+	// The TLS 1.2 default was introduced in Go 1.18 (released March 2022).
+	defaultMinVersion = tls.VersionTLS12
+)
 
 // CreateTLSConfig creates tls.Config instance from TLS parameters passed in environment variables with the given prefix
 func CreateTLSConfig(prefix string) (*tls.Config, error) {
@@ -40,7 +43,7 @@ func CreateTLSConfig(prefix string) (*tls.Config, error) {
 
 // NewTLSConfig creates a tls.Config instance from directly passed parameters, loading the ca, cert, and key from disk
 func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, minVersion uint16) (*tls.Config, error) {
-	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
+	if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
 		return nil, errors.New("either both cert and key or none must be provided")
 	}
 	var certificates []tls.Certificate
@@ -78,9 +81,8 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %w", caPath, err)
 	}
-	ok := roots.AppendCertsFromPEM(pem)
-	if !ok {
-		return nil, fmt.Errorf("could not read root certs: %w", err)
+	if !roots.AppendCertsFromPEM(pem) {
+		return nil, fmt.Errorf("could not parse PEM certificates from %s", caPath)
 	}
 	return roots, nil
 }
