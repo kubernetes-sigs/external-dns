@@ -441,12 +441,16 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: review source/annotations package to consolidate alias key definitions;
+// currently duplicated here to avoid circular dependency.
+const providerSpecificAlias = "alias"
+
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
-	if !e.supportAlias() {
-		if _, ok := e.GetBoolProviderSpecificProperty("alias"); ok {
-			log.Debugf("Endpoint %s of type %s does not support alias records in ExternalDNS", e.DNSName, e.RecordType)
+	if !e.supportsAlias() {
+		if _, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias); ok {
+			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
 			return false
 		}
 	}
@@ -460,7 +464,7 @@ func (e *Endpoint) CheckEndpoint() bool {
 	return true
 }
 
-func (e *Endpoint) supportAlias() bool {
+func (e *Endpoint) supportsAlias() bool {
 	switch e.RecordType {
 	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
 		return true
