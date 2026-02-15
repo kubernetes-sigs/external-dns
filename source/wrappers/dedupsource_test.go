@@ -254,6 +254,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			},
 		},
 		{
+			name: "MX record with alias=true is filtered out",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "A record with alias=true is kept",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+		},
+		{
+			name: "SRV record with alias=true is filtered out",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
 			name: "mixed valid and invalid TXT, A, AAAA records",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}}, // valid
@@ -290,21 +313,45 @@ func TestDedupEndpointsValidation(t *testing.T) {
 }
 
 func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-	invalidEndpoint := &endpoint.Endpoint{
-		DNSName:       "example.org",
-		RecordType:    endpoint.RecordTypeSRV,
-		SetIdentifier: "default/svc/my-service",
-		Targets:       endpoint.Targets{"10 mail.example.org"},
+	tests := []struct {
+		name       string
+		endpoint   *endpoint.Endpoint
+		wantLogMsg string
+	}{
+		{
+			name: "invalid SRV record",
+			endpoint: &endpoint.Endpoint{
+				DNSName:       "example.org",
+				RecordType:    endpoint.RecordTypeSRV,
+				SetIdentifier: "default/svc/my-service",
+				Targets:       endpoint.Targets{"10 mail.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [default/svc/my-service:example.org] due to invalid configuration [SRV:10 mail.example.org]",
+		},
+		{
+			name: "unsupported alias on MX record",
+			endpoint: &endpoint.Endpoint{
+				DNSName:          "example.org",
+				RecordType:       endpoint.RecordTypeMX,
+				Targets:          endpoint.Targets{"10 mail.example.org"},
+				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
+		},
 	}
 
-	mockSource := new(testutils.MockSource)
-	mockSource.On("Endpoints").Return([]*endpoint.Endpoint{invalidEndpoint}, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
-	src := NewDedupSource(mockSource)
-	_, err := src.Endpoints(context.Background())
-	require.NoError(t, err)
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return([]*endpoint.Endpoint{tt.endpoint}, nil)
 
-	testutils.TestHelperLogContains("Skipping endpoint [default/svc/my-service:example.org] due to invalid configuration [SRV:10 mail.example.org]", hook, t)
+			src := NewDedupSource(mockSource)
+			_, err := src.Endpoints(context.Background())
+			require.NoError(t, err)
+
+			testutils.TestHelperLogContains(tt.wantLogMsg, hook, t)
+		})
+	}
 }
