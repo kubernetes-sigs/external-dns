@@ -19,8 +19,11 @@ package endpoint
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -1021,6 +1024,69 @@ func TestCheckEndpoint(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual := tt.endpoint.CheckEndpoint()
 			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog bool
+	}{
+		{
+			name: "unsupported type with alias logs warning",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			wantLog: true,
+		},
+		{
+			name: "supported type with alias does not log",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			wantLog: false,
+		},
+		{
+			name: "unsupported type without alias does not log",
+			ep: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			wantLog: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, hook := test.NewNullLogger()
+			log.AddHook(hook)
+			log.SetOutput(logger.Out)
+			log.SetLevel(log.WarnLevel)
+
+			tt.ep.CheckEndpoint()
+
+			warnMsg := "does not support alias records"
+			found := false
+			for _, entry := range hook.AllEntries() {
+				if strings.Contains(entry.Message, warnMsg) && entry.Level == log.WarnLevel {
+					found = true
+				}
+			}
+
+			if tt.wantLog {
+				assert.True(t, found, "Expected warning log message not found")
+			} else {
+				assert.False(t, found, "Unexpected warning log message found")
+			}
 		})
 	}
 }
