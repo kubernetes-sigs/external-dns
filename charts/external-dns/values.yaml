@@ -121,6 +121,7 @@ env: []
 
 # -- [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
 # @default -- See _values.yaml_
+livenessProbeenabled: true
 livenessProbe:
   httpGet:
     path: /healthz
@@ -133,6 +134,7 @@ livenessProbe:
 
 # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
 # @default -- See _values.yaml_
+readinessProbeenabled: true
 readinessProbe:
   httpGet:
     path: /healthz

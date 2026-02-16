@@ -157,10 +157,14 @@ spec:
             - name: http
               protocol: TCP
               containerPort: 7979
+          {{- if ne .Values.livenessProbeenabled false }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if ne .Values.readinessProbeenabled false }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
           {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
           volumeMounts:
             {{- if .Values.secretConfiguration.enabled }}
