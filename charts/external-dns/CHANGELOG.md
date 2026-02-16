@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Add option to not set livenessProbe and readinessProbe ([#6200](https://github.com/kubernetes-sigs/external-dns/pull/6200)) _@mickkael_
+
 ## [v1.20.0]
 
 ### Added
