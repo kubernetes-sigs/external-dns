@@ -195,25 +195,21 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
-			isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
-			isTXT := ep.RecordType == endpoint.RecordTypeTXT
-			isMx := ep.RecordType == endpoint.RecordTypeMX
 			illegalTarget := false
 			for _, target := range ep.Targets {
 				hasDot := strings.HasSuffix(target, ".")
-				// Skip dot validation for TXT records as they can contain arbitrary text
-				if !isTXT {
-					// Allow trailing dots if record is NAPTR OR MX.
-					// Otherwise, if it's NOT NAPTR and NOT MX, a dot is illegal.
-					if isNAPTR || isMx {
-						if !hasDot {
-							illegalTarget = true
-							break
-						}
-					} else if hasDot {
-						illegalTarget = true
-						break
-					}
+
+				switch ep.RecordType {
+				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
+					continue // TXT records allow arbitrary text, skip validation; MX records can have trailing dot but it's not required, skip validation
+				case endpoint.RecordTypeNAPTR:
+					illegalTarget = !hasDot // Must have trailing dot
+				default:
+					illegalTarget = hasDot // Must NOT have trailing dot
+				}
+
+				if illegalTarget {
+					break
 				}
 			}
 			if illegalTarget {
