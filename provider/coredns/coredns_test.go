@@ -1793,3 +1793,34 @@ func TestPTRRecords(t *testing.T) {
 		assert.Equal(t, "txt-value", services[0].Text)
 	})
 }
+
+func TestRecordsTargetStripToSources(t *testing.T) {
+	expectedTargetA := "1.2.3.4"
+	expectedTargetB := "1.2.3.5"
+	expectedDNSName := "bla.example.com"
+
+	client := &fakeETCDClient{
+		services: map[string]Service{
+			"/skydns/com/example/bla/foo": {Host: expectedTargetA, TargetStrip: 1},
+			"/skydns/com/example/bla/bar": {Host: expectedTargetB, TargetStrip: 1},
+		},
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	endpoints, err := provider.Records(context.Background())
+	require.NoError(t, err)
+	if len(endpoints) != 1 {
+		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
+	}
+	if endpoints[0].DNSName != expectedDNSName {
+		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
+	}
+	if endpoints[0].Labels[expectedTargetA] != "foo" {
+		t.Errorf("got unexpected host to prefix: %s != %s", endpoints[0].Labels[expectedTargetA], "foo")
+	}
+	if endpoints[0].Labels[expectedTargetB] != "bar" {
+		t.Errorf("got unexpected host to prefix: %s != %s", endpoints[0].Labels[expectedTargetA], "bar")
+	}
+}
