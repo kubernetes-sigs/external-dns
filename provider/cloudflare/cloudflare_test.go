@@ -235,6 +235,149 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(_ context.Context, recordID strin
 	return nil
 }
 
+func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error) {
+	zoneID := params.ZoneID.Value
+	var firstErr error
+
+	// Process Deletes first to mirror the real API's ordering.
+	for _, del := range params.Deletes.Value {
+		recordID := del.ID.Value
+		m.Actions = append(m.Actions, MockAction{
+			Name:     "Delete",
+			ZoneId:   zoneID,
+			RecordId: recordID,
+		})
+		if zone, ok := m.Records[zoneID]; ok {
+			if rec, exists := zone[recordID]; exists {
+				name := rec.Name
+				delete(zone, recordID)
+				if strings.HasPrefix(name, "newerror-delete-") && firstErr == nil {
+					firstErr = errors.New("failed to delete erroring DNS record")
+				}
+			}
+		}
+	}
+
+	// Process Puts (updates) before Posts (creates) to mirror the real API's
+	// server-side execution order: Deletes → Patches → Puts → Posts.
+	for _, putUnion := range params.Puts.Value {
+		id, record := extractBatchPutData(putUnion)
+		m.Actions = append(m.Actions, MockAction{
+			Name:       "Update",
+			ZoneId:     zoneID,
+			RecordId:   id,
+			RecordData: record,
+		})
+		if zone, ok := m.Records[zoneID]; ok {
+			if _, exists := zone[id]; exists {
+				if strings.HasPrefix(record.Name, "newerror-update-") {
+					if firstErr == nil {
+						firstErr = errors.New("failed to update erroring DNS record")
+					}
+				} else {
+					zone[id] = record
+				}
+			}
+		}
+	}
+
+	// Process Posts (creates).
+	for _, postUnion := range params.Posts.Value {
+		post, ok := postUnion.(dns.RecordBatchParamsPost)
+		if !ok {
+			continue
+		}
+		typeStr := string(post.Type.Value)
+		record := dns.RecordResponse{
+			ID:       generateDNSRecordID(typeStr, post.Name.Value, post.Content.Value),
+			Name:     post.Name.Value,
+			TTL:      dns.TTL(post.TTL.Value),
+			Proxied:  post.Proxied.Value,
+			Type:     dns.RecordResponseType(typeStr),
+			Content:  post.Content.Value,
+			Priority: post.Priority.Value,
+		}
+		m.Actions = append(m.Actions, MockAction{
+			Name:       "Create",
+			ZoneId:     zoneID,
+			RecordId:   record.ID,
+			RecordData: record,
+		})
+		if zone, ok := m.Records[zoneID]; ok {
+			zone[record.ID] = record
+		}
+		if record.Name == "newerror.bar.com" && firstErr == nil {
+			firstErr = fmt.Errorf("failed to create record")
+		}
+	}
+
+	return &dns.RecordBatchResponse{}, firstErr
+}
+
+// extractBatchPutData unpacks a BatchPutUnionParam into a record ID and a RecordResponse
+// suitable for recording in the mock's Actions list.
+func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse) {
+	switch p := put.(type) {
+	case dns.BatchPutARecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeA,
+			Content: p.Content.Value,
+		}
+	case dns.BatchPutAAAARecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeAAAA,
+			Content: p.Content.Value,
+		}
+	case dns.BatchPutCNAMERecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeCNAME,
+			Content: p.Content.Value,
+		}
+	case dns.BatchPutTXTRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeTXT,
+			Content: p.Content.Value,
+		}
+	case dns.BatchPutMXRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:       p.ID.Value,
+			Name:     p.Name.Value,
+			TTL:      p.TTL.Value,
+			Proxied:  p.Proxied.Value,
+			Type:     dns.RecordResponseTypeMX,
+			Content:  p.Content.Value,
+			Priority: p.Priority.Value,
+		}
+	case dns.BatchPutNSRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeNS,
+			Content: p.Content.Value,
+		}
+	default:
+		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))
+	}
+}
+
 func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	// Simulate iterator error (line 144)
 	if m.listZonesError != nil {
@@ -1680,19 +1823,6 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			RecordId: "2345678901",
 		},
 		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
-			RecordData: dns.RecordResponse{
-				ID:      generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
-				Name:    "foobar.bar.com",
-				Type:    "A",
-				Content: "2.3.4.5",
-				TTL:     1,
-				Proxied: true,
-			},
-		},
-		{
 			Name:     "Update",
 			ZoneId:   "001",
 			RecordId: "1234567890",
@@ -1701,6 +1831,19 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Name:    "foobar.bar.com",
 				Type:    "A",
 				Content: "1.2.3.4",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
+			RecordData: dns.RecordResponse{
+				ID:      generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
+				Name:    "foobar.bar.com",
+				Type:    "A",
+				Content: "2.3.4.5",
 				TTL:     1,
 				Proxied: true,
 			},
@@ -2977,6 +3120,12 @@ func TestZoneService(t *testing.T) {
 	t.Run("CreateCustomHostname", func(t *testing.T) {
 		t.Parallel()
 		err := client.CreateCustomHostname(ctx, zoneID, customHostname{})
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("BatchDNSRecords", func(t *testing.T) {
+		t.Parallel()
+		_, err := client.BatchDNSRecords(ctx, dns.RecordBatchParams{ZoneID: cloudflare.F(zoneID)})
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 }
