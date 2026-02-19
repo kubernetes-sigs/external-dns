@@ -339,7 +339,9 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			ep.Labels["originalText"] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
 			ep.Labels[service.Host] = prefix
-			result = append(result, ep)
+			if !found {
+				result = append(result, ep)
+			}
 		}
 		if service.Text != "" {
 			ep := endpoint.NewEndpoint(
