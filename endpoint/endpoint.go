@@ -367,6 +367,16 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
+// WithLabels replace labels for the Endpoint.
+//
+// Example usage:
+//
+//	ep.WithLabels(Labels{"test" : "test"})
+func (e *Endpoint) WithLabels(labels Labels) *Endpoint {
+	e.Labels = labels
+	return e
+}
+
 // WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
 // This can be used to associate the Endpoint with a specific Kubernetes object.
 func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
