@@ -60,6 +60,8 @@ var (
 	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
+	// GlobalAcceleratorKey The annotation used to reference a Global Accelerator resource for ingress targets.
+	GlobalAcceleratorKey = AnnotationKeyPrefix + "global-accelerator"
 	// ControllerValue The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
@@ -99,6 +101,7 @@ func SetAnnotationPrefix(prefix string) {
 	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
 	Ingress = AnnotationKeyPrefix + "ingress"
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
+	GlobalAcceleratorKey = AnnotationKeyPrefix + "global-accelerator"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
 }

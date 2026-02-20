@@ -25,7 +25,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/internal/testutils"
 
@@ -58,6 +61,7 @@ func (suite *IngressSuite) SetupTest() {
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
 		fakeClient,
+		nil,
 		"",
 		"",
 		"{{.Name}}",
@@ -122,6 +126,7 @@ func TestNewIngressSource(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
+				nil,
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1419,6 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 			source, _ := NewIngressSource(
 				context.TODO(),
 				fakeClient,
+				nil,
 				ti.targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1703,6 +1709,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
+				nil,
 				tt.cfg.Namespace,
 				tt.cfg.AnnotationFilter,
 				tt.cfg.FQDNTemplate,
@@ -1719,4 +1726,79 @@ func TestIngressWithConfiguration(t *testing.T) {
 			validateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+}
+
+func TestIngressGlobalAcceleratorAnnotation(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	kubeClient := fake.NewClientset()
+	dynamicClient := fakeDynamic.NewSimpleDynamicClient(runtime.NewScheme())
+
+	accelerator := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "aga.k8s.aws/v1beta1",
+			"kind":       "GlobalAccelerator",
+			"metadata": map[string]interface{}{
+				"name":      "accelerator",
+				"namespace": "infrastructure",
+			},
+			"status": map[string]interface{}{
+				"dnsName": "ga.example.awsglobalaccelerator.com",
+			},
+		},
+	}
+	_, err := dynamicClient.Resource(globalAcceleratorGVR).Namespace("infrastructure").Create(ctx, accelerator, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	ingress := &networkv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "app",
+			Namespace: "default",
+			Annotations: map[string]string{
+				annotations.GlobalAcceleratorKey: "infrastructure/accelerator",
+			},
+		},
+		Spec: networkv1.IngressSpec{
+			Rules: []networkv1.IngressRule{
+				{Host: "app.example.com"},
+			},
+		},
+		Status: networkv1.IngressStatus{
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				Ingress: []networkv1.IngressLoadBalancerIngress{
+					{Hostname: "alb.example.com"},
+				},
+			},
+		},
+	}
+	_, err = kubeClient.NetworkingV1().Ingresses("default").Create(ctx, ingress, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIngressSource(
+		ctx,
+		kubeClient,
+		dynamicClient,
+		"",
+		"",
+		"",
+		false,
+		false,
+		false,
+		false,
+		labels.Everything(),
+		[]string{},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		{
+			DNSName:    "app.example.com",
+			Targets:    endpoint.Targets{"ga.example.awsglobalaccelerator.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+	})
 }

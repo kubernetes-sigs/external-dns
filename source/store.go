@@ -440,7 +440,12 @@ func buildIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 	if err != nil {
 		return nil, err
 	}
-	return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.IngressClassNames)
+	dynamicClient, err := p.DynamicKubernetesClient()
+	if err != nil {
+		log.Warnf("Failed to create dynamic Kubernetes client for ingress source: %v", err)
+		dynamicClient = nil
+	}
+	return NewIngressSource(ctx, client, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.IngressClassNames)
 }
 
 // buildPodSource creates a Pod source for exposing Kubernetes pods as DNS records.
@@ -464,7 +469,12 @@ func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	dynamicClient, err := p.DynamicKubernetesClient()
+	if err != nil {
+		log.Warnf("Failed to create dynamic Kubernetes client for Istio gateway source: %v", err)
+		dynamicClient = nil
+	}
+	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 }
 
 // buildIstioVirtualServiceSource creates an Istio VirtualService source for exposing virtual services as DNS records.
@@ -478,7 +488,12 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	dynamicClient, err := p.DynamicKubernetesClient()
+	if err != nil {
+		log.Warnf("Failed to create dynamic Kubernetes client for Istio virtual service source: %v", err)
+		dynamicClient = nil
+	}
+	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 }
 
 func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {

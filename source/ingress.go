@@ -28,6 +28,7 @@ import (
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/dynamic"
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
@@ -63,6 +64,7 @@ const (
 // +externaldns:source:fqdn-template=true
 type ingressSource struct {
 	client                   kubernetes.Interface
+	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         string
 	ingressClassNames        []string
@@ -79,6 +81,7 @@ type ingressSource struct {
 func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
+	dynamicKubeClient dynamic.Interface,
 	namespace, annotationFilter, fqdnTemplate string,
 	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
 	labelSelector labels.Selector,
@@ -120,6 +123,7 @@ func NewIngressSource(
 
 	sc := &ingressSource{
 		client:                   kubeClient,
+		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		ingressClassNames:        ingressClassNames,
@@ -136,7 +140,7 @@ func NewIngressSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
@@ -158,14 +162,15 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		targets := ingressTargets(ctx, sc.dynamicKubeClient, ing)
+		ingEndpoints := endpointsFromIngressWithTargets(ing, targets, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
 		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
 			ingEndpoints,
 			sc.fqdnTemplate,
 			sc.combineFQDNAnnotation,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ctx, ing) },
 		)
 		if err != nil {
 			return nil, err
@@ -186,7 +191,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) endpointsFromTemplate(ctx context.Context, ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
 	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, ing)
 	if err != nil {
 		return nil, err
@@ -196,10 +201,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
+	targets := ingressTargets(ctx, sc.dynamicKubeClient, ing)
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -256,11 +258,14 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
+	return endpointsFromIngressWithTargets(ing, targets, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec)
+}
+
+func endpointsFromIngressWithTargets(ing *networkv1.Ingress, targets endpoint.Targets, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
