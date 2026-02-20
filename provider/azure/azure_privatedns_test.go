@@ -256,11 +256,11 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 			createPrivateMockRecordSet(endpoint.RecordTypeA, "123.123.123.122"),
 			createPrivateMockRecordSet(endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
 			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeAAAA, "2001::123:123:123:123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
-			createPrivateMockRecordSetWithTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeAAAA, "2001::123:123:123:123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSetWithNameAndTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
 		}, 3)
 
 	actual, err := provider.Records(context.Background())
@@ -294,8 +294,8 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
 			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createPrivateMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
 
@@ -442,11 +442,11 @@ func TestAzurePrivateDNSNameFilter(t *testing.T) {
 			createPrivateMockRecordSet("SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createPrivateMockRecordSet(endpoint.RecordTypeA, "123.123.123.122"),
 			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createPrivateMockRecordSetWithTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSetWithNameAndTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		}, 3)
 
 	ctx := context.Background()
