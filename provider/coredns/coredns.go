@@ -445,12 +445,8 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 			continue
 		}
 		if _, ok := findLabelInTargets(ep.Targets, label); !ok {
-			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
-			log.Infof("Delete key %s", key)
-			if p.dryRun {
-				continue
-			}
-			if err := p.client.DeleteService(ctx, key); err != nil {
+			err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName)
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -459,7 +455,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 }
 
 func shouldSkipLabel(label string) bool {
-	skip := []string{"originalText", "prefix", "resource"}
+	skip := []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
 	_, ok := findLabelInTargets(skip, label)
 	return ok
 }
@@ -498,14 +494,22 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
-		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
-		if p.dryRun {
-			continue
-		}
-		if err := p.client.DeleteService(ctx, key); err != nil {
+		err := p.deleteByDnsName(ctx, dnsName)
+		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string) error {
+	key := p.etcdKeyFor(dnsName)
+	log.Infof("Delete key %s", key)
+	if p.dryRun {
+		return nil
+	}
+	if err := p.client.DeleteService(ctx, key); err != nil {
+		return err
 	}
 	return nil
 }
