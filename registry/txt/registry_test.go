@@ -50,13 +50,13 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt.", "", "", time.Hour, "", []string{}, []string{}, false, nil, "")
+	_, err := NewTXTRegistry(p, "txt", "", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
 	_, err = NewTXTRegistry(p, "", "txt", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 
