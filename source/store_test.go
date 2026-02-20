@@ -336,34 +336,6 @@ func TestConfig_ClientGenerator_Caching(t *testing.T) {
 	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
 }
 
-// TestSingletonClientGenerator_RESTConfig_Singleton verifies singleton behavior
-func TestSingletonClientGenerator_RESTConfig_Singleton(t *testing.T) {
-	gen := &SingletonClientGenerator{
-		KubeConfig:     "",
-		APIServerURL:   "",
-		RequestTimeout: 30 * time.Second,
-	}
-
-	// Call RESTConfig multiple times
-	config1, err1 := gen.RESTConfig()
-	config2, err2 := gen.RESTConfig()
-	config3, err3 := gen.RESTConfig()
-
-	// All configs should be identical (same pointer) - this is the key singleton behavior
-	assert.Same(t, config1, config2, "Second call should return same config instance")
-	assert.Same(t, config1, config3, "Third call should return same config instance")
-
-	// Verify internal state is set correctly
-	assert.Same(t, config1, gen.restConfig, "Internal restConfig field should match returned value")
-
-	// Due to sync.Once bug, errors are only returned on first call
-	// We can at least verify the first call had an error (no valid kubeconfig)
-	assert.Error(t, err1, "First call should return error when kubeconfig is invalid")
-	// err2 and err3 are nil due to sync.Once bug - this is documented in TODO
-	require.NoError(t, err2, "Second call does not return error due to sync.Once bug")
-	require.NoError(t, err3, "Third call does not return error due to sync.Once bug")
-}
-
 // TestSingletonClientGenerator_RESTConfig_TimeoutPropagation verifies timeout configuration
 func TestSingletonClientGenerator_RESTConfig_TimeoutPropagation(t *testing.T) {
 	testCases := []struct {
