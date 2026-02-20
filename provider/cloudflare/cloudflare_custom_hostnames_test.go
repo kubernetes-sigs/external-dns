@@ -54,6 +54,7 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 				ID:                 ch.id,
 				Hostname:           ch.hostname,
 				CustomOriginServer: ch.customOriginServer,
+				CustomOriginSNI:    ch.customOriginSNI,
 			})
 		}
 	}
@@ -804,4 +805,167 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			"Custom hostname should be updated in mock client",
 		)
 	})
+
+	t.Run("CustomHostnames_Update_SNI", func(t *testing.T) {
+		client := NewMockCloudFlareClient()
+		client.customHostnames = map[string][]customHostname{
+			"zone1": {
+				{
+					id:                 "ch1",
+					hostname:           "app.fancybar.com",
+					customOriginServer: "origin.bar.com",
+					customOriginSNI:    "origin.bar.com",
+				},
+			},
+		}
+		provider := &CloudFlareProvider{
+			Client:                client,
+			CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+		}
+
+		// SNI-only change: same hostname, annotation goes from "app.fancybar.com" to "app.fancybar.com=sni.bar.com"
+		change := &cloudFlareChange{
+			Action: cloudFlareUpdate,
+			ResourceRecord: dns.RecordResponse{
+				Type: "A",
+			},
+			CustomHostnames: map[string]customHostname{
+				"app.fancybar.com=sni.bar.com": {
+					hostname:           "app.fancybar.com",
+					customOriginServer: "origin.bar.com",
+					customOriginSNI:    "sni.bar.com",
+				},
+			},
+			CustomHostnamesPrev: []string{"app.fancybar.com"},
+		}
+
+		chs := customHostnamesMap{
+			customHostnameIndex{hostname: "app.fancybar.com"}: {
+				id:                 "ch1",
+				hostname:           "app.fancybar.com",
+				customOriginServer: "origin.bar.com",
+				customOriginSNI:    "origin.bar.com",
+			},
+		}
+
+		result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
+		assert.True(t, result, "Should successfully update custom hostname SNI")
+		assert.Len(t, client.customHostnames["zone1"], 1, "One custom hostname should exist after SNI update")
+		assert.Contains(t, client.customHostnames["zone1"],
+			customHostname{
+				id:                 "ID-app.fancybar.com",
+				hostname:           "app.fancybar.com",
+				customOriginServer: "origin.bar.com",
+				customOriginSNI:    "sni.bar.com",
+			},
+			"Custom hostname should have updated SNI",
+		)
+	})
+}
+
+func TestNewCustomHostname(t *testing.T) {
+	provider := &CloudFlareProvider{
+		CustomHostnamesConfig: CustomHostnamesConfig{},
+	}
+	origin := "origin.bar.com"
+
+	tests := []struct {
+		annotation string
+		wantHost   string
+		wantSNI    string
+	}{
+		{
+			annotation: "app.fancybar.com",
+			wantHost:   "app.fancybar.com",
+			wantSNI:    "origin.bar.com", // no "=": SNI defaults to origin
+		},
+		{
+			annotation: "app.fancybar.com=",
+			wantHost:   "app.fancybar.com",
+			wantSNI:    ":request_host_header:", // trailing "=": host header mode
+		},
+		{
+			annotation: "app.fancybar.com=sni.bar.com",
+			wantHost:   "app.fancybar.com",
+			wantSNI:    "sni.bar.com", // explicit SNI override
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.annotation, func(t *testing.T) {
+			ch := provider.newCustomHostname(tt.annotation, origin)
+			assert.Equal(t, tt.wantHost, ch.hostname)
+			assert.Equal(t, origin, ch.customOriginServer)
+			assert.Equal(t, tt.wantSNI, ch.customOriginSNI)
+		})
+	}
+}
+
+func TestGroupByNameAndTypeWithCustomHostnames_SNI(t *testing.T) {
+	provider := &CloudFlareProvider{
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+	}
+
+	record := dns.RecordResponse{
+		ID:      "rec1",
+		Name:    "origin.bar.com",
+		Type:    "A",
+		Content: "1.2.3.4",
+	}
+	records := DNSRecordsMap{
+		{Name: "origin.bar.com", Type: "A", Content: "1.2.3.4"}: record,
+	}
+
+	getAnnotation := func(chs customHostnamesMap) string {
+		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)
+		if len(endpoints) == 0 {
+			return ""
+		}
+		for _, ps := range endpoints[0].ProviderSpecific {
+			if ps.Name == "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname" {
+				return ps.Value
+			}
+		}
+		return ""
+	}
+
+	tests := []struct {
+		name            string
+		customOriginSNI string
+		wantAnnotation  string
+	}{
+		{
+			name:            "SNI equals origin: no suffix",
+			customOriginSNI: "origin.bar.com",
+			wantAnnotation:  "app.fancybar.com",
+		},
+		{
+			name:            "SNI empty: no suffix",
+			customOriginSNI: "",
+			wantAnnotation:  "app.fancybar.com",
+		},
+		{
+			name:            "SNI is host header: trailing =",
+			customOriginSNI: ":request_host_header:",
+			wantAnnotation:  "app.fancybar.com=",
+		},
+		{
+			name:            "SNI differs from origin: explicit suffix",
+			customOriginSNI: "sni.bar.com",
+			wantAnnotation:  "app.fancybar.com=sni.bar.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chs := customHostnamesMap{
+				customHostnameIndex{hostname: "app.fancybar.com"}: {
+					hostname:           "app.fancybar.com",
+					customOriginServer: "origin.bar.com",
+					customOriginSNI:    tt.customOriginSNI,
+				},
+			}
+			assert.Equal(t, tt.wantAnnotation, getAnnotation(chs))
+		})
+	}
 }

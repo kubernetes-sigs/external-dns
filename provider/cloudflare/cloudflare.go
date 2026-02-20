@@ -841,10 +841,18 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 	}
 
 	// map custom origin to custom hostname, custom origin should match to a dns record
-	customHostnames := map[string][]string{}
+	customHostnamesMap := map[string][]string{}
 
 	for _, c := range chs {
-		customHostnames[c.customOriginServer] = append(customHostnames[c.customOriginServer], c.hostname)
+		annotationHostname := c.hostname
+		// for custom hostnames with Origin SNI overrides use the "<customHostname>=<customOriginSNI>" format to be able to detect changes and update accordingly.
+		// if Origin SNI Value from API is ":request_host_header:", we will be using "<customHostname>=" in annotation and internally for brevity.
+		if c.customOriginSNI == ":request_host_header:" {
+			annotationHostname += "="
+		} else if c.customOriginSNI != "" && c.customOriginSNI != c.customOriginServer {
+			annotationHostname += "=" + c.customOriginSNI
+		}
+		customHostnamesMap[c.customOriginServer] = append(customHostnamesMap[c.customOriginServer], annotationHostname)
 	}
 
 	// create a single endpoint with all the targets for each name/type
@@ -871,7 +879,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 		}
 		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
-		if customHostnames, ok := customHostnames[records[0].Name]; ok {
+		if customHostnames, ok := customHostnamesMap[records[0].Name]; ok {
 			sort.Strings(customHostnames)
 			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
 		}
