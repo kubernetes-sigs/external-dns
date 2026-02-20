@@ -166,7 +166,7 @@ func newEndpointWithOwnerAndDescription(dnsName, target, recordType, ownerID str
 	return e
 }
 
-func newEndpointWithOwner(dnsName, target, recordType string) *endpoint.Endpoint {
+func newEndpoint(dnsName, target, recordType string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = "owner"
 	return e

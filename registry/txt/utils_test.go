@@ -48,7 +48,7 @@ func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, 
 	return e
 }
 
-func newEndpointWithOwnerResource(dnsName, target, ownerID, resource string) *endpoint.Endpoint {
+func newCNAMEEndpointWithOwnerResource(dnsName, target, ownerID, resource string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, endpoint.RecordTypeCNAME, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.ResourceLabelKey] = resource

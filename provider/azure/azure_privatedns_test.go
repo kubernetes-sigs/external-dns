@@ -196,7 +196,7 @@ func createPrivateMockRecordSet(recordType string, values ...string) *privatedns
 	return createPrivateMockRecordSetMultiWithTTL("@", recordType, 0, values...)
 }
 
-func createPrivateMockRecordSetWithTTL(name, recordType, value string, ttl int64) *privatedns.RecordSet {
+func createPrivateMockRecordSetWithNameAndTTL(name, recordType, value string, ttl int64) *privatedns.RecordSet {
 	return createPrivateMockRecordSetMultiWithTTL(name, recordType, ttl, value)
 }
 

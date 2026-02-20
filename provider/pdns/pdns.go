@@ -439,8 +439,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 		}
 
 		for _, rr := range z.Rrsets {
-			e := p.convertRRSetToEndpoints(rr)
-			endpoints = append(endpoints, e...)
+			endpoints = append(endpoints, p.convertRRSetToEndpoints(rr)...)
 		}
 	}
 
