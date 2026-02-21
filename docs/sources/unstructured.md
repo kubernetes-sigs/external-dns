@@ -89,14 +89,14 @@ spec:
 
 ## Configuration
 
-| Flag                           | Description                                                        |
-|--------------------------------|--------------------------------------------------------------------|
-| `--unstructured-resource`      | Resources to watch in `resource.version.group` format (repeatable) |
-| `--fqdn-template`              | Go template for DNS names                                          |
-| `--fqdn-target-template`       | Go template for DNS targets                                        |
-| `--fqdn-host-target-template`  | Go template returning `host:target` pairs (mutually exclusive with above two) |
-| `--label-filter`               | Filter resources by labels                                         |
-| `--annotation-filter`          | Filter resources by annotations                                    |
+| Flag                          | Description                                                                   |
+|-------------------------------|-------------------------------------------------------------------------------|
+| `--unstructured-resource`     | Resources to watch in `resource.version.group` format (repeatable)            |
+| `--fqdn-template`             | Go template for DNS names                                                     |
+| `--fqdn-target-template`      | Go template for DNS targets                                                   |
+| `--fqdn-host-target-template` | Go template returning `host:target` pairs (mutually exclusive with above two) |
+| `--label-filter`              | Filter resources by labels                                                    |
+| `--annotation-filter`         | Filter resources by annotations                                               |
 
 ## Template Syntax
 
@@ -114,6 +114,7 @@ Templates have access to typed-style fields and raw object data:
 | `.Spec`        | Raw spec section     |
 | `.Status`      | Raw status section   |
 | `.Object`      | Raw full object      |
+
 ## Examples
 
 ### ConfigMap DNS Registry
