@@ -89,14 +89,15 @@ spec:
 
 ## Configuration
 
-| Flag                      | Description                                                        |
-|---------------------------|--------------------------------------------------------------------|
-| `--unstructured-resource` | Resources to watch in `resource.version.group` format (repeatable) |
-| `--fqdn-template`         | Go template for DNS names                                          |
-| `--target-template`       | Go template for DNS targets                                        |
-| `--fqdn-target-template`  | Go template returning `host:target` pairs                          |
-| `--label-filter`          | Filter resources by labels                                         |
-| `--annotation-filter`     | Filter resources by annotations                                    |
+| Flag                        | Description                                                        |
+|-----------------------------|--------------------------------------------------------------------|
+| `--unstructured-resource`   | Resources to watch in `resource.version.group` format (repeatable) |
+| `--fqdn-template`           | Go template for DNS names                                          |
+| `--target-template`         | Go template for DNS targets                                        |
+| `--fqdn-target-template`    | Go template returning `host:target` pairs                          |
+| `--label-filter`            | Filter resources by labels                                         |
+| `--annotation-filter`       | Filter resources by annotations                                    |
+| `--combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting       |
 
 ## Template Syntax
 

@@ -175,36 +175,28 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 			continue
 		}
 
-		var edps []*endpoint.Endpoint
-		// Get endpoints from annotations if no template or combining both
-		if us.fqdnTemplate == nil || us.combineFqdnAnnotation {
-			hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
-			addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
+		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
+		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
+		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
 
-			edps = EndpointsForHostsAndTargets(hosts, addrs)
+		fqdnTargetEdps, err := fqdn.CombineWithTemplatedEndpoints(
+			annotationEdps, us.fqdnTargetTemplate, us.combineFqdnAnnotation,
+			func() ([]*endpoint.Endpoint, error) {
+				return us.endpointsFromFQDNTargetTemplate(el)
+			},
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if us.fqdnTargetTemplate != nil {
-			edps, err = fqdn.CombineWithTemplatedEndpoints(
-				edps, us.fqdnTargetTemplate, us.combineFqdnAnnotation,
-				func() ([]*endpoint.Endpoint, error) {
-					return us.endpointsFromFQDNTargetTemplate(el)
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if us.fqdnTemplate != nil {
-			edps, err = fqdn.CombineWithTemplatedEndpoints(
-				edps, us.fqdnTemplate, us.combineFqdnAnnotation,
-				func() ([]*endpoint.Endpoint, error) {
-					return us.endpointsFromTemplate(el)
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
+		edps, err := fqdn.CombineWithTemplatedEndpoints(
+			fqdnTargetEdps, us.fqdnTemplate, us.combineFqdnAnnotation,
+			func() ([]*endpoint.Endpoint, error) {
+				return us.endpointsFromTemplate(el)
+			},
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		ttl := annotations.TTLFromAnnotations(el.GetAnnotations(),
@@ -225,18 +217,28 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
 func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(us.fqdnTemplate, el)
-	if err != nil {
-		return nil, err
+	if us.fqdnTemplate == nil && us.targetTemplate == nil {
+		return nil, nil
+	}
+	hostnames := make([]string, 0)
+	var err error
+	if us.fqdnTemplate != nil {
+		hostnames, err = fqdn.ExecTemplate(us.fqdnTemplate, el)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(hostnames) == 0 {
 		return nil, nil
 	}
 
-	targets, err := fqdn.ExecTemplate(us.targetTemplate, el)
-	if err != nil {
-		return nil, err
+	targets := make([]string, 0)
+	if us.targetTemplate != nil {
+		targets, err = fqdn.ExecTemplate(us.targetTemplate, el)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return EndpointsForHostsAndTargets(hostnames, targets), nil

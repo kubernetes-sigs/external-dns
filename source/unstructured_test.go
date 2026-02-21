@@ -74,6 +74,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 		resources        []string
 		labelSelector    string
 		annotationFilter string
+		combine          bool
 	}
 
 	for _, tt := range []struct {
@@ -426,7 +427,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				"",
 				"",
 				"",
-				false,
+				tt.cfg.combine,
 			)
 			require.NoError(t, err)
 

@@ -39,6 +39,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		targetTemplate     string
 		fqdnTargetTemplate string
 		labelFilter        string
+		combine            bool
 	}
 	for _, tt := range []struct {
 		title    string
@@ -382,11 +383,12 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 		},
 		{
-			title: "combined fqdn annotation and template",
+			title: "combined annotations and template",
 			cfg: cfg{
 				resources:      []string{"virtualmachineinstances.v1.kubevirt.io"},
 				fqdnTemplate:   "{{.Name}}.template.example.com",
 				targetTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
+				combine:        true,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -782,6 +784,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				fqdnTargetTemplate: `{{range $iface := .Status.interfaces}}{{$.Name}}-{{index $iface "name"}}.ifaces.example.com:{{index $iface "ipAddress"}},{{end}}`,
 				fqdnTemplate:       "{{.Name}}.vmi.example.com",
 				targetTemplate:     `{{index .Status.interfaces 0 "ipAddress"}}`,
+				combine:            true,
 			},
 			objects: []*unstructured.Unstructured{
 				{

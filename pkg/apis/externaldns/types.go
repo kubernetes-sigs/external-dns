@@ -514,7 +514,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
-	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
@@ -706,6 +705,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
 
 	// FQDN Templating
+	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
 	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
 	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional).", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
 	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --target-template", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)

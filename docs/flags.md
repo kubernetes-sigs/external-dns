@@ -17,7 +17,6 @@
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
 | `--annotation-prefix="external-dns.alpha.kubernetes.io/"` | Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/) |
-| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--connector-source-server="localhost:8080"` | The server to connect for connector source, valid only when using connector source |
 | `--crd-source-apiversion="externaldns.k8s.io/v1alpha1"` | API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source |
@@ -180,6 +179,7 @@
 | `--webhook-provider-read-timeout=5s` | The read timeout for the webhook provider in duration format (default: 5s) |
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
+| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--target-template=""` | A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). |
 | `--fqdn-target-template=""` | A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --target-template |
