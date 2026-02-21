@@ -403,7 +403,7 @@ external-dns \
 # Result:
 # app-abc12.pod.com -> 10.244.1.2 (A)
 # app-def34.pod.com -> 10.244.2.3, 10.244.2.4 (A)
-# test-abc12.pod.com -> 10.244.1.2, 10.244.2.3, 10.244.2.4 (A)
+# test-abc12.example.com -> 10.244.1.2, 10.244.2.3, 10.244.2.4 (A)
 ```
 
 The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
