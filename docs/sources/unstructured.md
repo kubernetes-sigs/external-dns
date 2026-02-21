@@ -113,7 +113,7 @@ Templates have access to typed-style fields and raw object data:
 | `.Metadata`    | Raw metadata section |
 | `.Spec`        | Raw spec section     |
 | `.Status`      | Raw status section   |
-
+| `.Object`      | Raw full object      |
 ## Examples
 
 ### ConfigMap DNS Registry
