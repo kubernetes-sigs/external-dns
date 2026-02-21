@@ -17,16 +17,12 @@ limitations under the License.
 package source
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -845,7 +841,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				tt.cfg.fqdnTemplate,
 				tt.cfg.targetTemplate,
 				tt.cfg.fqdnTargetTemplate,
-				true,
+				tt.cfg.combine,
 			)
 			require.NoError(t, err)
 
@@ -1010,43 +1006,4 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-// buildAPIResourceLists build API resource list from test resources
-func buildAPIResourceLists(t *testing.T, resources []string, objects []*unstructured.Unstructured) []*metav1.APIResourceList {
-	t.Helper()
-
-	// Build a map of GVR to Kind from objects
-	gvrToKind := make(map[string]string)
-	for _, obj := range objects {
-		apiVersion := obj.GetAPIVersion()
-		kind := obj.GetKind()
-		gvrToKind[apiVersion] = kind
-	}
-
-	result := make([]*metav1.APIResourceList, 0, len(resources))
-	for _, res := range resources {
-		if strings.Count(res, ".") == 1 {
-			res += "."
-		}
-		gvr, _ := schema.ParseResourceArg(res)
-		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
-
-		// Find matching kind from objects
-		kind := gvrToKind[gvr.GroupVersion().String()]
-		if kind == "" {
-			// Fallback to first object's kind
-			kind = objects[0].GetKind()
-		}
-
-		result = append(result, &metav1.APIResourceList{
-			GroupVersion: gvr.GroupVersion().String(),
-			APIResources: []metav1.APIResource{{
-				Name:       gvr.Resource,
-				Namespaced: true,
-				Kind:       kind,
-			}},
-		})
-	}
-	return result
 }

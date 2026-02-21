@@ -217,23 +217,15 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
 func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	if us.fqdnTemplate == nil && us.targetTemplate == nil {
-		return nil, nil
+	hostnames, err := fqdn.ExecTemplate(us.fqdnTemplate, el)
+	if err != nil {
+		return nil, err
 	}
-	hostnames := make([]string, 0)
-	var err error
-	if us.fqdnTemplate != nil {
-		hostnames, err = fqdn.ExecTemplate(us.fqdnTemplate, el)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if len(hostnames) == 0 {
 		return nil, nil
 	}
 
-	targets := make([]string, 0)
+	var targets []string
 	if us.targetTemplate != nil {
 		targets, err = fqdn.ExecTemplate(us.targetTemplate, el)
 		if err != nil {

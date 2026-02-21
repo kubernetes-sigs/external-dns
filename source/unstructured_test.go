@@ -545,12 +545,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 				assert.Nil(t, result)
 				return
 			}
-			assert.Len(t, result, len(tc.expected))
-			for i, ep := range result {
-				assert.Equal(t, tc.expected[i].DNSName, ep.DNSName, "DNSName mismatch at index %d", i)
-				assert.Equal(t, tc.expected[i].RecordType, ep.RecordType, "RecordType mismatch at index %d", i)
-				assert.ElementsMatch(t, tc.expected[i].Targets, ep.Targets, "Targets mismatch at index %d", i)
-			}
+			validateEndpoints(t, result, tc.expected)
 		})
 	}
 }
@@ -561,39 +556,55 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 ) {
 	t.Helper()
 
-	kubeClient := fake.NewClientset()
-	fakeDiscovery := kubeClient.Discovery().(*discoveryfake.FakeDiscovery)
-	fakeDiscovery.Resources = buildAPIResourceLists(t, resources, objects)
-
-	// Build GVR to ListKind map and apiVersion to GVR map
-	gvrToListKind := make(map[schema.GroupVersionResource]string)
-	apiVersionToGVR := make(map[string]schema.GroupVersionResource)
+	// Parse all resource identifiers once
+	gvrs := make([]schema.GroupVersionResource, 0, len(resources))
 	for _, res := range resources {
 		if strings.Count(res, ".") == 1 {
 			res += "."
 		}
 		gvr, _ := schema.ParseResourceArg(res)
-
 		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
-		apiVersionToGVR[gvr.GroupVersion().String()] = *gvr
+		gvrs = append(gvrs, *gvr)
 	}
 
-	// Determine list kinds from objects
+	// Map apiVersion → GVR for object lookup
+	apiVersionToGVR := make(map[string]schema.GroupVersionResource, len(gvrs))
+	for _, gvr := range gvrs {
+		apiVersionToGVR[gvr.GroupVersion().String()] = gvr
+	}
+
+	// Derive kind and list kind from objects
+	kindByGV := make(map[string]string, len(objects))
+	gvrToListKind := make(map[schema.GroupVersionResource]string, len(gvrs))
 	for _, obj := range objects {
-		apiVersion := obj.GetAPIVersion()
-		if gvr, ok := apiVersionToGVR[apiVersion]; ok {
+		av := obj.GetAPIVersion()
+		kindByGV[av] = obj.GetKind()
+		if gvr, ok := apiVersionToGVR[av]; ok {
 			gvrToListKind[gvr] = obj.GetKind() + "List"
 		}
 	}
 
-	scheme := runtime.NewScheme()
-	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	// Build discovery resource lists
+	apiResourceLists := make([]*metav1.APIResourceList, 0, len(gvrs))
+	for _, gvr := range gvrs {
+		apiResourceLists = append(apiResourceLists, &metav1.APIResourceList{
+			GroupVersion: gvr.GroupVersion().String(),
+			APIResources: []metav1.APIResource{{
+				Name:       gvr.Resource,
+				Namespaced: true,
+				Kind:       kindByGV[gvr.GroupVersion().String()],
+			}},
+		})
+	}
 
-	// Create each object using its matching GVR
+	kubeClient := fake.NewClientset()
+	kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = apiResourceLists
+
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), gvrToListKind)
+
 	for _, obj := range objects {
-		apiVersion := obj.GetAPIVersion()
-		gvr, ok := apiVersionToGVR[apiVersion]
-		require.True(t, ok, "no resource found for apiVersion %s", apiVersion)
+		gvr, ok := apiVersionToGVR[obj.GetAPIVersion()]
+		require.True(t, ok, "no resource found for apiVersion %s", obj.GetAPIVersion())
 		_, err := dynamicClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(
 			t.Context(), obj, metav1.CreateOptions{})
 		require.NoError(t, err)
