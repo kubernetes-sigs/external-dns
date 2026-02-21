@@ -3323,9 +3323,8 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expectedAaaa: nil,
 		},
-		// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed. This will be fixed in another PR.
 		{
-			name: "MX record with alias=true should remove alias and set default ttl, add evaluateTargetHealth and not create AAAA",
+			name: "MX record with alias-related properties should drop them, keep ttl and not create AAAA",
 			ep: &endpoint.Endpoint{
 				DNSName:    "test.foo.bar.",
 				RecordType: endpoint.RecordTypeMX,
@@ -3336,19 +3335,18 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 						Name:  providerSpecificAlias,
 						Value: "true",
 					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
 				},
 			},
 			expected: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:  defaultTTL,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: "false",
-					},
-				},
+				DNSName:          "test.foo.bar.",
+				RecordType:       endpoint.RecordTypeMX,
+				Targets:          endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:        600,
+				ProviderSpecific: endpoint.ProviderSpecific{},
 			},
 			expectedAaaa: nil,
 		},
