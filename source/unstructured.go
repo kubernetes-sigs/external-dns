@@ -28,7 +28,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
@@ -162,9 +161,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 
 		el := newUnstructuredWrapper(obj)
-		if el == nil {
-			continue
-		}
 
 		if annotations.IsControllerMismatch(el, types.Unstructured) {
 			continue
@@ -293,23 +289,15 @@ type unstructuredWrapper struct {
 	Metadata map[string]any
 	Spec     map[string]any
 	Status   map[string]any
-
-	// Full object for arbitrary access
-	Object map[string]any
 }
 
 func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
 	return u.Unstructured
 }
 
-// newUnstructuredWrapper creates a wrapper from a runtime.Object.
-// Returns nil if the object is not an *unstructured.Unstructured.
-func newUnstructuredWrapper(obj runtime.Object) *unstructuredWrapper {
-	u, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return nil
-	}
-
+// newUnstructuredWrapper creates a wrapper around an *unstructured.Unstructured,
+// exposing typed convenience fields for templates alongside raw map sections.
+func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 	w := &unstructuredWrapper{
 		Unstructured: u,
 		Name:         u.GetName(),
@@ -318,7 +306,6 @@ func newUnstructuredWrapper(obj runtime.Object) *unstructuredWrapper {
 		APIVersion:   u.GetAPIVersion(),
 		Labels:       u.GetLabels(),
 		Annotations:  u.GetAnnotations(),
-		Object:       u.Object,
 	}
 
 	// Extract common sections
