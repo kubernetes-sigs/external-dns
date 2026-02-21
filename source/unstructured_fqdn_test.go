@@ -604,8 +604,10 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "EndpointSlice for headless service with per-pod DNS",
 			cfg: cfg{
-				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
-				fqdnTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+				resources: []string{"endpointslices.v1.discovery.k8s.io"},
+				fqdnTargetTemplate: `
+{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}
+{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -668,10 +670,77 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 		},
 		{
+			title: "EndpointSlice for headless service with single FQDN per EndpointSlice",
+			cfg: cfg{
+				resources: []string{"endpointslices.v1.discovery.k8s.io"},
+				fqdnTargetTemplate: `
+{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}
+{{$svcName := index .Labels "kubernetes.io/service-name"}}{{range $ep := .Object.endpoints}}
+{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$svcName}}.example.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "discovery.k8s.io/v1",
+						"kind":       "EndpointSlice",
+						"metadata": map[string]any{
+							"name":      "test-headless-abc12",
+							"namespace": "default",
+							"labels": map[string]any{
+								"endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+								"kubernetes.io/service-name":             "my-headless",
+								"service.kubernetes.io/headless":         "",
+							},
+						},
+						"addressType": "IPv4",
+						"endpoints": []any{
+							map[string]any{
+								"addresses": []any{"10.244.1.2"},
+								"conditions": map[string]any{
+									"ready": true,
+								},
+								"nodeName": "worker1",
+								"targetRef": map[string]any{
+									"kind":      "Pod",
+									"name":      "app-abc12",
+									"namespace": "default",
+								},
+							},
+							map[string]any{
+								"addresses": []any{"10.244.2.3", "10.244.2.4"},
+								"conditions": map[string]any{
+									"ready": true,
+								},
+								"nodeName": "worker2",
+								"targetRef": map[string]any{
+									"kind":      "Pod",
+									"name":      "app-def34",
+									"namespace": "default",
+								},
+							},
+						},
+						"ports": []any{
+							map[string]any{
+								"name":     "http",
+								"port":     int64(80),
+								"protocol": "TCP",
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-headless.example.com", endpoint.RecordTypeA, "10.244.1.2", "10.244.2.3", "10.244.2.4").
+					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
+			},
+		},
+		{
 			title: "fqdnTargetTemplate returns no values when condition not met",
 			cfg: cfg{
-				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
-				fqdnTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+				resources: []string{"endpointslices.v1.discovery.k8s.io"},
+				fqdnTargetTemplate: `
+{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}
+{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{

@@ -359,7 +359,7 @@ Create per-pod DNS records from EndpointSlice resources for headless services. E
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
-  name: test-headless-abc12
+  name: test-abc12
   namespace: default
   labels:
     endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
@@ -396,11 +396,13 @@ ports:
 external-dns \
   --source=unstructured \
   --unstructured-resource=endpointslices.v1.discovery.k8s.io \
-  --fqdn-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
+  --fqdn-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}' \
+  --fqdn-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{$svcName := index .Labels "kubernetes.io/service-name"}}{{range $ep :=.Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$svcName}}.example.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
 
 # Result:
 # app-abc12.pod.com -> 10.244.1.2 (A)
 # app-def34.pod.com -> 10.244.2.3, 10.244.2.4 (A)
+# test-abc12.pod.com -> 10.244.1.2, 10.244.2.3, 10.244.2.4 (A)
 ```
 
 The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
