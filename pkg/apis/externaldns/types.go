@@ -53,8 +53,8 @@ type Config struct {
 	LabelFilter                                   string
 	IngressClassNames                             []string
 	FQDNTemplate                                  string
-	FQDNTargetTemplate                            string
-	FQDNHostTargetTemplate                        string
+	TargetTemplate                                string
+	HostTargetTemplate                            string
 	CombineFQDNAndAnnotation                      bool
 	IgnoreHostnameAnnotation                      bool
 	IgnoreNonHostNetworkPods                      bool
@@ -285,8 +285,8 @@ var defaultConfig = &Config{
 	ExoscaleAPIZone:              "ch-gva-2",
 	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
-	FQDNTargetTemplate:           "",
-	FQDNHostTargetTemplate:       "",
+	TargetTemplate:               "",
+	HostTargetTemplate:           "",
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -707,8 +707,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// FQDN Templating
 	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
-	b.StringVar("fqdn-target-template", "When using the unstructured source, specify the target FQDN template for DNS records", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
-	b.StringVar("fqdn-host-target-template", "When using the unstructured source, specify a template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --fqdn-target-template", defaultConfig.FQDNHostTargetTemplate, &cfg.FQDNHostTargetTemplate)
+	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional).", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
+	b.StringVar("host-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --target-template", defaultConfig.HostTargetTemplate, &cfg.HostTargetTemplate)
 }
 
 func App(cfg *Config) *kingpin.Application {

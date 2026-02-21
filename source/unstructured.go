@@ -58,7 +58,7 @@ import (
 type unstructuredSource struct {
 	combineFqdnAnnotation bool
 	fqdnTemplate          *template.Template
-	targetFqdnTemplate    *template.Template
+	targetTemplate        *template.Template
 	hostTargetTemplate    *template.Template
 	informers             []kubeinformers.GenericInformer
 }
@@ -71,7 +71,7 @@ func NewUnstructuredFQDNSource(
 	namespace, annotationFilter string,
 	labelSelector labels.Selector,
 	resources []string,
-	fqdnTemplate, targetFqdnTemplate, hostTargetTemplate string,
+	fqdnTemplate, targetTemplate, hostTargetTemplate string,
 	combineFqdnAnnotation bool,
 ) (Source, error) {
 	fqdnTmpl, err := fqdn.ParseTemplate(fqdnTemplate)
@@ -79,7 +79,7 @@ func NewUnstructuredFQDNSource(
 		return nil, err
 	}
 
-	targetTmpl, err := fqdn.ParseTemplate(targetFqdnTemplate)
+	targetTmpl, err := fqdn.ParseTemplate(targetTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func NewUnstructuredFQDNSource(
 
 	return &unstructuredSource{
 		fqdnTemplate:          fqdnTmpl,
-		targetFqdnTemplate:    targetTmpl,
+		targetTemplate:        targetTmpl,
 		hostTargetTemplate:    hostTargetTmpl,
 		informers:             resourceInformers,
 		combineFqdnAnnotation: combineFqdnAnnotation,
@@ -230,7 +230,7 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 		return nil, nil
 	}
 
-	targets, err := fqdn.ExecTemplate(us.targetFqdnTemplate, el)
+	targets, err := fqdn.ExecTemplate(us.targetTemplate, el)
 	if err != nil {
 		return nil, err
 	}

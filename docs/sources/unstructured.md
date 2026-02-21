@@ -93,8 +93,8 @@ spec:
 |-------------------------------|-------------------------------------------------------------------------------|
 | `--unstructured-resource`     | Resources to watch in `resource.version.group` format (repeatable)            |
 | `--fqdn-template`             | Go template for DNS names                                                     |
-| `--fqdn-target-template`      | Go template for DNS targets                                                   |
-| `--fqdn-host-target-template` | Go template returning `host:target` pairs (mutually exclusive with above two) |
+| `--target-template`      | Go template for DNS targets                                                   |
+| `--host-target-template` | Go template returning `host:target` pairs (mutually exclusive with above two) |
 | `--label-filter`              | Filter resources by labels                                                    |
 | `--annotation-filter`         | Filter resources by annotations                                               |
 
@@ -139,7 +139,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=configmaps.v1 \
   --fqdn-template='{{index .Object.data "hostname"}}' \
-  --fqdn-target-template='{{index .Object.data "target"}}' \
+  --target-template='{{index .Object.data "target"}}' \
   --label-filter='external-dns.alpha.kubernetes.io/controller=dns-controller'
 
 # Result:
@@ -153,7 +153,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=rdsinstances.v1alpha1.rds.aws.crossplane.io \
   --fqdn-template='{{.Name}}.db.example.com' \
-  --fqdn-target-template='{{.Status.atProvider.endpoint.address}}'
+  --target-template='{{.Status.atProvider.endpoint.address}}'
 ```
 
 ### Multiple Resources
@@ -164,7 +164,7 @@ external-dns \
   --unstructured-resource=virtualmachineinstances.v1.kubevirt.io \
   --unstructured-resource=rdsinstances.v1alpha1.rds.aws.crossplane.io \
   --fqdn-template='{{.Name}}.{{.Kind}}.example.com' \
-  --fqdn-target-template='{{.Status.endpoint}}'
+  --target-template='{{.Status.endpoint}}'
 ```
 
 ### MetalLB IPAddressPool
@@ -187,7 +187,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=ipaddresspools.v1beta1.metallb.io \
   --fqdn-template='{{index .Annotations "external-dns.alpha.kubernetes.io/hostname"}}' \
-  --fqdn-target-template='{{$addr := index .Spec.addresses 0}}{{if contains $addr "/32"}}{{trimSuffix $addr "/32"}}{{else}}{{$addr}}{{end}}'
+  --target-template='{{$addr := index .Spec.addresses 0}}{{if contains $addr "/32"}}{{trimSuffix $addr "/32"}}{{else}}{{$addr}}{{end}}'
 
 # Result:
 # lb.example.com -> 192.168.10.11 (A)
@@ -224,7 +224,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=apisixroutes.v2.apisix.apache.org \
   --fqdn-template='{{.Name}}.route.example.com' \
-  --fqdn-target-template='{{.Status.apisix.gateway}}'
+  --target-template='{{.Status.apisix.gateway}}'
 
 # Result:
 # httpbin.route.example.com -> apisix-gateway.ingress-apisix.svc.cluster.local (CNAME)
@@ -255,7 +255,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=certificates.v1.cert-manager.io \
   --fqdn-template='{{index .Spec.dnsNames 0}}' \
-  --fqdn-target-template='{{index .Annotations "external-dns.alpha.kubernetes.io/target"}}'
+  --target-template='{{index .Annotations "external-dns.alpha.kubernetes.io/target"}}'
 
 # Result:
 # my-app.example.com -> 10.0.0.50 (A)
@@ -288,7 +288,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=nodes.v3.management.cattle.io \
   --fqdn-template='{{.Spec.hostname}}.nodes.example.com' \
-  --fqdn-target-template='{{(index .Status.internalNodeStatus.addresses 0).address}}' \
+  --target-template='{{(index .Status.internalNodeStatus.addresses 0).address}}' \
   --label-filter='node-role.kubernetes.io/controlplane=true'
 
 # Result:
@@ -344,7 +344,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=configmaps.v1 \
   --fqdn-template='{{if eq .Kind "ConfigMap"}}{{.Name}}.cdn.example.com{{end}}' \
-  --fqdn-target-template='{{if eq .Kind "ConfigMap"}}{{$url := index .Object.data "default.export-bucket-url"}}{{trimSuffix (trimPrefix $url "https://") "/"}}{{end}}' \
+  --target-template='{{if eq .Kind "ConfigMap"}}{{$url := index .Object.data "default.export-bucket-url"}}{{trimSuffix (trimPrefix $url "https://") "/"}}{{end}}' \
   --label-filter='app.kubernetes.io/managed-by=ack-fieldexport'
 
 # Result:
@@ -396,14 +396,14 @@ ports:
 external-dns \
   --source=unstructured \
   --unstructured-resource=endpointslices.v1.discovery.k8s.io \
-  --fqdn-host-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
+  --host-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
 
 # Result:
 # app-abc12.pod.com -> 10.244.1.2 (A)
 # app-def34.pod.com -> 10.244.2.3, 10.244.2.4 (A)
 ```
 
-The `--fqdn-host-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
+The `--host-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
 
 ## RBAC
 

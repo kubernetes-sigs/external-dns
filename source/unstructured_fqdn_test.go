@@ -36,7 +36,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 	type cfg struct {
 		resources          []string
 		fqdnTemplate       string
-		targetFqdnTemplate string
+		targetTemplate     string
 		hostTargetTemplate string
 		labelFilter        string
 	}
@@ -49,9 +49,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "ConfigMap with comma-separated hostnames",
 			cfg: cfg{
-				resources:          []string{"configmaps.v1"},
-				fqdnTemplate:       `{{index .Object.data "hostnames"}}`,
-				targetFqdnTemplate: `{{index .Object.data "target"}}`,
+				resources:      []string{"configmaps.v1"},
+				fqdnTemplate:   `{{index .Object.data "hostnames"}}`,
+				targetTemplate: `{{index .Object.data "target"}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -82,9 +82,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "with IP address",
 			cfg: cfg{
-				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
-				fqdnTemplate:       `{{.Name}}.{{index .Status.interfaces 0 "name"}}.vmi.com`,
-				targetFqdnTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
+				resources:      []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTemplate:   `{{.Name}}.{{index .Status.interfaces 0 "name"}}.vmi.com`,
+				targetTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -114,9 +114,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "Crossplane RDSInstance with endpoint",
 			cfg: cfg{
-				resources:          []string{"rdsinstances.v1alpha1.rds.aws.crossplane.io"},
-				fqdnTemplate:       "{{.Name}}.db.example.com",
-				targetFqdnTemplate: "{{.Status.atProvider.endpoint.address}}",
+				resources:      []string{"rdsinstances.v1alpha1.rds.aws.crossplane.io"},
+				fqdnTemplate:   "{{.Name}}.db.example.com",
+				targetTemplate: "{{.Status.atProvider.endpoint.address}}",
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -145,9 +145,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "multiple VirtualMachineInstances",
 			cfg: cfg{
-				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
-				fqdnTemplate:       "{{.Name}}.vmi.example.com",
-				targetFqdnTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
+				resources:      []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTemplate:   "{{.Name}}.vmi.example.com",
+				targetTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -191,9 +191,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "multiple hosts from template",
 			cfg: cfg{
-				resources:          []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
-				fqdnTemplate:       "{{.Name}}.mesh.com,{{.Name}}.internal.com",
-				targetFqdnTemplate: "{{index .Spec.hosts 0}}",
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   "{{.Name}}.mesh.com,{{.Name}}.internal.com",
+				targetTemplate: "{{index .Spec.hosts 0}}",
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -222,9 +222,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "with labels",
 			cfg: cfg{
-				resources:          []string{"applications.v1alpha1.argoproj.io"},
-				fqdnTemplate:       `{{index .Labels "app.kubernetes.io/instance"}}.apps.com`,
-				targetFqdnTemplate: "{{.Status.loadBalancer}}",
+				resources:      []string{"applications.v1alpha1.argoproj.io"},
+				fqdnTemplate:   `{{index .Labels "app.kubernetes.io/instance"}}.apps.com`,
+				targetTemplate: "{{.Status.loadBalancer}}",
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -252,9 +252,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "with ttl annotation set",
 			cfg: cfg{
-				resources:          []string{"applications.v1alpha1.argoproj.io"},
-				fqdnTemplate:       `{{index .Labels "app.kubernetes.io/instance"}}.apps.com`,
-				targetFqdnTemplate: "{{.Status.loadBalancer}}",
+				resources:      []string{"applications.v1alpha1.argoproj.io"},
+				fqdnTemplate:   `{{index .Labels "app.kubernetes.io/instance"}}.apps.com`,
+				targetTemplate: "{{.Status.loadBalancer}}",
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -290,7 +290,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					"rdsinstances.v1alpha1.rds.aws.crossplane.io",
 				},
 				fqdnTemplate: "{{.Name}}.{{.Namespace}}.com",
-				targetFqdnTemplate: `
+				targetTemplate: `
 {{if .Status.interfaces}}{{index .Status.interfaces 0 "ipAddress"}}{{else}}{{.Status.atProvider.endpoint.address}}{{end}}`,
 			},
 			objects: []*unstructured.Unstructured{
@@ -343,8 +343,8 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					"virtualmachineinstances.v1.kubevirt.io",
 					"targetgroupbindings.v1beta1.elbv2.k8s.aws",
 				},
-				fqdnTemplate:       "{{.Name}}.{{.Kind}}.example.com",
-				targetFqdnTemplate: "{{.Status.target}}",
+				fqdnTemplate:   "{{.Name}}.{{.Kind}}.example.com",
+				targetTemplate: "{{.Status.target}}",
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -384,9 +384,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		{
 			title: "combined fqdn annotation and template",
 			cfg: cfg{
-				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
-				fqdnTemplate:       "{{.Name}}.template.example.com",
-				targetFqdnTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
+				resources:      []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTemplate:   "{{.Name}}.template.example.com",
+				targetTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -430,7 +430,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 {{if eq .Kind "VirtualMachineInstance"}}{{.Name}}.vm.com{{end}},
 {{if eq .Kind "TargetGroupBinding"}}{{.Name}}.tgb.com{{end}},
 {{if eq .Kind "ApisixRoute"}}{{.Name}}.route.com{{end}}`,
-				targetFqdnTemplate: `
+				targetTemplate: `
 {{if eq .Kind "VirtualMachineInstance"}}{{index .Status.interfaces 0 "ipAddress"}}{{end}},
 {{if eq .Kind "TargetGroupBinding"}}{{.Status.loadBalancerHostname}}{{end}},
 {{if eq .Kind "ApisixRoute"}}{{.Status.apisix.gateway}}{{end}}`,
@@ -517,7 +517,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					"fieldexports.v1alpha1.services.k8s.aws",
 					"configmap.v1"},
 				fqdnTemplate: `{{if eq .Kind "ConfigMap"}}{{.Name}}.s3.example.com{{end}}`,
-				targetFqdnTemplate: `
+				targetTemplate: `
 {{if eq .Kind "ConfigMap"}}{{$url := index .Object.data "default.export-user-data-bucket"}}{{trimSuffix (trimPrefix $url "https://") "/"}}{{end}}`,
 				labelFilter: "app.kubernetes.io/name=example-app",
 			},
@@ -728,7 +728,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				selector,
 				tt.cfg.resources,
 				tt.cfg.fqdnTemplate,
-				tt.cfg.targetFqdnTemplate,
+				tt.cfg.targetTemplate,
 				tt.cfg.hostTargetTemplate,
 				true,
 			)

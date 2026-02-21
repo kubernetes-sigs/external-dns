@@ -58,8 +58,8 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-prefix must end with '/'")
 	}
 
-	if cfg.FQDNHostTargetTemplate != "" && (cfg.FQDNTemplate != "" || cfg.FQDNTargetTemplate != "") {
-		return errors.New("--fqdn-host-target-template is mutually exclusive with --fqdn-template and --fqdn-target-template")
+	if cfg.HostTargetTemplate != "" && (cfg.FQDNTemplate != "" || cfg.TargetTemplate != "") {
+		return errors.New("--host-target-template is mutually exclusive with --fqdn-template and --target-template")
 	}
 
 	return nil

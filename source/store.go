@@ -63,8 +63,8 @@ type Config struct {
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	FQDNTemplate                   string
-	FQDNTargetTemplate             string
-	FQDNHostTargetTemplate         string
+	TargetTemplate                 string
+	HostTargetTemplate             string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreNonHostNetworkPods       bool
@@ -156,8 +156,8 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		MinTTL:                         cfg.MinTTL,
 		UnstructuredResources:          cfg.UnstructuredResources,
 		FQDNTemplate:                   cfg.FQDNTemplate,
-		FQDNTargetTemplate:             cfg.FQDNTargetTemplate,
-		FQDNHostTargetTemplate:         cfg.FQDNHostTargetTemplate,
+		TargetTemplate:                 cfg.TargetTemplate,
+		HostTargetTemplate:             cfg.HostTargetTemplate,
 		sources:                        cfg.Sources,
 	}
 }
@@ -681,8 +681,8 @@ func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config
 		cfg.LabelFilter,
 		cfg.UnstructuredResources,
 		cfg.FQDNTemplate,
-		cfg.FQDNTargetTemplate,
-		cfg.FQDNHostTargetTemplate,
+		cfg.TargetTemplate,
+		cfg.HostTargetTemplate,
 		cfg.CombineFQDNAndAnnotation,
 	)
 }
