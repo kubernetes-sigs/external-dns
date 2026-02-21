@@ -24,6 +24,8 @@ import (
 	"strings"
 	"text/template"
 
+	log "github.com/sirupsen/logrus"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -251,12 +253,16 @@ func (us *unstructuredSource) endpointsFromHostTargetTemplate(el *unstructuredWr
 		// Split at first colon (hostnames can't contain colons, IPv6 targets can)
 		parts := strings.SplitN(pair, ":", 2)
 		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
+				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
 			continue
 		}
 
 		host := strings.TrimSpace(parts[0])
 		target := strings.TrimSpace(parts[1])
 		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
+				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
 			continue
 		}
 
