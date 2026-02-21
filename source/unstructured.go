@@ -191,16 +191,20 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 					return us.endpointsFromFQDNTargetTemplate(el)
 				},
 			)
-		} else if us.fqdnTemplate != nil {
+			if err != nil {
+				return nil, err
+			}
+		}
+		if us.fqdnTemplate != nil {
 			edps, err = fqdn.CombineWithTemplatedEndpoints(
 				edps, us.fqdnTemplate, us.combineFqdnAnnotation,
 				func() ([]*endpoint.Endpoint, error) {
 					return us.endpointsFromTemplate(el)
 				},
 			)
-		}
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		ttl := annotations.TTLFromAnnotations(el.GetAnnotations(),

@@ -775,6 +775,49 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			title: "both fqdnTargetTemplate and fqdnTemplate set - endpoints from both are combined",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: `{{range $iface := .Status.interfaces}}{{$.Name}}-{{index $iface "name"}}.ifaces.example.com:{{index $iface "ipAddress"}},{{end}}`,
+				fqdnTemplate:       "{{.Name}}.vmi.example.com",
+				targetTemplate:     `{{index .Status.interfaces 0 "ipAddress"}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+						"status": map[string]any{
+							"interfaces": []any{
+								map[string]any{
+									"name":      "eth0",
+									"ipAddress": "10.244.1.50",
+								},
+								map[string]any{
+									"name":      "eth1",
+									"ipAddress": "192.168.1.50",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				// from fqdnTargetTemplate: per-interface 1:1 host:IP pairs
+				endpoint.NewEndpoint("my-vm-eth0.ifaces.example.com", endpoint.RecordTypeA, "10.244.1.50").
+					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
+				endpoint.NewEndpoint("my-vm-eth1.ifaces.example.com", endpoint.RecordTypeA, "192.168.1.50").
+					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
+				// from fqdnTemplate + targetTemplate: service-level record for the primary interface
+				endpoint.NewEndpoint("my-vm.vmi.example.com", endpoint.RecordTypeA, "10.244.1.50").
+					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
