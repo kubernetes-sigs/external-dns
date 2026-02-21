@@ -25,13 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	discoveryfake "k8s.io/client-go/discovery/fake"
-	"k8s.io/client-go/dynamic"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -940,51 +934,4 @@ func buildAPIResourceLists(t *testing.T, resources []string, objects []*unstruct
 		})
 	}
 	return result
-}
-
-// setupUnstructuredTestClients creates fake kube and dynamic clients with the given resources and objects.
-func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*unstructured.Unstructured) (
-	kubernetes.Interface, dynamic.Interface,
-) {
-	t.Helper()
-
-	kubeClient := fake.NewClientset()
-	fakeDiscovery := kubeClient.Discovery().(*discoveryfake.FakeDiscovery)
-	fakeDiscovery.Resources = buildAPIResourceLists(t, resources, objects)
-
-	// Build GVR to ListKind map and apiVersion to GVR map
-	gvrToListKind := make(map[schema.GroupVersionResource]string)
-	apiVersionToGVR := make(map[string]schema.GroupVersionResource)
-	for _, res := range resources {
-		if strings.Count(res, ".") == 1 {
-			res += "."
-		}
-		gvr, _ := schema.ParseResourceArg(res)
-
-		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
-		apiVersionToGVR[gvr.GroupVersion().String()] = *gvr
-	}
-
-	// Determine list kinds from objects
-	for _, obj := range objects {
-		apiVersion := obj.GetAPIVersion()
-		if gvr, ok := apiVersionToGVR[apiVersion]; ok {
-			gvrToListKind[gvr] = obj.GetKind() + "List"
-		}
-	}
-
-	scheme := runtime.NewScheme()
-	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
-
-	// Create each object using its matching GVR
-	for _, obj := range objects {
-		apiVersion := obj.GetAPIVersion()
-		gvr, ok := apiVersionToGVR[apiVersion]
-		require.True(t, ok, "no resource found for apiVersion %s", apiVersion)
-		_, err := dynamicClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(
-			t.Context(), obj, metav1.CreateOptions{})
-		require.NoError(t, err)
-	}
-
-	return kubeClient, dynamicClient
 }

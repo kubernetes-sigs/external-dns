@@ -17,13 +17,21 @@ limitations under the License.
 package source
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	discoveryfake "k8s.io/client-go/discovery/fake"
+	"k8s.io/client-go/dynamic"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/types"
@@ -31,68 +39,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
-
-func TestParseResourceArg(t *testing.T) {
-	tests := []struct {
-		name       string
-		identifier string
-		expected   schema.GroupVersionResource
-		valid      bool
-	}{
-		{
-			name:       "full resource with group",
-			identifier: "virtualmachineinstances.v1.kubevirt.io",
-			expected: schema.GroupVersionResource{
-				Group:    "kubevirt.io",
-				Version:  "v1",
-				Resource: "virtualmachineinstances",
-			},
-			valid: true,
-		},
-		{
-			name:       "resource with multi-part group",
-			identifier: "ingresses.v1.networking.k8s.io",
-			expected: schema.GroupVersionResource{
-				Group:    "networking.k8s.io",
-				Version:  "v1",
-				Resource: "ingresses",
-			},
-			valid: true,
-		},
-		{
-			name:       "core API resource (empty group with trailing dot)",
-			identifier: "pods.v1.",
-			expected: schema.GroupVersionResource{
-				Group:    "",
-				Version:  "v1",
-				Resource: "pods",
-			},
-			valid: true,
-		},
-		{
-			name:       "invalid - single part",
-			identifier: "pods",
-			valid:      false,
-		},
-		{
-			name:       "invalid - empty string",
-			identifier: "",
-			valid:      false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gvr, _ := schema.ParseResourceArg(tt.identifier)
-			if tt.valid {
-				require.NotNil(t, gvr)
-				assert.Equal(t, tt.expected, *gvr)
-			} else {
-				assert.Nil(t, gvr)
-			}
-		})
-	}
-}
 
 func TestUnstructuredWrapperImplementsKubeObject(t *testing.T) {
 	u := &unstructured.Unstructured{
@@ -606,4 +552,51 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			}
 		})
 	}
+}
+
+// setupUnstructuredTestClients creates fake kube and dynamic clients with the given resources and objects.
+func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*unstructured.Unstructured) (
+	kubernetes.Interface, dynamic.Interface,
+) {
+	t.Helper()
+
+	kubeClient := fake.NewClientset()
+	fakeDiscovery := kubeClient.Discovery().(*discoveryfake.FakeDiscovery)
+	fakeDiscovery.Resources = buildAPIResourceLists(t, resources, objects)
+
+	// Build GVR to ListKind map and apiVersion to GVR map
+	gvrToListKind := make(map[schema.GroupVersionResource]string)
+	apiVersionToGVR := make(map[string]schema.GroupVersionResource)
+	for _, res := range resources {
+		if strings.Count(res, ".") == 1 {
+			res += "."
+		}
+		gvr, _ := schema.ParseResourceArg(res)
+
+		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
+		apiVersionToGVR[gvr.GroupVersion().String()] = *gvr
+	}
+
+	// Determine list kinds from objects
+	for _, obj := range objects {
+		apiVersion := obj.GetAPIVersion()
+		if gvr, ok := apiVersionToGVR[apiVersion]; ok {
+			gvrToListKind[gvr] = obj.GetKind() + "List"
+		}
+	}
+
+	scheme := runtime.NewScheme()
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+
+	// Create each object using its matching GVR
+	for _, obj := range objects {
+		apiVersion := obj.GetAPIVersion()
+		gvr, ok := apiVersionToGVR[apiVersion]
+		require.True(t, ok, "no resource found for apiVersion %s", apiVersion)
+		_, err := dynamicClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(
+			t.Context(), obj, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	return kubeClient, dynamicClient
 }
