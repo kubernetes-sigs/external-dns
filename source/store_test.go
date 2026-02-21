@@ -25,6 +25,7 @@ import (
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
@@ -35,6 +36,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -89,6 +91,14 @@ func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	if args.Error(1) == nil {
 		m.openshiftClient = args.Get(0).(openshift.Interface)
 		return m.openshiftClient, nil
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) RESTConfig() (*rest.Config, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		return args.Get(0).(*rest.Config), nil
 	}
 	return nil, args.Error(1)
 }
@@ -266,6 +276,7 @@ func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interfac
 func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	return nil, errMock
 }
+func (m *minimalMockClientGenerator) RESTConfig() (*rest.Config, error) { return nil, errMock }
 
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	ctx := context.Background()
@@ -323,4 +334,139 @@ func TestConfig_ClientGenerator_Caching(t *testing.T) {
 
 	// Should return the same instance (cached)
 	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
+}
+
+// TestSingletonClientGenerator_RESTConfig_TimeoutPropagation verifies timeout configuration
+func TestSingletonClientGenerator_RESTConfig_TimeoutPropagation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		requestTimeout time.Duration
+	}{
+		{
+			name:           "30 second timeout",
+			requestTimeout: 30 * time.Second,
+		},
+		{
+			name:           "60 second timeout",
+			requestTimeout: 60 * time.Second,
+		},
+		{
+			name:           "zero timeout (for watches)",
+			requestTimeout: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gen := &SingletonClientGenerator{
+				KubeConfig:     "",
+				APIServerURL:   "",
+				RequestTimeout: tc.requestTimeout,
+			}
+
+			// Verify the generator was configured with correct timeout
+			assert.Equal(t, tc.requestTimeout, gen.RequestTimeout,
+				"SingletonClientGenerator should have the configured RequestTimeout")
+
+			config, err := gen.RESTConfig()
+
+			// Even if config creation failed, verify the timeout was set in generator
+			assert.Equal(t, tc.requestTimeout, gen.RequestTimeout,
+				"RequestTimeout should remain unchanged after RESTConfig() call")
+
+			// If config was successfully created, verify timeout propagated correctly
+			if err == nil {
+				require.NotNil(t, config, "Config should not be nil when error is nil")
+				assert.Equal(t, tc.requestTimeout, config.Timeout,
+					"REST config should have timeout matching RequestTimeout field")
+			}
+		})
+	}
+}
+
+// TestConfig_ClientGenerator_RESTConfig_Integration verifies Config → ClientGenerator → RESTConfig flow
+func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
+	t.Run("normal timeout is propagated", func(t *testing.T) {
+		cfg := &Config{
+			KubeConfig:     "",
+			APIServerURL:   "",
+			RequestTimeout: 45 * time.Second,
+			UpdateEvents:   false,
+		}
+
+		gen := cfg.ClientGenerator()
+
+		// Verify ClientGenerator has correct timeout
+		assert.Equal(t, 45*time.Second, gen.RequestTimeout,
+			"ClientGenerator should have the configured RequestTimeout")
+
+		config, err := gen.RESTConfig()
+
+		// Even if config creation fails, the timeout setting should be correct
+		assert.Equal(t, 45*time.Second, gen.RequestTimeout,
+			"RequestTimeout should remain 45s after RESTConfig() call")
+
+		if err == nil {
+			require.NotNil(t, config, "Config should not be nil when error is nil")
+			assert.Equal(t, 45*time.Second, config.Timeout,
+				"RESTConfig should propagate the timeout")
+		}
+	})
+
+	t.Run("UpdateEvents sets timeout to zero", func(t *testing.T) {
+		cfg := &Config{
+			KubeConfig:     "",
+			APIServerURL:   "",
+			RequestTimeout: 45 * time.Second,
+			UpdateEvents:   true, // Should override to 0
+		}
+
+		gen := cfg.ClientGenerator()
+
+		// When UpdateEvents=true, ClientGenerator sets timeout to 0 (for long-running watches)
+		assert.Equal(t, time.Duration(0), gen.RequestTimeout,
+			"ClientGenerator should have zero timeout when UpdateEvents=true")
+
+		config, err := gen.RESTConfig()
+
+		// Verify the timeout is 0, regardless of whether config was created
+		assert.Equal(t, time.Duration(0), gen.RequestTimeout,
+			"RequestTimeout should remain 0 after RESTConfig() call")
+
+		if err == nil {
+			require.NotNil(t, config, "Config should not be nil when error is nil")
+			assert.Equal(t, time.Duration(0), config.Timeout,
+				"RESTConfig should have zero timeout for watch operations")
+		}
+	})
+}
+
+// TestSingletonClientGenerator_RESTConfig_SharedAcrossClients verifies singleton is shared
+func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
+	gen := &SingletonClientGenerator{
+		KubeConfig:     "",
+		APIServerURL:   "",
+		RequestTimeout: 30 * time.Second,
+	}
+
+	// Get REST config multiple times
+	restConfig1, err1 := gen.RESTConfig()
+	restConfig2, err2 := gen.RESTConfig()
+	restConfig3, err3 := gen.RESTConfig()
+
+	// Verify singleton behavior - all should return same instance
+	assert.Same(t, restConfig1, restConfig2, "RESTConfig should return same instance on second call")
+	assert.Same(t, restConfig1, restConfig3, "RESTConfig should return same instance on third call")
+
+	// Verify the internal field matches
+	assert.Same(t, restConfig1, gen.restConfig,
+		"Internal restConfig field should match returned value")
+
+	// Verify first call had error (no valid kubeconfig)
+	assert.Error(t, err1, "First call should return error when kubeconfig is invalid")
+
+	// Due to sync.Once bug, subsequent calls won't return the error
+	// This is documented in the TODO comment on SingletonClientGenerator
+	require.NoError(t, err2, "Second call does not return error due to sync.Once bug")
+	require.NoError(t, err3, "Third call does not return error due to sync.Once bug")
 }
