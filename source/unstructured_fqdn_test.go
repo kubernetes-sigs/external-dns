@@ -89,7 +89,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			title: "with IP address",
 			cfg: cfg{
 				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
-				fqdnTemplate:       "{{.Name}}.{{index .Status.interfaces 0 \"name\"}}.vmi.com",
+				fqdnTemplate:       `{{.Name}}.{{index .Status.interfaces 0 "name"}}.vmi.com`,
 				targetFqdnTemplate: `{{index .Status.interfaces 0 "ipAddress"}}`,
 			},
 			objects: []*unstructured.Unstructured{

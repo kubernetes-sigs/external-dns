@@ -117,7 +117,7 @@ func TestUnstructuredWrapperImplementsKubeObject(t *testing.T) {
 	assert.Equal(t, map[string]string{"app": "test"}, wrapped.Labels)
 	assert.Equal(t, "test-vm", wrapped.GetName())
 	assert.Equal(t, "default", wrapped.GetNamespace())
-
+	assert.Same(t, u, wrapped.Unstructured)
 	// Verify it implements runtime.Object via embedding
 	gvk := wrapped.GetObjectKind().GroupVersionKind()
 	assert.Equal(t, "VirtualMachineInstance", gvk.Kind)
