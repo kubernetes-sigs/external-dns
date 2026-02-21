@@ -17,7 +17,8 @@ linters:
     - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/docs/linters/configuration/#errorlint
     - staticcheck
     - unconvert
-    - unused
+    - unused # https://golangci-lint.run/docs/linters/configuration/#unused
+    - unparam # https://golangci-lint.run/docs/linters/configuration/#unparam
     - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/docs/linters/configuration/#usestdlibvars
     - whitespace
     - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/docs/linters/configuration/#decorder

@@ -148,10 +148,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 
 		fullname := fmt.Sprintf("%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-		ingressEndpoints, err := sc.endpointsFromTCPIngress(tcpIngress, targets)
-		if err != nil {
-			return nil, err
-		}
+		ingressEndpoints := sc.endpointsFromTCPIngress(tcpIngress, targets)
 		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
@@ -168,7 +165,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
-func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
@@ -192,7 +189,7 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
