@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
@@ -30,6 +31,11 @@ import (
 type MockClientGenerator struct {
 	mock.Mock
 	kubeClient kubernetes.Interface
+}
+
+func (m *MockClientGenerator) RESTConfig() (*rest.Config, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
