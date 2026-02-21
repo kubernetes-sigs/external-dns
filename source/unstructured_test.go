@@ -420,14 +420,12 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				"",
-				tt.cfg.annotationFilter,
-				labelSelector,
-				tt.cfg.resources,
-				"",
-				"",
-				"",
-				tt.cfg.combine,
+				&Config{
+					AnnotationFilter:         tt.cfg.annotationFilter,
+					LabelFilter:              labelSelector,
+					UnstructuredResources:    tt.cfg.resources,
+					CombineFQDNAndAnnotation: tt.cfg.combine,
+				},
 			)
 			require.NoError(t, err)
 
@@ -473,14 +471,10 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 		t.Context(),
 		dynamicClient,
 		kubeClient,
-		"",
-		"",
-		labels.Everything(),
-		resources,
-		"",
-		"",
-		"",
-		false,
+		&Config{
+			LabelFilter:           labels.Everything(),
+			UnstructuredResources: resources,
+		},
 	)
 	require.NoError(t, err)
 
@@ -556,8 +550,9 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 ) {
 	t.Helper()
 
-	// Parse all resource identifiers once
+	// Parse all resource identifiers and build apiVersion → GVR map in one pass
 	gvrs := make([]schema.GroupVersionResource, 0, len(resources))
+	apiVersionToGVR := make(map[string]schema.GroupVersionResource, len(resources))
 	for _, res := range resources {
 		if strings.Count(res, ".") == 1 {
 			res += "."
@@ -565,21 +560,15 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 		gvr, _ := schema.ParseResourceArg(res)
 		require.NotNil(t, gvr, "invalid resource identifier: %s", res)
 		gvrs = append(gvrs, *gvr)
-	}
-
-	// Map apiVersion → GVR for object lookup
-	apiVersionToGVR := make(map[string]schema.GroupVersionResource, len(gvrs))
-	for _, gvr := range gvrs {
-		apiVersionToGVR[gvr.GroupVersion().String()] = gvr
+		apiVersionToGVR[gvr.GroupVersion().String()] = *gvr
 	}
 
 	// Derive kind and list kind from objects
-	kindByGV := make(map[string]string, len(objects))
+	gvrToKind := make(map[schema.GroupVersionResource]string, len(gvrs))
 	gvrToListKind := make(map[schema.GroupVersionResource]string, len(gvrs))
 	for _, obj := range objects {
-		av := obj.GetAPIVersion()
-		kindByGV[av] = obj.GetKind()
-		if gvr, ok := apiVersionToGVR[av]; ok {
+		if gvr, ok := apiVersionToGVR[obj.GetAPIVersion()]; ok {
+			gvrToKind[gvr] = obj.GetKind()
 			gvrToListKind[gvr] = obj.GetKind() + "List"
 		}
 	}
@@ -592,7 +581,7 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 			APIResources: []metav1.APIResource{{
 				Name:       gvr.Resource,
 				Namespaced: true,
-				Kind:       kindByGV[gvr.GroupVersion().String()],
+				Kind:       gvrToKind[gvr],
 			}},
 		})
 	}

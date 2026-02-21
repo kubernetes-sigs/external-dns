@@ -672,19 +672,7 @@ func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config
 	if err != nil {
 		return nil, err
 	}
-	return NewUnstructuredFQDNSource(
-		ctx,
-		dynamicClient,
-		kubeClient,
-		cfg.Namespace,
-		cfg.AnnotationFilter,
-		cfg.LabelFilter,
-		cfg.UnstructuredResources,
-		cfg.FQDNTemplate,
-		cfg.TargetTemplate,
-		cfg.FQDNTargetTemplate,
-		cfg.CombineFQDNAndAnnotation,
-	)
+	return NewUnstructuredFQDNSource(ctx, dynamicClient, kubeClient, cfg)
 }
 
 // NewIstioClient returns a new Istio client object. It uses the configured

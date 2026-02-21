@@ -834,14 +834,14 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				"",
-				"",
-				selector,
-				tt.cfg.resources,
-				tt.cfg.fqdnTemplate,
-				tt.cfg.targetTemplate,
-				tt.cfg.fqdnTargetTemplate,
-				tt.cfg.combine,
+				&Config{
+					LabelFilter:              selector,
+					UnstructuredResources:    tt.cfg.resources,
+					FQDNTemplate:             tt.cfg.fqdnTemplate,
+					TargetTemplate:           tt.cfg.targetTemplate,
+					FQDNTargetTemplate:       tt.cfg.fqdnTargetTemplate,
+					CombineFQDNAndAnnotation: tt.cfg.combine,
+				},
 			)
 			require.NoError(t, err)
 

@@ -28,7 +28,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -68,28 +67,24 @@ func NewUnstructuredFQDNSource(
 	ctx context.Context,
 	dynamicClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter string,
-	labelSelector labels.Selector,
-	resources []string,
-	fqdnTemplate, targetTemplate, fqdnTargetTemplate string,
-	combineFqdnAnnotation bool,
+	cfg *Config,
 ) (Source, error) {
-	fqdnTmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	fqdnTmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	targetTmpl, err := fqdn.ParseTemplate(targetTemplate)
+	targetTmpl, err := fqdn.ParseTemplate(cfg.TargetTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	fqdnTargetTmpl, err := fqdn.ParseTemplate(fqdnTargetTemplate)
+	fqdnTargetTmpl, err := fqdn.ParseTemplate(cfg.FQDNTargetTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	gvrs, err := discoverResources(kubeClient, resources)
+	gvrs, err := discoverResources(kubeClient, cfg.UnstructuredResources)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +93,7 @@ func NewUnstructuredFQDNSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
 		dynamicClient,
 		0,
-		namespace,
+		cfg.Namespace,
 		nil,
 	)
 
@@ -110,8 +105,8 @@ func NewUnstructuredFQDNSource(
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
 		err := informer.Informer().AddIndexers(
 			informers.IndexerWithOptions[*unstructured.Unstructured](
-				informers.IndexSelectorWithAnnotationFilter(annotationFilter),
-				informers.IndexSelectorWithLabelSelector(labelSelector),
+				informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+				informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 			),
 		)
 		if err != nil {
@@ -132,7 +127,7 @@ func NewUnstructuredFQDNSource(
 		targetTemplate:        targetTmpl,
 		fqdnTargetTemplate:    fqdnTargetTmpl,
 		informers:             resourceInformers,
-		combineFqdnAnnotation: combineFqdnAnnotation,
+		combineFqdnAnnotation: cfg.CombineFQDNAndAnnotation,
 	}, nil
 }
 
