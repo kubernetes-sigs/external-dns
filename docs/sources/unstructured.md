@@ -91,7 +91,7 @@ spec:
 
 | Flag                           | Description                                                        |
 |--------------------------------|--------------------------------------------------------------------|
-| `--unstructured-resource` | Resources to watch in `resource.version.group` format (repeatable) |
+| `--unstructured-resource`      | Resources to watch in `resource.version.group` format (repeatable) |
 | `--fqdn-template`              | Go template for DNS names                                          |
 | `--fqdn-target-template`       | Go template for DNS targets                                        |
 | `--fqdn-host-target-template`  | Go template returning `host:target` pairs (mutually exclusive with above two) |
