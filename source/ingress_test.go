@@ -1687,6 +1687,43 @@ func TestIngressWithConfiguration(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "no annotations, multiple ingresses, mixed IP and Hostname targets",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: testutils.ToPtr("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "app.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+								{Hostname: "foo.tld"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "app.example.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName:    "app.example.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"foo.tld"},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()

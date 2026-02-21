@@ -502,15 +502,12 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			t.Parallel()
 
 			gatewayCfg := ti.config.Config()
-			if source, err := newTestGatewaySource(ti.lbServices, ti.ingresses); err != nil {
-				require.NoError(t, err)
-			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
-				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
-				require.NoError(t, err)
-			} else {
-				validateEndpoints(t, endpoints, ti.expected)
-			}
+			source, err := newTestGatewaySource(ti.lbServices, ti.ingresses)
+			require.NoError(t, err)
+			hostnames := source.hostNamesFromGateway(gatewayCfg)
+			endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg)
+			require.NoError(t, err)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
