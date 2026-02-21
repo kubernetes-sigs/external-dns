@@ -59,7 +59,7 @@ type unstructuredSource struct {
 	combineFqdnAnnotation bool
 	fqdnTemplate          *template.Template
 	targetTemplate        *template.Template
-	hostTargetTemplate    *template.Template
+	fqdnTargetTemplate    *template.Template
 	informers             []kubeinformers.GenericInformer
 }
 
@@ -71,7 +71,7 @@ func NewUnstructuredFQDNSource(
 	namespace, annotationFilter string,
 	labelSelector labels.Selector,
 	resources []string,
-	fqdnTemplate, targetTemplate, hostTargetTemplate string,
+	fqdnTemplate, targetTemplate, fqdnTargetTemplate string,
 	combineFqdnAnnotation bool,
 ) (Source, error) {
 	fqdnTmpl, err := fqdn.ParseTemplate(fqdnTemplate)
@@ -84,7 +84,7 @@ func NewUnstructuredFQDNSource(
 		return nil, err
 	}
 
-	hostTargetTmpl, err := fqdn.ParseTemplate(hostTargetTemplate)
+	fqdnTargetTmpl, err := fqdn.ParseTemplate(fqdnTargetTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func NewUnstructuredFQDNSource(
 	return &unstructuredSource{
 		fqdnTemplate:          fqdnTmpl,
 		targetTemplate:        targetTmpl,
-		hostTargetTemplate:    hostTargetTmpl,
+		fqdnTargetTemplate:    fqdnTargetTmpl,
 		informers:             resourceInformers,
 		combineFqdnAnnotation: combineFqdnAnnotation,
 	}, nil
@@ -184,11 +184,11 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 			edps = EndpointsForHostsAndTargets(hosts, addrs)
 		}
 
-		if us.hostTargetTemplate != nil {
+		if us.fqdnTargetTemplate != nil {
 			edps, err = fqdn.CombineWithTemplatedEndpoints(
-				edps, us.hostTargetTemplate, us.combineFqdnAnnotation,
+				edps, us.fqdnTargetTemplate, us.combineFqdnAnnotation,
 				func() ([]*endpoint.Endpoint, error) {
-					return us.endpointsFromHostTargetTemplate(el)
+					return us.endpointsFromFQDNTargetTemplate(el)
 				},
 			)
 		} else if us.fqdnTemplate != nil {
@@ -238,10 +238,10 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 	return EndpointsForHostsAndTargets(hostnames, targets), nil
 }
 
-// endpointsFromHostTargetTemplate creates endpoints from a template that returns host:target pairs.
+// endpointsFromFQDNTargetTemplate creates endpoints from a template that returns host:target pairs.
 // Each pair creates a single endpoint with 1:1 mapping between host and target.
-func (us *unstructuredSource) endpointsFromHostTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	pairs, err := fqdn.ExecTemplate(us.hostTargetTemplate, el)
+func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
+	pairs, err := fqdn.ExecTemplate(us.fqdnTargetTemplate, el)
 	if err != nil {
 		return nil, err
 	}

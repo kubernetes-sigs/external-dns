@@ -94,7 +94,7 @@ spec:
 | `--unstructured-resource`     | Resources to watch in `resource.version.group` format (repeatable)            |
 | `--fqdn-template`             | Go template for DNS names                                                     |
 | `--target-template`      | Go template for DNS targets                                                   |
-| `--host-target-template` | Go template returning `host:target` pairs (mutually exclusive with above two) |
+| `--fqdn-target-template` | Go template returning `host:target` pairs (mutually exclusive with above two) |
 | `--label-filter`              | Filter resources by labels                                                    |
 | `--annotation-filter`         | Filter resources by annotations                                               |
 
@@ -396,14 +396,14 @@ ports:
 external-dns \
   --source=unstructured \
   --unstructured-resource=endpointslices.v1.discovery.k8s.io \
-  --host-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
+  --fqdn-target-template='{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}'
 
 # Result:
 # app-abc12.pod.com -> 10.244.1.2 (A)
 # app-def34.pod.com -> 10.244.2.3, 10.244.2.4 (A)
 ```
 
-The `--host-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
+The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
 
 ## RBAC
 

@@ -37,7 +37,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 		resources          []string
 		fqdnTemplate       string
 		targetTemplate     string
-		hostTargetTemplate string
+		fqdnTargetTemplate string
 		labelFilter        string
 	}
 	for _, tt := range []struct {
@@ -605,7 +605,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			title: "EndpointSlice for headless service with per-pod DNS",
 			cfg: cfg{
 				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
-				hostTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+				fqdnTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -668,10 +668,10 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 		},
 		{
-			title: "hostTargetTemplate returns no values when condition not met",
+			title: "fqdnTargetTemplate returns no values when condition not met",
 			cfg: cfg{
 				resources:          []string{"endpointslices.v1.discovery.k8s.io"},
-				hostTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
+				fqdnTargetTemplate: `{{if and (eq .Kind "EndpointSlice") (hasKey .Labels "service.kubernetes.io/headless")}}{{range $ep := .Object.endpoints}}{{if $ep.conditions.ready}}{{range $ep.addresses}}{{$ep.targetRef.name}}.pod.com:{{.}},{{end}}{{end}}{{end}}{{end}}`,
 			},
 			objects: []*unstructured.Unstructured{
 				{
@@ -729,7 +729,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				tt.cfg.resources,
 				tt.cfg.fqdnTemplate,
 				tt.cfg.targetTemplate,
-				tt.cfg.hostTargetTemplate,
+				tt.cfg.fqdnTargetTemplate,
 				true,
 			)
 			require.NoError(t, err)

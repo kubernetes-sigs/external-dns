@@ -54,7 +54,7 @@ type Config struct {
 	IngressClassNames                             []string
 	FQDNTemplate                                  string
 	TargetTemplate                                string
-	HostTargetTemplate                            string
+	FQDNTargetTemplate                            string
 	CombineFQDNAndAnnotation                      bool
 	IgnoreHostnameAnnotation                      bool
 	IgnoreNonHostNetworkPods                      bool
@@ -286,7 +286,7 @@ var defaultConfig = &Config{
 	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
 	TargetTemplate:               "",
-	HostTargetTemplate:           "",
+	FQDNTargetTemplate:           "",
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -708,7 +708,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// FQDN Templating
 	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
 	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional).", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
-	b.StringVar("host-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --target-template", defaultConfig.HostTargetTemplate, &cfg.HostTargetTemplate)
+	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Mutually exclusive with --fqdn-template and --target-template", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
 }
 
 func App(cfg *Config) *kingpin.Application {
