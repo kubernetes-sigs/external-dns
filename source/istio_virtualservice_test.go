@@ -118,11 +118,9 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+		},
 	)
 	suite.NoError(err, "should initialize virtualservice source")
 }
@@ -195,11 +193,11 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 				context.TODO(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
+				&Config{
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					AnnotationFilter:         ti.annotationFilter,
+				},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1992,11 +1990,13 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				ti.targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
+				&Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				},
 			)
 			require.NoError(t, err)
 
@@ -2078,11 +2078,9 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{ .Name }}",
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -2321,11 +2319,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				"",
-				"",
-				"",
-				false,
-				false,
+				&Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -2406,11 +2400,7 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		t.Context(),
 		fakeClient,
 		istiofake.NewSimpleClientset(),
-		"",
-		"",
-		"",
-		false,
-		false)
+		&Config{})
 	require.NoError(t, err)
 	gwSource, ok := src.(*virtualServiceSource)
 	require.True(t, ok)

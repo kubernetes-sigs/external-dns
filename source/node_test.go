@@ -92,12 +92,13 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			_, err := NewNodeSource(
 				context.TODO(),
 				fake.NewClientset(),
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				labels.Everything(),
-				true,
-				true,
-				false,
+				&Config{
+					AnnotationFilter:     ti.annotationFilter,
+					FQDNTemplate:         ti.fqdnTemplate,
+					LabelFilter:          labels.Everything(),
+					ExcludeUnschedulable: true,
+					ExposeInternalIPv6:   true,
+				},
 			)
 
 			if ti.expectError {
@@ -438,12 +439,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			client, err := NewNodeSource(
 				context.TODO(),
 				kubeClient,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				labelSelector,
-				tc.exposeInternalIPv6,
-				tc.excludeUnschedulable,
-				false,
+				&Config{
+					AnnotationFilter:     tc.annotationFilter,
+					FQDNTemplate:         tc.fqdnTemplate,
+					LabelFilter:          labelSelector,
+					ExposeInternalIPv6:   tc.exposeInternalIPv6,
+					ExcludeUnschedulable: tc.excludeUnschedulable,
+				},
 			)
 			require.NoError(t, err)
 
@@ -551,12 +553,13 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		client, err := NewNodeSource(
 			t.Context(),
 			kubeClient,
-			tc.annotationFilter,
-			tc.fqdnTemplate,
-			labelSelector,
-			tc.exposeInternalIPv6,
-			tc.excludeUnschedulable,
-			false,
+			&Config{
+				AnnotationFilter:     tc.annotationFilter,
+				FQDNTemplate:         tc.fqdnTemplate,
+				LabelFilter:          labelSelector,
+				ExposeInternalIPv6:   tc.exposeInternalIPv6,
+				ExcludeUnschedulable: tc.excludeUnschedulable,
+			},
 		)
 		require.NoError(t, err)
 
@@ -595,12 +598,9 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		kubeClient,
-		"",
-		"",
-		labels.Everything(),
-		false,
-		true,
-		false,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 

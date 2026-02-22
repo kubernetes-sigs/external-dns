@@ -345,7 +345,11 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(context.Background(), &transportServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5TransportServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5TransportServerNamespace, tc.annotationFilter)
+			source, err := NewF5TransportServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        defaultF5TransportServerNamespace,
+					AnnotationFilter: tc.annotationFilter,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
