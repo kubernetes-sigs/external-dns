@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
@@ -86,8 +87,11 @@ func (z zoneService) DeleteCustomHostname(ctx context.Context, customHostnameID 
 
 func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch customHostname) error {
 	params := buildCustomHostnameNewParams(zoneID, ch)
-	_, err := z.service.CustomHostnames.New(ctx, params,
-		option.WithJSONSet("custom_origin_server", ch.customOriginServer))
+	opts := []option.RequestOption{option.WithJSONSet("custom_origin_server", ch.customOriginServer)}
+	if ch.customOriginSNI != ch.customOriginServer {
+		opts = append(opts, option.WithJSONSet("custom_origin_sni", ch.customOriginSNI))
+	}
+	_, err := z.service.CustomHostnames.New(ctx, params, opts...)
 	return err
 }
 
@@ -148,10 +152,13 @@ func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zo
 	add, remove, _ := provider.Difference(change.CustomHostnamesPrev, slices.Collect(maps.Keys(change.CustomHostnames)))
 
 	for _, changeCH := range remove {
-		if prevCh, err := getCustomHostname(chs, changeCH); err == nil {
+		host, _, _ := strings.Cut(changeCH, "=")
+		// actual custom hostname is the part before "=", full format "<customHostname>=<customOriginSNI>" is used to detect changes with annotations
+		if prevCh, err := getCustomHostname(chs, host); err == nil {
 			prevChID := prevCh.id
 			if prevChID != "" {
-				log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q", prevChID, changeCH)
+				log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q(%q=%q)",
+					prevChID, prevCh.hostname, prevCh.customOriginServer, prevCh.customOriginSNI)
 				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
 				chErr := p.Client.DeleteCustomHostname(ctx, prevChID, params)
 				if chErr != nil {
@@ -162,7 +169,8 @@ func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zo
 		}
 	}
 	for _, changeCH := range add {
-		log.WithFields(logFields).Infof("Adding custom hostname %q", changeCH)
+		log.WithFields(logFields).Infof("Adding custom hostname %q(%q=%q)",
+			change.CustomHostnames[changeCH].hostname, change.CustomHostnames[changeCH].customOriginServer, change.CustomHostnames[changeCH].customOriginSNI)
 		chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostnames[changeCH])
 		if chErr != nil {
 			failedChange = true
@@ -176,7 +184,7 @@ func (p *CloudFlareProvider) processCustomHostnameDelete(ctx context.Context, zo
 	failedChange := false
 	for _, changeCH := range change.CustomHostnames {
 		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.hostname != "" {
-			log.WithFields(logFields).Infof("Deleting custom hostname %q", changeCH.hostname)
+			log.WithFields(logFields).Infof("Deleting custom hostname %q(%q=%q)", changeCH.hostname, changeCH.customOriginServer, changeCH.customOriginSNI)
 			if ch, err := getCustomHostname(chs, changeCH.hostname); err == nil {
 				chID := ch.id
 				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
@@ -197,7 +205,7 @@ func (p *CloudFlareProvider) processCustomHostnameCreate(ctx context.Context, zo
 	failedChange := false
 	for _, changeCH := range change.CustomHostnames {
 		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.hostname != "" {
-			log.WithFields(logFields).Infof("Creating custom hostname %q", changeCH.hostname)
+			log.WithFields(logFields).Infof("Creating custom hostname %q(%q=%q)", changeCH.hostname, changeCH.customOriginServer, changeCH.customOriginSNI)
 			if ch, err := getCustomHostname(chs, changeCH.hostname); err == nil {
 				if changeCH.customOriginServer == ch.customOriginServer {
 					log.WithFields(logFields).Warnf("custom hostname %q already exists with the same origin %q, continue", changeCH.hostname, ch.customOriginServer)
@@ -227,10 +235,20 @@ func getCustomHostname(chs customHostnamesMap, chName string) (customHostname, e
 	return customHostname{}, fmt.Errorf("failed to get custom hostname: %q not found", chName)
 }
 
-func (p *CloudFlareProvider) newCustomHostname(hostname string, origin string) customHostname {
+func (p *CloudFlareProvider) newCustomHostname(annotationHostname string, origin string) customHostname {
+	// custom hostname in annotation can be in format "<customHostname>=<customOriginSNI>"
+	// if customOriginSNI is omitted ("<customHostname>="), the Origin SNI Value will be set to "Host header"
+	host, sni, found := strings.Cut(annotationHostname, "=")
+	if !found {
+		sni = origin
+	} else if sni == "" {
+		sni = ":request_host_header:"
+	}
+
 	return customHostname{
-		hostname:           hostname,
+		hostname:           host,
 		customOriginServer: origin,
+		customOriginSNI:    sni,
 		ssl:                getCustomHostnamesSSLOptions(p.CustomHostnamesConfig),
 	}
 }
