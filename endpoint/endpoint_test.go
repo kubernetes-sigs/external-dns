@@ -19,8 +19,11 @@ package endpoint
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -939,12 +942,164 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "A record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "AAAA record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeAAAA,
+				Targets:          Targets{"dualstack.my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "CNAME record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeCNAME,
+				Targets:          Targets{"d111111abcdef8.cloudfront.net"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "MX record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "TXT record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeTXT,
+				Targets:          Targets{"v=spf1 ~all"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "NS record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeNS,
+				Targets:          Targets{"ns1.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "SRV record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "_sip._tcp.example.com",
+				RecordType:       RecordTypeSRV,
+				Targets:          Targets{"10 5 5060 sip.example.com."},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record with alias=false is also invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "false"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record without alias property is valid",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			actual := tt.endpoint.CheckEndpoint()
 			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog bool
+	}{
+		{
+			name: "unsupported type with alias logs warning",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			wantLog: true,
+		},
+		{
+			name: "supported type with alias does not log",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			wantLog: false,
+		},
+		{
+			name: "unsupported type without alias does not log",
+			ep: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			wantLog: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, hook := test.NewNullLogger()
+			log.AddHook(hook)
+			log.SetOutput(logger.Out)
+			log.SetLevel(log.WarnLevel)
+
+			tt.ep.CheckEndpoint()
+
+			warnMsg := "does not support alias records"
+			found := false
+			for _, entry := range hook.AllEntries() {
+				if strings.Contains(entry.Message, warnMsg) && entry.Level == log.WarnLevel {
+					found = true
+				}
+			}
+
+			if tt.wantLog {
+				assert.True(t, found, "Expected warning log message not found")
+			} else {
+				assert.False(t, found, "Unexpected warning log message found")
+			}
 		})
 	}
 }
