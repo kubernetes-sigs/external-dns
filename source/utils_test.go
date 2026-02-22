@@ -16,12 +16,12 @@ package source
 import (
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/events"
-	"sigs.k8s.io/external-dns/source/types"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 func TestSuitableType(t *testing.T) {
@@ -161,7 +161,12 @@ func TestMergeEndpoints(t *testing.T) {
 		expected []*endpoint.Endpoint
 	}{
 		{
-			name:     "empty input",
+			name:     "nil input returns nil",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "empty input returns empty",
 			input:    []*endpoint.Endpoint{},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -230,14 +235,64 @@ func TestMergeEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name: "same key with different TTL not merged",
+			name: "duplicate targets deduplicated",
 			input: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 300, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 600, Targets: endpoint.Targets{"5.6.7.8"}},
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "1.2.3.4", "5.6.7.8"),
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 300, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, RecordTTL: 600, Targets: endpoint.Targets{"5.6.7.8"}},
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			name: "duplicate targets across merged endpoints deduplicated",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			name: "CNAME endpoints not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+			},
+		},
+		{
+			name: "CNAME with no targets is skipped",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			name: "identical CNAME endpoints deduplicated",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			},
+		},
+		{
+			name: "same key with different TTL not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
 			},
 		},
 	}
@@ -363,4 +418,50 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			tt.expected(t, result)
 		})
 	}
+func TestMergeEndpointsLogging(t *testing.T) {
+	t.Run("warns on CNAME conflict", func(t *testing.T) {
+		hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+		})
+
+		testutils.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
+		testutils.TestHelperLogContains("example.com CNAME a.elb.com", hook, t)
+		testutils.TestHelperLogContains("example.com CNAME b.elb.com", hook, t)
+	})
+
+	t.Run("no warning for identical CNAMEs", func(t *testing.T) {
+		hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+		})
+
+		testutils.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+	})
+
+	t.Run("no warning for same DNSName with different SetIdentifier", func(t *testing.T) {
+		hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
+		})
+
+		testutils.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+	})
+
+	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
+		hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
+		})
+
+		testutils.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
+		testutils.TestHelperLogContains("example.com", hook, t)
+	})
 }

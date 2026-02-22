@@ -27,10 +27,16 @@ import (
 )
 
 func TestEncrypt(t *testing.T) {
-	// Verify that text encryption and decryption works
+	// Verify that nil nonce is rejected
 	aesKey := []byte("s%zF`.*'5`9.AhI2!B,.~hmbs^.*TL?;")
 	plaintext := "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-	encryptedtext, err := EncryptText(plaintext, aesKey, nil)
+	_, err := EncryptText(plaintext, aesKey, "")
+	require.EqualError(t, err, "nonce must be provided")
+
+	// Verify that text encryption and decryption works with a generated nonce
+	nonce, err := GenerateNonce()
+	require.NoError(t, err)
+	encryptedtext, err := EncryptText(plaintext, aesKey, nonce)
 	require.NoError(t, err)
 	decryptedtext, _, err := DecryptText(encryptedtext, aesKey)
 	require.NoError(t, err)
@@ -67,7 +73,7 @@ func TestGenerateNonceSuccess(t *testing.T) {
 	require.NotEmpty(t, nonce)
 
 	// Test nonce length
-	decodedNonce, err := base64.StdEncoding.DecodeString(string(nonce))
+	decodedNonce, err := base64.StdEncoding.DecodeString(nonce)
 	require.NoError(t, err)
 	require.Len(t, decodedNonce, standardGcmNonceSize)
 }
@@ -82,7 +88,7 @@ func TestGenerateNonceError(t *testing.T) {
 
 	nonce, err := GenerateNonce()
 	require.Error(t, err)
-	require.Nil(t, nonce)
+	require.Empty(t, nonce)
 }
 
 type faultyReader struct{}

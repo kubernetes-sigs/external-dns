@@ -30,8 +30,8 @@ func newMultiTargetEndpointWithOwner(dnsName string, targets endpoint.Targets, r
 	return newMultiTargetEndpointWithOwnerAndLabels(dnsName, targets, recordType, ownerID, nil)
 }
 
-func newEndpointWithOwnerAndOwnedRecord(dnsName, target, recordType, ownerID, ownedRecord string) *endpoint.Endpoint {
-	return newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID, endpoint.Labels{endpoint.OwnedRecordLabelKey: ownedRecord})
+func newTXTEndpointWithOwnedRecord(dnsName, target, ownedRecord string) *endpoint.Endpoint {
+	return newEndpointWithOwnerAndLabels(dnsName, target, endpoint.RecordTypeTXT, "", endpoint.Labels{endpoint.OwnedRecordLabelKey: ownedRecord})
 }
 
 func newMultiTargetEndpointWithOwnerAndLabels(dnsName string, targets endpoint.Targets, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
@@ -48,8 +48,8 @@ func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, 
 	return e
 }
 
-func newEndpointWithOwnerResource(dnsName, target, recordType, ownerID, resource string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
+func newCNAMEEndpointWithOwnerResource(dnsName, target, ownerID, resource string) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, endpoint.RecordTypeCNAME, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.ResourceLabelKey] = resource
 	return e
