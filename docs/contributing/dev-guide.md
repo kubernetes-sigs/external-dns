@@ -78,6 +78,56 @@ func TestMe(t *testing.T) {
 }
 ```
 
+### Integration Tests
+
+Integration tests live in `tests/integration/` and verify behavior that spans multiple sources or wrappers together, using a fake Kubernetes client — no real cluster is required.
+
+**When to add an integration test:**
+
+- You are adding or changing a **source** (e.g. `service`, `ingress`) and want to verify it produces the correct endpoints end-to-end.
+- You are changing a **wrapper** (e.g. deduplication, target filtering, default targets, NAT64) and want to verify it behaves correctly when real Kubernetes resources are involved.
+- You are changing a **post-processor** and want to confirm it applies correctly to endpoints produced by one or more sources.
+- You are verifying **multiple sources** together (e.g. `service` and `ingress` both pointing to the same hostname) and their combined output.
+- You are fixing a **cross-cutting bug** that only manifests when sources, wrappers, and post-processors interact.
+- A unit test would require mocking too many internals — an integration test can express the scenario more clearly as a real Kubernetes resource.
+
+**How to add a scenario:**
+
+Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares Kubernetes resources (Service, Ingress, etc.), the ExternalDNS source configuration, and the expected endpoints:
+
+```yaml
+- name: my-new-scenario
+  description: >
+    Brief explanation of what behavior this scenario validates.
+  config:
+    sources: ["service"]
+  resources:
+    - resource:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: my-svc
+          namespace: default
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: my.example.com
+        spec:
+          type: LoadBalancer
+        status:
+          loadBalancer:
+            ingress:
+              - ip: 1.2.3.4
+  expected:
+    - dnsName: my.example.com
+      targets: ["1.2.3.4"]
+      recordType: A
+```
+
+**How to run:**
+
+```shell
+go test ./tests/integration/...
+```
+
 ## Complete test on local env
 
 It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
