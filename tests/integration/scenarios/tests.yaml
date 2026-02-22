@@ -111,55 +111,57 @@ scenarios:
               ingress:
                 - ip: 1.2.3.4
       - resource:
-            kind: Ingress
-            metadata:
-              name: test-ingress
-              namespace: default
-              annotations:
-                kubernetes.io/ingress.class: "nginx"
-            spec:
-              rules:
-                - host: example.local
-                  http:
-                    paths:
-                      - path: /
-                        pathType: Prefix
-                        backend:
-                          service:
-                            name: my-service
-                            port:
-                              number: 80
-            status:
-              loadBalancer:
-                  ingress:
-                    - ip: 203.0.113.10
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 203.0.113.10
       - resource:
-            kind: Ingress
-            metadata:
-              name: ingress-with-same-host-and-status-as-service
-              namespace: kube-system
-              annotations:
-                kubernetes.io/ingress.class: "nginx"
-            spec:
-              rules:
-                - host: example.local
-                  http:
-                    paths:
-                      - path: /
-                        pathType: Prefix
-                        backend:
-                          service:
-                            name: my-service
-                            port:
-                              number: 80
-            status:
-              loadBalancer:
-                  ingress:
-                    - ip: 1.2.3.4
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: ingress-with-same-host-and-status-as-service
+            namespace: kube-system
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 1.2.3.4
     expected:
       - dnsName: example.local
         targets: ["1.2.3.4"]
         recordType: A
       - dnsName: example.local
-        targets: [ "203.0.113.10" ]
+        targets: ["203.0.113.10"]
         recordType: A

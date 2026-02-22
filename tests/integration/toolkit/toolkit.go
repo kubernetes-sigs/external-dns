@@ -44,7 +44,7 @@ import (
 
 // LoadScenarios loads test scenarios from the YAML file.
 func LoadScenarios(dir string) (*TestScenarios, error) {
-	filename := filepath.Join(dir, "/scenarios/tests.yaml")
+	filename := filepath.Join(dir, "scenarios", "tests.yaml")
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -170,11 +170,6 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 	return pods, endpointSlice
 }
 
-// CreateFakeClient creates a fake Kubernetes client.
-func CreateFakeClient() *fake.Clientset {
-	return fake.NewClientset()
-}
-
 func createIngressWithOptionalStatus(ctx context.Context, client *fake.Clientset, ing *networkingv1.Ingress) error {
 	created, err := client.NetworkingV1().Ingresses(ing.Namespace).Create(ctx, ing, metav1.CreateOptions{})
 	if err != nil {
@@ -213,10 +208,8 @@ func createServiceWithOptionalStatus(ctx context.Context, client *fake.Clientset
 
 // LoadResources creates the resources in the fake client using the API.
 // This must be called BEFORE creating sources so the informers can see the resources.
-// Populate resources BEFORE creating sources (so informers see them)
 func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, error) {
-	// Create fake Kubernetes client
-	client := CreateFakeClient()
+	client := fake.NewClientset()
 
 	// Parse resources from scenario
 	resources, err := ParseResources(scenario.Resources)
@@ -261,6 +254,7 @@ func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
 }
 
 // CreateWrappedSource creates sources using source.BuildWithConfig and wraps them with wrappers.WrapSources.
+// TODO: could we reuse the same source.BuildWithConfig() code as the controller instead of duplicating it here? It would require refactoring to allow passing in a custom client generator, but it would ensure we're testing the same code as the controller.
 func CreateWrappedSource(
 	ctx context.Context,
 	client *fake.Clientset,
