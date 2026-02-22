@@ -336,15 +336,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:                "MX Record allowing trailing dot in target",
-			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
-			apiVersion:           apiv1alpha1.GroupVersion.String(),
-			registeredKind:       apiv1alpha1.DNSEndpointKind,
-			kind:                 apiv1alpha1.DNSEndpointKind,
-			namespace:            "foo",
-			registeredNamespace:  "foo",
-			labels:               map[string]string{"test": "that"},
-			labelFilter:          "test=that",
+			title:           "MX Record allowing trailing dot in target",
+			namespace:       "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelFilter:     "test=that",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
@@ -357,15 +353,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "MX Record without trailing dot in target",
-			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
-			apiVersion:           apiv1alpha1.GroupVersion.String(),
-			registeredKind:       apiv1alpha1.DNSEndpointKind,
-			kind:                 apiv1alpha1.DNSEndpointKind,
-			namespace:            "foo",
-			registeredNamespace:  "foo",
-			labels:               map[string]string{"test": "that"},
-			labelFilter:          "test=that",
+			title:           "MX Record without trailing dot in target",
+			namespace:       "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelFilter:     "test=that",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
