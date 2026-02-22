@@ -72,6 +72,7 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 				false,
 				labels.Everything(),
 				[]string{},
+				[]string{},
 			)
 
 			if tt.expectError {
@@ -332,6 +333,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 				false,
 				false,
 				labels.Everything(),
+				[]string{},
 				[]string{},
 			)
 
