@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func TestSuitableType(t *testing.T) {
@@ -418,6 +420,8 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			tt.expected(t, result)
 		})
 	}
+}
+
 func TestMergeEndpointsLogging(t *testing.T) {
 	t.Run("warns on CNAME conflict", func(t *testing.T) {
 		hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
