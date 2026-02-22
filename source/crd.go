@@ -124,8 +124,11 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 // Endpoints returns endpoint objects.
 func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	indexKeys := cs.indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	if len(indexKeys) == 0 {
+		return nil, nil
+	}
 
-	var endpoints []*endpoint.Endpoint
+	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
 
 	for _, key := range indexKeys {
 		el, err := informers.GetByKey[*apiv1alpha1.DNSEndpoint](cs.indexer, key)

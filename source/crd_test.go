@@ -415,6 +415,35 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}
 }
 
+func TestCRDSource_Endpoints_SkipsKeyOnGetByKeyError(t *testing.T) {
+	// Build an indexer whose IndexWithSelectors function accepts any object
+	// regardless of type.  This lets us store an *unstructured.Unstructured
+	// under the index, which will cause GetByKey[*apiv1alpha1.DNSEndpoint] to
+	// fail with a type-assertion error.
+	indexer := cache.NewIndexer(
+		cache.MetaNamespaceKeyFunc,
+		cache.Indexers{
+			informers.IndexWithSelectors: func(obj any) ([]string, error) {
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err != nil {
+					return nil, err
+				}
+				return []string{key}, nil
+			},
+		},
+	)
+
+	wrongType := &unstructured.Unstructured{}
+	wrongType.SetName("test")
+	wrongType.SetNamespace("default")
+	require.NoError(t, indexer.Add(wrongType))
+
+	cs := &crdSource{indexer: indexer}
+	endpoints, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, endpoints)
+}
+
 func TestCRDSource_NoInformer(t *testing.T) {
 	cs := &crdSource{informer: nil}
 	called := false
