@@ -222,6 +222,7 @@ type EndpointKey struct {
 	RecordType    string
 	SetIdentifier string
 	RecordTTL     TTL
+	Target        string
 }
 
 type ObjectRef = events.ObjectReference

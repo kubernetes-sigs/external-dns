@@ -374,8 +374,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

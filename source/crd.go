@@ -177,3 +177,34 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	return MergeEndpoints(endpoints), nil
 }
+
+func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {
+	opts.Watch = true
+	return cs.crdClient.Get().
+		Namespace(cs.namespace).
+		Resource(cs.crdResource).
+		VersionedParams(opts, cs.codec).
+		Watch(ctx)
+}
+
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
+	result := &apiv1alpha1.DNSEndpointList{}
+	return result, cs.crdClient.Get().
+		Namespace(cs.namespace).
+		Resource(cs.crdResource).
+		VersionedParams(opts, cs.codec).
+		Do(ctx).
+		Into(result)
+}
+
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
+	result := &apiv1alpha1.DNSEndpoint{}
+	return result, cs.crdClient.Put().
+		Namespace(dnsEndpoint.Namespace).
+		Resource(cs.crdResource).
+		Name(dnsEndpoint.Name).
+		SubResource("status").
+		Body(dnsEndpoint).
+		Do(ctx).
+		Into(result)
+}
