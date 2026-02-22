@@ -38,14 +38,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
-
-	"sigs.k8s.io/external-dns/source/annotations"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 var (
@@ -70,6 +69,7 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -255,7 +255,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
+		if annotations.IsControllerMismatch(svc, types.Service) {
 			continue
 		}
 
@@ -282,6 +282,10 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
+		}
+
+		for _, ep := range svcEndpoints {
+			ep.WithRefObject(events.NewObjectReference(svc, types.Service))
 		}
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)

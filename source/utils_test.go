@@ -18,8 +18,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func TestSuitableType(t *testing.T) {
@@ -299,6 +303,121 @@ func TestMergeEndpoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := MergeEndpoints(tt.input)
 			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_RefObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() []*endpoint.Endpoint
+		expected func(*testing.T, []*endpoint.Endpoint)
+	}{
+		{
+			name:  "empty input",
+			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Empty(t, ep)
+			},
+		},
+		{
+			name: "single endpoint",
+			input: func() []*endpoint.Endpoint {
+				ep0 := endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, endpoint.Targets{"1.2.3.4"}...).
+					WithRefObject(events.NewObjectReference(&v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "foo",
+							Namespace: "default",
+							UID:       "123",
+						},
+					}, types.Service))
+				return []*endpoint.Endpoint{ep0}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.NotEmpty(t, ep)
+				assert.Len(t, ep, 1)
+
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123"}, string(el.RefObject().UID))
+				}
+			},
+		},
+		{
+			name: "two endpoints merged and only single refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				ep0 := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, endpoint.Targets{"1.1.1.1"}...).
+					WithRefObject(events.NewObjectReference(&v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "foo",
+							Namespace: "default",
+							UID:       "123",
+						},
+					}, types.Service))
+
+				ep1 := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, endpoint.Targets{"1.1.1.1"}...).
+					WithRefObject(events.NewObjectReference(&v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "bar",
+							Namespace: "ns",
+							UID:       "345",
+						},
+					}, types.Service))
+				return []*endpoint.Endpoint{ep0, ep1}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.NotEmpty(t, ep)
+				assert.Len(t, ep, 1)
+
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123"}, string(el.RefObject().UID))
+					assert.NotContains(t, []string{"345"}, string(el.RefObject().UID))
+				}
+			},
+		},
+		{
+			name: "two endpoints not merged and two refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				ep0 := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, endpoint.Targets{"1.1.1.1"}...).
+					WithRefObject(events.NewObjectReference(&v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "foo",
+							Namespace: "default",
+							UID:       "123",
+						},
+					}, types.Service))
+				ep1 := endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, endpoint.Targets{"1.1.1.2"}...).
+					WithRefObject(events.NewObjectReference(&v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "bar",
+							Namespace: "ns",
+							UID:       "345",
+						},
+					}, types.Service))
+				return []*endpoint.Endpoint{ep0, ep1}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.NotEmpty(t, ep)
+				assert.Len(t, ep, 2)
+
+				assert.NotEqual(t, ep[0], ep[1])
+
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input())
+			tt.expected(t, result)
 		})
 	}
 }

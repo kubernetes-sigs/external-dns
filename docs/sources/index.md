@@ -27,7 +27,7 @@ Sources are responsible for:
 | **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | false | ingress controllers |
 | **connector** | Remote TCP Server |  |  | false | false | special |
 | **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | false | ingress controllers |
-| **crd** | DNSEndpoint.externaldns.k8s.io | annotation,label | all,single | false | false | externaldns |
+| **crd** | DNSEndpoint.externaldns.k8s.io | annotation,label | all,single | false | true | externaldns |
 | **empty** | None |  |  | false | false | testing |
 | **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false | false | load balancers |
 | **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false | false | load balancers |
@@ -38,14 +38,14 @@ Sources are responsible for:
 | **gateway-tlsroute** | TLSRoute.gateway.networking.k8s.io | annotation,label | all,single | false | false | gateway api |
 | **gateway-udproute** | UDPRoute.gateway.networking.k8s.io | annotation,label | all,single | true | false | gateway api |
 | **gloo-proxy** | Proxy.gloo.solo.io |  | all,single | false | false | service mesh |
-| **ingress** | Ingress | annotation,label | all,single | true | false | kubernetes core |
+| **ingress** | Ingress | annotation,label | all,single | true | true | kubernetes core |
 | **istio-gateway** | Gateway.networking.istio.io | annotation | all,single | true | false | service mesh |
 | **istio-virtualservice** | VirtualService.networking.istio.io | annotation | all,single | true | false | service mesh |
 | **kong-tcpingress** | TCPIngress.configuration.konghq.com | annotation | all,single | false | false | ingress controllers |
-| **node** | Node | annotation,label | all | true | false | kubernetes core |
+| **node** | Node | annotation,label | all | true | true | kubernetes core |
 | **openshift-route** | Route.route.openshift.io | annotation,label | all,single | true | false | openshift |
-| **pod** | Pod | annotation,label | all,single | true | false | kubernetes core |
-| **service** | Service | annotation,label | all,single | true | false | kubernetes core |
+| **pod** | Pod | annotation,label | all,single | true | true | kubernetes core |
+| **service** | Service | annotation,label | all,single | true | true | kubernetes core |
 | **skipper-routegroup** | RouteGroup.zalando.org | annotation | all,single | true | false | ingress controllers |
 | **traefik-proxy** | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io | annotation | all,single | false | false | ingress controllers |
 
