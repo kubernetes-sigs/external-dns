@@ -102,7 +102,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "no endpoints within a specific namespace",
@@ -116,8 +115,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 		{
 			title:           "valid crd with no targets (relies on default-targets)",
@@ -132,7 +129,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "valid crd gvk with single endpoint",
@@ -147,7 +143,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "valid crd gvk with multiple endpoints",
@@ -168,7 +163,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:            "valid crd gvk with annotation and non matching annotation filter",
@@ -184,8 +178,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 		{
 			title:            "valid crd gvk with annotation and matching annotation filter",
@@ -202,7 +194,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "valid crd gvk with label and non matching label filter",
@@ -218,8 +209,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 		{
 			title:           "valid crd gvk with label and matching label filter",
@@ -236,7 +225,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "Create NS record",
@@ -253,7 +241,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "Create SRV record",
@@ -270,7 +257,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "Create NAPTR record",
@@ -287,7 +273,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "illegal target CNAME",
@@ -303,8 +288,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 		{
 			title:           "illegal target NAPTR",
@@ -320,8 +303,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 		{
 			title:           "valid target TXT",
@@ -338,7 +319,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			},
 			expectEndpoints: true,
-			expectError:     false,
 		},
 		{
 			title:           "illegal target A",
@@ -354,8 +334,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {

@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -56,8 +55,8 @@ type crdSource struct {
 func NewCRDSource(
 	ctx context.Context,
 	restConfig *rest.Config,
-	namespace, annotationFilter string,
-	labelSelector labels.Selector,
+	cfg *Config,
+
 ) (Source, error) {
 	scheme := runtime.NewScheme()
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
@@ -65,9 +64,9 @@ func NewCRDSource(
 	}
 
 	// Build cache options with label selector and optional namespace filter
-	byObject := cache.ByObject{Label: labelSelector}
-	if namespace != "" {
-		byObject.Namespaces = map[string]cache.Config{namespace: {}}
+	byObject := cache.ByObject{Label: cfg.LabelFilter}
+	if cfg.Namespace != "" {
+		byObject.Namespaces = map[string]cache.Config{cfg.Namespace: {}}
 	}
 
 	crCache, err := cache.New(restConfig, cache.Options{
@@ -95,9 +94,9 @@ func NewCRDSource(
 		return nil, err
 	}
 	err = inf.AddIndexers(informers.IndexerWithOptions[*apiv1alpha1.DNSEndpoint](
-		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
-		informers.IndexSelectorWithLabelSelector(labelSelector),
-		informers.IndexSelectorWithNamespace(namespace)))
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithNamespace(cfg.Namespace)))
 	if err != nil {
 		return nil, err
 	}

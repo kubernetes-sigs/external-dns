@@ -595,7 +595,7 @@ func buildCRDSource(ctx context.Context, _ ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	return NewCRDSource(ctx, restConfig, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter)
+	return NewCRDSource(ctx, restConfig, cfg)
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
