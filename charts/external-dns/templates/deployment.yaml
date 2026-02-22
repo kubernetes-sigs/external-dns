@@ -140,6 +140,12 @@ spec:
             {{- range $value }}
             - --{{ $key }}={{ tpl (. | toString) $ }}
             {{- end }}
+            {{- else if kindIs "bool" $value }}
+            {{- if $value }}
+            - --{{ $key }}
+            {{- else }}
+            - --no-{{ $key }}
+            {{- end }}
             {{- else }}
             - --{{ $key }}={{ tpl ($value | toString) $ }}
             {{- end }}
