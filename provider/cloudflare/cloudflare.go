@@ -58,9 +58,13 @@ const (
 	// defaultTTL 1 = automatic
 	defaultTTL = 1
 
-	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	// Cloudflare tier limitations
+	// https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	// https://developers.cloudflare.com/dns/manage-dns-records/how-to/batch-record-changes/
 	freeZoneMaxCommentLength = 100
 	paidZoneMaxCommentLength = 500
+	freeZoneBatchLimit       = 200
+	paidZoneBatchLimit       = 3500
 )
 
 var changeActionNames = map[changeAction]string{
@@ -96,6 +100,7 @@ type cloudFlareDNS interface {
 	ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone]
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
 	ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse]
+	BatchDNSRecords(ctx context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error)
 	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error
 	UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error)
@@ -130,6 +135,10 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 	}
 
 	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
+}
+
+func (z zoneService) BatchDNSRecords(ctx context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error) {
+	return z.service.DNS.Records.Batch(ctx, params)
 }
 
 func (z zoneService) CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
@@ -291,6 +300,223 @@ func convertCloudflareError(err error) error {
 	}
 
 	return err
+}
+
+// zoneBatchLimit returns the maximum number of DNS record operations that may be
+// included in a single batch request for the given zone. Free-plan zones are
+// capped at 200; all paid plans allow up to 3,500.
+func zoneBatchLimit(zone zones.Zone) int {
+	if !zone.Plan.IsSubscribed { //nolint:staticcheck // SA1019: Plan.IsSubscribed is deprecated but no replacement available yet
+		return freeZoneBatchLimit
+	}
+	return paidZoneBatchLimit
+}
+
+// chunkBatchParams splits DNS record batch operations into slices of
+// RecordBatchParams, each containing at most <limit> total operations.
+// Operations are distributed in server-execution order: deletes first,
+// then puts, then posts.
+func chunkBatchParams(
+	zoneID string,
+	deletes []dns.RecordBatchParamsDelete,
+	posts []dns.RecordBatchParamsPostUnion,
+	puts []dns.BatchPutUnionParam,
+	limit int,
+) []dns.RecordBatchParams {
+	var chunks []dns.RecordBatchParams
+	di, pi, ui := 0, 0, 0
+	for di < len(deletes) || pi < len(posts) || ui < len(puts) {
+		remaining := limit
+		params := dns.RecordBatchParams{ZoneID: cloudflare.F(zoneID)}
+
+		if di < len(deletes) && remaining > 0 {
+			end := min(di+remaining, len(deletes))
+			params.Deletes = cloudflare.F(deletes[di:end])
+			remaining -= end - di
+			di = end
+		}
+
+		if ui < len(puts) && remaining > 0 {
+			end := min(ui+remaining, len(puts))
+			params.Puts = cloudflare.F(puts[ui:end])
+			remaining -= end - ui
+			ui = end
+		}
+
+		if pi < len(posts) && remaining > 0 {
+			end := min(pi+remaining, len(posts))
+			params.Posts = cloudflare.F(posts[pi:end])
+			pi = end
+		}
+
+		chunks = append(chunks, params)
+	}
+	return chunks
+}
+
+// tagsFromResponse converts a RecordResponse Tags field (any) to the typed tag slice.
+func tagsFromResponse(tags any) []dns.RecordTagsParam {
+	if ts, ok := tags.([]string); ok {
+		return ts
+	}
+	return nil
+}
+
+// buildBatchPostParam constructs a RecordBatchParamsPost for creating a DNS record in a batch.
+func buildBatchPostParam(r dns.RecordResponse) dns.RecordBatchParamsPost {
+	return dns.RecordBatchParamsPost{
+		Name:     cloudflare.F(r.Name),
+		TTL:      cloudflare.F(r.TTL),
+		Type:     cloudflare.F(dns.RecordBatchParamsPostsType(r.Type)),
+		Content:  cloudflare.F(r.Content),
+		Proxied:  cloudflare.F(r.Proxied),
+		Priority: cloudflare.F(r.Priority),
+		Comment:  cloudflare.F(r.Comment),
+		Tags:     cloudflare.F[any](tagsFromResponse(r.Tags)),
+	}
+}
+
+// buildBatchPutParam constructs a BatchPutUnionParam for updating a DNS record in a batch.
+// Returns (nil, false) for record types that use structured Data fields (e.g. SRV, CAA),
+// which fall back to individual UpdateDNSRecord calls.
+func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam, bool) {
+	tags := tagsFromResponse(r.Tags)
+	comment := r.Comment
+	switch r.Type {
+	case dns.RecordResponseTypeA:
+		return dns.BatchPutARecordParam{
+			ID: cloudflare.F(id),
+			ARecordParam: dns.ARecordParam{
+				Name:    cloudflare.F(r.Name),
+				TTL:     cloudflare.F(r.TTL),
+				Type:    cloudflare.F(dns.ARecordTypeA),
+				Content: cloudflare.F(r.Content),
+				Proxied: cloudflare.F(r.Proxied),
+				Comment: cloudflare.F(comment),
+				Tags:    cloudflare.F(tags),
+			},
+		}, true
+	case dns.RecordResponseTypeAAAA:
+		return dns.BatchPutAAAARecordParam{
+			ID: cloudflare.F(id),
+			AAAARecordParam: dns.AAAARecordParam{
+				Name:    cloudflare.F(r.Name),
+				TTL:     cloudflare.F(r.TTL),
+				Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
+				Content: cloudflare.F(r.Content),
+				Proxied: cloudflare.F(r.Proxied),
+				Comment: cloudflare.F(comment),
+				Tags:    cloudflare.F(tags),
+			},
+		}, true
+	case dns.RecordResponseTypeCNAME:
+		return dns.BatchPutCNAMERecordParam{
+			ID: cloudflare.F(id),
+			CNAMERecordParam: dns.CNAMERecordParam{
+				Name:    cloudflare.F(r.Name),
+				TTL:     cloudflare.F(r.TTL),
+				Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
+				Content: cloudflare.F(r.Content),
+				Proxied: cloudflare.F(r.Proxied),
+				Comment: cloudflare.F(comment),
+				Tags:    cloudflare.F(tags),
+			},
+		}, true
+	case dns.RecordResponseTypeTXT:
+		return dns.BatchPutTXTRecordParam{
+			ID: cloudflare.F(id),
+			TXTRecordParam: dns.TXTRecordParam{
+				Name:    cloudflare.F(r.Name),
+				TTL:     cloudflare.F(r.TTL),
+				Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+				Content: cloudflare.F(r.Content),
+				Proxied: cloudflare.F(r.Proxied),
+				Comment: cloudflare.F(comment),
+				Tags:    cloudflare.F(tags),
+			},
+		}, true
+	case dns.RecordResponseTypeMX:
+		return dns.BatchPutMXRecordParam{
+			ID: cloudflare.F(id),
+			MXRecordParam: dns.MXRecordParam{
+				Name:     cloudflare.F(r.Name),
+				TTL:      cloudflare.F(r.TTL),
+				Type:     cloudflare.F(dns.MXRecordTypeMX),
+				Content:  cloudflare.F(r.Content),
+				Proxied:  cloudflare.F(r.Proxied),
+				Comment:  cloudflare.F(comment),
+				Tags:     cloudflare.F(tags),
+				Priority: cloudflare.F(r.Priority),
+			},
+		}, true
+	case dns.RecordResponseTypeNS:
+		return dns.BatchPutNSRecordParam{
+			ID: cloudflare.F(id),
+			NSRecordParam: dns.NSRecordParam{
+				Name:    cloudflare.F(r.Name),
+				TTL:     cloudflare.F(r.TTL),
+				Type:    cloudflare.F(dns.NSRecordTypeNS),
+				Content: cloudflare.F(r.Content),
+				Proxied: cloudflare.F(r.Proxied),
+				Comment: cloudflare.F(comment),
+				Tags:    cloudflare.F(tags),
+			},
+		}, true
+	default:
+		// Record types that use structured Data fields (SRV, CAA, etc.) are not
+		// supported in the generic batch put and fall back to individual updates.
+		return nil, false
+	}
+}
+
+// submitDNSRecordChanges submits the pre-built batch collections and any
+// fallback individual updates for a single zone. Returns true if any operation
+// fails.
+func (p *CloudFlareProvider) submitDNSRecordChanges(
+	ctx context.Context,
+	zoneID string,
+	zone zones.Zone,
+	batchDeletes []dns.RecordBatchParamsDelete,
+	batchPosts []dns.RecordBatchParamsPostUnion,
+	batchPuts []dns.BatchPutUnionParam,
+	fallbackUpdates []*cloudFlareChange,
+	records DNSRecordsMap,
+) bool {
+	failed := false
+	if len(batchDeletes) > 0 || len(batchPosts) > 0 || len(batchPuts) > 0 {
+		limit := zoneBatchLimit(zone)
+		chunks := chunkBatchParams(zoneID, batchDeletes, batchPosts, batchPuts, limit)
+		for i, params := range chunks {
+			log.Debugf("Submitting batch DNS records for zone %s (chunk %d/%d): %d deletes, %d creates, %d updates",
+				zoneID, i+1, len(chunks),
+				len(params.Deletes.Value),
+				len(params.Posts.Value),
+				len(params.Puts.Value),
+			)
+			if _, err := p.Client.BatchDNSRecords(ctx, params); err != nil {
+				failed = true
+				log.Errorf("failed to batch DNS records for zone %s (chunk %d/%d): %v", zoneID, i+1, len(chunks), convertCloudflareError(err))
+			} else {
+				log.Debugf("Successfully submitted batch DNS records for zone %s (chunk %d/%d)", zoneID, i+1, len(chunks))
+			}
+		}
+	}
+	for _, change := range fallbackUpdates {
+		logFields := log.Fields{
+			"record": change.ResourceRecord.Name,
+			"type":   change.ResourceRecord.Type,
+			"ttl":    change.ResourceRecord.TTL,
+			"action": change.Action.String(),
+			"zone":   zoneID,
+		}
+		recordID := p.getRecordID(records, change.ResourceRecord)
+		recordParam := getUpdateDNSRecordParam(zoneID, *change)
+		if _, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam); err != nil {
+			failed = true
+			log.WithFields(logFields).Errorf("failed to update record: %v", err)
+		}
+	}
+	return failed
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
@@ -515,16 +741,78 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		return nil
 	}
 
-	zones, err := p.Zones(ctx)
+	zoneList, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := p.changesByZone(zones, changes)
+	changesByZone := p.changesByZone(zoneList, changes)
+
+	zoneByID := make(map[string]zones.Zone, len(zoneList))
+	for _, z := range zoneList {
+		zoneByID[z.ID] = z
+	}
 
 	var failedZones []string
 	for zoneID, zoneChanges := range changesByZone {
 		var failedChange bool
+
+		// Log all planned changes upfront.
+		for _, change := range zoneChanges {
+			log.WithFields(log.Fields{
+				"record": change.ResourceRecord.Name,
+				"type":   change.ResourceRecord.Type,
+				"ttl":    change.ResourceRecord.TTL,
+				"action": change.Action.String(),
+				"zone":   zoneID,
+			}).Info("Changing record.")
+		}
+
+		if p.DryRun {
+			// In dry-run mode, skip all DNS record mutations but still process
+			// regional hostname changes (which have their own dry-run logging).
+			if p.RegionalServicesConfig.Enabled {
+				desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
+				if err != nil {
+					return fmt.Errorf("failed to build desired regional hostnames: %w", err)
+				}
+				if len(desiredRegionalHostnames) > 0 {
+					regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
+					if err != nil {
+						return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
+					}
+					regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
+					if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
+						failedChange = true
+					}
+				}
+			}
+			if failedChange {
+				failedZones = append(failedZones, zoneID)
+			}
+			continue
+		}
+
+		// Fetch the zone's current DNS records and custom hostnames once, rather
+		// than once per change, to avoid O(n) API calls for n changes.
+		records, err := p.getDNSRecordsMap(ctx, zoneID)
+		if err != nil {
+			return fmt.Errorf("could not fetch records from zone, %w", err)
+		}
+		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
+		if chErr != nil {
+			return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
+		}
+
+		// Segregate changes into batch collections and process custom hostname
+		// side effects (which use separate Cloudflare APIs) per change.
+		var batchDeletes []dns.RecordBatchParamsDelete
+		var batchPosts []dns.RecordBatchParamsPostUnion
+		var batchPuts []dns.BatchPutUnionParam
+		// fallbackUpdates holds changes for record types whose batch-put param
+		// requires structured Data fields (e.g. SRV). These are submitted via
+		// individual UpdateDNSRecord calls instead.
+		var fallbackUpdates []*cloudFlareChange
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
@@ -534,22 +822,22 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				"action": change.Action.String(),
 				"zone":   zoneID,
 			}
-
-			log.WithFields(logFields).Info("Changing record.")
-
-			if p.DryRun {
-				continue
-			}
-
-			records, err := p.getDNSRecordsMap(ctx, zoneID)
-			if err != nil {
-				return fmt.Errorf("could not fetch records from zone, %w", err)
-			}
-			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
-			if chErr != nil {
-				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
-			}
 			switch change.Action {
+			case cloudFlareCreate:
+				batchPosts = append(batchPosts, buildBatchPostParam(change.ResourceRecord))
+				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
+					failedChange = true
+				}
+			case cloudFlareDelete:
+				recordID := p.getRecordID(records, change.ResourceRecord)
+				if recordID == "" {
+					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+					continue
+				}
+				batchDeletes = append(batchDeletes, dns.RecordBatchParamsDelete{ID: cloudflare.F(recordID)})
+				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
+					failedChange = true
+				}
 			case cloudFlareUpdate:
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
@@ -559,37 +847,16 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam := getUpdateDNSRecordParam(zoneID, *change)
-				_, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", err)
-				}
-			case cloudFlareDelete:
-				recordID := p.getRecordID(records, change.ResourceRecord)
-				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
-				err := p.Client.DeleteDNSRecord(ctx, recordID, dns.RecordDeleteParams{ZoneID: cloudflare.F(zoneID)})
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
-				}
-				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
-					failedChange = true
-				}
-			case cloudFlareCreate:
-				recordParam := getCreateDNSRecordParam(zoneID, change)
-				_, err := p.Client.CreateDNSRecord(ctx, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create record: %v", err)
-				}
-				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
-					failedChange = true
+				if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
+					batchPuts = append(batchPuts, putParam)
+				} else {
+					fallbackUpdates = append(fallbackUpdates, change)
 				}
 			}
+		}
+
+		if p.submitDNSRecordChanges(ctx, zoneID, zoneByID[zoneID], batchDeletes, batchPosts, batchPuts, fallbackUpdates, records) {
+			failedChange = true
 		}
 
 		if p.RegionalServicesConfig.Enabled {
