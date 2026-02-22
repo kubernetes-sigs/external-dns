@@ -18,7 +18,9 @@ package google
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"time"
 
@@ -39,6 +41,17 @@ import (
 const (
 	defaultTTL = 300
 )
+
+// is409Error checks if an error is an HTTP 409 Conflict error from the Google API.
+// 409 Conflict errors typically indicate a resource already exists or a state
+// conflict that won't be resolved by retrying.
+func is409Error(err error) bool {
+	var apiErr *googleapi.Error
+	if errors.As(err, &apiErr) {
+		return apiErr.Code == http.StatusConflict
+	}
+	return false
+}
 
 type managedZonesCreateCallInterface interface {
 	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
@@ -297,6 +310,12 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 			}
 
 			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
+				// Don't retry HTTP 409 (Conflict) errors as they indicate a permanent
+				// state conflict (e.g., resource already exists) that won't resolve by retrying
+				if is409Error(err) {
+					log.Infof("Received HTTP 409 Conflict error, not retrying: %v", err)
+					return fmt.Errorf("failed to create changes: %w", err)
+				}
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 

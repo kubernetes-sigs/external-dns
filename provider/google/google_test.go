@@ -172,6 +172,18 @@ func (m *mockChangesClient) Create(project string, managedZone string, change *d
 	return &mockChangesCreateCall{project: project, managedZone: managedZone, change: change}
 }
 
+type mockChangesCreateCall409 struct{}
+
+func (m *mockChangesCreateCall409) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
+	return nil, &googleapi.Error{Code: http.StatusConflict}
+}
+
+type mockChangesClient409 struct{}
+
+func (m *mockChangesClient409) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
+	return &mockChangesCreateCall409{}
+}
+
 func zoneKey(project, zoneName string) string {
 	return project + "/" + zoneName
 }
@@ -630,6 +642,49 @@ func TestSoftErrListRecordsConflict(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 
 	require.Empty(t, records)
+}
+
+func TestApplyChanges409ErrorNotRetried(t *testing.T) {
+	// Create a provider with a changes client that returns 409 errors
+	p := &GoogleProvider{
+		project:                  "zalando-external-dns-test",
+		dryRun:                   false,
+		domainFilter:             endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}),
+		zoneIDFilter:             provider.NewZoneIDFilter([]string{""}),
+		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
+		managedZonesClient:       &mockManagedZonesClient{},
+		changesClient:            &mockChangesClient409{},
+		ctx:                      context.Background(),
+	}
+
+	// Create a test zone
+	createZone(t, p, &dns.ManagedZone{
+		Name:    "zone-1-ext-dns-test-2-gcp-zalan-do",
+		DnsName: "zone-1.ext-dns-test-2.gcp.zalan.do.",
+	})
+
+	// Temporarily use the normal changes client to set up the zone properly
+	p.changesClient = &mockChangesClient{}
+	// Now switch back to the 409-returning client
+	p.changesClient = &mockChangesClient409{}
+
+	// Try to apply changes
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		},
+	}
+
+	err := p.ApplyChanges(context.Background(), changes)
+
+	// Verify that we got an error
+	require.Error(t, err)
+
+	// Verify that the error is NOT a SoftError (i.e., it won't be retried)
+	require.NotErrorIs(t, err, provider.SoftError)
+
+	// Verify that the error contains information about the 409
+	require.Contains(t, err.Error(), "failed to create changes")
 }
 
 func sortChangesByName(cs *dns.Change) {
