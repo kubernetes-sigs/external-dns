@@ -57,6 +57,7 @@ theme:
     - navigation.instant
     - navigation.tabs
     - navigation.tabs.sticky
+    - tags
 
 extra:
   version:
@@ -124,3 +125,5 @@ plugins:
       j2_variable_end_string: ']]'
       j2_comment_start_string: '[[#'
       j2_comment_end_string: '#]]'
+  - tags:
+      tags_file: tags.md
