@@ -16,12 +16,13 @@ hide:
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
 [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kubernetes-sigs/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
 ## Documentation
 
-This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/).
+This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
 
 ## What It Does
 
