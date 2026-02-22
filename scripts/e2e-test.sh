@@ -48,6 +48,18 @@ echo "Using image reference: $EXTERNAL_DNS_IMAGE"
 echo "Applying etcd"
 kubectl apply -f e2e/provider/etcd.yaml
 
+# wait for etcd to be ready
+echo "Waiting for etcd to be ready..."
+kubectl wait --for=condition=ready --timeout=120s pod -l app=etcd
+
+# apply coredns deployment
+echo "Applying CoreDNS"
+kubectl apply -f e2e/provider/coredns.yaml
+
+# wait for coredns to be ready
+echo "Waiting for CoreDNS to be ready..."
+kubectl wait --for=condition=available --timeout=120s deployment/coredns
+
 # Build a DNS testing image with dig
 echo "Building DNS test image with dig..."
 docker build -t dns-test:v1 -f - . <<EOF
@@ -78,6 +90,7 @@ spec:
   template:
     spec:
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: external-dns
           args:
@@ -128,10 +141,6 @@ rm -rf "$TEMP_KUSTOMIZE_DIR"
 echo "Applying Kubernetes service..."
 kubectl apply -f e2e
 
-# Wait for convergence
-echo "Waiting for convergence (90 seconds)..."
-sleep 90  # normal loop is 60 seconds, this is enough and should not cause flakes
-
 # Check that the records are present
 echo "Checking services again..."
 kubectl get svc -owide
@@ -144,10 +153,10 @@ echo "Testing DNS server functionality..."
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
 echo "Node IP: $NODE_IP"
 
-# Test our DNS server with dig
-echo "Testing DNS server with dig..."
+# Test our DNS server with dig, with retry logic
+echo "Testing DNS server with dig (with retries)..."
 
-# Create DNS test job that uses dig to query our DNS server
+# Create DNS test job that uses dig to query our DNS server with retries
 cat <<EOF | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
@@ -156,7 +165,7 @@ metadata:
   labels:
     app: dns-server-test
 spec:
-  backoffLimit: 3
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -172,24 +181,28 @@ spec:
         - -c
         - |
           echo "Testing DNS server at $NODE_IP:5353"
+          echo "=== Testing DNS server with dig (retrying for up to 180s) ==="
+          MAX_ATTEMPTS=18
+          ATTEMPT=1
+          while [ \$ATTEMPT -le \$MAX_ATTEMPTS ]; do
+            echo "Attempt \$ATTEMPT/\$MAX_ATTEMPTS: Querying externaldns-e2e.external.dns A record"
+            RESULT=\$(dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5)
+            if [ -n "\$RESULT" ]; then
+              echo "DNS query successful: \$RESULT"
+              exit 0
+            fi
+            echo "DNS query returned empty result, retrying in 10s..."
+            sleep 10
+            ATTEMPT=\$((ATTEMPT + 1))
+          done
+          echo "DNS query failed after \$MAX_ATTEMPTS attempts"
+          exit 1
 
-          echo "=== Testing DNS server with dig ==="
-          echo "Querying: externaldns-e2e.external.dns A record"
-          if dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5; then
-            echo "DNS query successful"
-            exit 0
-          else
-            echo "DNS query failed"
-            exit 1
-          fi
-
-          echo "DNS server tests completed"
-          exit 0
 EOF
 
 # Wait for the job to complete
 echo "Waiting for DNS server test job to complete..."
-kubectl wait --for=condition=complete --timeout=90s job/dns-server-test-job || true
+kubectl wait --for=condition=complete --timeout=240s job/dns-server-test-job || true
 
 # Check job status and get results
 echo "DNS server test job results:"
@@ -210,6 +223,10 @@ fi
 kubectl delete job dns-server-test-job
 
 echo "End-to-end test completed!"
+
+if [ "$TEST_PASSED" != "true" ]; then
+    exit 1
+fi
 
 # Cleanup function
 cleanup() {
