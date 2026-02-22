@@ -401,7 +401,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 				WithStatusSubresource(&apiv1alpha1.DNSEndpoint{}).
 				Build()
 
-			cs := helperCrdSourceBuilder(t, ti.namespace, ti.annotationFilter, labelSelector, fakeClient, dnsEndpoint)
+			cs := helperCrdSourceBuilder(t, ti.namespace, ti.annotationFilter, labelSelector, fakeClient, *dnsEndpoint)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
@@ -565,13 +565,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		{recordType: endpoint.RecordTypeNAPTR, count: 1, namespace: "other-ns"},
 	})
 
-	// Convert slice to pointers for helper
-	fixturePointers := make([]*apiv1alpha1.DNSEndpoint, len(fixtures))
-	for i := range fixtures {
-		fixturePointers[i] = &fixtures[i]
-	}
-
-	cs := helperCrdSourceBuilder(t, "target-ns", "", labels.Everything(), newFakeClientFromFixtures(t, fixtures), fixturePointers...)
+	cs := helperCrdSourceBuilder(t, "target-ns", "", labels.Everything(), newFakeClientFromFixtures(t, fixtures), fixtures...)
 
 	res, err := cs.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -603,12 +597,6 @@ func TestDNSEndpointsWithLabelFilter(t *testing.T) {
 	})
 	fakeClient := newFakeClientFromFixtures(t, fixtures)
 
-	// Convert slice to pointers for helper
-	fixturePointers := make([]*apiv1alpha1.DNSEndpoint, len(fixtures))
-	for i := range fixtures {
-		fixturePointers[i] = &fixtures[i]
-	}
-
 	for _, ti := range []struct {
 		title         string
 		namespace     string
@@ -634,14 +622,11 @@ func TestDNSEndpointsWithLabelFilter(t *testing.T) {
 			labelSelector, err := labels.Parse(ti.labelFilter)
 			require.NoError(t, err)
 
-			cs := helperCrdSourceBuilder(t, ti.namespace, "", labelSelector, fakeClient, fixturePointers...)
+			cs := helperCrdSourceBuilder(t, ti.namespace, "", labelSelector, fakeClient, fixtures...)
 
 			res, err := cs.Endpoints(t.Context())
 			require.NoError(t, err)
 			require.Len(t, res, ti.expectedCount)
-			for _, ep := range res {
-				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
-			}
 		})
 	}
 }
@@ -666,12 +651,6 @@ func TestDNSEndpointsWithAnnotationFilter(t *testing.T) {
 	})
 	fakeClient := newFakeClientFromFixtures(t, fixtures)
 
-	// Convert slice to pointers for helper
-	fixturePointers := make([]*apiv1alpha1.DNSEndpoint, len(fixtures))
-	for i := range fixtures {
-		fixturePointers[i] = &fixtures[i]
-	}
-
 	for _, ti := range []struct {
 		title            string
 		namespace        string
@@ -692,14 +671,11 @@ func TestDNSEndpointsWithAnnotationFilter(t *testing.T) {
 		{"no match scoped to gamma", "gamma", "external-dns/owner=nobody", 0},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			cs := helperCrdSourceBuilder(t, ti.namespace, ti.annotationFilter, labels.Everything(), fakeClient, fixturePointers...)
+			cs := helperCrdSourceBuilder(t, ti.namespace, ti.annotationFilter, labels.Everything(), fakeClient, fixtures...)
 
 			res, err := cs.Endpoints(t.Context())
 			require.NoError(t, err)
 			require.Len(t, res, ti.expectedCount)
-			for _, ep := range res {
-				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
-			}
 		})
 	}
 }
@@ -728,7 +704,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 
 // helperCrdSourceBuilder creates a crdSource with a test informer populated with DNSEndpoint objects.
 // Returns a crdSourceTest wrapper that provides getInformer() and getWatcher() methods for tests.
-func helperCrdSourceBuilder(t *testing.T, namespace, annotationFilter string, labelSelector labels.Selector, fakeClient client.Client, dnsEndpoints ...*apiv1alpha1.DNSEndpoint) *crdSourceTest {
+func helperCrdSourceBuilder(t *testing.T, namespace, annotationFilter string, labelSelector labels.Selector, fakeClient client.Client, dnsEndpoints ...apiv1alpha1.DNSEndpoint) *crdSourceTest {
 	t.Helper()
 	ctx := t.Context()
 
@@ -740,19 +716,12 @@ func helperCrdSourceBuilder(t *testing.T, namespace, annotationFilter string, la
 		cache.Indexers{},
 	)
 
-	// Add indexers using the same approach as NewCRDSource
-	err := informer.AddIndexers(informers.IndexerWithOptions[*apiv1alpha1.DNSEndpoint](
-		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
-		informers.IndexSelectorWithLabelSelector(labelSelector),
-		informers.IndexSelectorWithNamespace(namespace)))
-	require.NoError(t, err)
-
-	// Start the informer
+	// Start the informer before adding indexers (required before objects are added)
 	go informer.RunWithContext(ctx)
 
 	// Add DNSEndpoint objects to the informer
-	for _, dnsEndpoint := range dnsEndpoints {
-		watcher.Add(dnsEndpoint)
+	for i := range dnsEndpoints {
+		watcher.Add(&dnsEndpoints[i])
 	}
 
 	// Wait for cache to sync
@@ -760,11 +729,8 @@ func helperCrdSourceBuilder(t *testing.T, namespace, annotationFilter string, la
 		return cache.WaitForCacheSync(ctx.Done(), informer.HasSynced)
 	}, 2*time.Second, 10*time.Millisecond)
 
-	cs := &crdSource{
-		crClient: fakeClient,
-		informer: informer,
-		indexer:  informer.GetIndexer(),
-	}
+	cs, err := newCRDSource(informer, fakeClient, annotationFilter, labelSelector, namespace)
+	require.NoError(t, err)
 
 	return &crdSourceTest{
 		crdSource:    cs,

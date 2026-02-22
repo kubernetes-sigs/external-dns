@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -92,22 +93,29 @@ func NewCRDSource(
 	if err != nil {
 		return nil, err
 	}
-	err = inf.AddIndexers(informers.IndexerWithOptions[*apiv1alpha1.DNSEndpoint](
-		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
-		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
-		informers.IndexSelectorWithNamespace(cfg.Namespace)))
-	if err != nil {
+	// controller-runtime's cache.GetInformer always returns a SharedIndexInformer.
+	return newCRDSource(inf.(tools.SharedIndexInformer), crClient, cfg.AnnotationFilter, cfg.LabelFilter, cfg.Namespace)
+}
+
+// newCRDSource wires a SharedIndexInformer and client into a crdSource.
+// It is called by NewCRDSource (production) and the test helper so both share
+// the same indexer setup and struct construction.
+func newCRDSource(
+	inf tools.SharedIndexInformer,
+	crClient client.Client,
+	annotationFilter string,
+	labelFilter labels.Selector,
+	namespace string) (*crdSource, error) {
+	if err := inf.AddIndexers(informers.IndexerWithOptions[*apiv1alpha1.DNSEndpoint](
+		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
+		informers.IndexSelectorWithLabelSelector(labelFilter),
+		informers.IndexSelectorWithNamespace(namespace))); err != nil {
 		return nil, err
 	}
-
-	// Controller-runtime's cache.GetInformer always returns a SharedIndexInformer
-	// AddIndexers above would have failed if it didn't support indexing
-	indexer := inf.(tools.SharedIndexInformer).GetIndexer()
-
 	return &crdSource{
 		crClient: crClient,
 		informer: inf,
-		indexer:  indexer,
+		indexer:  inf.GetIndexer(),
 	}, nil
 }
 
