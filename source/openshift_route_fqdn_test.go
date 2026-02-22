@@ -210,7 +210,6 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			fqdnTemplate: "{{ $name := .Name }}{{ range $ingress := .Status.Ingress }}{{ range $ingress.Conditions }}{{ if and (eq .Type \"Admitted\") (eq .Status \"True\") }}{{ $ingress.Host }},{{ end }}{{ end }}{{ end }}",
 			expected: []*endpoint.Endpoint{
 				{DNSName: "cluster.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
-				{DNSName: "cluster.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
 				{DNSName: "apps.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
 			},
 			ocpRoute: []*routev1.Route{

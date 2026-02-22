@@ -365,8 +365,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -658,8 +657,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			require.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -799,8 +797,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1128,8 +1125,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1421,8 +1417,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1562,8 +1557,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1724,8 +1718,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
