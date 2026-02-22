@@ -1179,3 +1179,128 @@ func TestGetBoolProviderSpecificProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestGetOwnerId(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint *Endpoint
+		expected string
+	}{
+		{
+			name: "owner label is set",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "my-owner",
+				},
+			},
+			expected: "my-owner",
+		},
+		{
+			name: "owner label is empty string",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "",
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "owner label is not set",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					"other-label": "value",
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "labels map is empty",
+			endpoint: &Endpoint{
+				Labels: Labels{},
+			},
+			expected: "",
+		},
+		{
+			name: "labels map is nil",
+			endpoint: &Endpoint{
+				Labels: nil,
+			},
+			expected: "",
+		},
+		{
+			name: "multiple labels with owner",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "owner-123",
+					"other-key":   "other-value",
+				},
+			},
+			expected: "owner-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetOwner()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetNakedDomain(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint *Endpoint
+		expected string
+	}{
+		{
+			name: "standard subdomain",
+			endpoint: &Endpoint{
+				DNSName: "www.example.com",
+			},
+			expected: "example.com",
+		},
+		{
+			name: "nested subdomain",
+			endpoint: &Endpoint{
+				DNSName: "api.v1.example.com",
+			},
+			expected: "v1.example.com",
+		},
+		{
+			name: "root domain only",
+			endpoint: &Endpoint{
+				DNSName: "example.com",
+			},
+			expected: "com",
+		},
+		{
+			name: "single label (no dots)",
+			endpoint: &Endpoint{
+				DNSName: "localhost",
+			},
+			expected: "localhost",
+		},
+		{
+			name: "empty DNS name",
+			endpoint: &Endpoint{
+				DNSName: "",
+			},
+			expected: "",
+		},
+		{
+			name: "deeply nested subdomain",
+			endpoint: &Endpoint{
+				DNSName: "a.b.c.d.example.com",
+			},
+			expected: "b.c.d.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetNakedDomain()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

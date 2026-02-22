@@ -28,7 +28,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-const pathToDocs = "%s/../../../../docs/monitoring"
+const (
+	pathToDocs        = "%s/../../../../docs/monitoring"
+	knownMetricsCount = 22
+)
 
 func TestComputeMetrics(t *testing.T) {
 	reg := metrics.RegisterMetric
@@ -37,7 +40,7 @@ func TestComputeMetrics(t *testing.T) {
 		t.Errorf("Expected not empty metrics registry, got %d", len(reg.Metrics))
 	}
 
-	assert.Len(t, reg.Metrics, 21)
+	assert.Len(t, reg.Metrics, knownMetricsCount)
 }
 
 func TestGenerateMarkdownTableRenderer(t *testing.T) {
