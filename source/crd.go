@@ -70,8 +70,9 @@ func NewCRDSource(
 	}
 
 	crCache, err := cache.New(restConfig, cache.Options{
-		Scheme:   scheme,
-		ByObject: map[client.Object]cache.ByObject{&apiv1alpha1.DNSEndpoint{}: byObject},
+		Scheme:           scheme,
+		DefaultTransform: cache.TransformStripManagedFields(),
+		ByObject:         map[client.Object]cache.ByObject{&apiv1alpha1.DNSEndpoint{}: byObject},
 	})
 	if err != nil {
 		return nil, err
