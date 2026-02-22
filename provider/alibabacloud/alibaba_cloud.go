@@ -34,6 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -415,7 +416,8 @@ func (p *AlibabaCloudProvider) getDomainList() ([]string, error) {
 			return nil, err
 		}
 		for _, tmpDomain := range resp.Domains.Domain {
-			domainNames = append(domainNames, tmpDomain.DomainName)
+			punycode := idna.ToASCII(tmpDomain.DomainName)
+			domainNames = append(domainNames, punycode)
 		}
 		nextPage := getNextPageNumber(resp.PageNumber, resp.TotalCount)
 		if nextPage == 0 {
@@ -429,8 +431,9 @@ func (p *AlibabaCloudProvider) getDomainList() ([]string, error) {
 
 func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Record, error) {
 	var results []alidns.Record
+	apiDomainName := idna.ToUnicode(domainName)
 	request := alidns.CreateDescribeDomainRecordsRequest()
-	request.DomainName = domainName
+	request.DomainName = apiDomainName
 	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 	request.PageNumber = "1"
 	request.Scheme = defaultAlibabaCloudRequestScheme
@@ -442,6 +445,12 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 		}
 
 		for _, record := range response.DomainRecords.Record {
+			punycode := idna.ToASCII(record.DomainName)
+			record.DomainName = punycode
+			if !isASCII(record.RR) {
+				record.RR = idna.ToASCII(record.RR)
+			}
+
 			domainName := record.RR + "." + record.DomainName
 			recordType := record.Type
 
@@ -513,8 +522,10 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 		return fmt.Errorf("no corresponding DNS zone found for this domain")
 	}
 
+	apiDomainName := idna.ToUnicode(domain)
+
 	request := alidns.CreateAddDomainRecordRequest()
-	request.DomainName = domain
+	request.DomainName = apiDomainName
 	request.Type = endpoint.RecordType
 	request.RR = rr
 	request.Scheme = defaultAlibabaCloudRequestScheme
@@ -694,6 +705,15 @@ func (p *AlibabaCloudProvider) splitDNSName(dnsName string, hostedZoneDomains []
 		rr = nullHostAlibabaCloud
 	}
 	return rr, domain
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *AlibabaCloudProvider) matchVPC(zoneID string) bool {
