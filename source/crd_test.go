@@ -661,6 +661,18 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			},
 			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
 		},
+		{
+			title: "CNAME with empty targets produces no warning",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
@@ -676,7 +688,11 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			_, err = cs.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			testutils.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+			if ti.wantWarning == "" {
+				require.Empty(t, hook.Entries, "expected no warnings to be logged")
+			} else {
+				testutils.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+			}
 		})
 	}
 }
