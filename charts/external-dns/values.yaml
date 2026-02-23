@@ -304,6 +304,26 @@ provider:  # @schema type: [object, string]
       metricRelabelings: []
       relabelings: []
 
+
+# Example array:
+# ```yaml
+# extraArgs:
+#   - --zone-id-filter=/hostedzone/Z00001
+#   - --zone-id-filter=/hostedzone/Z00002
+#   - --zone-id-filter=/hostedzone/Z00003
+# ```
+#
+# Eample map: (supported values for map are strings, list of strings, and boolean)
+# ```yaml
+# extraArgs:
+#   extraArgA: valueA
+#   extraArgB:
+#     - valueB-1
+#     - valueB-2
+#   extraArgC: true
+#   extraArgD: false
+# ```
+
 # -- Extra arguments to provide to _ExternalDNS_.
 # An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
 extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true
