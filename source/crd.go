@@ -202,6 +202,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				switch ep.RecordType {
 				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
 					continue // TXT records allow arbitrary text, skip validation; MX records can have trailing dot but it's not required, skip validation
+				case endpoint.RecordTypeCNAME:
+					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
 				case endpoint.RecordTypeNAPTR:
 					illegalTarget = !hasDot // Must have trailing dot
 				default:

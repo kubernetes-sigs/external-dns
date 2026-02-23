@@ -435,7 +435,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "illegal target CNAME",
+			title:                "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
 			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
 			apiVersion:           apiv1alpha1.GroupVersion.String(),
 			registeredKind:       apiv1alpha1.DNSEndpointKind,
@@ -452,8 +452,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectEndpoints: true,
+		},
+		{
+			title:                "CNAME target without trailing dot (relative name)",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "internal.example.com",
+					Targets:    endpoint.Targets{"backend.cluster.local"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  300,
+				},
+			},
+			expectEndpoints: true,
 		},
 		{
 			title:                "illegal target NAPTR",
