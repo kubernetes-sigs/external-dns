@@ -143,6 +143,12 @@ spec:
             {{- range $value }}
             - {{ print "--" $key "=" (tpl (. | toString) $) | quote }}
             {{- end }}
+            {{- else if kindIs "bool" $value }}
+            {{- if $value }}
+            - --{{ $key }}
+            {{- else }}
+            - --no-{{ $key }}
+            {{- end }}
             {{- else }}
             - {{ print "--" $key "=" (tpl ($value | toString) $) | quote }}
             {{- end }}
