@@ -42,8 +42,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 
+	log "github.com/sirupsen/logrus"
+
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type CRDSuite struct {
@@ -624,6 +627,56 @@ func testCRDSourceEndpoints(t *testing.T) {
 				require.GreaterOrEqual(t, len(e.Labels), 1, "endpoint must have at least one label")
 				require.Contains(t, e.Labels, endpoint.ResourceLabelKey, "endpoint must include the ResourceLabelKey label")
 			}
+		})
+	}
+}
+
+func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
+	for _, ti := range []struct {
+		title       string
+		endpoints   []*endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			title: "A record with trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4."},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+		},
+		{
+			title: "NAPTR record without trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"_sip._udp.example.org"},
+					RecordType: endpoint.RecordTypeNAPTR,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			restClient := fakeRESTClient(ti.endpoints, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind, "foo", "test", nil, nil, t)
+
+			scheme := runtime.NewScheme()
+			require.NoError(t, apiv1alpha1.AddToScheme(scheme))
+
+			cs, err := NewCRDSource(restClient, "foo", apiv1alpha1.DNSEndpointKind, "", labels.Everything(), scheme, false)
+			require.NoError(t, err)
+
+			_, err = cs.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			testutils.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
 		})
 	}
 }

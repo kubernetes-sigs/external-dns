@@ -196,6 +196,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
 			illegalTarget := false
+			illegalTargetValue := ""
 			for _, target := range ep.Targets {
 				hasDot := strings.HasSuffix(target, ".")
 
@@ -211,11 +212,18 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				}
 
 				if illegalTarget {
+					illegalTargetValue = target
 					break
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target format.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName)
+				var fix string
+				if ep.RecordType == endpoint.RecordTypeNAPTR {
+					fix = fmt.Sprintf("use %q not %q", illegalTargetValue+".", illegalTargetValue)
+				} else {
+					fix = fmt.Sprintf("use %q not %q", strings.TrimSuffix(illegalTargetValue, "."), illegalTargetValue)
+				}
+				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — %s.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, illegalTargetValue, ep.RecordType, fix)
 				continue
 			}
 
