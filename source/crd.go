@@ -196,15 +196,17 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
 			illegalTarget := false
-			illegalTargetValue := ""
 			for _, target := range ep.Targets {
-				hasDot := strings.HasSuffix(target, ".")
-
 				switch ep.RecordType {
 				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
 					continue // TXT records allow arbitrary text, skip validation; MX records can have trailing dot but it's not required, skip validation
 				case endpoint.RecordTypeCNAME:
 					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
+				}
+
+				hasDot := strings.HasSuffix(target, ".")
+
+				switch ep.RecordType {
 				case endpoint.RecordTypeNAPTR:
 					illegalTarget = !hasDot // Must have trailing dot
 				default:
@@ -212,18 +214,16 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				}
 
 				if illegalTarget {
-					illegalTargetValue = target
+					fixed := target + "."
+					if ep.RecordType != endpoint.RecordTypeNAPTR {
+						fixed = strings.TrimSuffix(target, ".")
+					}
+					log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — use %q not %q.",
+						dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, target, ep.RecordType, fixed, target)
 					break
 				}
 			}
 			if illegalTarget {
-				var fix string
-				if ep.RecordType == endpoint.RecordTypeNAPTR {
-					fix = fmt.Sprintf("use %q not %q", illegalTargetValue+".", illegalTargetValue)
-				} else {
-					fix = fmt.Sprintf("use %q not %q", strings.TrimSuffix(illegalTargetValue, "."), illegalTargetValue)
-				}
-				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — %s.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, illegalTargetValue, ep.RecordType, fix)
 				continue
 			}
 
