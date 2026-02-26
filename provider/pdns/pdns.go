@@ -289,7 +289,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
-	return endpoints
+	return endpoints, nil
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
@@ -452,7 +452,11 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 		}
 
 		for _, rr := range z.Rrsets {
-			endpoints = append(endpoints, p.convertRRSetToEndpoints(rr)...)
+			eps, err := p.convertRRSetToEndpoints(rr)
+			if err != nil {
+				return nil, err
+			}
+			endpoints = append(endpoints, eps...)
 		}
 	}
 
