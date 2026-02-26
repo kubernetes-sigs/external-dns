@@ -22,6 +22,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAlwaysFail(t *testing.T) {
+	t.Fatal("intentional failure to test CI behaviour")
+}
+
 func TestBanner(t *testing.T) {
 	// Set variables to known values
 	Version = "1.0.0"
