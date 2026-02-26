@@ -63,3 +63,4 @@ jobs:
       with:
         parallel-finished: true
         carryforward: "run-ubuntu-latest,run-macos-latest"
+      continue-on-error: true
