@@ -274,7 +274,7 @@ func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
 	return exists && value == "true"
 }
 
-func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
+func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	targets := make([]string, 0)
 	rrType_ := rr.Type_
@@ -289,7 +289,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
-	return endpoints, nil
+	return endpoints
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
@@ -452,11 +452,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 		}
 
 		for _, rr := range z.Rrsets {
-			eps, err := p.convertRRSetToEndpoints(rr)
-			if err != nil {
-				return nil, err
-			}
-			endpoints = append(endpoints, eps...)
+			endpoints = append(endpoints, p.convertRRSetToEndpoints(rr)...)
 		}
 	}
 
