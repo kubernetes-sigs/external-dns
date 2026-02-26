@@ -99,6 +99,7 @@ type mockCloudFlareClient struct {
 	Zones                map[string]string
 	Records              map[string]map[string]dns.RecordResponse
 	Actions              []MockAction
+	BatchDNSRecordsCalls int
 	listZonesError       error // For v4 ListZones
 	getZoneError         error // For v4 GetZone
 	dnsRecordsError      error
@@ -1680,19 +1681,6 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			RecordId: "2345678901",
 		},
 		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
-			RecordData: dns.RecordResponse{
-				ID:      generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
-				Name:    "foobar.bar.com",
-				Type:    "A",
-				Content: "2.3.4.5",
-				TTL:     1,
-				Proxied: true,
-			},
-		},
-		{
 			Name:     "Update",
 			ZoneId:   "001",
 			RecordId: "1234567890",
@@ -1701,6 +1689,19 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Name:    "foobar.bar.com",
 				Type:    "A",
 				Content: "1.2.3.4",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
+			RecordData: dns.RecordResponse{
+				ID:      generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
+				Name:    "foobar.bar.com",
+				Type:    "A",
+				Content: "2.3.4.5",
 				TTL:     1,
 				Proxied: true,
 			},
@@ -2979,8 +2980,10 @@ func TestZoneService(t *testing.T) {
 		err := client.CreateCustomHostname(ctx, zoneID, customHostname{})
 		assert.ErrorIs(t, err, context.Canceled)
 	})
-}
 
-func generateDNSRecordID(rrtype string, name string, content string) string {
-	return fmt.Sprintf("%s-%s-%s", name, rrtype, content)
+	t.Run("BatchDNSRecords", func(t *testing.T) {
+		t.Parallel()
+		_, err := client.BatchDNSRecords(ctx, dns.RecordBatchParams{ZoneID: cloudflare.F(zoneID)})
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }
