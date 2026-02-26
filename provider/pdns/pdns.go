@@ -348,7 +348,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				if ep.RecordType == endpoint.RecordTypeCNAME {
 					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
 					if useAlias {
-						log.Debugf("Converting CNAME record %s to ALIAS", dnsname)
+						log.Debugf("Converting CNAME record %q to ALIAS", dnsname)
 						RecordType_ = "ALIAS"
 					}
 				}
