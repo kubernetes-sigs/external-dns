@@ -353,25 +353,26 @@ func buildProvider(
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
-	if p != nil && (cfg.CreatePTR == "always" || cfg.CreatePTR == "annotation" || cfg.RFC2136CreatePTR) {
-		mode := cfg.CreatePTR
-		if cfg.RFC2136CreatePTR && mode == "off" {
-			mode = "always"
-		}
-		p = provider.NewPTRProvider(p, mode)
-		// Ensure PTR is a managed record type so the planner considers PTR records
-		if !slices.Contains(cfg.ManagedDNSRecordTypes, "PTR") {
-			cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
-			log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
-		}
-	}
-	if p != nil && cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(
-			p,
-			cfg.ProviderCacheTime,
-		)
-	}
+	p = wrapProvider(p, cfg)
 	return p, err
+}
+
+// wrapProvider applies optional provider decorators (PTR generation, caching).
+func wrapProvider(p provider.Provider, cfg *externaldns.Config) provider.Provider {
+	if p == nil {
+		return nil
+	}
+	defaultPTR := cfg.CreatePTR || cfg.RFC2136CreatePTR
+	p = provider.NewPTRProvider(p, defaultPTR)
+	// Ensure PTR is a managed record type so the planner considers PTR records
+	if !slices.Contains(cfg.ManagedDNSRecordTypes, "PTR") {
+		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+		log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
+	}
+	if cfg.ProviderCacheTime > 0 {
+		p = provider.NewCachedProvider(p, cfg.ProviderCacheTime)
+	}
+	return p
 }
 
 func buildController(

@@ -4,15 +4,18 @@
 > This feature works with any provider that has authority over reverse DNS zones
 > (e.g. `in-addr.arpa` for IPv4 or `ip6.arpa` for IPv6).
 
-## Modes
+## Flag and annotation
 
-The `--create-ptr` flag accepts three values:
+The `--create-ptr` flag is a boolean (default: `false`) that sets the global default for PTR record creation.
+The `external-dns.alpha.kubernetes.io/create-ptr` annotation on a resource overrides this default,
+following the standard [configuration precedence](configuration-precedence.md):
 
-| Mode         | Behaviour |
-|:-------------|:----------|
-| `off`        | PTR record creation is disabled. This is the default. |
-| `always`     | A PTR record is created for every A/AAAA endpoint. |
-| `annotation` | A PTR record is created only when the source resource is annotated with `external-dns.alpha.kubernetes.io/create-ptr: "true"`. |
+| Flag   | Annotation | Result |
+|:-------|:-----------|:-------|
+| `true` | (absent)   | PTR record created |
+| `true` | `"false"`  | PTR record **not** created (annotation opts out) |
+| `false`| (absent)   | PTR record **not** created |
+| `false`| `"true"`   | PTR record created (annotation opts in) |
 
 ## Prerequisites
 
@@ -20,28 +23,28 @@ The underlying DNS provider must have authority over the relevant reverse DNS zo
 Include the reverse zone in `--domain-filter` so that ExternalDNS knows it is allowed to manage records there:
 
 ```sh
---create-ptr=always --domain-filter=example.com --domain-filter=49.168.192.in-addr.arpa
+--create-ptr --domain-filter=example.com --domain-filter=49.168.192.in-addr.arpa
 ```
 
 ## Usage
 
-### Always mode
+### Global PTR creation
 
-In `always` mode every A/AAAA record managed by ExternalDNS automatically gets a corresponding PTR record.
-No annotation is needed on individual resources.
+With `--create-ptr` enabled, every A/AAAA record managed by ExternalDNS automatically gets a corresponding PTR record.
+Individual resources can opt out by setting the annotation to `"false"`.
 
 ```sh
 external-dns \
   --provider=pdns \
-  --create-ptr=always \
+  --create-ptr \
   --domain-filter=example.com \
   --domain-filter=49.168.192.in-addr.arpa
 ```
 
-### Annotation mode
+### Per-resource PTR creation
 
-In `annotation` mode only resources annotated with `external-dns.alpha.kubernetes.io/create-ptr: "true"`
-produce PTR records. This gives fine-grained, per-resource control.
+Without `--create-ptr`, only resources annotated with `external-dns.alpha.kubernetes.io/create-ptr: "true"`
+produce PTR records.
 
 ```yaml
 apiVersion: v1
@@ -73,7 +76,6 @@ Resources without the annotation are not affected.
 
 ## Deprecation of `--rfc2136-create-ptr`
 
-The `--rfc2136-create-ptr` flag is deprecated in favor of `--create-ptr`. If `--rfc2136-create-ptr` is set
-and `--create-ptr` is not, it is treated as `--create-ptr=always` for backward compatibility.
-Migrate to `--create-ptr=always` (or `--create-ptr=annotation`) and remove `--rfc2136-create-ptr` from
-your configuration.
+The `--rfc2136-create-ptr` flag is deprecated in favor of `--create-ptr`. If `--rfc2136-create-ptr` is set,
+it is treated as `--create-ptr` for backward compatibility. Migrate to `--create-ptr` and remove
+`--rfc2136-create-ptr` from your configuration.
