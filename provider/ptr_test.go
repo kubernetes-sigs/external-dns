@@ -203,7 +203,7 @@ func TestGeneratePTREndpoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GeneratePTREndpoints(tt.endpoints, nil)
+			result := GeneratePTREndpoints(tt.endpoints, nil, PTRModeAlways)
 			assert.Len(t, result, tt.wantCount)
 
 			for _, ep := range result {
@@ -236,7 +236,7 @@ func TestGeneratePTREndpoints_DomainFilter(t *testing.T) {
 		endpoint.NewEndpoint("web.example.com", "A", "192.168.49.3"),
 	}
 
-	result := GeneratePTREndpoints(eps, df)
+	result := GeneratePTREndpoints(eps, df, PTRModeAlways)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "2.49.168.192.in-addr.arpa", result[0].DNSName)
 	assert.Equal(t, "PTR", result[0].RecordType)
@@ -250,8 +250,63 @@ func TestGeneratePTREndpoints_NilDomainFilter(t *testing.T) {
 	}
 
 	// nil filter means no filtering — both produce PTRs
-	result := GeneratePTREndpoints(eps, nil)
+	result := GeneratePTREndpoints(eps, nil, PTRModeAlways)
 	assert.Len(t, result, 2)
+}
+
+func TestGeneratePTREndpoints_AnnotationMode(t *testing.T) {
+	t.Run("only annotated endpoints produce PTR", func(t *testing.T) {
+		eps := []*endpoint.Endpoint{
+			// Has create-ptr annotation — should produce PTR
+			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
+				WithProviderSpecific("create-ptr", "true"),
+			// No annotation — should be skipped
+			endpoint.NewEndpoint("api.example.com", "A", "192.168.49.3"),
+		}
+
+		result := GeneratePTREndpoints(eps, nil, PTRModeAnnotation)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "2.49.168.192.in-addr.arpa", result[0].DNSName)
+		assert.Contains(t, result[0].Targets, "web.example.com")
+	})
+
+	t.Run("annotation set to false is skipped", func(t *testing.T) {
+		eps := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
+				WithProviderSpecific("create-ptr", "false"),
+		}
+
+		result := GeneratePTREndpoints(eps, nil, PTRModeAnnotation)
+		assert.Len(t, result, 0)
+	})
+
+	t.Run("always mode ignores annotation", func(t *testing.T) {
+		eps := []*endpoint.Endpoint{
+			// No annotation, but always mode should still produce PTR
+			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2"),
+		}
+
+		result := GeneratePTREndpoints(eps, nil, PTRModeAlways)
+		assert.Len(t, result, 1)
+	})
+
+	t.Run("annotation mode with domain filter", func(t *testing.T) {
+		df := endpoint.NewDomainFilter([]string{"example.com"})
+		eps := []*endpoint.Endpoint{
+			// Annotated and matches filter — should produce PTR
+			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
+				WithProviderSpecific("create-ptr", "true"),
+			// Annotated but does NOT match filter — should be skipped
+			endpoint.NewEndpoint("web.other.org", "A", "192.168.49.3").
+				WithProviderSpecific("create-ptr", "true"),
+			// Matches filter but no annotation — should be skipped
+			endpoint.NewEndpoint("api.example.com", "A", "192.168.49.4"),
+		}
+
+		result := GeneratePTREndpoints(eps, df, PTRModeAnnotation)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "2.49.168.192.in-addr.arpa", result[0].DNSName)
+	})
 }
 
 // mockProvider is a test helper that records ApplyChanges calls
@@ -273,7 +328,7 @@ func (m *mockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 func TestPTRProviderAdjustEndpoints(t *testing.T) {
 	t.Run("A record generates PTR in adjusted endpoints", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
@@ -298,7 +353,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("AAAA record generates PTR", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(300), "2001:db8::1"),
@@ -320,7 +375,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("CNAME records are not affected", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
@@ -334,7 +389,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("wildcard A records are skipped", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("*.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "1.2.3.4"),
@@ -358,7 +413,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("multiple A records with same IP produce one merged PTR", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("web.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "192.168.49.2"),
@@ -383,7 +438,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("empty endpoints pass through", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		result, err := p.AdjustEndpoints([]*endpoint.Endpoint{})
 		require.NoError(t, err)
@@ -392,7 +447,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("delegates to underlying provider AdjustEndpoints", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "8.8.8.8"),
@@ -410,7 +465,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 			endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "8.8.8.8"),
 		}
 		mock := &mockProvider{recordsResult: expected}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		result, err := p.Records(context.Background())
 		require.NoError(t, err)
@@ -419,7 +474,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 	t.Run("ApplyChanges delegates to underlying provider unchanged", func(t *testing.T) {
 		mock := &mockProvider{}
-		p := NewPTRProvider(mock)
+		p := NewPTRProvider(mock, PTRModeAlways)
 
 		changes := &plan.Changes{
 			Create: []*endpoint.Endpoint{
@@ -433,5 +488,51 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 		// ApplyChanges should NOT augment changes — that's AdjustEndpoints' job
 		assert.Len(t, mock.appliedChanges[0].Create, 1)
 		assert.Equal(t, endpoint.RecordTypeA, mock.appliedChanges[0].Create[0].RecordType)
+	})
+
+	t.Run("annotation mode only generates PTR for annotated endpoints", func(t *testing.T) {
+		mock := &mockProvider{}
+		p := NewPTRProvider(mock, PTRModeAnnotation)
+
+		endpoints := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
+				WithProviderSpecific("create-ptr", "true"),
+			endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeA, "192.168.49.3"),
+		}
+
+		result, err := p.AdjustEndpoints(endpoints)
+		require.NoError(t, err)
+		// 2 original A records + 1 PTR (only for annotated endpoint)
+		assert.Len(t, result, 3)
+
+		var ptrCount int
+		for _, ep := range result {
+			if ep.RecordType == "PTR" {
+				ptrCount++
+				assert.Equal(t, "2.49.168.192.in-addr.arpa", ep.DNSName)
+				assert.Contains(t, ep.Targets, "web.example.com")
+			}
+		}
+		assert.Equal(t, 1, ptrCount, "expected exactly 1 PTR for annotated endpoint")
+	})
+
+	t.Run("off mode produces no PTR records", func(t *testing.T) {
+		mock := &mockProvider{}
+		p := NewPTRProvider(mock, PTRModeOff)
+
+		endpoints := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
+				WithProviderSpecific("create-ptr", "true"),
+			endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeA, "192.168.49.3"),
+		}
+
+		result, err := p.AdjustEndpoints(endpoints)
+		require.NoError(t, err)
+		// off mode: no PTR records at all
+		assert.Len(t, result, 2)
+
+		for _, ep := range result {
+			assert.NotEqual(t, "PTR", ep.RecordType)
+		}
 	})
 }
