@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,17 +27,6 @@ import (
 )
 
 const hexDigit = "0123456789abcdef"
-
-// PTR creation modes for the --create-ptr flag
-const (
-	// PTRModeOff disables PTR record creation (default)
-	PTRModeOff = "off"
-	// PTRModeAlways creates PTR records for all A/AAAA records
-	PTRModeAlways = "always"
-	// PTRModeAnnotation creates PTR records only for A/AAAA records whose
-	// source resource has the external-dns.alpha.kubernetes.io/create-ptr annotation
-	PTRModeAnnotation = "annotation"
-)
 
 // ReverseAddr returns the in-addr.arpa. or ip6.arpa. name for the given IP address,
 // suitable for rDNS (PTR) record lookup.
@@ -79,14 +68,13 @@ func ReverseAddr(addr string) (string, error) {
 // the filter will produce PTR records. This prevents PTR creation for
 // records that fall outside the managed domain set.
 //
-// The mode parameter controls which endpoints produce PTR records:
-//   - "always": all A/AAAA endpoints produce PTR records
-//   - "annotation": only endpoints with the "create-ptr" provider-specific
-//     property set to "true" produce PTR records
-func GeneratePTREndpoints(endpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, mode string) []*endpoint.Endpoint {
-	if mode == PTRModeOff {
-		return nil
-	}
+// The defaultEnabled parameter is the value of the --create-ptr flag.
+// Per-endpoint, the "create-ptr" provider-specific property (sourced from
+// the resource annotation) overrides this default:
+//   - annotation "true"  → include the endpoint (even if defaultEnabled is false)
+//   - annotation "false" → exclude the endpoint (even if defaultEnabled is true)
+//   - annotation absent  → use defaultEnabled
+func GeneratePTREndpoints(endpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, defaultEnabled bool) []*endpoint.Endpoint {
 	// Collect targets per reverse address, preserving the first TTL seen.
 	type ptrInfo struct {
 		targets []string
@@ -113,14 +101,15 @@ func GeneratePTREndpoints(endpoints []*endpoint.Endpoint, domainFilter endpoint.
 			log.Debugf("PTR: skipping %s %s — does not match domain filter", ep.DNSName, ep.RecordType)
 			continue
 		}
-		// In annotation mode, only create PTR if the endpoint has the
-		// "create-ptr" provider-specific property set to "true".
-		if mode == PTRModeAnnotation {
-			val, ok := ep.GetProviderSpecificProperty("create-ptr")
-			if !ok || val != "true" {
-				log.Debugf("PTR: skipping %s %s — missing create-ptr annotation", ep.DNSName, ep.RecordType)
-				continue
-			}
+		// Determine whether this endpoint should produce a PTR record.
+		// Annotation overrides the CLI flag (configuration precedence).
+		enabled := defaultEnabled
+		if val, ok := ep.GetProviderSpecificProperty("create-ptr"); ok {
+			enabled = val == "true"
+		}
+		if !enabled {
+			log.Debugf("PTR: skipping %s %s — PTR creation not enabled", ep.DNSName, ep.RecordType)
+			continue
 		}
 		for _, target := range ep.Targets {
 			revAddr, err := ReverseAddr(target)
@@ -173,18 +162,17 @@ func GeneratePTREndpoints(endpoints []*endpoint.Endpoint, domainFilter endpoint.
 // when --create-ptr is enabled).
 type PTRProvider struct {
 	Provider
-	mode string
+	defaultEnabled bool
 }
 
 // NewPTRProvider creates a new PTRProvider wrapping the given provider.
-// The mode parameter controls PTR creation behavior:
-//   - "always": create PTR for all A/AAAA records
-//   - "annotation": create PTR only for records with the create-ptr annotation
+// The defaultEnabled parameter is the value of the --create-ptr flag.
+// Per-resource annotations can override this default.
 //
 // The underlying provider's GetDomainFilter() is used to skip A/AAAA endpoints
 // whose hostname does not match the configured domain filter.
-func NewPTRProvider(p Provider, mode string) *PTRProvider {
-	return &PTRProvider{Provider: p, mode: mode}
+func NewPTRProvider(p Provider, defaultEnabled bool) *PTRProvider {
+	return &PTRProvider{Provider: p, defaultEnabled: defaultEnabled}
 }
 
 // AdjustEndpoints augments the desired endpoint set with PTR records
@@ -195,7 +183,7 @@ func NewPTRProvider(p Provider, mode string) *PTRProvider {
 // planner can detect missing PTRs and generate Create changes, or
 // detect stale PTRs and generate Delete changes.
 func (p *PTRProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	ptrEndpoints := GeneratePTREndpoints(endpoints, p.Provider.GetDomainFilter(), p.mode)
+	ptrEndpoints := GeneratePTREndpoints(endpoints, p.GetDomainFilter(), p.defaultEnabled)
 	if len(ptrEndpoints) > 0 {
 		log.Debugf("PTR: generated %d PTR endpoints from desired A/AAAA records", len(ptrEndpoints))
 		endpoints = append(endpoints, ptrEndpoints...)

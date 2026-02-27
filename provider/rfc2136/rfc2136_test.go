@@ -311,7 +311,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wrap with PTRProvider to enable automatic PTR record management
-	ptrProvider := provider.NewPTRProvider(p, provider.PTRModeAlways)
+	ptrProvider := provider.NewPTRProvider(p, true)
 
 	// AdjustEndpoints generates PTR endpoints from desired A/AAAA records.
 	// The plan then sees both A and PTR as desired and generates Create changes.

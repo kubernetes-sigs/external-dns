@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -224,7 +225,12 @@ func TestBuildProvider(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, p)
-				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
+				// Unwrap PTRProvider decorator to check the underlying provider type
+				actual := p
+				if ptrP, ok := actual.(*provider.PTRProvider); ok {
+					actual = ptrP.Provider
+				}
+				assert.Contains(t, reflect.TypeOf(actual).String(), tt.expectedType)
 			}
 		})
 	}
