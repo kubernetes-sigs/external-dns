@@ -96,6 +96,7 @@ ARCH          ?= amd64
 SHELL          = /bin/bash
 IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7
 IMG_PUSH      ?= true
+IMG_LOCAL     ?=
 IMG_SBOM      ?= none
 
 build: build/$(BINARY)
@@ -109,10 +110,10 @@ build.push/multiarch: ko
 	ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
 		--image-label org.opencontainers.image.source="https://github.com/kubernetes-sigs/external-dns" \
 		--image-label org.opencontainers.image.revision=$(shell git rev-parse HEAD) \
-		--platform=${IMG_PLATFORM}  --push=${IMG_PUSH} .
+		--platform=${IMG_PLATFORM}  --push=${IMG_PUSH} ${IMG_LOCAL} .
 
 build.image/multiarch:
-	$(MAKE) IMG_PUSH=false build.push/multiarch
+	$(MAKE) IMG_PUSH=false IMG_LOCAL=--local build.push/multiarch
 
 build.image:
 	$(MAKE) IMG_PLATFORM=linux/$(ARCH) build.image/multiarch
