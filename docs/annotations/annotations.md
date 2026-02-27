@@ -288,10 +288,16 @@ If the value is `annotation-only`, use only the domains from the `Route` annotat
 
 If the annotation is not present, use the domains from both the spec and annotations.
 
-## external-dns.alpha.kubernetes.io/create-ptr
+## external-dns.alpha.kubernetes.io/ptr
 
 Controls whether ExternalDNS creates reverse DNS (PTR) records for a resource's A/AAAA endpoints.
-Set to `"true"` to opt in or `"false"` to opt out, overriding the `--create-ptr` CLI flag per the
+
+Supported values:
+
+- `"true"` — create PTR records for this resource (opt in).
+- `"false"` — do not create PTR records for this resource (opt out).
+
+This annotation overrides the `--create-ptr` CLI flag per the
 standard [configuration precedence](../advanced/configuration-precedence.md).
 
 See [Automatic PTR (Reverse DNS) Records](../advanced/ptr-records.md) for full documentation.

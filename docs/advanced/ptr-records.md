@@ -7,7 +7,7 @@
 ## Flag and annotation
 
 The `--create-ptr` flag is a boolean (default: `false`) that sets the global default for PTR record creation.
-The `external-dns.alpha.kubernetes.io/create-ptr` annotation on a resource overrides this default,
+The `external-dns.alpha.kubernetes.io/ptr` annotation on a resource overrides this default,
 following the standard [configuration precedence](configuration-precedence.md):
 
 | Flag   | Annotation | Result |
@@ -43,7 +43,7 @@ external-dns \
 
 ### Per-resource PTR creation
 
-Without `--create-ptr`, only resources annotated with `external-dns.alpha.kubernetes.io/create-ptr: "true"`
+Without `--create-ptr`, only resources annotated with `external-dns.alpha.kubernetes.io/ptr: "true"`
 produce PTR records.
 
 ```yaml
@@ -53,7 +53,7 @@ metadata:
   name: web
   annotations:
     external-dns.alpha.kubernetes.io/hostname: web.example.com
-    external-dns.alpha.kubernetes.io/create-ptr: "true"
+    external-dns.alpha.kubernetes.io/ptr: "true"
 spec:
   type: LoadBalancer
   ports:

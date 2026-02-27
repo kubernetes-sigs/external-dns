@@ -259,7 +259,7 @@ func TestGeneratePTREndpoints_AnnotationOverride(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			// Annotation overrides flag — should produce PTR
 			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
-				WithProviderSpecific("create-ptr", "true"),
+				WithProviderSpecific("ptr", "true"),
 			// No annotation, flag is false — should be skipped
 			endpoint.NewEndpoint("api.example.com", "A", "192.168.49.3"),
 		}
@@ -273,7 +273,7 @@ func TestGeneratePTREndpoints_AnnotationOverride(t *testing.T) {
 	t.Run("flag=true annotation=false opts out", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
-				WithProviderSpecific("create-ptr", "false"),
+				WithProviderSpecific("ptr", "false"),
 		}
 
 		result := GeneratePTREndpoints(eps, nil, true)
@@ -303,10 +303,10 @@ func TestGeneratePTREndpoints_AnnotationOverride(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			// Annotated and matches filter — should produce PTR
 			endpoint.NewEndpoint("web.example.com", "A", "192.168.49.2").
-				WithProviderSpecific("create-ptr", "true"),
+				WithProviderSpecific("ptr", "true"),
 			// Annotated but does NOT match filter — should be skipped
 			endpoint.NewEndpoint("web.other.org", "A", "192.168.49.3").
-				WithProviderSpecific("create-ptr", "true"),
+				WithProviderSpecific("ptr", "true"),
 			// Matches filter but no annotation, flag false — should be skipped
 			endpoint.NewEndpoint("api.example.com", "A", "192.168.49.4"),
 		}
@@ -504,7 +504,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("create-ptr", "true"),
+				WithProviderSpecific("ptr", "true"),
 			endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeA, "192.168.49.3"),
 		}
 
@@ -530,7 +530,7 @@ func TestPTRProviderAdjustEndpoints(t *testing.T) {
 
 		endpoints := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("create-ptr", "false"),
+				WithProviderSpecific("ptr", "false"),
 			endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeA, "192.168.49.3"),
 		}
 
