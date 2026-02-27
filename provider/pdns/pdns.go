@@ -229,7 +229,8 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Res
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	client PDNSAPIProvider
+	client       PDNSAPIProvider
+	domainFilter *endpoint.DomainFilter
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
@@ -264,8 +265,13 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},
+		domainFilter: config.DomainFilter,
 	}
 	return provider, nil
+}
+
+func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return p.domainFilter
 }
 
 // hasAliasAnnotation checks if the endpoint has the alias annotation set to true
