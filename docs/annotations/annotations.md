@@ -326,6 +326,14 @@ If the value is `annotation-only`, use only the domains from the `Route` annotat
 
 If the annotation is not present, use the domains from both the spec and annotations.
 
+## external-dns.alpha.kubernetes.io/create-ptr
+
+When `--create-ptr=annotation` is set, this annotation controls whether ExternalDNS creates reverse DNS (PTR) records for a resource's A/AAAA endpoints. Set it to `"true"` on a Service, Ingress, or other supported source to enable PTR creation for that resource only.
+
+This annotation has no effect when `--create-ptr` is set to `off` or `always`.
+
+See [Automatic PTR (Reverse DNS) Records](../advanced/ptr-records.md) for full documentation.
+
 ## Provider-specific annotations
 
 Some providers define their own annotations. Cloud-specific annotations have keys prefixed as follows:
