@@ -126,6 +126,14 @@ func Execute() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if prvdr != nil && cfg.ProviderCacheTime > 0 {
+		prvdr = provider.NewCachedProvider(prvdr, cfg.ProviderCacheTime)
+	}
+	// Ensure PTR is a managed record type so the planner considers PTR records
+	if !slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR) {
+		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+		log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
+	}
 
 	if cfg.WebhookServer {
 		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
@@ -351,26 +359,7 @@ func buildProvider(
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
-	p = wrapProvider(p, cfg)
 	return p, err
-}
-
-// wrapProvider applies optional provider decorators (PTR generation, caching).
-func wrapProvider(p provider.Provider, cfg *externaldns.Config) provider.Provider {
-	if p == nil {
-		return nil
-	}
-	defaultPTR := cfg.CreatePTR || cfg.RFC2136CreatePTR
-	p = provider.NewPTRProvider(p, defaultPTR)
-	// Ensure PTR is a managed record type so the planner considers PTR records
-	if !slices.Contains(cfg.ManagedDNSRecordTypes, "PTR") {
-		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
-		log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
-	}
-	if cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(p, cfg.ProviderCacheTime)
-	}
-	return p
 }
 
 func buildController(
@@ -447,7 +436,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
+		wrappers.WithPreferAlias(cfg.PreferAlias),
+		wrappers.WithCreatePTR(cfg.CreatePTR || cfg.RFC2136CreatePTR))
 	return wrappers.WrapSources(sources, opts)
 }
 
