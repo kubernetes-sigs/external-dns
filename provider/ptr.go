@@ -69,7 +69,7 @@ func ReverseAddr(addr string) (string, error) {
 // records that fall outside the managed domain set.
 //
 // The defaultEnabled parameter is the value of the --create-ptr flag.
-// Per-endpoint, the "create-ptr" provider-specific property (sourced from
+// Per-endpoint, the "ptr" provider-specific property (sourced from
 // the resource annotation) overrides this default:
 //   - annotation "true"  → include the endpoint (even if defaultEnabled is false)
 //   - annotation "false" → exclude the endpoint (even if defaultEnabled is true)
@@ -104,7 +104,7 @@ func GeneratePTREndpoints(endpoints []*endpoint.Endpoint, domainFilter endpoint.
 		// Determine whether this endpoint should produce a PTR record.
 		// Annotation overrides the CLI flag (configuration precedence).
 		enabled := defaultEnabled
-		if val, ok := ep.GetProviderSpecificProperty("create-ptr"); ok {
+		if val, ok := ep.GetProviderSpecificProperty("ptr"); ok {
 			enabled = val == "true"
 		}
 		if !enabled {

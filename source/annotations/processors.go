@@ -34,9 +34,9 @@ func hasAliasFromAnnotations(annotations map[string]string) bool {
 	return ok && aliasAnnotation == "true"
 }
 
-func hasCreatePTRFromAnnotations(annotations map[string]string) bool {
-	ptrAnnotation, ok := annotations[CreatePTRKey]
-	return ok && ptrAnnotation == "true"
+func ptrValueFromAnnotations(annotations map[string]string) (string, bool) {
+	v, ok := annotations[PTRKey]
+	return v, ok
 }
 
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
