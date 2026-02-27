@@ -256,7 +256,8 @@ func convertCloudflareError(err error) error {
 	if strings.Contains(errMsg, "rate limit") ||
 		strings.Contains(errMsg, "429") ||
 		strings.Contains(errMsg, "exceeded available rate limit retries") ||
-		strings.Contains(errMsg, "too many requests") {
+		strings.Contains(errMsg, "too many requests") ||
+		strings.Contains(errMsg, "unexpected EOF") {
 		return provider.NewSoftError(err)
 	}
 
