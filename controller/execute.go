@@ -353,8 +353,12 @@ func buildProvider(
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
-	if p != nil && (cfg.CreatePTR || cfg.RFC2136CreatePTR) {
-		p = provider.NewPTRProvider(p)
+	if p != nil && (cfg.CreatePTR == "always" || cfg.CreatePTR == "annotation" || cfg.RFC2136CreatePTR) {
+		mode := cfg.CreatePTR
+		if cfg.RFC2136CreatePTR && mode == "off" {
+			mode = "always"
+		}
+		p = provider.NewPTRProvider(p, mode)
 		// Ensure PTR is a managed record type so the planner considers PTR records
 		if !slices.Contains(cfg.ManagedDNSRecordTypes, "PTR") {
 			cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")

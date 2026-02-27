@@ -29,6 +29,12 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			Value: "true",
 		})
 	}
+	if hasCreatePTRFromAnnotations(annotations) {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  "create-ptr",
+			Value: "true",
+		})
+	}
 	setIdentifier := ""
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
