@@ -73,6 +73,7 @@ type Config struct {
 	ConnectorSourceServer                         string
 	Provider                                      string
 	ProviderCacheTime                             time.Duration
+	CreatePTR                                     bool
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
@@ -343,6 +344,7 @@ var defaultConfig = &Config{
 	Policy:                       "sync",
 	Provider:                     "",
 	ProviderCacheTime:            0,
+	CreatePTR:                    false,
 	PublishHostIP:                false,
 	PublishInternal:              false,
 	RegexDomainExclude:           regexp.MustCompile(""),
@@ -556,6 +558,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("unstructured-resource", "When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources", nil, &cfg.UnstructuredResources)
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
+	b.BoolVar("create-ptr", "Automatically create PTR records for A and AAAA records. The provider must have authority over the reverse DNS zones (e.g. in-addr.arpa). Include reverse zones in --domain-filter. (default: false)", defaultConfig.CreatePTR, &cfg.CreatePTR)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.DomainExclude)
 	b.RegexpVar("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)", defaultConfig.RegexDomainFilter, &cfg.RegexDomainFilter)
@@ -648,7 +651,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
 	b.IntVar("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server", defaultConfig.RFC2136Port, &cfg.RFC2136Port)
 	b.StringsVar("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)", nil, &cfg.RFC2136Zone)
-	b.BoolVar("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management", defaultConfig.RFC2136CreatePTR, &cfg.RFC2136CreatePTR)
+	b.BoolVar("rfc2136-create-ptr", "(DEPRECATED: use --create-ptr instead) When using the RFC2136 provider, enable PTR management", defaultConfig.RFC2136CreatePTR, &cfg.RFC2136CreatePTR)
 	b.BoolVar("rfc2136-insecure", "When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret)", defaultConfig.RFC2136Insecure, &cfg.RFC2136Insecure)
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)

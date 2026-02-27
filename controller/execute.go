@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
 	"time"
 
@@ -314,7 +315,7 @@ func buildProvider(
 			ClientCertFilePath:    cfg.TLSClientCert,
 			ClientCertKeyFilePath: cfg.TLSClientCertKey,
 		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
@@ -351,6 +352,14 @@ func buildProvider(
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
+	}
+	if p != nil && (cfg.CreatePTR || cfg.RFC2136CreatePTR) {
+		p = provider.NewPTRProvider(p)
+		// Ensure PTR is a managed record type so the planner considers PTR records
+		if !slices.Contains(cfg.ManagedDNSRecordTypes, "PTR") {
+			cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+			log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
+		}
 	}
 	if p != nil && cfg.ProviderCacheTime > 0 {
 		p = provider.NewCachedProvider(
