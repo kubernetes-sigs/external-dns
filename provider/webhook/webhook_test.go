@@ -46,7 +46,7 @@ func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
 }
 
 func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("invalid-json")) // Invalid JSON
@@ -59,7 +59,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 }
 
 func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer svr.Close()
@@ -205,7 +205,7 @@ func TestRecords_DecodeError(t *testing.T) {
 }
 
 func TestRecords_NonOKStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 		return
 	}))
@@ -449,7 +449,7 @@ func TestAdjustEndpoints_HTTPRequestErrorMissingHost(t *testing.T) {
 }
 
 func TestAdjustEndpoints_NonOKStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 		return
 	}))
@@ -501,7 +501,7 @@ func TestAdjustEndpoints_DecodeError(t *testing.T) {
 }
 
 func TestRequestWithRetry_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, "ok")
 	}))
@@ -518,7 +518,7 @@ func TestRequestWithRetry_Success(t *testing.T) {
 }
 
 func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer server.Close()

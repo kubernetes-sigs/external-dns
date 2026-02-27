@@ -166,7 +166,6 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			fqdnTemplate: `{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname "nip.io" }}example.org{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
 			},
 		},
 		{

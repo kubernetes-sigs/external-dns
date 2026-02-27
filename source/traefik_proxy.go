@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -122,41 +121,17 @@ func NewTraefikSource(
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
-		_, _ = ingressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
+		_, _ = ingressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 	if enableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
-		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
-		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {},
-			},
-		)
+		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -233,11 +208,7 @@ func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, oldIngressRouteUdpEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
@@ -448,7 +419,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 	return endpoints
 }
 
-func (ts *traefikSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")

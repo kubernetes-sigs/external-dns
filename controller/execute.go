@@ -131,7 +131,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -250,7 +250,7 @@ func buildProvider(
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
 	case "linode":
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
@@ -327,11 +327,11 @@ func buildProvider(
 	case "transip":
 		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	case "scaleway":
-		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = scaleway.NewScalewayProvider(domainFilter, cfg.DryRun)
 	case "godaddy":
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	case "gandi":
-		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = gandi.NewGandiProvider(domainFilter, cfg.DryRun)
 	case "pihole":
 		p, err = pihole.NewPiholeProvider(
 			pihole.PiholeConfig{
@@ -362,6 +362,7 @@ func buildProvider(
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
+	sCfg *source.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -375,14 +376,17 @@ func buildController(
 		return nil, err
 	}
 	eventsCfg := events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventCtrl, err := events.NewEventController(eventsCfg)
+		kubeClient, err := sCfg.ClientGenerator().KubeClient()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
+		}
+		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
+		if err != nil {
+			return nil, err
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
@@ -428,7 +432,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithNAT64Networks(cfg.NAT64Networks),
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
+		wrappers.WithMinTTL(cfg.MinTTL),
+		wrappers.WithPreferAlias(cfg.PreferAlias))
 	return wrappers.WrapSources(sources, opts)
 }
 

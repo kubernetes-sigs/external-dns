@@ -45,13 +45,6 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
-// TestMain initializes annotation keys before running tests.
-// This is needed because init() was removed from annotations package.
-func TestMain(m *testing.M) {
-	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	m.Run()
-}
-
 type ServiceSuite struct {
 	suite.Suite
 	sc             Source
@@ -4862,8 +4855,6 @@ func TestNewServiceTypes(t *testing.T) {
 }
 
 func TestFilterByServiceType_WithFixture(t *testing.T) {
-	namespace := "testns"
-
 	tests := []struct {
 		name            string
 		filter          *serviceTypes
@@ -4872,7 +4863,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 	}{
 		{
 			name: "all types of services with filter enabled for ServiceTypeNodePort and ServiceTypeClusterIP",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("kube-system", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4889,7 +4880,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "all types of services with filter enabled for ServiceTypeLoadBalancer",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4905,7 +4896,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "enabled for ServiceTypeLoadBalancer when not all types are present",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
 				v1.ServiceTypeExternalName: 2,
@@ -4920,7 +4911,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "filter disabled returns all services",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -5109,7 +5100,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 }
 
 // createTestServicesByType creates the requested number of services per type in the given namespace.
-func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]int) []*v1.Service {
+func createTestServicesByType(ns string, typeCounts map[v1.ServiceType]int) []*v1.Service {
 	var services []*v1.Service
 	idx := 0
 	for svcType, count := range typeCounts {
@@ -5117,7 +5108,7 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 			svc := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("svc-%s-%d", svcType, idx),
-					Namespace: namespace,
+					Namespace: ns,
 				},
 				Spec: v1.ServiceSpec{
 					Type: svcType,
@@ -5188,13 +5179,13 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		name    string
 		filter  []string
 		times   int
-		asserts func(t *testing.T, s *serviceSource)
+		asserts func(t *testing.T)
 	}{
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5204,7 +5195,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should trigger only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
 			times:  1,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 0)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5214,7 +5205,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5224,7 +5215,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5259,7 +5250,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 
 			assert.Equal(t, tt.times, infSvc.times+infEdp.times+infNode.times)
 
-			tt.asserts(t, svcSource)
+			tt.asserts(t)
 		})
 	}
 }
@@ -5309,9 +5300,6 @@ func TestConvertToEndpointSlices(t *testing.T) {
 
 func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5330,7 +5318,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
 }
@@ -5338,9 +5326,6 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 // Test for processEndpointSlice: publishPodIPs true and unsupported address type triggers log.Debugf skip
 func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
@@ -5359,7 +5344,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
 }
@@ -5367,9 +5352,6 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 // Test for missing coverage: publishPodIPs false scenario
 func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5392,7 +5374,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Targets should be added when publishPodIPs is false")
 }
@@ -5400,9 +5382,6 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 // Test for missing coverage: not ready endpoints with publishNotReadyAddresses true
 func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5425,7 +5404,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	publishNotReadyAddresses := true // This should allow not-ready endpoints
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Not ready endpoints should be processed when publishNotReadyAddresses is true")
 }
@@ -5669,9 +5648,6 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 // Test for missing coverage: pod with hostname creates additional headless domains
 func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5695,7 +5671,7 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 
 	assert.NotEmpty(t, result, "Should create targets for pod with hostname")

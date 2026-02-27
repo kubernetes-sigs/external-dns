@@ -237,6 +237,62 @@ var (
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 	}
 
+	// Endpoint with alias annotation
+	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithProviderSpecific("alias", "true")
+
+	// Endpoints for preferAlias test
+	endpointsPreferAlias = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com"),
+	}
+
+	ZoneEmptyToPreferAliasPatch = pgo.Zone{
+		Id:    "example.com.",
+		Name:  "example.com.",
+		Type_: "Zone",
+		Url:   "/api/v1/servers/localhost/zones/example.com.",
+		Kind:  "Native",
+		Rrsets: []pgo.RrSet{
+			{
+				Name:       "sub.example.com.",
+				Type_:      "ALIAS",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "target.example.com.",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+		},
+	}
+
+	ZoneEmptyToCNAMEPatch = pgo.Zone{
+		Id:    "example.com.",
+		Name:  "example.com.",
+		Type_: "Zone",
+		Url:   "/api/v1/servers/localhost/zones/example.com.",
+		Kind:  "Native",
+		Rrsets: []pgo.RrSet{
+			{
+				Name:       "sub.example.com.",
+				Type_:      endpoint.RecordTypeCNAME,
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "target.example.com.",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+		},
+	}
+
 	ZoneEmpty = pgo.Zone{
 		// Opaque zone id (string), assigned by the server, should not be interpreted by the application. Guaranteed to be safe for embedding in URLs.
 		Id: "example.com.",
@@ -675,11 +731,11 @@ func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.
 	return zones, nil
 }
 
-func (c *PDNSAPIClientStub) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStub) ListZone(_ string) (pgo.Zone, *http.Response, error) {
 	return ZoneMixed, nil, nil
 }
 
-func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+func (c *PDNSAPIClientStub) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
@@ -710,7 +766,7 @@ func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.R
 	return pgo.Zone{}, nil, nil
 }
 
-func (c *PDNSAPIClientStubEmptyZones) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ string, zoneStruct pgo.Zone) (*http.Response, error) {
 	c.patchedZones = append(c.patchedZones, zoneStruct)
 	return &http.Response{}, nil
 }
@@ -723,7 +779,7 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 }
 
 // Just overwrite the PatchZone method to introduce a failure
-func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
 	return nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
@@ -735,7 +791,7 @@ type PDNSAPIClientStubListZoneFailure struct {
 }
 
 // Just overwrite the ListZone method to introduce a failure
-func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ string) (pgo.Zone, *http.Response, error) {
 	return pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
@@ -777,7 +833,7 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *ht
 }
 
 // Just overwrite the ListZones method to introduce a failure
-func (c *PDNSAPIClientStubPartitionZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClientStubPartitionZones) PartitionZones(_ []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
 }
 
@@ -866,6 +922,35 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 	}), "Enabled TLS Config with all flags should raise no error")
 }
 
+func (suite *NewPDNSProviderTestSuite) TestPDNSHasAliasAnnotation() {
+	p := &PDNSProvider{}
+
+	// Test endpoint without alias annotation
+	epWithoutAlias := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	suite.False(p.hasAliasAnnotation(epWithoutAlias))
+
+	// Test endpoint with alias=false
+	epWithAliasFalse := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithAliasFalse.ProviderSpecific = endpoint.ProviderSpecific{
+		{Name: "alias", Value: "false"},
+	}
+	suite.False(p.hasAliasAnnotation(epWithAliasFalse))
+
+	// Test endpoint with alias=true
+	epWithAliasTrue := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithAliasTrue.ProviderSpecific = endpoint.ProviderSpecific{
+		{Name: "alias", Value: "true"},
+	}
+	suite.True(p.hasAliasAnnotation(epWithAliasTrue))
+
+	// Test endpoint with other provider specific but no alias
+	epWithOtherPS := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithOtherPS.ProviderSpecific = endpoint.ProviderSpecific{
+		{Name: "other", Value: "value"},
+	}
+	suite.False(p.hasAliasAnnotation(epWithOtherPS))
+}
+
 func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	// Function definition: convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error)
 
@@ -877,16 +962,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	/* given an RRSet with three records, we test:
 	   - We correctly create corresponding endpoints
 	*/
-	eps, err := p.convertRRSetToEndpoints(RRSetMultipleRecords)
-	suite.Require().NoError(err)
+	eps := p.convertRRSetToEndpoints(RRSetMultipleRecords)
 	suite.Equal(endpointsMultipleRecords, eps)
 
 	/* Given an RRSet with two records, one of which is disabled, we test:
 	   - We can correctly convert the RRSet into a list of valid endpoints
 	   - We correctly discard/ignore the disabled record.
 	*/
-	eps, err = p.convertRRSetToEndpoints(RRSetDisabledRecord)
-	suite.Require().NoError(err)
+	eps = p.convertRRSetToEndpoints(RRSetDisabledRecord)
 	suite.Equal(endpointsDisabledRecord, eps)
 }
 
@@ -992,6 +1075,17 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	zlist, err = p.ConvertEndpointsToZones(endpointsApexRecords, PdnsReplace)
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToApexPatch}, zlist)
+
+	// Check endpoints of type CNAME remain CNAME when no alias annotation is set
+	zlist, err = p.ConvertEndpointsToZones(endpointsPreferAlias, PdnsReplace)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToCNAMEPatch}, zlist)
+
+	// Check endpoints with alias annotation are converted to ALIAS
+	// Note: The --prefer-alias flag now works via PostProcessor wrapper which sets the alias annotation
+	zlist, err = p.ConvertEndpointsToZones([]*endpoint.Endpoint{endpointWithAliasAnnotation}, PdnsReplace)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToPreferAliasPatch}, zlist)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZones() {

@@ -301,10 +301,6 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 43, registryRecords.Gauge, map[string]string{"record_type": "ptr"})
 }
 
-type mixedRecordsFixture struct {
-	ctrl *Controller
-}
-
 func newMixedRecordsFixture() *Controller {
 	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
 		endpoint.RecordTypeA:     534,

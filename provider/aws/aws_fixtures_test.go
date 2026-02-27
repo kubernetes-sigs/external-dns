@@ -30,7 +30,7 @@ import (
 
 func TestAWSRecordsV1(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub,
@@ -49,7 +49,7 @@ func TestAWSRecordsV1(t *testing.T) {
 
 func TestAWSZonesFilterWithTags(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub,
@@ -78,7 +78,7 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 		tName := fmt.Sprintf("filters=%s and zones=%d", strings.Join(tt.filters, ","), tt.want)
 		t.Run(tName, func(t *testing.T) {
 			var zones HostedZones
-			unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+			unmarshalZonesFixture(&zones, t)
 
 			stub := NewRoute53APIFixtureStub(&zones)
 			provider := providerFilters(stub,
@@ -94,7 +94,7 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 
 func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub)

@@ -182,11 +182,11 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 	}, nil
 }
 
-func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
+func (gs *glooSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects
-func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ns := range gs.glooNamespaces {
@@ -236,7 +236,7 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {

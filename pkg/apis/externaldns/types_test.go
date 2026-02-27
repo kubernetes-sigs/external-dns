@@ -17,7 +17,6 @@ limitations under the License.
 package externaldns
 
 import (
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -585,19 +584,6 @@ func TestConfigStringMasksSecureFields(t *testing.T) {
 	require.NotContains(t, s, "sensitive-value")
 	require.NotContains(t, s, "another-secret")
 	require.Contains(t, s, passwordMask)
-}
-
-// helper functions
-
-func setEnv(t *testing.T, env map[string]string) map[string]string {
-	originalEnv := map[string]string{}
-
-	for k, v := range env {
-		originalEnv[k] = os.Getenv(k)
-		require.NoError(t, os.Setenv(k, v))
-	}
-
-	return originalEnv
 }
 
 // Default path should use kingpin and parse flags correctly

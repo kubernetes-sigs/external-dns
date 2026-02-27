@@ -78,18 +78,6 @@ func omWithGeneration(meta metav1.ObjectMeta, generation int64) metav1.ObjectMet
 	return meta
 }
 
-func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HTTPRouteStatus {
-	for i, parent := range routeStatus.Parents {
-		if len(generation) <= i {
-			break
-		}
-
-		parent.Conditions[0].ObservedGeneration = generation[i]
-	}
-
-	return routeStatus
-}
-
 func rsWithoutAccepted(routeStatus v1.HTTPRouteStatus) v1.HTTPRouteStatus {
 	for _, parent := range routeStatus.Parents {
 		for j := range parent.Conditions {
@@ -128,8 +116,8 @@ func withPortNumber(port v1.PortNumber) gwParentRefOption {
 	return func(ref *v1.ParentReference) { ref.Port = &port }
 }
 
-func newTestEndpoint(dnsName, recordType string, targets ...string) *endpoint.Endpoint {
-	return newTestEndpointWithTTL(dnsName, recordType, 0, targets...)
+func newTestEndpoint(dnsName string, targets ...string) *endpoint.Endpoint {
+	return newTestEndpointWithTTL(dnsName, endpoint.RecordTypeA, 0, targets...)
 }
 
 func newTestEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...string) *endpoint.Endpoint {
@@ -219,7 +207,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
 			},
 			logExpectations: []string{
 				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
@@ -302,7 +290,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -343,7 +331,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("route-namespace.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("route-namespace.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -393,7 +381,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -444,7 +432,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("labels-match.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("labels-match.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -495,7 +483,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("annotations-match.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotations-match.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -566,7 +554,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4", "2.3.4.5"),
+				newTestEndpoint("test.example.internal", "1.2.3.4", "2.3.4.5"),
 			},
 		},
 		{
@@ -606,8 +594,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
-				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -647,7 +635,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -696,8 +684,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
-				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -729,7 +717,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -761,7 +749,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -793,7 +781,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("*.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("*.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -823,7 +811,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -918,9 +906,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("annotation.without-hostname.internal", "A", "1.2.3.4"),
-				newTestEndpoint("annotation.with-hostname.internal", "A", "1.2.3.4"),
-				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotation.without-hostname.internal", "1.2.3.4"),
+				newTestEndpoint("annotation.with-hostname.internal", "1.2.3.4"),
+				newTestEndpoint("with-hostname.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -955,7 +943,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4"),
+				newTestEndpoint("with-hostname.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -998,10 +986,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("fqdn-without-hostnames.zero.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-without-hostnames.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-without-hostnames.two.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4"),
+				newTestEndpoint("fqdn-without-hostnames.zero.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-without-hostnames.one.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-without-hostnames.two.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-with-hostnames.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1031,8 +1019,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4"),
-				newTestEndpoint("combine-fqdn-with-hostnames.internal", "A", "1.2.3.4"),
+				newTestEndpoint("fqdn-with-hostnames.internal", "1.2.3.4"),
+				newTestEndpoint("combine-fqdn-with-hostnames.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1081,8 +1069,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("invalid-ttl.internal", "A", "1.2.3.4"),
-				newTestEndpointWithTTL("valid-ttl.internal", "A", 15, "1.2.3.4"),
+				newTestEndpoint("invalid-ttl.internal", "1.2.3.4"),
+				newTestEndpointWithTTL("valid-ttl.internal", endpoint.RecordTypeA, 15, "1.2.3.4"),
 			},
 		},
 		{
@@ -1116,7 +1104,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("provider-annotations.com", "A", "1.2.3.4").
+				newTestEndpoint("provider-annotations.com", "1.2.3.4").
 					WithProviderSpecific("alias", "true").
 					WithSetIdentifier("test-set-identifier"),
 			},
@@ -1164,8 +1152,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+				newTestEndpoint("test.one.internal", "1.2.3.4"),
+				newTestEndpoint("test.two.internal", "2.3.4.5"),
 			},
 		},
 		{
@@ -1213,7 +1201,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("same-namespace.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("same-namespace.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1282,7 +1270,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1360,7 +1348,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "4.3.2.1"),
+				newTestEndpoint("test.example.internal", "4.3.2.1"),
 			},
 		},
 		{
@@ -1414,7 +1402,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "4.3.2.1", "2.3.4.5"),
+				newTestEndpoint("test.example.internal", "4.3.2.1", "2.3.4.5"),
 			},
 		},
 		{
@@ -1468,8 +1456,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+				newTestEndpoint("test.one.internal", "1.2.3.4"),
+				newTestEndpoint("test.two.internal", "2.3.4.5"),
 			},
 			logExpectations: []string{
 				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]",
@@ -1578,7 +1566,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1618,7 +1606,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.org.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.org.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1652,8 +1640,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("route.invalid.internal", "A", "1.2.3.4"),
-				newTestEndpoint("annotation.invalid.internal", "A", "1.2.3.4"),
+				newTestEndpoint("route.invalid.internal", "1.2.3.4"),
+				newTestEndpoint("annotation.invalid.internal", "1.2.3.4"),
 			},
 			logExpectations: []string{
 				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",

@@ -231,7 +231,7 @@ func TestBuildProvider(t *testing.T) {
 }
 
 func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 	}))
 	defer svr.Close()
@@ -275,7 +275,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 }
 
 // Helper used by runExecuteSubprocess.
-func TestHelperProcess(t *testing.T) {
+func TestHelperProcess(_ *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
@@ -295,13 +295,14 @@ func TestHelperProcess(t *testing.T) {
 	Execute()
 }
 
-// runExecuteSubprocess runs Execute in a separate process and returns exit code and output.
-func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
+// runExecuteSubprocess runs Execute in a separate process and returns exit code.
+func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// TODO: investigate why -test.run=TestHelperProcess
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
 	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
@@ -309,23 +310,22 @@ func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
-	output := buf.String()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return -1, output, ctx.Err()
+		return -1, ctx.Err()
 	}
 	if err == nil {
-		return 0, output, nil
+		return 0, nil
 	}
 	ee := &exec.ExitError{}
 	if errors.As(err, &ee) {
-		return ee.ExitCode(), output, nil
+		return ee.ExitCode(), nil
 	}
-	return -1, output, err
+	return -1, err
 }
 
 func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 	// Use :0 for an ephemeral metrics port.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--once",
@@ -337,7 +337,7 @@ func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 }
 
 func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "unknown",
 		"--metrics-address", ":0",
@@ -347,7 +347,7 @@ func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
 }
 
 func TestExecuteValidationErrorNoSources(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--provider", "inmemory",
 		"--metrics-address", ":0",
 	})
@@ -356,7 +356,7 @@ func TestExecuteValidationErrorNoSources(t *testing.T) {
 }
 
 func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--log-format", "invalid",
 		// Provide minimal required flags to keep errors focused on parsing
 		"--source", "fake",
@@ -369,7 +369,7 @@ func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
 
 // Config validation failure triggers log.Fatalf.
 func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		// Choose a provider with validation that fails without required flags
 		"--provider", "azure",
@@ -384,7 +384,7 @@ func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
 func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 	// Use a valid source name (ingress) and an invalid kubeconfig path to
 	// force client creation failure inside buildSource.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "ingress",
 		"--kubeconfig", "this/path/does/not/exist",
 		"--provider", "inmemory",
@@ -397,7 +397,7 @@ func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 // RunOnce error exits non-zero.
 func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 	// Connector source dials a TCP server; use a closed port to fail.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -410,7 +410,7 @@ func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 
 // Run loop error exits non-zero.
 func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -422,7 +422,7 @@ func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
 
 // buildController registry-creation failure triggers log.Fatal.
 func TestExecuteBuildControllerErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--registry", "dynamodb",
@@ -446,9 +446,10 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
+	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	src, err := buildSource(ctx, source.NewSourceConfig(cfg))
+	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
@@ -458,7 +459,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
-	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
 
 	done := make(chan struct{})

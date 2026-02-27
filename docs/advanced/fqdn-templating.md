@@ -64,16 +64,16 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Function     | Description                                           | Example                                                                          |
-|:-------------|:------------------------------------------------------|:---------------------------------------------------------------------------------|
-| `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                            |
-| `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                              |
-| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }}→true` |
-| `replace`    | Replace `old` with `new`                              | `{{ replace "hello" "l" "w" }} → hewwo`                                          |
-| `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                                 |
-| `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                  |
-| `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "pre" "prefix" }} → fix`                                          |
-| `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "fix" "suffix" }} → suf`                                          |
+| Function     | Description                                           | Example                                                                            |
+|:-------------|:------------------------------------------------------|:-----------------------------------------------------------------------------------|
+| `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                              |
+| `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                                |
+| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }} → true` |
+| `replace`    | Replace `old` with `new`                              | `{{ replace "l" "w" "hello" }} → hewwo`                                            |
+| `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                                   |
+| `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                    |
+| `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "hello" "h" }} → ello`                                              |
+| `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "hello" "o" }} → hell`                                              |
 
 ---
 

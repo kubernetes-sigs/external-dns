@@ -16,12 +16,13 @@ hide:
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
 [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kubernetes-sigs/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
 ## Documentation
 
-This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/).
+This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
 
 ## What It Does
 
@@ -109,6 +110,7 @@ from the usage of any externally developed webhook.
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
+| PS Cloud Services     | https://github.com/supervillain3000/external-dns-pscloud-webhook     |
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |

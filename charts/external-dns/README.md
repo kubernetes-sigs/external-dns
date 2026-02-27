@@ -61,7 +61,10 @@ For set up for a specific provider using the Helm chart, see the following links
 `external-dns` supports running on a namespace-only scope, too.
 If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
 
+Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
+
 ### Namespace-only limitations
+=======
 
 Not all sources are supported in namespace-only scope, since some sources depend on cluster-wide resources.
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
@@ -111,7 +114,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
-| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. |
+| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
