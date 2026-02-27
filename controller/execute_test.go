@@ -34,7 +34,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -163,7 +162,7 @@ func TestBuildProvider(t *testing.T) {
 				Provider:          "inmemory",
 				ProviderCacheTime: 10 * time.Millisecond,
 			},
-			expectedType: "*provider.CachedProvider",
+			expectedType: "*inmemory.InMemoryProvider",
 		},
 		{
 			name: "oci provider instance principal without compartment OCID",
@@ -226,12 +225,7 @@ func TestBuildProvider(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, p)
-				// Unwrap PTRProvider decorator to check the underlying provider type
-				actual := p
-				if ptrP, ok := actual.(*provider.PTRProvider); ok {
-					actual = ptrP.Provider
-				}
-				assert.Contains(t, reflect.TypeOf(actual).String(), tt.expectedType)
+				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
 			}
 		})
 	}

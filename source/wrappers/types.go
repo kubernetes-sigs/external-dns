@@ -33,6 +33,7 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
+	createPTR           bool
 	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
@@ -96,6 +97,12 @@ func WithPreferAlias(enabled bool) Option {
 	}
 }
 
+func WithCreatePTR(enabled bool) Option {
+	return func(o *Config) {
+		o.createPTR = enabled
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -139,5 +146,7 @@ func WrapSources(
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
+	combinedSource = NewPTRSource(combinedSource, opts.createPTR)
+	opts.addSourceWrapper("ptr")
 	return combinedSource, nil
 }

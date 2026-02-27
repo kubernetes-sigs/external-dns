@@ -309,24 +309,22 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	p, err := createRfc2136StubProviderWithReverse(stub)
 	assert.NoError(t, err)
 
-	// Wrap with PTRProvider to enable automatic PTR record management
-	ptrProvider := provider.NewPTRProvider(p, true)
-
-	// AdjustEndpoints generates PTR endpoints from desired A/AAAA records.
-	// The plan then sees both A and PTR as desired and generates Create changes.
-	desired := []*endpoint.Endpoint{
+	// Simulate what the PTR source wrapper produces: both A and PTR endpoints.
+	records := []*endpoint.Endpoint{
 		{
 			DNSName:    "demo.foo.com",
 			RecordType: "A",
 			Targets:    []string{"1.2.3.4"},
 		},
+		{
+			DNSName:    "4.3.2.1.in-addr.arpa",
+			RecordType: "PTR",
+			Targets:    []string{"demo.foo.com."},
+		},
 	}
-	adjusted, err := ptrProvider.AdjustEndpoints(desired)
-	assert.NoError(t, err)
-	assert.Len(t, adjusted, 2, "expected A + PTR after AdjustEndpoints")
 
-	err = ptrProvider.ApplyChanges(t.Context(), &plan.Changes{
-		Create: adjusted,
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: records,
 	})
 	assert.NoError(t, err)
 	assert.Len(t, stub.createMsgs, 2, "expected two records, one A and one PTR")

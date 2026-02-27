@@ -104,6 +104,8 @@ type Config struct {
 	MinTTL                         time.Duration
 	UnstructuredResources          []string
 	PreferAlias                    bool
+	CreatePTR                      bool
+	RFC2136CreatePTR               bool
 
 	sources []string
 
@@ -162,6 +164,8 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TargetTemplate:                 cfg.TargetTemplate,
 		FQDNTargetTemplate:             cfg.FQDNTargetTemplate,
 		PreferAlias:                    cfg.PreferAlias,
+		CreatePTR:                      cfg.CreatePTR,
+		RFC2136CreatePTR:               cfg.RFC2136CreatePTR,
 		sources:                        cfg.Sources,
 	}
 }
