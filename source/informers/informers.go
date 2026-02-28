@@ -19,6 +19,7 @@ package informers
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"time"
 
@@ -28,6 +29,33 @@ import (
 const (
 	defaultRequestTimeout = 60
 )
+
+// CacheLifecycle covers the start/sync contract satisfied by the real
+// controller-runtime cache in production and a test stub in tests.
+type CacheLifecycle interface {
+	Start(ctx context.Context) error
+	WaitForCacheSync(ctx context.Context) bool
+}
+
+// StartAndWaitForCacheSync starts lc in a goroutine and waits for all its
+// informers to sync, returning an error if the context expires first.
+func StartAndWaitForCacheSync(ctx context.Context, lc CacheLifecycle) error {
+	fmt.Println("Starting informers...")
+	go func() {
+		err := lc.Start(ctx)
+		if err != nil {
+			fmt.Println("fail informers...", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Error starting informers: %v\n", err)
+		}
+	}()
+	if !lc.WaitForCacheSync(ctx) {
+		if ctx.Err() != nil {
+			return fmt.Errorf("cache failed to sync: %w", ctx.Err())
+		}
+		return fmt.Errorf("cache failed to sync")
+	}
+	return nil
+}
 
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
