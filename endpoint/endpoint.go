@@ -222,6 +222,7 @@ type EndpointKey struct {
 	RecordType    string
 	SetIdentifier string
 	RecordTTL     TTL
+	Target        string
 }
 
 type ObjectRef = events.ObjectReference
@@ -305,6 +306,9 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 
 // GetProviderSpecificProperty returns the value of a ProviderSpecificProperty if the property exists.
 func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
+	if len(e.ProviderSpecific) == 0 {
+		return "", false
+	}
 	for _, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			return providerSpecific.Value, true
@@ -331,6 +335,13 @@ func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
+	if len(e.ProviderSpecific) == 0 {
+		e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{
+			Name:  key,
+			Value: value,
+		})
+		return
+	}
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			e.ProviderSpecific[i] = ProviderSpecificProperty{
@@ -346,6 +357,9 @@ func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 
 // DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
 func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
+	if len(e.ProviderSpecific) == 0 {
+		return
+	}
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)

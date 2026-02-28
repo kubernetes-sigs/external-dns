@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type postProcessor struct {
@@ -33,6 +34,7 @@ type postProcessor struct {
 
 type PostProcessorConfig struct {
 	ttl          int64
+	preferAlias  bool
 	isConfigured bool
 }
 
@@ -43,6 +45,18 @@ func WithTTL(ttl time.Duration) PostProcessorOption {
 		if int64(ttl.Seconds()) > 0 {
 			cfg.isConfigured = true
 			cfg.ttl = int64(ttl.Seconds())
+		}
+	}
+}
+
+// WithPostProcessorPreferAlias enables setting alias=true on CNAME endpoints.
+// This signals to providers that support ALIAS records (like PowerDNS, AWS)
+// to create ALIAS records instead of CNAMEs.
+func WithPostProcessorPreferAlias(enabled bool) PostProcessorOption {
+	return func(cfg *PostProcessorConfig) {
+		cfg.preferAlias = enabled
+		if enabled {
+			cfg.isConfigured = true
 		}
 	}
 }
@@ -70,7 +84,13 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 		ep.WithMinTTL(pp.cfg.ttl)
-		// Additional post-processing can be added here.
+		// Set alias annotation for CNAME records when preferAlias is enabled
+		// Only set if not already explicitly configured at the source level
+		if pp.cfg.preferAlias && ep.RecordType == endpoint.RecordTypeCNAME {
+			if _, exists := ep.GetProviderSpecificProperty(annotations.AliasKey); !exists {
+				ep.WithProviderSpecific("alias", "true")
+			}
+		}
 	}
 
 	return endpoints, nil

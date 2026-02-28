@@ -198,7 +198,7 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		}
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP

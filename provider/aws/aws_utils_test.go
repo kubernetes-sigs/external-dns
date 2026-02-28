@@ -142,10 +142,10 @@ func (r Route53APIFixtureStub) ListTagsForResources(_ context.Context, input *ro
 	return &route53.ListTagsForResourcesOutput{ResourceTagSets: sets}, nil
 }
 
-func unmarshalTestHelper(input string, obj any, t *testing.T) {
+func unmarshalZonesFixture(obj any, t *testing.T) {
 	t.Helper()
 	path, _ := os.Getwd()
-	file, err := os.Open(path + input)
+	file, err := os.Open(path + "/fixtures/160-plus-zones.yaml")
 	assert.NoError(t, err)
 	defer file.Close()
 	dec := yaml.NewDecoder(file)

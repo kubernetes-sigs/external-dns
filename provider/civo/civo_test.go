@@ -1176,7 +1176,7 @@ func TestCivoChangesEmpty(t *testing.T) {
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.
-func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
+func elementsMatch(t *testing.T, listA, listB any) bool {
 	switch {
 	case listA == nil && listB == nil:
 		return true
@@ -1190,11 +1190,11 @@ func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
 	bKind := reflect.TypeOf(listB).Kind()
 
 	if aKind != reflect.Array && aKind != reflect.Slice {
-		return assert.Fail(t, fmt.Sprintf("%q has an unsupported type %s", listA, aKind), msgAndArgs...)
+		return assert.Fail(t, fmt.Sprintf("%q has an unsupported type %s", listA, aKind))
 	}
 
 	if bKind != reflect.Array && bKind != reflect.Slice {
-		return assert.Fail(t, fmt.Sprintf("%q has an unsupported type %s", listB, bKind), msgAndArgs...)
+		return assert.Fail(t, fmt.Sprintf("%q has an unsupported type %s", listB, bKind))
 	}
 
 	aValue := reflect.ValueOf(listA)
@@ -1204,7 +1204,7 @@ func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
 	bLen := bValue.Len()
 
 	if aLen != bLen {
-		return assert.Fail(t, fmt.Sprintf("lengths don't match: %d != %d", aLen, bLen), msgAndArgs...)
+		return assert.Fail(t, fmt.Sprintf("lengths don't match: %d != %d", aLen, bLen))
 	}
 
 	// Mark indexes in bValue that we already used
@@ -1223,7 +1223,7 @@ func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
 			}
 		}
 		if !found {
-			return assert.Fail(t, fmt.Sprintf("element %s appears more times in %s than in %s", element, aValue, bValue), msgAndArgs...)
+			return assert.Fail(t, fmt.Sprintf("element %s appears more times in %s than in %s", element, aValue, bValue))
 		}
 	}
 

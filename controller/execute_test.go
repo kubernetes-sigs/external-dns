@@ -295,8 +295,8 @@ func TestHelperProcess(_ *testing.T) {
 	Execute()
 }
 
-// runExecuteSubprocess runs Execute in a separate process and returns exit code and output.
-func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
+// runExecuteSubprocess runs Execute in a separate process and returns exit code.
+func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -310,23 +310,22 @@ func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
-	output := buf.String()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return -1, output, ctx.Err()
+		return -1, ctx.Err()
 	}
 	if err == nil {
-		return 0, output, nil
+		return 0, nil
 	}
 	ee := &exec.ExitError{}
 	if errors.As(err, &ee) {
-		return ee.ExitCode(), output, nil
+		return ee.ExitCode(), nil
 	}
-	return -1, output, err
+	return -1, err
 }
 
 func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 	// Use :0 for an ephemeral metrics port.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--once",
@@ -338,7 +337,7 @@ func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 }
 
 func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "unknown",
 		"--metrics-address", ":0",
@@ -348,7 +347,7 @@ func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
 }
 
 func TestExecuteValidationErrorNoSources(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--provider", "inmemory",
 		"--metrics-address", ":0",
 	})
@@ -357,7 +356,7 @@ func TestExecuteValidationErrorNoSources(t *testing.T) {
 }
 
 func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--log-format", "invalid",
 		// Provide minimal required flags to keep errors focused on parsing
 		"--source", "fake",
@@ -370,7 +369,7 @@ func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
 
 // Config validation failure triggers log.Fatalf.
 func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		// Choose a provider with validation that fails without required flags
 		"--provider", "azure",
@@ -385,7 +384,7 @@ func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
 func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 	// Use a valid source name (ingress) and an invalid kubeconfig path to
 	// force client creation failure inside buildSource.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "ingress",
 		"--kubeconfig", "this/path/does/not/exist",
 		"--provider", "inmemory",
@@ -398,7 +397,7 @@ func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 // RunOnce error exits non-zero.
 func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 	// Connector source dials a TCP server; use a closed port to fail.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -411,7 +410,7 @@ func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 
 // Run loop error exits non-zero.
 func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -423,7 +422,7 @@ func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
 
 // buildController registry-creation failure triggers log.Fatal.
 func TestExecuteBuildControllerErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--registry", "dynamodb",
