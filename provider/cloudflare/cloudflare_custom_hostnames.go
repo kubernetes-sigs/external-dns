@@ -169,9 +169,13 @@ func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zo
 		}
 	}
 	for _, changeCH := range add {
-		log.WithFields(logFields).Infof("Adding custom hostname %q(%q=%q)",
-			change.CustomHostnames[changeCH].hostname, change.CustomHostnames[changeCH].customOriginServer, change.CustomHostnames[changeCH].customOriginSNI)
-		chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostnames[changeCH])
+		ch := change.CustomHostnames[changeCH]
+		if ch.hostname == change.ResourceRecord.Name {
+			log.WithFields(logFields).Warnf("skipping custom hostname %q: it matches the DNS record name (self-referential)", ch.hostname)
+			continue
+		}
+		log.WithFields(logFields).Infof("Adding custom hostname %q(%q=%q)", ch.hostname, ch.customOriginServer, ch.customOriginSNI)
+		chErr := p.Client.CreateCustomHostname(ctx, zoneID, ch)
 		if chErr != nil {
 			failedChange = true
 			log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", changeCH, chErr)
@@ -205,6 +209,10 @@ func (p *CloudFlareProvider) processCustomHostnameCreate(ctx context.Context, zo
 	failedChange := false
 	for _, changeCH := range change.CustomHostnames {
 		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.hostname != "" {
+			if changeCH.hostname == change.ResourceRecord.Name {
+				log.WithFields(logFields).Warnf("skipping custom hostname %q: it matches the DNS record name (self-referential)", changeCH.hostname)
+				continue
+			}
 			log.WithFields(logFields).Infof("Creating custom hostname %q(%q=%q)", changeCH.hostname, changeCH.customOriginServer, changeCH.customOriginSNI)
 			if ch, err := getCustomHostname(chs, changeCH.hostname); err == nil {
 				if changeCH.customOriginServer == ch.customOriginServer {

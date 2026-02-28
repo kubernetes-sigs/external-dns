@@ -861,6 +861,48 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			"Custom hostname should have updated SNI",
 		)
 	})
+
+	t.Run("CustomHostnames_Create_SkipSelfReferential", func(t *testing.T) {
+		// When the custom hostname is in the same managed zone as the origin, the annotation propagates
+		// to the DNS record for the custom hostname itself. That self-referential change must be skipped;
+		// the change for the origin record must still create the custom hostname correctly.
+		client := NewMockCloudFlareClient()
+		provider := &CloudFlareProvider{Client: client, CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true}}
+
+		selfRef := &cloudFlareChange{
+			Action:          cloudFlareCreate,
+			ResourceRecord:  dns.RecordResponse{Name: "custom.fancybar.com", Type: "A"},
+			CustomHostnames: map[string]customHostname{"custom.fancybar.com": {hostname: "custom.fancybar.com", customOriginServer: "custom.fancybar.com"}},
+		}
+		assert.True(t, provider.submitCustomHostnameChanges(ctx, "zone1", selfRef, customHostnamesMap{}, nil))
+		assert.Empty(t, client.customHostnames["zone1"], "Self-referential custom hostname should not be created")
+
+		originChange := &cloudFlareChange{
+			Action:          cloudFlareCreate,
+			ResourceRecord:  dns.RecordResponse{Name: "origin.fancybar.com", Type: "A"},
+			CustomHostnames: map[string]customHostname{"custom.fancybar.com": {hostname: "custom.fancybar.com", customOriginServer: "origin.fancybar.com"}},
+		}
+		assert.True(t, provider.submitCustomHostnameChanges(ctx, "zone1", originChange, customHostnamesMap{}, nil))
+		assert.Contains(t, client.customHostnames["zone1"],
+			customHostname{id: "ID-custom.fancybar.com", hostname: "custom.fancybar.com", customOriginServer: "origin.fancybar.com"},
+			"Custom hostname should point to origin, not itself",
+		)
+	})
+
+	t.Run("CustomHostnames_Update_SkipSelfReferential", func(t *testing.T) {
+		// Same scenario via the UPDATE add path.
+		client := NewMockCloudFlareClient()
+		provider := &CloudFlareProvider{Client: client, CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true}}
+
+		change := &cloudFlareChange{
+			Action:              cloudFlareUpdate,
+			ResourceRecord:      dns.RecordResponse{Name: "custom.fancybar.com", Type: "A"},
+			CustomHostnames:     map[string]customHostname{"custom.fancybar.com": {hostname: "custom.fancybar.com", customOriginServer: "custom.fancybar.com"}},
+			CustomHostnamesPrev: []string{},
+		}
+		assert.True(t, provider.submitCustomHostnameChanges(ctx, "zone1", change, customHostnamesMap{}, nil))
+		assert.Empty(t, client.customHostnames["zone1"], "Self-referential custom hostname should not be created")
+	})
 }
 
 func TestNewCustomHostname(t *testing.T) {
