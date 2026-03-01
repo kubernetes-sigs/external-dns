@@ -191,11 +191,14 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
 
+## Usage
+
 ### Configure `extraArgs`
 
 An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
 
 Example array:
+
 ```yaml
 extraArgs:
   - --zone-id-filter=/hostedzone/Z00001
@@ -204,6 +207,7 @@ extraArgs:
 ```
 
 Eample map: (supported values for map are strings, list of strings, and boolean)
+
 ```yaml
 extraArgs:
   extraArgA: valueA # results: "--extraArgA=valueA"
