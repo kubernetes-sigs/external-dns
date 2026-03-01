@@ -408,3 +408,302 @@ func TestChunkBatchChanges(t *testing.T) {
 		assert.Len(t, chunks[2].createChanges, 1)
 	})
 }
+
+func TestTagsFromResponse(t *testing.T) {
+	t.Run("nil input returns nil", func(t *testing.T) {
+		assert.Nil(t, tagsFromResponse(nil))
+	})
+	t.Run("non-string-slice returns nil", func(t *testing.T) {
+		assert.Nil(t, tagsFromResponse(42))
+	})
+	t.Run("string slice is returned unchanged", func(t *testing.T) {
+		tags := []string{"tag1", "tag2"}
+		assert.Equal(t, tags, tagsFromResponse(tags))
+	})
+}
+
+func TestBuildBatchPutParam(t *testing.T) {
+	base := dns.RecordResponse{
+		Name:    "example.bar.com",
+		TTL:     120,
+		Proxied: false,
+		Comment: "test-comment",
+	}
+
+	t.Run("AAAA record", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeAAAA
+		r.Content = "2001:db8::1"
+		param, ok := buildBatchPutParam("id-aaaa", r)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutAAAARecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-aaaa", p.ID.Value)
+		assert.Equal(t, "2001:db8::1", p.Content.Value)
+		assert.Equal(t, dns.AAAARecordTypeAAAA, p.Type.Value)
+	})
+
+	t.Run("CNAME record", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeCNAME
+		r.Content = "target.bar.com"
+		param, ok := buildBatchPutParam("id-cname", r)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutCNAMERecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-cname", p.ID.Value)
+		assert.Equal(t, "target.bar.com", p.Content.Value)
+		assert.Equal(t, dns.CNAMERecordTypeCNAME, p.Type.Value)
+	})
+
+	t.Run("TXT record", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeTXT
+		r.Content = "v=spf1 include:example.com ~all"
+		param, ok := buildBatchPutParam("id-txt", r)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutTXTRecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-txt", p.ID.Value)
+		assert.Equal(t, dns.TXTRecordTypeTXT, p.Type.Value)
+	})
+
+	t.Run("MX record with priority", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeMX
+		r.Content = "mail.example.com"
+		r.Priority = 10
+		param, ok := buildBatchPutParam("id-mx", r)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutMXRecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-mx", p.ID.Value)
+		assert.InDelta(t, float64(10), float64(p.Priority.Value), 0)
+		assert.Equal(t, dns.MXRecordTypeMX, p.Type.Value)
+	})
+
+	t.Run("NS record", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeNS
+		r.Content = "ns1.example.com"
+		param, ok := buildBatchPutParam("id-ns", r)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutNSRecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-ns", p.ID.Value)
+		assert.Equal(t, dns.NSRecordTypeNS, p.Type.Value)
+	})
+
+	t.Run("SRV record falls back (returns nil, false)", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeSRV
+		r.Content = "10 20 443 target.bar.com"
+		param, ok := buildBatchPutParam("id-srv", r)
+		assert.False(t, ok)
+		assert.Nil(t, param)
+	})
+
+	t.Run("CAA record falls back (returns nil, false)", func(t *testing.T) {
+		r := base
+		r.Type = dns.RecordResponseTypeCAA
+		r.Content = "0 issue letsencrypt.org"
+		param, ok := buildBatchPutParam("id-caa", r)
+		assert.False(t, ok)
+		assert.Nil(t, param)
+	})
+}
+
+func TestBuildBatchCollections_EdgeCases(t *testing.T) {
+	p := &CloudFlareProvider{}
+
+	t.Run("update with missing record ID is skipped", func(t *testing.T) {
+		changes := []*cloudFlareChange{
+			{
+				Action: cloudFlareUpdate,
+				ResourceRecord: dns.RecordResponse{
+					Name:    "missing.bar.com",
+					Type:    dns.RecordResponseTypeA,
+					Content: "1.2.3.4",
+				},
+			},
+		}
+		// Empty records map — getRecordID will return ""
+		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
+		assert.Empty(t, bc.batchPuts, "missing record should not be added to batch puts")
+		assert.Empty(t, bc.updateChanges)
+		assert.Empty(t, bc.fallbackUpdates)
+	})
+
+	t.Run("SRV update goes to fallbackUpdates", func(t *testing.T) {
+		srvRecord := dns.RecordResponse{
+			ID:      "srv-1",
+			Name:    "srv.bar.com",
+			Type:    dns.RecordResponseTypeSRV,
+			Content: "10 20 443 target.bar.com",
+		}
+		records := DNSRecordsMap{
+			newDNSRecordIndex(srvRecord): srvRecord,
+		}
+		changes := []*cloudFlareChange{
+			{
+				Action:         cloudFlareUpdate,
+				ResourceRecord: srvRecord,
+			},
+		}
+		bc := p.buildBatchCollections("zone1", changes, records)
+		assert.Empty(t, bc.batchPuts, "SRV should not be in batch puts")
+		assert.Empty(t, bc.updateChanges)
+		require.Len(t, bc.fallbackUpdates, 1)
+		assert.Equal(t, "srv.bar.com", bc.fallbackUpdates[0].ResourceRecord.Name)
+	})
+
+	t.Run("delete with missing record ID is skipped", func(t *testing.T) {
+		changes := []*cloudFlareChange{
+			{
+				Action: cloudFlareDelete,
+				ResourceRecord: dns.RecordResponse{
+					Name:    "gone.bar.com",
+					Type:    dns.RecordResponseTypeA,
+					Content: "1.2.3.4",
+				},
+			},
+		}
+		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
+		assert.Empty(t, bc.batchDeletes, "missing record should not be added to batch deletes")
+		assert.Empty(t, bc.deleteChanges)
+	})
+}
+
+func TestSubmitDNSRecordChanges_BatchInterval(t *testing.T) {
+	// Build 201 creates so they span 2 chunks (defaultBatchChangeSize=200),
+	// triggering the time.Sleep(BatchChangeInterval) code path between chunks.
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {},
+	})
+	p := &CloudFlareProvider{
+		Client: client,
+		DNSRecordsConfig: DNSRecordsConfig{
+			BatchChangeInterval: 1, // 1 nanosecond — non-zero triggers sleep
+		},
+	}
+
+	const nRecords = defaultBatchChangeSize + 1
+	var posts []dns.RecordBatchParamsPostUnion
+	var createChanges []*cloudFlareChange
+	for i := range nRecords {
+		name := fmt.Sprintf("record%d.bar.com", i)
+		posts = append(posts, dns.RecordBatchParamsPost{
+			Name:    cloudflare.F(name),
+			Type:    cloudflare.F(dns.RecordBatchParamsPostsTypeA),
+			Content: cloudflare.F("1.2.3.4"),
+		})
+		createChanges = append(createChanges, &cloudFlareChange{
+			Action:         cloudFlareCreate,
+			ResourceRecord: dns.RecordResponse{Name: name, Type: "A", Content: "1.2.3.4"},
+		})
+	}
+
+	bc := batchCollections{
+		batchPosts:    posts,
+		createChanges: createChanges,
+	}
+
+	failed := p.submitDNSRecordChanges(t.Context(), "001", bc, make(DNSRecordsMap))
+	assert.False(t, failed, "should not fail")
+	assert.Equal(t, 2, client.BatchDNSRecordsCalls, "two chunks should require two batch API calls")
+}
+
+func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
+	t.Run("successful SRV fallback update", func(t *testing.T) {
+		srvRecord := dns.RecordResponse{
+			ID:      "srv-1",
+			Name:    "srv.bar.com",
+			Type:    dns.RecordResponseTypeSRV,
+			Content: "10 20 443 target.bar.com",
+		}
+		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+			"001": {srvRecord},
+		})
+		p := &CloudFlareProvider{Client: client}
+
+		records := DNSRecordsMap{
+			newDNSRecordIndex(srvRecord): srvRecord,
+		}
+		bc := batchCollections{
+			fallbackUpdates: []*cloudFlareChange{
+				{Action: cloudFlareUpdate, ResourceRecord: srvRecord},
+			},
+		}
+
+		failed := p.submitDNSRecordChanges(t.Context(), "001", bc, records)
+		assert.False(t, failed, "successful SRV fallback update should not report failure")
+		assert.Equal(t, 0, client.BatchDNSRecordsCalls, "batch API not called for fallback-only changes")
+	})
+
+	t.Run("failed SRV fallback update is reported", func(t *testing.T) {
+		srvRecord := dns.RecordResponse{
+			ID:      "newerror-upd-srv",
+			Name:    "newerror-update-srv.bar.com",
+			Type:    dns.RecordResponseTypeSRV,
+			Content: "10 20 443 target.bar.com",
+		}
+		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+			"001": {srvRecord},
+		})
+		p := &CloudFlareProvider{Client: client}
+
+		records := DNSRecordsMap{
+			newDNSRecordIndex(srvRecord): srvRecord,
+		}
+		bc := batchCollections{
+			fallbackUpdates: []*cloudFlareChange{
+				{Action: cloudFlareUpdate, ResourceRecord: srvRecord},
+			},
+		}
+
+		failed := p.submitDNSRecordChanges(t.Context(), "001", bc, records)
+		assert.True(t, failed, "failed SRV fallback update should be reported")
+	})
+}
+
+func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {},
+	})
+	p := &CloudFlareProvider{Client: client}
+	emptyRecords := make(DNSRecordsMap)
+
+	t.Run("delete where record is already gone succeeds silently", func(t *testing.T) {
+		chunk := batchChunk{
+			deleteChanges: []*cloudFlareChange{
+				{
+					Action: cloudFlareDelete,
+					ResourceRecord: dns.RecordResponse{
+						Name:    "gone.bar.com",
+						Type:    dns.RecordResponseTypeA,
+						Content: "1.2.3.4",
+					},
+				},
+			},
+		}
+		failed := p.fallbackIndividualChanges(t.Context(), "001", chunk, emptyRecords)
+		assert.False(t, failed, "delete of already-absent record should not report failure")
+	})
+
+	t.Run("update where record is not found skips gracefully", func(t *testing.T) {
+		chunk := batchChunk{
+			updateChanges: []*cloudFlareChange{
+				{
+					Action: cloudFlareUpdate,
+					ResourceRecord: dns.RecordResponse{
+						Name:    "missing.bar.com",
+						Type:    dns.RecordResponseTypeA,
+						Content: "1.2.3.4",
+					},
+				},
+			},
+		}
+		failed := p.fallbackIndividualChanges(t.Context(), "001", chunk, emptyRecords)
+		assert.False(t, failed, "update of missing record should not report failure")
+	})
+}
