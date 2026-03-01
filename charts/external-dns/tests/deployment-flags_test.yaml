@@ -175,9 +175,9 @@ tests:
             - --registry=txt
             - --provider=aws
             - --extraArgA
-            - --no-extraArgB
             - --extraArgC
             - --no-extraArgD
+            - --no-extraArgB
 
   - it: should throw error when txtPrefix and txtSuffix are set
     set:

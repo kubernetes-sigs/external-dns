@@ -89,11 +89,14 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 
 {{ template "chart.valuesSection" . }}
 
+## Usage
+
 ### Configure `extraArgs`
 
 An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
 
 Example array:
+
 ```yaml
 extraArgs:
   - --zone-id-filter=/hostedzone/Z00001
@@ -102,6 +105,7 @@ extraArgs:
 ```
 
 Eample map: (supported values for map are strings, list of strings, and boolean)
+
 ```yaml
 extraArgs:
   extraArgA: valueA # results: "--extraArgA=valueA"
