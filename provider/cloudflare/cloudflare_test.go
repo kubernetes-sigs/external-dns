@@ -3149,7 +3149,7 @@ func TestZoneServiceZoneIDByName(t *testing.T) {
 	// Build a minimal cloudflare API response page for /zones.
 	writeZonesPage := func(w http.ResponseWriter, zones []map[string]any) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"result": zones,
 			"result_info": map[string]any{
 				"count":       len(zones),
@@ -3160,7 +3160,9 @@ func TestZoneServiceZoneIDByName(t *testing.T) {
 			"success":  true,
 			"errors":   []any{},
 			"messages": []any{},
-		})
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 
 	t.Run("zone found returns its ID", func(t *testing.T) {
