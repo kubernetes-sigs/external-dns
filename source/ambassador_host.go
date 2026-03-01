@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
+	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -50,7 +50,7 @@ const (
 )
 
 var (
-	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
 	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
 )
 

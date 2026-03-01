@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
+	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
