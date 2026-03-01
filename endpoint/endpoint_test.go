@@ -19,13 +19,12 @@ package endpoint
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -1080,25 +1079,15 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, hook := test.NewNullLogger()
-			log.AddHook(hook)
-			log.SetOutput(logger.Out)
-			log.SetLevel(log.WarnLevel)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 			tt.ep.CheckEndpoint()
 
 			warnMsg := "does not support alias records"
-			found := false
-			for _, entry := range hook.AllEntries() {
-				if strings.Contains(entry.Message, warnMsg) && entry.Level == log.WarnLevel {
-					found = true
-				}
-			}
-
 			if tt.wantLog {
-				assert.True(t, found, "Expected warning log message not found")
+				logtest.TestHelperLogContains(warnMsg, hook, t)
 			} else {
-				assert.False(t, found, "Unexpected warning log message found")
+				logtest.TestHelperLogNotContains(warnMsg, hook, t)
 			}
 		})
 	}

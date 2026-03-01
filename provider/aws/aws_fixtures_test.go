@@ -25,7 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestAWSRecordsV1(t *testing.T) {
@@ -102,8 +102,8 @@ func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	ctx := context.Background()
 	_, err := provider.Zones(ctx)
 	assert.NoError(t, err)
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	_, _ = provider.Zones(ctx)
 
-	testutils.TestHelperLogContainsWithLogLevel("Using cached AWS zones", log.DebugLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel("Using cached AWS zones", log.DebugLevel, hook, t)
 }

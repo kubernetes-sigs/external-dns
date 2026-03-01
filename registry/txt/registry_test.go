@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -1741,7 +1742,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	require.NoError(t, err)
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 
@@ -1756,7 +1757,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
+	logtest.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
 }
 
 // TestTXTRegistryRecreatesMissingRecords reproduces issue #4914.

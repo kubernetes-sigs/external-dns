@@ -46,7 +46,7 @@ import (
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type CRDSuite struct {
@@ -675,7 +675,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 			restClient := fakeRESTClient(ti.endpoints, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind, "foo", "test", nil, nil, t)
 
@@ -691,7 +691,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			if ti.wantWarning == "" {
 				require.Empty(t, hook.Entries, "expected no warnings to be logged")
 			} else {
-				testutils.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+				logtest.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
 			}
 		})
 	}

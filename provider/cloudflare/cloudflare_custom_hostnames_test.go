@@ -29,7 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -350,7 +350,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 
 			records, err := provider.Records(ctx)
 			if err != nil {
@@ -402,7 +402,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 				t.Error(e)
 			}
 
-			testutils.TestHelperLogContains(tc.logOutput, hook, t)
+			logtest.TestHelperLogContains(tc.logOutput, hook, t)
 		})
 	}
 }

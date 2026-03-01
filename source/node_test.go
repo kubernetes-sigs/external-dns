@@ -29,7 +29,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/stretchr/testify/assert"
@@ -405,7 +405,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -458,10 +458,10 @@ func testNodeSourceEndpoints(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
-				testutils.TestHelperLogContains(entry, hook, t)
+				logtest.TestHelperLogContains(entry, hook, t)
 			}
 			for _, entry := range tc.expectedAbsentLogs {
-				testutils.TestHelperLogNotContains(entry, hook, t)
+				logtest.TestHelperLogNotContains(entry, hook, t)
 			}
 		})
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -342,7 +343,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 			mockSource := new(testutils.MockSource)
 			mockSource.On("Endpoints").Return([]*endpoint.Endpoint{tt.endpoint}, nil)
@@ -351,7 +352,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			_, err := src.Endpoints(context.Background())
 			require.NoError(t, err)
 
-			testutils.TestHelperLogContains(tt.wantLogMsg, hook, t)
+			logtest.TestHelperLogContains(tt.wantLogMsg, hook, t)
 		})
 	}
 }
