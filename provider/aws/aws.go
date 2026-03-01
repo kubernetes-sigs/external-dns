@@ -840,8 +840,6 @@ func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *e
 			aaaa.RecordType = endpoint.RecordTypeAAAA
 		}
 		return aaaa
-	default:
-		p.adjustOtherRecord(ep)
 	}
 	adjustGeoProximityLocationEndpoint(ep)
 	return aaaa
@@ -896,15 +894,6 @@ func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
 		ep.RecordType = endpoint.RecordTypeA
 		p.adjustAliasRecord(ep)
 	}
-}
-
-func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
-	// Although Route53 supports alias records for all types except NS and SOA
-	// (see: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html),
-	// ExternalDNS only uses alias for A/AAAA records converted from CNAME.
-	// For other record types, we simply remove the alias-related properties.
-	ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-	ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 }
 
 // if the endpoint is using geoproximity, set the bias to 0 if not set
