@@ -78,21 +78,10 @@ func (suite *ServiceSuite) SetupTest() {
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -123,7 +112,7 @@ func testServiceSourceImplementsSource(t *testing.T) {
 func testServiceSourceNewServiceSource(t *testing.T) {
 	t.Parallel()
 
-	for _, ti := range []struct {
+	for _, tc := range []struct {
 		title              string
 		annotationFilter   string
 		fqdnTemplate       string
@@ -156,30 +145,21 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 		},
 	} {
 
-		t.Run(ti.title, func(t *testing.T) {
+		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewServiceSource(
 				context.TODO(),
 				fake.NewClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				"",
-				false,
-				false,
-				false,
-				ti.serviceTypesFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+				&Config{
+					FQDNTemplate:      tc.fqdnTemplate,
+					AnnotationFilter:  tc.annotationFilter,
+					ServiceTypeFilter: tc.serviceTypesFilter,
+					LabelFilter:       labels.Everything(),
+				},
 			)
 
-			if ti.expectError {
+			if tc.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
@@ -1135,33 +1115,25 @@ func testServiceSourceEndpoints(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var sourceLabel labels.Selector
+			sourceLabel := labels.Everything()
 			if tc.serviceLabelSelector != "" {
 				sourceLabel, err = labels.Parse(tc.serviceLabelSelector)
 				require.NoError(t, err)
-			} else {
-				sourceLabel = labels.Everything()
 			}
 
 			// Create our object under test and get the endpoints.
-			client, err := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				tc.combineFQDNAndAnnotation,
-				tc.compatibility,
-				false,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				sourceLabel,
-				tc.resolveLoadBalancerHostname,
-				false,
-				false,
-				false,
+			client, err := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:                tc.fqdnTemplate,
+					AnnotationFilter:            tc.annotationFilter,
+					ServiceTypeFilter:           tc.serviceTypesFilter,
+					CombineFQDNAndAnnotation:    tc.combineFQDNAndAnnotation,
+					Compatibility:               tc.compatibility,
+					Namespace:                   tc.targetNamespace,
+					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
+					IgnoreHostnameAnnotation:    tc.ignoreHostnameAnnotation,
+					LabelFilter:                 sourceLabel,
+				},
 			)
 
 			require.NoError(t, err)
@@ -1361,24 +1333,17 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, err := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				tc.combineFQDNAndAnnotation,
-				tc.compatibility,
-				false,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+			client, err := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					ServiceTypeFilter:        tc.serviceTypesFilter,
+					CombineFQDNAndAnnotation: tc.combineFQDNAndAnnotation,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
@@ -1659,32 +1624,22 @@ func TestClusterIpServices(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var labelSelector labels.Selector
+			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
 				labelSelector, err = labels.Parse(tc.labelSelector)
 				require.NoError(t, err)
-			} else {
-				labelSelector = labels.Everything()
 			}
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labelSelector,
-				false,
-				false,
-				false,
-				false,
+			client, _ := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					PublishInternal:          true,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					LabelFilter:              labelSelector,
+				},
 			)
 			require.NoError(t, err)
 
@@ -2495,24 +2450,17 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				tc.exposeInternalIPv6,
-				tc.ignoreUnscheduledNodes,
+			client, _ := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExposeInternalIPv6:       tc.exposeInternalIPv6,
+					ExcludeUnschedulable:     tc.ignoreUnscheduledNodes,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
@@ -3404,24 +3352,16 @@ func TestHeadlessServices(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				tc.exposeInternalIPv6,
-				false,
+			client, _ := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					ServiceTypeFilter:        tc.serviceTypesFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExposeInternalIPv6:       tc.exposeInternalIPv6,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
@@ -3541,24 +3481,12 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(
-		t.Context(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -3908,24 +3836,12 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(
-		t.Context(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			LabelFilter:          labels.Everything(),
+			ExcludeUnschedulable: true,
+		},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -4367,24 +4283,17 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				true,
+			client, _ := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					Namespace:                tc.targetNamespace,
+					LabelFilter:              labels.Everything(),
+					Compatibility:            tc.compatibility,
+					FQDNTemplate:             tc.fqdnTemplate,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExcludeUnschedulable:     true,
+					PublishHostIP:            true,
+					PublishInternal:          true,
+				},
 			)
 			require.NoError(t, err)
 
@@ -4578,24 +4487,16 @@ func TestExternalServices(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				tc.serviceTypeFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				true,
+			client, _ := NewServiceSource(context.TODO(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					Compatibility:            tc.compatibility,
+					ServiceTypeFilter:        tc.serviceTypeFilter,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExcludeUnschedulable:     true,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
@@ -4641,24 +4542,12 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(
-		context.TODO(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	client, err := NewServiceSource(context.TODO(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(b, err)
 
@@ -4739,33 +4628,22 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		},
 	}
 
-	for _, ts := range tests {
-		t.Run(ts.name, func(t *testing.T) {
-			svc, err := NewServiceSource(
-				t.Context(),
-				fake.NewClientset(),
-				"default",
-				"",
-				"",
-				false,
-				"",
-				true,
-				false,
-				false,
-				ts.svcFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
+				&Config{
+					Namespace:                      "default",
+					ServiceTypeFilter:              tc.svcFilter,
+					AlwaysPublishNotReadyAddresses: true,
+					LabelFilter:                    labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
 			if !ok {
 				require.Fail(t, "expected serviceSource")
 			}
-			ts.asserts(svcSrc)
+			tc.asserts(svcSrc)
 		})
 	}
 }
@@ -4773,24 +4651,12 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
 
-	svc, err := NewServiceSource(
-		context.TODO(),
-		fake.NewClientset(),
-		"default",
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		serviceTypeFilter,
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+	svc, err := NewServiceSource(context.TODO(), fake.NewClientset(),
+		&Config{
+			Namespace:         "default",
+			ServiceTypeFilter: serviceTypeFilter,
+			LabelFilter:       labels.Everything(),
+		},
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
@@ -4951,24 +4817,13 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should not error when creating the source
-	src, err := NewServiceSource(
-		ctx,
-		fakeClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(ctx, fakeClient,
+		&Config{
+			FQDNTemplate:         "{{.Name}}",
+			Namespace:            "default",
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5037,26 +4892,12 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 
 	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
 	require.NoError(t, err)
-
 	// Should not error when creating the source
-	src, err := NewServiceSource(
-		ctx,
-		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+	src, err := NewServiceSource(ctx, fakeClient,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5464,7 +5305,7 @@ func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 		},
 	}
 
-	client := fake.NewSimpleClientset(node)
+	client := fake.NewClientset(node)
 	kubeInformers := kubeinformers.NewSharedInformerFactory(client, 0)
 	nodeInformer := kubeInformers.Core().V1().Nodes()
 

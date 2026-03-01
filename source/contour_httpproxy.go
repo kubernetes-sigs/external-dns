@@ -64,20 +64,16 @@ type httpProxySource struct {
 func NewContourHTTPProxySource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
-	namespace string,
-	annotationFilter string,
-	fqdnTemplate string,
-	combineFqdnAnnotation bool,
-	ignoreHostnameAnnotation bool,
+	cfg *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	// Add default resource event handlers to properly initialize informer.
@@ -97,11 +93,11 @@ func NewContourHTTPProxySource(
 
 	return &httpProxySource{
 		dynamicKubeClient:        dynamicKubeClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
+		namespace:                cfg.Namespace,
+		annotationFilter:         cfg.AnnotationFilter,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		httpProxyInformer:        httpProxyInformer,
 		unstructuredConverter:    uc,
 	}, nil
