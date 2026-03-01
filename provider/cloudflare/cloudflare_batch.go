@@ -306,6 +306,7 @@ func (p *CloudFlareProvider) buildBatchCollections(
 				bc.batchPuts = append(bc.batchPuts, putParam)
 				bc.updateChanges = append(bc.updateChanges, change)
 			} else {
+				log.WithFields(logFields).Debugf("batch PUT not supported for type %s, using individual update", change.ResourceRecord.Type)
 				bc.fallbackUpdates = append(bc.fallbackUpdates, change)
 			}
 		}
@@ -363,6 +364,8 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 		if _, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam); err != nil {
 			failed = true
 			log.WithFields(logFields).Errorf("failed to update record: %v", err)
+		} else {
+			log.WithFields(logFields).Debugf("individual update succeeded")
 		}
 	}
 	return failed
