@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"sort"
@@ -248,7 +249,14 @@ func convertCloudflareError(err error) error {
 		return err
 	}
 
-	// Also check for rate limit indicators in error message strings as a fallback.
+	// Transport-level errors that the SDK does not wrap as *cloudflare.Error.
+	// Both are transient and worth retrying at the external-dns level.
+	//   ErrUnexpectedEOF – connection closed mid-response (during body read)
+	//   EOF              – connection closed before any response bytes arrived
+	if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+		return provider.NewSoftError(err)
+	}
+
 	// The v5 SDK's retry logic and error wrapping can hide the structured error type,
 	// so we need string matching to catch rate limits in wrapped errors like:
 	// "exceeded available rate limit retries" from the SDK's auto-retry mechanism.
@@ -256,8 +264,7 @@ func convertCloudflareError(err error) error {
 	if strings.Contains(errMsg, "rate limit") ||
 		strings.Contains(errMsg, "429") ||
 		strings.Contains(errMsg, "exceeded available rate limit retries") ||
-		strings.Contains(errMsg, "too many requests") ||
-		strings.Contains(errMsg, "unexpected EOF") {
+		strings.Contains(errMsg, "too many requests") {
 		return provider.NewSoftError(err)
 	}
 
