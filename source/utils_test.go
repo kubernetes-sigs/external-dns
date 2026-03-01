@@ -18,8 +18,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func TestSuitableType(t *testing.T) {
@@ -299,6 +303,87 @@ func TestMergeEndpoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := MergeEndpoints(tt.input)
 			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_RefObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() []*endpoint.Endpoint
+		expected func(*testing.T, []*endpoint.Endpoint)
+	}{
+		{
+			name:  "empty input",
+			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Empty(t, ep)
+			},
+		},
+		{
+			name: "single endpoint",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints merged and only single refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+				assert.NotEqual(t, "345", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints not merged and two refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("b.example.com", "1.1.1.2", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 2)
+				assert.NotEqual(t, ep[0], ep[1])
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input())
+			tt.expected(t, result)
 		})
 	}
 }

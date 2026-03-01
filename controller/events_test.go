@@ -92,7 +92,7 @@ func TestEmit_RecordReady(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emitter := fake.NewFakeEventEmitter()
 
-			emitChangeEvent(emitter, tt.changes, events.RecordReady)
+			emitChangeEvent(emitter, &tt.changes, events.RecordReady)
 
 			tt.asserts(emitter, tt.changes)
 			mock.AssertExpectationsForObjects(t, emitter)
@@ -102,6 +102,32 @@ func TestEmit_RecordReady(t *testing.T) {
 
 func TestEmit_NilEmitter(t *testing.T) {
 	assert.NotPanics(t, func() {
-		emitChangeEvent(nil, plan.Changes{}, events.RecordError)
+		emitChangeEvent(nil, &plan.Changes{}, events.RecordError)
 	})
+}
+
+func TestEmit_RecordError(t *testing.T) {
+	refObj := &events.ObjectReference{}
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").
+				WithRefObject(refObj),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").
+				WithRefObject(refObj),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").
+				WithRefObject(refObj),
+		},
+	}
+	emitter := fake.NewFakeEventEmitter()
+
+	emitChangeEvent(emitter, &changes, events.RecordError)
+
+	emitter.AssertCalled(t, "Add", events.NewEventFromEndpoint(changes.Create[0], events.ActionCreate, events.RecordError))
+	emitter.AssertCalled(t, "Add", events.NewEventFromEndpoint(changes.UpdateNew[0], events.ActionUpdate, events.RecordError))
+	emitter.AssertCalled(t, "Add", events.NewEventFromEndpoint(changes.Delete[0], events.ActionDelete, events.RecordError))
+	emitter.AssertNumberOfCalls(t, "Add", 3)
 }

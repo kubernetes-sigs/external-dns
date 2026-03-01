@@ -29,6 +29,30 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
+	// Verify that NewObjectReference does NOT mutate the original object
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+	}
+
+	// Before: TypeMeta is empty
+	require.Empty(t, pod.Kind)
+	require.Empty(t, pod.APIVersion)
+
+	ref := NewObjectReference(pod, "test")
+
+	// After: TypeMeta should still be empty (no mutation)
+	require.Empty(t, pod.Kind)
+	require.Empty(t, pod.APIVersion)
+
+	// But the ObjectReference should have the correct values
+	require.Equal(t, "Pod", ref.Kind)
+	require.Equal(t, "v1", ref.ApiVersion)
+}
+
 func TestSanitize(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -329,7 +353,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "endpoint for cluster-scoped resource (Node) should handle empty namespace",
+			name: "endpoint for cluster-scoped resource (Node)",
 			ep: &mockEndpointInfo{
 				dnsName:    "node1.example.com",
 				recordType: "A",
@@ -348,6 +372,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			asserts: func(t *testing.T, ev Event) {
 				require.Equal(t, ActionCreate, ev.action)
 				require.Empty(t, ev.ref.Namespace)
+
 				k8sEvent := ev.event()
 				require.NotNil(t, k8sEvent)
 				require.Equal(t, "default", k8sEvent.Namespace)
