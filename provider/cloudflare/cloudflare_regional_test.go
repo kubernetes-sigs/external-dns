@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
+func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(_ context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
 	zoneID := params.ZoneID.Value
 	if strings.Contains(zoneID, "rherror") {
 		return &mockAutoPager[addressing.RegionalHostnameListResponse]{err: fmt.Errorf("failed to list regional hostnames")}
@@ -52,7 +52,7 @@ func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context
 	}
 }
 
-func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error {
+func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(_ context.Context, params addressing.RegionalHostnameNewParams) error {
 	if strings.Contains(params.Hostname.Value, "rherror") {
 		return fmt.Errorf("failed to create regional hostname")
 	}
@@ -69,7 +69,7 @@ func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx contex
 	return nil
 }
 
-func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
+func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(_ context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
 	if strings.Contains(hostname, "rherror") {
 		return fmt.Errorf("failed to update regional hostname")
 	}
@@ -86,7 +86,7 @@ func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx contex
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
+func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(_ context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
 	if strings.Contains(hostname, "rherror") {
 		return fmt.Errorf("failed to delete regional hostname")
 	}

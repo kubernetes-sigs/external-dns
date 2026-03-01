@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
@@ -35,7 +34,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -93,12 +91,7 @@ func NewAmbassadorHostSource(
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = ambassadorHostInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = ambassadorHostInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -174,11 +167,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			}
 		}
 
-		hostEndpoints, err := sc.endpointsFromHost(host, targets)
-		if err != nil {
-			log.Warningf("Could not get endpoints for Host %s", err)
-			continue
-		}
+		hostEndpoints := sc.endpointsFromHost(host, targets)
 		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
@@ -187,15 +176,11 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, hostEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
-func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
@@ -209,7 +194,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
@@ -274,7 +259,7 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
-func (sc *ambassadorHostSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types

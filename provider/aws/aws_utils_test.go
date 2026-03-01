@@ -101,22 +101,22 @@ func NewRoute53APIFixtureStub(zones *HostedZones) *Route53APIFixtureStub {
 	}
 }
 
-func (r Route53APIFixtureStub) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+func (r Route53APIFixtureStub) ListResourceRecordSets(_ context.Context, _ *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (r Route53APIFixtureStub) ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
+func (r Route53APIFixtureStub) ChangeResourceRecordSets(_ context.Context, _ *route53.ChangeResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (r Route53APIFixtureStub) CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error) {
+func (r Route53APIFixtureStub) CreateHostedZone(_ context.Context, _ *route53.CreateHostedZoneInput, _ ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error) {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (r Route53APIFixtureStub) ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
+func (r Route53APIFixtureStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
 	r.calls["listhostedzones"]++
 	output := &route53.ListHostedZonesOutput{}
 	for _, zone := range r.zones {
@@ -125,7 +125,7 @@ func (r Route53APIFixtureStub) ListHostedZones(ctx context.Context, input *route
 	return output, nil
 }
 
-func (r Route53APIFixtureStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
+func (r Route53APIFixtureStub) ListTagsForResources(_ context.Context, input *route53.ListTagsForResourcesInput, _ ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	r.calls["listtagsforresource"]++
 
 	var sets []route53types.ResourceTagSet
@@ -142,10 +142,10 @@ func (r Route53APIFixtureStub) ListTagsForResources(ctx context.Context, input *
 	return &route53.ListTagsForResourcesOutput{ResourceTagSets: sets}, nil
 }
 
-func unmarshalTestHelper(input string, obj any, t *testing.T) {
+func unmarshalZonesFixture(obj any, t *testing.T) {
 	t.Helper()
 	path, _ := os.Getwd()
-	file, err := os.Open(path + input)
+	file, err := os.Open(path + "/fixtures/160-plus-zones.yaml")
 	assert.NoError(t, err)
 	defer file.Close()
 	dec := yaml.NewDecoder(file)

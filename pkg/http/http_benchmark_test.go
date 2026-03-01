@@ -55,7 +55,7 @@ func (api *apiUnderTest) doStuff() ([]byte, error) {
 }
 
 func BenchmarkRoundTripper(b *testing.B) {
-	client := newTestClient(func(req *http.Request) *http.Response {
+	client := newTestClient(func(_ *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString(`OK`)),
@@ -72,7 +72,7 @@ func BenchmarkRoundTripper(b *testing.B) {
 }
 
 func TestRoundTripper_Concurrent(t *testing.T) {
-	client := newTestClient(func(req *http.Request) *http.Response {
+	client := newTestClient(func(_ *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString(`OK`)),

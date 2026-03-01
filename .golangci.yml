@@ -10,14 +10,15 @@ linters:
     - govet
     - ineffassign
     - misspell
-    - revive
+    - revive # https://golangci-lint.run/docs/linters/configuration/#revive
     - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/docs/linters/configuration/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/docs/linters/configuration/#errchkjson
     - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/docs/linters/configuration/#errorlint
     - staticcheck
     - unconvert
-    - unused
+    - unused # https://golangci-lint.run/docs/linters/configuration/#unused
+    - unparam # https://golangci-lint.run/docs/linters/configuration/#unparam
     - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/docs/linters/configuration/#usestdlibvars
     - whitespace
     - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/docs/linters/configuration/#decorder
@@ -44,6 +45,8 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+        - name: unused-parameter # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#unused-parameter
+          disabled: false
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
     goconst:
@@ -86,7 +89,6 @@ linters:
           - staticcheck
           - structcheck
           - unconvert
-          - unused
           - varcheck
           - whitespace
           - goconst

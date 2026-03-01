@@ -366,8 +366,6 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 }
 
 func TestIsControllerMismatch(t *testing.T) {
-	SetAnnotationPrefix(DefaultAnnotationPrefix)
-
 	tests := []struct {
 		name         string
 		annotations  map[string]string

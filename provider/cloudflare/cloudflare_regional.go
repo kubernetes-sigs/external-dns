@@ -99,7 +99,7 @@ func updateDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHos
 }
 
 // deleteDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
-func deleteDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameDeleteParams {
+func deleteDataLocalizationRegionalHostnameParams(zoneID string) addressing.RegionalHostnameDeleteParams {
 	return addressing.RegionalHostnameDeleteParams{
 		ZoneID: cloudflare.F(zoneID),
 	}
@@ -147,7 +147,7 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, z
 		}
 	case cloudFlareDelete:
 		changeLog.Debug("Deleting regional hostname")
-		params := deleteDataLocalizationRegionalHostnameParams(zoneID, rhChange)
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID)
 		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, rhChange.hostname, params); err != nil {
 			changeLog.Errorf("failed to delete regional hostname: %v", err)
 			return false

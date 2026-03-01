@@ -48,7 +48,7 @@ type mockManagedZonesCreateCall struct {
 	managedZone *dns.ManagedZone
 }
 
-func (m *mockManagedZonesCreateCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)
 
 	if _, ok := testZones[zoneKey]; ok {
@@ -65,7 +65,7 @@ type mockManagedZonesListCall struct {
 	zonesListSoftErr error
 }
 
-func (m *mockManagedZonesListCall) Pages(ctx context.Context, f func(*dns.ManagedZonesListResponse) error) error {
+func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZonesListResponse) error) error {
 	zones := []*dns.ManagedZone{}
 
 	for k, v := range testZones {
@@ -99,7 +99,7 @@ type mockResourceRecordSetsListCall struct {
 	recordsListSoftErr error
 }
 
-func (m *mockResourceRecordSetsListCall) Pages(ctx context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
+func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -133,7 +133,7 @@ type mockChangesCreateCall struct {
 	change      *dns.Change
 }
 
-func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
+func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -208,7 +208,7 @@ func hasTrailingDot(target string) bool {
 }
 
 func TestGoogleZonesIDFilter(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestGoogleZonesIDFilter(t *testing.T) {
 }
 
 func TestGoogleZonesNameFilter(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2"}), provider.NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestGoogleZonesNameFilter(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPublic(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
@@ -241,7 +241,7 @@ func TestGoogleZonesVisibilityFilterPublic(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
@@ -252,7 +252,7 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"svc.local."}), provider.NewZoneIDFilter([]string{""}), provider.NewZoneTypeFilter("private"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"svc.local."}), provider.NewZoneIDFilter([]string{""}), provider.NewZoneTypeFilter("private"), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
@@ -676,7 +676,7 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 	assert.Equal(t, expected.Type, record.Type)
 }
 
-func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, dryRun bool, _ []*endpoint.Endpoint) *GoogleProvider {
+func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, _ []*endpoint.Endpoint) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:                  "zalando-external-dns-test",
 		dryRun:                   false,
@@ -737,8 +737,6 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFil
 		Visibility:    "private",
 		PeeringConfig: &dns.ManagedZonePeeringConfig{TargetNetwork: nil},
 	})
-
-	provider.dryRun = dryRun
 
 	return provider
 }

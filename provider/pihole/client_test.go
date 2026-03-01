@@ -228,36 +228,6 @@ func TestListRecords(t *testing.T) {
 
 }
 
-// Helper function to test error scenarios
-func testErrorScenarios(t *testing.T, srvrErr *httptest.Server) {
-	t.Helper()
-	cfgExpired := PiholeConfig{
-		Server: srvrErr.URL,
-	}
-	clExpired, err := newPiholeClient(cfgExpired)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// set clExpired.token to a valid token
-	clExpired.(*piholeClient).token = "expired"
-	clExpired.(*piholeClient).cfg.Password = "notcorrect"
-
-	cnamerecs, err := clExpired.listRecords(context.Background(), "notarealrecordtype")
-	if err == nil {
-		t.Fatal("Should return error, type is unknown ! ")
-	}
-	cnamerecs, err = clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
-	if err == nil {
-		t.Fatal("Should return error on failed auth ! ")
-	}
-	clExpired.(*piholeClient).token = "correct"
-	clExpired.(*piholeClient).cfg.Password = "correct"
-	cnamerecs, err = clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
-	if len(cnamerecs) != 0 {
-		t.Fatal("Should return empty on missing data in response ! ")
-	}
-}
-
 func TestErrorScenarios(t *testing.T) {
 	// Test errors token
 	srvrErr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {

@@ -268,7 +268,13 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 	return provider, nil
 }
 
-func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
+// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
+func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
+	value, exists := ep.GetProviderSpecificProperty("alias")
+	return exists && value == "true"
+}
+
+func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	targets := make([]string, 0)
 	rrType_ := rr.Type_
@@ -283,7 +289,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
-	return endpoints, nil
+	return endpoints
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
@@ -335,9 +341,16 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
-					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
-					RecordType_ = "ALIAS"
+				// Check if we should use ALIAS instead of CNAME:
+				// 1. APEX records (dnsname == zone.Name) always use ALIAS
+				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				//    (can be set via --prefer-alias flag globally or per-resource annotation)
+				if ep.RecordType == endpoint.RecordTypeCNAME {
+					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
+					if useAlias {
+						log.Debugf("Converting CNAME record %q to ALIAS", dnsname)
+						RecordType_ = "ALIAS"
+					}
 				}
 
 				rrset := pgo.RrSet{
@@ -439,11 +452,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 		}
 
 		for _, rr := range z.Rrsets {
-			e, err := p.convertRRSetToEndpoints(rr)
-			if err != nil {
-				return nil, err
-			}
-			endpoints = append(endpoints, e...)
+			endpoints = append(endpoints, p.convertRRSetToEndpoints(rr)...)
 		}
 	}
 
@@ -466,7 +475,7 @@ func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	startTime := time.Now()
 
 	// Create

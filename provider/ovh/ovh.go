@@ -124,7 +124,12 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(
+	domainFilter *endpoint.DomainFilter,
+	endpoint string,
+	apiRateLimit int,
+	enableCNAMERelative,
+	dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
