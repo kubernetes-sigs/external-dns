@@ -8,9 +8,9 @@ global:
 
 image:  # @schema additionalProperties: false
   # -- Image repository for the `external-dns` container.
-  repository: registry.k8s.io/external-dns/external-dns
+  repository:  hpeartifacts-glp-dino-images.jfrog.io/hpe.com/external-dns-fips
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
-  tag:  # @schema type:[string, null]
+  tag: 0.20.0 # @schema type:[string, null]
   # -- Image pull policy for the `external-dns` container.
   pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always]
 
