@@ -17,6 +17,8 @@ limitations under the License.
 package endpoint
 
 import (
+	"net/netip"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,6 +26,51 @@ import (
 const (
 	msg = "No endpoints could be generated from '%s/%s/%s'"
 )
+
+// suitableType returns the DNS record type suitable for the target.
+// Returns A for IPv4, AAAA for IPv6, and CNAME for everything else.
+func suitableType(target string) string {
+	netIP, err := netip.ParseAddr(target)
+	if err != nil {
+		return RecordTypeCNAME
+	}
+	switch {
+	case netIP.Is4():
+		return RecordTypeA
+	case netIP.Is6():
+		return RecordTypeAAAA
+	default:
+		return RecordTypeCNAME
+	}
+}
+
+// EndpointsForHostname returns endpoint objects for each host-target combination,
+// grouping targets by their suitable DNS record type (A, AAAA, or CNAME).
+func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpecific ProviderSpecific, setIdentifier string, resource string) []*Endpoint {
+	byType := map[string]Targets{}
+	for _, t := range targets {
+		rt := suitableType(t)
+		byType[rt] = append(byType[rt], t)
+	}
+
+	var endpoints []*Endpoint
+	for _, rt := range []string{RecordTypeA, RecordTypeAAAA, RecordTypeCNAME} {
+		if len(byType[rt]) == 0 {
+			continue
+		}
+		ep := NewEndpointWithTTL(hostname, rt, ttl, byType[rt]...)
+		if ep == nil {
+			continue
+		}
+		ep.ProviderSpecific = providerSpecific
+		ep.SetIdentifier = setIdentifier
+		if resource != "" {
+			ep.Labels[ResourceLabelKey] = resource
+		}
+		endpoints = append(endpoints, ep)
+	}
+	return endpoints
+}
 
 // HasNoEmptyEndpoints checks if the endpoint list is empty and logs
 // a debug message if so. Returns true if empty, false otherwise.
