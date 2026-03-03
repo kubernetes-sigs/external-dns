@@ -169,9 +169,8 @@ example:
 
 ```go
 func (p *MyProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-    zones, err := p.client.ListZones()
+    zones, err := p.zones()
     if err != nil {
-        log.Errorf("failed to list zones: %v", err)
         return &endpoint.DomainFilter{}
     }
     // Apply your own configured filter to keep only zones this provider manages.
