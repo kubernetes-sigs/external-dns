@@ -9,6 +9,12 @@ tags:
 
 ExternalDNS supports swapping out endpoint **sources** and DNS **providers** and both sides are pluggable. There currently exist multiple sources for different provider implementations.
 
+**Usage**
+
+You can choose any combination of sources and providers on the command line.
+Given a cluster on AWS you would most likely want to use the Service and Ingress Source in combination with the AWS provider.
+`Service` + `InMemory` is useful for testing your service collecting functionality, whereas `Fake` + `Google` is useful for testing that the Google provider behaves correctly, etc.
+
 ## Sources
 
 Sources are an abstraction over any kind of source of desired Endpoints, e.g.:
@@ -85,6 +91,7 @@ Upon receiving a change set (via an object of `plan.Changes`), `ApplyChanges` sh
 type Provider interface {
  Records() ([]*endpoint.Endpoint, error)
  ApplyChanges(changes *plan.Changes) error
+ GetDomainFilter() endpoint.DomainFilterInterface
 }
 ```
 
@@ -100,8 +107,199 @@ All providers live in package `provider`.
 * `AzureProvider`: returns and creates DNS records in Azure DNS
 * `InMemoryProvider`: Keeps a list of records in local memory
 
-## Usage
+### Implementing GetDomainFilter
 
-You can choose any combination of sources and providers on the command line.
-Given a cluster on AWS you would most likely want to use the Service and Ingress Source in combination with the AWS provider.
-`Service` + `InMemory` is useful for testing your service collecting functionality, whereas `Fake` + `Google` is useful for testing that the Google provider behaves correctly, etc.
+`GetDomainFilter()` is an optional method on the `Provider` interface that lets a provider
+contribute an additional domain filter to the reconcile plan, on top of whatever the user
+configured via `--domain-filter`.
+
+```go
+GetDomainFilter() endpoint.DomainFilterInterface
+```
+
+The default implementation in `BaseProvider` returns an empty `DomainFilter`, which matches
+everything and has no effect. Most providers embed `BaseProvider` and inherit this default.
+
+#### How the controller uses it
+
+Each reconcile cycle, the controller builds a plan combining two filters:
+
+```go
+DomainFilter: endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter}
+```
+
+* `c.DomainFilter` — from the `--domain-filter` CLI flag (user-supplied)
+* `registryFilter` — the value returned by `provider.GetDomainFilter()`
+
+`MatchAllDomainFilters` is a logical AND: a record must satisfy both to be included in the
+plan. The provider filter acts as an additional, provider-side constraint on top of whatever
+the user configured.
+
+#### When to leave the default
+
+If your provider has no concept of zones, or all zones it serves are already fully covered
+by the user's `--domain-filter`, the `BaseProvider` default is fine. Do not override it
+just to echo `config.DomainFilter` back. For example, if the user runs with
+`--domain-filter=example.com` and the provider returns the same value, the plan sees:
+
+```go
+MatchAllDomainFilters{example.com, example.com}  // same filter twice, no added value
+```
+
+This is functionally identical to the default and adds no protection.
+
+#### When and how to override — the dynamic pattern
+
+Override `GetDomainFilter()` when your provider has an authoritative list of zones it
+manages and can narrow the scope independently of what the user configured. The correct
+approach is to query your zone API at runtime and build the filter from the zones your
+provider actually controls. `AWSProvider.GetDomainFilter()` is the canonical example:
+
+```go
+func (p *MyProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+    zones, err := p.client.ListZones()
+    if err != nil {
+        log.Errorf("failed to list zones: %v", err)
+        return &endpoint.DomainFilter{}
+    }
+    // Apply your own configured filter to keep only zones this provider manages.
+    filteredZones := applyDomainFilter(zones)
+
+    var names []string
+    for _, z := range filteredZones {
+        names = append(names, z.Name, "."+z.Name)
+    }
+    return endpoint.NewDomainFilter(names)
+}
+```
+
+Each zone name is added twice — as a bare domain (`example.com`) and with a leading dot
+(`.example.com`) — so the filter matches both exact records and subdomains.
+
+For example, suppose the provider manages four zones:
+
+```sh
+api.example.com
+prod.myapp.io
+staging.myapp.io
+legacy.internal.net
+```
+
+**Without `--domain-filter`** — the provider filter alone constrains the plan:
+
+```go
+MatchAllDomainFilters{
+    <empty>,                                        // no CLI flag, matches everything
+    [api.example.com, .api.example.com,
+     prod.myapp.io,   .prod.myapp.io,
+     staging.myapp.io, .staging.myapp.io,
+     legacy.internal.net, .legacy.internal.net],   // only provider-managed zones
+}
+```
+
+The controller will only touch records in those four zones. Any other zone in the cluster
+is left untouched, even if records pointing to it appear in sources.
+
+**With `--domain-filter=myapp.io`** — the two filters intersect:
+
+```go
+MatchAllDomainFilters{
+    myapp.io,                                       // CLI flag
+    [api.example.com, .api.example.com,
+     prod.myapp.io,   .prod.myapp.io,
+     staging.myapp.io, .staging.myapp.io,
+     legacy.internal.net, .legacy.internal.net],
+}
+```
+
+Only `prod.myapp.io` and `staging.myapp.io` satisfy both filters and are in scope.
+`api.example.com` and `legacy.internal.net` are excluded by the CLI filter.
+
+On error, return an empty `&endpoint.DomainFilter{}` to fail open rather than blocking
+all reconciliation.
+
+#### Zone name formatting
+
+Check the format your provider's API returns for zone names before passing them to
+`endpoint.NewDomainFilter`. Some APIs include a trailing dot (`"example.com."`), which
+must be stripped first:
+
+```go
+// API returns:  "foo.example.com."
+// Filter needs: "foo.example.com"
+name := strings.TrimSuffix(z.Name, ".")
+names = append(names, name, "."+name)
+```
+
+#### Summary
+
+| Implementation | `--domain-filter` unset | `--domain-filter` set |
+|---|---|---|
+| `BaseProvider` default | No additional constraint | User filter applied |
+| Static (echoes `config.DomainFilter`) | No additional constraint (same as default) | Same filter applied twice — redundant |
+| Dynamic (`ListZones` + filter) | Provider-managed zones constrain the plan | Intersection of user filter + provider zones |
+
+The dynamic approach is what gives `GetDomainFilter()` its value: when no `--domain-filter`
+is set, it prevents the controller from touching records in zones the provider does not
+manage.
+
+#### Testing
+
+`GetDomainFilter()` must have a unit test. See `TestAWSProvider_GetDomainFilter` for a
+reference. At minimum, test that:
+
+* Zone names are correctly mapped to filter entries (including the leading-dot variant)
+* An error from `ListZones` returns an empty `DomainFilter` gracefully
+
+## Provider Blueprints
+
+The `provider/blueprint` package contains reusable building blocks for provider
+implementations. Using them keeps providers consistent and avoids reimplementing
+solved problems.
+
+### ZoneCache
+
+`ZoneCache[T]` is a generic, thread-safe TTL cache for zone data. Providers that call
+a zone-listing API on every reconcile loop can use it to avoid redundant API calls.
+See `provider/blueprint/zone_cache.go` for the full API and godoc.
+
+The typical usage pattern — taken from `AWSProvider.zones()` — is:
+
+```go
+// On the provider struct:
+zonesCache *blueprint.ZoneCache[map[string]*MyZone]
+
+// In the constructor:
+zonesCache: blueprint.NewZoneCache[map[string]*MyZone](config.ZoneCacheDuration),
+
+// In the zone-listing method:
+func (p *MyProvider) zones() (map[string]*MyZone, error) {
+    if !p.zonesCache.Expired() {
+        return p.zonesCache.Get(), nil
+    }
+
+    zones, err := p.client.ListZones()
+    if err != nil {
+        return nil, err
+    }
+
+    p.zonesCache.Reset(zones)
+    return zones, nil
+}
+```
+
+Full behaviour is documented in the `ZoneCache` godoc. The key contract to keep in mind
+when implementing the pattern: `Get()` returns stale data after expiry rather than a zero
+value — callers must check `Expired()` first and decide whether to refresh.
+
+### Configuration flag
+
+`ZoneCache` is controlled by a single shared flag:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--zones-cache-duration` | `0s` | Zone list cache TTL. Set to `0s` to disable. |
+
+Add a `ZoneCacheDuration time.Duration` field to your provider config struct, wire it to
+this flag in `pkg/apis/externaldns/types.go`, and pass it to `NewZoneCache` in the
+constructor.
