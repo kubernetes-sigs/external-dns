@@ -23,7 +23,6 @@ import (
 )
 
 // EndpointsForHostname returns the endpoint objects for each host-target combination.
-// TODO: move to endpoint package, simplify and reuse in other places (e.g. provider, source)
 func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
 	var (
 		endpoints    []*endpoint.Endpoint
