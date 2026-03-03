@@ -27,21 +27,34 @@ const (
 	msg = "No endpoints could be generated from '%s/%s/%s'"
 )
 
-// suitableType returns the DNS record type suitable for the target.
-// Returns A for IPv4, AAAA for IPv6, and CNAME for everything else.
-func suitableType(target string) string {
-	netIP, err := netip.ParseAddr(target)
+// SuitableType returns the DNS record type for the given target:
+// A for IPv4, AAAA for IPv6, CNAME for everything else.
+func SuitableType(target string) string {
+	ip, err := netip.ParseAddr(target)
 	if err != nil {
 		return RecordTypeCNAME
 	}
 	switch {
-	case netIP.Is4():
+	case ip.Is4():
 		return RecordTypeA
-	case netIP.Is6():
+	case ip.Is6():
 		return RecordTypeAAAA
 	default:
 		return RecordTypeCNAME
 	}
+}
+
+// HasNoEmptyEndpoints checks if the endpoint list is empty and logs
+// a debug message if so. Returns true if empty, false otherwise.
+func HasNoEmptyEndpoints(
+	endpoints []*Endpoint,
+	rType string, entity metav1.ObjectMetaAccessor,
+) bool {
+	if len(endpoints) == 0 {
+		log.Debugf(msg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName())
+		return true
+	}
+	return false
 }
 
 // EndpointsForHostname returns endpoint objects for each host-target combination,
@@ -49,7 +62,7 @@ func suitableType(target string) string {
 func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpecific ProviderSpecific, setIdentifier string, resource string) []*Endpoint {
 	byType := map[string]Targets{}
 	for _, t := range targets {
-		rt := suitableType(t)
+		rt := SuitableType(t)
 		byType[rt] = append(byType[rt], t)
 	}
 
@@ -70,17 +83,4 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 		endpoints = append(endpoints, ep)
 	}
 	return endpoints
-}
-
-// HasNoEmptyEndpoints checks if the endpoint list is empty and logs
-// a debug message if so. Returns true if empty, false otherwise.
-func HasNoEmptyEndpoints(
-	endpoints []*Endpoint,
-	rType string, entity metav1.ObjectMetaAccessor,
-) bool {
-	if len(endpoints) == 0 {
-		log.Debugf(msg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName())
-		return true
-	}
-	return false
 }
