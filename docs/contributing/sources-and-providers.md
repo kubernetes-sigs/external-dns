@@ -250,11 +250,11 @@ names = append(names, name, "."+name)
 
 #### Summary
 
-| Implementation | `--domain-filter` unset | `--domain-filter` set |
-|---|---|---|
-| `BaseProvider` default | No additional constraint | User filter applied |
-| Static (echoes `config.DomainFilter`) | No additional constraint (same as default) | Same filter applied twice — redundant |
-| Dynamic (`ListZones` + filter) | Provider-managed zones constrain the plan | Intersection of user filter + provider zones |
+| Implementation                        | `--domain-filter` unset                    | `--domain-filter` set                        |
+|---------------------------------------|--------------------------------------------|----------------------------------------------|
+| `BaseProvider` default                | No additional constraint                   | User filter applied                          |
+| Static (echoes `config.DomainFilter`) | No additional constraint (same as default) | Same filter applied twice — redundant        |
+| Dynamic (`ListZones` + filter)        | Provider-managed zones constrain the plan  | Intersection of user filter + provider zones |
 
 The dynamic approach is what gives `GetDomainFilter()` its value: when no `--domain-filter`
 is set, it prevents the controller from touching records in zones the provider does not
