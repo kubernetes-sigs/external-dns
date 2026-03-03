@@ -331,9 +331,9 @@ value — callers must check `Expired()` first and decide whether to refresh.
 
 `ZoneCache` is controlled by a single shared flag:
 
-| Flag | Default | Description |
-|---|---|---|
-| `--zones-cache-duration` | `0s` | Zone list cache TTL. Set to `0s` to disable. |
+| Flag                     | Default | Description                                  |
+|--------------------------|---------|----------------------------------------------|
+| `--zones-cache-duration` | `0s`    | Zone list cache TTL. Set to `0s` to disable. |
 
 Add a `ZoneCacheDuration time.Duration` field to your provider config struct, wire it to
 this flag in `pkg/apis/externaldns/types.go`, and pass it to `NewZoneCache` in the
