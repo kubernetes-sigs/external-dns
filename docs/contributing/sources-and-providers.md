@@ -151,9 +151,26 @@ This is functionally identical to the default and adds no protection.
 #### When and how to override — the dynamic pattern
 
 Override `GetDomainFilter()` when your provider has an authoritative list of zones it
-manages and can narrow the scope independently of what the user configured. The correct
-approach is to query your zone API at runtime and build the filter from the zones your
-provider actually controls. `AWSProvider.GetDomainFilter()` is the canonical example:
+manages and can narrow the scope independently of what the user configured. Two concrete
+benefits make this worthwhile:
+
+**Protection without user configuration** — when no `--domain-filter` is set,
+`BaseProvider` returns an empty filter and the controller has no domain constraint at all.
+A dynamic override builds the constraint from zones the provider actually manages, so the
+controller is scoped correctly even if the operator never sets a flag.
+
+**The filter reflects reality, not intent** — `--domain-filter` expresses what the
+operator wants to manage. `GetDomainFilter()` expresses what the provider actually manages
+at runtime — zones that exist and are accessible with the current credentials. The
+intersection of the two is tighter and safer than either alone.
+
+For example, if `--domain-filter=example.com` is set but the provider only has access to
+`api.example.com` and `prod.example.com`, a dynamic implementation scopes the plan to
+exactly those two zones rather than anything under `example.com`.
+
+The correct approach is to query your zone API at runtime and build the filter from the
+zones your provider actually controls. `AWSProvider.GetDomainFilter()` is the canonical
+example:
 
 ```go
 func (p *MyProvider) GetDomainFilter() endpoint.DomainFilterInterface {
@@ -259,9 +276,16 @@ solved problems.
 
 ### ZoneCache
 
-`ZoneCache[T]` is a generic, thread-safe TTL cache for zone data. Providers that call
-a zone-listing API on every reconcile loop can use it to avoid redundant API calls.
+`ZoneCache[T]` is a generic, thread-safe TTL cache for zone data.
 See `provider/blueprint/zone_cache.go` for the full API and godoc.
+
+**Reduced API pressure** — zone-listing is called on every reconcile cycle, but zones
+themselves are rarely created or deleted. Caching the result for a configurable TTL means
+the provider only hits the API when the cache has expired, rather than on every loop.
+
+**Consistent behaviour across providers** — thread safety, TTL logic, and the
+disable-via-zero behaviour are implemented and tested once in `blueprint`. Providers that
+use `ZoneCache` behave the same way, reducing drift between implementations over time.
 
 The typical usage pattern — taken from `AWSProvider.zones()` — is:
 
