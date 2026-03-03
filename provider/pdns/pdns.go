@@ -137,18 +137,17 @@ func stringifyHTTPResponseBody(r *http.Response) string {
 // well as mock APIClients used in testing
 type PDNSAPIProvider interface {
 	ListZones() ([]pgo.Zone, *http.Response, error)
-	PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone)
+	PartitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone)
 	ListZone(zoneID string) (pgo.Zone, *http.Response, error)
 	PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error)
 }
 
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
-	dryRun       bool
-	serverID     string
-	authCtx      context.Context
-	client       *pgo.APIClient
-	domainFilter *endpoint.DomainFilter
+	dryRun   bool
+	serverID string
+	authCtx  context.Context
+	client   *pgo.APIClient
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -172,13 +171,13 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 }
 
 // PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
-func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
 	var filteredZones []pgo.Zone
 	var residualZones []pgo.Zone
 
-	if c.domainFilter.IsConfigured() {
+	if domainFilter.IsConfigured() {
 		for _, zone := range zones {
-			if c.domainFilter.Match(zone.Name) {
+			if domainFilter.Match(zone.Name) {
 				filteredZones = append(filteredZones, zone)
 			} else {
 				residualZones = append(residualZones, zone)
@@ -259,11 +258,10 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
-			dryRun:       config.DryRun,
-			serverID:     config.ServerID,
-			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
-			client:       pgo.NewAPIClient(pdnsClientConfig),
-			domainFilter: config.DomainFilter,
+			dryRun:   config.DryRun,
+			serverID: config.ServerID,
+			authCtx:  context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			client:   pgo.NewAPIClient(pdnsClientConfig),
 		},
 		domainFilter: config.DomainFilter,
 	}
@@ -318,7 +316,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, residualZones := p.client.PartitionZones(zones)
+	filteredZones, residualZones := p.client.PartitionZones(zones, p.domainFilter)
 
 	// Sort the zone by length of the name in descending order, we use this
 	// property later to ensure we add a record to the longest matching zone
@@ -447,7 +445,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, _ := p.client.PartitionZones(zones)
+	filteredZones, _ := p.client.PartitionZones(zones, p.domainFilter)
 
 	var endpoints []*endpoint.Endpoint
 

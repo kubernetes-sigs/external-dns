@@ -666,56 +666,16 @@ var (
 
 	DomainFilterListSingle = endpoint.NewDomainFilter([]string{"example.com"})
 
-	DomainFilterChildListSingle = endpoint.NewDomainFilter([]string{"a.example.com"})
-
 	DomainFilterListMultiple = endpoint.NewDomainFilter([]string{"example.com", "mock.com"})
-
-	DomainFilterChildListMultiple = endpoint.NewDomainFilter([]string{"a.example.com", "c.example.com"})
 
 	DomainFilterListEmpty = endpoint.NewDomainFilter([]string{})
 
 	RegexDomainFilter = endpoint.NewRegexDomainFilter(regexp.MustCompile("example.com"), nil)
 
-	DomainFilterEmptyClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: DomainFilterListEmpty,
-	}
-
-	DomainFilterSingleClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: DomainFilterListSingle,
-	}
-
-	DomainFilterChildSingleClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: DomainFilterChildListSingle,
-	}
-
-	DomainFilterMultipleClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: DomainFilterListMultiple,
-	}
-
-	DomainFilterChildMultipleClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: DomainFilterChildListMultiple,
-	}
-
-	RegexDomainFilterClient = &PDNSAPIClient{
-		dryRun:       false,
-		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-		domainFilter: RegexDomainFilter,
+	DomainFilterClient = &PDNSAPIClient{
+		dryRun:  false,
+		authCtx: context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:  pgo.NewAPIClient(pgo.NewConfiguration()),
 	}
 )
 
@@ -727,7 +687,7 @@ func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneMixed}, nil, nil
 }
 
-func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
 	return zones, nil
 }
 
@@ -750,7 +710,7 @@ func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, *http.Response, e
 	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil, nil
 }
 
-func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
 	return zones, nil
 }
 
@@ -833,7 +793,7 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *ht
 }
 
 // Just overwrite the ListZones method to introduce a failure
-func (c *PDNSAPIClientStubPartitionZones) PartitionZones(_ []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+func (c *PDNSAPIClientStubPartitionZones) PartitionZones(_ []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
 	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
 }
 
@@ -1195,21 +1155,21 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	}
 
 	// Check filtered, residual zones when no domain filter specified
-	filteredZones, residualZones := DomainFilterEmptyClient.PartitionZones(zoneList)
+	filteredZones, residualZones := DomainFilterClient.PartitionZones(zoneList, DomainFilterListEmpty)
 	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
 	suite.Equal(partitionResultResidualEmptyFilter, residualZones)
 
 	// Check filtered, residual zones when a single domain filter specified
-	filteredZones, residualZones = DomainFilterSingleClient.PartitionZones(zoneList)
+	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, DomainFilterListSingle)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 
 	// Check filtered, residual zones when a multiple domain filter specified
-	filteredZones, residualZones = DomainFilterMultipleClient.PartitionZones(zoneList)
+	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, DomainFilterListMultiple)
 	suite.Equal(partitionResultFilteredMultipleFilter, filteredZones)
 	suite.Equal(partitionResultResidualMultipleFilter, residualZones)
 
-	filteredZones, residualZones = RegexDomainFilterClient.PartitionZones(zoneList)
+	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, RegexDomainFilter)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 }
