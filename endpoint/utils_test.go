@@ -35,6 +35,58 @@ func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
 	}
 }
 
+func TestHasEmptyEndpoints(t *testing.T) {
+	tests := []struct {
+		name      string
+		endpoints []*Endpoint
+		rType     string
+		entity    metav1.ObjectMetaAccessor
+		expected  bool
+	}{
+		{
+			name:      "nil endpoints returns true",
+			endpoints: nil,
+			rType:     "Service",
+			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
+			expected:  true,
+		},
+		{
+			name:      "empty slice returns true",
+			endpoints: []*Endpoint{},
+			rType:     "Ingress",
+			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
+			expected:  true,
+		},
+		{
+			name: "single endpoint returns false",
+			endpoints: []*Endpoint{
+				NewEndpoint("example.org", "A", "1.2.3.4"),
+			},
+			rType:    "Service",
+			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
+			expected: false,
+		},
+		{
+			name: "multiple endpoints returns false",
+			endpoints: []*Endpoint{
+				NewEndpoint("example.org", "A", "1.2.3.4"),
+				NewEndpoint("test.example.org", "CNAME", "example.org"),
+			},
+			rType:    "Ingress",
+			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := HasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
+			assert.Equal(t, tc.expected, result)
+			// TODO: Add log capture and verification
+		})
+	}
+}
+
 func TestEndpointsForHostname(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -128,58 +180,6 @@ func TestEndpointsForHostname(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EndpointsForHostname(tt.hostname, tt.targets, tt.ttl, tt.providerSpecific, tt.setIdentifier, tt.resource)
 			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestHasEmptyEndpoints(t *testing.T) {
-	tests := []struct {
-		name      string
-		endpoints []*Endpoint
-		rType     string
-		entity    metav1.ObjectMetaAccessor
-		expected  bool
-	}{
-		{
-			name:      "nil endpoints returns true",
-			endpoints: nil,
-			rType:     "Service",
-			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected:  true,
-		},
-		{
-			name:      "empty slice returns true",
-			endpoints: []*Endpoint{},
-			rType:     "Ingress",
-			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
-			expected:  true,
-		},
-		{
-			name: "single endpoint returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-			},
-			rType:    "Service",
-			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected: false,
-		},
-		{
-			name: "multiple endpoints returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-				NewEndpoint("test.example.org", "CNAME", "example.org"),
-			},
-			rType:    "Ingress",
-			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
-			expected: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := HasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
-			assert.Equal(t, tc.expected, result)
-			// TODO: Add log capture and verification
 		})
 	}
 }
