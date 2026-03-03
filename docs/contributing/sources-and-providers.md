@@ -109,16 +109,10 @@ All providers live in package `provider`.
 
 ### Implementing GetDomainFilter
 
-`GetDomainFilter()` is an optional method on the `Provider` interface that lets a provider
-contribute an additional domain filter to the reconcile plan, on top of whatever the user
-configured via `--domain-filter`.
-
-```go
-GetDomainFilter() endpoint.DomainFilterInterface
-```
-
-The default implementation in `BaseProvider` returns an empty `DomainFilter`, which matches
-everything and has no effect. Most providers embed `BaseProvider` and inherit this default.
+`GetDomainFilter()` is a method on the `Provider` interface. The default implementation in
+`BaseProvider` returns an empty filter with no effect. Providers can override it to
+contribute an additional domain constraint to the reconcile plan, on top of whatever the
+user configured via `--domain-filter`.
 
 #### How the controller uses it
 
@@ -137,9 +131,9 @@ the user configured.
 
 #### When to leave the default
 
-If your provider has no concept of zones, or all zones it serves are already fully covered
-by the user's `--domain-filter`, the `BaseProvider` default is fine. Do not override it
-just to echo `config.DomainFilter` back. For example, if the user runs with
+If your provider has no concept of zones, domains, or hosted zones — for example, a
+provider backed by flat storage like etcd — the `BaseProvider` default is fine. Do not
+override it just to echo `config.DomainFilter` back. For example, if the user runs with
 `--domain-filter=example.com` and the provider returns the same value, the plan sees:
 
 ```go
@@ -150,8 +144,9 @@ This is functionally identical to the default and adds no protection.
 
 #### When and how to override — the dynamic pattern
 
-Override `GetDomainFilter()` when your provider has an authoritative list of zones it
-manages and can narrow the scope independently of what the user configured. Two concrete
+Override `GetDomainFilter()` when your provider has an authoritative list of zones,
+domains, or hosted zones it manages — regardless of what the DNS provider calls them —
+and can narrow the scope independently of what the user configured. Two concrete
 benefits make this worthwhile:
 
 **Protection without user configuration** — when no `--domain-filter` is set,
@@ -276,12 +271,13 @@ solved problems.
 
 ### ZoneCache
 
-`ZoneCache[T]` is a generic, thread-safe TTL cache for zone data.
+`ZoneCache[T]` is a generic, thread-safe TTL cache for zone, domain, or hosted zone data.
 See `provider/blueprint/zone_cache.go` for the full API and godoc.
 
-**Reduced API pressure** — zone-listing is called on every reconcile cycle, but zones
-themselves are rarely created or deleted. Caching the result for a configurable TTL means
-the provider only hits the API when the cache has expired, rather than on every loop.
+**Reduced API pressure** — listing zones, domains, or hosted zones is called on every
+reconcile cycle, but they are rarely created or deleted. Caching the result for a
+configurable TTL means the provider only hits the API when the cache has expired, rather
+than on every loop.
 
 **Consistent behaviour across providers** — thread safety, TTL logic, and the
 disable-via-zero behaviour are implemented and tested once in `blueprint`. Providers that
@@ -296,7 +292,7 @@ zonesCache *blueprint.ZoneCache[map[string]*MyZone]
 // In the constructor:
 zonesCache: blueprint.NewZoneCache[map[string]*MyZone](config.ZoneCacheDuration),
 
-// In the zone-listing method:
+// In the zone/domain-listing method:
 func (p *MyProvider) zones() (map[string]*MyZone, error) {
     if !p.zonesCache.Expired() {
         return p.zonesCache.Get(), nil
