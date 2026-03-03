@@ -27,7 +27,7 @@ The `Source` interface has a single method called `Endpoints` that should return
 
 ```go
 type Source interface {
- Endpoints() ([]*endpoint.Endpoint, error)
+  Endpoints() ([]*endpoint.Endpoint, error)
 }
 ```
 
@@ -89,9 +89,8 @@ Upon receiving a change set (via an object of `plan.Changes`), `ApplyChanges` sh
 
 ```go
 type Provider interface {
- Records() ([]*endpoint.Endpoint, error)
- ApplyChanges(changes *plan.Changes) error
- GetDomainFilter() endpoint.DomainFilterInterface
+  Records() ([]*endpoint.Endpoint, error)
+  ApplyChanges(changes *plan.Changes) error
 }
 ```
 
@@ -226,8 +225,10 @@ MatchAllDomainFilters{
 Only `prod.myapp.io` and `staging.myapp.io` satisfy both filters and are in scope.
 `api.example.com` and `legacy.internal.net` are excluded by the CLI filter.
 
-On error, return an empty `&endpoint.DomainFilter{}` to fail open rather than blocking
-all reconciliation.
+On error, return an empty `&endpoint.DomainFilter{}`. This has the same effect as the
+`BaseProvider` default — the CLI filter becomes the sole authority. If the user specifies
+a domain the provider does not manage, reconciliation will proceed against it. This is a
+deliberate tradeoff: a temporary API failure should not block all reconciliation.
 
 #### Zone name formatting
 
