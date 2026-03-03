@@ -230,6 +230,21 @@ On error, return an empty `&endpoint.DomainFilter{}`. This has the same effect a
 a domain the provider does not manage, reconciliation will proceed against it. This is a
 deliberate tradeoff: a temporary API failure should not block all reconciliation.
 
+For example, if the provider manages `a.com` and `b.com` but the user sets
+`--domain-filter=c.com`, a dynamic implementation produces an empty intersection —
+the controller does nothing:
+
+```go
+MatchAllDomainFilters{
+    c.com,               // CLI flag
+    [a.com, .a.com,      // provider zones — no overlap with c.com
+     b.com, .b.com],
+}
+```
+
+With an empty `GetDomainFilter()` (default or error), only the CLI filter applies and
+the controller attempts to reconcile `c.com` against a provider that does not manage it.
+
 #### Zone name formatting
 
 Check the format your provider's API returns for zone names before passing them to
