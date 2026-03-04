@@ -268,8 +268,35 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 	return provider, nil
 }
 
+// filteredZones fetches all zones from the PowerDNS API and partitions them
+// using the provider's domain filter. It returns the matching zones, the
+// non-matching (residual) zones, and any error from the API call.
+func (p *PDNSProvider) filteredZones() ([]pgo.Zone, []pgo.Zone, error) {
+	zones, _, err := p.client.ListZones()
+	if err != nil {
+		return nil, nil, err
+	}
+	filtered, residual := p.client.PartitionZones(zones, p.domainFilter)
+	return filtered, residual, nil
+}
+
 func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return p.domainFilter
+	// Return all zones the provider manages so the controller can intersect
+	// with --domain-filter on its own. Do NOT apply p.domainFilter here;
+	// double-filtering would produce an empty filter when no zones match,
+	// silently failing open instead of letting the controller see the
+	// mismatch and produce a safe empty plan.
+	zones, _, err := p.client.ListZones()
+	if err != nil {
+		log.Errorf("Unable to fetch zones from PowerDNS API: %v", err)
+		return &endpoint.DomainFilter{}
+	}
+
+	var zoneNames []string
+	for _, zone := range zones {
+		zoneNames = append(zoneNames, zone.Name, "."+zone.Name)
+	}
+	return endpoint.NewDomainFilter(zoneNames)
 }
 
 // hasAliasAnnotation checks if the endpoint has the alias annotation set to true
@@ -312,11 +339,10 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			return endpoints[i].DNSName < endpoints[j].DNSName
 		})
 
-	zones, _, err := p.client.ListZones()
+	filteredZones, residualZones, err := p.filteredZones()
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, residualZones := p.client.PartitionZones(zones, p.domainFilter)
 
 	// Sort the zone by length of the name in descending order, we use this
 	// property later to ensure we add a record to the longest matching zone
@@ -441,11 +467,10 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
 func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	zones, _, err := p.client.ListZones()
+	filteredZones, _, err := p.filteredZones()
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, _ := p.client.PartitionZones(zones, p.domainFilter)
 
 	var endpoints []*endpoint.Endpoint
 
