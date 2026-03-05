@@ -671,12 +671,6 @@ var (
 	DomainFilterListEmpty = endpoint.NewDomainFilter([]string{})
 
 	RegexDomainFilter = endpoint.NewRegexDomainFilter(regexp.MustCompile("example.com"), nil)
-
-	DomainFilterClient = &PDNSAPIClient{
-		dryRun:  false,
-		authCtx: context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-		client:  pgo.NewAPIClient(pgo.NewConfiguration()),
-	}
 )
 
 /******************************************************************************/
@@ -685,10 +679,6 @@ type PDNSAPIClientStub struct{}
 
 func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneMixed}, nil, nil
-}
-
-func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
-	return zones, nil
 }
 
 func (c *PDNSAPIClientStub) ListZone(_ string) (pgo.Zone, *http.Response, error) {
@@ -708,10 +698,6 @@ type PDNSAPIClientStubEmptyZones struct {
 
 func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil, nil
-}
-
-func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
-	return zones, nil
 }
 
 func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
@@ -775,7 +761,7 @@ type PDNSAPIClientStubPartitionZones struct {
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2, ZoneEmptySimilar}, nil, nil
+	return []pgo.Zone{ZoneEmpty, ZoneEmpty2, ZoneEmptySimilar}, nil, nil
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
@@ -784,17 +770,10 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *ht
 		return ZoneEmpty, nil, nil
 	case strings.Contains(zoneID, "mock.test"):
 		return ZoneEmpty2, nil, nil
-	case strings.Contains(zoneID, "long.domainname.example.com"):
-		return ZoneEmptyLong, nil, nil
 	case strings.Contains(zoneID, "simexample.com"):
 		return ZoneEmptySimilar, nil, nil
 	}
 	return pgo.Zone{}, nil, nil
-}
-
-// Just overwrite the ListZones method to introduce a failure
-func (c *PDNSAPIClientStubPartitionZones) PartitionZones(_ []pgo.Zone, _ *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
-	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
 }
 
 /******************************************************************************/
@@ -811,22 +790,6 @@ func (c *PDNSAPIClientStubConfigurable) ListZones() ([]pgo.Zone, *http.Response,
 		return nil, nil, c.listErr
 	}
 	return c.zones, nil, nil
-}
-
-func (c *PDNSAPIClientStubConfigurable) PartitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
-	var filtered, residual []pgo.Zone
-	if domainFilter.IsConfigured() {
-		for _, zone := range zones {
-			if domainFilter.Match(zone.Name) {
-				filtered = append(filtered, zone)
-			} else {
-				residual = append(residual, zone)
-			}
-		}
-	} else {
-		filtered = zones
-	}
-	return filtered, residual
 }
 
 func (c *PDNSAPIClientStubConfigurable) ListZone(_ string) (pgo.Zone, *http.Response, error) {
@@ -1091,7 +1054,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZones() {
 	// Test DomainFilters
 	p := &PDNSProvider{
-		client: &PDNSAPIClientStubPartitionZones{},
+		client:       &PDNSAPIClientStubPartitionZones{},
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
 	// Check inserting endpoints from a single zone which is specified in DomainFilter
@@ -1195,21 +1159,21 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	}
 
 	// Check filtered, residual zones when no domain filter specified
-	filteredZones, residualZones := DomainFilterClient.PartitionZones(zoneList, DomainFilterListEmpty)
+	filteredZones, residualZones := partitionZones(zoneList, DomainFilterListEmpty)
 	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
 	suite.Equal(partitionResultResidualEmptyFilter, residualZones)
 
 	// Check filtered, residual zones when a single domain filter specified
-	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, DomainFilterListSingle)
+	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListSingle)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 
 	// Check filtered, residual zones when a multiple domain filter specified
-	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, DomainFilterListMultiple)
+	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListMultiple)
 	suite.Equal(partitionResultFilteredMultipleFilter, filteredZones)
 	suite.Equal(partitionResultResidualMultipleFilter, residualZones)
 
-	filteredZones, residualZones = DomainFilterClient.PartitionZones(zoneList, RegexDomainFilter)
+	filteredZones, residualZones = partitionZones(zoneList, RegexDomainFilter)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 }

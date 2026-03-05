@@ -137,7 +137,6 @@ func stringifyHTTPResponseBody(r *http.Response) string {
 // well as mock APIClients used in testing
 type PDNSAPIProvider interface {
 	ListZones() ([]pgo.Zone, *http.Response, error)
-	PartitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone)
 	ListZone(zoneID string) (pgo.Zone, *http.Response, error)
 	PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error)
 }
@@ -170,23 +169,22 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return zones, resp, provider.NewSoftErrorf("unable to list zones: %v", err)
 }
 
-// PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
-func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
-	var filteredZones []pgo.Zone
-	var residualZones []pgo.Zone
-
-	if domainFilter.IsConfigured() {
-		for _, zone := range zones {
-			if domainFilter.Match(zone.Name) {
-				filteredZones = append(filteredZones, zone)
-			} else {
-				residualZones = append(residualZones, zone)
-			}
-		}
-	} else {
-		filteredZones = zones
+// partitionZones returns a slice of zones that adhere to the domain filter and a slice of ones that do not adhere to the filter.
+func partitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
+	if domainFilter == nil || !domainFilter.IsConfigured() {
+		return zones, nil
 	}
-	return filteredZones, residualZones
+
+	var filtered, residual []pgo.Zone
+	for _, zone := range zones {
+		if domainFilter.Match(zone.Name) {
+			filtered = append(filtered, zone)
+		} else {
+			residual = append(residual, zone)
+		}
+	}
+
+	return filtered, residual
 }
 
 // ListZone : Method returns the details of a specific zone from PowerDNS
@@ -276,7 +274,7 @@ func (p *PDNSProvider) filteredZones() ([]pgo.Zone, []pgo.Zone, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	filtered, residual := p.client.PartitionZones(zones, p.domainFilter)
+	filtered, residual := partitionZones(zones, p.domainFilter)
 	return filtered, residual, nil
 }
 
@@ -292,7 +290,7 @@ func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 		return &endpoint.DomainFilter{}
 	}
 
-	var zoneNames []string
+	zoneNames := make([]string, 0, 2*len(zones))
 	for _, zone := range zones {
 		zoneNames = append(zoneNames, zone.Name, "."+zone.Name)
 	}
