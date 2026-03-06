@@ -28,7 +28,7 @@ import (
 )
 
 // ptrSource wraps a Source to append PTR endpoints for every A/AAAA endpoint.
-// The defaultEnabled flag corresponds to --create-ptr. Per-endpoint, the "ptr"
+// The defaultEnabled flag corresponds to --create-ptr. Per-endpoint, the "record-type"
 // provider-specific property (from the resource annotation) overrides this default.
 type ptrSource struct {
 	source         source.Source
@@ -78,8 +78,8 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 		}
 
 		enabled := defaultEnabled
-		if val, ok := ep.GetProviderSpecificProperty("ptr"); ok {
-			enabled = val == "true"
+		if val, ok := ep.GetProviderSpecificProperty("record-type"); ok {
+			enabled = strings.Contains(val, "ptr")
 		}
 		if !enabled {
 			continue

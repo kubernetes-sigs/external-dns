@@ -126,7 +126,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts in when flag is off", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("ptr", "true"),
+				WithProviderSpecific("record-type", "ptr"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)
@@ -139,7 +139,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts out when flag is on", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("ptr", "false"),
+				WithProviderSpecific("record-type", ""),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)

@@ -7,15 +7,15 @@
 ## Flag and annotation
 
 The `--create-ptr` flag is a boolean (default: `false`) that sets the global default for PTR record creation.
-The `external-dns.alpha.kubernetes.io/ptr` annotation on a resource overrides this default,
+The `external-dns.alpha.kubernetes.io/record-type` annotation on a resource overrides this default,
 following the standard [configuration precedence](configuration-precedence.md):
 
-| Flag   | Annotation | Result |
-|:-------|:-----------|:-------|
-| `true` | (absent)   | PTR record created |
-| `true` | `"false"`  | PTR record **not** created (annotation opts out) |
-| `false`| (absent)   | PTR record **not** created |
-| `false`| `"true"`   | PTR record created (annotation opts in) |
+| Flag   | Annotation             | Result |
+|:-------|:-----------------------|:-------|
+| `true` | (absent)               | PTR record created |
+| `true` | `""` (empty)           | PTR record **not** created (annotation opts out) |
+| `false`| (absent)               | PTR record **not** created |
+| `false`| `"ptr"`                | PTR record created (annotation opts in) |
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ Include the reverse zone in `--domain-filter` so that ExternalDNS knows it is al
 ### Global PTR creation
 
 With `--create-ptr` enabled, every A/AAAA record managed by ExternalDNS automatically gets a corresponding PTR record.
-Individual resources can opt out by setting the annotation to `"false"`.
+Individual resources can opt out by setting the annotation to an empty value.
 
 ```sh
 external-dns \
@@ -43,7 +43,7 @@ external-dns \
 
 ### Per-resource PTR creation
 
-Without `--create-ptr`, only resources annotated with `external-dns.alpha.kubernetes.io/ptr: "true"`
+Without `--create-ptr`, only resources annotated with `external-dns.alpha.kubernetes.io/record-type: "ptr"`
 produce PTR records.
 
 ```yaml
@@ -53,7 +53,7 @@ metadata:
   name: web
   annotations:
     external-dns.alpha.kubernetes.io/hostname: web.example.com
-    external-dns.alpha.kubernetes.io/ptr: "true"
+    external-dns.alpha.kubernetes.io/record-type: "ptr"
 spec:
   type: LoadBalancer
   ports:
@@ -66,6 +66,31 @@ If the Service receives the external IP `192.168.49.2`, ExternalDNS creates both
 `web.example.com → 192.168.49.2` (A) and `2.49.168.192.in-addr.arpa → web.example.com` (PTR).
 
 Resources without the annotation are not affected.
+
+### DNSEndpoint CRD
+
+The DNSEndpoint CRD source does not process Kubernetes resource annotations.
+To enable PTR for individual CRD endpoints, set the `record-type` property
+directly in `spec.endpoints[].providerSpecific`:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: web
+spec:
+  endpoints:
+  - dnsName: web.example.com
+    recordType: A
+    targets:
+    - 192.168.49.2
+    providerSpecific:
+    - name: record-type
+      value: ptr
+```
+
+When `--create-ptr` is enabled globally, PTR records are generated for all
+A/AAAA endpoints regardless of source, including DNSEndpoint.
 
 ## Behaviour details
 
