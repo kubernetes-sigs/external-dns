@@ -34,8 +34,8 @@ func hasAliasFromAnnotations(annotations map[string]string) bool {
 	return ok && aliasAnnotation == "true"
 }
 
-func ptrValueFromAnnotations(annotations map[string]string) (string, bool) {
-	v, ok := annotations[PTRKey]
+func recordTypeFromAnnotations(annotations map[string]string) (string, bool) {
+	v, ok := annotations[RecordTypeKey]
 	return v, ok
 }
 
