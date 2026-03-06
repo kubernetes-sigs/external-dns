@@ -175,7 +175,7 @@ func (p *MyProvider) GetDomainFilter() endpoint.DomainFilterInterface {
     // Apply your own configured filter to keep only zones this provider manages.
     filteredZones := applyDomainFilter(zones)
 
-    var names []string
+    names := make([]string, 0, len(zones))
     for _, z := range filteredZones {
         names = append(names, z.Name, "."+z.Name)
     }
