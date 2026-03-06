@@ -82,12 +82,14 @@ Call `SetTransform` on every informer **before** `factory.Start()`. Use
 `TransformerWithOptions[T]` with the options appropriate for the resource:
 
 ```go
-_ = myInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.MyResource](
+if err = myInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.MyResource](
     informers.TransformRemoveManagedFields(),     // always — can be megabytes per object
     informers.TransformRemoveLastAppliedConfig(), // always — full JSON snapshot stored as annotation
     informers.TransformRemoveStatusConditions(),  // when Status.Conditions is not used by the source
     informers.TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"), // when only specific annotations are needed
-))
+)); err != nil {
+    return nil, err
+}
 ```
 
 `TransformRemoveManagedFields` and `TransformRemoveLastAppliedConfig` should be
@@ -104,16 +106,20 @@ annotation/label filters, or by a label value that references another resource:
 
 ```go
 // Filter by annotation/label selectors (index key = object's own namespace/name)
-_ = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*v1.MyResource](
+if err = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*v1.MyResource](
     informers.IndexSelectorWithAnnotationFilter(annotationFilter),
     informers.IndexSelectorWithLabelSelector(labelSelector),
-))
+)); err != nil {
+    return nil, err
+}
 
 // Index by a label's value rather than the object's own name
 // (e.g. EndpointSlices indexed by the Service they belong to)
-_ = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
+if err = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
     informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
-))
+)); err != nil {
+    return nil, err
+}
 ```
 
 All indexed objects are stored under the `informers.IndexWithSelectors` key.
