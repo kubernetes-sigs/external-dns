@@ -676,6 +676,12 @@ var (
 
 	RegexDomainFilter = endpoint.NewRegexDomainFilter(regexp.MustCompile("example.com"), nil)
 
+	// Regex that matches subdomains but not the zone name itself (issue #5591)
+	RegexDomainFilterSubdomainOnly = endpoint.NewRegexDomainFilter(regexp.MustCompile(`^[\w-]+\.example\.com$`), nil)
+
+	// Regex exclusion only (no include regex)
+	RegexDomainFilterExcludeOnly = endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`^staging\.`))
+
 	DomainFilterEmptyClient = &PDNSAPIClient{
 		dryRun:       false,
 		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
@@ -716,6 +722,20 @@ var (
 		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 		domainFilter: RegexDomainFilter,
+	}
+
+	RegexDomainFilterSubdomainOnlyClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: RegexDomainFilterSubdomainOnly,
+	}
+
+	RegexDomainFilterExcludeOnlyClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: RegexDomainFilterExcludeOnly,
 	}
 )
 
@@ -1209,9 +1229,23 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	suite.Equal(partitionResultFilteredMultipleFilter, filteredZones)
 	suite.Equal(partitionResultResidualMultipleFilter, residualZones)
 
+	// Regex domain filters include all zones because the regex may match record
+	// names but not parent zone names. Endpoint-level filtering handles the rest.
 	filteredZones, residualZones = RegexDomainFilterClient.PartitionZones(zoneList)
-	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
-	suite.Equal(partitionResultResidualSingleFilter, residualZones)
+	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
+	suite.Equal(([]pgo.Zone)(nil), residualZones)
+
+	// Regex that matches subdomains (e.g. "foo.example.com") but not the zone
+	// name itself ("example.com"). Before the fix for #5591, this would put
+	// example.com into residualZones and discard all its records.
+	filteredZones, residualZones = RegexDomainFilterSubdomainOnlyClient.PartitionZones(zoneList)
+	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
+	suite.Equal(([]pgo.Zone)(nil), residualZones)
+
+	// Regex exclusion only — all zones should be included
+	filteredZones, residualZones = RegexDomainFilterExcludeOnlyClient.PartitionZones(zoneList)
+	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
+	suite.Equal(([]pgo.Zone)(nil), residualZones)
 }
 
 // Validate whether invalid endpoints are removed by AdjustEndpoints

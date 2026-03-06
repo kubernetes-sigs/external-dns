@@ -171,17 +171,27 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return zones, resp, provider.NewSoftErrorf("unable to list zones: %v", err)
 }
 
-// PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
+// PartitionZones returns a slice of zones that adhere to the domain filter and a slice of ones that do not.
+// When regex-based domain filters are configured, all zones are included because a regex that matches
+// record names (e.g. "^sub\.example\.com$") may not match the parent zone name ("example.com"),
+// and endpoint-level filtering in the plan already ensures only matching records are managed.
 func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	var filteredZones []pgo.Zone
 	var residualZones []pgo.Zone
 
 	if c.domainFilter.IsConfigured() {
-		for _, zone := range zones {
-			if c.domainFilter.Match(zone.Name) {
-				filteredZones = append(filteredZones, zone)
-			} else {
-				residualZones = append(residualZones, zone)
+		if c.domainFilter.HasRegex() {
+			// Regex filters cannot reliably partition zones because a regex
+			// designed for record names won't match parent zone names.
+			// Include all zones; record-level filtering handles the rest.
+			filteredZones = zones
+		} else {
+			for _, zone := range zones {
+				if c.domainFilter.Match(zone.Name) {
+					filteredZones = append(filteredZones, zone)
+				} else {
+					residualZones = append(residualZones, zone)
+				}
 			}
 		}
 	} else {

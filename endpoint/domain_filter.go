@@ -180,6 +180,14 @@ func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain strin
 	return true
 }
 
+// HasRegex returns true if the filter uses regex-based matching.
+func (df *DomainFilter) HasRegex() bool {
+	if df == nil {
+		return false
+	}
+	return (df.regex != nil && df.regex.String() != "") || (df.regexExclusion != nil && df.regexExclusion.String() != "")
+}
+
 // IsConfigured returns true if any inclusion or exclusion rules have been specified.
 func (df *DomainFilter) IsConfigured() bool {
 	if df == nil {

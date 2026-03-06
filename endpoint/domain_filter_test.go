@@ -720,6 +720,26 @@ func TestRegexDomainFilterIsConfigured(t *testing.T) {
 	}
 }
 
+func TestDomainFilterHasRegex(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		df       *DomainFilter
+		expected bool
+	}{
+		{"nil filter", nil, false},
+		{"empty string filter", NewDomainFilter([]string{}), false},
+		{"string filter only", NewDomainFilter([]string{"example.com"}), false},
+		{"regex include only", NewRegexDomainFilter(regexp.MustCompile(`\.example\.com$`), nil), true},
+		{"regex exclude only", NewRegexDomainFilter(nil, regexp.MustCompile(`^api\.`)), true},
+		{"regex both", NewRegexDomainFilter(regexp.MustCompile(`\.example\.com$`), regexp.MustCompile(`^api\.`)), true},
+		{"empty regex", NewRegexDomainFilter(regexp.MustCompile(""), nil), false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.df.HasRegex())
+		})
+	}
+}
+
 func TestDomainFilterDeserializeError(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
