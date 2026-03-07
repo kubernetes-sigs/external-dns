@@ -32,7 +32,7 @@ func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	)
 
 	for _, t := range targets {
-		switch suitableType(t) {
+		switch endpoint.SuitableType(t) {
 		case endpoint.RecordTypeA:
 			aTargets = append(aTargets, t)
 		case endpoint.RecordTypeAAAA:

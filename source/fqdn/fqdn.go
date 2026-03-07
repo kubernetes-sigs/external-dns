@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"net/netip"
 	"reflect"
 	"slices"
 	"strings"
@@ -107,20 +106,12 @@ func replace(oldValue, newValue, target string) string {
 // isIPv6String reports whether the target string is an IPv6 address,
 // including IPv4-mapped IPv6 addresses.
 func isIPv6String(target string) bool {
-	netIP, err := netip.ParseAddr(target)
-	if err != nil {
-		return false
-	}
-	return netIP.Is6()
+	return endpoint.SuitableType(target) == endpoint.RecordTypeAAAA
 }
 
 // isIPv4String reports whether the target string is an IPv4 address.
 func isIPv4String(target string) bool {
-	netIP, err := netip.ParseAddr(target)
-	if err != nil {
-		return false
-	}
-	return netIP.Is4()
+	return endpoint.SuitableType(target) == endpoint.RecordTypeA
 }
 
 // hasKey checks if a key exists in a map. This is needed because Go templates'

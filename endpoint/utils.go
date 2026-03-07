@@ -17,6 +17,8 @@ limitations under the License.
 package endpoint
 
 import (
+	"net/netip"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,6 +26,23 @@ import (
 const (
 	msg = "No endpoints could be generated from '%s/%s/%s'"
 )
+
+// SuitableType returns the DNS record type for the given target:
+// A for IPv4, AAAA for IPv6, CNAME for everything else.
+func SuitableType(target string) string {
+	ip, err := netip.ParseAddr(target)
+	if err != nil {
+		return RecordTypeCNAME
+	}
+	switch {
+	case ip.Is4():
+		return RecordTypeA
+	case ip.Is6():
+		return RecordTypeAAAA
+	default:
+		return RecordTypeCNAME
+	}
+}
 
 // HasNoEmptyEndpoints checks if the endpoint list is empty and logs
 // a debug message if so. Returns true if empty, false otherwise.

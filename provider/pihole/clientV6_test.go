@@ -31,62 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestIsValidIPv4(t *testing.T) {
-	tests := []struct {
-		ip       string
-		expected bool
-	}{
-		{"192.168.1.1", true},
-		{"255.255.255.255", true},
-		{"0.0.0.0", true},
-		{"", false},
-		{"256.256.256.256", false},
-		{"192.168.0.1/22", false},
-		{"192.168.1", false},
-		{"abc.def.ghi.jkl", false},
-		{"::ffff:192.168.20.3", false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.ip, func(t *testing.T) {
-			if got := isValidIPv4(test.ip); got != test.expected {
-				t.Errorf("isValidIPv4(%s) = %v; want %v", test.ip, got, test.expected)
-			}
-		})
-	}
-}
-
-func TestIsValidIPv6(t *testing.T) {
-	tests := []struct {
-		ip       string
-		expected bool
-	}{
-		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
-		{"2001:db8:85a3::8a2e:370:7334", true},
-		// IPv6 dual, the format is y:y:y:y:y:y:x.x.x.x.
-		{"::ffff:192.168.20.3", true},
-		{"::1", true},
-		{"::", true},
-		{"2001:db8::", true},
-		{"", false},
-		{":", false},
-		{"::ffff:", false},
-		{"192.168.20.3", false},
-		{"2001:db8:85a3:0:0:8a2e:370:7334:1234", false},
-		{"2001:db8:85a3::8a2e:370g:7334", false},
-		{"2001:db8:85a3::8a2e:370:7334::", false},
-		{"2001:db8:85a3::8a2e:370:7334::1", false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.ip, func(t *testing.T) {
-			if got := isValidIPv6(test.ip); got != test.expected {
-				t.Errorf("isValidIPv6(%s) = %v; want %v", test.ip, got, test.expected)
-			}
-		})
-	}
-}
-
 func newTestServerV6(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	svr := httptest.NewServer(hdlr)

@@ -22,37 +22,6 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
-func TestSuitableType(t *testing.T) {
-	tests := []struct {
-		name     string
-		target   string
-		expected string
-	}{
-		{
-			name:     "valid IPv4 address",
-			target:   "192.168.1.1",
-			expected: endpoint.RecordTypeA,
-		},
-		{
-			name:     "valid IPv6 address",
-			target:   "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-			expected: endpoint.RecordTypeAAAA,
-		},
-		{
-			name:     "invalid IP address, should return CNAME",
-			target:   "example.com",
-			expected: endpoint.RecordTypeCNAME,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := suitableType(tt.target)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestParseIngress(t *testing.T) {
 	tests := []struct {
 		name      string

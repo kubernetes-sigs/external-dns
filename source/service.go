@@ -420,7 +420,7 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
-						RecordType: suitableType(target),
+						RecordType: endpoint.SuitableType(target),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -469,7 +469,7 @@ func (sc *serviceSource) getTargetsForDomain(
 				return nil
 			}
 			for _, address := range node.Status.Addresses {
-				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA) {
 					targets = append(targets, address.Address)
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
@@ -799,7 +799,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
-				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
+				if endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA {
 					ipv6IPs = append(ipv6IPs, address.Address)
 				}
 			}
