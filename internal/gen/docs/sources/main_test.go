@@ -46,25 +46,24 @@ func TestIndexMdUpToDate(t *testing.T) {
 	expected, err := fs.ReadFile(fsys, fileName)
 	assert.NoError(t, err, "expected file %s to exist", fileName)
 
-	// path to sources folder
-	ssys := os.DirFS(fmt.Sprintf("%s/../../../../source", testPath))
-	sources, err := discoverSources(fmt.Sprintf("%s", ssys))
+	sourceDir := fmt.Sprintf("%s/../../../../source", testPath)
+	sources, err := discoverSources(sourceDir)
 	require.NoError(t, err, "expected to find sources")
 	actual, err := sources.generateMarkdown()
 	assert.NoError(t, err)
-	assert.Contains(t, string(expected), actual, "expected file 'docs/source/index.md' to be up to date. execute 'make generate-sources-documentation'")
+	assert.Contains(t, string(expected), actual, "expected file 'docs/sources/index.md' to be up to date. execute 'make generate-sources-documentation'")
 }
 
 func TestDiscoverSources(t *testing.T) {
 	testPath, _ := os.Getwd()
-	ssys := os.DirFS(fmt.Sprintf("%s/../../../../source", testPath))
+	sourceDir := fmt.Sprintf("%s/../../../../source", testPath)
 
-	sources, err := discoverSources(fmt.Sprintf("%s", ssys))
+	sources, err := discoverSources(sourceDir)
 	require.NoError(t, err)
 
 	assert.GreaterOrEqual(t, len(sources), 5, "Expected at least 5 sources with annotations")
 
-	// Verify sources are sorted by category, then by name
+	// Verify sources are sorted by name
 	for i := range len(sources) - 1 {
 		prev, curr := sources[i], sources[i+1]
 		if prev.Name > curr.Name {
@@ -381,7 +380,8 @@ func TestExtractSourcesFromComments(t *testing.T) {
 			},
 		},
 		{
-			name: "missing name annotation",
+			name:        "empty name annotation",
+			wantSources: 0,
 			comments: `testSource with minimal annotations.
 
 +externaldns:source:name=
@@ -390,9 +390,6 @@ func TestExtractSourcesFromComments(t *testing.T) {
 `,
 			typeName: "testSource",
 			filePath: "test.go",
-			validate: func(t *testing.T, s Source) {
-				require.Nil(t, s)
-			},
 		},
 	}
 
@@ -416,8 +413,8 @@ func TestExtractSourcesFromComments(t *testing.T) {
 
 			// Verify all sources have required fields
 			for _, source := range sources {
-				assert.Equal(t, source.Type, tt.typeName)
-				assert.Equal(t, source.File, tt.filePath)
+				assert.Equal(t, tt.typeName, source.Type)
+				assert.Equal(t, tt.filePath, source.File)
 			}
 		})
 	}

@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"go/ast"
@@ -28,7 +27,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"text/template"
 
 	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 )
@@ -68,9 +66,9 @@ type Source struct {
 
 type Sources []Source
 
-// It generates a markdown file
-// with the supported sources and writes it to the 'docs/sources/index.md' file.
-// to re-generate `docs/sources/index.md` execute 'go run internal/gen/docs/sources/main.go'
+// main generates a markdown file with the supported sources
+// and writes it to the 'docs/sources/index.md' file.
+// To re-generate, execute 'go run internal/gen/docs/sources/main.go'.
 func main() {
 	cPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/sources/index.md", cPath)
@@ -98,7 +96,7 @@ func discoverSources(dir string) (Sources, error) {
 		return nil, err
 	}
 
-	// Sort sources by category, then by name
+	// Sort sources by name
 	slices.SortFunc(sources, func(a, b Source) int {
 		return strings.Compare(a.Name, b.Name)
 	})
@@ -107,15 +105,7 @@ func discoverSources(dir string) (Sources, error) {
 }
 
 func (s *Sources) generateMarkdown() (string, error) {
-	tmpl := template.New("").Funcs(utils.FuncMap())
-	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "sources.gotpl", s)
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
+	return utils.RenderTemplate(templates, "sources.gotpl", s)
 }
 
 // parseSourceAnnotations parses all Go files in the source directory
@@ -124,13 +114,13 @@ func parseSourceAnnotations(sourceDir string) (Sources, error) {
 	var sources Sources
 
 	// Walk through the source directory
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(sourceDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip directories and non-Go files
-		if info.IsDir() || !strings.HasSuffix(path, ".go") {
+		if d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
 
