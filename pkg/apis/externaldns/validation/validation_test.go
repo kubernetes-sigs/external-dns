@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"regexp"
 	"testing"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -382,4 +383,86 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 	err := ValidateConfig(cfg)
 
 	assert.NoError(t, err)
+}
+
+func TestValidateIncludeDomainsExclusivity(t *testing.T) {
+	tests := []struct {
+		name           string
+		includeDomains []string
+		domainFilter   []string
+		domainExclude  []string
+		regexFilter    string
+		regexExclude   string
+		expectError    bool
+		errorContains  string
+	}{
+		{
+			name:           "include-domains alone is valid",
+			includeDomains: []string{"api.example.com"},
+			expectError:    false,
+		},
+		{
+			name:           "include-domains with domain-filter is invalid",
+			includeDomains: []string{"api.example.com"},
+			domainFilter:   []string{"example.com"},
+			expectError:    true,
+			errorContains:  "mutually exclusive",
+		},
+		{
+			name:           "include-domains with exclude-domains is invalid",
+			includeDomains: []string{"api.example.com"},
+			domainExclude:  []string{"internal.example.com"},
+			expectError:    true,
+			errorContains:  "mutually exclusive",
+		},
+		{
+			name:           "include-domains with regex-domain-filter is invalid",
+			includeDomains: []string{"api.example.com"},
+			regexFilter:    ".*\\.example\\.com$",
+			expectError:    true,
+			errorContains:  "mutually exclusive",
+		},
+		{
+			name:           "include-domains with regex-domain-exclusion is invalid",
+			includeDomains: []string{"api.example.com"},
+			regexExclude:   ".*\\.internal\\.com$",
+			expectError:    true,
+			errorContains:  "mutually exclusive",
+		},
+		{
+			name:         "domain-filter alone is valid",
+			domainFilter: []string{"example.com"},
+			expectError:  false,
+		},
+		{
+			name:        "regex-domain-filter alone is valid",
+			regexFilter: ".*\\.example\\.com$",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newValidConfig(t)
+			cfg.IncludeDomains = tt.includeDomains
+			cfg.DomainFilter = tt.domainFilter
+			cfg.DomainExclude = tt.domainExclude
+
+			if tt.regexFilter != "" {
+				cfg.RegexDomainFilter = regexp.MustCompile(tt.regexFilter)
+			}
+			if tt.regexExclude != "" {
+				cfg.RegexDomainExclude = regexp.MustCompile(tt.regexExclude)
+			}
+
+			err := ValidateConfig(cfg)
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
