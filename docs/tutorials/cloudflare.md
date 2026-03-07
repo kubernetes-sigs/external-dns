@@ -341,6 +341,8 @@ Currently, requires SuperAdmin or Admin role.
 
 Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
 
+Origin SNI overrides require a Cloudflare account entitlement — contact your Cloudflare account team to request access (see [Custom origin server](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/custom-origin/)). When enabled, the Origin SNI defaults to the origin hostname and can be overridden using the `<customHostname>=<customOriginSNI>` annotation format. A trailing `=` with no value (`<customHostname>=`) sets the Origin SNI to the request's Host header instead.
+
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
 
 See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/domain-support/) for more information on custom hostnames.

@@ -79,9 +79,7 @@ func cloneEndpointWithOpts(e *endpoint.Endpoint, opt ...func(*endpoint.Endpoint)
 	var providerSpecific endpoint.ProviderSpecific
 	if e.ProviderSpecific != nil {
 		providerSpecific = make(endpoint.ProviderSpecific, len(e.ProviderSpecific))
-		for i, p := range e.ProviderSpecific {
-			providerSpecific[i] = p
-		}
+		copy(providerSpecific, e.ProviderSpecific)
 	}
 
 	ttl := e.RecordTTL
