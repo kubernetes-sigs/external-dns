@@ -293,6 +293,27 @@ func TestMergeEndpoints(t *testing.T) {
 				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
 			},
 		},
+		{
+			name: "same DNSName and RecordType with different SetIdentifier not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+		},
+		{
+			name: "same DNSName, RecordType and SetIdentifier targets are merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
