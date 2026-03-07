@@ -29,7 +29,9 @@ import (
 )
 
 type MockAlibabaCloudDNSAPI struct {
-	records []alidns.Record
+	records                []alidns.Record
+	LastAddDomainName      string
+	LastDescribeDomainName string
 }
 
 func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
@@ -56,6 +58,7 @@ func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
 }
 
 func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (*alidns.AddDomainRecordResponse, error) {
+	m.LastAddDomainName = request.DomainName
 	ttl, _ := request.TTL.GetValue()
 	m.records = append(m.records, alidns.Record{
 		RecordId:   "3",
@@ -108,6 +111,7 @@ func (m *MockAlibabaCloudDNSAPI) DescribeDomains(_ *alidns.DescribeDomainsReques
 }
 
 func (m *MockAlibabaCloudDNSAPI) DescribeDomainRecords(request *alidns.DescribeDomainRecordsRequest) (*alidns.DescribeDomainRecordsResponse, error) {
+	m.LastDescribeDomainName = request.DomainName
 	var result []alidns.Record
 	for _, record := range m.records {
 		if record.DomainName == request.DomainName {
@@ -504,6 +508,12 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	if rr != "@" || domain != "" {
 		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
 	}
+
+	endpoint.DNSName = "externaldns.example.com"
+	rr, domain = p.splitDNSName(endpoint.DNSName, []string{"example.com"})
+	if rr != "externaldns" || domain != "example.com" {
+		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
@@ -530,5 +540,115 @@ func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
 	}
 	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
 		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
+	}
+}
+
+func TestAlibabaCloudProvider_CreateRecord_IDN(t *testing.T) {
+	tests := []struct {
+		name              string
+		dnsName           string
+		hostedZoneDomains []string
+		expectedRR        string
+		expectedAPIDomain string
+	}{
+		{
+			name:              "Chinese domain with subdomain",
+			dnsName:           "www.例子.com",
+			hostedZoneDomains: []string{"例子.com"},
+			expectedRR:        "www",
+			expectedAPIDomain: "例子.com",
+		},
+		{
+			name:              "Punycode input should be converted to Unicode for API",
+			dnsName:           "api.xn--fsqu00a.com",
+			hostedZoneDomains: []string{"xn--fsqu00a.com"},
+			expectedRR:        "api",
+			expectedAPIDomain: "例子.com",
+		},
+		{
+			name:              "ASCII domain unchanged",
+			dnsName:           "www.example.com",
+			hostedZoneDomains: []string{"example.com"},
+			expectedRR:        "www",
+			expectedAPIDomain: "example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockAPI := NewMockAlibabaCloudDNSAPI()
+			p := &AlibabaCloudProvider{
+				domainFilter: endpoint.NewDomainFilter(tt.hostedZoneDomains),
+				dryRun:       false,
+				dnsClient:    mockAPI,
+			}
+
+			ep := endpoint.NewEndpoint(tt.dnsName, "A", "1.2.3.4")
+			err := p.createRecord(ep, "1.2.3.4", tt.hostedZoneDomains)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedAPIDomain, mockAPI.LastAddDomainName,
+				"API should receive Unicode format domain name, not punycode")
+		})
+	}
+}
+
+func TestAlibabaCloudProvider_GetDomainRecords_IDN(t *testing.T) {
+	tests := []struct {
+		name              string
+		domainName        string
+		expectedAPIDomain string
+	}{
+		{
+			name:              "Punycode domain should be converted to Unicode for API",
+			domainName:        "xn--fsqu00a.com",
+			expectedAPIDomain: "例子.com",
+		},
+		{
+			name:              "ASCII domain unchanged",
+			domainName:        "example.com",
+			expectedAPIDomain: "example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockAPI := NewMockAlibabaCloudDNSAPI()
+			p := &AlibabaCloudProvider{
+				domainFilter: endpoint.NewDomainFilter([]string{tt.domainName}),
+				dryRun:       false,
+				dnsClient:    mockAPI,
+			}
+
+			_, _ = p.getDomainRecords(tt.domainName)
+
+			assert.Equal(t, tt.expectedAPIDomain, mockAPI.LastDescribeDomainName,
+				"API should receive Unicode format domain name, not punycode")
+		})
+	}
+}
+
+func TestAlibabaCloudProvider_GetDomainRecords_RRUnicodeToPunycode(t *testing.T) {
+	mockAPI := NewMockAlibabaCloudDNSAPI()
+	mockAPI.records = []alidns.Record{
+		{
+			DomainName: "例子.com",
+			RR:         "测试",
+			Type:       "A",
+		},
+	}
+
+	p := &AlibabaCloudProvider{
+		domainFilter: endpoint.NewDomainFilter([]string{"xn--fsqu00a.com"}),
+		dryRun:       false,
+		dnsClient:    mockAPI,
+	}
+
+	records, err := p.getDomainRecords("xn--fsqu00a.com")
+
+	assert.NoError(t, err)
+	if assert.Len(t, records, 1) {
+		assert.Equal(t, "xn--0zwm56d", records[0].RR)
+		assert.Equal(t, "xn--fsqu00a.com", records[0].DomainName)
 	}
 }

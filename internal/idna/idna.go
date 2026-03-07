@@ -31,6 +31,28 @@ var (
 	)
 )
 
+// ToASCII converts a value to ASCII using the default IDNA profile.
+// It returns the original value on conversion errors.
+func ToASCII(value string) string {
+	ascii, err := Profile.ToASCII(value)
+	if err != nil {
+		log.Debugf("Failed to convert %q to ASCII: %v", value, err)
+		return value
+	}
+	return ascii
+}
+
+// ToUnicode converts a value to Unicode using the default IDNA profile.
+// It returns the original value on conversion errors.
+func ToUnicode(value string) string {
+	unicode, err := Profile.ToUnicode(value)
+	if err != nil {
+		log.Debugf("Failed to convert %q to Unicode: %v", value, err)
+		return value
+	}
+	return unicode
+}
+
 // NormalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
 // it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func NormalizeDNSName(dnsName string) string {
