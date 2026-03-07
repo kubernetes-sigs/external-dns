@@ -25,6 +25,11 @@ GRPCRoutes are available in v1alpha2 and v1 APIs, not v1beta2.
 Therefore, GRPCRoutes use the v1 API which is available in both release channels.
 Unfortunately, this means they will not be available in environments with old CRDs.
 
+ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
+They use the v1 API and allow attaching additional listeners to an existing Gateway.
+Routes that reference a ListenerSet as a parentRef are automatically supported —
+ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
+
 ## Hostnames
 
 HTTPRoute and TLSRoute specs, along with their associated Gateway Listeners, contain hostnames that
@@ -189,7 +194,7 @@ rules:
   resources: ["namespaces"]
   verbs: ["get","watch","list"]
 - apiGroups: ["gateway.networking.k8s.io"]
-  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"]
+  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes","listenersets"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
