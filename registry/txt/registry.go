@@ -243,16 +243,18 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
-		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
-			key.RecordType = endpoint.RecordTypeCNAME
-		}
-
 		// Handle both new and old registry format with the preference for the new one
 		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
 			key.RecordType = ""
 			labels, labelsExist = labelMap[key]
+		}
+		// For AWS Alias A records, also check for legacy "cname" format TXT records
+		if !labelsExist && ep.RecordType == endpoint.RecordTypeA {
+			if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias {
+				key.RecordType = endpoint.RecordTypeCNAME
+				labels, labelsExist = labelMap[key]
+			}
 		}
 		if labelsExist {
 			maps.Copy(ep.Labels, labels)
@@ -299,10 +301,6 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 
 	// Always create new format record
 	recordType := r.RecordType
-	// AWS Alias records are encoded as type "cname"
-	if isAlias, found := r.GetBoolProviderSpecificProperty("alias"); found && isAlias && recordType == endpoint.RecordTypeA {
-		recordType = endpoint.RecordTypeCNAME
-	}
 
 	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
