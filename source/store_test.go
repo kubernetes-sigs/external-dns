@@ -444,7 +444,7 @@ func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 // TestSingletonClientGenerator_RESTConfig_SharedAcrossClients verifies singleton is shared
 func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
 	gen := &SingletonClientGenerator{
-		KubeConfig:     "",
+		KubeConfig:     "invalid",
 		APIServerURL:   "",
 		RequestTimeout: 30 * time.Second,
 	}
