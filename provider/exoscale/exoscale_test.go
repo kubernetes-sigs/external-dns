@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 

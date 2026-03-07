@@ -37,8 +37,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type MockClientGenerator struct {
