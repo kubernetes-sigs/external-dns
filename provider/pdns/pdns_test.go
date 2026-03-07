@@ -1262,11 +1262,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 
 // TestPDNSPartitionZonesRegexBehavior compares two regex forms for --domain-filter
 // and shows how the choice of regex affects zone partitioning correctness.
-//
-// Match() correctly applies regex to zone names, but a regex written for record
-// names (e.g. ^[\w-]+\.example\.com$) cannot match the parent zone (example.com.)
-// because [\w-]+ does not span dots and requires at least one label prefix.
-// String-based filters avoid this because matchFilter uses suffix semantics.
 func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 	newZone := func(name string) pgo.Zone {
 		return pgo.Zone{Id: name, Name: name, Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}}
@@ -1336,9 +1331,9 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 			},
 		},
 		{
-			// Replace + with * to make the label prefix optional (zero-or-more).
-			// The apex matches with zero repetitions; deeper zones match with two or more.
-			// Suffix similarity (simexample.com) is rejected by the dot-boundary in ([\w-]+\.).
+			// ([\w-]+\.)* with zero repetitions matches the apex; one or more
+			// repetitions match subdomain zones at any depth.
+			// Suffix similarity (simexample.com) is rejected by the dot-boundary.
 			//
 			//   "example.com"                 → 0 repetitions          → filtered  ✓
 			//   "sub.example.com"             → 1 repetition "sub."    → filtered  ✓

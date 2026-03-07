@@ -1170,3 +1170,113 @@ func TestNewDomainFilterFromConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestRegexDomainFilterZoneNames(t *testing.T) {
+	const (
+		rootZone       = "test.com"
+		usEast1Zone    = "us-east-1.test.com"
+		euCentral1Zone = "eu-central-1.test.com"
+		globalZone     = "global.test.com"
+		wwwUsEast1     = "www.us-east-1.test.com"
+		wwwEuCentral1  = "www.eu-central-1.test.com"
+		wwwRoot        = "www.test.com"
+	)
+
+	tests := []struct {
+		name       string
+		regex      string
+		domains    []string
+		assertions func(t *testing.T, domain string, matched bool)
+	}{
+		{
+			name:    `^[\w-]+\.us-east-1\.test\.com$: + requires label prefix, matches records under us-east-1.test.com`,
+			regex:   `^[\w-]+\.us-east-1\.test\.com$`,
+			domains: []string{wwwUsEast1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.True(t, matched, domain)
+			},
+		},
+		{
+			name:    `^[\w-]+\.us-east-1\.test\.com$: + excludes zone apex and all non-us-east-1 domains`,
+			regex:   `^[\w-]+\.us-east-1\.test\.com$`,
+			domains: []string{usEast1Zone, rootZone, euCentral1Zone, globalZone, wwwRoot, wwwEuCentral1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.False(t, matched, domain)
+			},
+		},
+		{
+			name:    `^([\w-]+\.)*us-east-1\.test\.com$: * makes label prefix optional, matches zone apex and records`,
+			regex:   `^([\w-]+\.)*us-east-1\.test\.com$`,
+			domains: []string{usEast1Zone, wwwUsEast1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.True(t, matched, domain)
+			},
+		},
+		{
+			name:    `^([\w-]+\.)*us-east-1\.test\.com$: does not match root zone, other regions, or global`,
+			regex:   `^([\w-]+\.)*us-east-1\.test\.com$`,
+			domains: []string{rootZone, euCentral1Zone, globalZone, wwwRoot, wwwEuCentral1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.False(t, matched, domain)
+			},
+		},
+		{
+			name:    `^[\w-]+\.(us-east-1|eu-central-1)\.test\.com$: + matches records under both regions`,
+			regex:   `^[\w-]+\.(us-east-1|eu-central-1)\.test\.com$`,
+			domains: []string{wwwUsEast1, wwwEuCentral1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.True(t, matched, domain)
+			},
+		},
+		{
+			name:    `^[\w-]+\.(us-east-1|eu-central-1)\.test\.com$: + excludes both regional zone apexes`,
+			regex:   `^[\w-]+\.(us-east-1|eu-central-1)\.test\.com$`,
+			domains: []string{usEast1Zone, euCentral1Zone, rootZone, globalZone, wwwRoot},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.False(t, matched, domain)
+			},
+		},
+		{
+			name:    `^([\w-]+\.)*(?:us-east-1|eu-central-1)\.test\.com$: * matches zone apexes and records for both regions`,
+			regex:   `^([\w-]+\.)*(?:us-east-1|eu-central-1)\.test\.com$`,
+			domains: []string{usEast1Zone, euCentral1Zone, wwwUsEast1, wwwEuCentral1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.True(t, matched, domain)
+			},
+		},
+		{
+			name:    `^([\w-]+\.)*(?:us-east-1|eu-central-1)\.test\.com$: does not match root zone, global, or root record`,
+			regex:   `^([\w-]+\.)*(?:us-east-1|eu-central-1)\.test\.com$`,
+			domains: []string{rootZone, globalZone, wwwRoot},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.False(t, matched, domain)
+			},
+		},
+		{
+			name:    `^www\.us-east-1\.test\.com$: exact record match, matches www.us-east-1.test.com only`,
+			regex:   `^www\.us-east-1\.test\.com$`,
+			domains: []string{wwwUsEast1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.True(t, matched, domain)
+			},
+		},
+		{
+			name:    `^www\.us-east-1\.test\.com$: does not match zone apexes or other records`,
+			regex:   `^www\.us-east-1\.test\.com$`,
+			domains: []string{rootZone, usEast1Zone, euCentral1Zone, wwwRoot, wwwEuCentral1},
+			assertions: func(t *testing.T, domain string, matched bool) {
+				assert.False(t, matched, domain)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			df := NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil)
+			for _, domain := range tt.domains {
+				tt.assertions(t, domain, df.Match(domain))
+				tt.assertions(t, domain+".", df.Match(domain+"."))
+			}
+		})
+	}
+}
