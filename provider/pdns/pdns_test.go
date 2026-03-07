@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	pgo "github.com/ffledgling/pdns-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -1256,6 +1257,127 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 		actual, err := p.AdjustEndpoints(tt.endpoints)
 		suite.NoError(err)
 		suite.Equal(tt.expected, actual)
+	}
+}
+
+// TestPDNSPartitionZonesRegexBehavior compares two regex forms for --domain-filter
+// and shows how the choice of regex affects zone partitioning correctness.
+//
+// Match() correctly applies regex to zone names, but a regex written for record
+// names (e.g. ^[\w-]+\.example\.com$) cannot match the parent zone (example.com.)
+// because [\w-]+ does not span dots and requires at least one label prefix.
+// String-based filters avoid this because matchFilter uses suffix semantics.
+func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
+	newZone := func(name string) pgo.Zone {
+		return pgo.Zone{Id: name, Name: name, Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}}
+	}
+
+	zoneNames := func(zz []pgo.Zone) []string {
+		names := make([]string, len(zz))
+		for i, z := range zz {
+			names[i] = z.Name
+		}
+		return names
+	}
+
+	tests := []struct {
+		name       string
+		zones      []pgo.Zone
+		regex      string
+		assertions func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone)
+	}{
+		{
+			// Worst case: no subdomain zone exists at all.
+			// Both apex zones fail the regex → filtered is empty →
+			// ConvertEndpointsToZones logs "Ignoring Endpoint" for every record.
+			//
+			//   "example.com" → no label prefix  → residual  ← BUG
+			//   "other.com"   → no match at all  → residual  ← BUG
+			name: "complete wipeout: subdomain-only regex with only apex zones leaves filtered empty",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("other.com."),
+			},
+			regex: `^[\w-]+\.example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.Empty(t, filtered,
+					"no zone matches the subdomain-only regex — every record will be ignored")
+				assert.Equal(t, []string{"example.com.", "other.com."}, zoneNames(residual),
+					"both zones land in residual: records in example.com. silently dropped")
+			},
+		},
+		{
+			// Partial match: a sub-zone happens to exist, so sub.example.com. is
+			// managed but the apex example.com. and the deep zone are still lost.
+			//
+			//   "example.com"                 → no label at all        → residual  ← BUG
+			//   "sub.example.com"             → one label "sub"        → filtered
+			//   "long.domainname.example.com" → [\w-]+ can't span dots → residual  ← BUG
+			//   "simexample.com"              → no .example.com suffix  → residual  ✓
+			//   "mock.test"                   → no match                → residual  ✓
+			name: "partial match: subdomain-only regex misses apex and multi-label zones",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("sub.example.com."),
+				newZone("long.domainname.example.com."),
+				newZone("simexample.com."),
+				newZone("mock.test."),
+			},
+			regex: `^[\w-]+\.example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.Equal(t, []string{"sub.example.com."}, zoneNames(filtered),
+					"only the single-label subdomain zone matches")
+				assert.Contains(t, zoneNames(residual), "example.com.",
+					"zone apex lands in residual: its records would be ignored")
+				assert.Contains(t, zoneNames(residual), "long.domainname.example.com.",
+					"multi-label zone lands in residual: [\\w-]+ cannot span dots")
+				assert.Contains(t, zoneNames(residual), "simexample.com.")
+				assert.Contains(t, zoneNames(residual), "mock.test.")
+			},
+		},
+		{
+			// Replace + with * to make the label prefix optional (zero-or-more).
+			// The apex matches with zero repetitions; deeper zones match with two or more.
+			// Suffix similarity (simexample.com) is rejected by the dot-boundary in ([\w-]+\.).
+			//
+			//   "example.com"                 → 0 repetitions          → filtered  ✓
+			//   "sub.example.com"             → 1 repetition "sub."    → filtered  ✓
+			//   "long.domainname.example.com" → 2 repetitions          → filtered  ✓
+			//   "simexample.com"              → no dot-boundary match   → residual  ✓
+			//   "mock.test"                   → no match                → residual  ✓
+			name: "zone-aware regex (* quantifier) matches apex and all subdomain depths",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("sub.example.com."),
+				newZone("long.domainname.example.com."),
+				newZone("simexample.com."),
+				newZone("mock.test."),
+			},
+			regex: `^([\w-]+\.)*example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.Equal(t,
+					[]string{"example.com.", "sub.example.com.", "long.domainname.example.com."},
+					zoneNames(filtered),
+					"apex and all subdomain zones must be filtered")
+				assert.Equal(t, []string{"simexample.com.", "mock.test."}, zoneNames(residual),
+					"only truly unrelated zones must be residual")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &PDNSAPIClient{
+				dryRun:       false,
+				authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+				client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+				domainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil),
+			}
+
+			filtered, residual := client.PartitionZones(tt.zones)
+
+			tt.assertions(t, filtered, residual)
+		})
 	}
 }
 
