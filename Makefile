@@ -70,7 +70,7 @@ update-tools-deps:
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
-	go test -race ./...
+	CGO_ENABLED=0 go test -race ./...
 
 
 .PHONY: test
