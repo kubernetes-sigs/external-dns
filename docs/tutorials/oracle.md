@@ -10,7 +10,7 @@ Create a DNS zone which will contain the managed DNS records. Let's use
 `example.com` as a reference here.  Make note of the OCID of the compartment
 in which you created the zone; you'll need to provide that later.
 
-For more information about OCI DNS see the documentation [here][1].
+For more information about [OCI DNS see the documentation here][1].
 
 ## Using Private OCI DNS Zones
 
@@ -82,8 +82,8 @@ this type of authentication. Finally, you'll need to add the
 `--oci-compartment-ocid=ocid1.compartment.oc1...` flag to provide the OCID of
 the compartment containing the zone to be managed.
 
-For more information about OCI IAM instance principals, see the documentation [here][2].
-For more information about OCI IAM policy details for the DNS service, see the documentation [here][3].
+For more information about OCI IAM instance principals, see [the documentation here][2].
+For more information about OCI IAM policy details for the DNS service, see [the documentation here][3].
 
 ### OCI IAM Workload Identity
 

@@ -22,7 +22,7 @@ ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS prov
 
 ## Documentation
 
-This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
+This README is a part of the complete [documentation, available here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
 
 ## What It Does
 
@@ -258,7 +258,7 @@ Optionally, you can customize the TTL value of the resulting DNS record by using
 kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
-For more details on configuring TTL, see [here](docs/advanced/ttl.md).
+For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
 
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
@@ -322,7 +322,7 @@ show us what you can do!
 
 The external-dns project is currently in need of maintainers for specific DNS providers. Ideally each provider
 would have at least two maintainers. It would be nice if the maintainers run the provider in production, but it
-is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers)
+is not strictly required. Provider listed [status](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers)
 that do not have a maintainer listed are in need of assistance.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/dev-guide.md) to learn about building the project, the project structure, and the purpose of each package.

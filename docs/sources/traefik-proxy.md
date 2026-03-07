@@ -80,10 +80,10 @@ kubectl delete -f externaldns.yaml
 
 ## Additional Flags
 
-| Flag                     | Description                                              |
-|--------------------------|----------------------------------------------------------|
-| --traefik-enable-legacy  | Enable listeners on Resources under traefik.containo.us |
-| --traefik-disable-new    | Disable listeners on Resources under traefik.io          |
+| Flag                    | Description                                             |
+|-------------------------|---------------------------------------------------------|
+| --traefik-enable-legacy | Enable listeners on Resources under traefik.containo.us |
+| --traefik-disable-new   | Disable listeners on Resources under traefik.io         |
 
 ### Resource Listeners
 

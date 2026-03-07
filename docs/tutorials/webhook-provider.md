@@ -28,7 +28,7 @@ The following table represents the methods to implement mapped to their HTTP met
 | AdjustEndpoints | POST        | /adjustendpoints | Provider specific adjustments of records |
 | ApplyChanges    | POST        | /records         | Apply record                             |
 
-OpenAPI spec is [here](../../api/webhook.yaml).
+OpenAPI [spec is here](../../api/webhook.yaml).
 
 ExternalDNS will also make requests to the `/` endpoint for negotiation and for deserialization of the `DomainFilter`.
 

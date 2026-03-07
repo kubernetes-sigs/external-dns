@@ -45,61 +45,61 @@ TTL must be a positive value.
 
 | Provider       | Supported |
 |:---------------|:---------:|
-| `Akamai`       |     ✅     |
-| `AlibabaCloud` |     ✅     |
-| `AWS`          |     ✅     |
-| `AWSSD`        |     ✅     |
-| `Azure`        |     ✅     |
-| `Civo`         |     ❌     |
-| `Cloudflare`   |     ✅     |
-| `CoreDNS`      |     ❌     |
-| `DigitalOcean` |     ✅     |
-| `DNSSimple`    |     ✅     |
-| `Exoscale`     |     ✅     |
-| `Gandi`        |     ✅     |
-| `GoDaddy`      |     ✅     |
-| `Google GCP`   |     ✅     |
-| `InMemory`     |     ❌     |
-| `Linode`       |     ❌     |
-| `NS1`          |     ❌     |
-| `OCI`          |     ✅     |
-| `OVH`          |     ❌     |
-| `PDNS`         |     ❌     |
-| `PiHole`       |     ✅     |
-| `Plural`       |     ❌     |
-| `RFC2136`      |     ✅     |
-| `Scaleway`     |     ✅     |
-| `Transip`      |     ✅     |
-| `Webhook`      |     ✅     |
+| `Akamai`       |    Yes    |
+| `AlibabaCloud` |    Yes    |
+| `AWS`          |    Yes    |
+| `AWSSD`        |    Yes    |
+| `Azure`        |    Yes    |
+| `Civo`         |    No     |
+| `Cloudflare`   |    Yes    |
+| `CoreDNS`      |    No     |
+| `DigitalOcean` |    Yes    |
+| `DNSSimple`    |    Yes    |
+| `Exoscale`     |    Yes    |
+| `Gandi`        |    Yes    |
+| `GoDaddy`      |    Yes    |
+| `Google GCP`   |    Yes    |
+| `InMemory`     |    No     |
+| `Linode`       |    No     |
+| `NS1`          |    No     |
+| `OCI`          |    Yes    |
+| `OVH`          |    No     |
+| `PDNS`         |    No     |
+| `PiHole`       |    Yes    |
+| `Plural`       |    No     |
+| `RFC2136`      |    Yes    |
+| `Scaleway`     |    Yes    |
+| `Transip`      |    Yes    |
+| `Webhook`      |    Yes    |
 
 ### Sources
 
 | Source                 | Supported |
 |:-----------------------|:---------:|
-| `ambassador-host`      |     ✅     |
-| `connector`            |     ❌     |
-| `contour-httpproxy`    |     ✅     |
-| `crd`                  |     ❌     |
-| `empty`                |     ❌     |
-| `f5-transportserver`   |     ✅     |
-| `f5-virtualserver`     |     ✅     |
-| `fake`                 |     ❌     |
-| `gateway-grpcroute`    |     ✅     |
-| `gateway-httproute`    |     ✅     |
-| `gateway-tcproute`     |     ✅     |
-| `gateway-tlsroute`     |     ✅     |
-| `gateway-udproute`     |     ✅     |
-| `gloo-proxy`           |     ✅     |
-| `ingress`              |     ✅     |
-| `istio-gateway`        |     ✅     |
-| `istio-virtualservice` |     ✅     |
-| `kong-tcpingress`      |     ✅     |
-| `node`                 |     ✅     |
-| `openshift-route`      |     ✅     |
-| `pod`                  |     ✅     |
-| `service`              |     ✅     |
-| `skipper-routegroup`   |     ✅     |
-| `traefik-proxy`        |     ✅     |
+| `ambassador-host`      |    Yes    |
+| `connector`            |    No     |
+| `contour-httpproxy`    |    Yes    |
+| `crd`                  |    No     |
+| `empty`                |    No     |
+| `f5-transportserver`   |    Yes    |
+| `f5-virtualserver`     |    Yes    |
+| `fake`                 |    No     |
+| `gateway-grpcroute`    |    Yes    |
+| `gateway-httproute`    |    Yes    |
+| `gateway-tcproute`     |    Yes    |
+| `gateway-tlsroute`     |    Yes    |
+| `gateway-udproute`     |    Yes    |
+| `gloo-proxy`           |    Yes    |
+| `ingress`              |    Yes    |
+| `istio-gateway`        |    Yes    |
+| `istio-virtualservice` |    Yes    |
+| `kong-tcpingress`      |    Yes    |
+| `node`                 |    Yes    |
+| `openshift-route`      |    Yes    |
+| `pod`                  |    Yes    |
+| `service`              |    Yes    |
+| `skipper-routegroup`   |    Yes    |
+| `traefik-proxy`        |    Yes    |
 
 ## Notes
 

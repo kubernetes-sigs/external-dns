@@ -2,7 +2,7 @@
 
 This tutorial describes how to configure ExternalDNS to use the F5 Networks TransportServer Source. It is meant to supplement the other provider-specific setup tutorials.
 
-The F5 Networks TransportServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project. See more in-depth info regarding the TransportServer CRD [here](https://github.com/F5Networks/k8s-bigip-ctlr/tree/master/docs/cis-20.x/config_examples/customResource/TransportServer).
+The F5 Networks TransportServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project. See more in-depth info regarding the [TransportServer CRD here](https://github.com/F5Networks/k8s-bigip-ctlr/tree/master/docs/cis-20.x/config_examples/customResource/TransportServer).
 
 ## Start with ExternalDNS with the F5 Networks TransportServer source
 
