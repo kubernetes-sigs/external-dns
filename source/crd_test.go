@@ -582,6 +582,30 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "provider-specific properties are passed through from DNSEndpoint spec",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "subdomain.example.org",
+					Targets:    endpoint.Targets{"other.example.org"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/failover", Value: "PRIMARY"},
+						{Name: "aws/health-check-id", Value: "asdf1234-as12-as12-as12-asdf12345678"},
+						{Name: "aws/evaluate-target-health", Value: "true"},
+					},
+					SetIdentifier: "some-unique-id",
+				},
+			},
+			expectEndpoints: true,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()

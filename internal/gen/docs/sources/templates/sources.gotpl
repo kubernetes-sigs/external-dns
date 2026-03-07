@@ -22,10 +22,10 @@ Sources are responsible for:
 
 ## Available Sources
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Events | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|:---------|
+| **Source Name** | Resources | Filters | Namespace | FQDN Template | Events | Provider Specific | Category |
+|:----------------|:----------|:--------|:----------|:--------------|:---------|:------------------|:---------|
 {{- range . }}
-| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} | {{ .Events }} | {{ lower .Category }} |
+| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} | {{ .Events }} | {{ .ProviderSpecific }} | {{ lower .Category }} |
 {{- end }}
 
 ## Usage

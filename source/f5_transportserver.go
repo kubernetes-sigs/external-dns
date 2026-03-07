@@ -55,6 +55,7 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer

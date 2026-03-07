@@ -34,15 +34,16 @@ import (
 )
 
 const (
-	annotationPrefix       = "+externaldns:source:"
-	annotationName         = annotationPrefix + "name="
-	annotationCategory     = annotationPrefix + "category="
-	annotationDesc         = annotationPrefix + "description="
-	annotationResources    = annotationPrefix + "resources="
-	annotationFilters      = annotationPrefix + "filters="
-	annotationNamespace    = annotationPrefix + "namespace="
-	annotationFQDNTemplate = annotationPrefix + "fqdn-template="
-	annotationEvents       = annotationPrefix + "events="
+	annotationPrefix           = "+externaldns:source:"
+	annotationName             = annotationPrefix + "name="
+	annotationCategory         = annotationPrefix + "category="
+	annotationDesc             = annotationPrefix + "description="
+	annotationResources        = annotationPrefix + "resources="
+	annotationFilters          = annotationPrefix + "filters="
+	annotationNamespace        = annotationPrefix + "namespace="
+	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
+	annotationEvents           = annotationPrefix + "events="
+	annotationProviderSpecific = annotationPrefix + "provider-specific="
 )
 
 var (
@@ -54,16 +55,17 @@ var (
 
 // Source represents metadata about a source implementation
 type Source struct {
-	Name         string // e.g., "service", "ingress", "crd"
-	Type         string // e.g., "serviceSource"
-	File         string // e.g., "source/service.go"
-	Description  string // Description of what this source does
-	Category     string // e.g., "Kubernetes", "Gateway", "Service Mesh", "Wrapper"
-	Resources    string // Kubernetes resources watched, e.g., "Service", "Ingress"
-	Filters      string // Supported filters, e.g., "annotation,label"
-	Namespace    string // Namespace support: "all", "single", "multiple"
-	FQDNTemplate string // FQDN template support: "true", "false"
-	Events       string // Events support: "true", "false"
+	Name             string // e.g., "service", "ingress", "crd"
+	Type             string // e.g., "serviceSource"
+	File             string // e.g., "source/service.go"
+	Description      string // Description of what this source does
+	Category         string // e.g., "Kubernetes", "Gateway", "Service Mesh", "Wrapper"
+	Resources        string // Kubernetes resources watched, e.g., "Service", "Ingress"
+	Filters          string // Supported filters, e.g., "annotation,label"
+	Namespace        string // Namespace support: "all", "single", "multiple"
+	FQDNTemplate     string // FQDN template support: "true", "false"
+	Events           string // Events support: "true", "false"
+	ProviderSpecific string // Provider-specific properties support: "true", "false"
 }
 
 type Sources []Source
@@ -256,10 +258,11 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 
 			// Start new source
 			currentSource = &Source{
-				Type:   typeName,
-				File:   filePath,
-				Name:   strings.TrimPrefix(line, annotationName),
-				Events: "false",
+				Type:             typeName,
+				File:             filePath,
+				Name:             strings.TrimPrefix(line, annotationName),
+				Events:           "false",
+				ProviderSpecific: "false",
 			}
 		case currentSource == nil:
 			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
@@ -277,6 +280,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
 		case strings.HasPrefix(line, annotationEvents):
 			currentSource.Events = strings.TrimPrefix(line, annotationEvents)
+		case strings.HasPrefix(line, annotationProviderSpecific):
+			currentSource.ProviderSpecific = strings.TrimPrefix(line, annotationProviderSpecific)
 		}
 	}
 

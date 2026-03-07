@@ -45,6 +45,7 @@ import (
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
+// +externaldns:source:provider-specific=false
 type fakeSource struct {
 	dnsName string
 }

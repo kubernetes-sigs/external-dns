@@ -35,6 +35,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // This is a compile-time validation that traefikSource is a Source.
@@ -328,6 +329,39 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 			},
 			expected: nil,
+		},
+		{
+			title: "IngressRoute with provider-specific annotation",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-provider-specific",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						annotations.HostnameKey:          "a.example.com",
+						annotations.TargetKey:            "target.domain.tld",
+						"kubernetes.io/ingress.class":    "traefik",
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-provider-specific",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {

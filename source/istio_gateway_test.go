@@ -496,6 +496,32 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "provider-specific annotation is converted to endpoint property",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

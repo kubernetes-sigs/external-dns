@@ -403,6 +403,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"Skipping node node1 because it is unschedulable",
 			},
 		},
+		{
+			title:              "provider-specific annotation is not supported and is ignored",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.AWSPrefix + "weight": "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
