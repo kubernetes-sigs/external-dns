@@ -130,6 +130,49 @@ func TestCivoProviderRecords(t *testing.T) {
 	assert.Equal(t, int(records[1].RecordTTL), expected[1].TTL)
 }
 
+func TestCivoProviderRecordsApexAt(t *testing.T) {
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "GET",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns/12345/records",
+					ResponseBody: `[
+						{"id": "1", "domain_id":"12345", "account_id": "1", "name": "@", "type": "A", "value": "10.0.0.0", "ttl": 600},
+						{"id": "2", "account_id": "1", "domain_id":"12345", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600}
+						]`,
+				},
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns",
+					ResponseBody: `[
+						{"id": "12345", "account_id": "1", "name": "example.com"}
+						]`,
+				},
+			},
+		},
+	})
+
+	defer server.Close()
+	provider := &CivoProvider{
+		Client:       *client,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+	}
+
+	records, err := provider.Records(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, records, 2)
+
+	// The "@" apex record should be translated to the zone name
+	assert.Equal(t, "example.com", records[0].DNSName)
+	assert.Equal(t, "A", records[0].RecordType)
+	assert.Equal(t, "10.0.0.0", records[0].Targets[0])
+
+	// Regular subdomain record should work as before
+	assert.Equal(t, "www.example.com", records[1].DNSName)
+}
+
 func TestCivoProviderRecordsWithError(t *testing.T) {
 	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
 		{
@@ -864,6 +907,30 @@ func TestCivoProviderGetRecordID(t *testing.T) {
 	id := getRecordID(record, zone, endPoint)
 
 	assert.Equal(t, id[0].ID, record[0].ID)
+}
+
+func TestCivoProviderGetRecordIDApexAt(t *testing.T) {
+	zone := civogo.DNSDomain{
+		ID:   "12345",
+		Name: "test.com",
+	}
+
+	// Civo API may return "@" for apex record names
+	records := []civogo.DNSRecord{{
+		ID:          "1",
+		Type:        "A",
+		Name:        "@",
+		Value:       "10.0.0.0",
+		DNSDomainID: "12345",
+		TTL:         600,
+	}}
+
+	// Apex endpoint: DNSName == zone name, so getStrippedRecordName returns ""
+	ep := endpoint.Endpoint{DNSName: "test.com", Targets: endpoint.Targets{"10.0.0.0"}, RecordType: "A"}
+	matched := getRecordID(records, zone, ep)
+
+	assert.Len(t, matched, 1)
+	assert.Equal(t, "1", matched[0].ID)
 }
 
 func TestCivo_submitChangesCreate(t *testing.T) {

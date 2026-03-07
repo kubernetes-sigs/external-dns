@@ -132,7 +132,8 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 				// root name is identified by the empty string and should be
 				// translated to zone name for the endpoint entry.
-				if r.Name == "" {
+				// The Civo API may return "@" for apex records instead of "".
+				if r.Name == "" || r.Name == "@" {
 					name = zone.Name
 				}
 
@@ -539,7 +540,12 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	for _, record := range records {
 		stripedName := getStrippedRecordName(zone, ep)
 		toUpper := strings.ToUpper(string(record.Type))
-		if record.Name == stripedName && toUpper == ep.RecordType {
+		// The Civo API may return "@" for apex record names instead of "".
+		recordName := record.Name
+		if recordName == "@" {
+			recordName = ""
+		}
+		if recordName == stripedName && toUpper == ep.RecordType {
 			matchedRecords = append(matchedRecords, record)
 		}
 	}
