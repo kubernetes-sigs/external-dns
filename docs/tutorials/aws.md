@@ -288,6 +288,31 @@ kubectl create secret generic external-dns \
 
 Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RBAC or non-RBAC.  Make sure to uncomment the section that mounts volumes, so that the credentials can be mounted.
 
+As an alternative to mounting a credentials file, you can provide static credentials via environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_SESSION_TOKEN` (optional; for temporary credentials)
+- `AWS_REGION` or `AWS_DEFAULT_REGION`
+
+Example snippet:
+
+```yaml
+env:
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-aws
+        key: access_key_id
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-aws
+        key: secret_access_key
+  - name: AWS_DEFAULT_REGION
+    value: us-east-1
+```
+
 > [!TIP]
 > By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different
 > profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the
