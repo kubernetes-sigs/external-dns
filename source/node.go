@@ -76,6 +76,14 @@ func NewNodeSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
+	if err = nodeInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Node](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
+
 	// Add default resource event handler to properly initialize informer.
 	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 

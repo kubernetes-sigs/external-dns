@@ -95,19 +95,17 @@ func NewIstioGatewaySource(
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-
-	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
-		informers.TransformWithSpecSelector(),
-		informers.TransformWithSpecExternalIPs(),
-		informers.TransformWithStatusLoadBalancer(),
-	))
-	if err != nil {
+	if err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
 		return nil, err
 	}
 
+	// Add default resource event handlers to properly initialize informer.
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())

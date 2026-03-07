@@ -1653,8 +1653,12 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
 				"external-dns.alpha.kubernetes.io/random":   "value",
 				"other/annotation":                          "value",
+				v1.LastAppliedConfigAnnotation:              `{"apiVersion":"v1"}`,
 			},
 			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
@@ -1719,9 +1723,11 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-service", rService.Name)
-	assert.Empty(t, rService.Labels)
-	assert.Empty(t, rService.Annotations)
-	assert.Empty(t, rService.UID)
+	assert.Equal(t, svc.Labels, rService.Labels)
+	assert.NotContains(t, rService.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, rService.Annotations, "user-annotation")
+	assert.Equal(t, svc.UID, rService.UID)
+	assert.Empty(t, rService.ManagedFields)
 	assert.NotEmpty(t, rService.Status.LoadBalancer)
 	assert.Empty(t, rService.Status.Conditions)
 	assert.Equal(t, map[string]string{

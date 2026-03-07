@@ -107,6 +107,14 @@ func NewIngressSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
+	if err = ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
+
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 

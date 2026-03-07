@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -1756,4 +1757,57 @@ func TestIngressWithConfiguration(t *testing.T) {
 			validateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+}
+
+func TestTransformerInIngressSource(t *testing.T) {
+	ingress := &networkv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-ingress",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation": "value",
+				"external-dns.alpha.kubernetes.io/hostname": "ingress.example.com",
+				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"networking.k8s.io/v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Spec: networkv1.IngressSpec{
+			Rules: []networkv1.IngressRule{
+				{Host: "app.example.com"},
+			},
+		},
+		Status: networkv1.IngressStatus{
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				Ingress: []networkv1.IngressLoadBalancerIngress{
+					{IP: "1.2.3.4"},
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(ingress)
+
+	src, err := NewIngressSource(t.Context(), fakeClient, "", "", "", false, false, false, false, labels.Everything(), nil)
+	require.NoError(t, err)
+	is, ok := src.(*ingressSource)
+	require.True(t, ok)
+
+	retrieved, err := is.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, ingress.Name, retrieved.Name)
+	assert.Equal(t, ingress.Labels, retrieved.Labels)
+	assert.Equal(t, ingress.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, corev1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	assert.Contains(t, retrieved.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+	// Status.LoadBalancer preserved — used for endpoint generation
+	assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	// Spec preserved
+	assert.Equal(t, ingress.Spec.Rules, retrieved.Spec.Rules)
 }

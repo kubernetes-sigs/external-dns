@@ -30,6 +30,7 @@ import (
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -98,21 +99,26 @@ func NewIstioVirtualServiceSource(
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-
-	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
-		informers.TransformWithSpecSelector(),
-		informers.TransformWithSpecExternalIPs(),
-		informers.TransformWithStatusLoadBalancer(),
-	))
-	if err != nil {
+	if err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
 		return nil, err
 	}
 
-	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	if err = ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
 
+	// Add default resource event handlers to properly initialize informer.
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())

@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -144,6 +145,41 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 			assert.Equal(t, tt.expectedFilter, options.annotationFilter)
 		})
 	}
+}
+
+func TestIndexerWithOptions_LabelKey(t *testing.T) {
+	indexers := IndexerWithOptions[*discoveryv1.EndpointSlice](
+		IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
+	)
+	indexFn := indexers[IndexWithSelectors]
+
+	t.Run("returns namespace/serviceName when label is set", func(t *testing.T) {
+		es := &discoveryv1.EndpointSlice{}
+		es.SetNamespace("default")
+		es.SetName("my-slice")
+		es.SetLabels(map[string]string{discoveryv1.LabelServiceName: "my-service"})
+
+		keys, err := indexFn(es)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"default/my-service"}, keys)
+	})
+
+	t.Run("returns nil when label is absent", func(t *testing.T) {
+		es := &discoveryv1.EndpointSlice{}
+		es.SetNamespace("default")
+		es.SetName("my-slice")
+		es.SetLabels(map[string]string{})
+
+		keys, err := indexFn(es)
+		assert.NoError(t, err)
+		assert.Nil(t, keys)
+	})
+
+	t.Run("wrong type returns error", func(t *testing.T) {
+		keys, err := indexFn(&corev1.Service{})
+		assert.Error(t, err)
+		assert.Nil(t, keys)
+	})
 }
 
 func TestGetByKey_ObjectExists(t *testing.T) {
