@@ -66,6 +66,7 @@ var trailingTypes = []string{
 	endpoint.RecordTypeMX,
 	endpoint.RecordTypeSRV,
 	endpoint.RecordTypeNS,
+	endpoint.RecordTypePTR,
 	"ALIAS",
 }
 
@@ -229,7 +230,13 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Res
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	client PDNSAPIProvider
+	client       PDNSAPIProvider
+	domainFilter *endpoint.DomainFilter
+}
+
+// GetDomainFilter returns the domain filter configured for this provider.
+func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return p.domainFilter
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
@@ -264,6 +271,7 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},
+		domainFilter: config.DomainFilter,
 	}
 	return provider, nil
 }
@@ -523,6 +531,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 			return err
 		}
 	}
+
 	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }

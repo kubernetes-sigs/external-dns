@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
 	"time"
 
@@ -124,6 +125,14 @@ func Execute() {
 	prvdr, err := buildProvider(ctx, cfg, domainFilter)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if prvdr != nil && cfg.ProviderCacheTime > 0 {
+		prvdr = provider.NewCachedProvider(prvdr, cfg.ProviderCacheTime)
+	}
+	// Ensure PTR is a managed record type so the planner considers PTR records
+	if !slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR) {
+		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+		log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
 	}
 
 	if cfg.WebhookServer {
@@ -312,7 +321,7 @@ func buildProvider(
 			ClientCertFilePath:    cfg.TLSClientCert,
 			ClientCertKeyFilePath: cfg.TLSClientCertKey,
 		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
@@ -349,12 +358,6 @@ func buildProvider(
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
-	}
-	if p != nil && cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(
-			p,
-			cfg.ProviderCacheTime,
-		)
 	}
 	return p, err
 }
@@ -433,7 +436,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
+		wrappers.WithPreferAlias(cfg.PreferAlias),
+		wrappers.WithCreatePTR(cfg.CreatePTR || cfg.RFC2136CreatePTR))
 	return wrappers.WrapSources(sources, opts)
 }
 
