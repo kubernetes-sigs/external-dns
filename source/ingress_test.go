@@ -67,6 +67,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		[]string{},
+		[]string{},
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -131,6 +132,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				labels.Everything(),
 				ti.ingressClassNames,
+				[]string{},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -150,6 +152,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		defaultTargets           []string
 		expected                 []*endpoint.Endpoint
 	}{
 		{
@@ -259,10 +262,24 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "fallback to default targets",
+			ingress: fakeIngress{
+				dnsnames: []string{"foo.bar"},
+			},
+			defaultTargets: []string{"1.2.3.4"},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec, ti.defaultTargets), ti.expected)
 		})
 	}
 }
@@ -361,7 +378,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false, []string{}), ti.expected)
 		})
 	}
 }
@@ -1428,6 +1445,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressRulesSpec,
 				ti.ingressLabelSelector,
 				ti.ingressClassNames,
+				[]string{},
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(t.Context())
@@ -1507,6 +1525,108 @@ func TestIngressWithConfiguration(t *testing.T) {
 		cfg       *Config
 		expected  []*endpoint.Endpoint
 	}{
+		{
+			title: "Ingress with fallback to default ip target",
+			cfg: &Config{
+				DefaultTargets: []string{"8.8.8.8"},
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"8.8.8.8"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "Ingress with default ip target and valid status ip",
+			cfg: &Config{
+				DefaultTargets: []string{"8.8.8.8"},
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "Ingress with fallback to default cname target",
+			cfg: &Config{
+				DefaultTargets: []string{"example.com"},
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"example.com"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+		},
+		{
+			title: "Ingress with default cname target and valid status ip",
+			cfg: &Config{
+				DefaultTargets: []string{"google.com"},
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
 		{
 			title: "hostname and targets configured as annotations",
 			ingresses: []*networkv1.Ingress{
@@ -1749,6 +1869,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 				tt.cfg.IgnoreIngressRulesSpec,
 				labels.Everything(),
 				tt.cfg.IngressClassNames,
+				tt.cfg.DefaultTargets,
 			)
 			require.NoError(t, err)
 			endpoints, err := src.Endpoints(t.Context())

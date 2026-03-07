@@ -72,6 +72,7 @@ type ingressSource struct {
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 	labelSelector            labels.Selector
+	defaultTargets           endpoint.Targets
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -81,7 +82,9 @@ func NewIngressSource(
 	namespace, annotationFilter, fqdnTemplate string,
 	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
 	labelSelector labels.Selector,
-	ingressClassNames []string) (Source, error) {
+	ingressClassNames []string,
+	defaultTargets []string,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -129,6 +132,7 @@ func NewIngressSource(
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
 		labelSelector:            labelSelector,
+		defaultTargets:           defaultTargets,
 	}
 	return sc, nil
 }
@@ -157,7 +161,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec, sc.defaultTargets)
 
 		// apply template if host is missing on ingress
 		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
@@ -171,6 +175,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		if endpoint.HasNoEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
+			log.Warnf("Ingress %s/%s has no valid endpoints (skipping)", ing.Namespace, ing.Name)
 			continue
 		}
 
@@ -194,6 +199,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
+	}
+
+	if len(targets) == 0 {
+		targets = sc.defaultTargets
 	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
@@ -250,7 +259,7 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, defaultTargets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
@@ -259,6 +268,10 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
+	}
+
+	if len(targets) == 0 {
+		targets = defaultTargets
 	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
