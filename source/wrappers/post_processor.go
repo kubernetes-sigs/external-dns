@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -34,6 +35,7 @@ type postProcessor struct {
 
 type PostProcessorConfig struct {
 	ttl          int64
+	provider     string
 	preferAlias  bool
 	isConfigured bool
 }
@@ -49,14 +51,25 @@ func WithTTL(ttl time.Duration) PostProcessorOption {
 	}
 }
 
+// WithProviderLabel sets the provider label used to retain provider-specific
+// properties on endpoints. Empty or whitespace-only values are ignored.
+func WithProviderLabel(input string) PostProcessorOption {
+	return func(cfg *PostProcessorConfig) {
+		if p := strings.TrimSpace(input); p != "" {
+			cfg.isConfigured = true
+			cfg.provider = p
+		}
+	}
+}
+
 // WithPostProcessorPreferAlias enables setting alias=true on CNAME endpoints.
 // This signals to providers that support ALIAS records (like PowerDNS, AWS)
 // to create ALIAS records instead of CNAMEs.
 func WithPostProcessorPreferAlias(enabled bool) PostProcessorOption {
 	return func(cfg *PostProcessorConfig) {
-		cfg.preferAlias = enabled
 		if enabled {
 			cfg.isConfigured = true
+			cfg.preferAlias = enabled
 		}
 	}
 }
@@ -84,6 +97,7 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 		ep.WithMinTTL(pp.cfg.ttl)
+		ep.RetainProviderProperties(pp.cfg.provider)
 		// Set alias annotation for CNAME records when preferAlias is enabled
 		// Only set if not already explicitly configured at the source level
 		if pp.cfg.preferAlias && ep.RecordType == endpoint.RecordTypeCNAME {

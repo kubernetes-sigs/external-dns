@@ -15,6 +15,7 @@ package annotations
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -89,6 +90,15 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			result, setIdentifier := ProviderSpecificAnnotations(tt.annotations)
 			assert.Equal(t, tt.expected, result)
 			assert.Equal(t, tt.setIdentifier, setIdentifier)
+
+			for _, prop := range result {
+				slashIdx := strings.Index(prop.Name, "/")
+				if slashIdx == -1 || strings.HasPrefix(prop.Name, CloudflarePrefix) {
+					continue
+				}
+				assert.NotContains(t, prop.Name[:slashIdx], ".",
+					"property %q uses a full annotation name; only cloudflare is allowed to — use the short \"provider/attr\" form instead", prop.Name)
+			}
 		})
 	}
 }
@@ -309,6 +319,45 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+// TestProviderSpecificPropertyNameConvention enforces that only Cloudflare may
+// emit the full annotation name (e.g. "external-dns.alpha.kubernetes.io/cloudflare-proxied")
+// as a property name. All other providers must normalise to the short "provider/attr" form
+// (e.g. "aws/weight"). If a new provider (e.g. azure-, ovh-) is added but accidentally
+// outputs the full annotation name, this test will catch it.
+func TestProviderSpecificPropertyNameConvention(t *testing.T) {
+	annotations := map[string]string{
+		AnnotationKeyPrefix + "aws-weight":        "10",
+		AnnotationKeyPrefix + "scw-something":     "val",
+		AnnotationKeyPrefix + "webhook-something": "val",
+		AnnotationKeyPrefix + "coredns-group":     "g1",
+		CloudflareProxiedKey:                      "true",
+		CloudflareTagsKey:                         "tag1",
+		CloudflareRegionKey:                       "us",
+		CloudflareRecordCommentKey:                "comment",
+		CloudflareCustomHostnameKey:               "host.example.com",
+		AliasKey:                                  "true",
+	}
+
+	props, _ := ProviderSpecificAnnotations(annotations)
+	for _, prop := range props {
+		name := prop.Name
+		slashIdx := strings.Index(name, "/")
+		if slashIdx == -1 {
+			// No slash: provider-agnostic property (e.g. "alias") — always OK.
+			continue
+		}
+		// Cloudflare exception: retains the full annotation name.
+		if strings.HasPrefix(name, CloudflarePrefix) {
+			continue
+		}
+		// All other providers must use the short "provider/attr" form.
+		// The segment before "/" must be a plain word with no dots.
+		providerSegment := name[:slashIdx]
+		assert.NotContains(t, providerSegment, ".",
+			"property %q uses a full annotation name; only cloudflare is allowed to — use the short \"provider/attr\" form instead", name)
 	}
 }
 

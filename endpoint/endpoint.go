@@ -17,8 +17,10 @@ limitations under the License.
 package endpoint
 
 import (
+	"cmp"
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -366,6 +368,33 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 			return
 		}
 	}
+}
+
+// RetainProviderProperties retains only properties whose name is prefixed with
+// "provider/" (e.g. "aws/evaluate-target-health" for provider "aws").
+// Properties belonging to other providers are dropped.
+// Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
+// TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
+// annotation form "external-dns.alpha.kubernetes.io/cloudflare-*", so filtering is skipped for
+// cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
+// adopts the standard prefix convention.
+func (e *Endpoint) RetainProviderProperties(provider string) {
+	if provider == "" || len(e.ProviderSpecific) == 0 {
+		return
+	}
+	if provider != "cloudflare" {
+		prefix := provider + "/"
+		result := make(ProviderSpecific, 0, len(e.ProviderSpecific))
+		for _, prop := range e.ProviderSpecific {
+			if !strings.Contains(prop.Name, "/") || strings.HasPrefix(prop.Name, prefix) {
+				result = append(result, prop)
+			}
+		}
+		e.ProviderSpecific = result
+	}
+	slices.SortFunc(e.ProviderSpecific, func(a, b ProviderSpecificProperty) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 }
 
 // WithLabel adds or updates a label for the Endpoint.
