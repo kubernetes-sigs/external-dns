@@ -160,7 +160,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 			targets = append(targets, transportServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
 	return endpoints
