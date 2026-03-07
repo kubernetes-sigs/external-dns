@@ -49,7 +49,8 @@ const (
 
 var (
 	// avoids allocating a new slice on every call
-	skipLabels = []string{"originalText", "prefix", "resource"}
+	// prevents unwanted deletion of etcd keys based on labels
+	skipLabels = []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
@@ -487,14 +488,22 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
-		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
-		if p.dryRun {
-			continue
-		}
-		if err := p.client.DeleteService(ctx, key); err != nil {
+		err := p.deleteByDnsName(ctx, dnsName)
+		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string) error {
+	key := p.etcdKeyFor(dnsName)
+	log.Infof("Delete key %s", key)
+	if p.dryRun {
+		return nil
+	}
+	if err := p.client.DeleteService(ctx, key); err != nil {
+		return err
 	}
 	return nil
 }
