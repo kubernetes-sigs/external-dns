@@ -261,6 +261,44 @@ For `Services` of type `LoadBalancer`, uses the `Service`'s `ClusterIP`.
 
 For `Pods`, uses the `Pod`'s `Status.PodIP`.
 
+### Use Cases for `external-dns.alpha.kubernetes.io/internal-hostname` annotation
+
+#### Internal DNS Name for a LoadBalancer Service
+
+Use this annotation when you want an internal DNS name that resolves to the Service `ClusterIP`, for
+in-cluster workloads or private network clients.
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    external-dns.alpha.kubernetes.io/internal-hostname: my-service.internal.example.com
+spec:
+  type: LoadBalancer
+  ...
+```
+
+> ExternalDNS will create an internal DNS record for `my-service.internal.example.com` targeting the Service `ClusterIP`.
+
+#### Internal DNS Name for a Pod
+
+Use this annotation on a Pod when you want an internal DNS name that resolves to that Pod's `Status.PodIP`.
+
+```yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+  annotations:
+    external-dns.alpha.kubernetes.io/internal-hostname: my-pod.internal.example.com
+spec:
+  ...
+```
+
+> ExternalDNS will create an internal DNS record for `my-pod.internal.example.com` targeting the Pod `Status.PodIP`.
+
 ## external-dns.alpha.kubernetes.io/target
 
 Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA).
