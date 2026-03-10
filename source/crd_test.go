@@ -688,7 +688,13 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			scheme := runtime.NewScheme()
 			require.NoError(t, apiv1alpha1.AddToScheme(scheme))
 
-			cs, err := NewCRDSource(restClient, "foo", apiv1alpha1.DNSEndpointKind, "", labels.Everything(), scheme, false)
+			cs, err := NewCRDSource(restClient, &Config{
+				Namespace:        "foo",
+				AnnotationFilter: "",
+				LabelFilter:      labels.Everything(),
+				CRDSourceKind:    apiv1alpha1.DNSEndpointKind,
+				UpdateEvents:     false,
+			}, scheme)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
