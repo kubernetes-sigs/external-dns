@@ -21,9 +21,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestOwnerMismatchMetric(t *testing.T) {
@@ -95,11 +96,11 @@ func TestCalculateOwnerMismatchDetection(t *testing.T) {
 		ManagedRecords: endpoint.KnownRecordTypes,
 		OwnerID:        "my-owner",
 	}
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	changes := p.Calculate().Changes
 
 	assert.Empty(t, changes.Create, "expected no creates due to owner mismatch")
-	testutils.TestHelperLogContains("owner id does not match for one or more items to create", hook, t)
+	logtest.TestHelperLogContains("owner id does not match for one or more items to create", hook, t)
 }
 
 func TestOwnerMismatchMetricDistribution(t *testing.T) {
