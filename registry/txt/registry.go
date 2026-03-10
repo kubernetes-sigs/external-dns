@@ -271,7 +271,13 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 				desiredTXTs := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
-						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
+						// Only force update if the TXT record is within the managed zone.
+						// For zone roots without explicit txt-prefix, the generated TXT name
+						// may fall outside the zone (e.g., zone "example.com" generates "a-example.com"
+						// which is not a subdomain of "example.com").
+						if im.provider.GetDomainFilter().Match(desiredTXT.DNSName) {
+							ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
+						}
 					}
 				}
 			}
