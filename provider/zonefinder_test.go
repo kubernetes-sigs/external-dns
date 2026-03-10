@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestZoneIDName(t *testing.T) {
@@ -101,8 +101,8 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "testécassé.fr", zoneName)
 	assert.Equal(t, "234567", zoneID)
 
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("xn--not-a-valid-punycode")
 
-	testutils.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
+	logtest.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
 }

@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -1029,14 +1030,14 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 					RegionKey: tt.fields.RegionKey,
 				},
 			}
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
 			assert.Error(t, err, "ApplyChanges should return an error")
 			if tt.errMsg != "" && err != nil {
 				assert.Contains(t, err.Error(), tt.errMsg, "Expected error message to contain: %s", tt.errMsg)
 			}
 			if tt.expectDebug != "" {
-				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+				logtest.TestHelperLogContains(tt.expectDebug, hook, t)
 			}
 		})
 	}
@@ -1178,11 +1179,11 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 					RegionKey: tt.fields.RegionKey,
 				},
 			}
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
 			assert.NoError(t, err, "ApplyChanges should not fail")
 			if tt.expectDebug != "" {
-				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+				logtest.TestHelperLogContains(tt.expectDebug, hook, t)
 			}
 		})
 	}

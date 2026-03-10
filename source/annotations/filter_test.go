@@ -19,7 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 // Mock object implementing AnnotatedObject
@@ -123,7 +123,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilter_LogOutput(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 	items := []mockObj{
 		{annotations: map[string]string{"foo": "bar"}},
@@ -132,5 +132,5 @@ func TestFilter_LogOutput(t *testing.T) {
 	filter := "foo=bar"
 	_, _ = Filter(items, filter)
 
-	testutils.TestHelperLogContains("filtered '1' services out of '2' with annotation filter 'foo=bar'", hook, t)
+	logtest.TestHelperLogContains("filtered '1' services out of '2' with annotation filter 'foo=bar'", hook, t)
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestExampleSameEndpoints(t *testing.T) {
@@ -620,13 +621,13 @@ func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			endpoint.FilterEndpointsByOwnerID(tt.ownerID, tt.endpoints)
 			for _, m := range tt.messages {
-				TestHelperLogContains(m, hook, t)
+				logtest.TestHelperLogContains(m, hook, t)
 			}
 			for _, m := range tt.messages_not {
-				TestHelperLogNotContains(m, hook, t)
+				logtest.TestHelperLogNotContains(m, hook, t)
 			}
 		})
 	}

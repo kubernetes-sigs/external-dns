@@ -195,19 +195,35 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
-			isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
-			isTXT := ep.RecordType == endpoint.RecordTypeTXT
 			illegalTarget := false
 			for _, target := range ep.Targets {
+				switch ep.RecordType {
+				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
+					continue // TXT records allow arbitrary text, skip validation; MX records can have trailing dot but it's not required, skip validation
+				case endpoint.RecordTypeCNAME:
+					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
+				}
+
 				hasDot := strings.HasSuffix(target, ".")
-				// Skip dot validation for TXT records as they can contain arbitrary text
-				if !isTXT && ((isNAPTR && !hasDot) || (!isNAPTR && hasDot)) {
-					illegalTarget = true
+
+				switch ep.RecordType {
+				case endpoint.RecordTypeNAPTR:
+					illegalTarget = !hasDot // Must have trailing dot
+				default:
+					illegalTarget = hasDot // Must NOT have trailing dot
+				}
+
+				if illegalTarget {
+					fixed := target + "."
+					if ep.RecordType != endpoint.RecordTypeNAPTR {
+						fixed = strings.TrimSuffix(target, ".")
+					}
+					log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — use %q not %q.",
+						dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, target, ep.RecordType, fixed, target)
 					break
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target format.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
@@ -230,7 +246,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {

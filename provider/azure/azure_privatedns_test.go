@@ -192,11 +192,11 @@ func privateOthersRecordSetPropertiesGetter(_ []string, ttl int64) *privatedns.R
 	}
 }
 
-func createPrivateMockRecordSet(name, recordType string, values ...string) *privatedns.RecordSet {
-	return createPrivateMockRecordSetMultiWithTTL(name, recordType, 0, values...)
+func createPrivateMockRecordSet(recordType string, values ...string) *privatedns.RecordSet {
+	return createPrivateMockRecordSetMultiWithTTL("@", recordType, 0, values...)
 }
 
-func createPrivateMockRecordSetWithTTL(name, recordType, value string, ttl int64) *privatedns.RecordSet {
+func createPrivateMockRecordSetWithNameAndTTL(name, recordType, value string, ttl int64) *privatedns.RecordSet {
 	return createPrivateMockRecordSetMultiWithTTL(name, recordType, ttl, value)
 }
 
@@ -225,10 +225,10 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 }
 
 // newMockedAzurePrivateDNSProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, zones []*privatedns.PrivateZone, recordSets []*privatedns.RecordSet, maxRetriesCount int) (*AzurePrivateDNSProvider, error) {
+func newMockedAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, zones []*privatedns.PrivateZone, recordSets []*privatedns.RecordSet, maxRetriesCount int) *AzurePrivateDNSProvider {
 	zonesClient := newMockPrivateZonesClient(zones)
 	recordSetsClient := newMockPrivateRecordSectsClient(recordSets)
-	return newAzurePrivateDNSProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient, maxRetriesCount), nil
+	return newAzurePrivateDNSProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient, maxRetriesCount)
 }
 
 func newAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, privateZonesClient PrivateZonesClient, privateRecordsClient PrivateRecordSetsClient, maxRetriesCount int) *AzurePrivateDNSProvider {
@@ -246,25 +246,22 @@ func newAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFil
 }
 
 func TestAzurePrivateDNSRecord(t *testing.T) {
-	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
+	provider := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
 		[]*privatedns.PrivateZone{
 			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
 		[]*privatedns.RecordSet{
-			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
-			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeAAAA, "2001::123:123:123:123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
-			createPrivateMockRecordSetWithTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
+			createPrivateMockRecordSet("NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet(endpoint.RecordTypeA, "123.123.123.122"),
+			createPrivateMockRecordSet(endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
+			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeAAAA, "2001::123:123:123:123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSetWithNameAndTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	actual, err := provider.Records(context.Background())
 	if err != nil {
@@ -285,25 +282,22 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 }
 
 func TestAzurePrivateDNSMultiRecord(t *testing.T) {
-	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
+	provider := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
 		[]*privatedns.PrivateZone{
 			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
 		[]*privatedns.RecordSet{
-			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
-			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSet("NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet(endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+			createPrivateMockRecordSet(endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
+			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
 			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createPrivateMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	actual, err := provider.Records(context.Background())
 	if err != nil {
@@ -438,25 +432,22 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 }
 
 func TestAzurePrivateDNSNameFilter(t *testing.T) {
-	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"nginx.example.com"}), endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
+	provider := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"nginx.example.com"}), endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
 		[]*privatedns.PrivateZone{
 			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
 
 		[]*privatedns.RecordSet{
-			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
-			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
-			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createPrivateMockRecordSetWithTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createPrivateMockRecordSetWithTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
-			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createPrivateMockRecordSet("NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet(endpoint.RecordTypeA, "123.123.123.122"),
+			createPrivateMockRecordSet(endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSetWithNameAndTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithNameAndTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
+			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	ctx := context.Background()
 	actual, err := provider.Records(ctx)

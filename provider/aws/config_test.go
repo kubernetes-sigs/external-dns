@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -114,7 +115,7 @@ func Test_newV2Config(t *testing.T) {
 			"AWS_SECRET_ACCESS_KEY": "topsecret",
 		})
 
-		hook := testutils.LogsUnderTestWithLogLevel(logrus.InfoLevel, t)
+		hook := logtest.LogsUnderTestWithLogLevel(logrus.InfoLevel, t)
 		defer hook.Reset()
 
 		// when
@@ -124,7 +125,7 @@ func Test_newV2Config(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		testutils.TestHelperLogContainsWithLogLevel(
+		logtest.TestHelperLogContainsWithLogLevel(
 			"Assuming role: arn:aws:iam::123456789012:role/example",
 			logrus.InfoLevel,
 			hook,
@@ -227,7 +228,7 @@ func TestCreateConfigFatalOnError(t *testing.T) {
 		})
 
 		exitCode := 0
-		_ = testutils.TestHelperWithLogExitFunc(func(code int) {
+		_ = logtest.TestHelperWithLogExitFunc(func(code int) {
 			exitCode = code
 			panic("exit")
 		})
@@ -244,7 +245,7 @@ func TestCreateConfigFatalOnError(t *testing.T) {
 		})
 
 		exitCode := 0
-		_ = testutils.TestHelperWithLogExitFunc(func(code int) {
+		_ = logtest.TestHelperWithLogExitFunc(func(code int) {
 			exitCode = code
 			panic("exit")
 		})

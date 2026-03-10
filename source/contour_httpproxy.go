@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"text/template"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -143,10 +142,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		hpEndpoints, err := sc.endpointsFromHTTPProxy(hp)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get endpoints from HTTPProxy: %w", err)
-		}
+		hpEndpoints := sc.endpointsFromHTTPProxy(hp)
 
 		// apply template if fqdn is missing on HTTPProxy
 		hpEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
@@ -167,11 +163,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, hpEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
@@ -206,7 +198,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 }
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
-func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
+func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
@@ -242,7 +234,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {

@@ -42,8 +42,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 
+	log "github.com/sirupsen/logrus"
+
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type CRDSuite struct {
@@ -435,7 +438,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "illegal target CNAME",
+			title:                "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
 			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
 			apiVersion:           apiv1alpha1.GroupVersion.String(),
 			registeredKind:       apiv1alpha1.DNSEndpointKind,
@@ -452,8 +455,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectEndpoints: true,
+		},
+		{
+			title:                "CNAME target without trailing dot (relative name)",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "internal.example.com",
+					Targets:    endpoint.Targets{"backend.cluster.local"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  300,
+				},
+			},
+			expectEndpoints: true,
 		},
 		{
 			title:                "illegal target NAPTR",
@@ -518,6 +540,48 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: false,
 			expectError:     false,
 		},
+		{
+			title:                "MX Record allowing trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com."},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
+			title:                "MX Record without trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com"},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
@@ -562,6 +626,72 @@ func testCRDSourceEndpoints(t *testing.T) {
 				// TODO: at the moment not all sources apply ResourceLabelKey
 				require.GreaterOrEqual(t, len(e.Labels), 1, "endpoint must have at least one label")
 				require.Contains(t, e.Labels, endpoint.ResourceLabelKey, "endpoint must include the ResourceLabelKey label")
+			}
+		})
+	}
+}
+
+func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
+	for _, ti := range []struct {
+		title       string
+		endpoints   []*endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			title: "A record with trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4."},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+		},
+		{
+			title: "NAPTR record without trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"_sip._udp.example.org"},
+					RecordType: endpoint.RecordTypeNAPTR,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+		},
+		{
+			title: "CNAME with empty targets produces no warning",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			restClient := fakeRESTClient(ti.endpoints, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind, "foo", "test", nil, nil, t)
+
+			scheme := runtime.NewScheme()
+			require.NoError(t, apiv1alpha1.AddToScheme(scheme))
+
+			cs, err := NewCRDSource(restClient, "foo", apiv1alpha1.DNSEndpointKind, "", labels.Everything(), scheme, false)
+			require.NoError(t, err)
+
+			_, err = cs.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			if ti.wantWarning == "" {
+				require.Empty(t, hook.Entries, "expected no warnings to be logged")
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
 			}
 		})
 	}

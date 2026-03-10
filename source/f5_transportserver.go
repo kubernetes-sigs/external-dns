@@ -126,12 +126,9 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
-	endpoints, err := ts.endpointsFromTransportServers(transportServers)
-	if err != nil {
-		return nil, err
-	}
+	endpoints := ts.endpointsFromTransportServers(transportServers)
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
@@ -141,7 +138,7 @@ func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler fu
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
-func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) ([]*endpoint.Endpoint, error) {
+func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
@@ -166,7 +163,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 		endpoints = append(endpoints, EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
