@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -208,11 +207,7 @@ func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, oldIngressRouteUdpEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects

@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -902,7 +902,7 @@ func TestPodSourceLogs(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			_, err = src.Endpoints(ctx)
 			require.NoError(t, err)
@@ -911,13 +911,13 @@ func TestPodSourceLogs(t *testing.T) {
 			// We don't do an exact match because logs are globally shared,
 			// making precise comparisons difficult
 			for _, expectedLog := range tc.expectedDebugLogs {
-				testutils.TestHelperLogContains(expectedLog, hook, t)
+				logtest.TestHelperLogContains(expectedLog, hook, t)
 			}
 
 			// Check that no unexpected logs are present.
 			// This ensures that logs are not generated inappropriately.
 			for _, unexpectedLog := range tc.unexpectedDebugLogs {
-				testutils.TestHelperLogNotContains(unexpectedLog, hook, t)
+				logtest.TestHelperLogNotContains(unexpectedLog, hook, t)
 			}
 		})
 	}

@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 
 	"github.com/stretchr/testify/require"
@@ -435,12 +436,12 @@ func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
 			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	err := coredns.ApplyChanges(context.Background(), changes1)
 	require.NoError(t, err)
 
-	testutils.TestHelperLogContains("Skipping record \"domain1.local\" due to domain filter", hook, t)
-	testutils.TestHelperLogContains("Skipping record \"domain2.local\" due to domain filter", hook, t)
+	logtest.TestHelperLogContains("Skipping record \"domain1.local\" due to domain filter", hook, t)
+	logtest.TestHelperLogContains("Skipping record \"domain2.local\" due to domain filter", hook, t)
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) error {

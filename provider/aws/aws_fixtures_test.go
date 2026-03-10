@@ -25,12 +25,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestAWSRecordsV1(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub,
@@ -49,7 +49,7 @@ func TestAWSRecordsV1(t *testing.T) {
 
 func TestAWSZonesFilterWithTags(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub,
@@ -78,7 +78,7 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 		tName := fmt.Sprintf("filters=%s and zones=%d", strings.Join(tt.filters, ","), tt.want)
 		t.Run(tName, func(t *testing.T) {
 			var zones HostedZones
-			unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+			unmarshalZonesFixture(&zones, t)
 
 			stub := NewRoute53APIFixtureStub(&zones)
 			provider := providerFilters(stub,
@@ -94,7 +94,7 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 
 func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	var zones HostedZones
-	unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+	unmarshalZonesFixture(&zones, t)
 
 	stub := NewRoute53APIFixtureStub(&zones)
 	provider := providerFilters(stub)
@@ -102,8 +102,8 @@ func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	ctx := context.Background()
 	_, err := provider.Zones(ctx)
 	assert.NoError(t, err)
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	_, _ = provider.Zones(ctx)
 
-	testutils.TestHelperLogContainsWithLogLevel("Using cached AWS zones", log.DebugLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel("Using cached AWS zones", log.DebugLevel, hook, t)
 }

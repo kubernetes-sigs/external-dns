@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -183,12 +182,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	// TODO: sort on endpoint creation
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.

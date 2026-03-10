@@ -22,7 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type MockMetric struct {
@@ -94,13 +94,13 @@ func TestMustRegister(t *testing.T) {
 }
 
 func TestUnsupportedMetricWarning(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	registry := NewMetricsRegister()
 	mockUnsupported := &MockMetric{FQDN: "unsupported_metric"}
 	registry.MustRegister(mockUnsupported)
 	assert.NotContains(t, registry.mName, "unsupported_metric")
 
-	testutils.TestHelperLogContains("Unsupported metric type: *metrics.MockMetric", hook, t)
+	logtest.TestHelperLogContains("Unsupported metric type: *metrics.MockMetric", hook, t)
 }
 
 func TestNewMetricsRegister(t *testing.T) {
