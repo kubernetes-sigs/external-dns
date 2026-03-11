@@ -388,6 +388,72 @@ func TestGatewayHTTPRouteWithListenerSetSectionName(t *testing.T) {
 	})
 }
 
+func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	for _, name := range []string{"infra", "apps"} {
+		ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	// Gateway and ListenerSet in "infra" namespace.
+	gw := &v1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "shared-gw", Namespace: "infra"},
+		Spec:       v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+		Status:     gatewayStatus("10.0.0.1"),
+	}
+	_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	hostname := v1.Hostname("app.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "ls", Namespace: "infra"},
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "shared-gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Route in "apps" namespace referencing the ListenerSet in "infra".
+	rt := &v1beta1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "apps"},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames:       []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("infra", "ls")}},
+		},
+		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("infra", "ls"))},
+	}
+	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		GatewayNamespace: "infra",
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", "10.0.0.1"),
+	})
+}
+
 func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	t.Parallel()
 
