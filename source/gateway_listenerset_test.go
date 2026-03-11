@@ -114,7 +114,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)
@@ -185,7 +185,7 @@ func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)
@@ -247,7 +247,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)
@@ -310,7 +310,7 @@ func TestGatewayHTTPRouteWithListenerSetAllowedRoutesSame(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)
@@ -378,7 +378,7 @@ func TestGatewayHTTPRouteWithListenerSetSectionName(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)
@@ -443,7 +443,8 @@ func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
-		GatewayNamespace: "infra",
+		GatewayNamespace:    "infra",
+		GatewayListenerSets: true,
 	})
 	require.NoError(t, err)
 
@@ -497,7 +498,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
 	require.NoError(t, err)
 
 	endpoints, err := src.Endpoints(ctx)

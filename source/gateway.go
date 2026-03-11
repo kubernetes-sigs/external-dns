@@ -179,8 +179,11 @@ func newGatewayRouteSource(
 	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
 	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
 	gwInformer.Informer()                                        // Register with factory before starting.
-	lsInformer := informerFactory.Gateway().V1().ListenerSets()  // TODO: ListenerSet informer should be shared across gateway sources.
-	lsInformer.Informer()                                        // Register with factory before starting.
+	var lsInformer informers_v1.ListenerSetInformer
+	if config.GatewayListenerSets {
+		lsInformer = informerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+		lsInformer.Informer()                                      // Register with factory before starting.
+	}
 
 	rtInformerFactory := informerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
@@ -239,7 +242,9 @@ func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
 	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
-	informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
+	if src.lsInformer != nil {
+		informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
+	}
 	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
 	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
 }
@@ -254,9 +259,12 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 	if err != nil {
 		return nil, err
 	}
-	listenerSets, err := src.lsInformer.Lister().ListenerSets(src.gwNamespace).List(src.gwLabels)
-	if err != nil {
-		return nil, err
+	var listenerSets []*v1.ListenerSet
+	if src.lsInformer != nil {
+		listenerSets, err = src.lsInformer.Lister().ListenerSets(src.gwNamespace).List(src.gwLabels)
+		if err != nil {
+			return nil, err
+		}
 	}
 	namespaces, err := src.nsInformer.Lister().List(labels.Everything())
 	if err != nil {
