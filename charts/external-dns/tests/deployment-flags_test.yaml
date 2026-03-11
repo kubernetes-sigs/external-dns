@@ -202,3 +202,15 @@ tests:
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--source=ingress"
+
+  - it: should format extraArgs as list of strings
+    set:
+      provider:
+        name: cloudflare
+      extraArgs:
+        - --cloudflare-dns-records-per-page
+        - "5000"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "5000"
