@@ -20,11 +20,11 @@ Building and/or testing `external-dns` requires additional tooling.
 
 Additional Go-based tools are managed in [`go.tool.mod`](../../go.tool.mod) and used for code generation:
 
-| Tool | Purpose |
-|------|---------|
-| [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods |
-| [yq](https://github.com/mikefarah/yq) | YAML processing (splitting, filtering CRD outputs) |
-| [yamlfmt](https://github.com/google/yamlfmt) | YAML formatting |
+| Tool                                                                  | Purpose                                            |
+|-----------------------------------------------------------------------|----------------------------------------------------|
+| [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods       |
+| [yq](https://github.com/mikefarah/yq)                                 | YAML processing (splitting, filtering CRD outputs) |
+| [yamlfmt](https://github.com/google/yamlfmt)                          | YAML formatting                                    |
 
 List all installed Go tools:
 
