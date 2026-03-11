@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/netip"
 	"sort"
 	"strings"
@@ -145,6 +146,7 @@ type gatewayRouteSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
+	resolveLoadBalancerHostname bool
 }
 
 func newGatewayRouteSource(
@@ -228,6 +230,7 @@ func newGatewayRouteSource(
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    config.CombineFQDNAndAnnotation,
 		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
+		resolveLoadBalancerHostname: config.ResolveLoadBalancerHostname,
 	}
 	return src, nil
 }
@@ -424,7 +427,18 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+						if c.src.resolveLoadBalancerHostname && addr.Type != nil && *addr.Type == v1.HostnameAddressType {
+							ips, err := net.LookupIP(addr.Value)
+							if err != nil {
+								log.Errorf("Unable to resolve %q: %v", addr.Value, err)
+								continue
+							}
+							for _, ip := range ips {
+								hostTargets[host] = append(hostTargets[host], ip.String())
+							}
+						} else {
+							hostTargets[host] = append(hostTargets[host], addr.Value)
+						}
 					}
 				}
 				match = true
