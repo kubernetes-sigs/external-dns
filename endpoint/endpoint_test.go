@@ -1416,7 +1416,7 @@ func TestGetNakedDomain(t *testing.T) {
 			endpoint: &Endpoint{
 				DNSName: "example.com",
 			},
-			expected: "com",
+			expected: "example.com",
 		},
 		{
 			name: "single label (no dots)",

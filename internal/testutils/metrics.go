@@ -56,22 +56,29 @@ func TestHelperVerifyMetricsGaugeVectorWithLabelsFunc(t *testing.T, expected flo
 	}
 }
 
-// sumMetricsWithLabels sums all metric values that match the provided labels (partial match supported).
-// Label matching is case-insensitive since metrics are stored in lowercase.
-func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]string) float64 {
-	ch := make(chan prometheus.Metric, 100)
+// collectAll drains all current observations from a GaugeVec into a slice.
+func collectAll(metric *prometheus.GaugeVec) []dto.Metric {
+	ch := make(chan prometheus.Metric, 1024)
 	go func() {
 		metric.Collect(ch)
 		close(ch)
 	}()
-
-	var sum float64
+	var result []dto.Metric
 	for m := range ch {
 		var dm dto.Metric
 		if err := m.Write(&dm); err != nil {
 			continue
 		}
+		result = append(result, dm)
+	}
+	return result
+}
 
+// sumMetricsWithLabels sums all metric values that match the provided labels (partial match supported).
+// Label matching is case-insensitive since metrics are stored in lowercase.
+func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]string) float64 {
+	var sum float64
+	for _, dm := range collectAll(metric) {
 		// Check if all matchLabels are present with correct values (case-insensitive)
 		metricLabels := make(map[string]string)
 		for _, lp := range dm.Label {
@@ -97,12 +104,6 @@ func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]st
 // collectGaugeVecMetrics collects all metrics from a GaugeVec and returns a formatted string.
 // Shows both per-label aggregates and detailed metrics.
 func collectGaugeVecMetrics(metric *prometheus.GaugeVec) string {
-	ch := make(chan prometheus.Metric, 100)
-	go func() {
-		metric.Collect(ch)
-		close(ch)
-	}()
-
 	// Collect all metrics and aggregate by label
 	type metricEntry struct {
 		labels map[string]string
@@ -111,12 +112,7 @@ func collectGaugeVecMetrics(metric *prometheus.GaugeVec) string {
 	var entries []metricEntry
 	aggregates := make(map[string]map[string]float64) // labelName -> labelValue -> sum
 
-	for m := range ch {
-		var dm dto.Metric
-		if err := m.Write(&dm); err != nil {
-			continue
-		}
-
+	for _, dm := range collectAll(metric) {
 		entry := metricEntry{labels: make(map[string]string)}
 		for _, lp := range dm.Label {
 			name, value := lp.GetName(), lp.GetValue()

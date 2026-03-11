@@ -407,14 +407,15 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
-// GetNakedDomain returns the domain portion of the DNS name (without the first label).
+// GetNakedDomain returns the parent domain of the DNS name (without the first label).
 // For example, "www.example.com" returns "example.com".
+// For apex/two-label names like "example.com", the full name is returned unchanged.
 func (e *Endpoint) GetNakedDomain() string {
 	if e.DNSName == "" {
 		return ""
 	}
 	parts := strings.SplitN(e.DNSName, ".", 2)
-	if len(parts) < 2 {
+	if len(parts) < 2 || !strings.Contains(parts[1], ".") {
 		return e.DNSName
 	}
 	return parts[1]
