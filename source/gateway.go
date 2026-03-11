@@ -346,14 +346,7 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gatewa
 	for _, ls := range listenerSets {
 		listeners := make([]v1.Listener, len(ls.Spec.Listeners))
 		for i, entry := range ls.Spec.Listeners {
-			listeners[i] = v1.Listener{
-				Name:          entry.Name,
-				Hostname:      entry.Hostname,
-				Port:          entry.Port,
-				Protocol:      entry.Protocol,
-				TLS:           entry.TLS,
-				AllowedRoutes: entry.AllowedRoutes,
-			}
+			listeners[i] = v1.Listener(entry)
 		}
 		lssBySection := make(map[v1.SectionName][]v1.Listener, len(listeners)+1)
 		for i, lis := range listeners {
