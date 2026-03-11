@@ -57,19 +57,19 @@ func TestHelperVerifyMetricsGaugeVectorWithLabelsFunc(t *testing.T, expected flo
 }
 
 // collectAll drains all current observations from a GaugeVec into a slice.
-func collectAll(metric *prometheus.GaugeVec) []dto.Metric {
+func collectAll(metric *prometheus.GaugeVec) []*dto.Metric {
 	ch := make(chan prometheus.Metric, 1024)
 	go func() {
 		metric.Collect(ch)
 		close(ch)
 	}()
-	var result []dto.Metric
+	var result []*dto.Metric
 	for m := range ch {
 		var dm dto.Metric
 		if err := m.Write(&dm); err != nil {
 			continue
 		}
-		result = append(result, dm)
+		result = append(result, &dm)
 	}
 	return result
 }
