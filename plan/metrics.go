@@ -42,11 +42,11 @@ func init() {
 	metrics.RegisterMetric.MustRegister(registryOwnerMismatchPerSync)
 }
 
-// flushOwnerMismatch records a single skipped record due to an owner mismatch.
-// It increments the per-sync gauge with labels for record type, expected owner,
-// foreign owner, and the record's naked/apex domain.
-// Using the naked domain instead of the full FQDN helps prevent metric cardinality explosion.
-func flushOwnerMismatch(owner string, current *endpoint.Endpoint) {
+// recordOwnerMismatch increments the per-sync gauge for a single skipped record due to an
+// owner mismatch. Labels capture the record type, expected owner, foreign owner, and the
+// record's parent domain (apex). Using the parent domain instead of the full FQDN prevents
+// metric cardinality explosion.
+func recordOwnerMismatch(owner string, current *endpoint.Endpoint) {
 	registryOwnerMismatchPerSync.AddWithLabels(
 		1.0,
 		current.RecordType,

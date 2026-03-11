@@ -199,7 +199,7 @@ func TestFlushOwnerMismatch(t *testing.T) {
 			registryOwnerMismatchPerSync.Gauge.Reset()
 
 			for range tt.calls {
-				flushOwnerMismatch(tt.owner, tt.current)
+				recordOwnerMismatch(tt.owner, tt.current)
 			}
 
 			testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(

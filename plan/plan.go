@@ -184,7 +184,9 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
-	registryOwnerMismatchPerSync.Gauge.Reset()
+	if p.OwnerID != "" {
+		registryOwnerMismatchPerSync.Gauge.Reset()
+	}
 	changes := p.calculateChanges(t)
 
 	plan := &Plan{
@@ -258,7 +260,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 		for _, current := range row.current {
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
-				flushOwnerMismatch(p.OwnerID, current)
+				recordOwnerMismatch(p.OwnerID, current)
 			}
 		}
 	}
