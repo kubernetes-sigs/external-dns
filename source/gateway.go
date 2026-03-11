@@ -181,7 +181,7 @@ func newGatewayRouteSource(
 	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
 	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
 	gwInformer.Informer()                                        // Register with factory before starting.
-	lsInformer := informerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+	lsInformer := informerFactory.Gateway().V1().ListenerSets()  // TODO: ListenerSet informer should be shared across gateway sources.
 	lsInformer.Informer()                                        // Register with factory before starting.
 
 	rtInformerFactory := informerFactory
