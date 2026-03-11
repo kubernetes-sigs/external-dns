@@ -526,7 +526,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
 	b.StringVar("gateway-namespace", "Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)", defaultConfig.GatewayNamespace, &cfg.GatewayNamespace)
-	b.BoolVar("gateway-listener-sets", "Enable ListenerSet support for Gateway API sources (requires Gateway API v1.5+ CRDs)", false, &cfg.GatewayListenerSets)
+	b.BoolVar("gateway-listener-sets", "Enable ListenerSet support for Gateway API sources (requires Gateway API v1.5+ CRDs) (default: false)", false, &cfg.GatewayListenerSets)
 	b.BoolVar("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)", false, &cfg.IgnoreHostnameAnnotation)
 	b.BoolVar("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)", false, &cfg.IgnoreIngressRulesSpec)
 	b.BoolVar("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)", false, &cfg.IgnoreIngressTLSSpec)
