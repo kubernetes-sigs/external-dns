@@ -33,6 +33,7 @@
 | `--gateway-label-filter=""` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--gateway-name=""` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=""` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
+| `--[no-]gateway-listener-sets` | Enable ListenerSet support for Gateway API sources (requires Gateway API v1.5+ CRDs) |
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
