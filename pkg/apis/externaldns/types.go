@@ -112,6 +112,8 @@ type Config struct {
 	AzureActiveDirectoryAuthorityHost             string
 	AzureZonesCacheDuration                       time.Duration
 	AzureMaxRetriesCount                          int
+	BatchChangeSize                               int
+	BatchChangeInterval                           time.Duration
 	CloudflareProxied                             bool
 	CloudflareCustomHostnames                     bool
 	CloudflareDNSRecordsPerPage                   int
@@ -256,6 +258,8 @@ var defaultConfig = &Config{
 	AzureSubscriptionID:         "",
 	AzureZonesCacheDuration:     0 * time.Second,
 	AzureMaxRetriesCount:        3,
+	BatchChangeSize:             200,
+	BatchChangeInterval:         time.Second,
 	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
@@ -587,6 +591,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.DurationVar("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).", defaultConfig.AzureZonesCacheDuration, &cfg.AzureZonesCacheDuration)
 	b.IntVar("azure-maxretries-count", "When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional)", defaultConfig.AzureMaxRetriesCount, &cfg.AzureMaxRetriesCount)
 
+	b.IntVar("batch-change-size", "Set the maximum number of DNS record changes that will be submitted to the provider in each batch (optional)", defaultConfig.BatchChangeSize, &cfg.BatchChangeSize)
+	b.DurationVar("batch-change-interval", "Set the interval between batch changes (optional, default: 1s)", defaultConfig.BatchChangeInterval, &cfg.BatchChangeInterval)
 	b.BoolVar("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)", false, &cfg.CloudflareProxied)
 	b.BoolVar("cloudflare-custom-hostnames", "When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires \"Cloudflare for SaaS\" enabled. (default: disabled)", false, &cfg.CloudflareCustomHostnames)
 	b.EnumVar("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)", "1.0", &cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
