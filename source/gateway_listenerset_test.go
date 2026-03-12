@@ -455,6 +455,140 @@ func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
 	})
 }
 
+func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Gateway without target annotation.
+	gw := &v1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
+		Spec:       v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+		Status:     gatewayStatus("10.0.0.1"),
+	}
+	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// ListenerSet with its own target annotation.
+	hostname := v1.Hostname("app.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ls", Namespace: "default",
+			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls-override.example.com"},
+		},
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1beta1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames:       []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+		},
+		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+	}
+	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpointWithTTL("app.example.com", endpoint.RecordTypeCNAME, 0, "ls-override.example.com"),
+	})
+}
+
+func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Gateway with its own target annotation.
+	gw := &v1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "gw", Namespace: "default",
+			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "gw.example.com"},
+		},
+		Spec:   v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// ListenerSet with its own target annotation — should take precedence.
+	hostname := v1.Hostname("app.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ls", Namespace: "default",
+			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls.example.com"},
+		},
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1beta1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames:       []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+		},
+		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+	}
+	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	// ListenerSet annotation should win over Gateway annotation.
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpointWithTTL("app.example.com", endpoint.RecordTypeCNAME, 0, "ls.example.com"),
+	})
+}
+
 func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	t.Parallel()
 
