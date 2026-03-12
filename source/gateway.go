@@ -285,7 +285,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
 		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
