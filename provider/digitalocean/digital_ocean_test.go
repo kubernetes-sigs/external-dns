@@ -662,7 +662,7 @@ func TestDigitalOceanProcessDeleteActions(t *testing.T) {
 }
 
 func TestNewDigitalOceanProvider(t *testing.T) {
-	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
+	t.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
 	_, err := NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

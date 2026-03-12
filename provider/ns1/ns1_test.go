@@ -150,7 +150,7 @@ func TestNS1Records(t *testing.T) {
 }
 
 func TestNewNS1Provider(t *testing.T) {
-	_ = os.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
+	t.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
 	testNS1Config := NS1Config{
 		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),

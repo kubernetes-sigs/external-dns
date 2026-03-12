@@ -164,7 +164,7 @@ func testDnsimpleProviderZones(t *testing.T) {
 	assert.Error(t, err)
 
 	mockProvider.accountID = "3"
-	os.Setenv("DNSIMPLE_ZONES", "example-from-env.com")
+	t.Setenv("DNSIMPLE_ZONES", "example-from-env.com")
 	result, err = mockProvider.Zones(ctx)
 	assert.NoError(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesFromEnvResponse.Data)
@@ -228,7 +228,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 	zone := dnsimpleSuitableZone("example-beta.example.com", zones)
 	assert.Equal(t, "example.com", zone.Name)
 
-	os.Setenv("DNSIMPLE_ZONES", "environment-example.com,example.environment-example.com")
+	t.Setenv("DNSIMPLE_ZONES", "environment-example.com,example.environment-example.com")
 	mockProvider.accountID = "3"
 	zones, err = mockProvider.Zones(ctx)
 	require.NoError(t, err)
@@ -241,7 +241,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 }
 
 func TestNewDnsimpleProvider(t *testing.T) {
-	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
+	t.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
 	_, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on bad token")
@@ -253,8 +253,8 @@ func TestNewDnsimpleProvider(t *testing.T) {
 		t.Errorf("Expected to fail new provider on empty token")
 	}
 
-	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
-	os.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
+	t.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
+	t.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
 	providerTypedProvider, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	dnsimpleTypedProvider := providerTypedProvider.(*dnsimpleProvider)
 	if err != nil {
