@@ -56,3 +56,31 @@ func HasNoEmptyEndpoints(
 	}
 	return false
 }
+
+// EndpointsForHostname returns endpoint objects for each host-target combination,
+// grouping targets by their suitable DNS record type (A, AAAA, or CNAME).
+func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpecific ProviderSpecific, setIdentifier string, resource string) []*Endpoint {
+	byType := map[string]Targets{}
+	for _, t := range targets {
+		rt := SuitableType(t)
+		byType[rt] = append(byType[rt], t)
+	}
+
+	var endpoints []*Endpoint
+	for _, rt := range []string{RecordTypeA, RecordTypeAAAA, RecordTypeCNAME} {
+		if len(byType[rt]) == 0 {
+			continue
+		}
+		ep := NewEndpointWithTTL(hostname, rt, ttl, byType[rt]...)
+		if ep == nil {
+			continue
+		}
+		ep.ProviderSpecific = providerSpecific
+		ep.SetIdentifier = setIdentifier
+		if resource != "" {
+			ep.Labels[ResourceLabelKey] = resource
+		}
+		endpoints = append(endpoints, ep)
+	}
+	return endpoints
+}
