@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
