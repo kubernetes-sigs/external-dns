@@ -410,6 +410,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 
 		// Determine the Gateway and Listeners based on parent kind.
 		var gw gatewayListeners
+		var ls *listenerSetListeners
 		var listeners []v1.Listener
 		var ownerNamespace string // namespace of the resource owning the listeners (for AllowedRoutes checks)
 
@@ -426,19 +427,20 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			listeners = gw.listeners[section]
 
 		case group == gatewayGroup && kind == listenerSetKind:
-			ls, ok := c.lss[namespacedName(namespace, string(ref.Name))]
+			lsVal, ok := c.lss[namespacedName(namespace, string(ref.Name))]
 			if !ok {
 				log.Debugf("ListenerSet %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 				continue
 			}
-			gw, ok = c.gws[ls.gateway]
+			ls = &lsVal
+			gw, ok = c.gws[lsVal.gateway]
 			if !ok {
-				log.Debugf("Gateway %s/%s not found for ListenerSet %s/%s for %s %s/%s", ls.gateway.Namespace, ls.gateway.Name, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+				log.Debugf("Gateway %s/%s not found for ListenerSet %s/%s for %s %s/%s", lsVal.gateway.Namespace, lsVal.gateway.Name, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 				continue
 			}
-			ownerNamespace = ls.listenerSet.Namespace
+			ownerNamespace = lsVal.listenerSet.Namespace
 			section := sectionVal(ref.SectionName, "")
-			listeners = ls.listeners[section]
+			listeners = lsVal.listeners[section]
 
 		default:
 			log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
@@ -491,7 +493,13 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
+				var override endpoint.Targets
+				if ls != nil {
+					override = annotations.TargetsFromTargetAnnotation(ls.listenerSet.Annotations)
+				}
+				if len(override) == 0 {
+					override = annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
+				}
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
