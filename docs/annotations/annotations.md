@@ -330,5 +330,8 @@ are read from different resources: **Gateway resource** reads only `target` anno
 (HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`, and
 provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
 
+**ListenerSet resources** also support the `target` annotation. When a Route references a ListenerSet
+as its parent, the ListenerSet's target annotation takes precedence over the parent Gateway's target annotation.
+
 For more details and comprehensive examples, see the
 [Gateway API documentation](../sources/gateway-api.md#annotations).
