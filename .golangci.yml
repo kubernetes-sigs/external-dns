@@ -36,6 +36,7 @@ linters:
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
+    - usetesting # Reports uses of functions with replacement inside the testing package.
   settings:
     exhaustive:
       default-signifies-exhaustive: false

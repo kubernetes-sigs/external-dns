@@ -329,7 +329,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 func TestRfc2136TLSConfig(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -369,7 +369,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigWithMultiHosts(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -414,7 +414,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigNoVerify(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -454,7 +454,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigClientAuth(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -468,7 +468,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 -----END CERTIFICATE-----
 `))
 
-	certFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.crt")
+	certFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.crt")
 	assert.NoError(t, err)
 	defer os.Remove(certFile.Name())
 	_, err = certFile.Write([]byte(
@@ -484,7 +484,7 @@ goRP/fRfTTTLwLg8UBpUAmALX8A8HBSBaUlTTQcaImbcwU4DRSbv5JEA8tM1mWrA
 -----END CERTIFICATE-----
 `))
 
-	keyFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.key")
+	keyFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.key")
 	assert.NoError(t, err)
 	defer os.Remove(keyFile.Name())
 	_, err = keyFile.Write([]byte(
