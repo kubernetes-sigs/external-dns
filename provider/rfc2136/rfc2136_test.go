@@ -17,7 +17,6 @@ limitations under the License.
 package rfc2136
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"math/rand"
@@ -291,7 +290,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 1, "expected single record")
@@ -310,7 +309,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	provider, err := createRfc2136StubProviderWithReverse(stub)
 	assert.NoError(t, err)
 
-	err = provider.ApplyChanges(context.Background(), &plan.Changes{
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "demo.foo.com",
@@ -537,7 +536,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub, "barfoo.com", "foo.com", "bar.com", "foobar.com")
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 6)
@@ -610,7 +609,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -668,7 +667,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -738,7 +737,7 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -795,7 +794,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
@@ -833,7 +832,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	p = &plan.Changes{
@@ -865,7 +864,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 4)
@@ -1001,7 +1000,7 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 		UpdateNew: newRecords,
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.updateMsgs, 4)

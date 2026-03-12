@@ -275,7 +275,7 @@ func TestScalewayProvider_Zones(t *testing.T) {
 			Subdomain: "test",
 		},
 	}
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}

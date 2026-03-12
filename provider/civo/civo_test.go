@@ -16,7 +16,6 @@ limitations under the License.
 package civo
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -64,7 +63,7 @@ func TestCivoProviderZones(t *testing.T) {
 	expected, err := client.ListDNSDomains()
 	assert.NoError(t, err)
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	assert.NoError(t, err)
 
 	// Check if the return is a DNSDomain type
@@ -80,7 +79,7 @@ func TestCivoProviderZonesWithError(t *testing.T) {
 		Client: *client,
 	}
 
-	_, err := provider.Zones(context.Background())
+	_, err := provider.Zones(t.Context())
 	assert.Error(t, err)
 }
 
@@ -118,7 +117,7 @@ func TestCivoProviderRecords(t *testing.T) {
 	expected, err := client.ListDNSRecords("12345")
 	assert.NoError(t, err)
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Equal(t, strings.TrimSuffix(records[0].DNSName, ".example.com"), expected[0].Name)
@@ -162,7 +161,7 @@ func TestCivoProviderRecordsWithError(t *testing.T) {
 	_, err := client.ListDNSRecords("12345")
 	assert.NoError(t, err)
 
-	endpoint, err := provider.Records(context.Background())
+	endpoint, err := provider.Records(t.Context())
 	assert.Error(t, err)
 	assert.Nil(t, endpoint)
 
@@ -182,7 +181,7 @@ func TestCivoProviderWithoutRecords(t *testing.T) {
 		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Empty(t, records)
@@ -650,7 +649,7 @@ func TestCivoApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	assert.NoError(t, err)
 }
 
@@ -707,7 +706,7 @@ func TestCivoApplyChangesError(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			err := provider.ApplyChanges(context.Background(), tt.changes)
+			err := provider.ApplyChanges(t.Context(), tt.changes)
 			assert.Equal(t, "invalid Record Type: AAAA", string(err.Error()))
 		})
 	}

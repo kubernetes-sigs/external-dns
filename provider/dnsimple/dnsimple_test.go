@@ -116,10 +116,10 @@ func TestDnsimpleServices(t *testing.T) {
 	// Setup mock services
 	// Note: AnythingOfType doesn't work with interfaces https://github.com/stretchr/testify/issues/519
 	mockDNS := &mockDnsimpleZoneServiceInterface{}
-	mockDNS.On("ListZones", context.Background(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListZonesResponse, nil)
-	mockDNS.On("ListZones", context.Background(), "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
-	mockDNS.On("ListRecords", context.Background(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListRecordsResponse, nil)
-	mockDNS.On("ListRecords", context.Background(), "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
+	mockDNS.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListZonesResponse, nil)
+	mockDNS.On("ListZones", t.Context(), "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
+	mockDNS.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListRecordsResponse, nil)
+	mockDNS.On("ListRecords", t.Context(), "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
 
 	for _, record := range records {
 		recordName := record.Name
@@ -135,10 +135,10 @@ func TestDnsimpleServices(t *testing.T) {
 			Data:     []dnsimple.ZoneRecord{record},
 		}
 
-		mockDNS.On("ListRecords", context.Background(), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleRecordResponse, nil)
-		mockDNS.On("CreateRecord", context.Background(), "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("DeleteRecord", context.Background(), "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("UpdateRecord", context.Background(), "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("ListRecords", t.Context(), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleRecordResponse, nil)
+		mockDNS.On("CreateRecord", t.Context(), "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("DeleteRecord", t.Context(), "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("UpdateRecord", t.Context(), "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 	}
 
 	mockProvider = dnsimpleProvider{client: mockDNS}
@@ -153,7 +153,7 @@ func TestDnsimpleServices(t *testing.T) {
 }
 
 func testDnsimpleProviderZones(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockProvider.accountID = "1"
 	result, err := mockProvider.Zones(ctx)
 	assert.NoError(t, err)
@@ -174,7 +174,7 @@ func testDnsimpleProviderZones(t *testing.T) {
 }
 
 func testDnsimpleProviderRecords(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockProvider.accountID = "1"
 	result, err := mockProvider.Records(ctx)
 	assert.NoError(t, err)
@@ -200,7 +200,7 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(context.Background(), changes)
+	err := mockProvider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("Failed to apply changes: %v", err)
 	}
@@ -213,14 +213,14 @@ func testDnsimpleProviderApplyChangesSkipsUnknown(t *testing.T) {
 	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(context.Background(), changes)
+	err := mockProvider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("Failed to ignore unknown zones: %v", err)
 	}
 }
 
 func testDnsimpleSuitableZone(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockProvider.accountID = "1"
 	zones, err := mockProvider.Zones(ctx)
 	require.NoError(t, err)
@@ -270,11 +270,11 @@ func testDnsimpleGetRecordID(t *testing.T) {
 	var err error
 
 	mockProvider.accountID = "1"
-	result, err = mockProvider.GetRecordID(context.Background(), "example.com", "example")
+	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), result)
 
-	result, err = mockProvider.GetRecordID(context.Background(), "example.com", "example-beta")
+	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example-beta")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), result)
 }

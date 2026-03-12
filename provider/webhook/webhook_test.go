@@ -156,7 +156,7 @@ func TestRecordsWithErrors(t *testing.T) {
 
 	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
-	_, err = p.Records(context.Background())
+	_, err = p.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -199,7 +199,7 @@ func TestRecords_DecodeError(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(context.Background())
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
 }
@@ -258,7 +258,7 @@ func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := wpr.ApplyChanges(context.Background(), nil)
+	err := wpr.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
