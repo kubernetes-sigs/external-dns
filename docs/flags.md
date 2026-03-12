@@ -85,6 +85,8 @@
 | `--azure-user-assigned-identity-client-id=""` | When using the Azure provider, override the client id of user assigned identity in config file (optional) |
 | `--azure-zones-cache-duration=0s` | When using the Azure provider, set the zones list cache TTL (0s to disable). |
 | `--azure-maxretries-count=3` | When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional) |
+| `--batch-change-size=200` | Set the maximum number of DNS record changes that will be submitted to the provider in each batch (optional) |
+| `--batch-change-interval=1s` | Set the interval between batch changes (optional, default: 1s) |
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
 | `--[no-]cloudflare-custom-hostnames` | When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires "Cloudflare for SaaS" enabled. (default: disabled) |
 | `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
