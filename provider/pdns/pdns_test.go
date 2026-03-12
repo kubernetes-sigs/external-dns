@@ -1224,6 +1224,92 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 	}
 }
 
+func (suite *NewPDNSProviderTestSuite) TestPDNSGetDomainFilter() {
+	allZones := []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2} // example.com., long.domainname.example.com., mock.test.
+
+	tests := []struct {
+		name         string
+		client       PDNSAPIProvider
+		domainFilter *endpoint.DomainFilter
+		// domains we expect the returned filter to match
+		shouldMatch []string
+		// domains we expect the returned filter NOT to match
+		shouldNotMatch []string
+	}{
+		{
+			name: "no domain filter — all zones from API are in scope",
+			client: &PDNSAPIClientStubConfigurable{
+				zones: allZones,
+			},
+			domainFilter:   nil,
+			shouldMatch:    []string{"example.com", "long.domainname.example.com", "mock.test", "sub.example.com", "sub.mock.test"},
+			shouldNotMatch: []string{"other.com"},
+		},
+		{
+			name: "domain filter set — all API zones still returned (controller handles intersection with --domain-filter)",
+			client: &PDNSAPIClientStubConfigurable{
+				zones: allZones,
+			},
+			domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+			// GetDomainFilter returns all API zones, not the filtered subset;
+			// the controller intersects with --domain-filter on its own
+			shouldMatch:    []string{"example.com", "long.domainname.example.com", "mock.test", "sub.example.com", "sub.mock.test"},
+			shouldNotMatch: []string{"other.com"},
+		},
+		{
+			name: "domain filter excludes all API zones — all zones still returned (no silent fail-open)",
+			client: &PDNSAPIClientStubConfigurable{
+				zones: allZones,
+			},
+			domainFilter: endpoint.NewDomainFilter([]string{"notexist.org"}),
+			// All provider-managed zones are returned; when the controller
+			// intersects with --domain-filter=notexist.org, nothing matches
+			// and the plan is safely empty
+			shouldMatch:    []string{"example.com", "mock.test", "long.domainname.example.com"},
+			shouldNotMatch: []string{"notexist.org", "other.com"},
+		},
+		{
+			name: "ListZones error — returns empty filter (fail-open)",
+			client: &PDNSAPIClientStubConfigurable{
+				listErr: provider.NewSoftErrorf("API unreachable"),
+			},
+			domainFilter: nil,
+			// empty DomainFilter matches everything
+			shouldMatch:    []string{"anything.com", "example.com"},
+			shouldNotMatch: []string{},
+		},
+		{
+			name: "API returns single zone — that zone is returned regardless of domain filter",
+			client: &PDNSAPIClientStubConfigurable{
+				zones: []pgo.Zone{ZoneEmpty}, // only example.com.
+			},
+			domainFilter:   endpoint.NewDomainFilter([]string{"example.com"}),
+			shouldMatch:    []string{"example.com", "sub.example.com"},
+			shouldNotMatch: []string{"mock.test", "other.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			p := &PDNSProvider{
+				client:       tt.client,
+				domainFilter: tt.domainFilter,
+			}
+			df := p.GetDomainFilter()
+			for _, domain := range tt.shouldMatch {
+				suite.True(df.Match(domain), "expected filter to match %q", domain)
+			}
+			for _, domain := range tt.shouldNotMatch {
+				suite.False(df.Match(domain), "expected filter NOT to match %q", domain)
+			}
+		})
+	}
+}
+
+func TestNewPDNSProviderTestSuite(t *testing.T) {
+	suite.Run(t, new(NewPDNSProviderTestSuite))
+}
+
 // TestPDNSPartitionZonesRegexBehavior compares two regex forms for --domain-filter
 // and shows how the choice of regex affects zone partitioning correctness.
 func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
@@ -1321,99 +1407,14 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 				assert.Equal(t, []string{"simexample.com.", "mock.test."}, zoneNames(residual),
 					"only truly unrelated zones must be residual")
 			},
-func (suite *NewPDNSProviderTestSuite) TestPDNSGetDomainFilter() {
-	allZones := []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2} // example.com., long.domainname.example.com., mock.test.
-
-	tests := []struct {
-		name         string
-		client       PDNSAPIProvider
-		domainFilter *endpoint.DomainFilter
-		// domains we expect the returned filter to match
-		shouldMatch []string
-		// domains we expect the returned filter NOT to match
-		shouldNotMatch []string
-	}{
-		{
-			name: "no domain filter — all zones from API are in scope",
-			client: &PDNSAPIClientStubConfigurable{
-				zones: allZones,
-			},
-			domainFilter:   nil,
-			shouldMatch:    []string{"example.com", "long.domainname.example.com", "mock.test", "sub.example.com", "sub.mock.test"},
-			shouldNotMatch: []string{"other.com"},
-		},
-		{
-			name: "domain filter set — all API zones still returned (controller handles intersection with --domain-filter)",
-			client: &PDNSAPIClientStubConfigurable{
-				zones: allZones,
-			},
-			domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
-			// GetDomainFilter returns all API zones, not the filtered subset;
-			// the controller intersects with --domain-filter on its own
-			shouldMatch:    []string{"example.com", "long.domainname.example.com", "mock.test", "sub.example.com", "sub.mock.test"},
-			shouldNotMatch: []string{"other.com"},
-		},
-		{
-			name: "domain filter excludes all API zones — all zones still returned (no silent fail-open)",
-			client: &PDNSAPIClientStubConfigurable{
-				zones: allZones,
-			},
-			domainFilter: endpoint.NewDomainFilter([]string{"notexist.org"}),
-			// All provider-managed zones are returned; when the controller
-			// intersects with --domain-filter=notexist.org, nothing matches
-			// and the plan is safely empty
-			shouldMatch:    []string{"example.com", "mock.test", "long.domainname.example.com"},
-			shouldNotMatch: []string{"notexist.org", "other.com"},
-		},
-		{
-			name: "ListZones error — returns empty filter (fail-open)",
-			client: &PDNSAPIClientStubConfigurable{
-				listErr: provider.NewSoftErrorf("API unreachable"),
-			},
-			domainFilter: nil,
-			// empty DomainFilter matches everything
-			shouldMatch:    []string{"anything.com", "example.com"},
-			shouldNotMatch: []string{},
-		},
-		{
-			name: "API returns single zone — that zone is returned regardless of domain filter",
-			client: &PDNSAPIClientStubConfigurable{
-				zones: []pgo.Zone{ZoneEmpty}, // only example.com.
-			},
-			domainFilter:   endpoint.NewDomainFilter([]string{"example.com"}),
-			shouldMatch:    []string{"example.com", "sub.example.com"},
-			shouldNotMatch: []string{"mock.test", "other.com"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &PDNSAPIClient{
-				dryRun:       false,
-				authCtx:      context.WithValue(t.Context(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
-				client:       pgo.NewAPIClient(pgo.NewConfiguration()),
-				domainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil),
-			}
-
-			filtered, residual := client.PartitionZones(tt.zones)
-
+			df := endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil)
+			filtered, residual := partitionZones(tt.zones, df)
 			tt.assertions(t, filtered, residual)
-		suite.Run(tt.name, func() {
-			p := &PDNSProvider{
-				client:       tt.client,
-				domainFilter: tt.domainFilter,
-			}
-			df := p.GetDomainFilter()
-			for _, domain := range tt.shouldMatch {
-				suite.True(df.Match(domain), "expected filter to match %q", domain)
-			}
-			for _, domain := range tt.shouldNotMatch {
-				suite.False(df.Match(domain), "expected filter NOT to match %q", domain)
-			}
 		})
 	}
-}
-
-func TestNewPDNSProviderTestSuite(t *testing.T) {
-	suite.Run(t, new(NewPDNSProviderTestSuite))
 }
