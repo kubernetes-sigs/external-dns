@@ -1364,7 +1364,7 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := &PDNSAPIClient{
 				dryRun:       false,
-				authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+				authCtx:      context.WithValue(t.Context(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 				client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 				domainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil),
 			}
