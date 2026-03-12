@@ -25,6 +25,9 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -222,6 +225,18 @@ func GenerateTestEndpointsWithDistribution(
 		result[i], result[j] = result[j], result[i]
 	})
 	return result
+}
+
+// AssertEndpointsHaveRefObject asserts that endpoints have the expected count
+// and each endpoint has a non-nil RefObject with the expected source type.
+func AssertEndpointsHaveRefObject(t *testing.T, endpoints []*endpoint.Endpoint, expectedSource string, expectedCount int) {
+	t.Helper()
+	assert.Len(t, endpoints, expectedCount)
+	for _, ep := range endpoints {
+		assert.NotNil(t, ep.RefObject())
+		assert.NotEmpty(t, ep.RefObject().UID)
+		assert.Equal(t, expectedSource, ep.RefObject().Source)
+	}
 }
 
 // distributeByWeight distributes n items according to weights.
