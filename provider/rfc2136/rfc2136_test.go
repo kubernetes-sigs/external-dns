@@ -1071,7 +1071,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test that Records() returns a SoftError when nameserver fails
-	_, err = providerInstance.Records(context.Background())
+	_, err = providerInstance.Records(t.Context())
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
 
@@ -1085,7 +1085,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 			},
 		},
 	}
-	err = providerInstance.ApplyChanges(context.Background(), p)
+	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }
