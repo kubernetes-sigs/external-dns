@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"math/rand"
@@ -90,7 +89,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewNodeSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -436,7 +435,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
-				context.TODO(),
+				t.Context(),
 				kubeClient,
 				tc.annotationFilter,
 				tc.fqdnTemplate,

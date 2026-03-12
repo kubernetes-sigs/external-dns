@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -637,7 +636,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(t.Context(), host, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace, ti.annotationFilter, ti.labelSelector)
+			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, namespace, ti.annotationFilter, ti.labelSelector)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 

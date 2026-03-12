@@ -143,7 +143,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
@@ -528,7 +528,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
 				"",
 				"",

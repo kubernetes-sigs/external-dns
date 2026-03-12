@@ -192,7 +192,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioVirtualServiceSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -1989,7 +1989,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			}
 
 			virtualServiceSource, err := NewIstioVirtualServiceSource(
-				context.TODO(),
+				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ti.targetNamespace,
@@ -2143,21 +2143,21 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		{name: "EmptyGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     "",
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MeshGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     IstioMeshGateway,
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MissingGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:        context.TODO(),
+			ctx:        t.Context(),
 			gatewayStr: "doesnt/exist",
 			virtualService: &networkingv1beta1.VirtualService{
 				TypeMeta:   metav1.TypeMeta{},
@@ -2169,7 +2169,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		{name: "InvalidGatewayStr", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     "1/2/3/",
 			virtualService: &networkingv1beta1.VirtualService{},
 		}, want: nil, expectedErrStr: "invalid ingress name (name or namespace/name) found \"1/2/3/\""},
@@ -2182,7 +2182,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 				return vs
 			}(),
 		}, args: args{
-			ctx:        context.TODO(),
+			ctx:        t.Context(),
 			gatewayStr: "bar/foo",
 			virtualService: &networkingv1beta1.VirtualService{
 				TypeMeta:   metav1.TypeMeta{},

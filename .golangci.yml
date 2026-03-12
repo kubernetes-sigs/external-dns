@@ -72,6 +72,8 @@ linters:
     usetesting:
       # Enable/disable `context.Background()` detections.
       context-background: true
+      # Enable/disable `context.TODO()` detections.
+      context-todo: true
   exclusions:
     generated: lax
     presets:

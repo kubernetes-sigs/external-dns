@@ -187,7 +187,7 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 			fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 			_, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
 				"",
 				ti.annotationFilter,
@@ -1053,7 +1053,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			}
 
 			httpProxySource, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
 				ti.targetNamespace,
 				ti.annotationFilter,

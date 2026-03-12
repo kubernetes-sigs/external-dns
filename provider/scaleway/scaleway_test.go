@@ -17,7 +17,6 @@ limitations under the License.
 package scaleway
 
 import (
-	"context"
 	"io"
 	"os"
 	"reflect"
@@ -343,7 +342,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 		},
 	}
 
-	records, err := provider.Records(context.TODO())
+	records, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,7 +560,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 		},
 	}
 
-	requests, err := provider.generateApplyRequests(context.TODO(), changes)
+	requests, err := provider.generateApplyRequests(t.Context(), changes)
 	if err != nil {
 		t.Fatal(err)
 	}

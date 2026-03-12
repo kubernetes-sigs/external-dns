@@ -171,7 +171,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioGatewaySource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -1506,7 +1506,7 @@ func testGatewayEndpoints(t *testing.T) {
 			}
 
 			gatewaySource, err := NewIstioGatewaySource(
-				context.TODO(),
+				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				targetNamespace,
