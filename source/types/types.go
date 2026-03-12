@@ -42,4 +42,5 @@ const (
 	KongTCPIngress      Type = "kong-tcpingress"
 	F5VirtualServer     Type = "f5-virtualserver"
 	F5TransportServer   Type = "f5-transportserver"
+	Unstructured        Type = "unstructured"
 )

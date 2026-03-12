@@ -63,6 +63,8 @@ type Config struct {
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	FQDNTemplate                   string
+	TargetTemplate                 string
+	FQDNTargetTemplate             string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreNonHostNetworkPods       bool
@@ -99,6 +101,7 @@ type Config struct {
 	TargetNetFilter                []string
 	NAT64Networks                  []string
 	MinTTL                         time.Duration
+	UnstructuredResources          []string
 	PreferAlias                    bool
 
 	sources []string
@@ -116,7 +119,6 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
-		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
@@ -153,6 +155,10 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TargetNetFilter:                cfg.TargetNetFilter,
 		NAT64Networks:                  cfg.NAT64Networks,
 		MinTTL:                         cfg.MinTTL,
+		UnstructuredResources:          cfg.UnstructuredResources,
+		FQDNTemplate:                   cfg.FQDNTemplate,
+		TargetTemplate:                 cfg.TargetTemplate,
+		FQDNTargetTemplate:             cfg.FQDNTargetTemplate,
 		PreferAlias:                    cfg.PreferAlias,
 		sources:                        cfg.Sources,
 	}
@@ -430,6 +436,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildF5VirtualServerSource(ctx, p, cfg)
 	case types.F5TransportServer:
 		return buildF5TransportServerSource(ctx, p, cfg)
+	case types.Unstructured:
+		return buildUnstructuredSource(ctx, p, cfg)
 	}
 	return nil, ErrSourceNotFound
 }
@@ -650,6 +658,18 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 		return nil, err
 	}
 	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg)
+}
+
+func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+	kubeClient, err := p.KubeClient()
+	if err != nil {
+		return nil, err
+	}
+	dynamicClient, err := p.DynamicKubernetesClient()
+	if err != nil {
+		return nil, err
+	}
+	return NewUnstructuredFQDNSource(ctx, dynamicClient, kubeClient, cfg)
 }
 
 // NewIstioClient returns a new Istio client object. It uses the configured
