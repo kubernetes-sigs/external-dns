@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ptrSource wraps a Source to append PTR endpoints for every A/AAAA endpoint.
@@ -70,16 +71,13 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 	var order []string
 
 	for _, ep := range endpoints {
-		if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeAAAA {
-			continue
-		}
-		if strings.HasPrefix(ep.DNSName, "*.") {
+		if !ep.SupportsPTR() {
 			continue
 		}
 
 		enabled := defaultEnabled
-		if val, ok := ep.GetProviderSpecificProperty("record-type"); ok {
-			enabled = strings.Contains(val, "ptr")
+		if val, ok := ep.GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty); ok {
+			enabled = strings.EqualFold(val, "ptr")
 		}
 		if !enabled {
 			continue

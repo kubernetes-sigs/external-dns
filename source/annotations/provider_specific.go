@@ -31,7 +31,7 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 	}
 	if v, ok := recordTypeFromAnnotations(annotations); ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "record-type",
+			Name:  RecordTypeProviderSpecificProperty,
 			Value: v,
 		})
 	}

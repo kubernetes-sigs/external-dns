@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var _ source.Source = &ptrSource{}
@@ -126,7 +127,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts in when flag is off", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("record-type", "ptr"),
+				WithProviderSpecific(annotations.RecordTypeProviderSpecificProperty, "ptr"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)
@@ -139,7 +140,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts out when flag is on", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific("record-type", ""),
+				WithProviderSpecific(annotations.RecordTypeProviderSpecificProperty, ""),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)

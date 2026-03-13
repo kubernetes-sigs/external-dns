@@ -21,6 +21,9 @@ const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
 	DefaultAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
+	// RecordTypeProviderSpecificProperty is the provider-specific property name for record-type overrides.
+	RecordTypeProviderSpecificProperty = "record-type"
+
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
 )
