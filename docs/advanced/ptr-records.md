@@ -20,11 +20,21 @@ following the standard [configuration precedence](configuration-precedence.md):
 ## Prerequisites
 
 The underlying DNS provider must have authority over the relevant reverse DNS zones.
-Include the reverse zone in `--domain-filter` so that ExternalDNS knows it is allowed to manage records there:
+Include the reverse zone in `--domain-filter` so that ExternalDNS knows it is allowed to manage records there.
+
+PTR must also be included in `--managed-record-types` so the planner considers PTR records during sync:
 
 ```sh
---create-ptr --domain-filter=example.com --domain-filter=49.168.192.in-addr.arpa
+--create-ptr \
+  --managed-record-types=A \
+  --managed-record-types=AAAA \
+  --managed-record-types=CNAME \
+  --managed-record-types=PTR \
+  --domain-filter=example.com \
+  --domain-filter=49.168.192.in-addr.arpa
 ```
+
+ExternalDNS will fail at startup if `--create-ptr` is enabled but PTR is not in `--managed-record-types`.
 
 ## Usage
 
