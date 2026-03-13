@@ -432,6 +432,15 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
+// SupportsPTR returns true if this endpoint is eligible for PTR record generation.
+// Only non-wildcard A and AAAA records can have meaningful reverse DNS mappings.
+func (e *Endpoint) SupportsPTR() bool {
+	if e.RecordType != RecordTypeA && e.RecordType != RecordTypeAAAA {
+		return false
+	}
+	return !strings.HasPrefix(e.DNSName, "*.")
+}
+
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
