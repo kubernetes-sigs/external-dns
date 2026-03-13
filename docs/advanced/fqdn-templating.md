@@ -93,8 +93,8 @@ kubectl explain pod.spec.containers
 | `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                    |
 | `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "hello" "h" }} → ello`                                              |
 | `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "hello" "o" }} → hell`                                              |
-| `hasKey`     | Check if a key exists in a `map[string]string`        | `{{ if hasKey .Labels "app" }}...{{ end }}`                                        |
-| `fromJson`   | Decode a JSON string into a Go value                  | `{{ range (index .Annotations "list" \| fromJson) }}{{ . }},{{ end }}`             |
+| `hasKey`     | Check if a key exists in a map                        | `{{ hasKey .Labels "app" }} → true`                                                |
+| `fromJson`   | Parse a JSON string into a value                      | `{{ index (fromJson "{\"env\":\"prod\"}") "env" }} → prod`                         |
 
 ---
 
@@ -499,3 +499,58 @@ args:
 ```
 
 This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
+
+### Using `hasKey` for Safe Label and Annotation Access
+
+Unlike `index`, which returns an empty string for both a missing key and a key with an empty value, `hasKey` explicitly checks for key existence. This matters for Kubernetes marker labels (e.g., `service.kubernetes.io/headless: ""`), where an empty value is meaningful.
+
+Check for a label before using it in a template:
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app: nginx
+```
+
+```yml
+args:
+  - --fqdn-template={{ if hasKey .Labels "app" }}{{ .Name }}.{{ index .Labels "app" }}.example.com{{ end }}
+
+# Result: my-service.nginx.example.com
+```
+
+This only generates an FQDN when the `app` label is present. Without `hasKey`, `{{ index .Labels "app" }}` would silently return `""` for unlabelled resources, producing an invalid FQDN like `my-service..example.com`.
+
+Combine with `Kind` for targeted rules:
+
+```yml
+args:
+  - --fqdn-template={{ if and (eq .Kind "Service") (hasKey .Labels "tier") }}{{ .Name }}.{{ index .Labels "tier" }}.example.com{{ end }}
+```
+
+### Using `fromJson` to Parse Structured Labels
+
+`fromJson` parses a JSON string stored in a label or annotation into a Go value, enabling templates to iterate over structured data.
+
+Given a Service with a JSON array of DNS entries in a label:
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    records: '[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]'
+```
+
+Use `hasKey` to guard against a missing label, then iterate with `range` to emit one FQDN per entry:
+
+```yml
+args:
+  - --fqdn-template={{ if hasKey .Labels "records" }}{{ range $entry := (index .Labels "records" | fromJson) }}{{ index $entry "dns" }},{{ end }}{{ end }}
+
+# Result: entry1.internal.tld, entry2.example.tld
+```
