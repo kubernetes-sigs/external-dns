@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	providerfactory "sigs.k8s.io/external-dns/provider/factory"
+	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -345,7 +345,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
-	p, err := providerfactory.SelectProvider(ctx, cfg, domainFilter)
+	p, err := provider.SelectProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
