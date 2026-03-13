@@ -24,7 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -110,11 +110,11 @@ func TestNewPiholeProvider_APIVersions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			_, err := NewPiholeProvider(tt.config)
 			require.NoError(t, err)
 			if tt.wantMsg {
-				testutils.TestHelperLogContains(warningMsg, hook, t)
+				logtest.TestHelperLogContains(warningMsg, hook, t)
 			}
 		})
 	}

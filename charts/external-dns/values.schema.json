@@ -112,7 +112,7 @@
       ]
     },
     "gatewayNamespace": {
-      "description": "_Gateway API_ gateway namespace to watch.",
+      "description": "_Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources.",
       "type": [
         "string",
         "null"

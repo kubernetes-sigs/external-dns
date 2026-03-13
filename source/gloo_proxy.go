@@ -254,7 +254,7 @@ func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.
 			ttl := annotations.TTLFromAnnotations(ants, resource)
 			providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ants)
 			for _, domain := range virtualHost.Domains {
-				endpoints = append(endpoints, EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
+				endpoints = append(endpoints, endpoint.EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}
 		}
 	}

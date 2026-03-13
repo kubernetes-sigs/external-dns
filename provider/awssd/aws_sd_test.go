@@ -29,6 +29,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -747,7 +748,7 @@ func TestAWSSDProvider_DeleteServiceEmptyDescription_Logging(t *testing.T) {
 		},
 	}
 
-	logs := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	logs := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 	api := &AWSSDClientStub{
 		namespaces: namespaces,
@@ -761,7 +762,7 @@ func TestAWSSDProvider_DeleteServiceEmptyDescription_Logging(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 
-	testutils.TestHelperLogContainsWithLogLevel("Skipping service removal \"service1\" because owner id (service.Description) not set, when should be", log.DebugLevel, logs, t)
+	logtest.TestHelperLogContainsWithLogLevel("Skipping service removal \"service1\" because owner id (service.Description) not set, when should be", log.DebugLevel, logs, t)
 }
 
 func TestAWSSDProvider_DeleteServiceDryRun(t *testing.T) {

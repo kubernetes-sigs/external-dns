@@ -455,9 +455,20 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: review source/annotations package to consolidate alias key definitions;
+// currently duplicated here to avoid circular dependency.
+const providerSpecificAlias = "alias"
+
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
+	if !e.supportsAlias() {
+		if _, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias); ok {
+			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
+			return false
+		}
+	}
+
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
@@ -465,6 +476,15 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+func (e *Endpoint) supportsAlias() bool {
+	switch e.RecordType {
+	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
+		return true
+	default:
+		return false
+	}
 }
 
 // WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
