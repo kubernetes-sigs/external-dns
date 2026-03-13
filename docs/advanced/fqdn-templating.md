@@ -93,6 +93,8 @@ kubectl explain pod.spec.containers
 | `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                    |
 | `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "hello" "h" }} → ello`                                              |
 | `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "hello" "o" }} → hell`                                              |
+| `hasKey`     | Check if a key exists in a `map[string]string`        | `{{ if hasKey .Labels "app" }}...{{ end }}`                                        |
+| `fromJson`   | Decode a JSON string into a Go value                  | `{{ range (index .Annotations "list" \| fromJson) }}{{ . }},{{ end }}`             |
 
 ---
 
