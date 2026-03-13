@@ -207,7 +207,7 @@ func createRfc2136TLSStubProviderWithHosts(stub *rfc2136Stub, tlsConfig TLSConfi
 	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
-func createRfc2136StubProviderWithReverse(stub *rfc2136Stub) (provider.Provider, error) {
+func createRfc2136StubProviderWithReverseZone(stub *rfc2136Stub) (provider.Provider, error) {
 	tlsConfig := TLSConfig{
 		UseTLS:                false,
 		SkipTLSVerify:         false,
@@ -306,7 +306,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 
 func TestRfc2136PTRCreation(t *testing.T) {
 	stub := newStub()
-	p, err := createRfc2136StubProviderWithReverse(stub)
+	p, err := createRfc2136StubProviderWithReverseZone(stub)
 	assert.NoError(t, err)
 
 	// Simulate what the PTR source wrapper produces: both A and PTR endpoints.
@@ -1066,7 +1066,6 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 		&endpoint.DomainFilter{},
 		false,
 		300*time.Second,
-		false,
 		false,
 		"",
 		"",

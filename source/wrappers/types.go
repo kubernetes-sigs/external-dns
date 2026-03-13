@@ -146,7 +146,9 @@ func WrapSources(
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
-	combinedSource = NewPTRSource(combinedSource, opts.createPTR)
-	opts.addSourceWrapper("ptr")
+	if opts.createPTR {
+		combinedSource = NewPTRSource(combinedSource, opts.createPTR)
+		opts.addSourceWrapper("ptr")
+	}
 	return combinedSource, nil
 }
