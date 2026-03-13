@@ -53,6 +53,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 type unstructuredSource struct {
 	combineFqdnAnnotation bool
 	fqdnTemplate          *template.Template
