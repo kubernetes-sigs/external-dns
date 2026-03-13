@@ -149,7 +149,7 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 	return nil
 }
 
-func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (chan *dns.Envelope, error) {
+func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
@@ -1010,4 +1010,83 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	assert.Contains(t, stub.updateMsgs[0].String(), "\nv2.foo.com.\t0\tNONE\tA\t10.0.0.2\nv2.foo.com.\t400\tIN\tA\t10.0.1.2\n")
 	assert.Contains(t, stub.updateMsgs[2].String(), "\nv3.foo.com.\t0\tNONE\tA\t10.0.0.3\nv3.foo.com.\t400\tIN\tA\t10.0.1.3\n")
 	assert.Contains(t, stub.updateMsgs[2].String(), "\nv4.foo.com.\t0\tNONE\tA\t10.0.0.4\nv4.foo.com.\t400\tIN\tA\t10.0.1.4\n")
+}
+
+// Test stub that simulates nameserver connection failures
+type failingRfc2136Stub struct {
+	rfc2136Stub
+}
+
+func (r *failingRfc2136Stub) SendMessage(_ *dns.Msg) error {
+	return fmt.Errorf("failed to connect: dial tcp: lookup unreachable-nameserver: no such host")
+}
+
+func (r *failingRfc2136Stub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	return nil, fmt.Errorf("failed to connect for transfer: dial tcp: lookup unreachable-nameserver: no such host")
+}
+
+// Test that nameserver failures return SoftError to prevent crashes
+func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
+	// Create a stub that will fail all operations
+	failingStub := &failingRfc2136Stub{
+		rfc2136Stub: rfc2136Stub{
+			output:                make([]*dns.Envelope, 0),
+			updateMsgs:            make([]*dns.Msg, 0),
+			createMsgs:            make([]*dns.Msg, 0),
+			nameservers:           []string{"unreachable-nameserver:53"},
+			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+			loadBalancingStrategy: "round-robin",
+		},
+	}
+
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	providerInstance, err := NewRfc2136Provider(
+		[]string{"unreachable-nameserver"},
+		53,
+		[]string{"example.com"},
+		false,
+		"key",
+		"secret",
+		"hmac-sha512",
+		true,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		failingStub,
+	)
+	assert.NoError(t, err)
+
+	// Test that Records() returns a SoftError when nameserver fails
+	_, err = providerInstance.Records(context.Background())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
+
+	// Test that ApplyChanges() returns a SoftError when nameserver fails
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "test.example.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+			},
+		},
+	}
+	err = providerInstance.ApplyChanges(context.Background(), p)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }

@@ -42,6 +42,7 @@ const (
 	annotationFilters      = annotationPrefix + "filters="
 	annotationNamespace    = annotationPrefix + "namespace="
 	annotationFQDNTemplate = annotationPrefix + "fqdn-template="
+	annotationEvents       = annotationPrefix + "events="
 )
 
 var (
@@ -62,6 +63,7 @@ type Source struct {
 	Filters      string // Supported filters, e.g., "annotation,label"
 	Namespace    string // Namespace support: "all", "single", "multiple"
 	FQDNTemplate string // FQDN template support: "true", "false"
+	Events       string // Events support: "true", "false"
 }
 
 type Sources []Source
@@ -254,9 +256,10 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 
 			// Start new source
 			currentSource = &Source{
-				Type: typeName,
-				File: filePath,
-				Name: strings.TrimPrefix(line, annotationName),
+				Type:   typeName,
+				File:   filePath,
+				Name:   strings.TrimPrefix(line, annotationName),
+				Events: "false",
 			}
 		case currentSource == nil:
 			return nil, fmt.Errorf("found annotation line without preceding source name in type %s: %s", typeName, line)
@@ -272,6 +275,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			currentSource.Namespace = strings.TrimPrefix(line, annotationNamespace)
 		case strings.HasPrefix(line, annotationFQDNTemplate):
 			currentSource.FQDNTemplate = strings.TrimPrefix(line, annotationFQDNTemplate)
+		case strings.HasPrefix(line, annotationEvents):
+			currentSource.Events = strings.TrimPrefix(line, annotationEvents)
 		}
 	}
 

@@ -22,6 +22,7 @@ import (
 	"slices"
 
 	"github.com/google/go-cmp/cmp"
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -31,6 +32,10 @@ import (
 // ErrNoPiholeServer is returned when there is no Pihole server configured
 // in the environment.
 var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
+
+const (
+	warningMsg = "Pi-hole v5 API support is deprecated. Set --pihole-api-version=\"6\" to use the Pi-hole v6 API. The v5 API will be removed in a future release."
+)
 
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
@@ -69,6 +74,7 @@ func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	case "6":
 		api, err = newPiholeClientV6(cfg)
 	default:
+		log.Warn(warningMsg)
 		api, err = newPiholeClient(cfg)
 	}
 	if err != nil {

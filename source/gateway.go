@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -46,8 +45,10 @@ import (
 )
 
 const (
-	gatewayGroup = "gateway.networking.k8s.io"
-	gatewayKind  = "Gateway"
+	gatewayGroup                               = "gateway.networking.k8s.io"
+	gatewayKind                                = "Gateway"
+	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
 )
 
 type gatewayRoute interface {
@@ -194,10 +195,10 @@ func newGatewayRouteSource(
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
-	informerFactory.Start(wait.NeverStop)
-	kubeInformerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
+	kubeInformerFactory.Start(ctx.Done())
 	if rtInformerFactory != informerFactory {
-		rtInformerFactory.Start(wait.NeverStop)
+		rtInformerFactory.Start(ctx.Done())
 
 		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 			return nil, err
@@ -263,10 +264,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 			continue
 		}
 
-		// Check controller annotation to see if we are responsible.
-		if v, ok := annots[annotations.ControllerKey]; ok && v != annotations.ControllerValue {
-			log.Debugf("Skipping %s %s/%s because controller value does not match, found: %s, required: %s",
-				src.rtKind, meta.Namespace, meta.Name, v, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(meta, src.rtKind) {
 			continue
 		}
 
@@ -275,6 +273,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		if err != nil {
 			return nil, err
 		}
+		// TODO: does not follow the pattern of other sources to log empty hostTargets
 		if len(hostTargets) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
@@ -286,13 +285,13 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
 		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
 		endpoints = append(endpoints, routeEndpoints...)
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {
@@ -448,11 +447,6 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
 	}
-	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
-	// but other sources don't check if fqdn-template is set. Which should it be?
-	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
 		hosts, err := fqdn.ExecTemplate(c.src.fqdnTemplate, rt.Object())
@@ -461,13 +455,42 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		}
 		hostnames = append(hostnames, hosts...)
 	}
-	// This means that the route doesn't specify a hostname and should use any provided by
-	// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-	// break {TCP,UDP}Routes.
-	if len(rt.Hostnames()) == 0 {
-		hostnames = append(hostnames, "")
+
+	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
+	if !hostNameAnnotationExists {
+		// This means that the route doesn't specify a hostname and should use any provided by
+		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
+		// break {TCP,UDP}Routes.
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
+		}
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, nil
 	}
-	return hostnames, nil
+
+	switch strings.ToLower(hostNameAnnotation) {
+	case gatewayHostnameSourceAnnotationOnlyValue:
+		if c.src.ignoreHostnameAnnotation {
+			return []string{}, nil
+		}
+		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+	case gatewayHostnameSourceDefinedHostsOnlyValue:
+		// Explicitly use only defined hostnames (route spec and optional template result)
+		return hostnames, nil
+	default:
+		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
+		}
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, nil
+	}
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {

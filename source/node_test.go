@@ -26,11 +26,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
-	"k8s.io/client-go/kubernetes"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/stretchr/testify/assert"
@@ -406,7 +405,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -459,10 +458,10 @@ func testNodeSourceEndpoints(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
-				testutils.TestHelperLogContains(entry, hook, t)
+				logtest.TestHelperLogContains(entry, hook, t)
 			}
 			for _, entry := range tc.expectedAbsentLogs {
-				testutils.TestHelperLogNotContains(entry, hook, t)
+				logtest.TestHelperLogNotContains(entry, hook, t)
 			}
 		})
 	}
@@ -582,10 +581,10 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	kubeClient := fake.NewClientset()
 
 	nodes := helperNodeBuilder().
-		withNode(nil).
-		withNode(nil).
-		withNode(nil).
-		withNode(nil).
+		withNode(map[string]string{"tenant": "1"}).
+		withNode(map[string]string{"tenant": "2"}).
+		withNode(map[string]string{"tenant": "3"}).
+		withNode(map[string]string{"tenant": "4"}).
 		build()
 
 	for _, node := range nodes.Items {
@@ -634,7 +633,6 @@ func TestNodeSource_AddEventHandler(t *testing.T) {
 
 type fakeNodeInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
 }
 
 func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
@@ -697,14 +695,6 @@ func (b *nodeListBuilder) build() v1.NodeList {
 		rand.Shuffle(len(b.nodes), func(i, j int) {
 			b.nodes[i], b.nodes[j] = b.nodes[j], b.nodes[i]
 		})
-	}
-	return v1.NodeList{Items: b.nodes}
-}
-
-func (b *nodeListBuilder) apply(t *testing.T, kubeClient kubernetes.Interface) v1.NodeList {
-	for _, node := range b.nodes {
-		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
-		require.NoError(t, err, "Failed to create node %s", node.Name)
 	}
 	return v1.NodeList{Items: b.nodes}
 }

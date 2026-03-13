@@ -53,7 +53,7 @@ func NewConnectorSource(remoteServer string) (Source, error) {
 }
 
 // Endpoints returns endpoint objects.
-func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (cs *connectorSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	conn, err := net.DialTimeout("tcp", cs.remoteServer, dialTimeout)
@@ -71,8 +71,7 @@ func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 	log.Debugf("Received endpoints: %#v", endpoints)
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
-func (cs *connectorSource) AddEventHandler(ctx context.Context, handler func()) {
-}
+func (cs *connectorSource) AddEventHandler(_ context.Context, _ func()) {}

@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -34,6 +33,8 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -153,22 +154,15 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	log.Debugf("Found %d gateways in namespace %s", len(gateways), sc.namespace)
 
 	for _, gateway := range gateways {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := gateway.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping gateway %s/%s,%s because controller value does not match, found: %s, required: %s",
-				gateway.Namespace, gateway.APIVersion, gateway.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
 			continue
 		}
 
-		gwHostnames, err := sc.hostNamesFromGateway(gateway)
-		if err != nil {
-			return nil, err
-		}
+		gwHostnames := sc.hostNamesFromGateway(gateway)
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
 
-		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
+		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -183,15 +177,14 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				if err != nil {
 					return nil, err
 				}
-				return sc.endpointsFromGateway(ctx, hostnames, gateway)
+				return sc.endpointsFromGateway(hostnames, gateway)
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
 			continue
 		}
 
@@ -199,12 +192,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	// TODO: sort on endpoint creation
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
@@ -240,7 +228,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -255,11 +243,11 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	targets, err := sc.targetsFromGateway(ctx, gateway)
+	targets, err := sc.targetsFromGateway(gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -273,13 +261,13 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
 	for _, host := range hostnames {
-		endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway) ([]string, error) {
+func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway) []string {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
@@ -305,5 +293,5 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway
 		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(gateway.Annotations)...)
 	}
 
-	return hostnames, nil
+	return hostnames
 }

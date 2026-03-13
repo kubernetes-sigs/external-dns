@@ -23,6 +23,9 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -63,6 +66,9 @@ func (b byAllFields) Less(i, j int) bool {
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
 	return a.DNSName == b.DNSName && a.Targets.Same(b.Targets) && a.RecordType == b.RecordType && a.SetIdentifier == b.SetIdentifier &&
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
 		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey] &&
@@ -159,4 +165,16 @@ func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint
 		result[i], result[j] = result[j], result[i]
 	})
 	return result
+}
+
+// AssertEndpointsHaveRefObject asserts that endpoints have the expected count
+// and each endpoint has a non-nil RefObject with the expected source type.
+func AssertEndpointsHaveRefObject(t *testing.T, endpoints []*endpoint.Endpoint, expectedSource string, expectedCount int) {
+	t.Helper()
+	assert.Len(t, endpoints, expectedCount)
+	for _, ep := range endpoints {
+		assert.NotNil(t, ep.RefObject())
+		assert.NotEmpty(t, ep.RefObject().UID)
+		assert.Equal(t, expectedSource, ep.RefObject().Source)
+	}
 }

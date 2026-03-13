@@ -54,6 +54,7 @@ var (
 	KnownRecordTypes = []string{
 		RecordTypeA,
 		RecordTypeAAAA,
+		RecordTypeCNAME,
 		RecordTypeTXT,
 		RecordTypeSRV,
 		RecordTypeNS,
@@ -221,6 +222,7 @@ type EndpointKey struct {
 	RecordType    string
 	SetIdentifier string
 	RecordTTL     TTL
+	Target        string
 }
 
 type ObjectRef = events.ObjectReference
@@ -245,6 +247,7 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
+	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
 	// +optional
 	refObject *ObjectRef `json:"-"`
 }
@@ -303,6 +306,9 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 
 // GetProviderSpecificProperty returns the value of a ProviderSpecificProperty if the property exists.
 func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
+	if len(e.ProviderSpecific) == 0 {
+		return "", false
+	}
 	for _, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			return providerSpecific.Value, true
@@ -311,7 +317,7 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
-// GetBoolProperty returns a boolean provider-specific property value.
+// GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
 func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 	prop, ok := e.GetProviderSpecificProperty(key)
 	if !ok {
@@ -329,6 +335,13 @@ func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
+	if len(e.ProviderSpecific) == 0 {
+		e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{
+			Name:  key,
+			Value: value,
+		})
+		return
+	}
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			e.ProviderSpecific[i] = ProviderSpecificProperty{
@@ -344,6 +357,9 @@ func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 
 // DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
 func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
+	if len(e.ProviderSpecific) == 0 {
+		return
+	}
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)
@@ -439,9 +455,20 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: review source/annotations package to consolidate alias key definitions;
+// currently duplicated here to avoid circular dependency.
+const providerSpecificAlias = "alias"
+
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
+	if !e.supportsAlias() {
+		if _, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias); ok {
+			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
+			return false
+		}
+	}
+
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
@@ -449,6 +476,15 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+func (e *Endpoint) supportsAlias() bool {
+	switch e.RecordType {
+	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
+		return true
+	default:
+		return false
+	}
 }
 
 // WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
@@ -523,4 +559,32 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// GetDNSName returns the DNS name of the endpoint.
+func (e *Endpoint) GetDNSName() string {
+	return e.DNSName
+}
+
+// GetRecordType returns the record type of the endpoint.
+func (e *Endpoint) GetRecordType() string {
+	return e.RecordType
+}
+
+// GetRecordTTL returns the TTL of the endpoint as int64.
+func (e *Endpoint) GetRecordTTL() int64 {
+	return int64(e.RecordTTL)
+}
+
+// GetTargets returns the targets of the endpoint.
+func (e *Endpoint) GetTargets() []string {
+	return e.Targets
+}
+
+// GetOwner returns the owner of the endpoint from labels or set identifier.
+func (e *Endpoint) GetOwner() string {
+	if val, ok := e.Labels[OwnerLabelKey]; ok {
+		return val
+	}
+	return e.SetIdentifier
 }

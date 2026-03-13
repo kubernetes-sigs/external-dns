@@ -101,8 +101,8 @@ func NewCivoProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoPro
 }
 
 // Zones returns the list of hosted zones.
-func (p *CivoProvider) Zones(ctx context.Context) ([]civogo.DNSDomain, error) {
-	zones, err := p.fetchZones(ctx)
+func (p *CivoProvider) Zones(_ context.Context) ([]civogo.DNSDomain, error) {
+	zones, err := p.fetchZones()
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	var endpoints []*endpoint.Endpoint
 
 	for _, zone := range zones {
-		records, err := p.fetchRecords(ctx, zone.ID)
+		records, err := p.fetchRecords(zone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civogo.DNSRecord, error) {
+func (p *CivoProvider) fetchRecords(domainID string) ([]civogo.DNSRecord, error) {
 	records, err := p.Client.ListDNSRecords(domainID)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civ
 	return records, nil
 }
 
-func (p *CivoProvider) fetchZones(ctx context.Context) ([]civogo.DNSDomain, error) {
+func (p *CivoProvider) fetchZones() ([]civogo.DNSDomain, error) {
 	var zones []civogo.DNSDomain
 
 	allZones, err := p.Client.ListDNSDomains()
@@ -173,7 +173,7 @@ func (p *CivoProvider) fetchZones(ctx context.Context) ([]civogo.DNSDomain, erro
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) error {
+func (p *CivoProvider) submitChanges(changes CivoChanges) error {
 	if changes.Empty() {
 		log.Info("All records are already up to date")
 		return nil
@@ -440,11 +440,11 @@ func processDeleteActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *CivoProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	var civoChange CivoChanges
 	recordsByZoneID := make(map[string][]civogo.DNSRecord)
 
-	zones, err := p.fetchZones(ctx)
+	zones, err := p.fetchZones()
 
 	if err != nil {
 		return err
@@ -461,7 +461,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// Fetch records for each zone
 	for _, zone := range zones {
-		records, err := p.fetchRecords(ctx, zone.ID)
+		records, err := p.fetchRecords(zone.ID)
 
 		if err != nil {
 			return err
@@ -492,7 +492,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		return err
 	}
 
-	return p.submitChanges(ctx, civoChange)
+	return p.submitChanges(civoChange)
 }
 
 func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {

@@ -31,7 +31,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -148,7 +149,7 @@ func NewServiceSource(
 				if serviceName == "" {
 					return nil, nil
 				}
-				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				key := apitypes.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
 				return []string{key}, nil
 			},
 		})
@@ -254,11 +255,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := svc.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
-				svc.Namespace, svc.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
 			continue
 		}
 
@@ -283,8 +280,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			return nil, err
 		}
 
-		if len(svcEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
 
@@ -334,7 +330,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		})
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource
@@ -365,7 +361,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
 	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+		pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
 
 	return endpoints
@@ -389,7 +385,6 @@ func convertToEndpointSlices(rawEndpointSlices []any) []*discoveryv1.EndpointSli
 // and returns deduped targets by domain/type.
 // TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
 func (sc *serviceSource) processHeadlessEndpointsFromSlices(
-	svc *v1.Service,
 	pods []*v1.Pod,
 	endpointSlices []*discoveryv1.EndpointSlice,
 	hostname string,
@@ -635,7 +630,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		}
 	}
 
-	endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 
 	return endpoints
 }

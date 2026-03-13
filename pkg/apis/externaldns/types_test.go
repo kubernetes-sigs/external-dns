@@ -17,7 +17,6 @@ limitations under the License.
 package externaldns
 
 import (
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -77,6 +76,8 @@ var (
 		AzureResourceGroup:                     "",
 		AzureSubscriptionID:                    "",
 		AzureMaxRetriesCount:                   3,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
@@ -186,6 +187,8 @@ var (
 		AzureResourceGroup:                     "arg",
 		AzureSubscriptionID:                    "arg",
 		AzureMaxRetriesCount:                   4,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      true,
 		CloudflareCustomHostnames:              true,
 		CloudflareCustomHostnamesMinTLSVersion: "1.3",
@@ -427,6 +430,7 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
+				"--batch-change-size=200",
 			},
 			envVars: map[string]string{},
 			expected: func(cfg *Config) {
@@ -548,6 +552,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+				"EXTERNAL_DNS_BATCH_CHANGE_SIZE":                                 "200",
 			},
 			expected: func(cfg *Config) {
 				assert.Equal(t, overriddenConfig, cfg)
@@ -585,19 +590,6 @@ func TestConfigStringMasksSecureFields(t *testing.T) {
 	require.NotContains(t, s, "sensitive-value")
 	require.NotContains(t, s, "another-secret")
 	require.Contains(t, s, passwordMask)
-}
-
-// helper functions
-
-func setEnv(t *testing.T, env map[string]string) map[string]string {
-	originalEnv := map[string]string{}
-
-	for k, v := range env {
-		originalEnv[k] = os.Getenv(k)
-		require.NoError(t, os.Setenv(k, v))
-	}
-
-	return originalEnv
 }
 
 // Default path should use kingpin and parse flags correctly

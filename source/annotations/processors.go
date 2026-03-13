@@ -25,6 +25,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const (
+	skipCtrlMsg = "Skipping '%s/%s/%s' because controller '%s' value does not match, found: '%s', required: '%s'"
+)
+
 func hasAliasFromAnnotations(annotations map[string]string) bool {
 	aliasAnnotation, ok := annotations[AliasKey]
 	return ok && aliasAnnotation == "true"
@@ -47,6 +51,21 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 		return ttlNotConfigured
 	}
 	return endpoint.TTL(ttlValue)
+}
+
+// IsControllerMismatch returns true when the resource should be skipped because
+// the controller annotation is present and does not match the expected controller value.
+// It also logs the reason.
+func IsControllerMismatch(
+	entity metav1.ObjectMetaAccessor,
+	rType string,
+) bool {
+	value, ok := entity.GetObjectMeta().GetAnnotations()[ControllerKey]
+	if ok && value != ControllerValue {
+		log.Debugf(skipCtrlMsg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName(), ControllerKey, value, ControllerValue)
+		return true
+	}
+	return false
 }
 
 // parseTTL parses TTL from string, returning duration in seconds.
