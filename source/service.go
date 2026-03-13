@@ -116,6 +116,14 @@ func NewServiceSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 
+	if err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
+
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 

@@ -5115,6 +5115,63 @@ func TestNodeTransformerInServiceSource(t *testing.T) {
 	assert.Empty(t, retrieved.Status.Conditions)
 }
 
+func TestServiceTransformerInServiceSource(t *testing.T) {
+	ctx := t.Context()
+
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type:        v1.ServiceTypeLoadBalancer,
+			ExternalIPs: []string{"1.2.3.4"},
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{{IP: "5.6.7.8"}},
+			},
+			Conditions: []metav1.Condition{
+				{Type: "Available", Status: metav1.ConditionTrue, Reason: "Ready"},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(svc)
+
+	src, err := NewServiceSource(
+		ctx, fakeClient, svc.Namespace, "", "", false, "", false, false, false,
+		nil, false, labels.Everything(), false, false, false, false,
+	)
+	require.NoError(t, err)
+	ss, ok := src.(*serviceSource)
+	require.True(t, ok)
+
+	retrieved, err := ss.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, svc.Name, retrieved.Name)
+	assert.Equal(t, svc.Labels, retrieved.Labels)
+	assert.Equal(t, svc.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Spec and Status.LoadBalancer preserved — used for endpoint generation
+	assert.Equal(t, svc.Spec.ExternalIPs, retrieved.Spec.ExternalIPs)
+	assert.Equal(t, svc.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
+}
+
 // createTestServicesByType creates the requested number of services per type in the given namespace.
 func createTestServicesByType(ns string, typeCounts map[v1.ServiceType]int) []*v1.Service {
 	var services []*v1.Service
