@@ -19,10 +19,12 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -56,6 +58,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	}
 	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
 		return errors.New("--annotation-prefix must end with '/'")
+	}
+
+	if (cfg.CreatePTR || cfg.RFC2136CreatePTR) && !slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR) {
+		return errors.New("--create-ptr requires PTR in --managed-record-types")
 	}
 
 	return nil

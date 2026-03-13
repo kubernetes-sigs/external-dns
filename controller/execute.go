@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"slices"
 	"syscall"
 	"time"
 
@@ -128,11 +127,6 @@ func Execute() {
 	}
 	if prvdr != nil && cfg.ProviderCacheTime > 0 {
 		prvdr = provider.NewCachedProvider(prvdr, cfg.ProviderCacheTime)
-	}
-	// Ensure PTR is a managed record type so the planner considers PTR records
-	if !slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR) {
-		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
-		log.Infof("PTR: automatically added PTR to managed record types: %v", cfg.ManagedDNSRecordTypes)
 	}
 
 	if cfg.WebhookServer {
