@@ -103,6 +103,32 @@ func TestPTRSource(t *testing.T) {
 				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 300, "web.example.com"),
 			},
 		},
+		{
+			name:           "conflicting TTLs use minimum",
+			defaultEnabled: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
+			},
+		},
+		{
+			name:           "conflicting TTLs use minimum reversed order",
+			defaultEnabled: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -117,6 +143,7 @@ func TestPTRSource(t *testing.T) {
 			for i, ep := range result {
 				assert.Equal(t, tc.expected[i].DNSName, ep.DNSName)
 				assert.Equal(t, tc.expected[i].RecordType, ep.RecordType)
+				assert.Equal(t, tc.expected[i].RecordTTL, ep.RecordTTL)
 				assert.ElementsMatch(t, tc.expected[i].Targets, ep.Targets)
 			}
 		})

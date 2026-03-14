@@ -94,6 +94,12 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 
 			if info, ok := ptrMap[ptrName]; ok {
 				info.targets = append(info.targets, ep.DNSName)
+				if ep.RecordTTL != info.ttl {
+					log.Warnf("PTR: conflicting TTLs for %s (from %s TTL=%d vs existing TTL=%d), using minimum", ptrName, ep.DNSName, ep.RecordTTL, info.ttl)
+					if ep.RecordTTL < info.ttl {
+						info.ttl = ep.RecordTTL
+					}
+				}
 			} else {
 				ptrMap[ptrName] = &ptrInfo{targets: []string{ep.DNSName}, ttl: ep.RecordTTL}
 				order = append(order, ptrName)
