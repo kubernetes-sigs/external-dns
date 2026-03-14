@@ -300,7 +300,7 @@ func TestHelperProcess(_ *testing.T) {
 func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	// TODO: investigate why -test.run=TestHelperProcess
@@ -448,7 +448,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		TXTOwnerID: "test-owner",
 	}
 	sCfg := source.NewSourceConfig(cfg)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)

@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"net/netip"
 	"testing"
 
@@ -81,7 +80,7 @@ func testNat64Source(t *testing.T) {
 			source, err := NewNAT64Source(mockSource, []string{"2001:DB8::/96"})
 			require.NoError(t, err)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
@@ -262,7 +261,7 @@ func TestNat64SourceEndpoints_VariousCases(t *testing.T) {
 			src, err := NewNAT64Source(mockSource, []string{"2001:db8::/96"})
 			require.NoError(t, err)
 
-			eps, err := src.Endpoints(context.Background())
+			eps, err := src.Endpoints(t.Context())
 			tc.asserts(eps, err)
 
 			mockSource.AssertExpectations(t)

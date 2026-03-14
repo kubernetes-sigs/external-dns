@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -94,7 +93,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			source := NewMultiSource(sources, nil, false)
 
 			// Get endpoints from the source.
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
@@ -121,7 +120,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 	source := NewMultiSource([]source.Source{src}, nil, false)
 
 	// Get endpoints from our source.
-	_, err := source.Endpoints(context.Background())
+	_, err := source.Endpoints(t.Context())
 	assert.EqualError(t, err, "some error")
 
 	// Validate that the nested source was called.
@@ -159,7 +158,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=false (default behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
 		validateEndpoints(t, endpoints, expectedEndpoints)
@@ -189,7 +188,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=false (default behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
 		validateEndpoints(t, endpoints, expectedEndpoints)
@@ -227,7 +226,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=true (legacy behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
 		validateEndpoints(t, endpoints, expectedEndpoints)
@@ -262,7 +261,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=true
 		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
 		validateEndpoints(t, endpoints, expectedEndpoints)

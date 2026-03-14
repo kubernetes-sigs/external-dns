@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -537,49 +536,49 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
 	assert.NoError(t, targetAnnotatedProxySourceUnstructured.UnmarshalJSON(targetAnnotatedProxySvcAsJSON))
 
-	_, err = fakeKubernetesClient.CoreV1().Services(internalProxySvc.GetNamespace()).Create(context.Background(), &internalProxySvc, metav1.CreateOptions{})
+	_, err = fakeKubernetesClient.CoreV1().Services(internalProxySvc.GetNamespace()).Create(t.Context(), &internalProxySvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeKubernetesClient.CoreV1().Services(externalProxySvc.GetNamespace()).Create(context.Background(), &externalProxySvc, metav1.CreateOptions{})
+	_, err = fakeKubernetesClient.CoreV1().Services(externalProxySvc.GetNamespace()).Create(t.Context(), &externalProxySvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeKubernetesClient.CoreV1().Services(proxyWithMetadataStaticSvc.GetNamespace()).Create(context.Background(), &proxyWithMetadataStaticSvc, metav1.CreateOptions{})
+	_, err = fakeKubernetesClient.CoreV1().Services(proxyWithMetadataStaticSvc.GetNamespace()).Create(t.Context(), &proxyWithMetadataStaticSvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeKubernetesClient.CoreV1().Services(targetAnnotatedProxySvc.GetNamespace()).Create(context.Background(), &targetAnnotatedProxySvc, metav1.CreateOptions{})
+	_, err = fakeKubernetesClient.CoreV1().Services(targetAnnotatedProxySvc.GetNamespace()).Create(t.Context(), &targetAnnotatedProxySvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	_, err = fakeKubernetesClient.NetworkingV1().Ingresses(gatewayIngressAnnotatedProxyIngress.GetNamespace()).Create(context.Background(), &gatewayIngressAnnotatedProxyIngress, metav1.CreateOptions{})
+	_, err = fakeKubernetesClient.NetworkingV1().Ingresses(gatewayIngressAnnotatedProxyIngress.GetNamespace()).Create(t.Context(), &gatewayIngressAnnotatedProxyIngress, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	// Create proxy resources
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &internalProxyUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &internalProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &externalProxyUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &externalProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &proxyMetadataStaticUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &proxyMetadataStaticUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &targetAnnotatedProxyUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &targetAnnotatedProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &gatewayIngressAnnotatedProxyUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &gatewayIngressAnnotatedProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	// Create proxy source
-	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(internalProxySource.Namespace).Create(context.Background(), &internalProxySourceUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(internalProxySource.Namespace).Create(t.Context(), &internalProxySourceUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(externalProxySource.Namespace).Create(context.Background(), &externalProxySourceUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(externalProxySource.Namespace).Create(t.Context(), &externalProxySourceUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(proxyWithMetadataStaticSource.Namespace).Create(context.Background(), &proxyMetadataStaticSourceUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(proxyWithMetadataStaticSource.Namespace).Create(t.Context(), &proxyMetadataStaticSourceUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(targetAnnotatedProxySource.Namespace).Create(context.Background(), &targetAnnotatedProxySourceUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(targetAnnotatedProxySource.Namespace).Create(t.Context(), &targetAnnotatedProxySourceUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	// Create gateway resource
-	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(context.Background(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(t.Context(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	source, err := NewGlooSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
+	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
 	assert.NoError(t, err)
 	assert.NotNil(t, source)
 
-	endpoints, err := source.Endpoints(context.Background())
+	endpoints, err := source.Endpoints(t.Context())
 	assert.NoError(t, err)
 	assert.Len(t, endpoints, 11)
 

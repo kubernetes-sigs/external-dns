@@ -14,7 +14,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -331,7 +330,7 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
 			for _, ocp := range tt.ocpRoute {
-				_, err := kubeClient.RouteV1().Routes(ocp.Namespace).Create(context.Background(), ocp, metav1.CreateOptions{})
+				_, err := kubeClient.RouteV1().Routes(ocp.Namespace).Create(t.Context(), ocp, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 

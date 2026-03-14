@@ -280,7 +280,7 @@ func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, err
 func (m *minimalMockClientGenerator) RESTConfig() (*rest.Config, error) { return nil, errMock }
 
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := &minimalMockClientGenerator{}
 	cfg := &Config{LabelFilter: labels.NewSelector()}
 

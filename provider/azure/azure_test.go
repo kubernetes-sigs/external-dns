@@ -285,7 +285,7 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com"),
 		}, 3)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -327,7 +327,7 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -472,7 +472,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -497,7 +497,7 @@ func TestAzureNameFilter(t *testing.T) {
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeNS, "ns1.example.com.", 3600),
 		}, 3)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -601,7 +601,7 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

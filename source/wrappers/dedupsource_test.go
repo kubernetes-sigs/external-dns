@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -149,7 +148,7 @@ func testDedupEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			source := NewDedupSource(mockSource)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -305,7 +304,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			mockSource.On("Endpoints").Return(tt.endpoints, nil)
 
 			sr := NewDedupSource(mockSource)
-			endpoints, err := sr.Endpoints(context.Background())
+			endpoints, err := sr.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			validateEndpoints(t, endpoints, tt.expected)
@@ -350,7 +349,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			mockSource.On("Endpoints").Return([]*endpoint.Endpoint{tt.endpoint}, nil)
 
 			src := NewDedupSource(mockSource)
-			_, err := src.Endpoints(context.Background())
+			_, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			logtest.TestHelperLogContains(tt.wantLogMsg, hook, t)

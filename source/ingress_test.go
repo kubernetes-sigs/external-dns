@@ -1418,7 +1418,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			source, _ := NewIngressSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
 				ti.targetNamespace,
 				ti.annotationFilter,
