@@ -681,27 +681,12 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 }
 
 func isPodStatusReady(status v1.PodStatus) bool {
-	_, condition := getPodCondition(&status, v1.PodReady)
-	return condition != nil && condition.Status == v1.ConditionTrue
-}
-
-func getPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
-	if status == nil {
-		return -1, nil
-	}
-	return getPodConditionFromList(status.Conditions, conditionType)
-}
-
-func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
-	if conditions == nil {
-		return -1, nil
-	}
-	for i := range conditions {
-		if conditions[i].Type == conditionType {
-			return i, &conditions[i]
+	for _, c := range status.Conditions {
+		if c.Type == v1.PodReady {
+			return c.Status == v1.ConditionTrue
 		}
 	}
-	return -1, nil
+	return false
 }
 
 // nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
@@ -721,7 +706,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 		}
 		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
 		if err != nil {
-			log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
+			log.Debugf("Unable to find node where Pod %s is running", v.Spec.NodeName)
 			continue
 		}
 

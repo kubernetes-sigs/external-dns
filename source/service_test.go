@@ -5691,27 +5691,44 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
 }
 
-// TestNodesExternalTrafficPolicyLocalIterationOrder proves that node
-// classification must use the best pod state across all pods on a node, not
-// the first pod encountered. During a rolling update node1 has both a
-// not-ready replacement pod and a ready existing pod; node1 must still appear
-// in the result regardless of which pod is iterated first.
-func TestNodesExternalTrafficPolicyLocalIterationOrder(t *testing.T) {
-	node1 := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: "node1"},
-		Status: v1.NodeStatus{
-			Addresses: []v1.NodeAddress{
-				{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
-			},
-		},
+func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
+	now := metav1.Now()
+
+	makeNode := func(name, ip string) *v1.Node {
+		return &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Status:     v1.NodeStatus{Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: ip}}},
+		}
 	}
-	node2 := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: "node2"},
-		Status: v1.NodeStatus{
-			Addresses: []v1.NodeAddress{
-				{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+
+	makePod := func(name, nodeName string, ready bool, deletionTimestamp *metav1.Time) *v1.Pod {
+		readiness := v1.ConditionFalse
+		if ready {
+			readiness = v1.ConditionTrue
+		}
+		return &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "testing", DeletionTimestamp: deletionTimestamp},
+			Spec:       v1.PodSpec{NodeName: nodeName},
+			Status: v1.PodStatus{
+				Phase:      v1.PodRunning,
+				Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: readiness}},
 			},
-		},
+		}
+	}
+
+	makeResourceSource := func(t *testing.T, nodes []*v1.Node, pods []*v1.Pod) *serviceSource {
+		t.Helper()
+		client := fake.NewClientset()
+		inf := kubeinformers.NewSharedInformerFactory(client, 0)
+		nodeInformer := inf.Core().V1().Nodes()
+		podInformer := inf.Core().V1().Pods()
+		for _, n := range nodes {
+			require.NoError(t, nodeInformer.Informer().GetStore().Add(n))
+		}
+		for _, p := range pods {
+			require.NoError(t, podInformer.Informer().GetStore().Add(p))
+		}
+		return &serviceSource{podInformer: podInformer, nodeInformer: nodeInformer}
 	}
 
 	svc := &v1.Service{
@@ -5722,66 +5739,77 @@ func TestNodesExternalTrafficPolicyLocalIterationOrder(t *testing.T) {
 		},
 	}
 
-	// node1: not-ready pod (rolling replacement) + ready pod (existing)
-	pod0 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "pod-0", Namespace: "testing"},
-		Spec:       v1.PodSpec{NodeName: "node1"},
-		Status: v1.PodStatus{
-			Phase:      v1.PodRunning,
-			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
-		},
-	}
-	pod1 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "pod-1", Namespace: "testing"},
-		Spec:       v1.PodSpec{NodeName: "node1"},
-		Status: v1.PodStatus{
-			Phase:      v1.PodRunning,
-			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}},
-		},
-	}
-	// node2: ready pod
-	pod2 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "pod-2", Namespace: "testing"},
-		Spec:       v1.PodSpec{NodeName: "node2"},
-		Status: v1.PodStatus{
-			Phase:      v1.PodRunning,
-			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}},
-		},
-	}
-
-	client := fake.NewClientset()
-	kubeInformers := kubeinformers.NewSharedInformerFactory(client, 0)
-	nodeInformer := kubeInformers.Core().V1().Nodes()
-	podInformer := kubeInformers.Core().V1().Pods()
-
-	for _, obj := range []any{node1, node2} {
-		require.NoError(t, nodeInformer.Informer().GetStore().Add(obj))
-	}
-	for _, obj := range []any{pod0, pod1, pod2} {
-		require.NoError(t, podInformer.Informer().GetStore().Add(obj))
-	}
-
-	sc := &serviceSource{
-		podInformer:  podInformer,
-		nodeInformer: nodeInformer,
-	}
-
-	// The informer cache is a Go map so pod iteration order is randomised each
-	// call. Over 100+ iterations pod-0 will be processed before pod-1 roughly
-	// half the time, reliably triggering the bug if it is present.
-	const iterations = 100
-	for i := range iterations {
-		nodes := sc.nodesExternalTrafficPolicyTypeLocal(svc)
-
-		inResult := make(map[string]bool, len(nodes))
-		for _, n := range nodes {
-			inResult[n.Name] = true
+	// nodeNames extracts node names from a result slice for easy assertion.
+	nodeNames := func(nodes []*v1.Node) []string {
+		names := make([]string, len(nodes))
+		for i, n := range nodes {
+			names[i] = n.Name
 		}
-
-		if !inResult["node1"] {
-			t.Fatalf("iteration %d: node1 dropped despite having a ready pod", i)
-		}
+		sort.Strings(names)
+		return names
 	}
+
+	t.Run("best pod wins during rolling update regardless of iteration order", func(t *testing.T) {
+		// node1: not-ready replacement pod + ready existing pod (rolling update)
+		// node2: single ready pod
+		// The informer cache is a Go map so pod iteration order is randomised
+		// each call. Over 100 iterations pod-0 will be processed before pod-1
+		// roughly half the time, reliably triggering the bug if present.
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // not-ready replacement
+				makePod("pod-1", "node1", true, nil),  // ready existing
+				makePod("pod-2", "node2", true, nil),  // ready
+			},
+		)
+		for i := range 100 {
+			got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+			require.Containsf(t, got, "node1", "iteration %d: node1 dropped despite having a ready pod", i)
+			require.Containsf(t, got, "node2", "iteration %d: node2 dropped despite having a ready pod", i)
+		}
+	})
+
+	t.Run("falls back to nodesReady when all ready pods are terminating", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", true, &now)}, // ready + terminating
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("falls back to nodesRunning when no pod is ready", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", false, nil)}, // running, not ready
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips pods that are not in Running phase", func(t *testing.T) {
+		pendingPod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "pod-pending", Namespace: "testing"},
+			Spec:       v1.PodSpec{NodeName: "node1"},
+			Status:     v1.PodStatus{Phase: v1.PodPending},
+		}
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{pendingPod},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
+
+	t.Run("skips pods whose node is not found in the informer", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{}, // node1 not registered
+			[]*v1.Pod{makePod("pod-0", "node1", true, nil)},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
 }
 
 // Helper function to find endpoint by record type
