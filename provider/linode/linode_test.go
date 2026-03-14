@@ -144,7 +144,7 @@ func TestLinodeConvertRecordType(t *testing.T) {
 }
 
 func TestNewProvider(t *testing.T) {
-	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
+	t.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
 	_, err := newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.NoError(t, err)
 

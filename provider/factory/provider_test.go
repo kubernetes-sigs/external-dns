@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package factory_test
+package factory
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -29,7 +28,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/provider/factory"
 )
 
 func TestSelectProvider(t *testing.T) {
@@ -129,7 +127,7 @@ func TestSelectProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 
-			p, err := factory.SelectProvider(t.Context(), tt.cfg, domainFilter)
+			p, err := SelectProvider(t.Context(), tt.cfg, domainFilter)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
@@ -143,8 +141,8 @@ func TestSelectProvider(t *testing.T) {
 	}
 }
 
-func TestSelectProvider_AllKnownProviders(t *testing.T) {
-	knownProviders := []string{
+func TestKnownProviders(t *testing.T) {
+	expected := []string{
 		"akamai", "alibabacloud", "aws", "aws-sd",
 		"azure", "azure-dns", "azure-private-dns",
 		"civo", "cloudflare", "coredns", "skydns",
@@ -154,17 +152,11 @@ func TestSelectProvider_AllKnownProviders(t *testing.T) {
 		"pdns", "pihole", "plural", "rfc2136",
 		"scaleway", "transip", "webhook",
 	}
-
-	for _, name := range knownProviders {
-		t.Run(name, func(t *testing.T) {
-			cfg := &externaldns.Config{Provider: name}
-			_, err := factory.SelectProvider(context.Background(), cfg, nil)
-			if err != nil {
-				assert.NotContains(t, err.Error(), "unknown dns provider",
-					"provider %q should be registered", name)
-			}
-		})
+	names := make([]string, 0, len(providers()))
+	for name := range providers() {
+		names = append(names, name)
 	}
+	assert.ElementsMatch(t, expected, names)
 }
 
 func TestSelectProvider_Webhook(t *testing.T) {
@@ -180,7 +172,7 @@ func TestSelectProvider_Webhook(t *testing.T) {
 		Provider:           "webhook",
 		WebhookProviderURL: srv.URL,
 	}
-	p, err := factory.SelectProvider(t.Context(), cfg, nil)
+	p, err := SelectProvider(t.Context(), cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 }

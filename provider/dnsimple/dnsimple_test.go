@@ -241,7 +241,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 }
 
 func TestNewProvider(t *testing.T) {
-	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
+	t.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
 	_, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on bad token")
@@ -253,8 +253,8 @@ func TestNewProvider(t *testing.T) {
 		t.Errorf("Expected to fail new provider on empty token")
 	}
 
-	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
-	os.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
+	t.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
+	t.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
 	providerTypedProvider, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	dnsimpleTypedProvider := providerTypedProvider.(*dnsimpleProvider)
 	if err != nil {

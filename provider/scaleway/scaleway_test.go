@@ -123,15 +123,15 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	_ = os.Setenv(scw.ScwActiveProfileEnv, "foo")
-	_ = os.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
+	t.Setenv(scw.ScwActiveProfileEnv, "foo")
+	t.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
-	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
+	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
@@ -143,20 +143,20 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 		t.Errorf("expected to fail")
 	}
 
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "dummy")
+	t.Setenv(scw.ScwSecretKeyEnv, "dummy")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Unsetenv(scw.ScwAccessKeyEnv)
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
-	_ = os.Setenv(scw.ScwAccessKeyEnv, "dummy")
+	t.Setenv(scw.ScwAccessKeyEnv, "dummy")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")

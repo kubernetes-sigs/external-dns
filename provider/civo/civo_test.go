@@ -34,7 +34,7 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	_ = os.Setenv("CIVO_TOKEN", "xxxxxxxxxxxxxxx")
+	t.Setenv("CIVO_TOKEN", "xxxxxxxxxxxxxxx")
 	_, err := newProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
 	require.NoError(t, err)
 
