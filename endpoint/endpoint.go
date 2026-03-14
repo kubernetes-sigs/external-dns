@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/set"
 
@@ -439,6 +440,17 @@ func (e *Endpoint) SupportsPTR() bool {
 		return false
 	}
 	return !strings.HasPrefix(e.DNSName, "*.")
+}
+
+// NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
+// It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
+func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {
+	revAddr, err := dns.ReverseAddr(target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
+	}
+	ptrName := strings.TrimSuffix(revAddr, ".")
+	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
 }
 
 func (e *Endpoint) String() string {

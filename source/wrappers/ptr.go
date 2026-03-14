@@ -20,7 +20,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -63,6 +62,15 @@ type ptrInfo struct {
 	ttl     endpoint.TTL
 }
 
+// supportsPTR returns true if the endpoint is eligible for PTR record generation.
+// Only non-wildcard A and AAAA records can have meaningful reverse DNS mappings.
+func supportsPTR(ep *endpoint.Endpoint) bool {
+	if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeAAAA {
+		return false
+	}
+	return !strings.HasPrefix(ep.DNSName, "*.")
+}
+
 // generatePTREndpoints creates PTR endpoints for A/AAAA endpoints.
 // When multiple records share an IP, a single PTR with all hostnames is created.
 func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) []*endpoint.Endpoint {
@@ -70,7 +78,7 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 	var order []string
 
 	for _, ep := range endpoints {
-		if !ep.SupportsPTR() {
+		if !supportsPTR(ep) {
 			continue
 		}
 
@@ -84,13 +92,12 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 		}
 
 		for _, target := range ep.Targets {
-			revAddr, err := dns.ReverseAddr(target)
+			ptrEp, err := endpoint.NewPTREndpoint(target, ep.RecordTTL, ep.DNSName)
 			if err != nil {
-				log.Warnf("PTR: failed to compute reverse address for %s: %v", target, err)
+				log.Warnf("PTR: %v", err)
 				continue
 			}
-			// Strip trailing dot from reverse address (external-dns convention)
-			ptrName := strings.TrimSuffix(revAddr, ".")
+			ptrName := ptrEp.DNSName
 
 			if info, ok := ptrMap[ptrName]; ok {
 				info.targets = append(info.targets, ep.DNSName)
