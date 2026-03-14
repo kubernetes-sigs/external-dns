@@ -1,3 +1,10 @@
+---
+tags:
+  - advanced
+  - area/domain-filter
+  - domain-filter
+---
+
 # Domain Filter
 
 ExternalDNS provides four flags for controlling which domains it manages:
