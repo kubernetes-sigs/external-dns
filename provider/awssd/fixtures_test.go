@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
