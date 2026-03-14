@@ -689,9 +689,10 @@ func isPodStatusReady(status v1.PodStatus) bool {
 	return false
 }
 
-// nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
-// with externalTrafficPolicy=Local. Returns the highest-priority available slice of nodes: ready non-terminating
-// first, falling back to ready terminating, then any running.
+// nodesExternalTrafficPolicyTypeLocal returns nodes that have running pods for the given
+// NodePort service with externalTrafficPolicy=Local. Only nodes at the highest available
+// pod readiness level are returned — nodes with lower readiness are excluded when better
+// ones exist.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
 	// Pod states ranked by readiness then termination; PodRunning phase is a precondition.
 	// Values start at 1 so that the zero value of the bestPriority map acts as a
@@ -731,15 +732,14 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	case 0:
 		return nil
 	case notReady:
-		log.Debugf("All pods not ready, use all running")
+		log.Debugf("No ready pods found, falling back to running pods")
 	case readyTerminating:
-		log.Debugf("All pods in terminating state, use ready")
+		log.Debugf("No non-terminating ready pods found, falling back to terminating ready pods")
 	case readyNonTerminating:
-		log.Debugf("All pods ready and non-terminating, use ready non-terminating")
+		log.Debugf("Ready non-terminating pods found")
 	}
 
-	// Only return nodes that match the best available readiness level across the cluster,
-	// equivalent to the old: nodes > nodesReady > nodesRunning fallback switch.
+	// Only return nodes at the highest readiness level available across the cluster.
 	nodes := make([]*v1.Node, 0, len(bestPriority))
 	for node, p := range bestPriority {
 		if p == maxPriority {
