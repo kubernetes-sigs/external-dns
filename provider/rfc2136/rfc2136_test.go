@@ -17,7 +17,6 @@ limitations under the License.
 package rfc2136
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"math/rand"
@@ -291,7 +290,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 1, "expected single record")
@@ -310,7 +309,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	provider, err := createRfc2136StubProviderWithReverse(stub)
 	assert.NoError(t, err)
 
-	err = provider.ApplyChanges(context.Background(), &plan.Changes{
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "demo.foo.com",
@@ -329,7 +328,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 func TestRfc2136TLSConfig(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -369,7 +368,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigWithMultiHosts(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -414,7 +413,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigNoVerify(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -454,7 +453,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigClientAuth(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -468,7 +467,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 -----END CERTIFICATE-----
 `))
 
-	certFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.crt")
+	certFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.crt")
 	assert.NoError(t, err)
 	defer os.Remove(certFile.Name())
 	_, err = certFile.Write([]byte(
@@ -484,7 +483,7 @@ goRP/fRfTTTLwLg8UBpUAmALX8A8HBSBaUlTTQcaImbcwU4DRSbv5JEA8tM1mWrA
 -----END CERTIFICATE-----
 `))
 
-	keyFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.key")
+	keyFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.key")
 	assert.NoError(t, err)
 	defer os.Remove(keyFile.Name())
 	_, err = keyFile.Write([]byte(
@@ -537,7 +536,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub, "barfoo.com", "foo.com", "bar.com", "foobar.com")
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 6)
@@ -610,7 +609,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -668,7 +667,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -738,7 +737,7 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -795,7 +794,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
@@ -833,7 +832,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	p = &plan.Changes{
@@ -865,7 +864,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 4)
@@ -1001,7 +1000,7 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 		UpdateNew: newRecords,
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.updateMsgs, 4)
@@ -1072,7 +1071,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test that Records() returns a SoftError when nameserver fails
-	_, err = providerInstance.Records(context.Background())
+	_, err = providerInstance.Records(t.Context())
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
 
@@ -1086,7 +1085,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 			},
 		},
 	}
-	err = providerInstance.ApplyChanges(context.Background(), p)
+	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -134,7 +133,7 @@ func TestRecords(t *testing.T) {
 
 	provider, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	endpoints, err := provider.Records(context.TODO())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
@@ -156,7 +155,7 @@ func TestRecordsWithErrors(t *testing.T) {
 
 	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	_, err = p.Records(context.Background())
+	_, err = p.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -199,7 +198,7 @@ func TestRecords_DecodeError(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(context.Background())
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
 }
@@ -242,12 +241,12 @@ func TestApplyChanges(t *testing.T) {
 
 	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
 
 	successfulApplyChanges = false
 
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -258,7 +257,7 @@ func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := wpr.ApplyChanges(context.Background(), nil)
+	err := wpr.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
@@ -269,7 +268,7 @@ func TestApplyChanges_GetFailed(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := p.ApplyChanges(context.TODO(), &plan.Changes{})
+	err := p.ApplyChanges(t.Context(), &plan.Changes{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported protocol scheme")
 }
@@ -289,7 +288,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.NotErrorIs(t, err, provider.SoftError)
 	assert.Contains(t, err.Error(), "failed to apply changes with code 511")
@@ -419,7 +418,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			},
 		},
 	}
-	err = p.ApplyChanges(context.TODO(), &plan.Changes{
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			e,
 		},

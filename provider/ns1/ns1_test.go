@@ -17,7 +17,6 @@ limitations under the License.
 package ns1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -134,7 +133,7 @@ func TestNS1Records(t *testing.T) {
 		zoneIDFilter:  provider.NewZoneIDFilter([]string{""}),
 		minTTLSeconds: 3600,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
@@ -150,7 +149,7 @@ func TestNS1Records(t *testing.T) {
 }
 
 func TestNewNS1Provider(t *testing.T) {
-	_ = os.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
+	t.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
 	testNS1Config := NS1Config{
 		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),
@@ -235,14 +234,14 @@ func TestNS1ApplyChanges(t *testing.T) {
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
 	changes.Delete = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
-	err = provider.ApplyChanges(context.Background(), changes)
+	err = provider.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 }
 

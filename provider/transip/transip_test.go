@@ -17,7 +17,6 @@ limitations under the License.
 package transip
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -254,7 +253,7 @@ func TestProviderRecords(t *testing.T) {
 	p := newTestProvider()
 	p.domainRepo = domain.Repository{Client: client}
 
-	endpoints, err := p.Records(context.TODO())
+	endpoints, err := p.Records(t.Context())
 	if assert.NoError(t, err) {
 		if assert.Len(t, endpoints, 4) {
 			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
