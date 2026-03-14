@@ -1030,6 +1030,114 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "Valid PTR record with in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"v6.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with multiple hostname targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"a.example.com", "b.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid PTR record - DNS name not reverse DNS",
+			endpoint: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IP address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IPv6 address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - empty target",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1088,6 +1196,74 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				logtest.TestHelperLogContains(warnMsg, hook, t)
 			} else {
 				logtest.TestHelperLogNotContains(warnMsg, hook, t)
+			}
+		})
+	}
+}
+
+func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog string
+	}{
+		{
+			name: "non-reverse DNS name logs invalid",
+			ep: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"other.example.com"},
+			},
+			wantLog: "must be a valid reverse DNS name",
+		},
+		{
+			name: "IP address target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			wantLog: "must be a hostname, not an IP address",
+		},
+		{
+			name: "empty target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			wantLog: "target must not be empty",
+		},
+		{
+			name: "no targets logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			wantLog: "at least one target is required",
+		},
+		{
+			name: "valid PTR does not log",
+			ep: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			wantLog: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			tt.ep.CheckEndpoint()
+
+			if tt.wantLog != "" {
+				logtest.TestHelperLogContains(tt.wantLog, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains("Invalid PTR record", hook, t)
 			}
 		})
 	}
