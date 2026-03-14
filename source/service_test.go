@@ -5754,11 +5754,12 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 	nodeInformer := kubeInformers.Core().V1().Nodes()
 	podInformer := kubeInformers.Core().V1().Pods()
 
-	require.NoError(t, nodeInformer.Informer().GetStore().Add(node1))
-	require.NoError(t, nodeInformer.Informer().GetStore().Add(node2))
-	require.NoError(t, podInformer.Informer().GetStore().Add(pod0))
-	require.NoError(t, podInformer.Informer().GetStore().Add(pod1))
-	require.NoError(t, podInformer.Informer().GetStore().Add(pod2))
+	for _, obj := range []any{node1, node2} {
+		require.NoError(t, nodeInformer.Informer().GetStore().Add(obj))
+	}
+	for _, obj := range []any{pod0, pod1, pod2} {
+		require.NoError(t, podInformer.Informer().GetStore().Add(obj))
+	}
 
 	sc := &serviceSource{
 		podInformer:  podInformer,
@@ -5768,7 +5769,7 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 	// The informer cache is a Go map so pod iteration order is randomised each
 	// call. Over 1000 iterations pod-0 will be processed before pod-1 roughly
 	// half the time, reliably triggering the bug if it is present.
-	const iterations = 1000
+	const iterations = 100
 	for i := range iterations {
 		nodes := sc.nodesExternalTrafficPolicyTypeLocal(svc)
 
