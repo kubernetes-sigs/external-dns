@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source"
@@ -299,7 +300,7 @@ func TestHelperProcess(_ *testing.T) {
 func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	// TODO: investigate why -test.run=TestHelperProcess
@@ -447,7 +448,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		TXTOwnerID: "test-owner",
 	}
 	sCfg := source.NewSourceConfig(cfg)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)

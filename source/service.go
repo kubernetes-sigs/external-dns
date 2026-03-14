@@ -648,78 +648,71 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 }
 
 func isPodStatusReady(status v1.PodStatus) bool {
-	_, condition := getPodCondition(&status, v1.PodReady)
-	return condition != nil && condition.Status == v1.ConditionTrue
-}
-
-func getPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
-	if status == nil {
-		return -1, nil
-	}
-	return getPodConditionFromList(status.Conditions, conditionType)
-}
-
-func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
-	if conditions == nil {
-		return -1, nil
-	}
-	for i := range conditions {
-		if conditions[i].Type == conditionType {
-			return i, &conditions[i]
+	for _, c := range status.Conditions {
+		if c.Type == v1.PodReady {
+			return c.Status == v1.ConditionTrue
 		}
 	}
-	return -1, nil
+	return false
 }
 
-// nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
-// with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
+// nodesExternalTrafficPolicyTypeLocal returns nodes that have running pods for the given
+// NodePort service with externalTrafficPolicy=Local. Only nodes at the highest available
+// pod readiness level are returned — nodes with lower readiness are excluded when better
+// ones exist.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
-	var nodesReady []*v1.Node
-	var nodesRunning []*v1.Node
-	var nodes []*v1.Node
-	nodesMap := map[*v1.Node]struct{}{}
+	// Pod states ranked by readiness then termination; PodRunning phase is a precondition.
+	// Values start at 1 so that the zero value of the bestPriority map acts as a
+	// "node not yet seen" sentinel, making max() correct on the first pod without
+	// special-casing.
+	const (
+		notReady            = iota + 1 // PodRunning, not ready
+		readyTerminating               // PodRunning, ready, terminating
+		readyNonTerminating            // PodRunning, ready, non-terminating
+	)
 
-	pods := sc.pods(svc)
+	bestPriority := map[*v1.Node]int{}
+	maxPriority := 0
 
-	for _, v := range pods {
-		if v.Status.Phase == v1.PodRunning {
-			node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
-			if err != nil {
-				log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
-				continue
-			}
+	for _, v := range sc.pods(svc) {
+		if v.Status.Phase != v1.PodRunning {
+			continue
+		}
+		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
+		if err != nil {
+			log.Debugf("Skipping pod %s/%s: node %s not found", v.Namespace, v.Name, v.Spec.NodeName)
+			continue
+		}
 
-			if _, ok := nodesMap[node]; !ok {
-				nodesMap[node] = struct{}{}
-				nodesRunning = append(nodesRunning, node)
-
-				if isPodStatusReady(v.Status) {
-					nodesReady = append(nodesReady, node)
-					// Check pod not terminating
-					if v.GetDeletionTimestamp() == nil {
-						nodes = append(nodes, node)
-					}
-				}
+		p := notReady
+		if isPodStatusReady(v.Status) {
+			p = readyTerminating
+			if v.GetDeletionTimestamp() == nil {
+				p = readyNonTerminating
 			}
 		}
+		bestPriority[node] = max(bestPriority[node], p)
+		maxPriority = max(maxPriority, p)
 	}
 
-	// Prioritize nodes with non-terminating ready pods
-	// If none available, fall back to nodes with ready pods
-	// If still none, use nodes with any running pods
-	switch {
-	case len(nodes) > 0:
-		// Works the same as service endpoints
-	case len(nodesReady) > 0:
-		// 2 level of panic modes as safeguard, because old wrong behavior can be used by someone
-		// Publish all endpoints not always a bad thing
-		log.Debugf("All pods in terminating state, use ready")
-		nodes = nodesReady
-	default:
-		log.Debugf("All pods not ready, use all running")
-		nodes = nodesRunning
+	switch maxPriority {
+	case 0:
+		return nil
+	case notReady:
+		log.Debugf("No ready pods found, falling back to running pods")
+	case readyTerminating:
+		log.Debugf("No non-terminating ready pods found, falling back to terminating ready pods")
+	case readyNonTerminating:
+		log.Debugf("Ready non-terminating pods found")
 	}
 
+	// Only return nodes at the highest readiness level available across the cluster.
+	nodes := make([]*v1.Node, 0, len(bestPriority))
+	for node, p := range bestPriority {
+		if p == maxPriority {
+			nodes = append(nodes, node)
+		}
+	}
 	return nodes
 }
 

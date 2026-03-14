@@ -17,7 +17,6 @@ limitations under the License.
 package noop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,7 +42,7 @@ func testNoopInit(t *testing.T) {
 }
 
 func testNoopRecords(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
 	inmemoryRecords := []*endpoint.Endpoint{
@@ -88,7 +87,7 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: inmemoryRecords,
 	})

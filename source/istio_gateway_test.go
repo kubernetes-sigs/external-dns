@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -170,7 +171,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioGatewaySource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -1484,7 +1485,7 @@ func testGatewayEndpoints(t *testing.T) {
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
-				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1493,19 +1494,19 @@ func testGatewayEndpoints(t *testing.T) {
 				if ingress.Namespace != targetNamespace {
 					targetNamespace = v1.NamespaceAll
 				}
-				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			fakeIstioClient := istiofake.NewSimpleClientset()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
-				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(ti.targetNamespace).Create(context.Background(), gatewayCfg, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(ti.targetNamespace).Create(t.Context(), gatewayCfg, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			gatewaySource, err := NewIstioGatewaySource(
-				context.TODO(),
+				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				targetNamespace,
@@ -1516,7 +1517,7 @@ func testGatewayEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := gatewaySource.Endpoints(context.Background())
+			res, err := gatewaySource.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1614,7 +1615,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				},
 			}
 
-			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			src, err := NewIstioGatewaySource(
@@ -1703,7 +1704,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 
 	fakeClient := fake.NewClientset()
 
-	_, err := fakeClient.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+	_, err := fakeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewIstioGatewaySource(
