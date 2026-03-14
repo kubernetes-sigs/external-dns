@@ -704,6 +704,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	)
 
 	bestPriority := map[*v1.Node]int{}
+	maxPriority := 0
 
 	for _, v := range sc.pods(svc) {
 		if v.Status.Phase != v1.PodRunning {
@@ -723,39 +724,26 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			}
 		}
 		bestPriority[node] = max(bestPriority[node], p)
+		maxPriority = max(maxPriority, p)
 	}
 
-	var nodesReady []*v1.Node
-	var nodesRunning []*v1.Node
-	var nodes []*v1.Node
+	switch maxPriority {
+	case 0:
+		return nil
+	case notReady:
+		log.Debugf("All pods not ready, use all running")
+	case readyTerminating:
+		log.Debugf("All pods in terminating state, use ready")
+	case readyNonTerminating:
+		// happy path, no log needed
+	}
 
+	var nodes []*v1.Node
 	for node, p := range bestPriority {
-		switch {
-		case p >= readyNonTerminating:
+		if p == maxPriority {
 			nodes = append(nodes, node)
-		case p >= readyTerminating:
-			nodesReady = append(nodesReady, node)
-		default:
-			nodesRunning = append(nodesRunning, node)
 		}
 	}
-
-	// Prioritize nodes with non-terminating ready pods
-	// If none available, fall back to nodes with ready pods
-	// If still none, use nodes with any running pods
-	switch {
-	case len(nodes) > 0:
-		// Works the same as service endpoints
-	case len(nodesReady) > 0:
-		// 2 level of panic modes as safeguard, because old wrong behavior can be used by someone
-		// Publish all endpoints not always a bad thing
-		log.Debugf("All pods in terminating state, use ready")
-		nodes = nodesReady
-	default:
-		log.Debugf("All pods not ready, use all running")
-		nodes = nodesRunning
-	}
-
 	return nodes
 }
 
