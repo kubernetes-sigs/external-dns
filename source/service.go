@@ -692,9 +692,10 @@ func isPodStatusReady(status v1.PodStatus) bool {
 // nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
 // with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
+	// Pod states ranked by readiness then termination; PodRunning phase is a precondition.
 	const (
-		priorityRunning             = iota + 1 // PodRunning, not ready
-		priorityReady                          // PodRunning, ready, terminating
+		priorityRunningNotReady     = iota + 1 // PodRunning, not ready
+		priorityReadyTerminating               // PodRunning, ready, terminating
 		priorityReadyNonTerminating            // PodRunning, ready, non-terminating
 	)
 
@@ -710,12 +711,12 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			continue
 		}
 
-		p := priorityRunning
+		p := priorityRunningNotReady
 		if isPodStatusReady(v.Status) {
 			if v.GetDeletionTimestamp() == nil {
 				p = priorityReadyNonTerminating
 			} else {
-				p = priorityReady
+				p = priorityReadyTerminating
 			}
 		}
 		bestPriority[node] = max(bestPriority[node], p)
@@ -729,7 +730,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 		switch {
 		case p >= priorityReadyNonTerminating:
 			nodes = append(nodes, node)
-		case p >= priorityReady:
+		case p >= priorityReadyTerminating:
 			nodesReady = append(nodesReady, node)
 		default:
 			nodesRunning = append(nodesRunning, node)
