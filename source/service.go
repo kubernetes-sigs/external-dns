@@ -708,9 +708,9 @@ func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodC
 // with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
 	const (
-		priorityRunning             = iota // PodRunning, not ready
-		priorityReady                      // PodRunning, ready, terminating
-		priorityReadyNonTerminating        // PodRunning, ready, non-terminating
+		priorityRunning             = iota + 1 // PodRunning, not ready
+		priorityReady                          // PodRunning, ready, terminating
+		priorityReadyNonTerminating            // PodRunning, ready, non-terminating
 	)
 
 	bestPriority := map[*v1.Node]int{}
@@ -733,9 +733,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 				p = priorityReady
 			}
 		}
-		if cur, ok := bestPriority[node]; !ok || p > cur {
-			bestPriority[node] = p
-		}
+		bestPriority[node] = max(bestPriority[node], p)
 	}
 
 	var nodesReady []*v1.Node
@@ -743,12 +741,13 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	var nodes []*v1.Node
 
 	for node, p := range bestPriority {
-		nodesRunning = append(nodesRunning, node)
-		if p >= priorityReady {
-			nodesReady = append(nodesReady, node)
-		}
-		if p >= priorityReadyNonTerminating {
+		switch {
+		case p >= priorityReadyNonTerminating:
 			nodes = append(nodes, node)
+		case p >= priorityReady:
+			nodesReady = append(nodesReady, node)
+		default:
+			nodesRunning = append(nodesRunning, node)
 		}
 	}
 
