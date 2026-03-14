@@ -114,7 +114,7 @@ func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 	eps := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
-	cfg := NewConfig(WithCreatePTR(true))
+	cfg := NewConfig(WithPTRSupported(true), WithCreatePTR(true))
 	src, err := WrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
 	require.NoError(t, err)
 	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
@@ -125,6 +125,20 @@ func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 	assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
 	assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
 	assert.Equal(t, "4.3.2.1.in-addr.arpa", result[1].DNSName)
+}
+
+func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	cfg := NewConfig(WithPTRSupported(true)) // createPTR defaults to false
+	src, err := WrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	require.NoError(t, err)
+	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
+
+	result, err := src.Endpoints(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, result, 1, "no PTR should be generated when createPTR is false and no annotation overrides")
 }
 
 func TestWithDefaultTargets(t *testing.T) {

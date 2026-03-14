@@ -33,7 +33,8 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
-	createPTR           bool
+	ptrSupported        bool            // PTR is in --managed-record-types
+	createPTR           bool            // --create-ptr default for all A/AAAA records
 	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
@@ -97,6 +98,12 @@ func WithPreferAlias(enabled bool) Option {
 	}
 }
 
+func WithPTRSupported(supported bool) Option {
+	return func(o *Config) {
+		o.ptrSupported = supported
+	}
+}
+
 func WithCreatePTR(enabled bool) Option {
 	return func(o *Config) {
 		o.createPTR = enabled
@@ -146,7 +153,7 @@ func WrapSources(
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
-	if opts.createPTR {
+	if opts.ptrSupported {
 		combinedSource = NewPTRSource(combinedSource, opts.createPTR)
 		opts.addSourceWrapper("ptr")
 	}
