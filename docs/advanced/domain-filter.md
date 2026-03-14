@@ -9,7 +9,7 @@ ExternalDNS provides four flags for controlling which domains it manages:
 | `--regex-domain-filter`    | Full regex match — **overrides `--domain-filter`** when set                            |
 | `--regex-domain-exclusion` | Regex that subtracts matches from `--regex-domain-filter`; can also be used standalone |
 
-Both flags are applied to DNS record names. Providers that partition zones before managing records
+All of these flags are applied to DNS record names. Providers that partition zones before managing records
 (e.g. PowerDNS) also apply the filter to zone names.
 
 When either regex flag is set, **it takes complete precedence** — `--domain-filter` and
@@ -59,17 +59,17 @@ Exclusion is always checked first:
 
 ```mermaid
 flowchart TD
-    A["Domain candidate"] --> B{"Is regex filter\nor exclusion set?"}
-    B -- "No (use plain filters)" --> C{"Matches --domain-filter?"}
+    A["Domain candidate"] --> B{"Is regex filter<br/>or exclusion set?"}
+    B -- "No (use plain filters)" --> C{"Matches<br/> --domain-filter?"}
     C -- "No" --> REJECT["❌ Rejected"]
-    C -- "Yes" --> D{"Matches --exclude-domains?"}
+    C -- "Yes" --> D{"Matches<br/> --exclude-domains?"}
     D -- "Yes" --> REJECT
     D -- "No" --> ACCEPT["✅ Accepted"]
-    B -- "Yes (regex mode)" --> E{"Matches\n--regex-domain-exclusion?"}
+    B -- "Yes (regex mode)" --> E{"Matches<br/>--regex-domain-exclusion?"}
     E -- "Yes" --> REJECT
     E -- "No" --> F{"--regex-domain-filter set?"}
     F -- "No (exclusion-only mode)" --> ACCEPT
-    F -- "Yes" --> G{"Matches\n--regex-domain-filter?"}
+    F -- "Yes" --> G{"Matches<br/>--regex-domain-filter?"}
     G -- "Yes" --> ACCEPT
     G -- "No" --> REJECT
 ```
@@ -128,12 +128,12 @@ least one repetition:
 Both zone types end up unmanaged, causing ExternalDNS to log `Ignoring Endpoint` for every record
 they contain with no other indication of what went wrong.
 
-| Regex | Matches | Misses |
-|---|---|---|
-| `^[\w-]+\.example\.com$` | `sub.example.com` | `example.com`, `long.sub.example.com` |
-| `^([\w-]+\.)*example\.com$` | `example.com`, `sub.example.com`, `long.sub.example.com` | — |
+| Regex                       | Matches                                                  | Misses                                |
+|-----------------------------|----------------------------------------------------------|---------------------------------------|
+| `^[\w-]+\.example\.com$`    | `sub.example.com`                                        | `example.com`, `long.sub.example.com` |
+| `^([\w-]+\.)*example\.com$` | `example.com`, `sub.example.com`, `long.sub.example.com` | —                                     |
 
-Always use `*` so the apex matches on zero repetitions and deeper zones match on two or more.
+Always use `*` so the apex matches on zero repetitions and subdomain zones match on one or more.
 
 ### Multi-region example
 
@@ -142,13 +142,13 @@ Always use `*` so the apex matches on zero repetitions and deeper zones match on
 --regex-domain-exclusion='^staging\.'
 ```
 
-| Zone | Result |
-|---|---|
-| `us-east-1.example.com` | managed |
-| `prod.us-east-1.example.com` | managed |
-| `eu-central-1.example.com` | managed |
-| `staging.us-east-1.example.com` | excluded |
-| `other.com` | not managed |
+| Zone                            | Result      |
+|---------------------------------|-------------|
+| `us-east-1.example.com`         | managed     |
+| `prod.us-east-1.example.com`    | managed     |
+| `eu-central-1.example.com`      | managed     |
+| `staging.us-east-1.example.com` | excluded    |
+| `other.com`                     | not managed |
 
 ## Notes
 
