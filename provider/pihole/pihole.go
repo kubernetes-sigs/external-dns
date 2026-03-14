@@ -24,6 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -66,8 +68,22 @@ type piholeEntryKey struct {
 	RecordType string
 }
 
-// NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
-func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
+// New creates a Pi-hole provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		PiholeConfig{
+			Server:                cfg.PiholeServer,
+			Password:              cfg.PiholePassword,
+			TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+			DomainFilter:          domainFilter,
+			DryRun:                cfg.DryRun,
+			APIVersion:            cfg.PiholeApiVersion,
+		},
+	)
+}
+
+// newProvider initializes a new Pi-hole Local DNS based Provider.
+func newProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	var api piholeAPI
 	var err error
 	switch cfg.APIVersion {

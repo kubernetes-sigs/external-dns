@@ -28,6 +28,8 @@ import (
 	api "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -103,8 +105,22 @@ type NS1Provider struct {
 	minTTLSeconds int
 }
 
-// NewNS1Provider creates a new NS1 Provider
-func NewNS1Provider(config NS1Config) (*NS1Provider, error) {
+// New creates an NS1 provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		NS1Config{
+			DomainFilter:  domainFilter,
+			ZoneIDFilter:  provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+			NS1Endpoint:   cfg.NS1Endpoint,
+			NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
+			DryRun:        cfg.DryRun,
+			MinTTLSeconds: cfg.NS1MinTTLSeconds,
+		},
+	)
+}
+
+// newProvider creates a new NS1 Provider
+func newProvider(config NS1Config) (*NS1Provider, error) {
 	return newNS1ProviderWithHTTPClient(config, http.DefaultClient)
 }
 

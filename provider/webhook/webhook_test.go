@@ -36,12 +36,12 @@ import (
 )
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := NewWebhookProvider("://invalid-url")
+	_, err := newProvider("://invalid-url")
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := NewWebhookProvider("http://nonexistent.url")
+	_, err := newProvider("http://nonexistent.url")
 	require.Error(t, err)
 }
 
@@ -53,7 +53,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
@@ -64,7 +64,7 @@ func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "status code < 500")
 }
@@ -79,7 +79,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -97,7 +97,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 }
 
@@ -113,7 +113,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -132,7 +132,7 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints, err := provider.Records(context.TODO())
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	_, err = p.Records(context.Background())
 	require.Error(t, err)
@@ -240,7 +240,7 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	err = p.ApplyChanges(context.TODO(), nil)
 	require.NoError(t, err)
@@ -286,7 +286,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 
 	err = p.ApplyChanges(context.TODO(), nil)
@@ -323,7 +323,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -359,7 +359,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -403,7 +403,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",

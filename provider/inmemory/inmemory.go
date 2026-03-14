@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -95,8 +96,18 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 	}
 }
 
+// New creates an InMemory provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(InMemoryInitZones(cfg.InMemoryZones), InMemoryWithDomain(domainFilter), InMemoryWithLogging()), nil
+}
+
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
+	return newProvider(opts...)
+}
+
+// newProvider returns InMemoryProvider DNS provider interface implementation
+func newProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
 		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},

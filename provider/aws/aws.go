@@ -32,11 +32,12 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/provider/blueprint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 const (
@@ -327,27 +328,53 @@ type AWSConfig struct {
 	ZoneCacheDuration     time.Duration
 }
 
-// NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
+// New creates an AWS Route53 provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	configs := CreateV2Configs(cfg)
+	clients := make(map[string]Route53API, len(configs))
+	for profile, config := range configs {
+		clients[profile] = route53.NewFromConfig(config)
+	}
+	return newProvider(
+		AWSConfig{
+			DomainFilter:          domainFilter,
+			ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+			ZoneTypeFilter:        provider.NewZoneTypeFilter(cfg.AWSZoneType),
+			ZoneTagFilter:         provider.NewZoneTagFilter(cfg.AWSZoneTagFilter),
+			ZoneMatchParent:       cfg.AWSZoneMatchParent,
+			BatchChangeSize:       cfg.AWSBatchChangeSize,
+			BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
+			BatchChangeSizeValues: cfg.AWSBatchChangeSizeValues,
+			BatchChangeInterval:   cfg.AWSBatchChangeInterval,
+			EvaluateTargetHealth:  cfg.AWSEvaluateTargetHealth,
+			PreferCNAME:           cfg.AWSPreferCNAME,
+			DryRun:                cfg.DryRun,
+			ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
+		},
+		clients,
+	), nil
+}
+
+// newProvider initializes a new AWS Route53 based Provider.
+func newProvider(cfg AWSConfig, clients map[string]Route53API) *AWSProvider {
 	pr := &AWSProvider{
 		clients:               clients,
-		domainFilter:          awsConfig.DomainFilter,
-		zoneIDFilter:          awsConfig.ZoneIDFilter,
-		zoneTypeFilter:        awsConfig.ZoneTypeFilter,
-		zoneTagFilter:         awsConfig.ZoneTagFilter,
-		zoneMatchParent:       awsConfig.ZoneMatchParent,
-		batchChangeSize:       awsConfig.BatchChangeSize,
-		batchChangeSizeBytes:  awsConfig.BatchChangeSizeBytes,
-		batchChangeSizeValues: awsConfig.BatchChangeSizeValues,
-		batchChangeInterval:   awsConfig.BatchChangeInterval,
-		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
-		preferCNAME:           awsConfig.PreferCNAME,
-		dryRun:                awsConfig.DryRun,
-		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](awsConfig.ZoneCacheDuration),
+		domainFilter:          cfg.DomainFilter,
+		zoneIDFilter:          cfg.ZoneIDFilter,
+		zoneTypeFilter:        cfg.ZoneTypeFilter,
+		zoneTagFilter:         cfg.ZoneTagFilter,
+		zoneMatchParent:       cfg.ZoneMatchParent,
+		batchChangeSize:       cfg.BatchChangeSize,
+		batchChangeSizeBytes:  cfg.BatchChangeSizeBytes,
+		batchChangeSizeValues: cfg.BatchChangeSizeValues,
+		batchChangeInterval:   cfg.BatchChangeInterval,
+		evaluateTargetHealth:  cfg.EvaluateTargetHealth,
+		preferCNAME:           cfg.PreferCNAME,
+		dryRun:                cfg.DryRun,
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](cfg.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
-
-	return pr, nil
+	return pr
 }
 
 // Zones returns the list of hosted zones.

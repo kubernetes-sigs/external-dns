@@ -1162,7 +1162,7 @@ func TestSaveService(t *testing.T) {
 	}
 }
 
-func TestNewCoreDNSProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	tests := []struct {
 		name    string
 		envs    map[string]string
@@ -1189,7 +1189,7 @@ func TestNewCoreDNSProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.TestHelperEnvSetter(t, tt.envs)
 
-			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
+			provider, err := newProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.errMsg)
