@@ -228,7 +228,7 @@ func TestRunOnce(t *testing.T) {
 		EventEmitter:       emitter,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
@@ -257,7 +257,7 @@ func TestRun(t *testing.T) {
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)
@@ -355,7 +355,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 	assert.Equal(t, 1, provider.RecordsCallCount)
 	require.Len(t, provider.ApplyChangesCalls, len(expectedChanges))
 	for i, change := range expectedChanges {
@@ -523,7 +523,7 @@ func TestToggleRegistry(t *testing.T) {
 		Interval:           interval,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)

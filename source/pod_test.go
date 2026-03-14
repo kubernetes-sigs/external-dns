@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -937,7 +936,7 @@ func TestPodSourceLogs(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 			// Create the nodes
 			for _, node := range tc.nodes {
 				if _, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{}); err != nil {
@@ -1105,7 +1104,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source
@@ -1185,7 +1184,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source

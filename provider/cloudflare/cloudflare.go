@@ -20,11 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/addressing"
@@ -96,6 +98,7 @@ type cloudFlareDNS interface {
 	ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone]
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
 	ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse]
+	BatchDNSRecords(ctx context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error)
 	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error
 	UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error)
@@ -163,8 +166,10 @@ func listZonesV4Params() zones.ZoneListParams {
 }
 
 type DNSRecordsConfig struct {
-	PerPage int
-	Comment string
+	PerPage             int
+	Comment             string
+	BatchChangeSize     int
+	BatchChangeInterval time.Duration
 }
 
 func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZone func(string) bool) string {
@@ -229,40 +234,6 @@ type cloudFlareChange struct {
 	CustomHostnamesPrev []string
 }
 
-// updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpdateParams {
-	return dns.RecordUpdateParams{
-		ZoneID: cloudflare.F(zoneID),
-		Body: dns.RecordUpdateParamsBody{
-			Name:     cloudflare.F(cfc.ResourceRecord.Name),
-			TTL:      cloudflare.F(cfc.ResourceRecord.TTL),
-			Proxied:  cloudflare.F(cfc.ResourceRecord.Proxied),
-			Type:     cloudflare.F(dns.RecordUpdateParamsBodyType(cfc.ResourceRecord.Type)),
-			Content:  cloudflare.F(cfc.ResourceRecord.Content),
-			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
-			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
-			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
-		},
-	}
-}
-
-// getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNewParams {
-	return dns.RecordNewParams{
-		ZoneID: cloudflare.F(zoneID),
-		Body: dns.RecordNewParamsBody{
-			Name:     cloudflare.F(cfc.ResourceRecord.Name),
-			TTL:      cloudflare.F(cfc.ResourceRecord.TTL),
-			Proxied:  cloudflare.F(cfc.ResourceRecord.Proxied),
-			Type:     cloudflare.F(dns.RecordNewParamsBodyType(cfc.ResourceRecord.Type)),
-			Content:  cloudflare.F(cfc.ResourceRecord.Content),
-			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
-			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
-			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
-		},
-	}
-}
-
 func convertCloudflareError(err error) error {
 	// Handle CloudFlare v5 SDK errors according to the documentation:
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
@@ -278,7 +249,14 @@ func convertCloudflareError(err error) error {
 		return err
 	}
 
-	// Also check for rate limit indicators in error message strings as a fallback.
+	// Transport-level errors that the SDK does not wrap as *cloudflare.Error.
+	// Both are transient and worth retrying at the external-dns level.
+	//   ErrUnexpectedEOF – connection closed mid-response (during body read)
+	//   EOF              – connection closed before any response bytes arrived
+	if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+		return provider.NewSoftError(err)
+	}
+
 	// The v5 SDK's retry logic and error wrapping can hide the structured error type,
 	// so we need string matching to catch rate limits in wrapped errors like:
 	// "exceeded available rate limit retries" from the SDK's auto-retry mechanism.
@@ -534,64 +512,55 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				"action": change.Action.String(),
 				"zone":   zoneID,
 			}
-
 			log.WithFields(logFields).Info("Changing record.")
-
-			if p.DryRun {
-				continue
-			}
-
-			records, err := p.getDNSRecordsMap(ctx, zoneID)
-			if err != nil {
-				return fmt.Errorf("could not fetch records from zone, %w", err)
-			}
-			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
-			if chErr != nil {
-				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
-			}
-			switch change.Action {
-			case cloudFlareUpdate:
-				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
-					failedChange = true
-				}
-				recordID := p.getRecordID(records, change.ResourceRecord)
-				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
-				recordParam := getUpdateDNSRecordParam(zoneID, *change)
-				_, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", err)
-				}
-			case cloudFlareDelete:
-				recordID := p.getRecordID(records, change.ResourceRecord)
-				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
-				err := p.Client.DeleteDNSRecord(ctx, recordID, dns.RecordDeleteParams{ZoneID: cloudflare.F(zoneID)})
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
-				}
-				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
-					failedChange = true
-				}
-			case cloudFlareCreate:
-				recordParam := getCreateDNSRecordParam(zoneID, change)
-				_, err := p.Client.CreateDNSRecord(ctx, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create record: %v", err)
-				}
-				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
-					failedChange = true
-				}
-			}
 		}
 
+		if p.DryRun {
+			// In dry-run mode, skip all DNS record mutations but still process
+			// regional hostname changes (which have their own dry-run logging).
+			if p.RegionalServicesConfig.Enabled {
+				desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
+				if err != nil {
+					return fmt.Errorf("failed to build desired regional hostnames: %w", err)
+				}
+				if len(desiredRegionalHostnames) > 0 {
+					regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
+					if err != nil {
+						return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
+					}
+					regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
+					if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
+						failedChange = true
+					}
+				}
+			}
+			if failedChange {
+				failedZones = append(failedZones, zoneID)
+			}
+			continue
+		}
+
+		// Fetch the zone's current DNS records and custom hostnames once, rather
+		// than once per change, to avoid O(n) API calls for n changes.
+		records, err := p.getDNSRecordsMap(ctx, zoneID)
+		if err != nil {
+			return fmt.Errorf("could not fetch records from zone, %w", err)
+		}
+		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
+		if chErr != nil {
+			return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
+		}
+
+		// Apply custom hostname side-effects (separate Cloudflare API), then
+		// classify DNS record changes into batch collections.
+		if p.processCustomHostnameChanges(ctx, zoneID, zoneChanges, chs) {
+			failedChange = true
+		}
+		bc := p.buildBatchCollections(zoneID, zoneChanges, records)
+
+		if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
+			failedChange = true
+		}
 		if p.RegionalServicesConfig.Enabled {
 			desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
 			if err != nil {

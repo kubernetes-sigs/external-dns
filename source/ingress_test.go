@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -1419,7 +1420,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			source, _ := NewIngressSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
 				ti.targetNamespace,
 				ti.annotationFilter,

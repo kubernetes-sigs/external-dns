@@ -103,7 +103,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 	}
 
 	r, _ := NewAWSSDRegistry(p, "records-owner")
-	records, _ := r.Records(context.Background())
+	records, _ := r.Records(t.Context())
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
@@ -158,7 +158,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 	r, err := NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)
 
-	err = r.ApplyChanges(context.Background(), changes)
+	err = r.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 }
 
