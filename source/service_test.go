@@ -5691,23 +5691,12 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
 }
 
-// TestNodesExternalTrafficPolicyLocalIterationOrderBug proves that
-// nodesExternalTrafficPolicyTypeLocal is order-dependent: if a not-ready pod
-// on a node is iterated before a ready pod on the same node, the node is
-// incorrectly dropped from the result even though it has a healthy pod.
-//
-// Scenario (rolling update):
-//   - node1: pod-0 (Running, not ready) + pod-1 (Running, ready, non-terminating)
-//   - node2: pod-2 (Running, ready, non-terminating)
-//
-// Expected: both node1 and node2 in result (node1 has a ready pod).
-// Buggy:    node1 is dropped whenever pod-0 is iterated before pod-1 because
-//
-//	nodesMap deduplication locks in the first pod's state for the node,
-//	and the subsequent ready pod is silently skipped.
+// TestNodesExternalTrafficPolicyLocalIterationOrderBug proves that node
+// classification must use the best pod state across all pods on a node, not
+// the first pod encountered. During a rolling update node1 has both a
+// not-ready replacement pod and a ready existing pod; node1 must still appear
+// in the result regardless of which pod is iterated first.
 func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
-	t.Parallel()
-
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{Name: "node1"},
 		Status: v1.NodeStatus{
@@ -5726,62 +5715,41 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 	}
 
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "testing",
-		},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "testing"},
 		Spec: v1.ServiceSpec{
 			Type:                  v1.ServiceTypeNodePort,
 			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
 		},
 	}
 
-	// pod-0: not-ready replacement pod on node1 (new pod created during rolling update)
+	// node1: not-ready pod (rolling replacement) + ready pod (existing)
 	pod0 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod-0",
-			Namespace: "testing",
-		},
-		Spec: v1.PodSpec{NodeName: "node1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "pod-0", Namespace: "testing"},
+		Spec:       v1.PodSpec{NodeName: "node1"},
 		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
-			Conditions: []v1.PodCondition{
-				{Type: v1.PodReady, Status: v1.ConditionFalse},
-			},
+			Phase:      v1.PodRunning,
+			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
 		},
 	}
-
-	// pod-1: ready, non-terminating existing pod still running on node1
 	pod1 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod-1",
-			Namespace: "testing",
-		},
-		Spec: v1.PodSpec{NodeName: "node1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "pod-1", Namespace: "testing"},
+		Spec:       v1.PodSpec{NodeName: "node1"},
 		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
-			Conditions: []v1.PodCondition{
-				{Type: v1.PodReady, Status: v1.ConditionTrue},
-			},
+			Phase:      v1.PodRunning,
+			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}},
 		},
 	}
-
-	// pod-2: ready, non-terminating pod on node2
+	// node2: ready pod
 	pod2 := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod-2",
-			Namespace: "testing",
-		},
-		Spec: v1.PodSpec{NodeName: "node2"},
+		ObjectMeta: metav1.ObjectMeta{Name: "pod-2", Namespace: "testing"},
+		Spec:       v1.PodSpec{NodeName: "node2"},
 		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
-			Conditions: []v1.PodCondition{
-				{Type: v1.PodReady, Status: v1.ConditionTrue},
-			},
+			Phase:      v1.PodRunning,
+			Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}},
 		},
 	}
 
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	kubeInformers := kubeinformers.NewSharedInformerFactory(client, 0)
 	nodeInformer := kubeInformers.Core().V1().Nodes()
 	podInformer := kubeInformers.Core().V1().Pods()
@@ -5797,15 +5765,9 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 		nodeInformer: nodeInformer,
 	}
 
-	// nodesExternalTrafficPolicyTypeLocal iterates pods from a Go map (via the
-	// informer cache), which randomises order on every call. With pod-0 (not-ready)
-	// and pod-1 (ready) both on node1, roughly half of all iterations will process
-	// pod-0 first. In that case the nodesMap guard fires for the second pod and
-	// node1 is never promoted into the ready-node bucket, so it is silently dropped
-	// from the DNS result even though pod-1 is healthy.
-	//
-	// With 1000 iterations the probability that every single one happens to process
-	// pod-1 first is (0.5)^1000 ≈ 0 — the test will reliably surface the bug.
+	// The informer cache is a Go map so pod iteration order is randomised each
+	// call. Over 1000 iterations pod-0 will be processed before pod-1 roughly
+	// half the time, reliably triggering the bug if it is present.
 	const iterations = 1000
 	for i := range iterations {
 		nodes := sc.nodesExternalTrafficPolicyTypeLocal(svc)
@@ -5816,13 +5778,7 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 		}
 
 		if !inResult["node1"] {
-			t.Fatalf(
-				"iteration %d: node1 was dropped from the DNS result despite having a "+
-					"ready non-terminating pod (pod-1); the nodesMap deduplication locked "+
-					"node1 into nodesRunning when the not-ready pod-0 was iterated first, "+
-					"then silently skipped pod-1 — proving the iteration-order bug",
-				i,
-			)
+			t.Fatalf("iteration %d: node1 dropped despite having a ready pod", i)
 		}
 	}
 }

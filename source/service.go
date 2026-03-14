@@ -707,33 +707,48 @@ func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodC
 // nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
 // with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
+	const (
+		priorityRunning             = iota // PodRunning, not ready
+		priorityReady                      // PodRunning, ready, terminating
+		priorityReadyNonTerminating        // PodRunning, ready, non-terminating
+	)
+
+	bestPriority := map[*v1.Node]int{}
+
+	for _, v := range sc.pods(svc) {
+		if v.Status.Phase != v1.PodRunning {
+			continue
+		}
+		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
+		if err != nil {
+			log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
+			continue
+		}
+
+		p := priorityRunning
+		if isPodStatusReady(v.Status) {
+			if v.GetDeletionTimestamp() == nil {
+				p = priorityReadyNonTerminating
+			} else {
+				p = priorityReady
+			}
+		}
+		if cur, ok := bestPriority[node]; !ok || p > cur {
+			bestPriority[node] = p
+		}
+	}
+
 	var nodesReady []*v1.Node
 	var nodesRunning []*v1.Node
 	var nodes []*v1.Node
-	nodesMap := map[*v1.Node]struct{}{}
 
-	pods := sc.pods(svc)
-
-	for _, v := range pods {
-		if v.Status.Phase == v1.PodRunning {
-			node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
-			if err != nil {
-				log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
-				continue
-			}
-
-			if _, ok := nodesMap[node]; !ok {
-				nodesMap[node] = struct{}{}
-				nodesRunning = append(nodesRunning, node)
-
-				if isPodStatusReady(v.Status) {
-					nodesReady = append(nodesReady, node)
-					// Check pod not terminating
-					if v.GetDeletionTimestamp() == nil {
-						nodes = append(nodes, node)
-					}
-				}
-			}
+	for node, p := range bestPriority {
+		nodesRunning = append(nodesRunning, node)
+		if p >= priorityReady {
+			nodesReady = append(nodesReady, node)
+		}
+		if p >= priorityReadyNonTerminating {
+			nodes = append(nodes, node)
 		}
 	}
 
