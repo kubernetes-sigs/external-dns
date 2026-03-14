@@ -1636,3 +1636,15 @@ func TestGetBoolProviderSpecificProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestedRecordType(t *testing.T) {
+	ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4").
+		WithProviderSpecific(ProviderSpecificRecordType, "ptr")
+	val, ok := ep.RequestedRecordType()
+	assert.True(t, ok)
+	assert.Equal(t, "ptr", val)
+
+	ep2 := NewEndpoint("example.com", RecordTypeA, "1.2.3.4")
+	_, ok = ep2.RequestedRecordType()
+	assert.False(t, ok)
+}

@@ -34,11 +34,6 @@ func hasAliasFromAnnotations(annotations map[string]string) bool {
 	return ok && aliasAnnotation == "true"
 }
 
-func recordTypeFromAnnotations(annotations map[string]string) (string, bool) {
-	v, ok := annotations[RecordTypeKey]
-	return v, ok
-}
-
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
 func TTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)

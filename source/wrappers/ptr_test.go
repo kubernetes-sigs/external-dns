@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var _ source.Source = &ptrSource{}
@@ -154,7 +153,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts in when flag is off", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific(annotations.RecordTypeProviderSpecificProperty, "ptr"),
+				WithProviderSpecific(endpoint.ProviderSpecificRecordType, "ptr"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)
@@ -163,14 +162,14 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		assert.Len(t, result, 2)
 		assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
 		// provider-specific property should be removed after processing
-		_, ok := result[0].GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty)
+		_, ok := result[0].GetProviderSpecificProperty(endpoint.ProviderSpecificRecordType)
 		assert.False(t, ok, "record-type property should be removed from original endpoint")
 	})
 
 	t.Run("annotation opts out when flag is on", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
-				WithProviderSpecific(annotations.RecordTypeProviderSpecificProperty, ""),
+				WithProviderSpecific(endpoint.ProviderSpecificRecordType, ""),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)
@@ -178,7 +177,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, result, 1) // only the original A record
 		// provider-specific property should be removed after processing
-		_, ok := result[0].GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty)
+		_, ok := result[0].GetProviderSpecificProperty(endpoint.ProviderSpecificRecordType)
 		assert.False(t, ok, "record-type property should be removed from original endpoint")
 	})
 

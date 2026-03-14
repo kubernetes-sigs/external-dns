@@ -493,6 +493,16 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 // currently duplicated here to avoid circular dependency.
 const providerSpecificAlias = "alias"
 
+// ProviderSpecificRecordType is the provider-specific property name used to
+// request a particular DNS record type (e.g. "ptr") on an endpoint.
+const ProviderSpecificRecordType = "record-type"
+
+// RequestedRecordType returns the value of the "record-type" provider-specific
+// property, following the same pattern as the alias accessor.
+func (e *Endpoint) RequestedRecordType() (string, bool) {
+	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
+}
+
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
