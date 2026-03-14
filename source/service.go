@@ -690,13 +690,17 @@ func isPodStatusReady(status v1.PodStatus) bool {
 }
 
 // nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
-// with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
+// with externalTrafficPolicy=Local. Returns the highest-priority available slice of nodes: ready non-terminating
+// first, falling back to ready terminating, then any running.
 func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
 	// Pod states ranked by readiness then termination; PodRunning phase is a precondition.
+	// Values start at 1 so that the zero value of the bestPriority map acts as a
+	// "node not yet seen" sentinel, making max() correct on the first pod without
+	// special-casing.
 	const (
-		notReady          = iota + 1 // PodRunning, not ready
-		readyTerminating             // PodRunning, ready, terminating
-		readyNonTerminating         // PodRunning, ready, non-terminating
+		notReady            = iota + 1 // PodRunning, not ready
+		readyTerminating               // PodRunning, ready, terminating
+		readyNonTerminating            // PodRunning, ready, non-terminating
 	)
 
 	bestPriority := map[*v1.Node]int{}

@@ -5770,6 +5770,31 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		}
 	})
 
+	t.Run("best pod state wins per node deterministically", func(t *testing.T) {
+		// Explicitly verify that each priority upgrade path lands in the correct tier,
+		// independent of iteration order.
+		//   node1: notReady pod + readyNonTerminating pod  → must appear in nodes (top tier)
+		//   node2: notReady pod + readyTerminating pod     → must appear in nodesReady (mid tier)
+		//   node3: notReady pod only                       → must appear in nodesRunning (low tier)
+		// Because node1 is in the top tier the fallback switch returns only node1.
+		sc := makeResourceSource(t,
+			[]*v1.Node{
+				makeNode("node1", "54.10.11.1"),
+				makeNode("node2", "54.10.11.2"),
+				makeNode("node3", "54.10.11.3"),
+			},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // notReady
+				makePod("pod-1", "node1", true, nil),  // readyNonTerminating — upgrades node1
+				makePod("pod-2", "node2", false, nil), // notReady
+				makePod("pod-3", "node2", true, &now), // readyTerminating — upgrades node2
+				makePod("pod-4", "node3", false, nil), // notReady only
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got, "fallback should select the top-tier node only")
+	})
+
 	t.Run("falls back to nodesReady when all ready pods are terminating", func(t *testing.T) {
 		sc := makeResourceSource(t,
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
