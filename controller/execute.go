@@ -125,9 +125,6 @@ func Execute() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if prvdr != nil && cfg.ProviderCacheTime > 0 {
-		prvdr = provider.NewCachedProvider(prvdr, cfg.ProviderCacheTime)
-	}
 
 	if cfg.WebhookServer {
 		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
@@ -354,6 +351,9 @@ func buildProvider(
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
+	}
+	if p != nil && cfg.ProviderCacheTime > 0 {
+		p = provider.NewCachedProvider(p, cfg.ProviderCacheTime)
 	}
 	return p, err
 }
