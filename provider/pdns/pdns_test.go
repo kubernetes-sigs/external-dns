@@ -1326,10 +1326,11 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		zones      []pgo.Zone
-		regex      string
-		assertions func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone)
+		name         string
+		zones        []pgo.Zone
+		regex        string
+		regexExclude string
+		assertions   func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone)
 	}{
 		{
 			// Worst case: no subdomain zone exists at all.
@@ -1347,7 +1348,7 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
 				assert.Empty(t, filtered,
 					"no zone matches the subdomain-only regex — every record will be ignored")
-				assert.Equal(t, []string{"example.com.", "other.com."}, zoneNames(residual),
+				assert.ElementsMatch(t, []string{"example.com.", "other.com."}, zoneNames(residual),
 					"both zones land in residual: records in example.com. silently dropped")
 			},
 		},
@@ -1381,6 +1382,30 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 			},
 		},
 		{
+			// Exclusion regex takes priority: zones matching regexExclusion are
+			// rejected before the inclusion regex is checked.
+			//
+			//   "example.com"         → inclusion matches, exclusion does not → filtered  ✓
+			//   "staging.example.com" → inclusion matches, exclusion matches  → residual  ✓
+			//   "prod.example.com"    → inclusion matches, exclusion does not → filtered  ✓
+			//   "mock.test"           → inclusion does not match              → residual  ✓
+			name:         "exclusion regex overrides inclusion: staging zones are excluded",
+			regexExclude: `^staging\.`,
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("staging.example.com."),
+				newZone("prod.example.com."),
+				newZone("mock.test."),
+			},
+			regex: `^([\w-]+\.)*example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.ElementsMatch(t, []string{"example.com.", "prod.example.com."}, zoneNames(filtered),
+					"only non-excluded example.com zones must be filtered")
+				assert.ElementsMatch(t, []string{"staging.example.com.", "mock.test."}, zoneNames(residual),
+					"staging zone is excluded by regexExclusion; mock.test does not match inclusion")
+			},
+		},
+		{
 			// ([\w-]+\.)* with zero repetitions matches the apex; one or more
 			// repetitions match subdomain zones at any depth.
 			// Suffix similarity (simexample.com) is rejected by the dot-boundary.
@@ -1400,11 +1425,11 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 			},
 			regex: `^([\w-]+\.)*example\.com$`,
 			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
-				assert.Equal(t,
+				assert.ElementsMatch(t,
 					[]string{"example.com.", "sub.example.com.", "long.domainname.example.com."},
 					zoneNames(filtered),
 					"apex and all subdomain zones must be filtered")
-				assert.Equal(t, []string{"simexample.com.", "mock.test."}, zoneNames(residual),
+				assert.ElementsMatch(t, []string{"simexample.com.", "mock.test."}, zoneNames(residual),
 					"only truly unrelated zones must be residual")
 			},
 		},
@@ -1412,7 +1437,11 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			df := endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), nil)
+			var exclusion *regexp.Regexp
+			if tt.regexExclude != "" {
+				exclusion = regexp.MustCompile(tt.regexExclude)
+			}
+			df := endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), exclusion)
 			filtered, residual := partitionZones(tt.zones, df)
 			tt.assertions(t, filtered, residual)
 		})
