@@ -190,7 +190,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioVirtualServiceSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				&Config{
@@ -714,7 +714,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 
 			if source, err := newTestVirtualServiceSource(ti.lbServices, ti.ingresses, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromVirtualService(context.Background(), ti.vsconfig.Config()); err != nil {
+			} else if endpoints, err := source.endpointsFromVirtualService(t.Context(), ti.vsconfig.Config()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -1964,30 +1964,30 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
-				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			for _, ing := range ti.ingresses {
 				ingress := ing.Ingress()
-				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gateway.Namespace).Create(t.Context(), gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			for _, vService := range virtualservices {
-				_, err := fakeIstioClient.NetworkingV1beta1().VirtualServices(vService.Namespace).Create(context.Background(), vService, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().VirtualServices(vService.Namespace).Create(t.Context(), vService, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			virtualServiceSource, err := NewIstioVirtualServiceSource(
-				context.TODO(),
+				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				&Config{
@@ -2000,7 +2000,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := virtualServiceSource.Endpoints(context.Background())
+			res, err := virtualServiceSource.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -2141,21 +2141,21 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		{name: "EmptyGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     "",
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MeshGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     IstioMeshGateway,
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MissingGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:        context.TODO(),
+			ctx:        t.Context(),
 			gatewayStr: "doesnt/exist",
 			virtualService: &networkingv1beta1.VirtualService{
 				TypeMeta:   metav1.TypeMeta{},
@@ -2167,7 +2167,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		{name: "InvalidGatewayStr", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
 		}, args: args{
-			ctx:            context.TODO(),
+			ctx:            t.Context(),
 			gatewayStr:     "1/2/3/",
 			virtualService: &networkingv1beta1.VirtualService{},
 		}, want: nil, expectedErrStr: "invalid ingress name (name or namespace/name) found \"1/2/3/\""},
@@ -2180,7 +2180,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 				return vs
 			}(),
 		}, args: args{
-			ctx:        context.TODO(),
+			ctx:        t.Context(),
 			gatewayStr: "bar/foo",
 			virtualService: &networkingv1beta1.VirtualService{
 				TypeMeta:   metav1.TypeMeta{},
@@ -2283,7 +2283,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				},
 			}
 
-			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			gw := &networkingv1beta1.Gateway{
@@ -2301,7 +2301,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				},
 			}
 
-			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			gwService := &networkingv1beta1.VirtualService{

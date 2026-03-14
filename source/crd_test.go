@@ -18,7 +18,6 @@ package source
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -713,7 +712,7 @@ func TestCRDSource_NoInformer(t *testing.T) {
 	cs := &crdSource{informer: nil}
 	called := false
 
-	cs.AddEventHandler(context.Background(), func() { called = true })
+	cs.AddEventHandler(t.Context(), func() { called = true })
 	require.False(t, called, "handler must not be called when informer is nil")
 }
 
@@ -837,7 +836,7 @@ func TestCRDSource_Watch(t *testing.T) {
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	t.Helper()
 	cs := src.(*crdSource)
-	result, err := cs.List(context.Background(), &metav1.ListOptions{})
+	result, err := cs.List(t.Context(), &metav1.ListOptions{})
 	if expectError {
 		require.Errorf(t, err, "Received err %v", err)
 	} else {

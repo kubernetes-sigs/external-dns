@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -1409,7 +1410,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			source, _ := NewIngressSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
 				&Config{
 					Namespace:                ti.targetNamespace,

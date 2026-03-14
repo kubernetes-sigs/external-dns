@@ -140,7 +140,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				&Config{
 					AnnotationFilter: ti.annotationFilter,
@@ -515,14 +515,14 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			t.Parallel()
 			// Create a Kubernetes testing client
 			fakeClient := fake.NewClientset()
-			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
+			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(t.Context(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(tc.labelFilter)
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
 				&Config{
 					FQDNTemplate:  "{{.Name}}",
@@ -532,7 +532,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := source.Endpoints(context.Background())
+			res, err := source.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
