@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Avoid creating cluster-scoped RBAC for Gateway API sources when running namespaced with `gatewayNamespace` set. Namespace listing permissions are now only added when `gatewayNamespace` is unset. ([#5843](https://github.com/kubernetes-sigs/external-dns/pull/5843)) _@TobyTheHutt_
+- Ensure container arguments are passed in as strings ([#6264](https://github.com/kubernetes-sigs/external-dns/pull/6264)) _@KhooHaoYit_
 
 ## [v1.20.0]
 
