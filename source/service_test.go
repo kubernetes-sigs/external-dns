@@ -4995,7 +4995,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 
 	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 	require.NoError(t, err)
-	_, err = fakeClient.DiscoveryV1().EndpointSlices(es.Namespace).Create(context.Background(), es, metav1.CreateOptions{})
+	_, err = fakeClient.DiscoveryV1().EndpointSlices(es.Namespace).Create(t.Context(), es, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// Should not error when creating the source
