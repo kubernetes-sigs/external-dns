@@ -31,6 +31,7 @@ Routes that reference a ListenerSet as a parentRef are automatically supported â
 ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
 The `external-dns.alpha.kubernetes.io/target` annotation is also supported on ListenerSet
 resources. When present, it takes precedence over the parent Gateway's target annotation.
+ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
 
 ## Hostnames
 
@@ -51,7 +52,7 @@ ExternalDNS reads different annotations from different Gateway API resources:
 - **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
 - **ListenerSet annotations**: The `external-dns.alpha.kubernetes.io/target` annotation is also supported on
   ListenerSet resources. When a Route references a ListenerSet, the ListenerSet target annotation takes
-  precedence over the parent Gateway's target annotation.
+  precedence over the parent Gateway's target annotation. Requires `--gateway-listener-sets`.
 - **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
   resources (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute)
 
@@ -252,6 +253,8 @@ spec:
         - --gateway-namespace=my-gateway-namespace
         # Optionally, limit Route endpoints to those Gateways matching the given label selector.
         - --gateway-label-filter=my-gateway-label==my-gateway-value
+        # Optionally, enable ListenerSet support for Routes referencing ListenerSet parentRefs.
+        - --gateway-listener-sets
         # Add provider-specific flags...
         - --domain-filter=external-dns-test.my-org.com
         - --provider=google
