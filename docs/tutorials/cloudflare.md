@@ -360,6 +360,8 @@ Origin SNI overrides require a Cloudflare account entitlement — contact your C
 
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
 
+Setting the annotation to `-` tells external-dns to skip custom hostname management for this record entirely — existing custom hostnames in Cloudflare are left untouched. This is useful when migrating CH ownership to another controller.
+
 See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/domain-support/) for more information on custom hostnames.
 
 This feature is disabled by default and supports the `--cloudflare-custom-hostnames-min-tls-version` and `--cloudflare-custom-hostnames-certificate-authority` flags.
