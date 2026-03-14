@@ -684,11 +684,14 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	prevCustomHostnames := []string{}
 	newCustomHostnames := map[string]customHostname{}
 	if p.CustomHostnamesConfig.Enabled {
-		if current != nil {
-			prevCustomHostnames = getEndpointCustomHostnames(current)
-		}
-		for _, v := range getEndpointCustomHostnames(ep) {
-			newCustomHostnames[v] = p.newCustomHostname(v, ep.DNSName)
+		desiredCHs := getEndpointCustomHostnames(ep)
+		if desiredCHs != nil { // nil = managed externally, skip CH lifecycle
+			if current != nil {
+				prevCustomHostnames = getEndpointCustomHostnames(current)
+			}
+			for _, v := range desiredCHs {
+				newCustomHostnames[v] = p.newCustomHostname(v, ep.DNSName)
+			}
 		}
 	}
 
@@ -783,8 +786,10 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
 		if v.Name == annotations.CloudflareCustomHostnameKey {
-			customHostnames := strings.Split(v.Value, ",")
-			return customHostnames
+			if v.Value == "-" {
+				return nil // managed externally, skip
+			}
+			return strings.Split(v.Value, ",")
 		}
 	}
 	return []string{}

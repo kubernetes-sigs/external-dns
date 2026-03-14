@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -941,6 +942,80 @@ func TestNewCustomHostname(t *testing.T) {
 			assert.Equal(t, tt.wantSNI, ch.customOriginSNI)
 		})
 	}
+}
+
+func TestGetEndpointCustomHostnames(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    string
+		expected []string
+	}{
+		{"normal hostname", "app.example.com", []string{"app.example.com"}},
+		{"multiple hostnames", "a.example.com,b.example.com", []string{"a.example.com", "b.example.com"}},
+		{"managed externally", "-", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{Name: annotations.CloudflareCustomHostnameKey, Value: tt.value},
+				},
+			}
+			result := getEndpointCustomHostnames(ep)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+
+	t.Run("no annotation", func(t *testing.T) {
+		ep := &endpoint.Endpoint{}
+		result := getEndpointCustomHostnames(ep)
+		assert.Equal(t, []string{}, result)
+	})
+}
+
+func TestManagedExternallySkipsCHLifecycle(t *testing.T) {
+	ctx := t.Context()
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client: client,
+		CustomHostnamesConfig: CustomHostnamesConfig{
+			Enabled: true,
+		},
+	}
+
+	// Existing CH in CF that should NOT be deleted
+	client.customHostnames = map[string][]customHostname{
+		"zone1": {
+			{
+				id:                 "ch1",
+				hostname:           "app.example.com",
+				customOriginServer: "origin.example.com",
+			},
+		},
+	}
+	chs := customHostnamesMap{
+		customHostnameIndex{hostname: "app.example.com"}: {
+			id:                 "ch1",
+			hostname:           "app.example.com",
+			customOriginServer: "origin.example.com",
+		},
+	}
+
+	// UPDATE with annotation="-": both prev and new are empty (skipped by nil check)
+	change := &cloudFlareChange{
+		Action: cloudFlareUpdate,
+		ResourceRecord: dns.RecordResponse{
+			Type: "A",
+		},
+		CustomHostnamesPrev: []string{},
+		CustomHostnames:     map[string]customHostname{},
+	}
+
+	result := provider.submitCustomHostnameChanges(ctx, "zone1", change, chs, nil)
+	assert.True(t, result)
+	assert.Len(t, client.customHostnames["zone1"], 1, "Existing CH should NOT be deleted")
+	assert.Equal(t, "ch1", client.customHostnames["zone1"][0].id)
 }
 
 func TestGroupByNameAndTypeWithCustomHostnames_SNI(t *testing.T) {
