@@ -54,6 +54,7 @@ func (s *ptrSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
 }
 
 func (s *ptrSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("ptrSource: adding event handler")
 	s.source.AddEventHandler(ctx, handler)
 }
 

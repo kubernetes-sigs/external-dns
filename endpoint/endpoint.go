@@ -433,15 +433,6 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
-// SupportsPTR returns true if this endpoint is eligible for PTR record generation.
-// Only non-wildcard A and AAAA records can have meaningful reverse DNS mappings.
-func (e *Endpoint) SupportsPTR() bool {
-	if e.RecordType != RecordTypeA && e.RecordType != RecordTypeAAAA {
-		return false
-	}
-	return !strings.HasPrefix(e.DNSName, "*.")
-}
-
 // NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
 // It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
 func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {

@@ -216,3 +216,12 @@ func TestPTRSource_IPv6(t *testing.T) {
 	assert.Equal(t, "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa", result[1].DNSName)
 	assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
 }
+
+func TestPTRSource_AddEventHandler(t *testing.T) {
+	mockSource := testutils.NewMockSource()
+
+	src := NewPTRSource(mockSource, true)
+	src.AddEventHandler(t.Context(), func() {})
+
+	mockSource.AssertNumberOfCalls(t, "AddEventHandler", 1)
+}
