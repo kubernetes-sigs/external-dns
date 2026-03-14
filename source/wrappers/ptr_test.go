@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -136,7 +135,7 @@ func TestPTRSource(t *testing.T) {
 			mockSource.On("Endpoints").Return(tc.endpoints, nil)
 
 			src := NewPTRSource(mockSource, tc.defaultEnabled)
-			result, err := src.Endpoints(context.Background())
+			result, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, result, len(tc.expected))
 			for i, ep := range result {
@@ -157,7 +156,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)
-		result, err := src.Endpoints(context.Background())
+		result, err := src.Endpoints(t.Context())
 		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
@@ -173,7 +172,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)
-		result, err := src.Endpoints(context.Background())
+		result, err := src.Endpoints(t.Context())
 		require.NoError(t, err)
 		assert.Len(t, result, 1) // only the original A record
 		// provider-specific property should be removed after processing
@@ -187,7 +186,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)
-		result, err := src.Endpoints(context.Background())
+		result, err := src.Endpoints(t.Context())
 		require.NoError(t, err)
 		assert.Len(t, result, 2)
 	})
@@ -198,7 +197,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)
-		result, err := src.Endpoints(context.Background())
+		result, err := src.Endpoints(t.Context())
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
@@ -210,7 +209,7 @@ func TestPTRSource_IPv6(t *testing.T) {
 	}
 	mockSource := testutils.NewMockSource(eps...)
 	src := NewPTRSource(mockSource, true)
-	result, err := src.Endpoints(context.Background())
+	result, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	require.Len(t, result, 2)
 	assert.Equal(t, "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa", result[1].DNSName)

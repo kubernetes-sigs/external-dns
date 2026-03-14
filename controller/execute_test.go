@@ -162,7 +162,7 @@ func TestBuildProvider(t *testing.T) {
 				Provider:          "inmemory",
 				ProviderCacheTime: 10 * time.Millisecond,
 			},
-			expectedType: "*inmemory.InMemoryProvider",
+			expectedType: "*provider.CachedProvider",
 		},
 		{
 			name: "oci provider instance principal without compartment OCID",
