@@ -5691,6 +5691,173 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
 }
 
+func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
+	now := metav1.Now()
+
+	makeNode := func(name, ip string) *v1.Node {
+		return &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Status:     v1.NodeStatus{Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: ip}}},
+		}
+	}
+
+	makePod := func(name, nodeName string, ready bool, deletionTimestamp *metav1.Time) *v1.Pod {
+		readiness := v1.ConditionFalse
+		if ready {
+			readiness = v1.ConditionTrue
+		}
+		return &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "testing", DeletionTimestamp: deletionTimestamp},
+			Spec:       v1.PodSpec{NodeName: nodeName},
+			Status: v1.PodStatus{
+				Phase:      v1.PodRunning,
+				Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: readiness}},
+			},
+		}
+	}
+
+	makeResourceSource := func(t *testing.T, nodes []*v1.Node, pods []*v1.Pod) *serviceSource {
+		t.Helper()
+		client := fake.NewClientset()
+		inf := kubeinformers.NewSharedInformerFactory(client, 0)
+		nodeInformer := inf.Core().V1().Nodes()
+		podInformer := inf.Core().V1().Pods()
+		for _, n := range nodes {
+			require.NoError(t, nodeInformer.Informer().GetStore().Add(n))
+		}
+		for _, p := range pods {
+			require.NoError(t, podInformer.Informer().GetStore().Add(p))
+		}
+		return &serviceSource{podInformer: podInformer, nodeInformer: nodeInformer}
+	}
+
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "testing"},
+		Spec: v1.ServiceSpec{
+			Type:                  v1.ServiceTypeNodePort,
+			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+		},
+	}
+
+	// nodeNames extracts node names from a result slice for easy assertion.
+	nodeNames := func(nodes []*v1.Node) []string {
+		names := make([]string, len(nodes))
+		for i, n := range nodes {
+			names[i] = n.Name
+		}
+		sort.Strings(names)
+		return names
+	}
+
+	t.Run("best pod wins during rolling update regardless of iteration order", func(t *testing.T) {
+		// node1: not-ready replacement pod + ready existing pod (rolling update)
+		// node2: single ready pod
+		// The informer cache is a Go map so pod iteration order is randomised
+		// each call. Over 100 iterations pod-0 will be processed before pod-1
+		// roughly half the time, reliably triggering the bug if present.
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // not-ready replacement
+				makePod("pod-1", "node1", true, nil),  // ready existing
+				makePod("pod-2", "node2", true, nil),  // ready
+			},
+		)
+		for i := range 100 {
+			got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+			require.Containsf(t, got, "node1", "iteration %d: node1 dropped despite having a ready pod", i)
+			require.Containsf(t, got, "node2", "iteration %d: node2 dropped despite having a ready pod", i)
+		}
+	})
+
+	t.Run("best pod state wins per node deterministically", func(t *testing.T) {
+		// Explicitly verify that each priority upgrade path lands in the correct tier,
+		// independent of iteration order.
+		//   node1: notReady pod + readyNonTerminating pod  → must appear in nodes (top tier)
+		//   node2: notReady pod + readyTerminating pod     → must appear in nodesReady (mid tier)
+		//   node3: notReady pod only                       → must appear in nodesRunning (low tier)
+		// Because node1 is in the top tier the fallback switch returns only node1.
+		sc := makeResourceSource(t,
+			[]*v1.Node{
+				makeNode("node1", "54.10.11.1"),
+				makeNode("node2", "54.10.11.2"),
+				makeNode("node3", "54.10.11.3"),
+			},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // notReady
+				makePod("pod-1", "node1", true, nil),  // readyNonTerminating — upgrades node1
+				makePod("pod-2", "node2", false, nil), // notReady
+				makePod("pod-3", "node2", true, &now), // readyTerminating — upgrades node2
+				makePod("pod-4", "node3", false, nil), // notReady only
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got, "fallback should select the top-tier node only")
+	})
+
+	t.Run("falls back to nodesReady when all ready pods are terminating", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", true, &now)}, // ready + terminating
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("falls back to nodesRunning when no pod is ready", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", false, nil)}, // running, not ready
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips pods that are not in Running phase", func(t *testing.T) {
+		pendingPod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "pod-pending", Namespace: "testing"},
+			Spec:       v1.PodSpec{NodeName: "node1"},
+			Status:     v1.PodStatus{Phase: v1.PodPending},
+		}
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{pendingPod},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
+
+	t.Run("skips pods whose node is not found in the informer", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{}, // node1 not registered
+			[]*v1.Pod{makePod("pod-0", "node1", true, nil)},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
+
+	t.Run("returns nil when pod list is empty", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{},
+		)
+		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
+		assert.Nil(t, got)
+	})
+
+	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),  // ready, non-terminating
+				makePod("pod-1", "node2", true, &now), // ready, terminating
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+}
+
 // Helper function to find endpoint by record type
 func findEndpointByType(endpoints []*endpoint.Endpoint, recordType string) *endpoint.Endpoint {
 	for _, ep := range endpoints {
