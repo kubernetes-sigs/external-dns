@@ -2,11 +2,11 @@
 
 ExternalDNS provides four flags for controlling which domains it manages:
 
-| Flag | Semantics |
-|---|---|
-| `--domain-filter` | Suffix match — includes a domain and all its subdomains |
-| `--exclude-domains` | Suffix match — excludes a domain or subdomain from `--domain-filter` |
-| `--regex-domain-filter` | Full regex match — **overrides `--domain-filter`** when set |
+| Flag                       | Semantics                                                                              |
+|----------------------------|----------------------------------------------------------------------------------------|
+| `--domain-filter`          | Suffix match — includes a domain and all its subdomains                                |
+| `--exclude-domains`        | Suffix match — excludes a domain or subdomain from `--domain-filter`                   |
+| `--regex-domain-filter`    | Full regex match — **overrides `--domain-filter`** when set                            |
 | `--regex-domain-exclusion` | Regex that subtracts matches from `--regex-domain-filter`; can also be used standalone |
 
 Both flags are applied to DNS record names. Providers that partition zones before managing records
@@ -168,7 +168,7 @@ zone matched the record. To isolate whether the domain filter is the cause, temp
 Before deploying, validate the regex against real zone names:
 
 - [regex101.com](https://regex101.com/) — interactive tester; select the **Golang** flavour to match Go's RE2 engine exactly. Paste each zone name on a separate line and enable the **global** flag.
-- AI assistants (ChatGPT, Claude, Gemini, etc.) — describe the zones you want to match/exclude and ask for a regex; always verify the output in regex101 before use.
+- AI assistants (ChatGPT, Claude, DeepWiki, etc.) — describe the zones you want to match/exclude and ask for a regex; always verify the output in regex101 before use.
 
 ## See Also
 
