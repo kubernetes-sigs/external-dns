@@ -5691,12 +5691,12 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
 }
 
-// TestNodesExternalTrafficPolicyLocalIterationOrderBug proves that node
+// TestNodesExternalTrafficPolicyLocalIterationOrder proves that node
 // classification must use the best pod state across all pods on a node, not
 // the first pod encountered. During a rolling update node1 has both a
 // not-ready replacement pod and a ready existing pod; node1 must still appear
 // in the result regardless of which pod is iterated first.
-func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
+func TestNodesExternalTrafficPolicyLocalIterationOrder(t *testing.T) {
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{Name: "node1"},
 		Status: v1.NodeStatus{
@@ -5767,7 +5767,7 @@ func TestNodesExternalTrafficPolicyLocalIterationOrderBug(t *testing.T) {
 	}
 
 	// The informer cache is a Go map so pod iteration order is randomised each
-	// call. Over 1000 iterations pod-0 will be processed before pod-1 roughly
+	// call. Over 100+ iterations pod-0 will be processed before pod-1 roughly
 	// half the time, reliably triggering the bug if it is present.
 	const iterations = 100
 	for i := range iterations {
