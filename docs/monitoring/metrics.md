@@ -32,8 +32,10 @@ curl https://localhost:7979/metrics
 | endpoints_total | Gauge | registry | Number of Endpoints in the registry |
 | errors_total | Counter | registry | Number of Registry errors. |
 | records | Gauge | registry | Number of registry records partitioned by label name (vector). |
+| deduplicated_endpoints | Gauge | source | Number of endpoints currently removed as duplicates, partitioned by record type and source. |
 | endpoints_total | Gauge | source | Number of Endpoints in all sources |
 | errors_total | Counter | source | Number of Source errors. |
+| invalid_endpoints | Gauge | source | Number of endpoints currently rejected due to invalid configuration, partitioned by record type and source. |
 | records | Gauge | source | Number of source records partitioned by label name (vector). |
 | adjustendpoints_errors_total | Gauge | webhook_provider | Errors with AdjustEndpoints method |
 | adjustendpoints_requests_total | Gauge | webhook_provider | Requests with AdjustEndpoints method |

@@ -224,3 +224,60 @@ func TestPTRSource_AddEventHandler(t *testing.T) {
 
 	mockSource.AssertNumberOfCalls(t, "AddEventHandler", 1)
 }
+
+func TestPTRSource_InvalidEndpointMetric(t *testing.T) {
+	invalidEndpointsTotal.Gauge.Reset()
+
+	eps := []*endpoint.Endpoint{
+		// valid A record
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+		// A record with invalid target (not an IP)
+		{DNSName: "bad.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},
+	}
+
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewPTRSource(mockSource, true)
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	// valid record produces PTR, invalid one doesn't
+	assert.Len(t, result, 3) // 2 original + 1 PTR from valid record
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, invalidEndpointsTotal.Gauge,
+		map[string]string{"record_type": "a", "source_type": "ptr"},
+	)
+}
+
+func TestPTRSource_InvalidEndpointMetricResets(t *testing.T) {
+	invalidEndpointsTotal.Gauge.Reset()
+
+	// First call: one invalid endpoint
+	eps := []*endpoint.Endpoint{
+		{DNSName: "bad.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},
+	}
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewPTRSource(mockSource, true)
+	_, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, invalidEndpointsTotal.Gauge,
+		map[string]string{"record_type": "a", "source_type": "ptr"},
+	)
+
+	// Second call: no invalid endpoints — metric should reset to 0
+	eps2 := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "10.0.0.1"),
+	}
+	mockSource2 := testutils.NewMockSource(eps2...)
+	src2 := NewPTRSource(mockSource2, true)
+	_, err = src2.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	// After reset, querying the old label combination should return 0
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 0.0, invalidEndpointsTotal.Gauge,
+		map[string]string{"record_type": "a", "source_type": "ptr"},
+	)
+}

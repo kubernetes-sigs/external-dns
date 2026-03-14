@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -104,7 +103,7 @@ func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
 
-	result, err := src.Endpoints(context.Background())
+	result, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
@@ -119,7 +118,7 @@ func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
 
-	result, err := src.Endpoints(context.Background())
+	result, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
@@ -136,7 +135,7 @@ func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
 
-	result, err := src.Endpoints(context.Background())
+	result, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, result, 1, "no PTR should be generated when createPTR is false and no annotation overrides")
 }

@@ -41,6 +41,9 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
 	result := make([]*endpoint.Endpoint, 0)
 	collected := make(map[string]struct{})
+	invalidCounts := make(map[string]float64)
+	dupCounts := make(map[string]float64)
+	seenTypes := make(map[string]struct{})
 
 	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
@@ -52,9 +55,12 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
+		seenTypes[ep.RecordType] = struct{}{}
+
 		// validate endpoint before normalization
 		if ok := ep.CheckEndpoint(); !ok {
 			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))
+			invalidCounts[ep.RecordType]++
 			continue
 		}
 
@@ -66,11 +72,18 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
+			dupCounts[ep.RecordType]++
 			continue
 		}
 
 		collected[identifier] = struct{}{}
 		result = append(result, ep)
+	}
+
+	// Set metrics for all seen record types, zeroing those with no invalids/duplicates.
+	for rt := range seenTypes {
+		invalidEndpointsTotal.SetWithLabels(invalidCounts[rt], rt, "dedup")
+		deduplicatedEndpointsTotal.SetWithLabels(dupCounts[rt], rt, "dedup")
 	}
 
 	return result, nil

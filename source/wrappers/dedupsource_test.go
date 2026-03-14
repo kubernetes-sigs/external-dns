@@ -388,3 +388,52 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestDedupSource_DeduplicatedEndpointsMetric(t *testing.T) {
+	deduplicatedEndpointsTotal.Gauge.Reset()
+
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"), // duplicate
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // duplicate
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // another duplicate
+	}
+
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewDedupSource(mockSource)
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, result, 2) // only unique endpoints
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, deduplicatedEndpointsTotal.Gauge,
+		map[string]string{"record_type": "a", "source_type": "dedup"},
+	)
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 2.0, deduplicatedEndpointsTotal.Gauge,
+		map[string]string{"record_type": "aaaa", "source_type": "dedup"},
+	)
+}
+
+func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
+	invalidEndpointsTotal.Gauge.Reset()
+
+	eps := []*endpoint.Endpoint{
+		// valid A record
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		// invalid SRV record (missing port and target host)
+		{DNSName: "_svc._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 mail.example.org"}},
+	}
+
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewDedupSource(mockSource)
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, result, 1) // only the valid A record
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, invalidEndpointsTotal.Gauge,
+		map[string]string{"record_type": "srv", "source_type": "dedup"},
+	)
+}

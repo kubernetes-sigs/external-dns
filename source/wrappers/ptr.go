@@ -77,12 +77,15 @@ func supportsPTR(ep *endpoint.Endpoint) bool {
 func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) []*endpoint.Endpoint {
 	ptrMap := make(map[string]*ptrInfo)
 	var order []string
+	invalidCounts := make(map[string]float64)
+	seenTypes := make(map[string]struct{})
 
 	for _, ep := range endpoints {
 		if !supportsPTR(ep) {
 			continue
 		}
 
+		seenTypes[ep.RecordType] = struct{}{}
 		enabled := defaultEnabled
 		if val, ok := ep.RequestedRecordType(); ok {
 			enabled = strings.EqualFold(val, endpoint.RecordTypePTR)
@@ -96,6 +99,7 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 			ptrEp, err := endpoint.NewPTREndpoint(target, ep.RecordTTL, ep.DNSName)
 			if err != nil {
 				log.Warnf("PTR: %v", err)
+				invalidCounts[ep.RecordType]++
 				continue
 			}
 			ptrName := ptrEp.DNSName
@@ -113,6 +117,10 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 				order = append(order, ptrName)
 			}
 		}
+	}
+
+	for rt := range seenTypes {
+		invalidEndpointsTotal.SetWithLabels(invalidCounts[rt], rt, endpoint.RecordTypePTR)
 	}
 
 	result := make([]*endpoint.Endpoint, 0, len(ptrMap))
