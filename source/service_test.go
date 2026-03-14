@@ -4542,7 +4542,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(b.Context(), service, metav1.CreateOptions{})
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(t.Context(), kubernetes,
+	client, err := NewServiceSource(b.Context(), kubernetes,
 		&Config{
 			Namespace:            v1.NamespaceAll,
 			ExcludeUnschedulable: true,
