@@ -5810,6 +5810,18 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
 		assert.Empty(t, got)
 	})
+
+	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),  // ready, non-terminating
+				makePod("pod-1", "node2", true, &now), // ready, terminating
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
 }
 
 // Helper function to find endpoint by record type
