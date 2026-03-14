@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -402,19 +401,19 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			assert.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(context.Background(), &tcpi, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &tcpi, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewKongTCPIngressSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultKongNamespace, "kubernetes.io/ingress.class=kong", ti.ignoreHostnameAnnotation)
+			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, defaultKongNamespace, "kubernetes.io/ingress.class=kong", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
 			validateEndpoints(t, endpoints, ti.expected)
 		})

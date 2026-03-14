@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -340,7 +341,7 @@ func TestAWSZones(t *testing.T) {
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
 			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, false, nil)
-			zones, err := provider.Zones(context.Background())
+			zones, err := provider.Zones(t.Context())
 			require.NoError(t, err)
 			validateAWSZones(t, zones, ti.expectedZones)
 		})
@@ -365,7 +366,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 		Name:   aws.String("zone-2.ext-dns-test-error-on-list-tags.example.com."),
 		Config: &route53types.HostedZoneConfig{PrivateZone: false},
 	})
-	_, err := provider.Zones(context.Background())
+	_, err := provider.Zones(t.Context())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to list tags for zones")
 }
@@ -649,7 +650,7 @@ func TestAWSRecords(t *testing.T) {
 		},
 	})
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
@@ -697,7 +698,7 @@ func TestAWSRecordsSoftError(t *testing.T) {
 	})
 
 	subClient.MockMethod("ListResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
-	_, err := pvd.Records(context.Background())
+	_, err := pvd.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -742,9 +743,9 @@ func TestAWSApplyChanges(t *testing.T) {
 		setup      func(p *AWSProvider) context.Context
 		listRRSets int
 	}{
-		{"no cache", func(_ *AWSProvider) context.Context { return context.Background() }, 0},
+		{"no cache", func(_ *AWSProvider) context.Context { return t.Context() }, 0},
 		{"cached", func(p *AWSProvider) context.Context {
-			ctx := context.Background()
+			ctx := t.Context()
 			records, err := p.Records(ctx)
 			require.NoError(t, err)
 			return context.WithValue(ctx, provider.RecordsContextKey, records)
@@ -1459,7 +1460,7 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, provider.ApplyChanges(ctx, changes))
 
@@ -1614,7 +1615,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, _ := provider.zones(ctx)
 	records, _ := provider.Records(ctx)
 	cs := make(Route53Changes, 0, len(endpoints))
@@ -1632,7 +1633,7 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 	clientStub.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
@@ -1645,7 +1646,7 @@ func TestAWSsubmitChangesError(t *testing.T) {
 func TestAWSsubmitChangesRetryOnError(t *testing.T) {
 	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
@@ -2086,7 +2087,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 
 	adjusted, err := provider.AdjustEndpoints(records)
 	require.NoError(t, err)
-	require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+	require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: adjusted,
 	}))
 
@@ -2147,7 +2148,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		}
 		adjusted, err := provider.AdjustEndpoints(records)
 		require.NoError(t, err)
-		require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+		require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 			Create: adjusted,
 		}))
 
@@ -2305,7 +2306,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.Hoste
 		HostedZoneConfig: zone.Config,
 	}
 
-	if _, err := provider.clients[defaultAWSProfile].CreateHostedZone(context.Background(), params); err != nil {
+	if _, err := provider.clients[defaultAWSProfile].CreateHostedZone(t.Context(), params); err != nil {
 		var hzExists *route53types.HostedZoneAlreadyExists
 		require.ErrorAs(t, err, &hzExists)
 	}
@@ -2318,7 +2319,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 		provider.dryRun = dryRun
 	}()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err)
 
@@ -2344,7 +2345,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types.ResourceRecordSet {
-	resp, err := client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+	resp, err := client.ListResourceRecordSets(t.Context(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 		MaxItems:     aws.Int32(route53PageSize),
 	})
