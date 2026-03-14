@@ -187,7 +187,7 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 			fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 			_, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
 				"",
 				ti.annotationFilter,
@@ -1048,12 +1048,12 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
-				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
+				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(t.Context(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			httpProxySource, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
 				ti.targetNamespace,
 				ti.annotationFilter,
@@ -1063,7 +1063,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := httpProxySource.Endpoints(context.Background())
+			res, err := httpProxySource.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {

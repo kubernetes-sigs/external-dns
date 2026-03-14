@@ -37,8 +37,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type MockClientGenerator struct {
@@ -279,7 +280,7 @@ func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, err
 func (m *minimalMockClientGenerator) RESTConfig() (*rest.Config, error) { return nil, errMock }
 
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := &minimalMockClientGenerator{}
 	cfg := &Config{LabelFilter: labels.NewSelector()}
 
