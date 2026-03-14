@@ -713,10 +713,9 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 
 		p := notReady
 		if isPodStatusReady(v.Status) {
+			p = readyTerminating
 			if v.GetDeletionTimestamp() == nil {
 				p = readyNonTerminating
-			} else {
-				p = readyTerminating
 			}
 		}
 		bestPriority[node] = max(bestPriority[node], p)
