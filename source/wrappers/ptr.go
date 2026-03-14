@@ -78,6 +78,7 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 		enabled := defaultEnabled
 		if val, ok := ep.GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty); ok {
 			enabled = strings.EqualFold(val, "ptr")
+			ep.DeleteProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty)
 		}
 		if !enabled {
 			continue

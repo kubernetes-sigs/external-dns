@@ -162,6 +162,9 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
+		// provider-specific property should be removed after processing
+		_, ok := result[0].GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty)
+		assert.False(t, ok, "record-type property should be removed from original endpoint")
 	})
 
 	t.Run("annotation opts out when flag is on", func(t *testing.T) {
@@ -174,6 +177,9 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 		result, err := src.Endpoints(context.Background())
 		require.NoError(t, err)
 		assert.Len(t, result, 1) // only the original A record
+		// provider-specific property should be removed after processing
+		_, ok := result[0].GetProviderSpecificProperty(annotations.RecordTypeProviderSpecificProperty)
+		assert.False(t, ok, "record-type property should be removed from original endpoint")
 	})
 
 	t.Run("no annotation uses flag default true", func(t *testing.T) {
