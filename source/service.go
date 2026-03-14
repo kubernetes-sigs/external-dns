@@ -712,7 +712,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 		}
 		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
 		if err != nil {
-			log.Debugf("Unable to find node where Pod %s is running", v.Spec.NodeName)
+			log.Debugf("Skipping pod %s/%s: node %s not found", v.Namespace, v.Name, v.Spec.NodeName)
 			continue
 		}
 
@@ -735,10 +735,12 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	case readyTerminating:
 		log.Debugf("All pods in terminating state, use ready")
 	case readyNonTerminating:
-		// happy path, no log needed
+		log.Debugf("All pods ready and non-terminating, use ready non-terminating")
 	}
 
-	var nodes []*v1.Node
+	// Only return nodes that match the best available readiness level across the cluster,
+	// equivalent to the old: nodes > nodesReady > nodesRunning fallback switch.
+	nodes := make([]*v1.Node, 0, len(bestPriority))
 	for node, p := range bestPriority {
 		if p == maxPriority {
 			nodes = append(nodes, node)

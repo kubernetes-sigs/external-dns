@@ -5836,6 +5836,15 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		assert.Empty(t, got)
 	})
 
+	t.Run("returns nil when pod list is empty", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{},
+		)
+		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
+		assert.Nil(t, got)
+	})
+
 	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {
 		sc := makeResourceSource(t,
 			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
