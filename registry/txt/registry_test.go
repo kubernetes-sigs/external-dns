@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/registry/mapper"
 
 	log "github.com/sirupsen/logrus"
@@ -98,7 +99,7 @@ func testTXTRegistryRecords(t *testing.T) {
 }
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -273,7 +274,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 }
 
 func testTXTRegistryRecordsSuffixed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -439,7 +440,7 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	ctx := context.Background()
+	ctx := t.Context()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	err = p.ApplyChanges(ctx, &plan.Changes{
@@ -589,7 +590,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 }
 
 func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -633,7 +634,7 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 }
 
 func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -688,7 +689,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -787,7 +788,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -833,7 +834,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -877,7 +878,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -981,7 +982,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -1060,7 +1061,7 @@ func testTXTRegistryMissingRecords(t *testing.T) {
 }
 
 func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -1167,7 +1168,7 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 }
 
 func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -1350,7 +1351,7 @@ func TestNewTXTScheme(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
@@ -1520,7 +1521,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
 
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1565,7 +1566,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 // was treated independently and would cause each cluster to fight over ownership. This tests ensure that the default
 // Dual Stack record support only treats AAAA records independently and while keeping A and CNAME record ownership intact.
 func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -1689,7 +1690,7 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
@@ -1721,7 +1722,7 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 }
 
 func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -1917,7 +1918,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 
 				t.Run(fmt.Sprintf("%s with %s policy and setIdentifier=%s", tt.name, pName, setIdentifier), func(t *testing.T) {
 					t.Parallel()
-					ctx := context.Background()
+					ctx := t.Context()
 					p := inmemory.NewInMemoryProvider()
 
 					// Given: Register existing records
@@ -1982,7 +1983,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 }
 
 func TestTXTRecordMigration(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -2034,7 +2035,7 @@ func TestTXTRecordMigration(t *testing.T) {
 // caused ExternalDNS to skip recreating TXT records after deletion.
 func TestRecreateRecordAfterDeletion(t *testing.T) {
 	ownerID := "foo"
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)

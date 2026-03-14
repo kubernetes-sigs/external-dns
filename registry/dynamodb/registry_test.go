@@ -159,7 +159,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 
 			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
 
-			_, err := r.Records(context.Background())
+			_, err := r.Records(t.Context())
 			assert.EqualError(t, err, tc.expected)
 		})
 	}
@@ -168,7 +168,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 func TestDynamoDBRegistryRecords(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
@@ -244,7 +244,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	}
 
 	r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
-	_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
+	_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("migrate.test-zone.example.org", endpoint.RecordTypeA, "3.3.3.3").WithSetIdentifier("set-3"),
 			endpoint.NewEndpoint("txt.migrate.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
@@ -1076,12 +1076,12 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 
 			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
 			if len(tc.addRecords) > 0 {
-				_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
+				_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 					Create: tc.addRecords,
 				})
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
 			_, err := r.Records(ctx)
@@ -1162,7 +1162,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	}
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
-	_ = p.ApplyChanges(context.Background(), &plan.Changes{
+	_ = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("foo.test-zone.example.org", endpoint.RecordTypeCNAME, "foo.loadbalancer.com"),
 			endpoint.NewEndpoint("bar.test-zone.example.org", endpoint.RecordTypeCNAME, "my-domain.com"),
