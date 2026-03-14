@@ -125,6 +125,15 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
+// glooSource is an implementation of Source for Gloo Proxy objects.
+//
+// +externaldns:source:name=gloo-proxy
+// +externaldns:source:category=Service Mesh
+// +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
+// +externaldns:source:resources=Proxy.gloo.solo.io
+// +externaldns:source:filters=
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
 	ingressInformer        netinformers.IngressInformer
@@ -173,11 +182,11 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 	}, nil
 }
 
-func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
+func (gs *glooSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // Endpoints returns endpoint objects
-func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ns := range gs.glooNamespaces {
@@ -227,7 +236,7 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
@@ -244,7 +253,7 @@ func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.
 			ttl := annotations.TTLFromAnnotations(ants, resource)
 			providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ants)
 			for _, domain := range virtualHost.Domains {
-				endpoints = append(endpoints, EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
+				endpoints = append(endpoints, endpoint.EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}
 		}
 	}

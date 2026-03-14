@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package dynamodb
 
 import (
 	"context"
@@ -35,6 +35,10 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+)
+
+const (
+	testZone = "test-zone.example.org"
 )
 
 func TestDynamoDBRegistryNew(t *testing.T) {
@@ -155,7 +159,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 
 			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
 
-			_, err := r.Records(context.Background())
+			_, err := r.Records(t.Context())
 			assert.EqualError(t, err, tc.expected)
 		})
 	}
@@ -164,7 +168,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 func TestDynamoDBRegistryRecords(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
@@ -240,7 +244,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	}
 
 	r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
-	_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
+	_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("migrate.test-zone.example.org", endpoint.RecordTypeA, "3.3.3.3").WithSetIdentifier("set-3"),
 			endpoint.NewEndpoint("txt.migrate.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
@@ -1072,12 +1076,12 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 
 			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
 			if len(tc.addRecords) > 0 {
-				_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
+				_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 					Create: tc.addRecords,
 				})
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
 			_, err := r.Records(ctx)
@@ -1158,7 +1162,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	}
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
-	_ = p.ApplyChanges(context.Background(), &plan.Changes{
+	_ = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("foo.test-zone.example.org", endpoint.RecordTypeCNAME, "foo.loadbalancer.com"),
 			endpoint.NewEndpoint("bar.test-zone.example.org", endpoint.RecordTypeCNAME, "my-domain.com"),
@@ -1172,7 +1176,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	}
 }
 
-func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, opts ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
+func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, _ ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	return &dynamodb.DescribeTableOutput{
@@ -1180,7 +1184,7 @@ func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.Descri
 	}, nil
 }
 
-func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, opts ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
+func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, _ ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	assert.Equal(r.t, "o = :ownerval", *input.FilterExpression)
@@ -1220,7 +1224,7 @@ func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, opts
 	}, nil
 }
 
-func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, option ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
+func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, _ ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
 	assert.NotNil(r.t, context)
 	hasDelete := strings.HasPrefix(strings.ToLower(*input.Statements[0].Statement), "delete")
 	assert.Equal(r.t, hasDelete, r.changesApplied, "delete after provider changes, everything else before")

@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -46,6 +47,11 @@ const (
 	providerSpecificGroup = "coredns/group"
 )
 
+var (
+	// avoids allocating a new slice on every call
+	skipLabels = []string{"originalText", "prefix", "resource"}
+)
+
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(ctx context.Context, prefix string) ([]*Service, error)
@@ -56,6 +62,7 @@ type coreDNSClient interface {
 type coreDNSProvider struct {
 	provider.BaseProvider
 	dryRun        bool
+	strictlyOwned bool
 	coreDNSPrefix string
 	domainFilter  *endpoint.DomainFilter
 	client        coreDNSClient
@@ -86,13 +93,13 @@ type Service struct {
 	// Etcd key where we found this service and ignored from json un-/marshaling
 	Key string `json:"-"`
 
-	// OwnedBy is used to prevent service to be added by different external-dns (only used by external-dns)
-	OwnedBy string `json:"ownedby,omitempty"`
+	// Owner is used to prevent service to be added by different external-dns (only used by external-dns)
+	Owner string `json:"owner,omitempty"`
 }
 
 type etcdClient struct {
 	client        *etcdcv3.Client
-	ownerID       string
+	owner         string
 	strictlyOwned bool
 }
 
@@ -116,7 +123,7 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 		if err != nil {
 			return nil, err
 		}
-		if c.strictlyOwned && svc.OwnedBy != c.ownerID {
+		if c.strictlyOwned && svc.Owner != c.owner {
 			continue
 		}
 		b := Service{
@@ -149,7 +156,7 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	defer cancel()
 
 	// check only for empty OwnedBy
-	if c.strictlyOwned && service.OwnedBy != c.ownerID {
+	if c.strictlyOwned && service.Owner != c.owner {
 		r, err := c.client.Get(ctx, service.Key)
 		if err != nil {
 			return fmt.Errorf("etcd get %q: %w", service.Key, err)
@@ -160,11 +167,11 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
 			}
-			if svc.OwnedBy != c.ownerID {
+			if svc.Owner != c.owner {
 				return fmt.Errorf("key %q is not owned by this provider", service.Key)
 			}
 		}
-		service.OwnedBy = c.ownerID
+		service.Owner = c.owner
 	}
 
 	value, err := json.Marshal(&service)
@@ -193,7 +200,7 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 			if err != nil {
 				return err
 			}
-			if svc.OwnedBy != c.ownerID {
+			if svc.Owner != c.owner {
 				continue
 			}
 
@@ -248,7 +255,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 }
 
 // the newETCDClient is an etcd client constructor
-func newETCDClient(ownerID string, strictlyOwned bool) (coreDNSClient, error) {
+func newETCDClient(owner string, strictlyOwned bool) (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {
 		return nil, err
@@ -257,12 +264,12 @@ func newETCDClient(ownerID string, strictlyOwned bool) (coreDNSClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return etcdClient{c, ownerID, strictlyOwned}, nil
+	return etcdClient{c, owner, strictlyOwned}, nil
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, ownerID string, strictlyOwned, dryRun bool) (provider.Provider, error) {
-	client, err := newETCDClient(ownerID, strictlyOwned)
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+	client, err := newETCDClient(owner, strictlyOwned)
 	if err != nil {
 		return nil, err
 	}
@@ -270,6 +277,7 @@ func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, ownerID str
 	return coreDNSProvider{
 		client:        client,
 		dryRun:        dryRun,
+		strictlyOwned: strictlyOwned,
 		coreDNSPrefix: prefix,
 		domainFilter:  domainFilter,
 	}, nil
@@ -284,17 +292,6 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, boo
 		}
 	}
 	return nil, false
-}
-
-// findLabelInTargets takes an ep.Targets string slice and looks for an element in it. If found it will
-// return its string value, otherwise it will return empty string and a bool of false.
-func findLabelInTargets(targets []string, label string) (string, bool) {
-	for _, target := range targets {
-		if target == label {
-			return target, true
-		}
-	}
-	return "", false
 }
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
@@ -331,6 +328,9 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				}
 				log.Debugf("Creating new ep (%s) with new service host (%s)", ep, service.Host)
 			}
+			if p.strictlyOwned {
+				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
+			}
 			ep.Labels["originalText"] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
 			ep.Labels[service.Host] = prefix
@@ -342,6 +342,9 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				endpoint.RecordTypeTXT,
 				service.Text,
 			)
+			if p.strictlyOwned {
+				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
+			}
 			ep.Labels[randomPrefixLabel] = prefix
 			result = append(result, ep)
 		}
@@ -433,10 +436,10 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 	// Clean outdated labels
 	for label, labelPrefix := range ep.Labels {
-		if shouldSkipLabel(label) {
+		if slices.Contains(skipLabels, label) {
 			continue
 		}
-		if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+		if !slices.Contains(ep.Targets, label) {
 			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
 			log.Infof("Delete key %s", key)
 			if p.dryRun {
@@ -448,12 +451,6 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		}
 	}
 	return services, nil
-}
-
-func shouldSkipLabel(label string) bool {
-	skip := []string{"originalText", "prefix", "resource"}
-	_, ok := findLabelInTargets(skip, label)
-	return ok
 }
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.

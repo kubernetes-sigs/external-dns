@@ -17,13 +17,14 @@ limitations under the License.
 package scaleway
 
 import (
-	"context"
+	"io"
 	"os"
 	"reflect"
 	"testing"
 
 	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -35,7 +36,7 @@ type mockScalewayDomain struct {
 	*domain.API
 }
 
-func (m *mockScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
+func (m *mockScalewayDomain) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
 	return &domain.ListDNSZonesResponse{
 		DNSZones: []*domain.DNSZone{
 			{
@@ -58,7 +59,7 @@ func (m *mockScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts 
 	}, nil
 }
 
-func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRequest, opts ...scw.RequestOption) (*domain.ListDNSZoneRecordsResponse, error) {
+func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRequest, _ ...scw.RequestOption) (*domain.ListDNSZoneRecordsResponse, error) {
 	records := []*domain.Record{}
 	if req.DNSZone == "example.com" {
 		records = []*domain.Record{
@@ -122,51 +123,52 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	_ = os.Setenv(scw.ScwActiveProfileEnv, "foo")
-	_ = os.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv(scw.ScwActiveProfileEnv, "foo")
+	t.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
-	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
+	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Unsetenv(scw.ScwSecretKeyEnv)
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "dummy")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv(scw.ScwSecretKeyEnv, "dummy")
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Unsetenv(scw.ScwAccessKeyEnv)
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
-	_ = os.Setenv(scw.ScwAccessKeyEnv, "dummy")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv(scw.ScwAccessKeyEnv, "dummy")
+	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 }
 
 func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
-	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
-	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+	log.SetOutput(io.Discard)
+	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
+	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 
-	_, err := NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err := NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	assert.NoError(t, err)
 }
 
@@ -272,7 +274,7 @@ func TestScalewayProvider_Zones(t *testing.T) {
 			Subdomain: "test",
 		},
 	}
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,7 +342,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 		},
 	}
 
-	records, err := provider.Records(context.TODO())
+	records, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -558,7 +560,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 		},
 	}
 
-	requests, err := provider.generateApplyRequests(context.TODO(), changes)
+	requests, err := provider.generateApplyRequests(t.Context(), changes)
 	if err != nil {
 		t.Fatal(err)
 	}

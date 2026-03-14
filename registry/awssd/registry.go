@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package awssd
 
 import (
 	"context"
@@ -46,8 +46,8 @@ func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return sdr.provider.GetDomainFilter()
 }
 
-func (im *AWSSDRegistry) OwnerID() string {
-	return im.ownerID
+func (sdr *AWSSDRegistry) OwnerID() string {
+	return sdr.ownerID
 }
 
 // Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized

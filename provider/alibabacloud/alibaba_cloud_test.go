@@ -17,7 +17,6 @@ limitations under the License.
 package alibabacloud
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
@@ -93,7 +92,7 @@ func (m *MockAlibabaCloudDNSAPI) UpdateDomainRecord(request *alidns.UpdateDomain
 	return response, nil
 }
 
-func (m *MockAlibabaCloudDNSAPI) DescribeDomains(request *alidns.DescribeDomainsRequest) (*alidns.DescribeDomainsResponse, error) {
+func (m *MockAlibabaCloudDNSAPI) DescribeDomains(_ *alidns.DescribeDomainsRequest) (*alidns.DescribeDomainsResponse, error) {
 	var result alidns.DomainsInDescribeDomains
 	for _, record := range m.records {
 		domain := alidns.Domain{}
@@ -193,7 +192,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) UpdateZoneRecord(request *pvtz.UpdateZo
 	return pvtz.CreateUpdateZoneRecordResponse(), nil
 }
 
-func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(request *pvtz.DescribeZoneRecordsRequest) (*pvtz.DescribeZoneRecordsResponse, error) {
+func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(_ *pvtz.DescribeZoneRecordsRequest) (*pvtz.DescribeZoneRecordsResponse, error) {
 	response := pvtz.CreateDescribeZoneRecordsResponse()
 	response.Records.Record = append(response.Records.Record, m.records...)
 	return response, nil
@@ -235,7 +234,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 
 func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records(context.Background())
+	endpoints, err := p.Records(t.Context())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -250,7 +249,7 @@ func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
-	endpoints, err := p.Records(context.Background())
+	endpoints, err := p.Records(t.Context())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -298,7 +297,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	err := p.ApplyChanges(ctx, &changes)
 	assert.NoError(t, err)
 	endpoints, err := p.Records(ctx)
@@ -356,7 +355,7 @@ func TestAlibabaCloudProvider_ApplyChanges_HaveNoDefinedZoneDomain(t *testing.T)
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	err := p.ApplyChanges(ctx, &changes)
 	assert.NoError(t, err)
 	endpoints, err := p.Records(ctx)
@@ -381,7 +380,7 @@ func TestAlibabaCloudProvider_ApplyChanges_HaveNoDefinedZoneDomain(t *testing.T)
 
 func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records(context.Background())
+	endpoints, err := p.Records(t.Context())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -422,7 +421,7 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	err := p.ApplyChanges(ctx, &changes)
 	assert.NoError(t, err)
 	endpoints, err := p.Records(ctx)

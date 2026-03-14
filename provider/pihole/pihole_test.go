@@ -21,7 +21,11 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -30,7 +34,7 @@ type testPiholeClient struct {
 	requests  *requestTracker
 }
 
-func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (t *testPiholeClient) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
 	for _, ep := range t.endpoints {
 		if ep.RecordType == rtype {
@@ -40,13 +44,13 @@ func (t *testPiholeClient) listRecords(ctx context.Context, rtype string) ([]*en
 	return out, nil
 }
 
-func (t *testPiholeClient) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) createRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	t.endpoints = append(t.endpoints, ep)
 	t.requests.createRequests = append(t.requests.createRequests, ep)
 	return nil
 }
 
-func (t *testPiholeClient) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClient) deleteRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	newEPs := make([]*endpoint.Endpoint, 0)
 	for _, existing := range t.endpoints {
 		if existing.DNSName != ep.DNSName && existing.Targets[0] != ep.Targets[0] {
@@ -81,12 +85,48 @@ func TestNewPiholeProvider(t *testing.T) {
 	}
 }
 
+func TestNewPiholeProvider_APIVersions(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  PiholeConfig
+		wantMsg bool
+	}{
+		{
+			name: "API version 5 with server",
+			config: PiholeConfig{
+				APIVersion: "5",
+				Server:     "test.example.com",
+			},
+			wantMsg: true,
+		},
+		{
+			name: "API version 6 with server",
+			config: PiholeConfig{
+				APIVersion: "6",
+				Server:     "test.example.com",
+			},
+			wantMsg: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			_, err := NewPiholeProvider(tt.config)
+			require.NoError(t, err)
+			if tt.wantMsg {
+				logtest.TestHelperLogContains(warningMsg, hook, t)
+			}
+		})
+	}
+}
+
 func TestProvider_InitialState(t *testing.T) {
 	requests := requestTracker{}
 	p := &PiholeProvider{
 		api: &testPiholeClient{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
 	}
-	records, err := p.Records(context.Background())
+	records, err := p.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,12 +172,12 @@ func TestProvider_CreateRecords(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 		},
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: records,
 	}); err != nil {
 		t.Fatal(err)
 	}
-	newRecords, err := p.Records(context.Background())
+	newRecords, err := p.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +232,7 @@ func TestProvider_DeleteRecords(t *testing.T) {
 		},
 	}
 	// Create initial records
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: records,
 	}); err != nil {
 		t.Fatal(err)
@@ -202,7 +242,7 @@ func TestProvider_DeleteRecords(t *testing.T) {
 		Targets:    []string{"192.168.1.3"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			&recordToDeleteA,
 		},
@@ -214,14 +254,14 @@ func TestProvider_DeleteRecords(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:3"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			&recordToDeleteAAAA,
 		},
 	}); err != nil {
 		t.Fatal(err)
 	}
-	newRecords, err := p.Records(context.Background())
+	newRecords, err := p.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +319,7 @@ func TestProvider_UpdateRecords(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 		},
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: initialRecords,
 	}); err != nil {
 		t.Fatal(err)
@@ -330,13 +370,13 @@ func TestProvider_UpdateRecords(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 		},
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+	if err := p.ApplyChanges(t.Context(), &plan.Changes{
 		UpdateOld: updateOld,
 		UpdateNew: updateNew,
 	}); err != nil {
 		t.Fatal(err)
 	}
-	newRecords, err := p.Records(context.Background())
+	newRecords, err := p.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}

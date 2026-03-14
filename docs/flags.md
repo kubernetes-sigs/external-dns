@@ -12,26 +12,22 @@
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
 | `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |
-| `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
-| `--cf-username=""` | The username to log into the cloud foundry API |
-| `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
 | `--annotation-prefix="external-dns.alpha.kubernetes.io/"` | Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/) |
-| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--connector-source-server="localhost:8080"` | The server to connect for connector source, valid only when using connector source |
 | `--crd-source-apiversion="externaldns.k8s.io/v1alpha1"` | API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source |
 | `--crd-source-kind="DNSEndpoint"` | Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion |
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
 | `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state) |
+| `--[no-]prefer-alias` | When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled) |
 | `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
 | `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional, default: false) |
-| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--gateway-label-filter=""` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--gateway-name=""` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=""` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
@@ -52,6 +48,7 @@
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]traefik-enable-legacy` | Enable legacy listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
+| `--unstructured-resource=UNSTRUCTURED-RESOURCE` | When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources |
 | `--events-emit=EVENTS-EMIT` | Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
@@ -88,6 +85,8 @@
 | `--azure-user-assigned-identity-client-id=""` | When using the Azure provider, override the client id of user assigned identity in config file (optional) |
 | `--azure-zones-cache-duration=0s` | When using the Azure provider, set the zones list cache TTL (0s to disable). |
 | `--azure-maxretries-count=3` | When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional) |
+| `--batch-change-size=200` | Set the maximum number of DNS record changes that will be submitted to the provider in each batch (optional) |
+| `--batch-change-interval=1s` | Set the interval between batch changes (optional, default: 1s) |
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
 | `--[no-]cloudflare-custom-hostnames` | When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires "Cloudflare for SaaS" enabled. (default: disabled) |
 | `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
@@ -183,5 +182,9 @@
 | `--webhook-provider-read-timeout=5s` | The read timeout for the webhook provider in duration format (default: 5s) |
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
+| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
+| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
+| `--target-template=""` | A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Accepts comma separated list for multiple targets. |
+| `--fqdn-target-template=""` | A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Accepts comma separated list for multiple pairs. |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, contour-httpproxy, gloo-proxy, fake, connector, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy, unstructured) |

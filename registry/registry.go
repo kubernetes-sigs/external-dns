@@ -20,13 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	aws_dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/aws"
+	"sigs.k8s.io/external-dns/registry/awssd"
+	"sigs.k8s.io/external-dns/registry/dynamodb"
+	"sigs.k8s.io/external-dns/registry/noop"
+	"sigs.k8s.io/external-dns/registry/txt"
 )
 
 const (
@@ -56,28 +60,20 @@ func SelectRegistry(cfg *externaldns.Config, p provider.Provider) (Registry, err
 	var err error
 	switch cfg.Registry {
 	case DYNAMODB:
-		var dynamodbOpts []func(*dynamodb.Options)
-		if cfg.AWSDynamoDBRegion != "" {
-			dynamodbOpts = []func(*dynamodb.Options){
-				func(opts *dynamodb.Options) {
-					opts.Region = cfg.AWSDynamoDBRegion
-				},
-			}
-		}
-		r, err = NewDynamoDBRegistry(
-			p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...),
+		r, err = dynamodb.NewDynamoDBRegistry(
+			p, cfg.TXTOwnerID, aws_dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodb.WithRegion(cfg.AWSDynamoDBRegion)),
 			cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes,
 			cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case NOOP:
-		r, err = NewNoopRegistry(p)
+		r, err = noop.NewNoopRegistry(p)
 	case TXT:
-		r, err = NewTXTRegistry(
+		r, err = txt.NewTXTRegistry(
 			p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
 			cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
 			cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
 			cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
 	case AWSSD:
-		r, err = NewAWSSDRegistry(p, cfg.TXTOwnerID)
+		r, err = awssd.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
 		err = fmt.Errorf("unknown registry: %s", cfg.Registry)
 	}

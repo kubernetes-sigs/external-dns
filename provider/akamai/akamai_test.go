@@ -17,7 +17,6 @@ limitations under the License.
 package akamai
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -33,10 +32,8 @@ import (
 )
 
 type edgednsStubData struct {
-	objType       string // zone, record, recordsets
-	output        []any
-	updateRecords []any
-	createRecords []any
+	objType string // zone, record, recordsets
+	output  []any
 }
 
 type edgednsStub struct {
@@ -83,27 +80,7 @@ func (r *edgednsStub) setOutput(objtype string, output []any) {
 	return
 }
 
-func (r *edgednsStub) setUpdateRecords(objtype string, records []any) {
-	log.Debugf("Setting updaterecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.updateRecords = records
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) setCreateRecords(objtype string, records []any) {
-	log.Debugf("Setting createrecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.createRecords = records
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
+func (r *edgednsStub) ListZones(_ dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
 	log.Debugf("Entering ListZones")
 	// Ignore Metadata`
 	resp := &dns.ZoneListResponse{}
@@ -118,7 +95,7 @@ func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListR
 	return resp, nil
 }
 
-func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
+func (r *edgednsStub) GetRecordsets(_ string, _ dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
 	log.Debugf("Entering GetRecordsets")
 	// Ignore Metadata`
 	resp := &dns.RecordSetResponse{}
@@ -132,21 +109,21 @@ func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArg
 	return resp, nil
 }
 
-func (r *edgednsStub) CreateRecordsets(recordsets *dns.Recordsets, zone string, reclock bool) error {
+func (r *edgednsStub) CreateRecordsets(_ *dns.Recordsets, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error) {
+func (r *edgednsStub) GetRecord(_ string, _ string, _ string) (*dns.RecordBody, error) {
 	resp := &dns.RecordBody{}
 
 	return resp, nil
 }
 
-func (r *edgednsStub) DeleteRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) DeleteRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) UpdateRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) UpdateRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 
@@ -213,7 +190,7 @@ func TestAkamaiRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -229,7 +206,7 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 	recordsets := make([]any, 0)
 	stub.setOutput("recordset", recordsets)
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	assert.Nil(t, x)
 }
 
@@ -255,7 +232,7 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -388,6 +365,6 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
-	apply := c.ApplyChanges(context.Background(), changes)
+	apply := c.ApplyChanges(t.Context(), changes)
 	assert.NoError(t, apply)
 }

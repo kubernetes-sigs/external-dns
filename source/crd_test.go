@@ -18,7 +18,6 @@ package source
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,8 +41,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 
+	log "github.com/sirupsen/logrus"
+
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type CRDSuite struct {
@@ -66,7 +68,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
-	_ = addKnownTypes(scheme, groupVersion)
+	_ = apiv1alpha1.AddToScheme(scheme)
 
 	dnsEndpointList := apiv1alpha1.DNSEndpointList{}
 	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
@@ -171,9 +173,9 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "invalid crd kind",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
 			kind:                 "JustEndpoint",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -188,10 +190,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "endpoints within a specific namespace",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
@@ -207,10 +209,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "no endpoints within a specific namespace",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "bar",
 			endpoints: []*endpoint.Endpoint{
@@ -226,10 +228,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd with no targets (relies on default-targets)",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
@@ -245,10 +247,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with single endpoint",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
@@ -264,10 +266,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with multiple endpoints",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
@@ -289,10 +291,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with annotation and non matching annotation filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations:          map[string]string{"test": "that"},
@@ -310,10 +312,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with annotation and matching annotation filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations:          map[string]string{"test": "that"},
@@ -331,10 +333,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with label and non matching label filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -352,10 +354,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid crd gvk with label and matching label filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -373,10 +375,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create NS record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -394,10 +396,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create SRV record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -415,10 +417,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "Create NAPTR record",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -435,11 +437,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "illegal target CNAME",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			title:                "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -452,15 +454,34 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectEndpoints: true,
+		},
+		{
+			title:                "CNAME target without trailing dot (relative name)",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "internal.example.com",
+					Targets:    endpoint.Targets{"backend.cluster.local"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  300,
+				},
+			},
+			expectEndpoints: true,
 		},
 		{
 			title:                "illegal target NAPTR",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -478,10 +499,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "valid target TXT",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -499,10 +520,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:                "illegal target A",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
@@ -518,6 +539,48 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: false,
 			expectError:     false,
 		},
+		{
+			title:                "MX Record allowing trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com."},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
+			title:                "MX Record without trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com"},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
@@ -528,7 +591,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			require.NotNil(t, groupVersion)
 
 			scheme := runtime.NewScheme()
-			err = addKnownTypes(scheme, groupVersion)
+			err = apiv1alpha1.AddToScheme(scheme)
 			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(ti.labelFilter)
@@ -567,11 +630,77 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}
 }
 
+func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
+	for _, ti := range []struct {
+		title       string
+		endpoints   []*endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			title: "A record with trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4."},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+		},
+		{
+			title: "NAPTR record without trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"_sip._udp.example.org"},
+					RecordType: endpoint.RecordTypeNAPTR,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+		},
+		{
+			title: "CNAME with empty targets produces no warning",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			restClient := fakeRESTClient(ti.endpoints, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind, "foo", "test", nil, nil, t)
+
+			scheme := runtime.NewScheme()
+			require.NoError(t, apiv1alpha1.AddToScheme(scheme))
+
+			cs, err := NewCRDSource(restClient, "foo", apiv1alpha1.DNSEndpointKind, "", labels.Everything(), scheme, false)
+			require.NoError(t, err)
+
+			_, err = cs.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			if ti.wantWarning == "" {
+				require.Empty(t, hook.Entries, "expected no warnings to be logged")
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
+}
+
 func TestCRDSource_NoInformer(t *testing.T) {
 	cs := &crdSource{informer: nil}
 	called := false
 
-	cs.AddEventHandler(context.Background(), func() { called = true })
+	cs.AddEventHandler(t.Context(), func() { called = true })
 	require.False(t, called, "handler must not be called when informer is nil")
 }
 
@@ -695,7 +824,7 @@ func TestCRDSource_Watch(t *testing.T) {
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	t.Helper()
 	cs := src.(*crdSource)
-	result, err := cs.List(context.Background(), &metav1.ListOptions{})
+	result, err := cs.List(t.Context(), &metav1.ListOptions{})
 	if expectError {
 		require.Errorf(t, err, "Received err %v", err)
 	} else {
@@ -739,7 +868,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		GroupVersion:         apiv1alpha1.GroupVersion,
 		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
 		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Header:     make(http.Header),

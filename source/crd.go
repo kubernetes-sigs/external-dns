@@ -44,6 +44,15 @@ import (
 
 // crdSource is an implementation of Source that provides endpoints by listing
 // specified CRD and fetching Endpoints embedded in Spec.
+//
+// +externaldns:source:name=crd
+// +externaldns:source:category=ExternalDNS
+// +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
+// +externaldns:source:resources=DNSEndpoint.externaldns.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string
@@ -52,15 +61,6 @@ type crdSource struct {
 	annotationFilter string
 	labelSelector    labels.Selector
 	informer         cache.SharedInformer
-}
-
-func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
-	scheme.AddKnownTypes(groupVersion,
-		&apiv1alpha1.DNSEndpoint{},
-		&apiv1alpha1.DNSEndpointList{},
-	)
-	metav1.AddToGroupVersion(scheme, groupVersion)
-	return nil
 }
 
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
@@ -97,7 +97,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	}
 
 	scheme := runtime.NewScheme()
-	_ = addKnownTypes(scheme, groupVersion)
+	_ = apiv1alpha1.AddToScheme(scheme)
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
@@ -111,7 +111,12 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 }
 
 // NewCRDSource creates a new crdSource with the given config.
-func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, labelSelector labels.Selector, scheme *runtime.Scheme, startInformer bool) (Source, error) {
+func NewCRDSource(
+	crdClient rest.Interface,
+	namespace, kind, annotationFilter string,
+	labelSelector labels.Selector,
+	scheme *runtime.Scheme,
+	startInformer bool) (Source, error) {
 	sourceCrd := crdSource{
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
@@ -146,13 +151,13 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 		// https://github.com/kubernetes/kubernetes/issues/79610
 		_, _ = cs.informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {
+				AddFunc: func(_ any) {
 					handler()
 				},
-				UpdateFunc: func(old any, newI any) {
+				UpdateFunc: func(_ any, _ any) {
 					handler()
 				},
-				DeleteFunc: func(obj any) {
+				DeleteFunc: func(_ any) {
 					handler()
 				},
 			},
@@ -174,30 +179,51 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	result, err = cs.filterByAnnotations(result)
+	itemPtrs := make([]*apiv1alpha1.DNSEndpoint, len(result.Items))
+	for i := range result.Items {
+		itemPtrs[i] = &result.Items[i]
+	}
+
+	filtered, err := annotations.Filter(itemPtrs, cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, dnsEndpoint := range result.Items {
+	for _, dnsEndpoint := range filtered {
 		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
-			isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
-			isTXT := ep.RecordType == endpoint.RecordTypeTXT
 			illegalTarget := false
 			for _, target := range ep.Targets {
+				switch ep.RecordType {
+				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
+					continue // TXT records allow arbitrary text, skip validation; MX records can have trailing dot but it's not required, skip validation
+				case endpoint.RecordTypeCNAME:
+					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
+				}
+
 				hasDot := strings.HasSuffix(target, ".")
-				// Skip dot validation for TXT records as they can contain arbitrary text
-				if !isTXT && ((isNAPTR && !hasDot) || (!isNAPTR && hasDot)) {
-					illegalTarget = true
+
+				switch ep.RecordType {
+				case endpoint.RecordTypeNAPTR:
+					illegalTarget = !hasDot // Must have trailing dot
+				default:
+					illegalTarget = hasDot // Must NOT have trailing dot
+				}
+
+				if illegalTarget {
+					fixed := target + "."
+					if ep.RecordType != endpoint.RecordTypeNAPTR {
+						fixed = strings.TrimSuffix(target, ".")
+					}
+					log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — use %q not %q.",
+						dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, target, ep.RecordType, fixed, target)
 					break
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target format.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
@@ -214,13 +240,13 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		// Update the ObservedGeneration
-		_, err = cs.UpdateStatus(ctx, &dnsEndpoint)
+		_, err = cs.UpdateStatus(ctx, dnsEndpoint)
 		if err != nil {
 			log.Warnf("Could not update ObservedGeneration of the CRD: %v", err)
 		}
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {
@@ -252,27 +278,4 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 		Body(dnsEndpoint).
 		Do(ctx).
 		Into(result)
-}
-
-// filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
-func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
-	selector, err := annotations.ParseFilter(cs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	// empty filter returns original list
-	if selector.Empty() {
-		return dnsendpoints, nil
-	}
-
-	filteredList := apiv1alpha1.DNSEndpointList{}
-
-	for _, dnsendpoint := range dnsendpoints.Items {
-		// include dnsendpoint if its annotations match the selector
-		if selector.Matches(labels.Set(dnsendpoint.Annotations)) {
-			filteredList.Items = append(filteredList.Items, dnsendpoint)
-		}
-	}
-
-	return &filteredList, nil
 }

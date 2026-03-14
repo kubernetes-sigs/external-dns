@@ -16,10 +16,6 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
-CONTROLLER_GEN := go tool -modfile=go.tool.mod  controller-gen
-YQ := go tool -modfile=go.tool.mod yq
-YAMLFMT := go tool -modfile=go.tool.mod yamlfmt
-
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
 
@@ -64,13 +60,12 @@ lint: licensecheck go-lint
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd:
-	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./endpoint/..."
-	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout | \
-		$(YAMLFMT) - | \
-		$(YQ) eval '.' --no-doc --split-exp '"./config/crd/standard/" + .metadata.name + ".yaml"'
-	$(YQ) eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
-		--no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
-		./config/crd/standard/*.yaml
+	@./scripts/generate-crd.sh
+
+# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+#? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
+update-tools-deps:
+	@go get -modfile=go.tool.mod tool
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
@@ -177,6 +172,11 @@ generate-flags-documentation:
 #? generate-metrics-documentation: Generate documentation (docs/monitoring/metrics.md)
 generate-metrics-documentation:
 	go run internal/gen/docs/metrics/main.go
+
+.PHONY: generate-sources-documentation
+#? generate-sources-documentation: Generate documentation (docs/sources/index.md)
+generate-sources-documentation:
+	go run internal/gen/docs/sources/main.go
 
 #? pre-commit-install: Install pre-commit hooks
 pre-commit-install:

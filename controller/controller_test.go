@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,19 +58,19 @@ func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface 
 }
 
 // Records returns the desired mock endpoints.
-func (p *filteredMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *filteredMockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	p.RecordsCallCount++
 	return p.RecordsStore, nil
 }
 
 // ApplyChanges stores all calls for later check
-func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *filteredMockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	p.ApplyChangesCalls = append(p.ApplyChangesCalls, changes)
 	return nil
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 
@@ -224,7 +225,7 @@ func TestRunOnce(t *testing.T) {
 		EventEmitter:       emitter,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
@@ -253,7 +254,7 @@ func TestRun(t *testing.T) {
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)
@@ -351,7 +352,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 	assert.Equal(t, 1, provider.RecordsCallCount)
 	require.Len(t, provider.ApplyChangesCalls, len(expectedChanges))
 	for i, change := range expectedChanges {
@@ -484,7 +485,7 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 }
 
 type toggleRegistry struct {
-	registry.NoopRegistry
+	noop.NoopRegistry
 	failCount   int
 	failCountMu sync.Mutex // protects failCount
 }
@@ -501,7 +502,7 @@ func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return []*endpoint.Endpoint{}, nil
 }
 
-func (r *toggleRegistry) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (r *toggleRegistry) ApplyChanges(_ context.Context, _ *plan.Changes) error {
 	return nil
 }
 
@@ -519,7 +520,7 @@ func TestToggleRegistry(t *testing.T) {
 		Interval:           interval,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)

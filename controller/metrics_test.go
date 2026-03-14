@@ -20,48 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/registry"
 )
-
-func TestRecordKnownEndpointType(t *testing.T) {
-	mr := newMetricsRecorder()
-
-	// Recording a built-in type should start at 1 and increment
-	mr.recordEndpointType(endpoint.RecordTypeA)
-	assert.Equal(t, 1, mr.getEndpointTypeCount(endpoint.RecordTypeA))
-
-	mr.recordEndpointType(endpoint.RecordTypeA)
-	assert.Equal(t, 2, mr.getEndpointTypeCount(endpoint.RecordTypeA))
-}
-
-func TestRecordUnknownEndpointType(t *testing.T) {
-	mr := newMetricsRecorder()
-	const customType = "CUSTOM"
-
-	// Unknown types start at zero
-	assert.Equal(t, 0, mr.getEndpointTypeCount(customType))
-
-	// First record sets to 1
-	mr.recordEndpointType(customType)
-	assert.Equal(t, 1, mr.getEndpointTypeCount(customType))
-
-	// Subsequent records increment
-	mr.recordEndpointType(customType)
-	assert.Equal(t, 2, mr.getEndpointTypeCount(customType))
-}
-
-func TestLoadFloat64(t *testing.T) {
-	mr := newMetricsRecorder()
-
-	// loadFloat64 should return the float64 representation of the count
-	mr.recordEndpointType(endpoint.RecordTypeAAAA)
-	assert.InDelta(t, float64(1), mr.loadFloat64(endpoint.RecordTypeAAAA), 0.0001)
-}
 
 func TestVerifyARecords(t *testing.T) {
 	testControllerFiltersDomains(
@@ -322,6 +286,22 @@ func TestAAAARecords(t *testing.T) {
 }
 
 func TestGaugeMetricsWithMixedRecords(t *testing.T) {
+	ctrl := newMixedRecordsFixture()
+
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 534, sourceRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, sourceRecords.Gauge, map[string]string{"record_type": "cname"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 11, sourceRecords.Gauge, map[string]string{"record_type": "srv"})
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 5334, registryRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, registryRecords.Gauge, map[string]string{"record_type": "aaaa"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, registryRecords.Gauge, map[string]string{"record_type": "mx"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 43, registryRecords.Gauge, map[string]string{"record_type": "ptr"})
+}
+
+func newMixedRecordsFixture() *Controller {
 	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
 		endpoint.RecordTypeA:     534,
 		endpoint.RecordTypeAAAA:  324,
@@ -342,6 +322,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	})
 
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
 
 	source := new(testutils.MockSource)
@@ -350,27 +331,23 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.NewNoopRegistry(provider)
+	r, _ := registry.SelectRegistry(cfg, provider)
 
-	require.NoError(t, err)
-
-	ctrl := &Controller{
+	return &Controller{
 		Source:             source,
 		Registry:           r,
 		Policy:             &plan.SyncPolicy{},
 		DomainFilter:       endpoint.NewDomainFilter([]string{}),
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
+}
 
-	assert.NoError(t, ctrl.RunOnce(t.Context()))
+func BenchmarkGaugeMetricsWithMixedRecords(b *testing.B) {
+	ctrl := newMixedRecordsFixture()
 
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 534, sourceRecords.Gauge, map[string]string{"record_type": "a"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, sourceRecords.Gauge, map[string]string{"record_type": "cname"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 11, sourceRecords.Gauge, map[string]string{"record_type": "srv"})
-
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 5334, registryRecords.Gauge, map[string]string{"record_type": "a"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, registryRecords.Gauge, map[string]string{"record_type": "aaaa"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, registryRecords.Gauge, map[string]string{"record_type": "mx"})
-	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 43, registryRecords.Gauge, map[string]string{"record_type": "ptr"})
+	for b.Loop() {
+		if err := ctrl.RunOnce(b.Context()); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

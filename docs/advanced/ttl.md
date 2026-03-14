@@ -77,7 +77,6 @@ TTL must be a positive value.
 | Source                 | Supported |
 |:-----------------------|:---------:|
 | `ambassador-host`      |     ✅     |
-| `cloudfoundry`         |     ❌     |
 | `connector`            |     ❌     |
 | `contour-httpproxy`    |     ✅     |
 | `crd`                  |     ❌     |

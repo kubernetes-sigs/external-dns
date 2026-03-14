@@ -33,39 +33,33 @@ type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
 
-func WaitForCacheSync(ctx context.Context, factory informerFactory) error {
-	timeout := defaultRequestTimeout * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
-		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %w with timeout %s", typ, ctx.Err(), timeout)
-			default:
-				return fmt.Errorf("failed to sync %v with timeout %s", typ, timeout)
-			}
-		}
-	}
-	return nil
-}
-
 type dynamicInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
+func WaitForCacheSync(ctx context.Context, factory informerFactory) error {
+	return waitForCacheSync(ctx, factory.WaitForCacheSync)
+}
+
 func WaitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
+	return waitForCacheSync(ctx, factory.WaitForCacheSync)
+}
+
+// waitForCacheSync waits for informer caches to sync with a default timeout.
+// Returns an error if any cache fails to sync, wrapping the context error if a timeout occurred.
+func waitForCacheSync[K comparable](ctx context.Context, waitFunc func(<-chan struct{}) map[K]bool) error {
+	// The function receives a ctx but then creates a new timeout,
+	// effectively overriding whatever deadline the caller may have set.
+	// If the caller passed a context with a 30s timeout, this function ignores it and waits 60s anyway.
 	timeout := defaultRequestTimeout * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
+	for typ, done := range waitFunc(ctx.Done()) {
 		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %w with timeout %s", typ, ctx.Err(), timeout)
-			default:
-				return fmt.Errorf("failed to sync %v with timeout %s", typ, timeout)
+			if ctx.Err() != nil {
+				return fmt.Errorf("failed to sync %v after %s: %w", typ, timeout, ctx.Err())
 			}
+			return fmt.Errorf("failed to sync %v", typ)
 		}
 	}
 	return nil

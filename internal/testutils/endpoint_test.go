@@ -17,7 +17,6 @@ limitations under the License.
 package testutils
 
 import (
-	"fmt"
 	"net/netip"
 	"reflect"
 	"sort"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestExampleSameEndpoints(t *testing.T) {
@@ -71,17 +71,21 @@ func TestExampleSameEndpoints(t *testing.T) {
 		},
 	}
 	sort.Sort(byAllFields(eps))
-	for _, ep := range eps {
-		fmt.Println(ep)
+
+	expectedOrder := []string{
+		"abc.com",
+		"abc.com",
+		"bbc.com",
+		"cbc.com",
+		"example.org",
+		"example.org",
+		"example.org",
 	}
-	// Output:
-	// abc.com 0 IN A test-set-1 1.2.3.4 []
-	// abc.com 0 IN TXT  something []
-	// bbc.com 0 IN CNAME  foo.com []
-	// cbc.com 60 IN CNAME  foo.com []
-	// example.org 0 IN   load-balancer.org []
-	// example.org 0 IN   load-balancer.org [{foo bar}]
-	// example.org 0 IN TXT  load-balancer.org []
+
+	assert.Len(t, eps, len(expectedOrder))
+	for i, ep := range eps {
+		assert.Equal(t, expectedOrder[i], ep.DNSName, "endpoint %d should be %s", i, expectedOrder[i])
+	}
 }
 
 func makeEndpoint(DNSName string) *endpoint.Endpoint { // nolint: gocritic // captLocal
@@ -540,13 +544,13 @@ func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			endpoint.FilterEndpointsByOwnerID(tt.ownerID, tt.endpoints)
 			for _, m := range tt.messages {
-				TestHelperLogContains(m, hook, t)
+				logtest.TestHelperLogContains(m, hook, t)
 			}
 			for _, m := range tt.messages_not {
-				TestHelperLogNotContains(m, hook, t)
+				logtest.TestHelperLogNotContains(m, hook, t)
 			}
 		})
 	}

@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -138,18 +137,16 @@ func stringifyHTTPResponseBody(r *http.Response) string {
 // well as mock APIClients used in testing
 type PDNSAPIProvider interface {
 	ListZones() ([]pgo.Zone, *http.Response, error)
-	PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone)
 	ListZone(zoneID string) (pgo.Zone, *http.Response, error)
 	PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error)
 }
 
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
-	dryRun       bool
-	serverID     string
-	authCtx      context.Context
-	client       *pgo.APIClient
-	domainFilter *endpoint.DomainFilter
+	dryRun   bool
+	serverID string
+	authCtx  context.Context
+	client   *pgo.APIClient
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -172,23 +169,22 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return zones, resp, provider.NewSoftErrorf("unable to list zones: %v", err)
 }
 
-// PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
-func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
-	var filteredZones []pgo.Zone
-	var residualZones []pgo.Zone
-
-	if c.domainFilter.IsConfigured() {
-		for _, zone := range zones {
-			if c.domainFilter.Match(zone.Name) {
-				filteredZones = append(filteredZones, zone)
-			} else {
-				residualZones = append(residualZones, zone)
-			}
-		}
-	} else {
-		filteredZones = zones
+// partitionZones returns a slice of zones that adhere to the domain filter and a slice of ones that do not adhere to the filter.
+func partitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
+	if domainFilter == nil || !domainFilter.IsConfigured() {
+		return zones, nil
 	}
-	return filteredZones, residualZones
+
+	var filtered, residual []pgo.Zone
+	for _, zone := range zones {
+		if domainFilter.Match(zone.Name) {
+			filtered = append(filtered, zone)
+		} else {
+			residual = append(residual, zone)
+		}
+	}
+
+	return filtered, residual
 }
 
 // ListZone : Method returns the details of a specific zone from PowerDNS
@@ -230,7 +226,8 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Res
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	client PDNSAPIProvider
+	client       PDNSAPIProvider
+	domainFilter *endpoint.DomainFilter
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
@@ -259,17 +256,54 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
-			dryRun:       config.DryRun,
-			serverID:     config.ServerID,
-			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
-			client:       pgo.NewAPIClient(pdnsClientConfig),
-			domainFilter: config.DomainFilter,
+			dryRun:   config.DryRun,
+			serverID: config.ServerID,
+			authCtx:  context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			client:   pgo.NewAPIClient(pdnsClientConfig),
 		},
+		domainFilter: config.DomainFilter,
 	}
 	return provider, nil
 }
 
-func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
+// filteredZones fetches all zones from the PowerDNS API and partitions them
+// using the provider's domain filter. It returns the matching zones, the
+// non-matching (residual) zones, and any error from the API call.
+func (p *PDNSProvider) filteredZones() ([]pgo.Zone, []pgo.Zone, error) {
+	zones, _, err := p.client.ListZones()
+	if err != nil {
+		return nil, nil, err
+	}
+	filtered, residual := partitionZones(zones, p.domainFilter)
+	return filtered, residual, nil
+}
+
+func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	// Return all zones the provider manages so the controller can intersect
+	// with --domain-filter on its own. Do NOT apply p.domainFilter here;
+	// double-filtering would produce an empty filter when no zones match,
+	// silently failing open instead of letting the controller see the
+	// mismatch and produce a safe empty plan.
+	zones, _, err := p.client.ListZones()
+	if err != nil {
+		log.Errorf("Unable to fetch zones from PowerDNS API: %v", err)
+		return &endpoint.DomainFilter{}
+	}
+
+	zoneNames := make([]string, 0, 2*len(zones))
+	for _, zone := range zones {
+		zoneNames = append(zoneNames, zone.Name, "."+zone.Name)
+	}
+	return endpoint.NewDomainFilter(zoneNames)
+}
+
+// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
+func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
+	value, exists := ep.GetProviderSpecificProperty("alias")
+	return exists && value == "true"
+}
+
+func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	targets := make([]string, 0)
 	rrType_ := rr.Type_
@@ -284,7 +318,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
-	return endpoints, nil
+	return endpoints
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
@@ -303,11 +337,10 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			return endpoints[i].DNSName < endpoints[j].DNSName
 		})
 
-	zones, _, err := p.client.ListZones()
+	filteredZones, residualZones, err := p.filteredZones()
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, residualZones := p.client.PartitionZones(zones)
 
 	// Sort the zone by length of the name in descending order, we use this
 	// property later to ensure we add a record to the longest matching zone
@@ -336,9 +369,16 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
-					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
-					RecordType_ = "ALIAS"
+				// Check if we should use ALIAS instead of CNAME:
+				// 1. APEX records (dnsname == zone.Name) always use ALIAS
+				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				//    (can be set via --prefer-alias flag globally or per-resource annotation)
+				if ep.RecordType == endpoint.RecordTypeCNAME {
+					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
+					if useAlias {
+						log.Debugf("Converting CNAME record %q to ALIAS", dnsname)
+						RecordType_ = "ALIAS"
+					}
 				}
 
 				rrset := pgo.RrSet{
@@ -351,7 +391,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// DELETEs explicitly forbid a TTL, therefore only PATCHes need the TTL
 				if changetype == PdnsReplace {
 					if int64(ep.RecordTTL) > int64(math.MaxInt32) {
-						return nil, provider.NewSoftError(fmt.Errorf("value of record TTL overflows, limited to int32"))
+						return nil, provider.NewSoftErrorf("value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
 						// No TTL was specified for the record, we use the default
@@ -425,11 +465,10 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
 func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	zones, _, err := p.client.ListZones()
+	filteredZones, _, err := p.filteredZones()
 	if err != nil {
 		return nil, err
 	}
-	filteredZones, _ := p.client.PartitionZones(zones)
 
 	var endpoints []*endpoint.Endpoint
 
@@ -440,11 +479,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 		}
 
 		for _, rr := range z.Rrsets {
-			e, err := p.convertRRSetToEndpoints(rr)
-			if err != nil {
-				return nil, err
-			}
-			endpoints = append(endpoints, e...)
+			endpoints = append(endpoints, p.convertRRSetToEndpoints(rr)...)
 		}
 	}
 
@@ -467,7 +502,7 @@ func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	startTime := time.Now()
 
 	// Create

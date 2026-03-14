@@ -82,7 +82,7 @@ func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesReq
 	}, nil
 }
 
-func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
+func (c *mockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
 	var response dns.GetZoneRecordsResponse
 	var err error
 	if request.ZoneNameOrId == nil {
@@ -125,7 +125,7 @@ func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZo
 	return response, err
 }
 
-func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, _ dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
 	return dns.PatchZoneRecordsResponse{}, nil
 }
 
@@ -312,7 +312,7 @@ func TestOCIZones(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneScope, false)
-			zones, err := provider.zones(context.Background())
+			zones, err := provider.zones(t.Context())
 			require.NoError(t, err)
 			validateOCIZones(t, zones, tc.expected)
 		})
@@ -357,7 +357,7 @@ func TestOCIRecords(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, "", false)
-			endpoints, err := provider.Records(context.Background())
+			endpoints, err := provider.Records(t.Context())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
 		})
@@ -592,7 +592,7 @@ func sortEndpointTargets(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+func (c *mutableMockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
 	var response dns.PatchZoneRecordsResponse
 	if request.ZoneNameOrId == nil {
 		return response, errors.New("no name or id")
@@ -650,13 +650,13 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	client := newMutableMockOCIDNSClient(zones, records)
 
 	// First ListZones.
-	zonesResponse, err := client.ListZones(context.Background(), dns.ListZonesRequest{})
+	zonesResponse, err := client.ListZones(t.Context(), dns.ListZonesRequest{})
 	require.NoError(t, err)
 	require.Len(t, zonesResponse.Items, 1)
 	require.Equal(t, zonesResponse.Items, zones)
 
 	// GetZoneRecords for that zone.
-	recordsResponse, err := client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
+	recordsResponse, err := client.GetZoneRecords(t.Context(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
 	require.NoError(t, err)
@@ -664,7 +664,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	require.ElementsMatch(t, recordsResponse.Items, records["ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"])
 
 	// Remove the A record.
-	_, err = client.PatchZoneRecords(context.Background(), dns.PatchZoneRecordsRequest{
+	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
 		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
 			Items: []dns.RecordOperation{{
@@ -679,7 +679,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	require.NoError(t, err)
 
 	// GetZoneRecords again and check the A record was removed.
-	recordsResponse, err = client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
+	recordsResponse, err = client.GetZoneRecords(t.Context(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
 	require.NoError(t, err)
@@ -687,7 +687,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	require.Equal(t, recordsResponse.Items[0], records["ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"][1])
 
 	// Add the A record back.
-	_, err = client.PatchZoneRecords(context.Background(), dns.PatchZoneRecordsRequest{
+	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
 		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
 			Items: []dns.RecordOperation{{
@@ -702,7 +702,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	require.NoError(t, err)
 
 	// GetZoneRecords and check we're back in the original state
-	recordsResponse, err = client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
+	recordsResponse, err = client.GetZoneRecords(t.Context(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
 	require.NoError(t, err)
@@ -1037,7 +1037,7 @@ func TestOCIApplyChanges(t *testing.T) {
 				tc.dryRun,
 			)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			err := provider.ApplyChanges(ctx, tc.changes)
 			require.Equal(t, tc.err, err)
 			endpoints, err := provider.Records(ctx)

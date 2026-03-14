@@ -27,13 +27,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -48,6 +50,13 @@ const (
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
 )
 
+// +externaldns:source:name=skipper-routegroup
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
+// +externaldns:source:resources=RouteGroup.zalando.org
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
 type routeGroupSource struct {
 	cli                      routeGroupListClient
 	apiServer                string
@@ -235,49 +244,42 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, 
 }
 
 // AddEventHandler for routegroup is currently a no op, because we do not implement caching, yet.
-func (sc *routeGroupSource) AddEventHandler(ctx context.Context, handler func()) {}
+func (sc *routeGroupSource) AddEventHandler(_ context.Context, _ func()) {}
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.
 // Logic is ported from ingress without fqdnTemplate
-func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	rgList, err := sc.cli.getRouteGroupList(sc.apiEndpoint)
 	if err != nil {
 		log.Errorf("Failed to get RouteGroup list: %v", err)
 		return nil, err
 	}
-	rgList, err = sc.filterByAnnotations(rgList)
+
+	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	for _, rg := range rgList.Items {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := rg.Metadata.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping routegroup %s/%s because controller value does not match, found: %s, required: %s",
-				rg.Metadata.Namespace, rg.Metadata.Name, controller, annotations.ControllerValue)
+	for _, rg := range filtered {
+		if annotations.IsControllerMismatch(rg, types.SkipperRouteGroup) {
 			continue
 		}
 
 		eps := sc.endpointsFromRouteGroup(rg)
 
-		if (sc.combineFQDNAnnotation || len(eps) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(rg)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				eps = append(eps, tmplEndpoints...)
-			} else {
-				eps = tmplEndpoints
-			}
+		eps, err = fqdn.CombineWithTemplatedEndpoints(
+			eps,
+			sc.fqdnTemplate,
+			sc.combineFQDNAnnotation,
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(rg) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if len(eps) == 0 {
-			log.Debugf("No endpoints could be generated from routegroup %s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
+		if endpoint.HasNoEmptyEndpoints(eps, types.OpenShiftRoute, rg) {
 			continue
 		}
 
@@ -285,11 +287,7 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		endpoints = append(endpoints, eps...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.Endpoint, error) {
@@ -320,7 +318,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	hostnameList := strings.SplitSeq(strings.ReplaceAll(hostnames, " ", ""), ",")
 	for hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -351,41 +349,17 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		if src == "" {
 			continue
 		}
-		endpoints = append(endpoints, EndpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := annotations.HostnamesFromAnnotations(rg.Metadata.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 	return endpoints
-}
-
-// filterByAnnotations filters a list of routeGroupList by a given annotation selector.
-func (sc *routeGroupSource) filterByAnnotations(rgs *routeGroupList) (*routeGroupList, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return rgs, nil
-	}
-
-	var filteredList []*routeGroup
-	for _, rg := range rgs.Items {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, rg.Metadata.Annotations) {
-			filteredList = append(filteredList, rg)
-		}
-	}
-	rgs.Items = filteredList
-
-	return rgs, nil
 }
 
 func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
@@ -416,15 +390,13 @@ type routeGroupListMetadata struct {
 }
 
 type routeGroup struct {
-	Metadata itemMetadata     `json:"metadata"`
-	Spec     routeGroupSpec   `json:"spec"`
-	Status   routeGroupStatus `json:"status"`
+	Metadata metav1.ObjectMeta `json:"metadata"`
+	Spec     routeGroupSpec    `json:"spec"`
+	Status   routeGroupStatus  `json:"status"`
 }
 
-type itemMetadata struct {
-	Namespace   string            `json:"namespace"`
-	Name        string            `json:"name"`
-	Annotations map[string]string `json:"annotations"`
+func (rg *routeGroup) GetObjectMeta() metav1.Object {
+	return rg.Metadata.GetObjectMeta()
 }
 
 type routeGroupSpec struct {
@@ -442,4 +414,8 @@ type routeGroupLoadBalancerStatus struct {
 type routeGroupLoadBalancer struct {
 	IP       string `json:"ip,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+}
+
+func (rg *routeGroup) GetAnnotations() map[string]string {
+	return rg.Metadata.Annotations
 }

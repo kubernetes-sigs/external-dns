@@ -62,6 +62,11 @@ func TestFuncs(t *testing.T) {
 			expect: "Capital",
 			vars:   map[string]any{"name": "capital"},
 		},
+		{
+			tpl:    `{{ replace .resources "," "<br/>" }}`,
+			expect: "one<br/>two<br/>tree",
+			vars:   map[string]any{"resources": "one,two,tree"},
+		},
 	}
 
 	for _, tt := range tests {

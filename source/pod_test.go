@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -33,7 +32,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -562,6 +561,66 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
+			"create records based on internal hostname annotation for non-host network pod",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.1",
+					},
+				},
+			},
+		},
+		{
+			"create records based on internal hostname annotation for host network pod",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.1",
+					},
+				},
+			},
+		},
+		{
 			"create records based on pod's target annotation with pod source domain",
 			"",
 			"",
@@ -874,7 +933,7 @@ func TestPodSourceLogs(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 			// Create the nodes
 			for _, node := range tc.nodes {
 				if _, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{}); err != nil {
@@ -894,7 +953,7 @@ func TestPodSourceLogs(t *testing.T) {
 			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil)
 			require.NoError(t, err)
 
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			_, err = client.Endpoints(ctx)
 			require.NoError(t, err)
@@ -903,13 +962,13 @@ func TestPodSourceLogs(t *testing.T) {
 			// We don't do an exact match because logs are globally shared,
 			// making precise comparisons difficult
 			for _, expectedLog := range tc.expectedDebugLogs {
-				testutils.TestHelperLogContains(expectedLog, hook, t)
+				logtest.TestHelperLogContains(expectedLog, hook, t)
 			}
 
 			// Check that no unexpected logs are present.
 			// This ensures that logs are not generated inappropriately.
 			for _, unexpectedLog := range tc.unexpectedDebugLogs {
-				testutils.TestHelperLogNotContains(unexpectedLog, hook, t)
+				logtest.TestHelperLogNotContains(unexpectedLog, hook, t)
 			}
 		})
 	}
@@ -936,7 +995,6 @@ func TestPodSource_AddEventHandler(t *testing.T) {
 
 type fakePodInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
 }
 
 func (f *fakePodInformer) Informer() cache.SharedIndexInformer {
@@ -1043,7 +1101,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source
@@ -1124,7 +1182,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source

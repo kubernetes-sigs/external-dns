@@ -17,12 +17,17 @@ limitations under the License.
 package fqdn
 
 import (
+	"errors"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestParseTemplate(t *testing.T) {
@@ -117,7 +122,7 @@ func TestExecTemplate(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			want: []string{"test.example.com", "default.example.org"},
+			want: []string{"default.example.org", "test.example.com"},
 		},
 		{
 			name: "multiple hostnames",
@@ -142,6 +147,39 @@ func TestExecTemplate(t *testing.T) {
 			want: []string{"test.example.com"},
 		},
 		{
+			name: "trim prefix",
+			tmpl: `{{ trimPrefix .Name "the-" }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "the-test",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "trim suffix",
+			tmpl: `{{ trimSuffix .Name "-v2" }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-v2",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "replace dash",
+			tmpl: `{{ replace "-" "." .Name }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-v2",
+					Namespace: "default",
+				},
+			},
+			want: []string{"test.v2.example.com"},
+		},
+		{
 			name: "annotations and labels",
 			tmpl: "{{.Labels.environment }}.example.com, {{ index .ObjectMeta.Annotations \"alb.ingress.kubernetes.io/scheme\" }}.{{ .Labels.environment }}.{{ index .ObjectMeta.Annotations \"dns.company.com/zone\" }}",
 			obj: &testObject{
@@ -163,7 +201,7 @@ func TestExecTemplate(t *testing.T) {
 					},
 				},
 			},
-			want: []string{"production.example.com", "internal.production.company.org"},
+			want: []string{"internal.production.company.org", "production.example.com"},
 		},
 		{
 			name: "labels to lowercase",
@@ -198,6 +236,100 @@ func TestExecTemplate(t *testing.T) {
 			},
 			want: []string{"abrakadabra.google.com"},
 		},
+		{
+			name: "ignore empty template output",
+			tmpl: "{{ if eq .Name \"other\" }}{{ .Name }}.example.com{{ end }}",
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "ignore trailing comma output",
+			tmpl: "{{ .Name }}.example.com,",
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "contains label with empty value",
+			tmpl: `{{if hasKey .Labels "service.kubernetes.io/headless"}}{{ .Name }}.example.com,{{end}}`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"service.kubernetes.io/headless": "",
+					},
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "result only contains unique values",
+			tmpl: `{{ .Name }}.example.com,{{ .Name }}.example.com,{{ .Name }}.example.com`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"service.kubernetes.io/headless": "",
+					},
+				},
+			},
+			want: []string{"test.example.com"},
+		},
+		{
+			name: "dns entries in labels",
+			tmpl: `
+{{ if hasKey .Labels "records" }}{{ range $entry := (index .Labels "records" | fromJson) }}{{ index $entry "dns" }},{{ end }}{{ end }}`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"records": `
+[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
+					},
+				},
+			},
+			want: []string{"entry1.internal.tld", "entry2.example.tld"},
+		},
+		{
+			name: "configmap with multiple entries",
+			tmpl: `{{ range $entry := (index .Data "entries" | fromJson) }}{{ index $entry "dns" }},{{ end }}`,
+			obj: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-configmap",
+				},
+				Data: map[string]string{
+					"entries": `
+[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
+				},
+			},
+			want: []string{"entry1.internal.tld", "entry2.example.tld"},
+		},
+		{
+			name: "rancher publicEndpoints annotation",
+			tmpl: `
+{{ range $entry := (index .Annotations "field.cattle.io/publicEndpoints" | fromJson) }}{{ index $entry "hostname" }},{{ end }}`,
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Annotations: map[string]string{
+						"field.cattle.io/publicEndpoints": `
+							[{"addresses":[""],"port":80,"protocol":"HTTP",
+								"serviceName":"development:keycloak-ha-service",
+								"ingressName":"development:keycloak-ha-ingress",
+								"hostname":"keycloak.snip.com","allNodes":false
+							}]`,
+					},
+				},
+			},
+			want: []string{"keycloak.snip.com"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -217,6 +349,54 @@ func TestExecTemplateEmptyObject(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ExecTemplate(tmpl, nil)
 	assert.Error(t, err)
+}
+
+func TestExecTemplatePopulatesEmptyKind(t *testing.T) {
+	// Test that Kind is populated when initially empty (simulates informer behavior)
+	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	require.NoError(t, err)
+
+	// Create object with empty TypeMeta (Kind == "")
+	obj := &testObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+		},
+	}
+
+	// Kind should be empty initially
+	assert.Empty(t, obj.GetObjectKind().GroupVersionKind().Kind)
+
+	got, err := ExecTemplate(tmpl, obj)
+	require.NoError(t, err)
+
+	// Kind should now be populated via reflection
+	assert.Equal(t, "testObject", obj.GetObjectKind().GroupVersionKind().Kind)
+	assert.Equal(t, []string{"testObject.test.example.com"}, got)
+}
+
+func TestExecTemplatePreservesExistingKind(t *testing.T) {
+	// Test that existing Kind is not overwritten
+	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	require.NoError(t, err)
+
+	obj := &testObject{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CustomKind",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+		},
+	}
+
+	got, err := ExecTemplate(tmpl, obj)
+	require.NoError(t, err)
+
+	// Kind should remain unchanged
+	assert.Equal(t, "CustomKind", obj.GetObjectKind().GroupVersionKind().Kind)
+	assert.Equal(t, []string{"CustomKind.test.example.com"}, got)
 }
 
 func TestFqdnTemplate(t *testing.T) {
@@ -382,13 +562,106 @@ func TestIsIPv4String(t *testing.T) {
 	}
 }
 
+func TestHasKey(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		m        map[string]string
+		key      string
+		expected bool
+	}{
+		{
+			name:     "key exists with non-empty value",
+			m:        map[string]string{"foo": "bar"},
+			key:      "foo",
+			expected: true,
+		},
+		{
+			name:     "key exists with empty value",
+			m:        map[string]string{"service.kubernetes.io/headless": ""},
+			key:      "service.kubernetes.io/headless",
+			expected: true,
+		},
+		{
+			name:     "key does not exist",
+			m:        map[string]string{"foo": "bar"},
+			key:      "baz",
+			expected: false,
+		},
+		{
+			name:     "nil map",
+			m:        nil,
+			key:      "foo",
+			expected: false,
+		},
+		{
+			name:     "empty map",
+			m:        map[string]string{},
+			key:      "foo",
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			result := hasKey(tt.m, tt.key)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFromJson(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		input    string
+		expected any
+	}{
+		{
+			name:     "map of strings",
+			input:    `{"dns":"entry1.internal.tld","target":"10.10.10.10"}`,
+			expected: map[string]any{"dns": "entry1.internal.tld", "target": "10.10.10.10"},
+		},
+		{
+			name:  "slice of maps",
+			input: `[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
+			expected: []any{
+				map[string]any{"dns": "entry1.internal.tld", "target": "10.10.10.10"},
+				map[string]any{"dns": "entry2.example.tld", "target": "my.cluster.local"},
+			},
+		},
+		{
+			name:     "null input",
+			input:    "null",
+			expected: nil,
+		},
+		{
+			name:     "empty object",
+			input:    "{}",
+			expected: map[string]any{},
+		},
+		{
+			name:     "string value",
+			input:    `"hello"`,
+			expected: "hello",
+		},
+		{
+			name:     "invalid json",
+			input:    "not valid json",
+			expected: nil,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			result := fromJson(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 type testObject struct {
+	metav1.TypeMeta
 	metav1.ObjectMeta
-	runtime.Object
 }
 
 func (t *testObject) DeepCopyObject() runtime.Object {
 	return &testObject{
+		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
 }
@@ -410,4 +683,104 @@ func TestExecTemplateExecutionError(t *testing.T) {
 	_, err = ExecTemplate(tmpl, obj)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to apply template on TestKind default/test-name")
+}
+
+func TestCombineWithTemplatedEndpoints(t *testing.T) {
+	// Create a dummy template for tests that need one
+	dummyTemplate := template.Must(template.New("test").Parse("{{.Name}}"))
+
+	annotationEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	templatedEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("template.example.com", endpoint.RecordTypeA, "5.6.7.8"),
+	}
+
+	successTemplateFunc := func() ([]*endpoint.Endpoint, error) {
+		return templatedEndpoints, nil
+	}
+	errorTemplateFunc := func() ([]*endpoint.Endpoint, error) {
+		return nil, errors.New("template error")
+	}
+
+	tests := []struct {
+		name                  string
+		endpoints             []*endpoint.Endpoint
+		fqdnTemplate          *template.Template
+		combineFQDNAnnotation bool
+		templateFunc          func() ([]*endpoint.Endpoint, error)
+		want                  []*endpoint.Endpoint
+		wantErr               bool
+	}{
+		{
+			name:         "nil template returns original endpoints",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: nil,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
+		},
+		{
+			name:         "combine=false with existing endpoints returns original",
+			endpoints:    annotationEndpoints,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         annotationEndpoints,
+		},
+		{
+			name:         "combine=false with empty endpoints returns templated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
+		},
+		{
+			name:                  "combine=true appends templated to existing",
+			endpoints:             annotationEndpoints,
+			fqdnTemplate:          dummyTemplate,
+			combineFQDNAnnotation: true,
+			templateFunc:          successTemplateFunc,
+			want:                  append(annotationEndpoints, templatedEndpoints...),
+		},
+		{
+			name:                  "combine=true with empty endpoints returns templated",
+			endpoints:             []*endpoint.Endpoint{},
+			fqdnTemplate:          dummyTemplate,
+			combineFQDNAnnotation: true,
+			templateFunc:          successTemplateFunc,
+			want:                  templatedEndpoints,
+		},
+		{
+			name:         "template error is propagated",
+			endpoints:    []*endpoint.Endpoint{},
+			fqdnTemplate: dummyTemplate,
+			templateFunc: errorTemplateFunc,
+			want:         nil,
+			wantErr:      true,
+		},
+		{
+			name:         "nil endpoints with combine=false returns templated",
+			endpoints:    nil,
+			fqdnTemplate: dummyTemplate,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CombineWithTemplatedEndpoints(
+				tt.endpoints,
+				tt.fqdnTemplate,
+				tt.combineFQDNAnnotation,
+				tt.templateFunc,
+			)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to get endpoints from template")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

@@ -16,12 +16,13 @@ hide:
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
 [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kubernetes-sigs/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
 ## Documentation
 
-This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/).
+This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
 
 ## What It Does
 
@@ -103,12 +104,14 @@ from the usage of any externally developed webhook.
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
+| PS Cloud Services     | https://github.com/supervillain3000/external-dns-pscloud-webhook     |
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
@@ -180,7 +183,7 @@ Breaking changes were introduced in external-dns in the following versions:
 
 ## Running ExternalDNS
 
-The are two ways of running ExternalDNS:
+There are two ways of running ExternalDNS:
 
 - Deploying to a Cluster
 - Running Locally

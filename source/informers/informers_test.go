@@ -17,7 +17,6 @@ limitations under the License.
 package informers
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -68,7 +67,7 @@ func TestWaitForCacheSync(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
 			err := WaitForCacheSync(ctx, factory)
@@ -110,7 +109,7 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
 			err := WaitForDynamicCacheSync(ctx, factory)

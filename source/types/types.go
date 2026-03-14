@@ -30,7 +30,6 @@ const (
 	GatewayUdpRoute     Type = "gateway-udproute"
 	IstioGateway        Type = "istio-gateway"
 	IstioVirtualService Type = "istio-virtualservice"
-	Cloudfoundry        Type = "cloudfoundry"
 	AmbassadorHost      Type = "ambassador-host"
 	ContourHTTPProxy    Type = "contour-httpproxy"
 	GlooProxy           Type = "gloo-proxy"
@@ -43,4 +42,5 @@ const (
 	KongTCPIngress      Type = "kong-tcpingress"
 	F5VirtualServer     Type = "f5-virtualserver"
 	F5TransportServer   Type = "f5-transportserver"
+	Unstructured        Type = "unstructured"
 )

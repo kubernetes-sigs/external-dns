@@ -95,6 +95,26 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 	return &DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
 }
 
+// NewDomainFilterWithOptions creates a DomainFilter based on the provided parameters.
+//
+// Example usage:
+// df := NewDomainFilterWithOptions(
+//
+//	WithDomainFilter([]string{"example.com"}),
+//	WithDomainExclude([]string{"test.com"}),
+//
+// )
+func NewDomainFilterWithOptions(opts ...DomainFilterOption) *DomainFilter {
+	cfg := &domainFilterConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	if cfg.isRegexFilter {
+		return NewRegexDomainFilter(cfg.regexInclude, cfg.regexExclude)
+	}
+	return NewDomainFilterWithExclusions(cfg.include, cfg.exclude)
+}
+
 // Match checks whether a domain can be found in the DomainFilter.
 // RegexFilter takes precedence over Filters
 func (df *DomainFilter) Match(domain string) bool {
@@ -267,4 +287,43 @@ func normalizeDomain(domain string) string {
 		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
 	}
 	return s
+}
+
+type DomainFilterOption func(*domainFilterConfig)
+type domainFilterConfig struct {
+	include       []string
+	exclude       []string
+	regexInclude  *regexp.Regexp
+	regexExclude  *regexp.Regexp
+	isRegexFilter bool
+}
+
+func WithDomainFilter(filters []string) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.include = prepareFilters(filters)
+	}
+}
+
+func WithDomainExclude(exclude []string) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.exclude = prepareFilters(exclude)
+	}
+}
+
+func WithRegexDomainFilter(regex *regexp.Regexp) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.regexInclude = regex
+		if regex != nil && regex.String() != "" {
+			cfg.isRegexFilter = true
+		}
+	}
+}
+
+func WithRegexDomainExclude(regex *regexp.Regexp) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.regexExclude = regex
+		if regex != nil && regex.String() != "" {
+			cfg.isRegexFilter = true
+		}
+	}
 }

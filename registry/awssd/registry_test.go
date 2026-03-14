@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package awssd
 
 import (
 	"context"
@@ -35,11 +35,11 @@ type inMemoryProvider struct {
 	onApplyChanges func(changes *plan.Changes)
 }
 
-func (p *inMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *inMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return p.endpoints, nil
 }
 
-func (p *inMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *inMemoryProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	p.onApplyChanges(changes)
 	return nil
 }
@@ -102,8 +102,8 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 		},
 	}
 
-	r, _ := NewAWSSDRegistry(p, "owner")
-	records, _ := r.Records(context.Background())
+	r, _ := NewAWSSDRegistry(p, "records-owner")
+	records, _ := r.Records(t.Context())
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
@@ -111,16 +111,19 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
+			endpoint.NewEndpoint("new-record-1.test-zone.example.org", endpoint.RecordTypeCNAME, "new-loadbalancer-1.lb.com"),
 		},
 		Delete: []*endpoint.Endpoint{
-			newEndpointWithOwner("foobar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
+			endpoint.NewEndpoint("foobar.test-zone.example.org", endpoint.RecordTypeA, "1.2.3.4").
+				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+			endpoint.NewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "new-tar.loadbalancer.com").
+				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+			endpoint.NewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "tar.loadbalancer.com").
+				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 	}
 	expected := &plan.Changes{
@@ -155,7 +158,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 	r, err := NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)
 
-	err = r.ApplyChanges(context.Background(), changes)
+	err = r.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 }
 

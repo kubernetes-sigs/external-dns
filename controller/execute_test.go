@@ -25,15 +25,16 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Logger
@@ -230,202 +231,8 @@ func TestBuildProvider(t *testing.T) {
 	}
 }
 
-// TODO: this test should live in endpoint package
-func TestCreateDomainFilter(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cfg                  *externaldns.Config
-		expectedDomainFilter *endpoint.DomainFilter
-		isConfigured         bool
-		matchDomain          string
-		expectMatch          bool
-	}{
-		{
-			name: "RegexDomainFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`example\.com`),
-				RegexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
-			isConfigured:         true,
-		},
-		{
-			name: "RegexDomainWithoutExclusionFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusions",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{"example.com"},
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusionsOnly",
-			cfg: &externaldns.Config{
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "EmptyDomainFilter",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{},
-				ExcludeDomains: []string{},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
-			isConfigured:         false,
-		},
-		{
-			name: "RegexDomainExclusionWithoutRegexFilter",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`test-v1\.3\.example-test\.in`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`test-v1\.3\.example-test\.in`)),
-			isConfigured:         true,
-			matchDomain:          "test-v1.3.example-test.in",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexDomainFilterWithMultipleDomains",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`(example\.com|test\.org)`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`(example\.com|test\.org)`), nil),
-			isConfigured:         true,
-			matchDomain:          "api.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexDomainFilterWithWildcardPattern",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`.*\.staging\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.staging\..*`), nil),
-			isConfigured:         true,
-			matchDomain:          "app.staging.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexDomainExclusionWithComplexPattern",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`^(internal|private)-.*\.example\.com$`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`^(internal|private)-.*\.example\.com$`)),
-			isConfigured:         true,
-			matchDomain:          "internal-service.example.com",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexFilterAndExclusionBothPresent",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`.*\.prod\..*`),
-				RegexDomainExclusion: regexp.MustCompile(`temp-.*\.prod\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.prod\..*`), regexp.MustCompile(`temp-.*\.prod\..*`)),
-			isConfigured:         true,
-			matchDomain:          "temp-api.prod.example.com",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexWithEscapedSpecialChars",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`test\-api\.v\d+\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`test\-api\.v\d+\.example\.com`), nil),
-			isConfigured:         true,
-			matchDomain:          "test-api.v2.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexExclusionWithNumericPattern",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`\d{3,}-temp\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`\d{3,}-temp\..*`)),
-			isConfigured:         true,
-			matchDomain:          "123-temp.example.com",
-			expectMatch:          false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filter := createDomainFilter(tt.cfg)
-			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
-			assert.Equal(t, tt.expectedDomainFilter, filter)
-			if tt.matchDomain != "" {
-				assert.Equal(t, tt.expectMatch, filter.Match(tt.matchDomain))
-			}
-		})
-	}
-}
-
-func TestBuildSource(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name          string
-		cfg           *externaldns.Config
-		expectedError bool
-	}{
-		{
-			name: "Valid configuration with sources",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{"fake"},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Empty sources configuration",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Update events enabled",
-			cfg: &externaldns.Config{
-				KubeConfig:   "path-to-kubeconfig-not-exists",
-				APIServerURL: svr.URL,
-				Sources:      []string{"ingress"},
-				UpdateEvents: true,
-			},
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			src, err := buildSource(t.Context(), tt.cfg)
-
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, src)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, src)
-			}
-		})
-	}
-}
-
 func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 	}))
 	defer svr.Close()
@@ -462,14 +269,14 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), tt.cfg)
+			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
 			require.NoError(t, err)
 		})
 	}
 }
 
 // Helper used by runExecuteSubprocess.
-func TestHelperProcess(t *testing.T) {
+func TestHelperProcess(_ *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
@@ -489,30 +296,37 @@ func TestHelperProcess(t *testing.T) {
 	Execute()
 }
 
-// runExecuteSubprocess runs Execute in a separate process and returns exit code and output.
-func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
+// runExecuteSubprocess runs Execute in a separate process and returns exit code.
+func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
+	// make sure the subprocess does not run forever
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	// TODO: investigate why -test.run=TestHelperProcess
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
-	cmd := exec.Command(os.Args[0], cmdArgs...)
+	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
-	output := buf.String()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return -1, ctx.Err()
+	}
 	if err == nil {
-		return 0, output, nil
+		return 0, nil
 	}
 	ee := &exec.ExitError{}
 	if errors.As(err, &ee) {
-		return ee.ExitCode(), output, nil
+		return ee.ExitCode(), nil
 	}
-	return -1, output, err
+	return -1, err
 }
 
 func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 	// Use :0 for an ephemeral metrics port.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--once",
@@ -524,7 +338,7 @@ func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 }
 
 func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "unknown",
 		"--metrics-address", ":0",
@@ -534,7 +348,7 @@ func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
 }
 
 func TestExecuteValidationErrorNoSources(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--provider", "inmemory",
 		"--metrics-address", ":0",
 	})
@@ -543,7 +357,7 @@ func TestExecuteValidationErrorNoSources(t *testing.T) {
 }
 
 func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--log-format", "invalid",
 		// Provide minimal required flags to keep errors focused on parsing
 		"--source", "fake",
@@ -556,7 +370,7 @@ func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
 
 // Config validation failure triggers log.Fatalf.
 func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		// Choose a provider with validation that fails without required flags
 		"--provider", "azure",
@@ -571,7 +385,7 @@ func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
 func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 	// Use a valid source name (ingress) and an invalid kubeconfig path to
 	// force client creation failure inside buildSource.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "ingress",
 		"--kubeconfig", "this/path/does/not/exist",
 		"--provider", "inmemory",
@@ -584,7 +398,7 @@ func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
 // RunOnce error exits non-zero.
 func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 	// Connector source dials a TCP server; use a closed port to fail.
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -597,7 +411,7 @@ func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
 
 // Run loop error exits non-zero.
 func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "connector",
 		"--connector-source-server", "127.0.0.1:1",
 		"--provider", "inmemory",
@@ -609,7 +423,7 @@ func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
 
 // buildController registry-creation failure triggers log.Fatal.
 func TestExecuteBuildControllerErrorExitsNonZero(t *testing.T) {
-	code, _, err := runExecuteSubprocess(t, []string{
+	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
 		"--registry", "dynamodb",
@@ -633,14 +447,20 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	sCfg := source.NewSourceConfig(cfg)
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	src, err := buildSource(ctx, cfg)
+	src, err := buildSource(ctx, sCfg)
 	require.NoError(t, err)
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
-	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)
 
 	done := make(chan struct{})

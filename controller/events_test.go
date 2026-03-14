@@ -53,10 +53,10 @@ func TestEmit_RecordReady(t *testing.T) {
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				for _, ep := range ch.Create {
-					em.AssertCalled(t, "Add", events.NewEvent(ep.RefObject(), ep.Describe(), events.ActionCreate, events.RecordReady))
+					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionCreate, events.RecordReady))
 				}
 				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEvent(ep.RefObject(), ep.Describe(), events.ActionDelete, events.RecordDeleted))
+					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
 				}
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.EventType() == events.EventTypeWarning
@@ -75,7 +75,7 @@ func TestEmit_RecordReady(t *testing.T) {
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEvent(ep.RefObject(), ep.Describe(), events.ActionDelete, events.RecordDeleted))
+					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
 				}
 				em.AssertCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.EventType() == events.EventTypeNormal &&

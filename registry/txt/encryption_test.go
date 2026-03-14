@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package txt
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -138,7 +137,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -149,9 +148,9 @@ func TestApplyRecordsWithEncryption(t *testing.T) {
 	_ = r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
-			newEndpointWithOwnerAndOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwner("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner"),
-			newEndpointWithOwnerAndOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+			newTXTEndpointWithOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
 			newEndpointWithOwner("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2"),
 			newEndpointWithOwner("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
 			newEndpointWithOwner("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner"),
@@ -191,7 +190,7 @@ func TestApplyRecordsWithEncryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -206,9 +205,9 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 		_ = r.ApplyChanges(ctx, &plan.Changes{
 			Create: []*endpoint.Endpoint{
 				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
-				newEndpointWithOwnerAndOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+				newTXTEndpointWithOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 				newEndpointWithOwner("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner"),
-				newEndpointWithOwnerAndOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+				newTXTEndpointWithOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
 				newEndpointWithOwner("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2"),
 				newEndpointWithOwner("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
 				newEndpointWithOwner("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner"),
@@ -221,7 +220,7 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 }
 
 func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -249,7 +248,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 				Create: changes,
 			})
 		} else {
-			_ = r.ApplyChanges(context.Background(), &plan.Changes{
+			_ = r.ApplyChanges(t.Context(), &plan.Changes{
 				UpdateNew: changes,
 			})
 		}

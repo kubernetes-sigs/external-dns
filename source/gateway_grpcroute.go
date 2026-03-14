@@ -17,6 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -25,8 +27,8 @@ import (
 )
 
 // NewGatewayGRPCRouteSource creates a new Gateway GRPCRoute source with the given config.
-func NewGatewayGRPCRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "GRPCRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
+func NewGatewayGRPCRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, config, "GRPCRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayGRPCRouteInformer{factory.Gateway().V1().GRPCRoutes()}
 	})
 }

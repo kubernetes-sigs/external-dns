@@ -85,7 +85,7 @@ func NewTransIPProvider(accountName, privateKeyFile string, domainFilter *endpoi
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *TransIPProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	// fetch all zones we currently have
 	// this does NOT include any DNS entries, so we'll have to fetch these for
 	// each zone that gets updated
@@ -258,7 +258,7 @@ func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 }
 
 // Records returns the list of records in all zones
-func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *TransIPProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.domainRepo.GetAll()
 	if err != nil {
 		return nil, err

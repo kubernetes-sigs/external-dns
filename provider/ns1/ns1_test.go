@@ -17,7 +17,6 @@ limitations under the License.
 package ns1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -38,15 +37,15 @@ type MockNS1DomainClient struct {
 	mock.Mock
 }
 
-func (m *MockNS1DomainClient) CreateRecord(r *dns.Record) (*http.Response, error) {
+func (m *MockNS1DomainClient) CreateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1DomainClient) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
+func (m *MockNS1DomainClient) DeleteRecord(_ string, _ string, _ string) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1DomainClient) UpdateRecord(r *dns.Record) (*http.Response, error) {
+func (m *MockNS1DomainClient) UpdateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
@@ -89,11 +88,11 @@ func (m *MockNS1GetZoneFail) DeleteRecord(_ string, _ string, _ string) (*http.R
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1GetZoneFail) UpdateRecord(r *dns.Record) (*http.Response, error) {
+func (m *MockNS1GetZoneFail) UpdateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1GetZoneFail) GetZone(zone string) (*dns.Zone, *http.Response, error) {
+func (m *MockNS1GetZoneFail) GetZone(_ string) (*dns.Zone, *http.Response, error) {
 	return nil, nil, api.ErrZoneMissing
 }
 
@@ -115,11 +114,11 @@ func (m *MockNS1ListZonesFail) DeleteRecord(_ string, _ string, _ string) (*http
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1ListZonesFail) UpdateRecord(r *dns.Record) (*http.Response, error) {
+func (m *MockNS1ListZonesFail) UpdateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
-func (m *MockNS1ListZonesFail) GetZone(zone string) (*dns.Zone, *http.Response, error) {
+func (m *MockNS1ListZonesFail) GetZone(_ string) (*dns.Zone, *http.Response, error) {
 	return &dns.Zone{}, &http.Response{}, nil
 }
 
@@ -134,7 +133,7 @@ func TestNS1Records(t *testing.T) {
 		zoneIDFilter:  provider.NewZoneIDFilter([]string{""}),
 		minTTLSeconds: 3600,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
@@ -150,7 +149,7 @@ func TestNS1Records(t *testing.T) {
 }
 
 func TestNewNS1Provider(t *testing.T) {
-	_ = os.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
+	t.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
 	testNS1Config := NS1Config{
 		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),
@@ -235,14 +234,14 @@ func TestNS1ApplyChanges(t *testing.T) {
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
 	changes.Delete = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
-	err = provider.ApplyChanges(context.Background(), changes)
+	err = provider.ApplyChanges(t.Context(), changes)
 	require.NoError(t, err)
 }
 

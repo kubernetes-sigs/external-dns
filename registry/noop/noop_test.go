@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package noop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,8 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
-
-var _ Registry = &NoopRegistry{}
 
 func TestNoopRegistry(t *testing.T) {
 	t.Run("NewNoopRegistry", testNoopInit)
@@ -45,7 +42,7 @@ func testNoopInit(t *testing.T) {
 }
 
 func testNoopRecords(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
 	inmemoryRecords := []*endpoint.Endpoint{
@@ -90,7 +87,7 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: inmemoryRecords,
 	})
