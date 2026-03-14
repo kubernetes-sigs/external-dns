@@ -332,6 +332,7 @@ provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
 
 **ListenerSet resources** also support the `target` annotation. When a Route references a ListenerSet
 as its parent, the ListenerSet's target annotation takes precedence over the parent Gateway's target annotation.
+ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
 
 For more details and comprehensive examples, see the
 [Gateway API documentation](../sources/gateway-api.md#annotations).
