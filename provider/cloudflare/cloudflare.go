@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"sort"
@@ -221,6 +222,7 @@ type CloudFlareProvider struct {
 	proxiedByDefault       bool
 	DryRun                 bool
 	CustomHostnamesConfig  CustomHostnamesConfig
+	CustomHostnamesCurrent customHostnamesMap // set by Records(), used by AdjustEndpoints()
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
 }
@@ -378,6 +380,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
+	p.CustomHostnamesCurrent = make(customHostnamesMap)
 	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		records, err := p.getDNSRecordsMap(ctx, zone.ID)
@@ -390,6 +393,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		if chErr != nil {
 			return nil, chErr
 		}
+		maps.Copy(p.CustomHostnamesCurrent, chs)
 
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
@@ -616,8 +620,16 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		e.SetProviderSpecificProperty(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
-			// sort custom hostnames in annotation to properly detect changes
-			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
+			customHostnames := getEndpointCustomHostnames(e)
+			if customHostnames == nil {
+				// managed externally: match desired to current CF state to avoid no-op updates
+				if ann := p.chAnnotationForOrigin(e.DNSName); ann != "" {
+					e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, ann)
+				} else {
+					e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+				}
+			} else if len(customHostnames) > 1 {
+				// sort custom hostnames in annotation to properly detect changes
 				sort.Strings(customHostnames)
 				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
 			}
@@ -783,6 +795,32 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	return proxied
 }
 
+// chAnnotationHostname returns "<hostname>[=<sni>]" for the CH annotation format.
+func (c customHostname) chAnnotationHostname() string {
+	h := c.hostname
+	if c.customOriginSNI == ":request_host_header:" {
+		h += "="
+	} else if c.customOriginSNI != "" && c.customOriginSNI != c.customOriginServer {
+		h += "=" + c.customOriginSNI
+	}
+	return h
+}
+
+// chAnnotationForOrigin builds the CH annotation value from current CF state for a DNS name.
+func (p *CloudFlareProvider) chAnnotationForOrigin(origin string) string {
+	var hostnames []string
+	for _, c := range p.CustomHostnamesCurrent {
+		if c.customOriginServer == origin {
+			hostnames = append(hostnames, c.chAnnotationHostname())
+		}
+	}
+	if len(hostnames) == 0 {
+		return ""
+	}
+	sort.Strings(hostnames)
+	return strings.Join(hostnames, ",")
+}
+
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
 		if v.Name == annotations.CloudflareCustomHostnameKey {
@@ -818,15 +856,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 	customHostnamesMap := map[string][]string{}
 
 	for _, c := range chs {
-		annotationHostname := c.hostname
-		// for custom hostnames with Origin SNI overrides use the "<customHostname>=<customOriginSNI>" format to be able to detect changes and update accordingly.
-		// if Origin SNI Value from API is ":request_host_header:", we will be using "<customHostname>=" in annotation and internally for brevity.
-		if c.customOriginSNI == ":request_host_header:" {
-			annotationHostname += "="
-		} else if c.customOriginSNI != "" && c.customOriginSNI != c.customOriginServer {
-			annotationHostname += "=" + c.customOriginSNI
-		}
-		customHostnamesMap[c.customOriginServer] = append(customHostnamesMap[c.customOriginServer], annotationHostname)
+		customHostnamesMap[c.customOriginServer] = append(customHostnamesMap[c.customOriginServer], c.chAnnotationHostname())
 	}
 
 	// create a single endpoint with all the targets for each name/type

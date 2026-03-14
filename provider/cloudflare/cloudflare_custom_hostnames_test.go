@@ -1018,6 +1018,97 @@ func TestManagedExternallySkipsCHLifecycle(t *testing.T) {
 	assert.Equal(t, "ch1", client.customHostnames["zone1"][0].id)
 }
 
+func TestManagedExternallyNoOpUpdate(t *testing.T) {
+	provider := &CloudFlareProvider{
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+		CustomHostnamesCurrent: customHostnamesMap{
+			customHostnameIndex{hostname: "app.example.com"}: {
+				hostname:           "app.example.com",
+				customOriginServer: "origin.example.com",
+				customOriginSNI:    ":request_host_header:",
+			},
+		},
+	}
+
+	// simulate Records() output (current side)
+	currentEP := &endpoint.Endpoint{
+		DNSName:    "origin.example.com",
+		RecordType: "A",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{Name: annotations.CloudflareProxiedKey, Value: "true"},
+			{Name: annotations.CloudflareCustomHostnameKey, Value: "app.example.com="},
+		},
+	}
+
+	// simulate source output (desired side) with "-" annotation
+	desiredEP := &endpoint.Endpoint{
+		DNSName:    "origin.example.com",
+		RecordType: "A",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{Name: annotations.CloudflareProxiedKey, Value: "true"},
+			{Name: annotations.CloudflareCustomHostnameKey, Value: "-"},
+		},
+	}
+
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{desiredEP})
+	assert.NoError(t, err)
+
+	// after adjustment, desired CH annotation should match current
+	desiredVal, _ := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+	currentVal, _ := currentEP.GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+	assert.Equal(t, currentVal, desiredVal, "desired should match current to avoid no-op update")
+}
+
+func TestManagedExternallyNoCHsInCF(t *testing.T) {
+	provider := &CloudFlareProvider{
+		CustomHostnamesConfig:  CustomHostnamesConfig{Enabled: true},
+		CustomHostnamesCurrent: customHostnamesMap{},
+	}
+
+	ep := &endpoint.Endpoint{
+		DNSName:    "origin.example.com",
+		RecordType: "A",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{Name: annotations.CloudflareProxiedKey, Value: "true"},
+			{Name: annotations.CloudflareCustomHostnameKey, Value: "-"},
+		},
+	}
+
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{ep})
+	assert.NoError(t, err)
+
+	_, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+	assert.False(t, ok, "CH property should be deleted when no CHs in CF")
+}
+
+func TestChAnnotationForOrigin(t *testing.T) {
+	provider := &CloudFlareProvider{
+		CustomHostnamesCurrent: customHostnamesMap{
+			customHostnameIndex{hostname: "a.example.com"}: {
+				hostname:           "a.example.com",
+				customOriginServer: "origin.example.com",
+				customOriginSNI:    "origin.example.com",
+			},
+			customHostnameIndex{hostname: "b.example.com"}: {
+				hostname:           "b.example.com",
+				customOriginServer: "origin.example.com",
+				customOriginSNI:    ":request_host_header:",
+			},
+			customHostnameIndex{hostname: "other.example.com"}: {
+				hostname:           "other.example.com",
+				customOriginServer: "other-origin.example.com",
+			},
+		},
+	}
+
+	assert.Equal(t, "a.example.com,b.example.com=", provider.chAnnotationForOrigin("origin.example.com"))
+	assert.Equal(t, "other.example.com", provider.chAnnotationForOrigin("other-origin.example.com"))
+	assert.Equal(t, "", provider.chAnnotationForOrigin("nonexistent.example.com"))
+}
+
 func TestGroupByNameAndTypeWithCustomHostnames_SNI(t *testing.T) {
 	provider := &CloudFlareProvider{
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
