@@ -242,8 +242,10 @@ func buildProvider(
 				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
 			},
 			cloudflare.DNSRecordsConfig{
-				PerPage: cfg.CloudflareDNSRecordsPerPage,
-				Comment: cfg.CloudflareDNSRecordsComment,
+				PerPage:             cfg.CloudflareDNSRecordsPerPage,
+				Comment:             cfg.CloudflareDNSRecordsComment,
+				BatchChangeSize:     cfg.BatchChangeSize,
+				BatchChangeInterval: cfg.BatchChangeInterval,
 			})
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
@@ -432,7 +434,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithNAT64Networks(cfg.NAT64Networks),
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
+		wrappers.WithMinTTL(cfg.MinTTL),
+		wrappers.WithPreferAlias(cfg.PreferAlias))
 	return wrappers.WrapSources(sources, opts)
 }
 

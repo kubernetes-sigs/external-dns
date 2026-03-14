@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 
@@ -121,7 +122,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 func TestExoscaleGetRecords(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", "", false)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	if err == nil {
 		assert.Len(t, recs, 3)
 		assert.True(t, contains(recs, "v1.foo.com"))
@@ -190,7 +191,7 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	createExoscale = make([]createRecordExoscale, 0)
 	deleteExoscale = make([]deleteRecordExoscale, 0)
 
-	provider.ApplyChanges(context.Background(), plan)
+	provider.ApplyChanges(t.Context(), plan)
 
 	assert.Len(t, createExoscale, 1)
 	assert.Equal(t, domainIDs[0], createExoscale[0].domainID)

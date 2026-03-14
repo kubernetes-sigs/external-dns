@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -155,7 +154,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			ttl, _ := time.ParseDuration(tt.ttl)
 			src := NewPostProcessor(ms, WithTTL(ttl))
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
 		})
@@ -182,6 +181,63 @@ func TestPostProcessor_AddEventHandler(t *testing.T) {
 			src.AddEventHandler(t.Context(), func() {})
 
 			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
+		})
+	}
+}
+
+func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
+	tests := []struct {
+		title       string
+		preferAlias bool
+		endpoints   []*endpoint.Endpoint
+		expected    []*endpoint.Endpoint
+	}{
+		{
+			title:       "CNAME records get alias annotation when preferAlias is enabled",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:       "CNAME records remain unchanged when preferAlias is disabled",
+			preferAlias: false,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+			},
+		},
+		{
+			title:       "only CNAME records are affected, A records are unchanged",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			ms := new(testutils.MockSource)
+			ms.On("Endpoints").Return(tt.endpoints, nil)
+			src := NewPostProcessor(ms, WithPostProcessorPreferAlias(tt.preferAlias))
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			validateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

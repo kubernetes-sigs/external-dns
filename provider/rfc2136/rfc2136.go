@@ -312,7 +312,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		if lastErr != nil {
 			r.lastErr = lastErr
-			return nil, lastErr
+			return nil, provider.NewSoftError(lastErr)
 		}
 	}
 
@@ -466,7 +466,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("RFC2136 had errors in one or more of its batches: %v", errs)
+		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
 	}
 
 	return nil
@@ -625,7 +625,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 
 	r.lastErr = lastErr
-	return lastErr
+	return provider.NewSoftError(lastErr)
 }
 
 func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {

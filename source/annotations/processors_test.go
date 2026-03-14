@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 // helper implementing metav1.ObjectMetaAccessor for tests
@@ -432,15 +432,15 @@ func TestIsControllerMismatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			result := IsControllerMismatch(&tt.entity, tt.resourceType)
 			assert.Equal(t, tt.expected, result)
 
 			if tt.debugMsg != "" {
-				testutils.TestHelperLogContains(tt.debugMsg, hook, t)
+				logtest.TestHelperLogContains(tt.debugMsg, hook, t)
 			} else {
-				testutils.TestHelperLogNotContains("Skipping", hook, t)
+				logtest.TestHelperLogNotContains("Skipping", hook, t)
 			}
 		})
 	}
