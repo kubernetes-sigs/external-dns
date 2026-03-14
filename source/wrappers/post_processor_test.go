@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -155,7 +154,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			ttl, _ := time.ParseDuration(tt.ttl)
 			src := NewPostProcessor(ms, WithTTL(ttl))
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
 		})
@@ -236,7 +235,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			ms.On("Endpoints").Return(tt.endpoints, nil)
 			src := NewPostProcessor(ms, WithPostProcessorPreferAlias(tt.preferAlias))
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
 		})
