@@ -14,7 +14,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -219,7 +218,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			serviceInformer := informerFactory.Core().V1().Services()
 
 			for _, svc := range tt.services {
-				_, err := client.CoreV1().Services(tt.namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+				_, err := client.CoreV1().Services(tt.namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 				assert.NoError(t, err)
 
 				err = serviceInformer.Informer().GetIndexer().Add(svc)

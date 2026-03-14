@@ -17,7 +17,6 @@ limitations under the License.
 package txt
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -138,7 +137,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -191,7 +190,7 @@ func TestApplyRecordsWithEncryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -221,7 +220,7 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 }
 
 func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -249,7 +248,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 				Create: changes,
 			})
 		} else {
-			_ = r.ApplyChanges(context.Background(), &plan.Changes{
+			_ = r.ApplyChanges(t.Context(), &plan.Changes{
 				UpdateNew: changes,
 			})
 		}

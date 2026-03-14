@@ -297,7 +297,7 @@ func TestDigitalOceanZones(t *testing.T) {
 		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 	}
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +386,7 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 100}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := provider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -662,13 +662,13 @@ func TestDigitalOceanProcessDeleteActions(t *testing.T) {
 }
 
 func TestNewDigitalOceanProvider(t *testing.T) {
-	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
+	t.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
+	_, err := NewDigitalOceanProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
+	_, err = NewDigitalOceanProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -776,7 +776,7 @@ func TestDigitalOceanRecord(t *testing.T) {
 		Client: &mockDigitalOceanClient{},
 	}
 
-	records, err := provider.fetchRecords(context.Background(), "example.com")
+	records, err := provider.fetchRecords(t.Context(), "example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -791,7 +791,7 @@ func TestDigitalOceanAllRecords(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	records, err := provider.Records(ctx)
 	if err != nil {
