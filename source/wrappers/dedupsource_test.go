@@ -35,12 +35,8 @@ import (
 // Validates that dedupSource is a Source
 var _ source.Source = &dedupSource{}
 
-func TestDedup(t *testing.T) {
-	t.Run("Endpoints", testDedupEndpoints)
-}
-
-// testDedupEndpoints tests that duplicates from the wrapped source are removed.
-func testDedupEndpoints(t *testing.T) {
+// TestDedupEndpoints tests that duplicates from the wrapped source are removed.
+func TestDedupEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title     string
 		endpoints []*endpoint.Endpoint
