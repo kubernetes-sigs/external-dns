@@ -148,13 +148,13 @@ func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, e
 		}
 		// 5xx: retryable server error
 		if resp.StatusCode >= http.StatusInternalServerError {
-			_ = resp.Body.Close()
+			drainAndClose(resp.Body)
 			return nil, fmt.Errorf("server error: status code %d", resp.StatusCode)
 		}
 		// 3xx/4xx: permanent client/redirect error, not worth retrying
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
 		if resp.StatusCode >= http.StatusMultipleChoices {
-			_ = resp.Body.Close()
+			drainAndClose(resp.Body)
 			return nil, backoff.Permanent(fmt.Errorf("unexpected status code %d", resp.StatusCode))
 		}
 		return resp, nil
