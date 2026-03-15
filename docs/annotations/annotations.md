@@ -326,6 +326,20 @@ If the value is `annotation-only`, use only the domains from the `Route` annotat
 
 If the annotation is not present, use the domains from both the spec and annotations.
 
+## external-dns.alpha.kubernetes.io/record-type
+
+Controls whether ExternalDNS creates additional record types for a resource's A/AAAA endpoints.
+
+Supported values:
+
+- `"ptr"` — create PTR records for this resource (opt in).
+- `""` (empty) — do not create additional records (opt out when `--create-ptr` is enabled).
+
+This annotation overrides the `--create-ptr` CLI flag per the
+standard [configuration precedence](../advanced/configuration-precedence.md).
+
+See [Automatic PTR (Reverse DNS) Records](../advanced/ptr-records.md) for full documentation.
+
 ## Provider-specific annotations
 
 Some providers define their own annotations. Cloud-specific annotations have keys prefixed as follows:

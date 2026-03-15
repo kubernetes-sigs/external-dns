@@ -383,3 +383,22 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func TestValidateCreatePTRRequiresManagedRecordType(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.CreatePTR = true
+	// ManagedDNSRecordTypes defaults to [A, AAAA, CNAME] — no PTR
+
+	err := ValidateConfig(cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--create-ptr requires PTR in --managed-record-types")
+}
+
+func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.CreatePTR = true
+	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+
+	err := ValidateConfig(cfg)
+	assert.NoError(t, err)
+}

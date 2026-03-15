@@ -58,6 +58,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-prefix must end with '/'")
 	}
 
+	if (cfg.CreatePTR || cfg.RFC2136CreatePTR) && !cfg.IsPTRSupported() {
+		return errors.New("--create-ptr requires PTR in --managed-record-types")
+	}
+
 	return nil
 }
 

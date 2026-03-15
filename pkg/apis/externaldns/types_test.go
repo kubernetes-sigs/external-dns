@@ -977,3 +977,11 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
 }
+
+func TestIsPTRSupported(t *testing.T) {
+	cfg := &Config{ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
+	assert.False(t, cfg.IsPTRSupported())
+
+	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+	assert.True(t, cfg.IsPTRSupported())
+}
