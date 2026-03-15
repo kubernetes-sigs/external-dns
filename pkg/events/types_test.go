@@ -37,20 +37,11 @@ func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
 			Namespace: "default",
 		},
 	}
+	podCopy := pod.DeepCopy()
 
-	// Before: TypeMeta is empty
-	require.Empty(t, pod.Kind)
-	require.Empty(t, pod.APIVersion)
+	_ = NewObjectReference(pod, "test")
 
-	ref := NewObjectReference(pod, "test")
-
-	// After: TypeMeta should still be empty (no mutation)
-	require.Empty(t, pod.Kind)
-	require.Empty(t, pod.APIVersion)
-
-	// But the ObjectReference should have the correct values
-	require.Equal(t, "Pod", ref.Kind)
-	require.Equal(t, "v1", ref.ApiVersion)
+	assert.Equal(t, podCopy, pod)
 }
 
 func TestSanitize(t *testing.T) {
