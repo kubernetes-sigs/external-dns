@@ -109,7 +109,7 @@ func Execute() {
 	go handleSigterm(cancel)
 
 	sCfg := source.NewSourceConfig(cfg)
-	endpointsSource, err := buildSource(ctx, sCfg)
+	endpointsSource, err := buildSource(ctx, cfg, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -314,7 +314,7 @@ func buildProvider(
 			ClientCertFilePath:    cfg.TLSClientCert,
 			ClientCertKeyFilePath: cfg.TLSClientCertKey,
 		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
@@ -353,10 +353,7 @@ func buildProvider(
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
 	if p != nil && cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(
-			p,
-			cfg.ProviderCacheTime,
-		)
+		p = provider.NewCachedProvider(p, cfg.ProviderCacheTime)
 	}
 	return p, err
 }
@@ -423,20 +420,22 @@ func configureLogger(cfg *externaldns.Config) {
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
 // It initializes the source configuration, generates the required sources, and combines them into a single,
 // deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
+func buildSource(ctx context.Context, cfg *externaldns.Config, sCfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, sCfg, sCfg.ClientGenerator())
 	if err != nil {
 		return nil, err
 	}
 	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithProvider(cfg.Provider),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
+		wrappers.WithDefaultTargets(sCfg.DefaultTargets),
+		wrappers.WithForceDefaultTargets(sCfg.ForceDefaultTargets),
+		wrappers.WithNAT64Networks(sCfg.NAT64Networks),
+		wrappers.WithTargetNetFilter(sCfg.TargetNetFilter),
+		wrappers.WithExcludeTargetNets(sCfg.ExcludeTargetNets),
+		wrappers.WithMinTTL(sCfg.MinTTL),
+		wrappers.WithProvider(sCfg.Provider),
+		wrappers.WithPreferAlias(sCfg.PreferAlias),
+		wrappers.WithPTRSupported(cfg.IsPTRSupported()),
+		wrappers.WithCreatePTR(cfg.CreatePTR || cfg.RFC2136CreatePTR))
 	return wrappers.WrapSources(sources, opts)
 }
 

@@ -66,6 +66,7 @@ var trailingTypes = []string{
 	endpoint.RecordTypeMX,
 	endpoint.RecordTypeSRV,
 	endpoint.RecordTypeNS,
+	endpoint.RecordTypePTR,
 	"ALIAS",
 }
 
@@ -550,6 +551,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 			return err
 		}
 	}
+
 	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }
