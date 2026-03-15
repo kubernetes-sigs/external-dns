@@ -40,6 +40,7 @@ import (
 	"k8s.io/client-go/rest/fake"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
+
 	"sigs.k8s.io/external-dns/source/types"
 
 	log "github.com/sirupsen/logrus"

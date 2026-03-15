@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
