@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type OCPRouteSuite struct {
@@ -514,6 +515,42 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "route with provider-specific annotation",
+			ocpRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-provider-specific",
+					Annotations: map[string]string{
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-domain.com",
+							RouterCanonicalHostname: "apps.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    []string{"apps.my-domain.com"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
 		},
 	} {
 

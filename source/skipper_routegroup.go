@@ -57,6 +57,7 @@ const (
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 type routeGroupSource struct {
 	cli                      routeGroupListClient
 	apiServer                string
