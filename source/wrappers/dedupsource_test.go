@@ -300,6 +300,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
+		{
+			name: "valid PTR record with reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+		},
+		{
+			name: "invalid PTR record - non-reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "web.example.com", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"other.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "invalid PTR record - target is an IP",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "1.0.0.10.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"10.0.0.1"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -342,6 +365,15 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
+		},
+		{
+			name: "invalid PTR record with non-reverse DNS name",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "web.example.org",
+				RecordType: endpoint.RecordTypePTR,
+				Targets:    endpoint.Targets{"other.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [:web.example.org] due to invalid configuration [PTR:other.example.org]",
 		},
 	}
 
