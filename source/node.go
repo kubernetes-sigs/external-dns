@@ -191,7 +191,7 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		log.Debugf("adding endpoint with %d targets", len(addrs))
 
 		for _, addr := range addrs {
-			ep := endpoint.NewEndpointWithTTL(dns, suitableType(addr), ttl, addr)
+			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
@@ -213,7 +213,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	for _, addr := range node.Status.Addresses {
 		// IPv6 InternalIP addresses have special handling.
 		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
-		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
+		if addr.Type == v1.NodeInternalIP && endpoint.SuitableType(addr.Address) == endpoint.RecordTypeAAAA {
 			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
 		}
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)

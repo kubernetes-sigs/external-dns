@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -117,32 +116,6 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
 	return results, nil
 }
 
-/**
- * isValidIPv4 checks if the given IP address is a valid IPv4 address.
- * It returns true if the IP address is valid, false otherwise.
- * If the IP address is in IPv6 format, it will return false.
- */
-func isValidIPv4(ip string) bool {
-	addr, err := netip.ParseAddr(ip)
-	if err != nil {
-		return false
-	}
-	return addr.Is4()
-}
-
-/**
- * isValidIPv6 checks if the given IP address is a valid IPv6 address.
- * It returns true if the IP address is valid, false otherwise.
- * If the IP address is in IPv6 with dual format y:y:y:y:y:y:x.x.x.x. , it will return true.
- */
-func isValidIPv6(ip string) bool {
-	addr, err := netip.ParseAddr(ip)
-	if err != nil {
-		return false
-	}
-	return addr.Is6()
-}
-
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	results, err := p.getConfigValue(ctx, rtype)
 	if err != nil {
@@ -166,12 +139,12 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		switch rtype {
 		case endpoint.RecordTypeA:
 			// PiHole return A and AAAA records. Filter to only keep the A records
-			if !isValidIPv4(Target) {
+			if endpoint.SuitableType(Target) != endpoint.RecordTypeA {
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
 			// PiHole return A and AAAA records. Filter to only keep the AAAA records
-			if !isValidIPv6(Target) {
+			if endpoint.SuitableType(Target) != endpoint.RecordTypeAAAA {
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
