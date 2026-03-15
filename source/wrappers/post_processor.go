@@ -67,9 +67,9 @@ func WithPostProcessorProvider(input string) PostProcessorOption {
 // to create ALIAS records instead of CNAMEs.
 func WithPostProcessorPreferAlias(enabled bool) PostProcessorOption {
 	return func(cfg *PostProcessorConfig) {
+		cfg.preferAlias = enabled
 		if enabled {
 			cfg.isConfigured = true
-			cfg.preferAlias = enabled
 		}
 	}
 }
