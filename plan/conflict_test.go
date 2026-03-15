@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
