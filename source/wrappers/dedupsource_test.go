@@ -108,11 +108,11 @@ func testDedupEndpoints(t *testing.T) {
 			"two endpoints with same dnsname, different record type, and same target return two endpoints",
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 		},
 		{
@@ -281,7 +281,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			name: "mixed valid and invalid TXT, A, AAAA records",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}}, // valid
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},                                // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},                                // valid (TXT allows empty)
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},                       // valid
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},                         // invalid
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},                    // valid
@@ -291,9 +291,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
 		{
@@ -390,7 +388,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 }
 
 func TestDedupSource_DeduplicatedEndpointsMetric(t *testing.T) {
-	deduplicatedEndpointsTotal.Gauge.Reset()
+	deduplicatedEndpoints.Reset()
 
 	eps := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
@@ -407,17 +405,17 @@ func TestDedupSource_DeduplicatedEndpointsMetric(t *testing.T) {
 	require.Len(t, result, 2) // only unique endpoints
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-		t, 1.0, deduplicatedEndpointsTotal.Gauge,
-		map[string]string{"record_type": "a", "source_type": "dedup"},
+		t, 1.0, deduplicatedEndpoints.Gauge,
+		map[string]string{"record_type": "a", "source_type": "unknown"},
 	)
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-		t, 2.0, deduplicatedEndpointsTotal.Gauge,
-		map[string]string{"record_type": "aaaa", "source_type": "dedup"},
+		t, 2.0, deduplicatedEndpoints.Gauge,
+		map[string]string{"record_type": "aaaa", "source_type": "unknown"},
 	)
 }
 
 func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
-	invalidEndpointsTotal.Gauge.Reset()
+	invalidEndpoints.Reset()
 
 	eps := []*endpoint.Endpoint{
 		// valid A record
@@ -433,7 +431,7 @@ func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
 	require.Len(t, result, 1) // only the valid A record
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
-		t, 1.0, invalidEndpointsTotal.Gauge,
-		map[string]string{"record_type": "srv", "source_type": "dedup"},
+		t, 1.0, invalidEndpoints.Gauge,
+		map[string]string{"record_type": "srv", "source_type": "unknown"},
 	)
 }

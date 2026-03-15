@@ -19,28 +19,50 @@ package wrappers
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-var invalidEndpointsTotal = metrics.NewGaugedVectorOpts(
-	prometheus.GaugeOpts{
-		Subsystem: "source",
-		Name:      "invalid_endpoints",
-		Help:      "Number of endpoints currently rejected due to invalid configuration, partitioned by record type and source.",
-	},
-	[]string{"record_type", "source_type"},
+var (
+	invalidEndpoints = metrics.NewGaugedVectorOpts(
+		prometheus.GaugeOpts{
+			Subsystem: "source",
+			Name:      "invalid_endpoints",
+			Help:      "Number of endpoints currently rejected due to invalid configuration, partitioned by record type and source.",
+		},
+		[]string{"record_type", "source_type"},
+	)
+
+	deduplicatedEndpoints = metrics.NewGaugedVectorOpts(
+		prometheus.GaugeOpts{
+			Subsystem: "source",
+			Name:      "deduplicated_endpoints",
+			Help:      "Number of endpoints currently removed as duplicates, partitioned by record type and source.",
+		},
+		[]string{"record_type", "source_type"},
+	)
 )
 
-var deduplicatedEndpointsTotal = metrics.NewGaugedVectorOpts(
-	prometheus.GaugeOpts{
-		Subsystem: "source",
-		Name:      "deduplicated_endpoints",
-		Help:      "Number of endpoints currently removed as duplicates, partitioned by record type and source.",
-	},
-	[]string{"record_type", "source_type"},
-)
+// endpointSource returns the source type from the endpoint's object reference,
+// or "unknown" if the reference is not set. Sources that set RefObject will
+// populate this with their name (e.g. "ingress", "service").
+func endpointSource(ep *endpoint.Endpoint) string {
+	if ref := ep.RefObject(); ref != nil && ref.Source != "" {
+		return ref.Source
+	}
+	return "unknown"
+}
+
+// resetMetrics clears all gauge label combinations so that stale
+// record-type/source-type pairs from a previous cycle do not linger.
+// Must be called at the start of each Endpoints() cycle in the
+// first wrapper in the chain (dedupSource).
+func resetMetrics() {
+	invalidEndpoints.Reset()
+	deduplicatedEndpoints.Reset()
+}
 
 func init() {
-	metrics.RegisterMetric.MustRegister(invalidEndpointsTotal)
-	metrics.RegisterMetric.MustRegister(deduplicatedEndpointsTotal)
+	metrics.RegisterMetric.MustRegister(invalidEndpoints)
+	metrics.RegisterMetric.MustRegister(deduplicatedEndpoints)
 }
