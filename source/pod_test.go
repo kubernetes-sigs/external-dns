@@ -726,7 +726,12 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false, "", nil)
+			client, err := NewPodSource(ctx, kubernetes, &Config{
+				Namespace:                tc.targetNamespace,
+				Compatibility:            tc.compatibility,
+				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
+				PodSourceDomain:          tc.PodSourceDomain,
+			})
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -954,12 +959,15 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil)
+			src, err := NewPodSource(ctx, kubernetes, &Config{
+				FQDNTemplate:             "",
+				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
+			})
 			require.NoError(t, err)
 
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
-			_, err = client.Endpoints(ctx)
+			_, err = src.Endpoints(ctx)
 			require.NoError(t, err)
 
 			// Check if all expected logs are present in actual logs.
@@ -1109,7 +1117,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil)
+		src, err := NewPodSource(ctx, fakeClient, &Config{})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1189,7 +1197,9 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(t.Context(), fakeClient, "", "", false, "", "template", false, "", nil)
+		src, err := NewPodSource(t.Context(), fakeClient, &Config{
+			FQDNTemplate: "template",
+		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1236,14 +1246,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 	client, err := NewPodSource(
 		t.Context(),
 		fakeClient,
-		"",
-		"",
-		false,
-		"",
-		"",
-		false,
-		"",
-		nil,
+		&Config{},
 	)
 	require.NoError(t, err)
 

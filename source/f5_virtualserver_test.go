@@ -586,7 +586,11 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, defaultF5VirtualServerNamespace, tc.annotationFilter)
+			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        defaultF5VirtualServerNamespace,
+					AnnotationFilter: tc.annotationFilter,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
