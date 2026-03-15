@@ -1079,6 +1079,51 @@ func TestCheckEndpoint(t *testing.T) {
 			expected: true,
 		},
 		{
+			description: "Valid AAAA record",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid A record - not an IP",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"not-an-ip"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid A record - IPv6 address",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid AAAA record - IPv4 address",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"192.168.1.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid AAAA record - not an IP",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"not-an-ip"},
+			},
+			expected: false,
+		},
+		{
 			description: "A record with alias=true is valid",
 			endpoint: Endpoint{
 				DNSName:          "example.com",

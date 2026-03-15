@@ -51,6 +51,14 @@ const (
 	RecordTypeMX = "MX"
 	// RecordTypeNAPTR is a RecordType enum value
 	RecordTypeNAPTR = "NAPTR"
+
+	// TODO: review source/annotations package to consolidate alias key definitions;
+	// currently duplicated here to avoid circular dependency.
+	providerSpecificAlias = "alias"
+
+	// ProviderSpecificRecordType is the provider-specific property name used to
+	// request a particular DNS record type (e.g. "ptr") on an endpoint.
+	ProviderSpecificRecordType = "record-type"
 )
 
 var (
@@ -492,14 +500,6 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
-// TODO: review source/annotations package to consolidate alias key definitions;
-// currently duplicated here to avoid circular dependency.
-const providerSpecificAlias = "alias"
-
-// ProviderSpecificRecordType is the provider-specific property name used to
-// request a particular DNS record type (e.g. "ptr") on an endpoint.
-const ProviderSpecificRecordType = "record-type"
-
 // RequestedRecordType returns the value of the "record-type" provider-specific
 // property, following the same pattern as the alias accessor.
 func (e *Endpoint) RequestedRecordType() (string, bool) {
@@ -517,6 +517,10 @@ func (e *Endpoint) CheckEndpoint() bool {
 	}
 
 	switch recordType := e.RecordType; recordType {
+	case RecordTypeA, RecordTypeAAAA:
+		if !e.isAlias() {
+			return e.Targets.ValidateIPRecord(recordType)
+		}
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
@@ -525,6 +529,12 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.ValidatePTRRecord()
 	}
 	return true
+}
+
+// isAlias returns true if the endpoint has the alias provider-specific property set to true.
+func (e *Endpoint) isAlias() bool {
+	val, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	return ok && val
 }
 
 func (e *Endpoint) supportsAlias() bool {
@@ -571,6 +581,25 @@ func (m *MXTarget) GetPriority() *uint16 {
 // GetHost returns the host of the MX record target.
 func (m *MXTarget) GetHost() *string {
 	return &m.host
+}
+
+func (t Targets) ValidateIPRecord(recordType string) bool {
+	for _, target := range t {
+		addr, err := netip.ParseAddr(target)
+		if err != nil {
+			log.Debugf("Invalid %s record target: %s is not a valid IP address", recordType, target)
+			return false
+		}
+		if recordType == RecordTypeA && addr.Is6() {
+			log.Debugf("Invalid A record target: %s is an IPv6 address", target)
+			return false
+		}
+		if recordType == RecordTypeAAAA && addr.Is4() {
+			log.Debugf("Invalid AAAA record target: %s is an IPv4 address", target)
+			return false
+		}
+	}
+	return true
 }
 
 func (t Targets) ValidateMXRecord() bool {
