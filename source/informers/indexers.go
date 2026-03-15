@@ -31,6 +31,10 @@ const (
 type IndexSelectorOptions struct {
 	annotationFilter labels.Selector
 	labelSelector    labels.Selector
+	// indexByLabelKey, when set, uses the value of this label as the index key
+	// instead of the object's own name. Useful for indexing objects by a "parent"
+	// resource they reference via a label (e.g. EndpointSlices by Service name).
+	indexByLabelKey string
 }
 
 func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
@@ -49,6 +53,16 @@ func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelector
 func IndexSelectorWithLabelSelector(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
 		options.labelSelector = input
+	}
+}
+
+// IndexSelectorWithLabelKey configures IndexerWithOptions to use the value of the given
+// label key as the index key instead of the object's own name. Useful when objects
+// reference a "parent" resource via a label (e.g. EndpointSlices carry
+// kubernetes.io/service-name pointing at their owning Service).
+func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		options.indexByLabelKey = key
 	}
 }
 
@@ -89,7 +103,14 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			if options.labelSelector != nil && !options.labelSelector.Matches(labels.Set(entity.GetLabels())) {
 				return nil, nil
 			}
-			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: entity.GetName()}.String()
+			name := entity.GetName()
+			if options.indexByLabelKey != "" {
+				name = entity.GetLabels()[options.indexByLabelKey]
+				if name == "" {
+					return nil, nil
+				}
+			}
+			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()
 			return []string{key}, nil
 		},
 	}

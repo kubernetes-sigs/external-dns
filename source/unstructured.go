@@ -113,6 +113,13 @@ func NewUnstructuredFQDNSource(
 			return nil, err
 		}
 
+		if err = informer.Informer().SetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		)); err != nil {
+			return nil, err
+		}
+
 		_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
 		resourceInformers = append(resourceInformers, informer)
 	}
