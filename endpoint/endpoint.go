@@ -379,10 +379,10 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 // cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
 // adopts the standard prefix convention.
 func (e *Endpoint) RetainProviderProperties(provider string) {
-	if provider == "" || len(e.ProviderSpecific) == 0 {
+	if len(e.ProviderSpecific) == 0 {
 		return
 	}
-	if provider != "cloudflare" {
+	if provider != "" && provider != "cloudflare" {
 		prefix := provider + "/"
 		result := make(ProviderSpecific, 0, len(e.ProviderSpecific))
 		for _, prop := range e.ProviderSpecific {

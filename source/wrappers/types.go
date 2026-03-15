@@ -82,6 +82,8 @@ func WithMinTTL(ttl time.Duration) Option {
 	}
 }
 
+// WithProvider sets the DNS provider name, used to filter provider-specific
+// endpoint properties to only those belonging to the configured provider.
 func WithProvider(input string) Option {
 	return func(o *Config) {
 		o.provider = input
@@ -135,7 +137,7 @@ func WrapSources(
 		opts.addSourceWrapper("target-filter")
 	}
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
-		WithProviderLabel(opts.provider))
+		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
 	return combinedSource, nil
 }

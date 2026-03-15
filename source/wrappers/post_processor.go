@@ -51,9 +51,9 @@ func WithTTL(ttl time.Duration) PostProcessorOption {
 	}
 }
 
-// WithProviderLabel sets the provider label used to retain provider-specific
+// WithPostProcessorProvider sets the provider used to retain provider-specific
 // properties on endpoints. Empty or whitespace-only values are ignored.
-func WithProviderLabel(input string) PostProcessorOption {
+func WithPostProcessorProvider(input string) PostProcessorOption {
 	return func(cfg *PostProcessorConfig) {
 		if p := strings.TrimSpace(input); p != "" {
 			cfg.isConfigured = true

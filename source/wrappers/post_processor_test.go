@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-func TestWithProviderLabel(t *testing.T) {
+func TestWithPostProcessorProvider(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          string
@@ -60,7 +60,7 @@ func TestWithProviderLabel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &PostProcessorConfig{}
-			opt := WithProviderLabel(tt.input)
+			opt := WithPostProcessorProvider(tt.input)
 			opt(cfg)
 
 			require.Equal(t, tt.isConfigured, cfg.isConfigured, "isConfigured mismatch")
@@ -204,7 +204,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 	}
 }
 
-func TestPostProcessorEndpointsWithProviderFilter(t *testing.T) {
+func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 	tests := []struct {
 		title     string
 		provider  string
@@ -407,7 +407,7 @@ func TestPostProcessorEndpointsWithProviderFilter(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			ms := new(testutils.MockSource)
 			ms.On("Endpoints").Return(tt.endpoints, nil)
-			src := NewPostProcessor(ms, WithProviderLabel(tt.provider))
+			src := NewPostProcessor(ms, WithPostProcessorProvider(tt.provider))
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
