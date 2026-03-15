@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/fakes"
-	"sigs.k8s.io/external-dns/registry"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
@@ -584,7 +584,7 @@ func TestRunOnce_EmitChangeEvent(t *testing.T) {
 					WithRefObject(&events.ObjectReference{}),
 			}, nil)
 
-			r, err := registry.SelectRegistry(getTestConfig(), &fakes.MockProvider{ApplyChangesErr: tt.applyErr})
+			r, err := registryfactory.Select(getTestConfig(), &fakes.MockProvider{ApplyChangesErr: tt.applyErr})
 			require.NoError(t, err)
 
 			emitter := fake.NewFakeEventEmitter()
