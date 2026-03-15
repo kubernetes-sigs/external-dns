@@ -373,7 +373,7 @@ func buildController(
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
 	}
-	reg, err := registryfactory.SelectRegistry(cfg, p)
+	reg, err := registryfactory.Select(cfg, p)
 	if err != nil {
 		return nil, err
 	}

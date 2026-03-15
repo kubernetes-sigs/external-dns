@@ -112,7 +112,7 @@ func TestSelectRegistry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reg, err := SelectRegistry(tt.cfg, tt.provider)
+			reg, err := Select(tt.cfg, tt.provider)
 
 			if tt.wantErr {
 				require.Nil(t, reg)
@@ -130,7 +130,7 @@ func TestSelectRegistryUnknown(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.Registry = "nope"
 
-	reg, err := SelectRegistry(cfg, inmemory.NewInMemoryProvider())
+	reg, err := Select(cfg, inmemory.NewInMemoryProvider())
 	require.Error(t, err)
 	require.Nil(t, reg)
 }

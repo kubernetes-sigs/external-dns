@@ -213,7 +213,7 @@ func TestRunOnce(t *testing.T) {
 
 	emitter := fake.NewFakeEventEmitter()
 
-	r, err := registryfactory.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -243,7 +243,7 @@ func TestRun(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
-	r, err := registryfactory.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -341,7 +341,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registryfactory.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	ctrl := &Controller{

@@ -332,7 +332,7 @@ func newMixedRecordsFixture() *Controller {
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, _ := registryfactory.SelectRegistry(cfg, provider)
+	r, _ := registryfactory.Select(cfg, provider)
 
 	return &Controller{
 		Source:             source,

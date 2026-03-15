@@ -31,8 +31,8 @@ import (
 // RegistryConstructor is a function that creates a Registry from configuration and a provider.
 type RegistryConstructor func(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error)
 
-// SelectRegistry creates a registry based on the given configuration.
-func SelectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+// Select creates a registry based on the given configuration.
+func Select(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	constructor, ok := registries(cfg.Registry)
 	if !ok {
 		return nil, fmt.Errorf("unknown registry: %s", cfg.Registry)
