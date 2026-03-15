@@ -150,12 +150,12 @@ func WrapSources(
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)
 		opts.addSourceWrapper("target-filter")
 	}
-	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
-		WithPostProcessorProvider(opts.provider))
-	opts.addSourceWrapper("post-processor")
 	if opts.ptrSupported {
 		combinedSource = NewPTRSource(combinedSource, opts.createPTR)
 		opts.addSourceWrapper("ptr")
 	}
+	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
+		WithPostProcessorProvider(opts.provider))
+	opts.addSourceWrapper("post-processor")
 	return combinedSource, nil
 }
