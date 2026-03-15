@@ -384,13 +384,9 @@ func (e *Endpoint) RetainProviderProperties(provider string) {
 	}
 	if provider != "" && provider != "cloudflare" {
 		prefix := provider + "/"
-		result := make(ProviderSpecific, 0, len(e.ProviderSpecific))
-		for _, prop := range e.ProviderSpecific {
-			if !strings.Contains(prop.Name, "/") || strings.HasPrefix(prop.Name, prefix) {
-				result = append(result, prop)
-			}
-		}
-		e.ProviderSpecific = result
+		e.ProviderSpecific = slices.DeleteFunc(e.ProviderSpecific, func(prop ProviderSpecificProperty) bool {
+			return strings.Contains(prop.Name, "/") && !strings.HasPrefix(prop.Name, prefix)
+		})
 	}
 	slices.SortFunc(e.ProviderSpecific, func(a, b ProviderSpecificProperty) int {
 		return cmp.Compare(a.Name, b.Name)
