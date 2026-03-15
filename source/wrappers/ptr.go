@@ -58,34 +58,32 @@ func (s *ptrSource) AddEventHandler(ctx context.Context, handler func()) {
 	s.source.AddEventHandler(ctx, handler)
 }
 
-type ptrInfo struct {
-	targets []string
-	ttl     endpoint.TTL
-}
-
 // supportsPTR returns true if the endpoint is eligible for PTR record generation.
 // Only non-wildcard A and AAAA records can have meaningful reverse DNS mappings.
 func supportsPTR(ep *endpoint.Endpoint) bool {
-	if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeAAAA {
-		return false
-	}
-	return !strings.HasPrefix(ep.DNSName, "*.")
+	return (ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) &&
+		!strings.HasPrefix(ep.DNSName, "*.")
 }
 
 // generatePTREndpoints creates PTR endpoints for A/AAAA endpoints.
 // When multiple records share an IP, a single PTR with all hostnames is created.
 func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) []*endpoint.Endpoint {
+	type ptrInfo struct {
+		targets []string
+		ttl     endpoint.TTL
+	}
 	ptrMap := make(map[string]*ptrInfo)
 	var order []string
-	invalidCounts := make(map[string]float64)
-	seenTypes := make(map[string]struct{})
 
 	for _, ep := range endpoints {
 		if !supportsPTR(ep) {
+			if _, ok := ep.RequestedRecordType(); ok {
+				log.Warnf("PTR: ignoring record-type annotation on unsupported %s record %s (only A/AAAA supported)", ep.RecordType, ep.DNSName)
+				ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificRecordType)
+			}
 			continue
 		}
 
-		seenTypes[ep.RecordType] = struct{}{}
 		enabled := defaultEnabled
 		if val, ok := ep.RequestedRecordType(); ok {
 			enabled = strings.EqualFold(val, endpoint.RecordTypePTR)
@@ -96,37 +94,28 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 		}
 
 		for _, target := range ep.Targets {
-			ptrEp, err := endpoint.NewPTREndpoint(target, ep.RecordTTL, ep.DNSName)
-			if err != nil {
-				log.Warnf("PTR: %v", err)
-				invalidCounts[ep.RecordType]++
-				continue
-			}
-			ptrName := ptrEp.DNSName
-
-			if info, ok := ptrMap[ptrName]; ok {
-				info.targets = append(info.targets, ep.DNSName)
-				if ep.RecordTTL != info.ttl {
-					log.Warnf("PTR: conflicting TTLs for %s (from %s TTL=%d vs existing TTL=%d), using minimum", ptrName, ep.DNSName, ep.RecordTTL, info.ttl)
-					if ep.RecordTTL < info.ttl {
-						info.ttl = ep.RecordTTL
-					}
+			if info, ok := ptrMap[target]; ok {
+				if ep.RecordTTL < info.ttl {
+					log.Warnf("PTR: conflicting TTLs for %s (from %s TTL=%d vs existing TTL=%d), using minimum", target, ep.DNSName, ep.RecordTTL, info.ttl)
+					info.ttl = ep.RecordTTL
 				}
+				info.targets = append(info.targets, ep.DNSName)
 			} else {
-				ptrMap[ptrName] = &ptrInfo{targets: []string{ep.DNSName}, ttl: ep.RecordTTL}
-				order = append(order, ptrName)
+				ptrMap[target] = &ptrInfo{targets: []string{ep.DNSName}, ttl: ep.RecordTTL}
+				order = append(order, target)
 			}
 		}
 	}
 
-	for rt := range seenTypes {
-		invalidEndpointsTotal.SetWithLabels(invalidCounts[rt], rt, endpoint.RecordTypePTR)
-	}
-
 	result := make([]*endpoint.Endpoint, 0, len(ptrMap))
-	for _, name := range order {
-		info := ptrMap[name]
-		result = append(result, endpoint.NewEndpointWithTTL(name, endpoint.RecordTypePTR, info.ttl, info.targets...))
+	for _, ip := range order {
+		info := ptrMap[ip]
+		ep, err := endpoint.NewPTREndpoint(ip, info.ttl, info.targets...)
+		if err != nil {
+			log.Warnf("PTR: %v", err)
+			continue
+		}
+		result = append(result, ep)
 	}
 	return result
 }
