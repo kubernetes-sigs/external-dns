@@ -7,6 +7,11 @@ on:
   # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
   # Can be used to update doc with latest tag
   workflow_dispatch:
+    inputs:
+      latest_version:
+        description: 'Version to set latest alias at (e.g., v0.20.0)'
+        required: true
+        type: string
 
 permissions: {}
 
@@ -40,7 +45,9 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
-            VERSION="latest"
+            LATEST_VERSION="${{ inputs.latest_version }}"
+            mike deploy $LATEST_VERSION latest --push --update-aliases
+            mike set-default --push latest
+          else
+            mike deploy $VERSION --push
           fi
-          mike deploy $VERSION --push --update-aliases
-          mike set-default --push latest
