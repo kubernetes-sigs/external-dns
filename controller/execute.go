@@ -66,7 +66,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/webhook"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
-	"sigs.k8s.io/external-dns/registry"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/wrappers"
@@ -373,7 +373,7 @@ func buildController(
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
 	}
-	reg, err := registry.SelectRegistry(cfg, p)
+	reg, err := registryfactory.Select(cfg, p)
 	if err != nil {
 		return nil, err
 	}

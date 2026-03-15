@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/registry"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 )
 
 func TestVerifyARecords(t *testing.T) {
@@ -323,7 +323,7 @@ func newMixedRecordsFixture() *Controller {
 	})
 
 	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
+	cfg.Registry = externaldns.RegistryNoop
 	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
 
 	source := new(testutils.MockSource)
@@ -332,7 +332,7 @@ func newMixedRecordsFixture() *Controller {
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, _ := registry.SelectRegistry(cfg, provider)
+	r, _ := registryfactory.Select(cfg, provider)
 
 	return &Controller{
 		Source:             source,
