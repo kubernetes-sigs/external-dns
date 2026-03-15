@@ -5566,21 +5566,9 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 	client, err := NewServiceSource(
 		t.Context(),
 		fakeClient,
-		"",
-		"",
-		"",
-		false,
-		"",
-		true,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 

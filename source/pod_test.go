@@ -1197,7 +1197,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, &Config{
+		src, err := NewPodSource(t.Context(), fakeClient, &Config{
 			FQDNTemplate: "template",
 		})
 		require.NoError(t, err)
@@ -1246,14 +1246,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 	client, err := NewPodSource(
 		t.Context(),
 		fakeClient,
-		"",
-		"",
-		false,
-		"",
-		"",
-		false,
-		"",
-		nil,
+		&Config{},
 	)
 	require.NoError(t, err)
 

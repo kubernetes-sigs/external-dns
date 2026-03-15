@@ -1777,15 +1777,9 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	client, err := NewIngressSource(
 		t.Context(),
 		fakeClient,
-		"",
-		"",
-		"",
-		false,
-		false,
-		false,
-		false,
-		labels.Everything(),
-		[]string{},
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 

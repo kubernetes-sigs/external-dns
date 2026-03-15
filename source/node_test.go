@@ -644,12 +644,9 @@ func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		fakeClient,
-		"",
-		"",
-		labels.Everything(),
-		false,
-		false,
-		false,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 
