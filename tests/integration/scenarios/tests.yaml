@@ -87,7 +87,7 @@ scenarios:
         targets: ["1.2.3.4"]
         recordType: A
 
-  - name: multiple-sources-pointing-to-same-hostname-dedup
+  - name: known-limitation-cross-source-dedup-not-applied
     description: >
       Documents a known limitation: when multiple ingresses share the same hostname,
       ingressSource.Endpoints() merges their targets via MergeEndpoints() before the

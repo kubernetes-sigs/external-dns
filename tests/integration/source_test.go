@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/tests/integration/toolkit"
@@ -32,7 +33,6 @@ func mustLoadScenarios(t *testing.T) *toolkit.TestScenarios {
 	scenarios, err := toolkit.LoadScenarios(dir)
 	require.NoError(t, err, "failed to load scenarios")
 	require.NotEmpty(t, scenarios.Scenarios, "no scenarios found")
-	require.Greater(t, len(scenarios.Scenarios), 1, "expected more than one scenario")
 	return scenarios
 }
 
@@ -40,8 +40,21 @@ func TestParseResources(t *testing.T) {
 	scenarios := mustLoadScenarios(t)
 	for _, scenario := range scenarios.Scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			_, err := toolkit.ParseResources(scenario.Resources)
+			parsed, err := toolkit.ParseResources(scenario.Resources)
 			require.NoError(t, err, "failed to parse resources")
+
+			totalParsed := len(parsed.Services) + len(parsed.Ingresses) + len(parsed.Pods) + len(parsed.EndpointSlices)
+			// Pods and EndpointSlices may be auto-generated from dependencies, so count
+			// only the explicitly declared resources when checking nothing was silently dropped.
+			explicitResources := 0
+			for _, r := range scenario.Resources {
+				explicitResources++
+				if r.Dependencies != nil && r.Dependencies.Pods != nil {
+					// Each Service with pod dependencies generates Pods + one EndpointSlice.
+					explicitResources += r.Dependencies.Pods.Replicas + 1
+				}
+			}
+			assert.Equal(t, explicitResources, totalParsed, "parsed resource count does not match declared resources")
 		})
 	}
 }

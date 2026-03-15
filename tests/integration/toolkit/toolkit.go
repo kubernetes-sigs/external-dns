@@ -110,6 +110,8 @@ func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, err
 				return nil, err
 			}
 			parsed.Pods = append(parsed.Pods, &pod)
+		default:
+			return nil, fmt.Errorf("unsupported resource kind %q", typeMeta.Kind)
 		}
 	}
 

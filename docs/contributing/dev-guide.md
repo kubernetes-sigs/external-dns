@@ -5,7 +5,6 @@ tags:
   - testing
   - integration-tests
   - helm
-  - minikube
 ---
 
 # Developer Reference
@@ -91,6 +90,49 @@ func TestMe(t *testing.T) {
 ### Integration Tests
 
 Integration tests live in `tests/integration/` and verify behavior that spans multiple sources or wrappers together, using a fake Kubernetes client — no real cluster is required.
+
+#### Where integration tests sit
+
+```mermaid
+flowchart TD
+    E2E["E2E Tests<br>Real cluster + real DNS provider<br>Slow · requires cloud credentials"]
+    IT["Integration Tests  ←  tests/integration/<br>Fake Kubernetes API · no cluster needed<br>Tests source + wrapper combinations · fast<br>Declarative YAML scenarios"]
+    UT["Unit Tests<br>One source or wrapper in isolation<br>Mocked or minimal Kubernetes client"]
+
+    E2E --> IT --> UT
+
+    style IT fill:#bbf7d0,stroke:#15803d,stroke-width:2px
+```
+
+#### What runs during a test
+
+```mermaid
+flowchart LR
+    subgraph yaml["tests/integration/scenarios/tests.yaml"]
+        RES["resources<br>Service · Ingress · Pod"]
+        CFG["config<br>sources · filters · wrappers"]
+        EXP["expected<br>endpoints"]
+    end
+
+    subgraph toolkit["toolkit  —  fake Kubernetes"]
+        PARSE["ParseResources()"]
+        FAKE["fake.Clientset"]
+        WRAP["CreateWrappedSource()"]
+    end
+
+    subgraph pipeline["ExternalDNS pipeline under test"]
+        SRC["Source(s)<br>service · ingress · ..."]
+        WRP["Wrapper(s)<br>dedup · targetFilter · NAT64"]
+        OUT["Endpoints"]
+    end
+
+    ASSERT["ValidateEndpoints()<br>DNSName · Targets<br>RecordType · TTL"]
+
+    RES --> PARSE --> FAKE --> WRAP
+    CFG --> WRAP
+    WRAP --> SRC --> WRP --> OUT --> ASSERT
+    EXP --> ASSERT
+```
 
 **When to add an integration test:**
 
