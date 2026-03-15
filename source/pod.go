@@ -101,39 +101,6 @@ func NewPodSource(
 		informers.TransformRemoveStatusConditions(),
 	)); err != nil {
 		return nil, err
-
-	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-
-	if fqdnTemplate == "" {
-		// Transformer is used to reduce the memory usage of the informer.
-		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
-		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		// When fqdnTemplate is used the entire pod needs to be provided to the rendering call, but the informer itself becomes unneeded.
-		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
-			pod, ok := i.(*corev1.Pod)
-			if !ok {
-				return nil, fmt.Errorf("object is not a pod")
-			}
-			// UID is retained so that event correlation works; the transform
-			// is idempotent by construction.
-			return &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					// Name/namespace must always be kept for the informer to work.
-					Name:      pod.Name,
-					Namespace: pod.Namespace,
-					// Used by the controller. This includes non-external-dns prefixed annotations.
-					Annotations: pod.Annotations,
-					UID:         pod.UID,
-				},
-				Spec: corev1.PodSpec{
-					HostNetwork: pod.Spec.HostNetwork,
-					NodeName:    pod.Spec.NodeName,
-				},
-				Status: corev1.PodStatus{
-					PodIP: pod.Status.PodIP,
-				},
-			}, nil
-		})
 	}
 
 	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())

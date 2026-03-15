@@ -1813,6 +1813,8 @@ func TestTransformerInIngressSource(t *testing.T) {
 	assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
 	// Spec preserved
 	assert.Equal(t, ingress.Spec.Rules, retrieved.Spec.Rules)
+}
+
 func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&networkv1.Ingress{

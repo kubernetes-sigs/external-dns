@@ -1124,7 +1124,6 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		assert.Equal(t, pod.Labels, retrieved.Labels)
 		assert.Equal(t, pod.Annotations, retrieved.Annotations) // no lastAppliedConfig in test data
 		assert.NotEmpty(t, retrieved.UID)
-		assert.Empty(t, retrieved.Labels)
 		// Filtered
 		assert.Equal(t, map[string]string{
 			"user-annotation": "value",
@@ -1146,7 +1145,6 @@ func TestPodTransformerInPodSource(t *testing.T) {
 	})
 
 	t.Run("transformer is always applied regardless of fqdnTemplate", func(t *testing.T) {
-		ctx := t.Context()
 		fakeClient := fake.NewClientset()
 
 		pod := &v1.Pod{
