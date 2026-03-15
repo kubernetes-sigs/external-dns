@@ -131,7 +131,7 @@ func TestNewPiholeClientV6(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 
-			if requestData["password"] != "correct" {
+			if requestData["password"] != `correct\"²` {
 				// Return unsuccessful authentication response
 				w.WriteHeader(http.StatusUnauthorized)
 				_, err = w.Write([]byte(`{
@@ -178,13 +178,13 @@ func TestNewPiholeClientV6(t *testing.T) {
 
 	// Test correct password
 	cl, err = newPiholeClientV6(
-		PiholeConfig{Server: srvr.URL, APIVersion: "6", Password: "correct"},
+		PiholeConfig{Server: srvr.URL, APIVersion: "6", Password: `correct\"²`},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cl.(*piholeClientV6).token != "supersecret" {
-		t.Error("Parsed invalid token from login response:", cl.(*piholeClient).token)
+		t.Error("Parsed invalid token from login response:", cl.(*piholeClientV6).token)
 	}
 }
 
