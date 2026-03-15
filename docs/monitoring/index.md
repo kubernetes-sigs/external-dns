@@ -55,12 +55,12 @@ The `external_dns_registry_skipped_records_owner_mismatch_per_sync` metric track
 
 The metric includes the following labels:
 
-| Label | Description |
-|:------|:------------|
-| `record_type` | DNS record type (A, AAAA, CNAME, etc.) |
-| `owner` | The owner ID of the current ExternalDNS instance |
-| `foreign_owner` | The owner ID found on the existing record |
-| `domain` | The naked/apex domain (e.g., "example.com") |
+| Label           | Description                                      |
+|:----------------|:-------------------------------------------------|
+| `record_type`   | DNS record type (A, AAAA, CNAME, etc.)           |
+| `owner`         | The owner ID of the current ExternalDNS instance |
+| `foreign_owner` | The owner ID found on the existing record        |
+| `domain`        | The naked/apex domain (e.g., "example.com")      |
 
 **Note:** The `domain` label uses the naked/apex domain rather than the full FQDN to prevent metric cardinality explosion. With thousands of subdomains under one apex domain, using full FQDNs would create excessive metric series.
 
