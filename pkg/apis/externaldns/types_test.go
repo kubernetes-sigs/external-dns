@@ -766,10 +766,12 @@ func TestParseFlagsGateway(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,
 		"--gateway-label-filter=app=gateway",
+		"--gateway-listener-sets",
 		"--gateway-name=gw-1",
 		"--gateway-namespace=gw-ns",
 	)
 	assert.Equal(t, "app=gateway", cfg.GatewayLabelFilter)
+	assert.True(t, cfg.GatewayListenerSets)
 	assert.Equal(t, "gw-1", cfg.GatewayName)
 	assert.Equal(t, "gw-ns", cfg.GatewayNamespace)
 }
