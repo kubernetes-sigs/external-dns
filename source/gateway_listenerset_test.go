@@ -77,7 +77,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	hostname := v1.Hostname("app.example.com")
+	hostname := v1.Hostname("*.example.com")
 	fromAll := v1.NamespacesFromAll
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-listenerset", Namespace: "default"},
@@ -148,7 +148,7 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	hostname := v1.Hostname("app.example.com")
+	hostname := v1.Hostname("*.example.com")
 	fromAll := v1.NamespacesFromAll
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{Name: "ls", Namespace: "default"},
@@ -181,6 +181,190 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err)
 	require.Empty(t, endpoints, "expected no endpoints when ListenerSet support is disabled")
+}
+
+func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	for _, gw := range []*v1beta1.Gateway{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "labels-match",
+				Namespace: "default",
+				Labels:    map[string]string{"foo": "bar"},
+			},
+			Spec:   v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+			Status: gatewayStatus("10.0.0.1"),
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "labels-dont-match",
+				Namespace: "default",
+				Labels:    map[string]string{"foo": "qux"},
+			},
+			Spec:   v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+			Status: gatewayStatus("10.0.0.2"),
+		},
+	} {
+		_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	hostname := v1.Hostname("app.example.com")
+	fromAll := v1.NamespacesFromAll
+	for _, ls := range []*v1.ListenerSet{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "ls-match", Namespace: "default"},
+			Spec: v1.ListenerSetSpec{
+				ParentRef: v1.ParentGatewayReference{Name: "labels-match"},
+				Listeners: []v1.ListenerEntry{{
+					Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+					AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+				}},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "ls-dont-match", Namespace: "default"},
+			Spec: v1.ListenerSetSpec{
+				ParentRef: v1.ParentGatewayReference{Name: "labels-dont-match"},
+				Listeners: []v1.ListenerEntry{{
+					Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+					AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+				}},
+			},
+		},
+	} {
+		_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	rt := &v1beta1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					lsParentRef("default", "ls-match"),
+					lsParentRef("default", "ls-dont-match"),
+				},
+			},
+		},
+		Status: v1.HTTPRouteStatus{
+			RouteStatus: gwRouteStatus(
+				lsParentRef("default", "ls-match"),
+				lsParentRef("default", "ls-dont-match"),
+			),
+		},
+	}
+	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		GatewayLabelFilter:  "foo=bar",
+		GatewayListenerSets: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", "10.0.0.1"),
+	})
+}
+
+func TestGatewayHTTPRouteWithListenerSetRouteLabelFilter(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	gw := &v1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
+		Spec:       v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+		Status:     gatewayStatus("10.0.0.1"),
+	}
+	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	hostname := v1.Hostname("*.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "ls", Namespace: "default"},
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	for _, rt := range []*v1beta1.HTTPRoute{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "labels-match",
+				Namespace: "default",
+				Labels:    map[string]string{"foo": "bar"},
+			},
+			Spec: v1.HTTPRouteSpec{
+				Hostnames:       []v1.Hostname{"labels-match.example.com"},
+				CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+			},
+			Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "labels-dont-match",
+				Namespace: "default",
+				Labels:    map[string]string{"foo": "qux"},
+			},
+			Spec: v1.HTTPRouteSpec{
+				Hostnames:       []v1.Hostname{"labels-dont-match.example.com"},
+				CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+			},
+			Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+		},
+	} {
+		_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		LabelFilter:         mustGetLabelSelector("foo=bar"),
+		GatewayListenerSets: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("labels-match.example.com", "10.0.0.1"),
+	})
 }
 
 func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {

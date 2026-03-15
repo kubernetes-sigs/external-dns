@@ -178,16 +178,21 @@ func newGatewayRouteSource(
 		return nil, err
 	}
 
-	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                        // Register with factory before starting.
+	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
+	gwInformer := gwInformerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+	gwInformer.Informer()                                          // Register with factory before starting.
 	var lsInformer informers_v1.ListenerSetInformer
+	lsInformerFactory := gwInformerFactory
 	if config.GatewayListenerSets {
-		lsInformer = informerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
-		lsInformer.Informer()                                      // Register with factory before starting.
+		// Gateway label filters should apply only to Gateways, not ListenerSets.
+		if gwLabels != nil && !gwLabels.Empty() {
+			lsInformerFactory = newGatewayInformerFactory(client, config.GatewayNamespace, nil)
+		}
+		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+		lsInformer.Informer()                                        // Register with factory before starting.
 	}
 
-	rtInformerFactory := informerFactory
+	rtInformerFactory := gwInformerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
 		rtInformerFactory = newGatewayInformerFactory(client, config.Namespace, rtLabels)
 	}
@@ -203,17 +208,26 @@ func newGatewayRouteSource(
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
-	informerFactory.Start(ctx.Done())
+	gwInformerFactory.Start(ctx.Done())
+	if lsInformerFactory != gwInformerFactory {
+		lsInformerFactory.Start(ctx.Done())
+	}
 	kubeInformerFactory.Start(ctx.Done())
-	if rtInformerFactory != informerFactory {
+	if rtInformerFactory != gwInformerFactory && rtInformerFactory != lsInformerFactory {
 		rtInformerFactory.Start(ctx.Done())
-
-		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+	}
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+		return nil, err
+	}
+	if lsInformerFactory != gwInformerFactory {
+		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
-		return nil, err
+	if rtInformerFactory != gwInformerFactory && rtInformerFactory != lsInformerFactory {
+		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+			return nil, err
+		}
 	}
 	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
 		return nil, err
@@ -264,7 +278,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 	}
 	var listenerSets []*v1.ListenerSet
 	if src.lsInformer != nil {
-		listenerSets, err = src.lsInformer.Lister().ListenerSets(src.gwNamespace).List(src.gwLabels)
+		listenerSets, err = src.lsInformer.Lister().ListenerSets(src.gwNamespace).List(labels.Everything())
 		if err != nil {
 			return nil, err
 		}
