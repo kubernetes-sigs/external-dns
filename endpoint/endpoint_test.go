@@ -21,8 +21,11 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -939,12 +942,330 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "A record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "AAAA record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeAAAA,
+				Targets:          Targets{"dualstack.my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "CNAME record with alias=true is valid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeCNAME,
+				Targets:          Targets{"d111111abcdef8.cloudfront.net"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "MX record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "TXT record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeTXT,
+				Targets:          Targets{"v=spf1 ~all"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "NS record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeNS,
+				Targets:          Targets{"ns1.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "SRV record with alias=true is invalid",
+			endpoint: Endpoint{
+				DNSName:          "_sip._tcp.example.com",
+				RecordType:       RecordTypeSRV,
+				Targets:          Targets{"10 5 5060 sip.example.com."},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record with alias=false is also invalid",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "false"}},
+			},
+			expected: false,
+		},
+		{
+			description: "MX record without alias property is valid",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"v6.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with multiple hostname targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"a.example.com", "b.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid PTR record - DNS name not reverse DNS",
+			endpoint: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IP address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IPv6 address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - empty target",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			actual := tt.endpoint.CheckEndpoint()
 			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog bool
+	}{
+		{
+			name: "unsupported type with alias logs warning",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeMX,
+				Targets:          Targets{"10 mail.example.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			wantLog: true,
+		},
+		{
+			name: "supported type with alias does not log",
+			ep: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+			},
+			wantLog: false,
+		},
+		{
+			name: "unsupported type without alias does not log",
+			ep: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 mail.example.com"},
+			},
+			wantLog: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			tt.ep.CheckEndpoint()
+
+			warnMsg := "does not support alias records"
+			if tt.wantLog {
+				logtest.TestHelperLogContains(warnMsg, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(warnMsg, hook, t)
+			}
+		})
+	}
+}
+
+func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog string
+	}{
+		{
+			name: "non-reverse DNS name logs invalid",
+			ep: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"other.example.com"},
+			},
+			wantLog: "must be a valid reverse DNS name",
+		},
+		{
+			name: "IP address target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			wantLog: "must be a hostname, not an IP address",
+		},
+		{
+			name: "empty target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			wantLog: "target must not be empty",
+		},
+		{
+			name: "no targets logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			wantLog: "at least one target is required",
+		},
+		{
+			name: "valid PTR does not log",
+			ep: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			wantLog: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			tt.ep.CheckEndpoint()
+
+			if tt.wantLog != "" {
+				logtest.TestHelperLogContains(tt.wantLog, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains("Invalid PTR record", hook, t)
+			}
 		})
 	}
 }

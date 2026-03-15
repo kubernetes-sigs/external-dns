@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"math/rand"
@@ -29,7 +28,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/stretchr/testify/assert"
@@ -90,7 +89,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewNodeSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -405,7 +404,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -431,12 +430,12 @@ func testNodeSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubeClient.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
-				context.TODO(),
+				t.Context(),
 				kubeClient,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
@@ -447,7 +446,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -458,10 +457,10 @@ func testNodeSourceEndpoints(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
-				testutils.TestHelperLogContains(entry, hook, t)
+				logtest.TestHelperLogContains(entry, hook, t)
 			}
 			for _, entry := range tc.expectedAbsentLogs {
-				testutils.TestHelperLogNotContains(entry, hook, t)
+				logtest.TestHelperLogNotContains(entry, hook, t)
 			}
 		})
 	}

@@ -28,9 +28,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -1029,14 +1031,14 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 					RegionKey: tt.fields.RegionKey,
 				},
 			}
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
 			assert.Error(t, err, "ApplyChanges should return an error")
 			if tt.errMsg != "" && err != nil {
 				assert.Contains(t, err.Error(), tt.errMsg, "Expected error message to contain: %s", tt.errMsg)
 			}
 			if tt.expectDebug != "" {
-				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+				logtest.TestHelperLogContains(tt.expectDebug, hook, t)
 			}
 		})
 	}
@@ -1178,11 +1180,11 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 					RegionKey: tt.fields.RegionKey,
 				},
 			}
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
 			assert.NoError(t, err, "ApplyChanges should not fail")
 			if tt.expectDebug != "" {
-				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+				logtest.TestHelperLogContains(tt.expectDebug, hook, t)
 			}
 		})
 	}
@@ -1292,4 +1294,90 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSubmitChanges_DryRun_RegionalErrors covers error paths in the dry-run branch of
+// submitChanges. Two statements in that branch are not covered by any test:
+//
+//   - the `failedChange = true` body inside `if !p.submitRegionalHostnameChanges(...)`
+//   - the subsequent `failedZones = append(...)` when failedChange is true
+//
+// Both are unreachable because submitRegionalHostnameChange unconditionally returns true
+// when DryRun=true (it logs and returns before making any API call), so the failure
+// branch can never be entered without changing the production code.
+func TestSubmitChanges_DryRun_RegionalErrors(t *testing.T) {
+	t.Run("desiredRegionalHostnames conflict returns error", func(t *testing.T) {
+		// Two changes for the same hostname with different region keys →
+		// desiredRegionalHostnames returns a conflict error.
+		client := NewMockCloudFlareClient()
+		p := &CloudFlareProvider{
+			Client: client,
+			DryRun: true,
+			RegionalServicesConfig: RegionalServicesConfig{
+				Enabled: true,
+			},
+		}
+
+		// Build conflicting cloudFlareChanges directly and call submitChanges,
+		// which is in the same package.
+		changes := []*cloudFlareChange{
+			{
+				Action:         cloudFlareCreate,
+				ResourceRecord: dns.RecordResponse{Name: "foo.bar.com", Type: "A", Content: "1.2.3.4"},
+				RegionalHostname: regionalHostname{
+					hostname:  "foo.bar.com",
+					regionKey: "us",
+				},
+			},
+			{
+				Action:         cloudFlareUpdate,
+				ResourceRecord: dns.RecordResponse{Name: "foo.bar.com", Type: "A", Content: "1.2.3.4"},
+				RegionalHostname: regionalHostname{
+					hostname:  "foo.bar.com",
+					regionKey: "eu", // different from "us" → conflict
+				},
+			},
+		}
+		err := p.submitChanges(t.Context(), changes)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to build desired regional hostnames")
+	})
+
+	t.Run("listDataLocalisationRegionalHostnames error in dry-run returns error", func(t *testing.T) {
+		// Zone ID containing "rherror" causes the mock to return an error from
+		// ListDataLocalizationRegionalHostnames.
+		client := &mockCloudFlareClient{
+			Zones: map[string]string{
+				"rherror-zone1": "rherror.bar.com",
+			},
+			Records: map[string]map[string]dns.RecordResponse{
+				"rherror-zone1": {},
+			},
+			customHostnames:   map[string][]customHostname{},
+			regionalHostnames: map[string][]regionalHostname{},
+		}
+		p := &CloudFlareProvider{
+			Client: client,
+			DryRun: true,
+			RegionalServicesConfig: RegionalServicesConfig{
+				Enabled:   true,
+				RegionKey: "us",
+			},
+			domainFilter: endpoint.NewDomainFilter([]string{"rherror.bar.com"}),
+		}
+
+		changes := []*cloudFlareChange{
+			{
+				Action:         cloudFlareCreate,
+				ResourceRecord: dns.RecordResponse{Name: "foo.rherror.bar.com", Type: "A", Content: "1.2.3.4"},
+				RegionalHostname: regionalHostname{
+					hostname:  "foo.rherror.bar.com",
+					regionKey: "us",
+				},
+			},
+		}
+		err := p.submitChanges(t.Context(), changes)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "could not fetch regional hostnames from zone")
+	})
 }

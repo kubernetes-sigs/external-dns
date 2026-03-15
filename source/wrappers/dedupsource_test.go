@@ -17,13 +17,14 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -168,7 +169,7 @@ func testDedupEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			source := NewDedupSource(mockSource)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -275,6 +276,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			},
 		},
 		{
+			name: "MX record with alias=true is filtered out",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "A record with alias=true is kept",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+		},
+		{
+			name: "SRV record with alias=true is filtered out",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
 			name: "mixed valid and invalid TXT, A, AAAA records",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}}, // valid
@@ -293,6 +317,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
+		{
+			name: "valid PTR record with reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+		},
+		{
+			name: "invalid PTR record - non-reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "web.example.com", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"other.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "invalid PTR record - target is an IP",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "1.0.0.10.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"10.0.0.1"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -301,7 +348,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			mockSource.On("Endpoints").Return(tt.endpoints, nil)
 
 			sr := NewDedupSource(mockSource)
-			endpoints, err := sr.Endpoints(context.Background())
+			endpoints, err := sr.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			validateEndpoints(t, endpoints, tt.expected)
@@ -311,21 +358,54 @@ func TestDedupEndpointsValidation(t *testing.T) {
 }
 
 func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-	invalidEndpoint := &endpoint.Endpoint{
-		DNSName:       "example.org",
-		RecordType:    endpoint.RecordTypeSRV,
-		SetIdentifier: "default/svc/my-service",
-		Targets:       endpoint.Targets{"10 mail.example.org"},
+	tests := []struct {
+		name       string
+		endpoint   *endpoint.Endpoint
+		wantLogMsg string
+	}{
+		{
+			name: "invalid SRV record",
+			endpoint: &endpoint.Endpoint{
+				DNSName:       "example.org",
+				RecordType:    endpoint.RecordTypeSRV,
+				SetIdentifier: "default/svc/my-service",
+				Targets:       endpoint.Targets{"10 mail.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [default/svc/my-service:example.org] due to invalid configuration [SRV:10 mail.example.org]",
+		},
+		{
+			name: "unsupported alias on MX record",
+			endpoint: &endpoint.Endpoint{
+				DNSName:          "example.org",
+				RecordType:       endpoint.RecordTypeMX,
+				Targets:          endpoint.Targets{"10 mail.example.org"},
+				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
+			},
+			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
+		},
+		{
+			name: "invalid PTR record with non-reverse DNS name",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "web.example.org",
+				RecordType: endpoint.RecordTypePTR,
+				Targets:    endpoint.Targets{"other.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [:web.example.org] due to invalid configuration [PTR:other.example.org]",
+		},
 	}
 
-	mockSource := new(testutils.MockSource)
-	mockSource.On("Endpoints").Return([]*endpoint.Endpoint{invalidEndpoint}, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
-	src := NewDedupSource(mockSource)
-	_, err := src.Endpoints(context.Background())
-	require.NoError(t, err)
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return([]*endpoint.Endpoint{tt.endpoint}, nil)
 
-	testutils.TestHelperLogContains("Skipping endpoint [default/svc/my-service:example.org] due to invalid configuration [SRV:10 mail.example.org]", hook, t)
+			src := NewDedupSource(mockSource)
+			_, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			logtest.TestHelperLogContains(tt.wantLogMsg, hook, t)
+		})
+	}
 }
