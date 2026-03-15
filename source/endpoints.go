@@ -22,65 +22,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// EndpointsForHostname returns the endpoint objects for each host-target combination.
-func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
-	var (
-		endpoints    []*endpoint.Endpoint
-		aTargets     endpoint.Targets
-		aaaaTargets  endpoint.Targets
-		cnameTargets endpoint.Targets
-	)
-
-	for _, t := range targets {
-		switch suitableType(t) {
-		case endpoint.RecordTypeA:
-			aTargets = append(aTargets, t)
-		case endpoint.RecordTypeAAAA:
-			aaaaTargets = append(aaaaTargets, t)
-		default:
-			cnameTargets = append(cnameTargets, t)
-		}
-	}
-
-	if len(aTargets) > 0 {
-		epA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, aTargets...)
-		if epA != nil {
-			epA.ProviderSpecific = providerSpecific
-			epA.SetIdentifier = setIdentifier
-			if resource != "" {
-				epA.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epA)
-		}
-	}
-
-	if len(aaaaTargets) > 0 {
-		epAAAA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeAAAA, ttl, aaaaTargets...)
-		if epAAAA != nil {
-			epAAAA.ProviderSpecific = providerSpecific
-			epAAAA.SetIdentifier = setIdentifier
-			if resource != "" {
-				epAAAA.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epAAAA)
-		}
-	}
-
-	if len(cnameTargets) > 0 {
-		epCNAME := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeCNAME, ttl, cnameTargets...)
-		if epCNAME != nil {
-			epCNAME.ProviderSpecific = providerSpecific
-			epCNAME.SetIdentifier = setIdentifier
-			if resource != "" {
-				epCNAME.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epCNAME)
-		}
-	}
-
-	return endpoints
-}
-
 // EndpointTargetsFromServices retrieves endpoint targets from services in a given namespace
 // that match the specified selector. It returns external IPs or load balancer addresses.
 //

@@ -484,16 +484,38 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
+// TODO: review source/annotations package to consolidate alias key definitions;
+// currently duplicated here to avoid circular dependency.
+const providerSpecificAlias = "alias"
+
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
+	if !e.supportsAlias() {
+		if _, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias); ok {
+			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
+			return false
+		}
+	}
+
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
 		return e.Targets.ValidateSRVRecord()
+	case RecordTypePTR:
+		return e.ValidatePTRRecord()
 	}
 	return true
+}
+
+func (e *Endpoint) supportsAlias() bool {
+	switch e.RecordType {
+	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
+		return true
+	default:
+		return false
+	}
 }
 
 // WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
@@ -568,6 +590,42 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
+// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
+func (e *Endpoint) ValidatePTRRecord() bool {
+	name := strings.ToLower(e.DNSName)
+	if !isReverseDNSName(name) {
+		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
+		return false
+	}
+	if len(e.Targets) == 0 {
+		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
+		return false
+	}
+	for _, target := range e.Targets {
+		if strings.TrimSpace(target) == "" {
+			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
+			return false
+		}
+		if _, err := netip.ParseAddr(target); err == nil {
+			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
+			return false
+		}
+	}
+	return true
+}
+
+// isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa
+// and has at least one label before the suffix.
+func isReverseDNSName(name string) bool {
+	for _, suffix := range []string{".in-addr.arpa", ".ip6.arpa"} {
+		if prefix, ok := strings.CutSuffix(name, suffix); ok {
+			return len(prefix) > 0 && prefix[0] != '.'
+		}
+	}
+	return false
 }
 
 // GetDNSName returns the DNS name of the endpoint.
