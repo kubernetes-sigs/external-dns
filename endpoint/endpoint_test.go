@@ -449,6 +449,142 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 	}
 }
 
+func TestRetainProviderProperties(t *testing.T) {
+	cases := []struct {
+		name     string
+		endpoint Endpoint
+		provider string
+		expected []ProviderSpecificProperty
+	}{
+		{
+			name:     "empty provider specific",
+			endpoint: Endpoint{},
+			provider: "aws",
+			expected: nil,
+		},
+		{
+			name: "empty provider, properties untouched",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "coredns/group", Value: "my-group"},
+			},
+		},
+		{
+			name: "all properties match provider",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		{
+			name: "no properties match provider",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{},
+		},
+		{
+			name: "mixed providers, only configured provider retained",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		{
+			name: "provider agnostic properties without prefix are retained",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "alias", Value: "true"},
+				{Name: "aws/evaluate-target-health", Value: "true"},
+			},
+		},
+		{
+			name: "provider prefix must match exactly, not as substring",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws-extended/some-prop", Value: "val"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
+		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
+		{
+			name: "cloudflare retains all properties",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "alias", Value: "false"},
+				},
+			},
+			provider: "cloudflare",
+			expected: []ProviderSpecificProperty{
+				{Name: "alias", Value: "false"},
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+			},
+		},
+		{
+			name: "cloudflare properties are sorted",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				},
+			},
+			provider: "cloudflare",
+			expected: []ProviderSpecificProperty{
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.endpoint.RetainProviderProperties(c.provider)
+			require.Equal(t, c.expected, []ProviderSpecificProperty(c.endpoint.ProviderSpecific))
+		})
+	}
+}
+
 func TestFilterEndpointsByOwnerIDWithRecordTypeA(t *testing.T) {
 	foo1 := &Endpoint{
 		DNSName:    "foo.com",
