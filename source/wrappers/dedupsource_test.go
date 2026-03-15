@@ -17,11 +17,11 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
@@ -148,7 +148,7 @@ func testDedupEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			source := NewDedupSource(mockSource)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -296,6 +296,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
+		{
+			name: "valid PTR record with reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+		},
+		{
+			name: "invalid PTR record - non-reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "web.example.com", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"other.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "invalid PTR record - target is an IP",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "1.0.0.10.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"10.0.0.1"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -304,7 +327,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			mockSource.On("Endpoints").Return(tt.endpoints, nil)
 
 			sr := NewDedupSource(mockSource)
-			endpoints, err := sr.Endpoints(context.Background())
+			endpoints, err := sr.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			validateEndpoints(t, endpoints, tt.expected)
@@ -339,6 +362,15 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
 		},
+		{
+			name: "invalid PTR record with non-reverse DNS name",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "web.example.org",
+				RecordType: endpoint.RecordTypePTR,
+				Targets:    endpoint.Targets{"other.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [:web.example.org] due to invalid configuration [PTR:other.example.org]",
+		},
 	}
 
 	for _, tt := range tests {
@@ -349,7 +381,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			mockSource.On("Endpoints").Return([]*endpoint.Endpoint{tt.endpoint}, nil)
 
 			src := NewDedupSource(mockSource)
-			_, err := src.Endpoints(context.Background())
+			_, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			logtest.TestHelperLogContains(tt.wantLogMsg, hook, t)

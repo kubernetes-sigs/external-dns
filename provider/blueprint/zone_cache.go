@@ -33,11 +33,13 @@ type ZoneCache[T any] struct {
 }
 
 // NewZoneCache creates a new ZoneCache with the specified TTL duration.
+// A duration of 0 or less disables caching: Reset becomes a no-op and Expired always returns true.
 func NewZoneCache[T any](duration time.Duration) *ZoneCache[T] {
 	return &ZoneCache[T]{duration: duration}
 }
 
-// Get returns the cached data. Returns the zero value if cache is empty.
+// Get returns the cached data. Returns the zero value if the cache has never been populated.
+// Data is not cleared on expiration; Get returns the last known value until Reset is called again.
 func (c *ZoneCache[T]) Get() T {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -57,7 +59,8 @@ func (c *ZoneCache[T]) Reset(data T) {
 	log.WithField("duration", c.duration).Debug("zone cache reset")
 }
 
-// Expired returns true if the cache has expired or is empty.
+// Expired returns true if the cache is empty (never populated) or the TTL has elapsed since
+// the last Reset. When caching is disabled (duration <= 0), always returns true.
 func (c *ZoneCache[T]) Expired() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

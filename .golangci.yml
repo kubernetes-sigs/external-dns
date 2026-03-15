@@ -36,6 +36,7 @@ linters:
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
+    - usetesting # Reports uses of functions with replacement inside the testing package.
   settings:
     exhaustive:
       default-signifies-exhaustive: false
@@ -68,6 +69,11 @@ linters:
       # TODO: enable in follow-up
       disable:
         - require-error
+    usetesting:
+      # Enable/disable `context.Background()` detections.
+      context-background: true
+      # Enable/disable `context.TODO()` detections.
+      context-todo: true
   exclusions:
     generated: lax
     presets:
@@ -122,4 +128,3 @@ formatters:
       - third_party$
       - builtin$
       - examples$
-      - _test\.go
