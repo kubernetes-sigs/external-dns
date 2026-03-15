@@ -409,7 +409,7 @@ func TestPostProcessorEndpointsWithProviderFilter(t *testing.T) {
 			ms.On("Endpoints").Return(tt.endpoints, nil)
 			src := NewPostProcessor(ms, WithProviderLabel(tt.provider))
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
 		})
