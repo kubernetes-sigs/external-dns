@@ -348,7 +348,7 @@ func buildProvider(
 	case "plural":
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "webhook":
-		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
+		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
 	default:
 		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
