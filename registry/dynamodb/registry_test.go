@@ -44,31 +44,31 @@ const (
 func TestDynamoDBRegistryNew(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 
-	_, err := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.NoError(t, err)
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "testPrefix", "", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "testPrefix", "", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.NoError(t, err)
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "testSuffix", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "", "testSuffix", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.NoError(t, err)
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "testWildcard", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "", "", "testWildcard", []string{}, []string{}, []byte(""), time.Hour)
 	require.NoError(t, err)
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "testWildcard", []string{}, []string{}, []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^"), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "", "", "testWildcard", []string{}, []string{}, []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^"), time.Hour)
 	require.NoError(t, err)
 
-	_, err = NewDynamoDBRegistry(p, "", api, "test-table", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "", api, "test-table", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.EqualError(t, err, "owner id cannot be empty")
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "", "", "", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.EqualError(t, err, "table cannot be empty")
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^x"), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^x"), time.Hour)
 	require.EqualError(t, err, "the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
 
-	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "testPrefix", "testSuffix", "", []string{}, []string{}, []byte(""), time.Hour)
+	_, err = newRegistry(p, "test-owner", api, "test-table", "testPrefix", "testSuffix", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.EqualError(t, err, "txt-prefix and txt-suffix are mutually exclusive")
 }
 
@@ -101,7 +101,7 @@ func TestDynamoDBRegistryNew_EncryptionConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		actual, err := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, test.aesKeyRaw, time.Hour)
+		actual, err := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, test.aesKeyRaw, time.Hour)
 		if test.errorExpected {
 			require.Error(t, err)
 		} else {
@@ -157,7 +157,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 			api, p := newDynamoDBAPIStub(t, nil)
 			tc.setup(&api.tableDescription)
 
-			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
+			r, _ := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
 
 			_, err := r.Records(t.Context())
 			assert.EqualError(t, err, tc.expected)
@@ -243,7 +243,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 	}
 
-	r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
+	r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
 	_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("migrate.test-zone.example.org", endpoint.RecordTypeA, "3.3.3.3").WithSetIdentifier("set-3"),
@@ -1083,7 +1083,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 
 			ctx := t.Context()
 
-			r, _ := NewDynamoDBRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
+			r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
 			_, err := r.Records(ctx)
 			require.NoError(t, err)
 

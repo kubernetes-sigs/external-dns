@@ -21,8 +21,10 @@ import (
 	"errors"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
 )
 
 // AWSSDRegistry implements registry interface with ownership information associated via the Description field of SD Service
@@ -31,8 +33,13 @@ type AWSSDRegistry struct {
 	ownerID  string
 }
 
-// NewAWSSDRegistry returns implementation of registry for AWS SD
-func NewAWSSDRegistry(provider provider.Provider, ownerID string) (*AWSSDRegistry, error) {
+// New creates an AWSSDRegistry from the given configuration.
+func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return newRegistry(p, cfg.TXTOwnerID)
+}
+
+// newRegistry returns implementation of registry for AWS SD
+func newRegistry(provider provider.Provider, ownerID string) (*AWSSDRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}

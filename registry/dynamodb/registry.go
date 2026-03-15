@@ -27,22 +27,25 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	provideraws "sigs.k8s.io/external-dns/provider/aws"
+	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
 // DynamoDBAPI is the subset of the AWS DynamoDB API that we actually use.  Add methods as required. Signatures must match exactly.
 type DynamoDBAPI interface {
-	DescribeTable(context.Context, *dynamodb.DescribeTableInput, ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error)
-	Scan(context.Context, *dynamodb.ScanInput, ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error)
-	BatchExecuteStatement(context.Context, *dynamodb.BatchExecuteStatementInput, ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error)
+	DescribeTable(context.Context, *awsdynamodb.DescribeTableInput, ...func(*awsdynamodb.Options)) (*awsdynamodb.DescribeTableOutput, error)
+	Scan(context.Context, *awsdynamodb.ScanInput, ...func(*awsdynamodb.Options)) (*awsdynamodb.ScanOutput, error)
+	BatchExecuteStatement(context.Context, *awsdynamodb.BatchExecuteStatementInput, ...func(*awsdynamodb.Options)) (*awsdynamodb.BatchExecuteStatementOutput, error)
 }
 
 // DynamoDBRegistry implements registry interface with ownership implemented via an AWS DynamoDB table.
@@ -75,8 +78,16 @@ const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 // DynamoDB allows a maximum batch size of 25 items.
 var dynamodbMaxBatchSize uint8 = 25
 
-// NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(
+// New creates a DynamoDBRegistry from the given configuration.
+func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	client := awsdynamodb.NewFromConfig(provideraws.CreateDefaultV2Config(cfg), WithRegion(cfg.AWSDynamoDBRegion))
+	return newRegistry(p, cfg.TXTOwnerID, client,
+		cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement,
+		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+}
+
+// newRegistry returns a new DynamoDBRegistry object.
+func newRegistry(
 	provider provider.Provider,
 	ownerID string, dynamodbAPI DynamoDBAPI,
 	table, txtPrefix, txtSuffix, txtWildcardReplacement string,
@@ -371,7 +382,7 @@ func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*
 }
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
-	table, err := im.dynamodbAPI.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+	table, err := im.dynamodbAPI.DescribeTable(ctx, &awsdynamodb.DescribeTableInput{
 		TableName: aws.String(im.table),
 	})
 	if err != nil {
@@ -399,7 +410,7 @@ func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 	}
 
 	labels := map[endpoint.EndpointKey]endpoint.Labels{}
-	scanPaginator := dynamodb.NewScanPaginator(im.dynamodbAPI, &dynamodb.ScanInput{
+	scanPaginator := awsdynamodb.NewScanPaginator(im.dynamodbAPI, &awsdynamodb.ScanInput{
 		TableName:        aws.String(im.table),
 		FilterExpression: aws.String("o = :ownerval"),
 		ExpressionAttributeValues: map[string]dynamodbtypes.AttributeValue{
@@ -528,7 +539,7 @@ func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []
 			statements = nil
 		}
 
-		output, err := im.dynamodbAPI.BatchExecuteStatement(ctx, &dynamodb.BatchExecuteStatementInput{
+		output, err := im.dynamodbAPI.BatchExecuteStatement(ctx, &awsdynamodb.BatchExecuteStatementInput{
 			Statements: chunk,
 		})
 		if err != nil {
@@ -580,11 +591,11 @@ func (im *DynamoDBRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	}
 }
 
-func WithRegion(region string) func(*dynamodb.Options) {
+func WithRegion(region string) func(*awsdynamodb.Options) {
 	if region == "" {
 		return nil
 	}
-	return func(opts *dynamodb.Options) {
+	return func(opts *awsdynamodb.Options) {
 		opts.Region = region
 	}
 }

@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events/fake"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/registry"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
@@ -154,7 +154,7 @@ func getTestSource() *testutils.MockSource {
 
 func getTestConfig() *externaldns.Config {
 	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
+	cfg.Registry = externaldns.RegistryNoop
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	return cfg
 }
@@ -213,7 +213,7 @@ func TestRunOnce(t *testing.T) {
 
 	emitter := fake.NewFakeEventEmitter()
 
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -243,7 +243,7 @@ func TestRun(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -331,7 +331,7 @@ func TestShouldRunOnce(t *testing.T) {
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter *endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
 	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
+	cfg.Registry = externaldns.RegistryNoop
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 
 	source := new(testutils.MockSource)
@@ -341,7 +341,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	ctrl := &Controller{
