@@ -31,9 +31,9 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"sigs.k8s.io/external-dns/source/types"
-
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -60,6 +60,7 @@ const (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
@@ -173,6 +174,8 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		if endpoint.HasNoEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
 			continue
 		}
+
+		endpoint.AttachRefObject(ingEndpoints, events.NewObjectReference(ing, types.Ingress))
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
