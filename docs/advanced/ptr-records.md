@@ -25,7 +25,7 @@ Include the reverse zone in `--domain-filter` so that ExternalDNS knows it is al
 PTR must also be included in `--managed-record-types` so the planner considers PTR records during sync:
 
 ```sh
---create-ptr \
+  --create-ptr \
   --managed-record-types=A \
   --managed-record-types=AAAA \
   --managed-record-types=CNAME \
@@ -33,8 +33,6 @@ PTR must also be included in `--managed-record-types` so the planner considers P
   --domain-filter=example.com \
   --domain-filter=49.168.192.in-addr.arpa
 ```
-
-ExternalDNS will fail at startup if `--create-ptr` is enabled but PTR is not in `--managed-record-types`.
 
 ## Usage
 
@@ -105,7 +103,13 @@ A/AAAA endpoints regardless of source, including DNSEndpoint.
 ## Behaviour details
 
 - Wildcard records (e.g. `*.example.com`) are skipped — a PTR pointing to a wildcard hostname is not meaningful.
-- When multiple A/AAAA records point to the same IP address, a single PTR record is created with all hostnames as targets.
+- When multiple A/AAAA records point to the same IP address, their hostnames are grouped into a single
+  ExternalDNS endpoint. In DNS this produces multiple PTR resource records in the same RRSet
+  (one per hostname), which is valid per [RFC 1035](https://datatracker.ietf.org/doc/html/rfc1035).
+  For example, if both `a.example.com` and `b.example.com` resolve to `192.168.49.2`,
+  a `dig -x 192.168.49.2` will return two PTR answers.
+  Note that not all providers may handle multi-target PTR records correctly — verify with your
+  provider if this applies to your setup.
 - PTR records whose forward hostname does not match `--domain-filter` are automatically cleaned up.
 - PTR records are tracked by the TXT registry like any other record type, so ownership is preserved across restarts.
 

@@ -66,7 +66,8 @@ func supportsPTR(ep *endpoint.Endpoint) bool {
 }
 
 // generatePTREndpoints creates PTR endpoints for A/AAAA endpoints.
-// When multiple records share an IP, a single PTR with all hostnames is created.
+// When multiple records share an IP, their hostnames are grouped into a single
+// endpoint with multiple targets, which translates to multiple PTR RRs in DNS.
 func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) []*endpoint.Endpoint {
 	type ptrInfo struct {
 		targets []string
