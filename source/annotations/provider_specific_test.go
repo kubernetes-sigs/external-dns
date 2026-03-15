@@ -14,6 +14,7 @@ limitations under the License.
 package annotations
 
 import (
+	"os"
 	"strconv"
 	"testing"
 
@@ -21,6 +22,12 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
+
+func TestMain(m *testing.M) {
+	// Initialize annotation prefixes before running tests
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	os.Exit(m.Run())
+}
 
 func TestProviderSpecificAnnotations(t *testing.T) {
 	tests := []struct {
@@ -72,6 +79,26 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			},
 			expected: endpoint.ProviderSpecific{
 				{Name: "coredns/group", Value: "g1"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name: "Azure tags annotation",
+			annotations: map[string]string{
+				AzureTagsKey: "cost-center=12345,owner=backend-team",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: AzureTagsKey, Value: "cost-center=12345,owner=backend-team"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name: "Azure tags annotation with spaces",
+			annotations: map[string]string{
+				AzureTagsKey: "environment=production, app=myapp ",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: AzureTagsKey, Value: "environment=production, app=myapp "},
 			},
 			setIdentifier: "",
 		},

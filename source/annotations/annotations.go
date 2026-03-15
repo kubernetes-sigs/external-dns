@@ -37,6 +37,9 @@ var (
 	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
 
+	// AzureTagsKey The annotation used for Azure DNS record tags
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
 	SCWPrefix        = AnnotationKeyPrefix + "scw-"
@@ -80,6 +83,9 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflareRegionKey = AnnotationKeyPrefix + "cloudflare-region-key"
 	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
+
+	// Azure annotations
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
 
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
