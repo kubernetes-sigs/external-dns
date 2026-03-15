@@ -101,7 +101,9 @@ func init() {
 	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
 }
 
-func NewWebhookProvider(u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
+func NewWebhookProvider(
+	u string,
+	readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
