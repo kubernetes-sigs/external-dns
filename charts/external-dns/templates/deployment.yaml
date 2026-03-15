@@ -150,7 +150,7 @@ spec:
             {{- end }}
             {{- if kindIs "slice" .Values.extraArgs }}
             {{- range .Values.extraArgs }}
-            - {{ tpl . $ }}
+            - {{ tpl . $ | quote }}
             {{- end }}
             {{- end }}
           ports:
