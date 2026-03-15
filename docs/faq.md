@@ -50,6 +50,15 @@ There are three sources of information for ExternalDNS to decide on DNS name. Ex
 
 3. If `--fqdn-template` flag is specified, e.g. `--fqdn-template={{.Name}}.my-org.com`, ExternalDNS will use service/ingress specifications for the provided template to generate DNS name.
 
+### Default Targets
+
+ExternalDNS allows you to specify a set of default targets that should be used for DNS records if the source doesn't provide any.
+
+*   `--default-targets`: Specifies one or more target IP addresses or hostnames to use as a fallback.
+    *   **New Behavior (>= 0.20)**: This flag acts as a fallback. If a source (like Ingress) provides its own targets (e.g. from the status field or the `external-dns.alpha.kubernetes.io/target` annotation), those targets are used and the default targets are ignored. The default targets are only applied when the source has no valid targets.
+*   `--force-default-targets`: (Deprecated) Forces the application of default targets.
+    *   **Legacy Behavior**: When this flag is used, ExternalDNS will *always* use the targets from `--default-targets`, regardless of whether the source has targets specified or not. This effectively overrides any target information from the source. This flag is deprecated and exists for backward compatibility.
+
 ## Which Service and Ingress controllers are supported?
 
 Regarding Services, we'll support the OSI Layer 4 load balancers that Kubernetes creates on AWS and Google Kubernetes Engine, and possibly other clusters running on Google Compute Engine.
