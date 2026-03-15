@@ -55,14 +55,15 @@ import (
 type ProviderConstructor func(
 	ctx context.Context,
 	cfg *externaldns.Config,
-	domainFilter *endpoint.DomainFilter) (provider.Provider, error)
+	domainFilter *endpoint.DomainFilter,
+) (provider.Provider, error)
 
 // SelectProvider creates a provider based on the given configuration.
 func SelectProvider(
 	ctx context.Context,
 	cfg *externaldns.Config,
 	domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	constructor, ok := providers()[cfg.Provider]
+	constructor, ok := providers(cfg.Provider)
 	if !ok {
 		return nil, fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -76,38 +77,39 @@ func SelectProvider(
 	return p, nil
 }
 
-// providers returns the map of known provider names to their constructors.
-// Returned as a function rather than a package-level var to avoid mutable global state.
-func providers() map[string]ProviderConstructor {
-	return map[string]ProviderConstructor{
-		"akamai":            akamai.New,
-		"alibabacloud":      alibabacloud.New,
-		"aws":               aws.New,
-		"aws-sd":            awssd.New,
-		"azure":             azure.New,
-		"azure-dns":         azure.New,
-		"azure-private-dns": azure.NewPrivate,
-		"civo":              civo.New,
-		"cloudflare":        cloudflare.New,
-		"coredns":           coredns.New,
-		"skydns":            coredns.New,
-		"digitalocean":      digitalocean.New,
-		"dnsimple":          dnsimple.New,
-		"exoscale":          exoscale.New,
-		"gandi":             gandi.New,
-		"godaddy":           godaddy.New,
-		"google":            google.New,
-		"inmemory":          inmemory.New,
-		"linode":            linode.New,
-		"ns1":               ns1.New,
-		"oci":               oci.New,
-		"ovh":               ovh.New,
-		"pdns":              pdns.New,
-		"pihole":            pihole.New,
-		"plural":            plural.New,
-		"rfc2136":           rfc2136.New,
-		"scaleway":          scaleway.New,
-		"transip":           transip.New,
-		"webhook":           webhook.New,
+// providers looks up the constructor for the named provider.
+func providers(selector string) (ProviderConstructor, bool) {
+	m := map[string]ProviderConstructor{
+		externaldns.ProviderAkamai:       akamai.New,
+		externaldns.ProviderAlibabaCloud: alibabacloud.New,
+		externaldns.ProviderAWS:          aws.New,
+		externaldns.ProviderAWSSD:        awssd.New,
+		externaldns.ProviderAzure:        azure.New,
+		externaldns.ProviderAzureDNS:     azure.New,
+		externaldns.ProviderAzurePrivate: azure.NewPrivate,
+		externaldns.ProviderCivo:         civo.New,
+		externaldns.ProviderCloudflare:   cloudflare.New,
+		externaldns.ProviderCoreDNS:      coredns.New,
+		externaldns.ProviderSkyDNS:       coredns.New,
+		externaldns.ProviderDigitalOcean: digitalocean.New,
+		externaldns.ProviderDNSimple:     dnsimple.New,
+		externaldns.ProviderExoscale:     exoscale.New,
+		externaldns.ProviderGandi:        gandi.New,
+		externaldns.ProviderGoDaddy:      godaddy.New,
+		externaldns.ProviderGoogle:       google.New,
+		externaldns.ProviderInMemory:     inmemory.New,
+		externaldns.ProviderLinode:       linode.New,
+		externaldns.ProviderNS1:          ns1.New,
+		externaldns.ProviderOCI:          oci.New,
+		externaldns.ProviderOVH:          ovh.New,
+		externaldns.ProviderPDNS:         pdns.New,
+		externaldns.ProviderPihole:       pihole.New,
+		externaldns.ProviderPlural:       plural.New,
+		externaldns.ProviderRFC2136:      rfc2136.New,
+		externaldns.ProviderScaleway:     scaleway.New,
+		externaldns.ProviderTransip:      transip.New,
+		externaldns.ProviderWebhook:      webhook.New,
 	}
+	c, ok := m[selector]
+	return c, ok
 }

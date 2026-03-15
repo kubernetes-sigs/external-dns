@@ -40,14 +40,14 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "aws provider",
 			cfg: &externaldns.Config{
-				Provider: "aws",
+				Provider: externaldns.ProviderAWS,
 			},
 			expectedType: "*aws.AWSProvider",
 		},
 		{
 			name: "rfc2136 provider",
 			cfg: &externaldns.Config{
-				Provider:             "rfc2136",
+				Provider:             externaldns.ProviderRFC2136,
 				RFC2136TSIGSecretAlg: "hmac-sha256",
 			},
 			expectedType: "*rfc2136.rfc2136Provider",
@@ -55,21 +55,21 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "gandi provider",
 			cfg: &externaldns.Config{
-				Provider: "gandi",
+				Provider: externaldns.ProviderGandi,
 			},
 			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
 		},
 		{
 			name: "inmemory provider",
 			cfg: &externaldns.Config{
-				Provider: "inmemory",
+				Provider: externaldns.ProviderInMemory,
 			},
 			expectedType: "*inmemory.InMemoryProvider",
 		},
 		{
 			name: "oci provider instance principal without compartment OCID",
 			cfg: &externaldns.Config{
-				Provider:                 "oci",
+				Provider:                 externaldns.ProviderOCI,
 				OCIAuthInstancePrincipal: true,
 				OCICompartmentOCID:       "",
 			},
@@ -78,7 +78,7 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "oci provider without config file",
 			cfg: &externaldns.Config{
-				Provider:      "oci",
+				Provider:      externaldns.ProviderOCI,
 				OCIConfigFile: "",
 			},
 			expectedError: "reading OCI config file",
@@ -86,14 +86,14 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "coredns provider",
 			cfg: &externaldns.Config{
-				Provider: "coredns",
+				Provider: externaldns.ProviderCoreDNS,
 			},
 			expectedType: "coredns.coreDNSProvider",
 		},
 		{
 			name: "pihole provider",
 			cfg: &externaldns.Config{
-				Provider:         "pihole",
+				Provider:         externaldns.ProviderPihole,
 				PiholeApiVersion: "6",
 				PiholeServer:     "http://localhost:8080",
 			},
@@ -102,7 +102,7 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "dnsimple provider",
 			cfg: &externaldns.Config{
-				Provider: "dnsimple",
+				Provider: externaldns.ProviderDNSimple,
 			},
 			expectedError: "no dnsimple oauth token provided",
 		},
@@ -116,7 +116,7 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "inmemory cached provider",
 			cfg: &externaldns.Config{
-				Provider:          "inmemory",
+				Provider:          externaldns.ProviderInMemory,
 				ProviderCacheTime: 10 * time.Millisecond,
 			},
 			expectedType: "*provider.CachedProvider",
@@ -142,21 +142,15 @@ func TestSelectProvider(t *testing.T) {
 }
 
 func TestKnownProviders(t *testing.T) {
-	expected := []string{
-		"akamai", "alibabacloud", "aws", "aws-sd",
-		"azure", "azure-dns", "azure-private-dns",
-		"civo", "cloudflare", "coredns", "skydns",
-		"digitalocean", "dnsimple", "exoscale",
-		"gandi", "godaddy", "google",
-		"inmemory", "linode", "ns1", "oci", "ovh",
-		"pdns", "pihole", "plural", "rfc2136",
-		"scaleway", "transip", "webhook",
+	names := make([]string, 0, len(externaldns.ProviderNames))
+	for _, name := range externaldns.ProviderNames {
+		t.Run(name, func(t *testing.T) {
+			names = append(names, name)
+			_, ok := providers(name)
+			assert.True(t, ok, "expected provider %s to be registered", name)
+		})
 	}
-	names := make([]string, 0, len(providers()))
-	for name := range providers() {
-		names = append(names, name)
-	}
-	assert.ElementsMatch(t, expected, names)
+	assert.ElementsMatch(t, externaldns.ProviderNames, names)
 }
 
 func TestSelectProvider_Webhook(t *testing.T) {
@@ -169,7 +163,7 @@ func TestSelectProvider_Webhook(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &externaldns.Config{
-		Provider:           "webhook",
+		Provider:           externaldns.ProviderWebhook,
 		WebhookProviderURL: srv.URL,
 	}
 	p, err := SelectProvider(t.Context(), cfg, nil)
