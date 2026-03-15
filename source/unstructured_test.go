@@ -441,7 +441,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 	}
 }
 
-func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
+func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
 	objects := []*unstructured.Unstructured{
 		{

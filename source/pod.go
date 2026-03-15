@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// TODO:
+// support
+// - set-identifier for endpoints created
+// - set resource aka fmt.Sprintf("pod/%s/%s", pod.Namespace, pod.Name)
 package source
 
 import (
@@ -24,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+  "k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,6 +38,8 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+  "sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // podSource is an implementation of Source for Kubernetes Pod objects.
@@ -43,6 +51,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type podSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -91,10 +100,8 @@ func NewPodSource(
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
 			}
-			if pod.UID == "" {
-				// Pod was already transformed and we must be idempotent.
-				return pod, nil
-			}
+			// UID is retained so that event correlation works; the transform
+			// is idempotent by construction.
 			return &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					// Name/namespace must always be kept for the informer to work.
@@ -102,6 +109,7 @@ func NewPodSource(
 					Namespace: pod.Namespace,
 					// Used by the controller. This includes non-external-dns prefixed annotations.
 					Annotations: pod.Annotations,
+					UID:         pod.UID,
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork: pod.Spec.HostNetwork,
@@ -166,6 +174,8 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		if err != nil {
 			return nil, err
 		}
+
+		endpoint.AttachRefObject(podEndpoints, events.NewObjectReference(pod, types.Pod))
 
 		endpoints = append(endpoints, podEndpoints...)
 	}
