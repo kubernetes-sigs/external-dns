@@ -840,8 +840,6 @@ func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *e
 			aaaa.RecordType = endpoint.RecordTypeAAAA
 		}
 		return aaaa
-	default:
-		p.adjustOtherRecord(ep)
 	}
 	adjustGeoProximityLocationEndpoint(ep)
 	return aaaa
@@ -895,18 +893,6 @@ func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
 	if isAlias {
 		ep.RecordType = endpoint.RecordTypeA
 		p.adjustAliasRecord(ep)
-	}
-}
-
-func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
-	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
-	// This will be fixed in another PR.
-	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
-		p.adjustAliasRecord(ep)
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 }
 
