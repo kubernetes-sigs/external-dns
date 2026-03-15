@@ -21,6 +21,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -83,4 +85,13 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 		endpoints = append(endpoints, ep)
 	}
 	return endpoints
+}
+
+// AttachRefObject sets the same ObjectReference on every endpoint in eps.
+// The reference is shared across all endpoints, so callers should create it once
+// per source object rather than once per endpoint.
+func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
+	for _, ep := range eps {
+		ep.WithRefObject(ref)
+	}
 }
