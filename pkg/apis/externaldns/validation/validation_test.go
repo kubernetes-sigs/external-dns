@@ -117,6 +117,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
 	cfg.RFC2136MinTTL = -1
+	cfg.RFC2136CreatePTR = false
 	cfg.RFC2136BatchChangeSize = 50
 
 	err := ValidateConfig(cfg)
@@ -380,5 +381,24 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
+	assert.NoError(t, err)
+}
+
+func TestValidateCreatePTRRequiresManagedRecordType(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.CreatePTR = true
+	// ManagedDNSRecordTypes defaults to [A, AAAA, CNAME] — no PTR
+
+	err := ValidateConfig(cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--create-ptr requires PTR in --managed-record-types")
+}
+
+func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.CreatePTR = true
+	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+
+	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
 }

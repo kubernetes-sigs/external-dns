@@ -864,6 +864,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-port=5353",
 		"--rfc2136-zone=example.org.",
 		"--rfc2136-zone=example.com.",
+		"--rfc2136-create-ptr",
 		"--rfc2136-insecure",
 		"--rfc2136-kerberos-realm=EXAMPLE.COM",
 		"--rfc2136-kerberos-username=svc-externaldns",
@@ -879,6 +880,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	)
 	assert.Equal(t, 5353, cfg.RFC2136Port)
 	assert.ElementsMatch(t, []string{"example.org.", "example.com."}, cfg.RFC2136Zone)
+	assert.True(t, cfg.RFC2136CreatePTR)
 	assert.True(t, cfg.RFC2136Insecure)
 	assert.Equal(t, "EXAMPLE.COM", cfg.RFC2136KerberosRealm)
 	assert.Equal(t, "svc-externaldns", cfg.RFC2136KerberosUsername)
@@ -974,4 +976,12 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	bindFlags(flags.NewKingpinBinder(app), cfgK)
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
+}
+
+func TestIsPTRSupported(t *testing.T) {
+	cfg := &Config{ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
+	assert.False(t, cfg.IsPTRSupported())
+
+	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+	assert.True(t, cfg.IsPTRSupported())
 }
