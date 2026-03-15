@@ -17,8 +17,10 @@ limitations under the License.
 package endpoint
 
 import (
+	"cmp"
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -368,6 +370,29 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 	}
 }
 
+// RetainProviderProperties retains only properties whose name is prefixed with
+// "provider/" (e.g. "aws/evaluate-target-health" for provider "aws").
+// Properties belonging to other providers are dropped.
+// Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
+// TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
+// annotation form "external-dns.alpha.kubernetes.io/cloudflare-*", so filtering is skipped for
+// cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
+// adopts the standard prefix convention.
+func (e *Endpoint) RetainProviderProperties(provider string) {
+	if len(e.ProviderSpecific) == 0 {
+		return
+	}
+	if provider != "" && provider != "cloudflare" {
+		prefix := provider + "/"
+		e.ProviderSpecific = slices.DeleteFunc(e.ProviderSpecific, func(prop ProviderSpecificProperty) bool {
+			return strings.Contains(prop.Name, "/") && !strings.HasPrefix(prop.Name, prefix)
+		})
+	}
+	slices.SortFunc(e.ProviderSpecific, func(a, b ProviderSpecificProperty) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+}
+
 // WithLabel adds or updates a label for the Endpoint.
 //
 // Example usage:
@@ -474,6 +499,8 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
 		return e.Targets.ValidateSRVRecord()
+	case RecordTypePTR:
+		return e.ValidatePTRRecord()
 	}
 	return true
 }
@@ -559,6 +586,42 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
+// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
+func (e *Endpoint) ValidatePTRRecord() bool {
+	name := strings.ToLower(e.DNSName)
+	if !isReverseDNSName(name) {
+		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
+		return false
+	}
+	if len(e.Targets) == 0 {
+		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
+		return false
+	}
+	for _, target := range e.Targets {
+		if strings.TrimSpace(target) == "" {
+			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
+			return false
+		}
+		if _, err := netip.ParseAddr(target); err == nil {
+			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
+			return false
+		}
+	}
+	return true
+}
+
+// isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa
+// and has at least one label before the suffix.
+func isReverseDNSName(name string) bool {
+	for _, suffix := range []string{".in-addr.arpa", ".ip6.arpa"} {
+		if prefix, ok := strings.CutSuffix(name, suffix); ok {
+			return len(prefix) > 0 && prefix[0] != '.'
+		}
+	}
+	return false
 }
 
 // GetDNSName returns the DNS name of the endpoint.

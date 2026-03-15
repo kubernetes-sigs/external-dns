@@ -128,4 +128,3 @@ formatters:
       - third_party$
       - builtin$
       - examples$
-      - _test\.go

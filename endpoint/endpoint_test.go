@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
@@ -444,6 +445,142 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			if !reflect.DeepEqual([]ProviderSpecificProperty(c.endpoint.ProviderSpecific), c.expected) {
 				t.Errorf("unexpected ProviderSpecific:\nGot:      %#v\nExpected: %#v", c.endpoint.ProviderSpecific, c.expected)
 			}
+		})
+	}
+}
+
+func TestRetainProviderProperties(t *testing.T) {
+	cases := []struct {
+		name     string
+		endpoint Endpoint
+		provider string
+		expected []ProviderSpecificProperty
+	}{
+		{
+			name:     "empty provider specific",
+			endpoint: Endpoint{},
+			provider: "aws",
+			expected: nil,
+		},
+		{
+			name: "empty provider, properties untouched",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "coredns/group", Value: "my-group"},
+			},
+		},
+		{
+			name: "all properties match provider",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		{
+			name: "no properties match provider",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{},
+		},
+		{
+			name: "mixed providers, only configured provider retained",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		{
+			name: "provider agnostic properties without prefix are retained",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "coredns/group", Value: "my-group"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "alias", Value: "true"},
+				{Name: "aws/evaluate-target-health", Value: "true"},
+			},
+		},
+		{
+			name: "provider prefix must match exactly, not as substring",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "aws-extended/some-prop", Value: "val"},
+					{Name: "aws/weight", Value: "10"},
+				},
+			},
+			provider: "aws",
+			expected: []ProviderSpecificProperty{
+				{Name: "aws/weight", Value: "10"},
+			},
+		},
+		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
+		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
+		{
+			name: "cloudflare retains all properties",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "aws/evaluate-target-health", Value: "true"},
+					{Name: "alias", Value: "false"},
+				},
+			},
+			provider: "cloudflare",
+			expected: []ProviderSpecificProperty{
+				{Name: "alias", Value: "false"},
+				{Name: "aws/evaluate-target-health", Value: "true"},
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+			},
+		},
+		{
+			name: "cloudflare properties are sorted",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				},
+			},
+			provider: "cloudflare",
+			expected: []ProviderSpecificProperty{
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.endpoint.RetainProviderProperties(c.provider)
+			require.Equal(t, c.expected, []ProviderSpecificProperty(c.endpoint.ProviderSpecific))
 		})
 	}
 }
@@ -1030,6 +1167,114 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "Valid PTR record with in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"v6.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid PTR record with multiple hostname targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"a.example.com", "b.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid PTR record - DNS name not reverse DNS",
+			endpoint: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IP address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - target is an IPv6 address",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - empty target",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    "in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed in-addr.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - bare ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    "ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid PTR record - dot-prefixed ip6.arpa",
+			endpoint: Endpoint{
+				DNSName:    ".ip6.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1088,6 +1333,74 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				logtest.TestHelperLogContains(warnMsg, hook, t)
 			} else {
 				logtest.TestHelperLogNotContains(warnMsg, hook, t)
+			}
+		})
+	}
+}
+
+func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		ep      Endpoint
+		wantLog string
+	}{
+		{
+			name: "non-reverse DNS name logs invalid",
+			ep: Endpoint{
+				DNSName:    "web.example.com",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"other.example.com"},
+			},
+			wantLog: "must be a valid reverse DNS name",
+		},
+		{
+			name: "IP address target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"10.0.0.1"},
+			},
+			wantLog: "must be a hostname, not an IP address",
+		},
+		{
+			name: "empty target logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{""},
+			},
+			wantLog: "target must not be empty",
+		},
+		{
+			name: "no targets logs invalid",
+			ep: Endpoint{
+				DNSName:    "1.0.0.10.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{},
+			},
+			wantLog: "at least one target is required",
+		},
+		{
+			name: "valid PTR does not log",
+			ep: Endpoint{
+				DNSName:    "2.49.168.192.in-addr.arpa",
+				RecordType: RecordTypePTR,
+				Targets:    Targets{"web.example.com"},
+			},
+			wantLog: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			tt.ep.CheckEndpoint()
+
+			if tt.wantLog != "" {
+				logtest.TestHelperLogContains(tt.wantLog, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains("Invalid PTR record", hook, t)
 			}
 		})
 	}

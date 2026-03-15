@@ -25,13 +25,13 @@ Wrappers solve these key challenges:
 
 ## Built In Wrappers
 
-|       Wrapper        | Purpose                                 | Use Case                              |
-|:--------------------:|:----------------------------------------|:--------------------------------------|
-|    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.  |
-|    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources. |
-| `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                 |
-|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.              |
-|   `PostProcessor`    | Add records post-processing.            | Configure TTL for all endpoints.      |
+|       Wrapper        | Purpose                                 | Use Case                                            |
+|:--------------------:|:----------------------------------------|:----------------------------------------------------|
+|    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
+|    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
+| `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
+|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
+|   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
 
 ### Use Cases
 
@@ -54,6 +54,22 @@ Converts IPv4 targets to IPv6 using NAT64 prefixes.
 
 ```yaml
 --nat64-prefix=64:ff9b::/96
+```
+
+### 3.1 `PostProcessor`
+
+Applies post-processing to all endpoints after they are collected from sources.
+
+📌 **Use case**
+
+- Sets a minimum TTL on endpoints that have no TTL or a TTL below the configured minimum.
+- Filters `ProviderSpecific` properties to retain only those belonging to the configured provider (e.g. `aws/evaluate-target-health` when provider is `aws`). Properties with no provider prefix (e.g. `alias`) are considered provider-agnostic and are always retained.
+- Sets the `alias=true` provider-specific property on `CNAME` endpoints when `--prefer-alias` is enabled, signalling providers that support ALIAS records (e.g. PowerDNS, AWS) to use them instead of CNAMEs. Per-resource annotations already present are not overwritten.
+
+```yaml
+--min-ttl=60s
+--provider=aws
+--prefer-alias
 ```
 
 ---

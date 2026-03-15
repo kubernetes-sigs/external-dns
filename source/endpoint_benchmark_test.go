@@ -28,6 +28,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/source/informers"
 
 	v1alpha3 "istio.io/api/networking/v1alpha3"
