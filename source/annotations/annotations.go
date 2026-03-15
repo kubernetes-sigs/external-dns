@@ -46,6 +46,7 @@ var (
 	TtlKey           = AnnotationKeyPrefix + "ttl"
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey         = AnnotationKeyPrefix + "alias"
+	RecordTypeKey    = AnnotationKeyPrefix + "record-type"
 	TargetKey        = AnnotationKeyPrefix + "target"
 	// ControllerKey The annotation used for figuring out which controller is responsible
 	ControllerKey = AnnotationKeyPrefix + "controller"
@@ -92,6 +93,7 @@ func SetAnnotationPrefix(prefix string) {
 	TtlKey = AnnotationKeyPrefix + "ttl"
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey = AnnotationKeyPrefix + "alias"
+	RecordTypeKey = AnnotationKeyPrefix + "record-type"
 	TargetKey = AnnotationKeyPrefix + "target"
 	ControllerKey = AnnotationKeyPrefix + "controller"
 	HostnameKey = AnnotationKeyPrefix + "hostname"

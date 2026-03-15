@@ -84,6 +84,16 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			expected:      endpoint.ProviderSpecific{},
 			setIdentifier: "identifier",
 		},
+		{
+			name: "Record type annotation",
+			annotations: map[string]string{
+				RecordTypeKey: "ptr",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: endpoint.ProviderSpecificRecordType, Value: "ptr"},
+			},
+			setIdentifier: "",
+		},
 	}
 
 	for _, tt := range tests {
