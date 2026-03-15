@@ -74,7 +74,7 @@ func TestFlagsMdUpToDate(t *testing.T) {
 	actual, err := flags.generateMarkdownTable()
 	assert.NoError(t, err)
 	actual += "\n"
-	assert.Len(t, actual, len(expected), "expected file '%s' to be up to date. execute 'make generate-flags-documentation", fileName)
+	assert.Equal(t, string(expected), actual, "expected file '%s' to be up to date. execute 'make generate-flags-documentation'", fileName)
 }
 
 func TestFlagsMdExtraFlagAdded(t *testing.T) {

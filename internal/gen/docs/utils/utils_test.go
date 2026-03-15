@@ -21,9 +21,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"text/template"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteToFile(t *testing.T) {
@@ -75,4 +77,29 @@ func TestFuncs(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, tt.expect, b.String(), tt.tpl)
 	}
+}
+
+func TestRenderTemplate(t *testing.T) {
+	fsys := fstest.MapFS{
+		"templates/test.gotpl": &fstest.MapFile{
+			Data: []byte("Hello {{ .Name }}!"),
+		},
+	}
+
+	result, err := RenderTemplate(fsys, "test.gotpl", struct{ Name string }{Name: "World"})
+	require.NoError(t, err)
+	assert.Equal(t, "Hello World!", result)
+}
+
+func TestRenderTemplateWithFuncMap(t *testing.T) {
+	fsys := fstest.MapFS{
+		"templates/test.gotpl": &fstest.MapFile{
+			Data: []byte("{{ backtick 3 }}go\nfmt.Println({{ capitalize .Lang }})\n{{ backtick 3 }}"),
+		},
+	}
+
+	result, err := RenderTemplate(fsys, "test.gotpl", struct{ Lang string }{Lang: "go"})
+	require.NoError(t, err)
+	assert.Contains(t, result, "```go")
+	assert.Contains(t, result, "Go")
 }
