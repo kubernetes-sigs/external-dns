@@ -396,36 +396,36 @@ var defaultConfig = &Config{
 	PreferAlias:                  false,
 }
 
-var providerNames = []string{
-	"akamai",
-	"alibabacloud",
-	"aws",
-	"aws-sd",
-	"azure",
-	"azure-dns",
-	"azure-private-dns",
-	"civo",
-	"cloudflare",
-	"coredns",
-	"digitalocean",
-	"dnsimple",
-	"exoscale",
-	"gandi",
-	"godaddy",
-	"google",
-	"inmemory",
-	"linode",
-	"ns1",
-	"oci",
-	"ovh",
-	"pdns",
-	"pihole",
-	"plural",
-	"rfc2136",
-	"scaleway",
-	"skydns",
-	"transip",
-	"webhook",
+var ProviderNames = []string{
+	ProviderAkamai,
+	ProviderAlibabaCloud,
+	ProviderAWS,
+	ProviderAWSSD,
+	ProviderAzure,
+	ProviderAzureDNS,
+	ProviderAzurePrivate,
+	ProviderCivo,
+	ProviderCloudflare,
+	ProviderCoreDNS,
+	ProviderDigitalOcean,
+	ProviderDNSimple,
+	ProviderExoscale,
+	ProviderGandi,
+	ProviderGoDaddy,
+	ProviderGoogle,
+	ProviderInMemory,
+	ProviderLinode,
+	ProviderNS1,
+	ProviderOCI,
+	ProviderOVH,
+	ProviderPDNS,
+	ProviderPihole,
+	ProviderPlural,
+	ProviderRFC2136,
+	ProviderScaleway,
+	ProviderSkyDNS,
+	ProviderTransip,
+	ProviderWebhook,
 }
 
 var allowedSources = []string{
@@ -729,8 +729,8 @@ func App(cfg *Config) *kingpin.Application {
 
 	// Kingpin-only semantics: preserve Required/PlaceHolder and enum validation
 	// that Kingpin provided before the flags were migrated into the binder.
-	providerHelp := "The DNS provider where the DNS records will be created (required, options: " + strings.Join(providerNames, ", ") + ")"
-	app.Flag("provider", providerHelp).Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providerNames...)
+	providerHelp := "The DNS provider where the DNS records will be created (required, options: " + strings.Join(ProviderNames, ", ") + ")"
+	app.Flag("provider", providerHelp).Required().PlaceHolder("provider").EnumVar(&cfg.Provider, ProviderNames...)
 
 	// Reintroduce source enum/required validation in Kingpin to match previous behavior.
 	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(allowedSources, ", ") + ")"

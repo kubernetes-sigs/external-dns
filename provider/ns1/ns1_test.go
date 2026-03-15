@@ -155,11 +155,11 @@ func TestNewNS1Provider(t *testing.T) {
 		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 		DryRun:       false,
 	}
-	_, err := NewNS1Provider(testNS1Config)
+	_, err := newProvider(testNS1Config)
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("NS1_APIKEY")
-	_, err = NewNS1Provider(testNS1Config)
+	_, err = newProvider(testNS1Config)
 	require.Error(t, err)
 }
 

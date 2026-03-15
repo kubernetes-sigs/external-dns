@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -53,8 +54,21 @@ type ExoscaleProvider struct {
 // ExoscaleOption for Provider options
 type ExoscaleOption func(*ExoscaleProvider)
 
-// NewExoscaleProvider returns ExoscaleProvider DNS provider interface implementation
-func NewExoscaleProvider(env, zone, key, secret string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
+// New creates an Exoscale provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		cfg.ExoscaleAPIEnvironment,
+		cfg.ExoscaleAPIZone,
+		cfg.ExoscaleAPIKey,
+		cfg.ExoscaleAPISecret,
+		cfg.DryRun,
+		ExoscaleWithDomain(domainFilter),
+		ExoscaleWithLogging(),
+	)
+}
+
+// newProvider returns ExoscaleProvider DNS provider interface implementation
+func newProvider(env, zone, key, secret string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
 	client, err := egoscale.NewClient(
 		key,
 		secret,

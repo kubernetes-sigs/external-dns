@@ -128,12 +128,12 @@ func TestErrorHandling(t *testing.T) {
 
 func TestNewPiholeProviderV6(t *testing.T) {
 	// Test invalid configuration
-	_, err := NewPiholeProvider(PiholeConfig{APIVersion: "7"})
+	_, err := newProvider(PiholeConfig{APIVersion: "7"})
 	if err == nil {
 		t.Error("Expected error from invalid configuration")
 	}
 	// Test valid configuration
-	_, err = NewPiholeProvider(PiholeConfig{Server: "test.example.com", APIVersion: "6"})
+	_, err = newProvider(PiholeConfig{Server: "test.example.com", APIVersion: "6"})
 	if err != nil {
 		t.Error("Expected no error from valid configuration, got:", err)
 	}

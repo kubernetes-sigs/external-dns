@@ -125,39 +125,39 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	}
 	t.Setenv(scw.ScwActiveProfileEnv, "foo")
 	t.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Unsetenv(scw.ScwSecretKeyEnv)
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	t.Setenv(scw.ScwSecretKeyEnv, "dummy")
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Unsetenv(scw.ScwAccessKeyEnv)
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	t.Setenv(scw.ScwAccessKeyEnv, "dummy")
-	_, err = NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -168,7 +168,7 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 
-	_, err := NewScalewayProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	assert.NoError(t, err)
 }
 

@@ -56,7 +56,7 @@ func createAkamaiStubProvider(stub *edgednsStub, domfilter *endpoint.DomainFilte
 		AccessToken:           "test_access_token",
 	}
 
-	prov, err := NewAkamaiProvider(akamaiConfig, stub)
+	prov, err := newProvider(akamaiConfig, stub)
 	aprov := prov.(*AkamaiProvider)
 	return aprov, err
 }

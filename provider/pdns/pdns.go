@@ -33,6 +33,8 @@ import (
 	pgo "github.com/ffledgling/pdns-go"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -230,8 +232,28 @@ type PDNSProvider struct {
 	domainFilter *endpoint.DomainFilter
 }
 
-// NewPDNSProvider initializes a new PowerDNS based Provider.
-func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
+// New creates a PowerDNS provider from the given configuration.
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		ctx,
+		PDNSConfig{
+			DomainFilter: domainFilter,
+			DryRun:       cfg.DryRun,
+			Server:       cfg.PDNSServer,
+			ServerID:     cfg.PDNSServerID,
+			APIKey:       cfg.PDNSAPIKey,
+			TLSConfig: TLSConfig{
+				SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
+				CAFilePath:            cfg.TLSCA,
+				ClientCertFilePath:    cfg.TLSClientCert,
+				ClientCertKeyFilePath: cfg.TLSClientCertKey,
+			},
+		},
+	)
+}
+
+// newProvider initializes a new PowerDNS based Provider.
+func newProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
 	// Do some input validation
 
 	if config.APIKey == "" {

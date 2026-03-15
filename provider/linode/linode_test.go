@@ -143,13 +143,13 @@ func TestLinodeConvertRecordType(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestNewLinodeProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	t.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.Error(t, err)
 }
 

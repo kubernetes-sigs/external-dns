@@ -967,7 +967,7 @@ func TestCloudflareProvider(t *testing.T) {
 				t.Setenv(env.Key, env.Value)
 			}
 
-			_, err = NewCloudFlareProvider(
+			_, err = newProvider(
 				endpoint.NewDomainFilter([]string{"bar.com"}),
 				provider.NewZoneIDFilter([]string{""}),
 				false,
@@ -1775,7 +1775,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		cfAPITokenEnvKey: "abc123def",
 		cfAPIEmailEnvKey: "test@test.com",
 	})
-	provider, err := NewCloudFlareProvider(
+	provider, err := newProvider(
 		endpoint.NewDomainFilter([]string{"example.com"}),
 		provider.ZoneIDFilter{},
 		true,

@@ -25,6 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -54,7 +56,13 @@ type InMemoryProvider struct {
 	OnRecords      func()
 }
 
+// New creates an InMemory provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(InMemoryInitZones(cfg.InMemoryZones), InMemoryWithDomain(domainFilter), InMemoryWithLogging()), nil
+}
+
 // InMemoryOption allows to extend in-memory provider
+// TODO: review this pattern, and consider inline with other providers
 type InMemoryOption func(*InMemoryProvider)
 
 // InMemoryWithLogging injects logging when ApplyChanges is called
@@ -97,6 +105,11 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
+	return newProvider(opts...)
+}
+
+// newProvider returns InMemoryProvider DNS provider interface implementation
+func newProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
 		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},
