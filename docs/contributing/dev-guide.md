@@ -1,3 +1,12 @@
+---
+tags:
+  - contributing
+  - build
+  - testing
+  - integration-tests
+  - helm
+---
+
 # Developer Reference
 
 The `external-dns` is the work of thousands of contributors, and is maintained by a small team within [kubernetes-sigs](https://github.com/kubernetes-sigs). This document covers basic needs to work with `external-dns` codebase. It contains instructions to build, run, and test `external-dns`.
@@ -76,6 +85,99 @@ func TestMe(t *testing.T) {
   // provide negative assertion
   testutils.TestHelperLogNotContains("this message should not be shown", hook, t)
 }
+```
+
+### Integration Tests
+
+Integration tests live in `tests/integration/` and verify behavior that spans multiple sources or wrappers together, using a fake Kubernetes client — no real cluster is required.
+
+#### Where integration tests sit
+
+```mermaid
+flowchart TD
+    E2E["E2E Tests<br>Real cluster + real DNS provider<br>Slow · requires cloud credentials"]
+    IT["Integration Tests  ←  tests/integration/<br>Fake Kubernetes API · no cluster needed<br>Tests source + wrapper combinations · fast<br>Declarative YAML scenarios"]
+    UT["Unit Tests<br>One source or wrapper in isolation<br>Mocked or minimal Kubernetes client"]
+
+    E2E --> IT --> UT
+
+    style IT fill:#bbf7d0,stroke:#15803d,stroke-width:2px
+```
+
+#### What runs during a test
+
+```mermaid
+flowchart LR
+    subgraph yaml["tests/integration/scenarios/tests.yaml"]
+        RES["resources<br>Service · Ingress · Pod"]
+        CFG["config<br>sources · filters · wrappers"]
+        EXP["expected<br>endpoints"]
+    end
+
+    subgraph toolkit["toolkit  —  fake Kubernetes"]
+        PARSE["ParseResources()"]
+        FAKE["fake.Clientset"]
+        WRAP["CreateWrappedSource()"]
+    end
+
+    subgraph pipeline["ExternalDNS pipeline under test"]
+        SRC["Source(s)<br>service · ingress · ..."]
+        WRP["Wrapper(s)<br>dedup · targetFilter · NAT64"]
+        OUT["Endpoints"]
+    end
+
+    ASSERT["ValidateEndpoints()<br>DNSName · Targets<br>RecordType · TTL"]
+
+    RES --> PARSE --> FAKE --> WRAP
+    CFG --> WRAP
+    WRAP --> SRC --> WRP --> OUT --> ASSERT
+    EXP --> ASSERT
+```
+
+**When to add an integration test:**
+
+- You are adding or changing a **source** (e.g. `service`, `ingress`) and want to verify it produces the correct endpoints end-to-end.
+- You are changing a **wrapper** (e.g. deduplication, target filtering, default targets, NAT64) and want to verify it behaves correctly when real Kubernetes resources are involved.
+- You are changing a **post-processor** and want to confirm it applies correctly to endpoints produced by one or more sources.
+- You are verifying **multiple sources** together (e.g. `service` and `ingress` both pointing to the same hostname) and their combined output.
+- You are fixing a **cross-cutting bug** that only manifests when sources, wrappers, and post-processors interact.
+- A unit test would require mocking too many internals — an integration test can express the scenario more clearly as a real Kubernetes resource.
+
+**How to add a scenario:**
+
+Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares Kubernetes resources (Service, Ingress, etc.), the ExternalDNS source configuration, and the expected endpoints:
+
+```yaml
+- name: my-new-scenario
+  description: >
+    Brief explanation of what behavior this scenario validates.
+  config:
+    sources: ["service"]
+  resources:
+    - resource:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: my-svc
+          namespace: default
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: my.example.com
+        spec:
+          type: LoadBalancer
+        status:
+          loadBalancer:
+            ingress:
+              - ip: 1.2.3.4
+  expected:
+    - dnsName: my.example.com
+      targets: ["1.2.3.4"]
+      recordType: A
+```
+
+**How to run:**
+
+```shell
+go test ./tests/integration/...
 ```
 
 ## Complete test on local env
