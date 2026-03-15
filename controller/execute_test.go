@@ -346,7 +346,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
-	p, err := provider.SelectProvider(ctx, cfg, domainFilter)
+	p, err := provider.Select(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)

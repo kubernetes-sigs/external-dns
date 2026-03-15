@@ -58,8 +58,8 @@ type ProviderConstructor func(
 	domainFilter *endpoint.DomainFilter,
 ) (provider.Provider, error)
 
-// SelectProvider creates a provider based on the given configuration.
-func SelectProvider(
+// Select creates a provider based on the given configuration.
+func Select(
 	ctx context.Context,
 	cfg *externaldns.Config,
 	domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

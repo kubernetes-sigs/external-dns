@@ -94,7 +94,7 @@ func Execute() {
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
 
-	prvdr, err := providerfactory.SelectProvider(ctx, cfg, domainFilter)
+	prvdr, err := providerfactory.Select(ctx, cfg, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}

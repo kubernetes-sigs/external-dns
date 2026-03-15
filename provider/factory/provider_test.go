@@ -127,7 +127,7 @@ func TestSelectProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 
-			p, err := SelectProvider(t.Context(), tt.cfg, domainFilter)
+			p, err := Select(t.Context(), tt.cfg, domainFilter)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
@@ -166,7 +166,7 @@ func TestSelectProvider_Webhook(t *testing.T) {
 		Provider:           externaldns.ProviderWebhook,
 		WebhookProviderURL: srv.URL,
 	}
-	p, err := SelectProvider(t.Context(), cfg, nil)
+	p, err := Select(t.Context(), cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 }
