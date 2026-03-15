@@ -87,12 +87,39 @@ func computeFlags() Flags {
 	return flags
 }
 
+type flagColumnWidths struct {
+	Flag        int
+	Description int
+}
+
+func computeFlagColumnWidths(flags Flags) flagColumnWidths {
+	names := make([]string, len(flags))
+	descriptions := make([]string, len(flags))
+	for i, f := range flags {
+		names[i] = f.Name
+		descriptions[i] = f.Description
+	}
+	return flagColumnWidths{
+		Flag:        utils.ComputeColumnWidth("Flag", names),
+		Description: utils.ComputeColumnWidth("Description", descriptions),
+	}
+}
+
 func (f *Flags) generateMarkdownTable() (string, error) {
 	tmpl := template.New("").Funcs(utils.FuncMap())
 	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
+	flags := *f
+	colWidths := computeFlagColumnWidths(flags)
+
 	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "flags.gotpl", f)
+	err := tmpl.ExecuteTemplate(&b, "flags.gotpl", struct {
+		Flags     Flags
+		ColWidths flagColumnWidths
+	}{
+		Flags:     flags,
+		ColWidths: colWidths,
+	})
 	if err != nil {
 		return "", err
 	}

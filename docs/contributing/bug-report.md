@@ -152,10 +152,10 @@ the console.
 
 Format the answer as:
 
-| Record | Type | Value | TTL | Expected? |
-|--------|------|-------|-----|-----------|
-| `foo.example.com` | `A` | `1.2.3.4` | 300 | yes |
-| `foo.example.com` | `TXT` | `"heritage=external-dns,..."` | 300 | yes |
+| Record            | Type  | Value                         | TTL | Expected? |
+|-------------------|-------|-------------------------------|-----|-----------|
+| `foo.example.com` | `A`   | `1.2.3.4`                     | 300 | yes       |
+| `foo.example.com` | `TXT` | `"heritage=external-dns,..."` | 300 | yes       |
 
 ### 4 — TXT ownership records
 

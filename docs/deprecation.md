@@ -43,7 +43,7 @@ The proposal must clearly outline the rationale for inclusion, the impact on use
 
 The proposal must be formalized by submitting a `docs/proposal/EDP-XXX.md` document in a Pull Request. Pull request must be labeled with `kind/proposal`.
 
-The proposal template location is [here](./proposal/design-template.md). The template is quite complete, one can remove any unnecessary or irrelevant section on a specific proposal.
+The proposal [template location is here](./proposal/design-template.md). The template is quite complete, one can remove any unnecessary or irrelevant section on a specific proposal.
 
 ## Deprecation Process
 

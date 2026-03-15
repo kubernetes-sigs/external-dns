@@ -106,12 +106,59 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
+type sourceColumnWidths struct {
+	Name         int
+	Resources    int
+	Filters      int
+	Namespace    int
+	FQDNTemplate int
+	Events       int
+	Category     int
+}
+
+func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
+	names := make([]string, len(sources))
+	resources := make([]string, len(sources))
+	filters := make([]string, len(sources))
+	namespaces := make([]string, len(sources))
+	fqdnTemplates := make([]string, len(sources))
+	events := make([]string, len(sources))
+	categories := make([]string, len(sources))
+	for i, src := range sources {
+		names[i] = "**" + src.Name + "**"
+		resources[i] = strings.ReplaceAll(src.Resources, ",", "<br/>")
+		filters[i] = src.Filters
+		namespaces[i] = src.Namespace
+		fqdnTemplates[i] = src.FQDNTemplate
+		events[i] = src.Events
+		categories[i] = strings.ToLower(src.Category)
+	}
+	return sourceColumnWidths{
+		Name:         utils.ComputeColumnWidth("**Source Name**", names),
+		Resources:    utils.ComputeColumnWidth("Resources", resources),
+		Filters:      utils.ComputeColumnWidth("Filters", filters),
+		Namespace:    utils.ComputeColumnWidth("Namespace", namespaces),
+		FQDNTemplate: utils.ComputeColumnWidth("FQDN Template", fqdnTemplates),
+		Events:       utils.ComputeColumnWidth("Events", events),
+		Category:     utils.ComputeColumnWidth("Category", categories),
+	}
+}
+
 func (s *Sources) generateMarkdown() (string, error) {
 	tmpl := template.New("").Funcs(utils.FuncMap())
 	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
+	sources := *s
+	colWidths := computeSourceColumnWidths(sources)
+
 	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "sources.gotpl", s)
+	err := tmpl.ExecuteTemplate(&b, "sources.gotpl", struct {
+		Sources   Sources
+		ColWidths sourceColumnWidths
+	}{
+		Sources:   sources,
+		ColWidths: colWidths,
+	})
 	if err != nil {
 		return "", err
 	}
