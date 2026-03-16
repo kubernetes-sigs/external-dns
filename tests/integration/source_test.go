@@ -17,7 +17,7 @@ limitations under the License.
 package integration
 
 import (
-	"os"
+	_ "embed"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,14 +26,17 @@ import (
 	"sigs.k8s.io/external-dns/tests/integration/toolkit"
 )
 
+var (
+	//go:embed scenarios/tests.yaml
+	testsYAML []byte
+)
+
 func mustLoadScenarios(t *testing.T) *toolkit.TestScenarios {
 	t.Helper()
-	dir, err := os.Getwd()
-	require.NoError(t, err)
-	scenarios, err := toolkit.LoadScenarios(dir)
+	testScenarios, err := toolkit.LoadScenarios(testsYAML)
 	require.NoError(t, err, "failed to load scenarios")
-	require.NotEmpty(t, scenarios.Scenarios, "no scenarios found")
-	return scenarios
+	require.NotEmpty(t, testScenarios.Scenarios, "no scenarios found")
+	return testScenarios
 }
 
 func TestParseResources(t *testing.T) {

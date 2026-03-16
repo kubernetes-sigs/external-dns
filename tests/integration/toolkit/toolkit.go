@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -30,6 +28,9 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
@@ -42,14 +43,20 @@ import (
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
-// LoadScenarios loads test scenarios from the YAML file.
-func LoadScenarios(dir string) (*TestScenarios, error) {
-	filename := filepath.Join(dir, "scenarios", "tests.yaml")
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
+var (
+	scheme  = runtime.NewScheme()
+	decoder runtime.Decoder
+)
 
+func init() {
+	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilruntime.Must(discoveryv1.AddToScheme(scheme))
+	utilruntime.Must(networkingv1.AddToScheme(scheme))
+	decoder = serializer.NewCodecFactory(scheme).UniversalDeserializer()
+}
+
+// LoadScenarios loads test scenarios from the embedded YAML data.
+func LoadScenarios(data []byte) (*TestScenarios, error) {
 	var scenarios TestScenarios
 	if err := yaml.Unmarshal(data, &scenarios); err != nil {
 		return nil, err
@@ -69,7 +76,7 @@ func LoadScenarios(dir string) (*TestScenarios, error) {
 func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, error) {
 	parsed := &ParsedResources{}
 
-for _, item := range resources {
+	for _, item := range resources {
 		obj, _, err := decoder.Decode(item.Resource.Raw, nil, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode resource: %w", err)
