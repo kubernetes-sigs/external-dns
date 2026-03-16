@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -306,5 +308,14 @@ func TestPopulateGVK(t *testing.T) {
 		populateGVK(svc)
 		assert.Equal(t, "Service", svc.Kind)
 		assert.Equal(t, "v1", svc.APIVersion)
+	})
+
+	t.Run("unstructured object retains its own GVK unchanged", func(t *testing.T) {
+		gvk := schema.GroupVersionKind{Group: "example.com", Version: "v1alpha1", Kind: "MyResource"}
+		obj := &unstructured.Unstructured{}
+		obj.SetGroupVersionKind(gvk)
+
+		populateGVK(obj)
+		assert.Equal(t, gvk, obj.GroupVersionKind())
 	})
 }
