@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -46,6 +47,7 @@ import (
 // +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
+// +externaldns:source:events=true
 type nodeSource struct {
 	client                kubernetes.Interface
 	annotationFilter      string
@@ -150,6 +152,8 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			continue
 		}
 
+		endpoint.AttachRefObject(nodeEndpoints, events.NewObjectReference(node, types.Node))
+
 		endpoints = append(endpoints, nodeEndpoints...)
 	}
 
@@ -192,7 +196,7 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		log.Debugf("adding endpoint with %d targets", len(addrs))
 
 		for _, addr := range addrs {
-			ep := endpoint.NewEndpointWithTTL(dns, suitableType(addr), ttl, addr)
+			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
@@ -214,7 +218,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	for _, addr := range node.Status.Addresses {
 		// IPv6 InternalIP addresses have special handling.
 		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
-		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
+		if addr.Type == v1.NodeInternalIP && endpoint.SuitableType(addr.Address) == endpoint.RecordTypeAAAA {
 			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
 		}
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)

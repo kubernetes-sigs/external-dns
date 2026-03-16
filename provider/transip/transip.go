@@ -26,6 +26,8 @@ import (
 	"github.com/transip/gotransip/v6"
 	"github.com/transip/gotransip/v6/domain"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -47,8 +49,13 @@ type TransIPProvider struct {
 	zoneMap provider.ZoneIDName
 }
 
-// NewTransIPProvider initializes a new TransIP Provider.
-func NewTransIPProvider(accountName, privateKeyFile string, domainFilter *endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
+// New creates a TransIP provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
+}
+
+// newProvider initializes a new TransIP Provider.
+func newProvider(accountName, privateKeyFile string, domainFilter *endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
 	// check given arguments
 	if accountName == "" {
 		return nil, errors.New("required --transip-account not set")

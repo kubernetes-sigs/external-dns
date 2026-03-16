@@ -54,6 +54,7 @@ import (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
+// +externaldns:source:events=false
 type unstructuredSource struct {
 	combineFqdnAnnotation bool
 	fqdnTemplate          *template.Template
@@ -258,7 +259,7 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 			continue
 		}
 
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, suitableType(target), target))
+		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
 	return MergeEndpoints(endpoints), nil
@@ -387,7 +388,7 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoi
 	// Group and deduplicate targets by record type
 	targetsByType := make(map[string]map[string]struct{})
 	for _, target := range targets {
-		recordType := suitableType(target)
+		recordType := endpoint.SuitableType(target)
 		if targetsByType[recordType] == nil {
 			targetsByType[recordType] = make(map[string]struct{})
 		}

@@ -21,10 +21,9 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// This function emits events for each change in the provided plan.Changes object using the given EventEmitter.
-// It handles create, update, and delete changes, assigning appropriate actions and reasons to each event.
-// If the emitter is nil, it does nothing.
-func emitChangeEvent(e events.EventEmitter, ch plan.Changes, reason events.Reason) {
+// emitChangeEvent emits a Kubernetes event for each DNS record change.
+// Deletes use RecordDeleted on success and RecordError on failure.
+func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason) {
 	if e == nil {
 		return
 	}
@@ -34,7 +33,11 @@ func emitChangeEvent(e events.EventEmitter, ch plan.Changes, reason events.Reaso
 	for _, ep := range ch.UpdateNew {
 		e.Add(events.NewEventFromEndpoint(ep, events.ActionUpdate, reason))
 	}
+	deleteReason := events.RecordDeleted
+	if reason == events.RecordError {
+		deleteReason = events.RecordError
+	}
 	for _, ep := range ch.Delete {
-		e.Add(events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
+		e.Add(events.NewEventFromEndpoint(ep, events.ActionDelete, deleteReason))
 	}
 }
