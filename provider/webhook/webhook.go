@@ -104,10 +104,10 @@ func init() {
 
 // New creates a webhook provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(cfg.WebhookProviderURL)
+	return newProvider(cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
 }
 
-func newProvider(u string) (*WebhookProvider, error) {
+func newProvider(u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
