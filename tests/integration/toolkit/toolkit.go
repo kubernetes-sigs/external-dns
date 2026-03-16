@@ -69,49 +69,29 @@ func LoadScenarios(dir string) (*TestScenarios, error) {
 func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, error) {
 	parsed := &ParsedResources{}
 
-	for _, item := range resources {
-		raw := item.Resource
-
-		// First unmarshal to get the kind
-		var typeMeta metav1.TypeMeta
-		if err := yaml.Unmarshal(raw.Raw, &typeMeta); err != nil {
-			return nil, err
+for _, item := range resources {
+		obj, _, err := decoder.Decode(item.Resource.Raw, nil, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode resource: %w", err)
 		}
 
-		switch typeMeta.Kind {
-		case "Ingress":
-			var ingress networkingv1.Ingress
-			if err := yaml.Unmarshal(raw.Raw, &ingress); err != nil {
-				return nil, err
-			}
-			parsed.Ingresses = append(parsed.Ingresses, &ingress)
-		case "Service":
-			var svc corev1.Service
-			if err := yaml.Unmarshal(raw.Raw, &svc); err != nil {
-				return nil, err
-			}
-			parsed.Services = append(parsed.Services, &svc)
-
+		switch res := obj.(type) {
+		case *corev1.Pod:
+			parsed.Pods = append(parsed.Pods, res)
+		case *corev1.Service:
+			parsed.Services = append(parsed.Services, res)
 			// Auto-generate Pods and EndpointSlice if dependencies are specified
 			if item.Dependencies != nil && item.Dependencies.Pods != nil {
-				pods, endpointSlice := generatePodsAndEndpointSlice(&svc, item.Dependencies.Pods)
+				pods, endpointSlice := generatePodsAndEndpointSlice(res, item.Dependencies.Pods)
 				parsed.Pods = append(parsed.Pods, pods...)
 				parsed.EndpointSlices = append(parsed.EndpointSlices, endpointSlice)
 			}
-		case "EndpointSlice":
-			var eps discoveryv1.EndpointSlice
-			if err := yaml.Unmarshal(raw.Raw, &eps); err != nil {
-				return nil, err
-			}
-			parsed.EndpointSlices = append(parsed.EndpointSlices, &eps)
-		case "Pod":
-			var pod corev1.Pod
-			if err := yaml.Unmarshal(raw.Raw, &pod); err != nil {
-				return nil, err
-			}
-			parsed.Pods = append(parsed.Pods, &pod)
+		case *networkingv1.Ingress:
+			parsed.Ingresses = append(parsed.Ingresses, res)
+		case *discoveryv1.EndpointSlice:
+			parsed.EndpointSlices = append(parsed.EndpointSlices, res)
 		default:
-			return nil, fmt.Errorf("unsupported resource kind %q", typeMeta.Kind)
+			return nil, fmt.Errorf("unsupported resource type %T", obj)
 		}
 	}
 
@@ -123,7 +103,7 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 	var pods []*corev1.Pod
 	var endpoints []discoveryv1.Endpoint
 
-	for i := 0; i < deps.Replicas; i++ {
+	for i := range deps.Replicas {
 		podName := fmt.Sprintf("%s-%d", svc.Name, i)
 		podIP := fmt.Sprintf("10.0.0.%d", i+1)
 
@@ -155,8 +135,7 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 	}
 
 	// Create EndpointSlice with the service name label
-	endpointSliceLabels := make(map[string]string)
-	maps.Copy(endpointSliceLabels, svc.Spec.Selector)
+	endpointSliceLabels := maps.Clone(svc.Spec.Selector)
 	endpointSliceLabels[discoveryv1.LabelServiceName] = svc.Name
 
 	endpointSlice := &discoveryv1.EndpointSlice{
