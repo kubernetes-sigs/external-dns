@@ -93,7 +93,7 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 		IndexWithSelectors: func(obj any) ([]string, error) {
 			entity, ok := obj.(T)
 			if !ok {
-				return nil, fmt.Errorf("object is not of type %T", new(T))
+				return nil, fmt.Errorf("object is not of type %T", *new(T))
 			}
 
 			if options.annotationFilter != nil && !options.annotationFilter.Matches(labels.Set(entity.GetAnnotations())) {
@@ -128,7 +128,7 @@ func GetByKey[T metav1.Object](indexer cache.Indexer, key string) (T, error) {
 
 	entity, ok := obj.(T)
 	if !ok {
-		return entity, fmt.Errorf("object is not of type %T", new(T))
+		return entity, fmt.Errorf("object is not of type %T", *new(T))
 	}
 	return entity, nil
 }

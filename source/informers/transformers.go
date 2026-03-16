@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 )
@@ -63,10 +62,11 @@ func TransformRemoveStatusConditions() func(*TransformOptions) {
 }
 
 // TransformKeepAnnotationPrefix retains only annotations whose keys match at least one of
-// the given prefixes, discarding all others. Multiple calls accumulate prefixes (OR logic).
-func TransformKeepAnnotationPrefix(prefix string) func(*TransformOptions) {
+// the given prefixes, discarding all others. Multiple prefixes use OR logic; multiple calls
+// also accumulate (OR logic).
+func TransformKeepAnnotationPrefix(prefixes ...string) func(*TransformOptions) {
 	return func(o *TransformOptions) {
-		o.keepAnnotationPrefixes = append(o.keepAnnotationPrefixes, prefix)
+		o.keepAnnotationPrefixes = append(o.keepAnnotationPrefixes, prefixes...)
 	}
 }
 
@@ -138,12 +138,9 @@ func populateGVK(obj runtime.Object) {
 	gvks, _, err := scheme.Scheme.ObjectKinds(obj)
 	if err == nil && len(gvks) > 0 {
 		obj.GetObjectKind().SetGroupVersionKind(gvks[0])
-	} else {
-		// Fallback to reflection for types not registered in the scheme (e.g. CRDs)
-		obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-			Kind: reflect.TypeOf(obj).Elem().Name(),
-		})
 	}
+	// For types not registered in the scheme (e.g. *unstructured.Unstructured), the
+	// GVK is already carried by the object itself — nothing to do.
 }
 
 // clearStatusConditions zeroes out the Status.Conditions field on obj if it exists.

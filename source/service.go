@@ -395,7 +395,12 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 			}
 		}
 	}
-	return targetsByHeadlessDomainAndType
+	// Return a copy of the map to prevent external modifications
+	result := make(map[endpoint.EndpointKey]endpoint.Targets, len(targetsByHeadlessDomainAndType))
+	for k, v := range targetsByHeadlessDomainAndType {
+		result[k] = append(endpoint.Targets(nil), v...)
+	}
+	return result
 }
 
 // Helper to find pod for endpoint

@@ -4850,7 +4850,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	// Insert an object of the wrong type into the indexer; indexFunc should return an error and Add() should panic
 	require.PanicsWithError(t,
 		"unable to calculate an index entry for key \"default/not-an-endpointslice\" on index \"withSelectors\": "+
-			"object is not of type **v1.EndpointSlice",
+			"object is not of type *v1.EndpointSlice",
 		func() {
 			_ = indexer.Add(&v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
