@@ -34,13 +34,18 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
+const (
+	testReadTimeout  = 5 * time.Millisecond
+	testWriteTimeout = 10 * time.Millisecond
+)
+
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := newProvider(t.Context(), "://invalid-url", 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := newProvider(t.Context(), "http://nonexistent.url", 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), "http://nonexistent.url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
@@ -52,7 +57,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
@@ -63,7 +68,7 @@ func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unexpected status code 400")
 }
@@ -78,7 +83,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -96,7 +101,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
@@ -112,7 +117,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -131,7 +136,7 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
@@ -153,7 +158,7 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	_, err = p.Records(t.Context())
 	require.Error(t, err)
@@ -239,7 +244,7 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
@@ -285,7 +290,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 
 	err = p.ApplyChanges(t.Context(), nil)
@@ -322,7 +327,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -358,7 +363,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -402,7 +407,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, 5*time.Second, 10*time.Second)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",
