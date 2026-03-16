@@ -38,6 +38,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -271,8 +272,8 @@ func convertCloudflareError(err error) error {
 	return err
 }
 
-// NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(
+// newProvider initializes a new CloudFlare DNS based Provider.
+func newProvider(
 	domainFilter *endpoint.DomainFilter,
 	zoneIDFilter provider.ZoneIDFilter,
 	proxiedByDefault bool,
@@ -323,6 +324,31 @@ func NewCloudFlareProvider(
 		RegionalServicesConfig: regionalServicesConfig,
 		DNSRecordsConfig:       dnsRecordsConfig,
 	}, nil
+}
+
+// New creates a Cloudflare provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		domainFilter,
+		provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+		cfg.CloudflareProxied,
+		cfg.DryRun,
+		RegionalServicesConfig{
+			Enabled:   cfg.CloudflareRegionalServices,
+			RegionKey: cfg.CloudflareRegionKey,
+		},
+		CustomHostnamesConfig{
+			Enabled:              cfg.CloudflareCustomHostnames,
+			MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
+			CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
+		},
+		DNSRecordsConfig{
+			PerPage:             cfg.CloudflareDNSRecordsPerPage,
+			Comment:             cfg.CloudflareDNSRecordsComment,
+			BatchChangeSize:     cfg.BatchChangeSize,
+			BatchChangeInterval: cfg.BatchChangeInterval,
+		},
+	)
 }
 
 // Zones returns the list of hosted zones.

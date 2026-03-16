@@ -33,16 +33,16 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-func TestNewCivoProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	t.Setenv("CIVO_TOKEN", "xxxxxxxxxxxxxxx")
-	_, err := NewCivoProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("CIVO_TOKEN")
 }
 
 func TestNewCivoProviderNoToken(t *testing.T) {
-	_, err := NewCivoProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
 	assert.Error(t, err)
 
 	assert.Equal(t, "no token found", err.Error())
