@@ -25,6 +25,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -68,10 +70,27 @@ type AzureProvider struct {
 	maxRetriesCount              int
 }
 
-// NewAzureProvider creates a new Azure provider.
+// New creates an Azure DNS provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		cfg.AzureConfigFile,
+		domainFilter,
+		endpoint.NewDomainFilter(cfg.ZoneNameFilter),
+		provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+		cfg.AzureSubscriptionID,
+		cfg.AzureResourceGroup,
+		cfg.AzureUserAssignedIdentityClientID,
+		cfg.AzureActiveDirectoryAuthorityHost,
+		cfg.AzureZonesCacheDuration,
+		cfg.AzureMaxRetriesCount,
+		cfg.DryRun,
+	)
+}
+
+// newProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzureProvider, error) {
+func newProvider(configFile string, domainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzureProvider, error) {
 	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %w", configFile, err)
