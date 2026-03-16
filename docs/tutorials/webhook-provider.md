@@ -88,7 +88,7 @@ ExternalDNS propagates request context to all outbound calls. When the controlle
 
 ### Memory and goroutine hygiene
 
-- Close request bodies after reading them to avoid goroutine leaks on the server side.
+- Close request bodies after reading them to avoid goroutine leaks on the webhook provider side.
 - Avoid holding references to decoded request payloads longer than needed; `plan.Changes` and endpoint slices can be large for zones with many records.
 
 ## Provider registry
