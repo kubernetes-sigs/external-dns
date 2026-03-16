@@ -1781,7 +1781,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(ingress)
 
-	src, err := NewIngressSource(t.Context(), fakeClient, "", "", "", false, false, false, false, labels.Everything(), nil)
+	src, err := NewIngressSource(t.Context(), fakeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	is, ok := src.(*ingressSource)
 	require.True(t, ok)

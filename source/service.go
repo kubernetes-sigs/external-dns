@@ -133,9 +133,6 @@ func NewServiceSource(
 		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
 		podInformer = informerFactory.Core().V1().Pods()
 
-		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-
 		// TODO: move to shared indexer in informer package
 		// Add an indexer to the EndpointSlice informer to index by the service name label
 		if err = endpointSlicesInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
@@ -150,20 +147,6 @@ func NewServiceSource(
 		)); err != nil {
 			return nil, err
 		}
-		// TODO: move to shared transformer in informer package
-		// Transformer is used to reduce the memory usage of the informer.
-		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
-		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
-			pod, ok := i.(*v1.Pod)
-			if !ok {
-				return nil, fmt.Errorf("object is not a pod")
-			}
-			if pod.UID == "" {
-				// Pod was already transformed and we must be idempotent.
-				return pod, nil
-			}
-
 		if err = podInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Pod](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),

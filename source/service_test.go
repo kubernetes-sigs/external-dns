@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/informers/fakes"
 )
 
@@ -4804,6 +4805,62 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 	}
 }
 
+func TestEndpointSlicesIndexer(t *testing.T) {
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+
+	es := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "test-slice",
+			Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
+			Annotations: map[string]string{
+				"some-annotation": "value",
+			},
+			UID: "esuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
+			},
+		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
+	}
+	_, err := fakeClient.DiscoveryV1().EndpointSlices("default").Create(ctx, es, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Should not error when creating the source
+	src, err := NewServiceSource(ctx, fakeClient,
+		&Config{
+			FQDNTemplate:         "{{.Name}}",
+			Namespace:            "default",
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+	ss, ok := src.(*serviceSource)
+	require.True(t, ok)
+
+	// Try to get EndpointSlices by index; should not panic or error, should return empty slice
+	indexer := ss.endpointSlicesInformer.Informer().GetIndexer()
+	slices, err := indexer.ByIndex(informers.IndexWithSelectors, "default/foo")
+	require.NoError(t, err)
+	require.Empty(t, slices)
+
+	// Insert an object of the wrong type into the indexer; indexFunc should return an error and Add() should panic
+	require.PanicsWithError(t,
+		"unable to calculate an index entry for key \"default/not-an-endpointslice\" on index \"withSelectors\": "+
+			"object is not of type **v1.EndpointSlice",
+		func() {
+			_ = indexer.Add(&v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "not-an-endpointslice",
+					Namespace: "default",
+				},
+			})
+		})
+}
+
 func TestPodTransformerInServiceSource(t *testing.T) {
 	ctx := t.Context()
 	fakeClient := fake.NewClientset()
@@ -4824,45 +4881,6 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
 	}
-	_, err := fakeClient.DiscoveryV1().EndpointSlices("default").Create(ctx, endpointSlice, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	// Should not error when creating the source
-	src, err := NewServiceSource(ctx, fakeClient,
-		&Config{
-			FQDNTemplate:         "{{.Name}}",
-			Namespace:            "default",
-			ExcludeUnschedulable: true,
-			LabelFilter:          labels.Everything(),
-		},
-	)
-	require.NoError(t, err)
-	ss, ok := src.(*serviceSource)
-	require.True(t, ok)
-
-	// Try to get EndpointSlices by index; should not panic or error, should return empty slice
-	indexer := ss.endpointSlicesInformer.Informer().GetIndexer()
-	slices, err := indexer.ByIndex(serviceNameIndexKey, "default/foo")
-	require.NoError(t, err)
-	require.Empty(t, slices)
-
-	// Insert an object of the wrong type into the indexer; indexFunc should return an error and Add() should panic
-	require.PanicsWithError(t,
-		"unable to calculate an index entry for key \"default/not-an-endpointslice\" on index \"serviceName\": "+
-			"expected *v1.EndpointSlice but got *v1.Service instead",
-		func() {
-			_ = indexer.Add(&v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "not-an-endpointslice",
-					Namespace: "default",
-				},
-			})
-		})
-}
-
-func TestPodTransformerInServiceSource(t *testing.T) {
-	ctx := t.Context()
-	fakeClient := fake.NewClientset()
 
 	pod := &v1.Pod{
 		Spec: v1.PodSpec{
@@ -4986,11 +5004,10 @@ func TestNodeTransformerInServiceSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(node)
 
-	src, err := NewServiceSource(
-		ctx, fakeClient, "", "", "", false, "", false, false, false,
-		[]string{string(v1.ServiceTypeNodePort)},
-		false, labels.Everything(), false, false, false, false,
-	)
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		ServiceTypeFilter: []string{string(v1.ServiceTypeNodePort)},
+		LabelFilter:       labels.Everything(),
+	})
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)
@@ -5043,10 +5060,10 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(svc)
 
-	src, err := NewServiceSource(
-		ctx, fakeClient, svc.Namespace, "", "", false, "", false, false, false,
-		nil, false, labels.Everything(), false, false, false, false,
-	)
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		Namespace:   svc.Namespace,
+		LabelFilter: labels.Everything(),
+	})
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)

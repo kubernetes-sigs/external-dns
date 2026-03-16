@@ -614,7 +614,7 @@ func TestTransformerInNodeSource(t *testing.T) {
 	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewNodeSource(t.Context(), kubeClient, "", "", labels.Everything(), false, false, false)
+	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	ns, ok := src.(*nodeSource)
 	require.True(t, ok)
