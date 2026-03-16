@@ -43,17 +43,17 @@ import (
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
+// Initialized at package load; safe for concurrent use after that.
 var (
-	scheme  = runtime.NewScheme()
-	decoder runtime.Decoder
-)
-
-func init() {
-	utilruntime.Must(corev1.AddToScheme(scheme))
-	utilruntime.Must(discoveryv1.AddToScheme(scheme))
-	utilruntime.Must(networkingv1.AddToScheme(scheme))
+	scheme = func() *runtime.Scheme {
+		s := runtime.NewScheme()
+		utilruntime.Must(corev1.AddToScheme(s))
+		utilruntime.Must(discoveryv1.AddToScheme(s))
+		utilruntime.Must(networkingv1.AddToScheme(s))
+		return s
+	}()
 	decoder = serializer.NewCodecFactory(scheme).UniversalDeserializer()
-}
+)
 
 // LoadScenarios loads test scenarios from the embedded YAML data.
 func LoadScenarios(data []byte) (*TestScenarios, error) {
@@ -64,8 +64,14 @@ func LoadScenarios(data []byte) (*TestScenarios, error) {
 
 	// Validate scenarios
 	for i, s := range scenarios.Scenarios {
+		if s.Name == "" {
+			return nil, fmt.Errorf("scenario %d is missing required field: name", i)
+		}
 		if s.Description == "" {
 			return nil, fmt.Errorf("scenario %d (%q) is missing required field: description", i, s.Name)
+		}
+		if len(s.Config.Sources) == 0 {
+			return nil, fmt.Errorf("scenario %d (%q) is missing required field: config.sources", i, s.Name)
 		}
 	}
 
