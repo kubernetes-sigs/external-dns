@@ -22,7 +22,7 @@ ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS prov
 
 ## Documentation
 
-This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
+This README is a part of the complete [documentation, available here](https://kubernetes-sigs.github.io/external-dns/) and [DeepWiki](https://deepwiki.com/kubernetes-sigs/external-dns).
 
 ## What It Does
 
@@ -171,7 +171,7 @@ Breaking changes were introduced in external-dns in the following versions:
 
 - [`v0.10.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.10.0): use of `networking.k8s.io/ingresses` instead of `extensions/ingresses` (see [#2281](https://github.com/kubernetes-sigs/external-dns/pull/2281))
 - [`v0.18.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.18.0): use of `discovery.k8s.io/endpointslices` instead of `endpoints` (see [#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493))
-- [`v0.20.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.20.0): expose external ipv6 by default (see [#5575](https://github.com/kubernetes-sigs/external-dns/pull/5575) and disable legacy listeners on traefik.containo.us API Group (see [#5565](https://github.com/kubernetes-sigs/external-dns/pull/5565))
+- [`v0.19.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.19.0): don't expose internal ipv6 by default (see [#5575](https://github.com/kubernetes-sigs/external-dns/pull/5575)) and disable legacy listeners on `traefik.containo.us` API Group (see [#5565](https://github.com/kubernetes-sigs/external-dns/pull/5565))
 
 | ExternalDNS                  |      ≤ 0.9.x       | ≥ 0.10.x and ≤ 0.17.x |      ≥ 0.18.x      |
 | ---------------------------- | :----------------: | :-------------------: | :----------------: |
@@ -259,7 +259,7 @@ Optionally, you can customize the TTL value of the resulting DNS record by using
 kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
-For more details on configuring TTL, see [here](docs/advanced/ttl.md).
+For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
 
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
@@ -323,7 +323,7 @@ show us what you can do!
 
 The external-dns project is currently in need of maintainers for specific DNS providers. Ideally each provider
 would have at least two maintainers. It would be nice if the maintainers run the provider in production, but it
-is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers)
+is not strictly required. Provider listed [status](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers)
 that do not have a maintainer listed are in need of assistance.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/dev-guide.md) to learn about building the project, the project structure, and the purpose of each package.

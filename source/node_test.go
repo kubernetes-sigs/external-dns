@@ -28,6 +28,9 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
@@ -36,6 +39,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -91,12 +95,13 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			_, err := NewNodeSource(
 				t.Context(),
 				fake.NewClientset(),
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				labels.Everything(),
-				true,
-				true,
-				false,
+				&Config{
+					AnnotationFilter:     ti.annotationFilter,
+					FQDNTemplate:         ti.fqdnTemplate,
+					LabelFilter:          labels.Everything(),
+					ExcludeUnschedulable: true,
+					ExposeInternalIPv6:   true,
+				},
 			)
 
 			if ti.expectError {
@@ -437,12 +442,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			client, err := NewNodeSource(
 				t.Context(),
 				kubeClient,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				labelSelector,
-				tc.exposeInternalIPv6,
-				tc.excludeUnschedulable,
-				false,
+				&Config{
+					AnnotationFilter:     tc.annotationFilter,
+					FQDNTemplate:         tc.fqdnTemplate,
+					LabelFilter:          labelSelector,
+					ExposeInternalIPv6:   tc.exposeInternalIPv6,
+					ExcludeUnschedulable: tc.excludeUnschedulable,
+				},
 			)
 			require.NoError(t, err)
 
@@ -550,12 +556,13 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		client, err := NewNodeSource(
 			t.Context(),
 			kubeClient,
-			tc.annotationFilter,
-			tc.fqdnTemplate,
-			labelSelector,
-			tc.exposeInternalIPv6,
-			tc.excludeUnschedulable,
-			false,
+			&Config{
+				AnnotationFilter:     tc.annotationFilter,
+				FQDNTemplate:         tc.fqdnTemplate,
+				LabelFilter:          labelSelector,
+				ExposeInternalIPv6:   tc.exposeInternalIPv6,
+				ExcludeUnschedulable: tc.excludeUnschedulable,
+			},
 		)
 		require.NoError(t, err)
 
@@ -594,12 +601,9 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		kubeClient,
-		"",
-		"",
-		labels.Everything(),
-		false,
-		true,
-		false,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 
@@ -609,6 +613,46 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 		assert.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
 		assert.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 	}
+}
+
+func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewNodeSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Node, len(elements))
 }
 
 func TestNodeSource_AddEventHandler(t *testing.T) {

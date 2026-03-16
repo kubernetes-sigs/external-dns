@@ -18,40 +18,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/types"
 )
-
-func TestSuitableType(t *testing.T) {
-	tests := []struct {
-		name     string
-		target   string
-		expected string
-	}{
-		{
-			name:     "valid IPv4 address",
-			target:   "192.168.1.1",
-			expected: endpoint.RecordTypeA,
-		},
-		{
-			name:     "valid IPv6 address",
-			target:   "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-			expected: endpoint.RecordTypeAAAA,
-		},
-		{
-			name:     "invalid IP address, should return CNAME",
-			target:   "example.com",
-			expected: endpoint.RecordTypeCNAME,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := suitableType(tt.target)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
 
 func TestParseIngress(t *testing.T) {
 	tests := []struct {
@@ -293,12 +267,114 @@ func TestMergeEndpoints(t *testing.T) {
 				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
 			},
 		},
+		{
+			name: "same DNSName and RecordType with different SetIdentifier not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+		},
+		{
+			name: "same DNSName, RecordType and SetIdentifier targets are merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := MergeEndpoints(tt.input)
 			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_RefObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() []*endpoint.Endpoint
+		expected func(*testing.T, []*endpoint.Endpoint)
+	}{
+		{
+			name:  "empty input",
+			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Empty(t, ep)
+			},
+		},
+		{
+			name: "single endpoint",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints merged and only single refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+				assert.NotEqual(t, "345", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints not merged and two refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("b.example.com", "1.1.1.2", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 2)
+				assert.NotEqual(t, ep[0], ep[1])
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input())
+			tt.expected(t, result)
 		})
 	}
 }

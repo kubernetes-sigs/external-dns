@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -62,11 +63,13 @@ func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				"",
-				tt.annotationFilter,
-				tt.fqdnTemplate,
-				false,
-				false,
+				&Config{
+					Namespace:                "",
+					AnnotationFilter:         tt.annotationFilter,
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: false,
+					IgnoreHostnameAnnotation: false,
+				},
 			)
 
 			if tt.expectError {
@@ -502,11 +505,13 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				istioClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				!tt.combineFqdn,
-				false,
+				&Config{
+					Namespace:                "",
+					AnnotationFilter:         "",
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: !tt.combineFqdn,
+					IgnoreHostnameAnnotation: false,
+				},
 			)
 			require.NoError(t, err)
 

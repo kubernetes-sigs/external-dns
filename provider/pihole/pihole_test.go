@@ -72,14 +72,14 @@ func (r *requestTracker) clear() {
 	r.deleteRequests = nil
 }
 
-func TestNewPiholeProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	// Test invalid configuration
-	_, err := NewPiholeProvider(PiholeConfig{})
+	_, err := newProvider(PiholeConfig{})
 	if err == nil {
 		t.Error("Expected error from invalid configuration")
 	}
 	// Test valid configuration
-	_, err = NewPiholeProvider(PiholeConfig{Server: "test.example.com"})
+	_, err = newProvider(PiholeConfig{Server: "test.example.com"})
 	if err != nil {
 		t.Error("Expected no error from valid configuration, got:", err)
 	}
@@ -112,7 +112,7 @@ func TestNewPiholeProvider_APIVersions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-			_, err := NewPiholeProvider(tt.config)
+			_, err := newProvider(tt.config)
 			require.NoError(t, err)
 			if tt.wantMsg {
 				logtest.TestHelperLogContains(warningMsg, hook, t)

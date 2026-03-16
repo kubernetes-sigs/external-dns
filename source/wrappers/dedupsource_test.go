@@ -21,22 +21,22 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // Validates that dedupSource is a Source
 var _ source.Source = &dedupSource{}
 
-func TestDedup(t *testing.T) {
-	t.Run("Endpoints", testDedupEndpoints)
-}
-
-// testDedupEndpoints tests that duplicates from the wrapped source are removed.
-func testDedupEndpoints(t *testing.T) {
+// TestDedupEndpoints tests that duplicates from the wrapped source are removed.
+func TestDedupEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title     string
 		endpoints []*endpoint.Endpoint
@@ -124,6 +124,27 @@ func testDedupEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			"two endpoints with same dnsname, same type, same target but different SetIdentifier return two endpoints",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "eu-west-1"},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "eu-west-1"},
+			},
+		},
+		{
+			"two endpoints with same dnsname, same type, same target and same SetIdentifier return one endpoint",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
 			},
 		},
 		{
@@ -296,6 +317,29 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
+		{
+			name: "valid PTR record with reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "2.49.168.192.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"web.example.com"}},
+			},
+		},
+		{
+			name: "invalid PTR record - non-reverse DNS name",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "web.example.com", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"other.example.com"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "invalid PTR record - target is an IP",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "1.0.0.10.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"10.0.0.1"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -339,6 +383,15 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
 		},
+		{
+			name: "invalid PTR record with non-reverse DNS name",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "web.example.org",
+				RecordType: endpoint.RecordTypePTR,
+				Targets:    endpoint.Targets{"other.example.org"},
+			},
+			wantLogMsg: "Skipping endpoint [:web.example.org] due to invalid configuration [PTR:other.example.org]",
+		},
 	}
 
 	for _, tt := range tests {
@@ -353,6 +406,208 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 			require.NoError(t, err)
 
 			logtest.TestHelperLogContains(tt.wantLogMsg, hook, t)
+		})
+	}
+}
+
+func TestDedupSource_RefObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() []*endpoint.Endpoint
+		expected func(*testing.T, []*endpoint.Endpoint)
+	}{
+		{
+			name:  "empty input",
+			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Empty(t, ep)
+			},
+		},
+		{
+			name: "single endpoint with RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				require.Equal(t, types.Service, ep[0].RefObject().Source)
+				require.Equal(t, "foo", ep[0].RefObject().Name)
+				require.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "duplicate endpoints with same source type - first RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "first-svc", Namespace: "default", UID: "uid-first"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "second-svc", Namespace: "other", UID: "uid-second"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				require.Equal(t, types.Service, ep[0].RefObject().Source)
+				require.Equal(t, "first-svc", ep[0].RefObject().Name)
+				require.Equal(t, "uid-first", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "duplicate endpoints with different source types - first RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "svc-uid"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "ing-uid"},
+					}, types.Ingress),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				// First endpoint (Service) wins, Ingress is discarded
+				require.Equal(t, types.Service, ep[0].RefObject().Source)
+				require.Equal(t, "my-service", ep[0].RefObject().Name)
+				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "duplicate endpoints - Ingress first, Service second - Ingress RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "ing-uid"},
+					}, types.Ingress),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "svc-uid"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				// First endpoint (Ingress) wins, Service is discarded
+				require.Equal(t, types.Ingress, ep[0].RefObject().Source)
+				require.Equal(t, "my-ingress", ep[0].RefObject().Name)
+				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "non-duplicate endpoints with different source types - both RefObjects preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("b.example.com", "2.2.2.2", &networkingv1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "234"},
+					}, types.Ingress),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 2)
+
+				// Find endpoints by DNS name since order may vary
+				var svcEndpoint, ingEndpoint *endpoint.Endpoint
+				for _, e := range ep {
+					if e.DNSName == "a.example.com" {
+						svcEndpoint = e
+					} else if e.DNSName == "b.example.com" {
+						ingEndpoint = e
+					}
+				}
+
+				require.NotNil(t, svcEndpoint)
+				require.NotNil(t, svcEndpoint.RefObject())
+				require.Equal(t, types.Service, svcEndpoint.RefObject().Source)
+				require.Equal(t, "my-service", svcEndpoint.RefObject().Name)
+
+				require.NotNil(t, ingEndpoint)
+				require.NotNil(t, ingEndpoint.RefObject())
+				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source)
+				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name)
+			},
+		},
+		{
+			name: "three duplicate endpoints from different sources - first RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "345"},
+					}, types.Ingress),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-pod", Namespace: "default", UID: "456"},
+					}, types.Pod),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				// First endpoint (Service) wins
+				require.Equal(t, types.Service, ep[0].RefObject().Source)
+				require.Equal(t, "my-service", ep[0].RefObject().Name)
+				require.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "duplicate endpoints with one having nil RefObject - first RefObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+					}, types.Service),
+					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				require.NotNil(t, ep[0].RefObject())
+				require.Equal(t, types.Service, ep[0].RefObject().Source)
+				require.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "duplicate endpoints with first having nil RefObject - nil preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				require.Len(t, ep, 1)
+				// First endpoint (without RefObject) wins
+				require.Nil(t, ep[0].RefObject())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return(tt.input(), nil)
+
+			src := NewDedupSource(mockSource)
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			tt.expected(t, endpoints)
+			mockSource.AssertExpectations(t)
 		})
 	}
 }

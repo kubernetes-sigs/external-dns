@@ -76,11 +76,11 @@ func preValidateConfig(cfg *externaldns.Config) error {
 
 func validateConfigForProvider(cfg *externaldns.Config) error {
 	switch cfg.Provider {
-	case "azure":
+	case externaldns.ProviderAzure:
 		return validateConfigForAzure(cfg)
-	case "akamai":
+	case externaldns.ProviderAkamai:
 		return validateConfigForAkamai(cfg)
-	case "rfc2136":
+	case externaldns.ProviderRFC2136:
 		return validateConfigForRfc2136(cfg)
 	default:
 		return nil

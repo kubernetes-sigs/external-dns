@@ -20,8 +20,10 @@ import (
 	"context"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
 )
 
 // NoopRegistry implements registry interface without ownership directly propagating changes to dns provider
@@ -29,11 +31,16 @@ type NoopRegistry struct {
 	provider provider.Provider
 }
 
-// NewNoopRegistry returns new NoopRegistry object
-func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
+// New creates a NoopRegistry from the given configuration.
+func New(_ *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return newRegistry(p), nil
+}
+
+// newRegistry returns new NoopRegistry object
+func newRegistry(provider provider.Provider) *NoopRegistry {
 	return &NoopRegistry{
 		provider: provider,
-	}, nil
+	}
 }
 
 func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilterInterface {

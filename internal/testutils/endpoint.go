@@ -26,8 +26,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 /** test utility functions for endpoints verifications */
@@ -146,7 +148,7 @@ func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
 // Usage example:
 //
 //	endpoints := GenerateTestEndpointsByType(map[string]int{"A": 2, "CNAME": 1})
-//	// endpoints will contain 2 A records and 1 CNAME record with unique DNS names and targets.
+//	endpoints will contain 2 A records and 1 CNAME record with unique DNS names and targets.
 func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint {
 	var result []*endpoint.Endpoint
 	idx := 0
@@ -167,9 +169,21 @@ func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint
 	return result
 }
 
+// NewEndpointWithRef builds an endpoint attached to a Kubernetes object reference.
+// The record type is inferred from target: A for IPv4, AAAA for IPv6, CNAME otherwise.
+// Kind and APIVersion are resolved from the client-go scheme, so TypeMeta need not be set on obj.
+func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string) *endpoint.Endpoint {
+	return endpoint.NewEndpoint(dns, endpoint.SuitableType(target), target).
+		WithRefObject(events.NewObjectReference(obj, source))
+}
+
 // AssertEndpointsHaveRefObject asserts that endpoints have the expected count
 // and each endpoint has a non-nil RefObject with the expected source type.
-func AssertEndpointsHaveRefObject(t *testing.T, endpoints []*endpoint.Endpoint, expectedSource string, expectedCount int) {
+func AssertEndpointsHaveRefObject(
+	t *testing.T,
+	endpoints []*endpoint.Endpoint,
+	expectedSource string,
+	expectedCount int) {
 	t.Helper()
 	assert.Len(t, endpoints, expectedCount)
 	for _, ep := range endpoints {

@@ -75,8 +75,13 @@ func (c *digitalOceanChanges) Empty() bool {
 	return len(c.Creates) == 0 && len(c.Updates) == 0 && len(c.Deletes) == 0
 }
 
-// NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, dryRun bool, apiPageSize int) (*DigitalOceanProvider, error) {
+// New creates a DigitalOcean provider from the given configuration.
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
+}
+
+// newProvider initializes a new DigitalOcean DNS based Provider.
+func newProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, dryRun bool, apiPageSize int) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
