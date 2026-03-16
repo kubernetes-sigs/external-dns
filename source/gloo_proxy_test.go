@@ -574,7 +574,9 @@ func TestGlooSource(t *testing.T) {
 	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(t.Context(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
+	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+		GlooNamespaces: []string{defaultGlooNamespace},
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, source)
 
