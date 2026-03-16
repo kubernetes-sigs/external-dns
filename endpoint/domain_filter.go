@@ -53,6 +53,8 @@ type DomainFilter struct {
 	Filters []string
 	// exclude define what domains not to match
 	exclude []string
+	// includeDomains defines exact FQDNs to match (whitelist)
+	includeDomains []string
 	// regex defines a regular expression to match the domains
 	regex *regexp.Regexp
 	// regexExclusion defines a regular expression to exclude the domains matched
@@ -63,10 +65,11 @@ var _ DomainFilterInterface = &DomainFilter{}
 
 // domainFilterSerde is a helper type for serializing and deserializing DomainFilter.
 type domainFilterSerde struct {
-	Include      []string `json:"include,omitempty"`
-	Exclude      []string `json:"exclude,omitempty"`
-	RegexInclude string   `json:"regexInclude,omitempty"`
-	RegexExclude string   `json:"regexExclude,omitempty"`
+	Include        []string `json:"include,omitempty"`
+	Exclude        []string `json:"exclude,omitempty"`
+	IncludeDomains []string `json:"includeDomains,omitempty"`
+	RegexInclude   string   `json:"regexInclude,omitempty"`
+	RegexExclude   string   `json:"regexExclude,omitempty"`
 }
 
 // prepareFilters provides consistent trimming for filters/exclude params
@@ -95,6 +98,11 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 	return &DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
 }
 
+// NewIncludeDomainsFilter returns a new DomainFilter that only matches exact FQDNs
+func NewIncludeDomainsFilter(includeDomains []string) *DomainFilter {
+	return &DomainFilter{includeDomains: prepareFilters(includeDomains)}
+}
+
 // NewDomainFilterWithOptions creates a DomainFilter based on the provided parameters.
 //
 // Example usage:
@@ -104,10 +112,21 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 //	WithDomainExclude([]string{"test.com"}),
 //
 // )
+//
+// For exact FQDN matching:
+// df := NewDomainFilterWithOptions(
+//
+//	WithIncludeDomains([]string{"api.example.com", "app.example.com"}),
+//
+// )
 func NewDomainFilterWithOptions(opts ...DomainFilterOption) *DomainFilter {
 	cfg := &domainFilterConfig{}
 	for _, opt := range opts {
 		opt(cfg)
+	}
+	// IncludeDomains takes precedence (exact FQDN matching)
+	if len(cfg.includeDomains) > 0 {
+		return NewIncludeDomainsFilter(cfg.includeDomains)
 	}
 	if cfg.isRegexFilter {
 		return NewRegexDomainFilter(cfg.regexInclude, cfg.regexExclude)
@@ -116,11 +135,17 @@ func NewDomainFilterWithOptions(opts ...DomainFilterOption) *DomainFilter {
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
-// RegexFilter takes precedence over Filters
+// IncludeDomains (exact match) takes precedence over RegexFilter, which takes precedence over Filters
 func (df *DomainFilter) Match(domain string) bool {
 	if df == nil {
 		return true // nil filter matches everything
 	}
+
+	// Check includeDomains first (exact FQDN matching)
+	if len(df.includeDomains) > 0 {
+		return matchExactDomain(df.includeDomains, domain)
+	}
+
 	if df.regex != nil && df.regex.String() != "" || df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return matchRegex(df.regex, df.regexExclusion, domain)
 	}
@@ -148,6 +173,21 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 		case strings.Count(strippedDomain, ".") == strings.Count(filter, ".") && strippedDomain == filter:
 			return true
 		case strings.HasSuffix(strippedDomain, "."+filter):
+			return true
+		}
+	}
+	return false
+}
+
+// matchExactDomain checks if a domain exactly matches any of the provided FQDNs.
+// This is used by the --include-domains flag to whitelist specific domains.
+func matchExactDomain(includeDomains []string, domain string) bool {
+	strippedDomain := normalizeDomain(domain)
+	for _, fqdn := range includeDomains {
+		if fqdn == "" {
+			continue
+		}
+		if strippedDomain == normalizeDomain(fqdn) {
 			return true
 		}
 	}
@@ -185,6 +225,9 @@ func (df *DomainFilter) IsConfigured() bool {
 	if df == nil {
 		return false // nil filter is not configured
 	}
+	if len(df.includeDomains) > 0 {
+		return true
+	}
 	if df.regex != nil && df.regex.String() != "" {
 		return true
 	} else if df.regexExclusion != nil && df.regexExclusion.String() != "" {
@@ -199,6 +242,14 @@ func (df *DomainFilter) MarshalJSON() ([]byte, error) {
 		return json.Marshal(domainFilterSerde{
 			Include: nil,
 			Exclude: nil,
+		})
+	}
+	if len(df.includeDomains) > 0 {
+		sorted := make([]string, len(df.includeDomains))
+		copy(sorted, df.includeDomains)
+		sort.Strings(sorted)
+		return json.Marshal(domainFilterSerde{
+			IncludeDomains: sorted,
 		})
 	}
 	if df.regex != nil || df.regexExclusion != nil {
@@ -227,6 +278,16 @@ func (df *DomainFilter) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &deserialized)
 	if err != nil {
 		return err
+	}
+
+	// Check for includeDomains first (exact FQDN matching)
+	if len(deserialized.IncludeDomains) > 0 {
+		if len(deserialized.Include) > 0 || len(deserialized.Exclude) > 0 ||
+			deserialized.RegexInclude != "" || deserialized.RegexExclude != "" {
+			return errors.New("cannot combine includeDomains with other filter types")
+		}
+		*df = DomainFilter{includeDomains: prepareFilters(deserialized.IncludeDomains)}
+		return nil
 	}
 
 	if deserialized.RegexInclude == "" && deserialized.RegexExclude == "" {
@@ -291,11 +352,12 @@ func normalizeDomain(domain string) string {
 
 type DomainFilterOption func(*domainFilterConfig)
 type domainFilterConfig struct {
-	include       []string
-	exclude       []string
-	regexInclude  *regexp.Regexp
-	regexExclude  *regexp.Regexp
-	isRegexFilter bool
+	include        []string
+	exclude        []string
+	includeDomains []string
+	regexInclude   *regexp.Regexp
+	regexExclude   *regexp.Regexp
+	isRegexFilter  bool
 }
 
 func WithDomainFilter(filters []string) DomainFilterOption {
@@ -307,6 +369,12 @@ func WithDomainFilter(filters []string) DomainFilterOption {
 func WithDomainExclude(exclude []string) DomainFilterOption {
 	return func(cfg *domainFilterConfig) {
 		cfg.exclude = prepareFilters(exclude)
+	}
+}
+
+func WithIncludeDomains(includeDomains []string) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.includeDomains = prepareFilters(includeDomains)
 	}
 }
 

@@ -42,6 +42,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
 
+	if err := validateDomainFilters(cfg); err != nil {
+		return err
+	}
+
 	if len(cfg.TXTPrefix) > 0 && len(cfg.TXTSuffix) > 0 {
 		return errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
@@ -124,6 +128,25 @@ func validateConfigForRfc2136(cfg *externaldns.Config) error {
 	}
 	if cfg.RFC2136BatchChangeSize < 1 {
 		return errors.New("batch size specified for rfc2136 cannot be less than 1")
+	}
+	return nil
+}
+
+// validateDomainFilters ensures that --include-domains is not combined with other domain filter flags
+func validateDomainFilters(cfg *externaldns.Config) error {
+	hasIncludeDomains := len(cfg.IncludeDomains) > 0 && cfg.IncludeDomains[0] != ""
+	hasDomainFilter := len(cfg.DomainFilter) > 0 && cfg.DomainFilter[0] != ""
+	hasDomainExclude := len(cfg.DomainExclude) > 0 && cfg.DomainExclude[0] != ""
+	hasRegexFilter := cfg.RegexDomainFilter != nil
+	hasRegexExclude := cfg.RegexDomainExclude != nil
+
+	if hasIncludeDomains {
+		if hasDomainFilter || hasDomainExclude {
+			return errors.New("--include-domains and --domain-filter/--exclude-domains are mutually exclusive")
+		}
+		if hasRegexFilter || hasRegexExclude {
+			return errors.New("--include-domains and --regex-domain-filter/--regex-domain-exclusion are mutually exclusive")
+		}
 	}
 	return nil
 }
