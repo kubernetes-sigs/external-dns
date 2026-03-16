@@ -32,6 +32,8 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -267,8 +269,13 @@ func newETCDClient(owner string, strictlyOwned bool) (coreDNSClient, error) {
 	return etcdClient{c, owner, strictlyOwned}, nil
 }
 
-// NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+// New creates a CoreDNS/SkyDNS provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
+}
+
+// newProvider is a CoreDNS provider constructor
+func newProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
 	client, err := newETCDClient(owner, strictlyOwned)
 	if err != nil {
 		return nil, err

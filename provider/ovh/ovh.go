@@ -123,8 +123,13 @@ type ovhChange struct {
 	Action int
 }
 
-// NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(
+// New creates an OVH provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+}
+
+// newProvider initializes a new OVH DNS based Provider.
+func newProvider(
 	domainFilter *endpoint.DomainFilter,
 	endpoint string,
 	apiRateLimit int,
