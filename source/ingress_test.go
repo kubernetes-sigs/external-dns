@@ -26,9 +26,11 @@ import (
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -59,15 +61,10 @@ func (suite *IngressSuite) SetupTest() {
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-		false,
-		false,
-		labels.Everything(),
-		[]string{},
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -123,15 +120,12 @@ func TestNewIngressSource(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				ti.ingressClassNames,
+				&Config{
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IngressClassNames:        ti.ingressClassNames,
+				},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1420,15 +1414,17 @@ func testIngressEndpoints(t *testing.T) {
 			source, _ := NewIngressSource(
 				t.Context(),
 				fakeClient,
-				ti.targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
-				ti.ignoreIngressTLSSpec,
-				ti.ignoreIngressRulesSpec,
-				ti.ingressLabelSelector,
-				ti.ingressClassNames,
+				&Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
+					IgnoreIngressRulesSpec:   ti.ignoreIngressRulesSpec,
+					LabelFilter:              ti.ingressLabelSelector,
+					IngressClassNames:        ti.ingressClassNames,
+				},
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(t.Context())
@@ -1737,19 +1733,12 @@ func TestIngressWithConfiguration(t *testing.T) {
 			if tt.cfg == nil {
 				tt.cfg = &Config{}
 			}
+			tt.cfg.LabelFilter = labels.Everything()
 
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				tt.cfg.Namespace,
-				tt.cfg.AnnotationFilter,
-				tt.cfg.FQDNTemplate,
-				tt.cfg.CombineFQDNAndAnnotation,
-				tt.cfg.IgnoreHostnameAnnotation,
-				tt.cfg.IgnoreIngressTLSSpec,
-				tt.cfg.IgnoreIngressRulesSpec,
-				labels.Everything(),
-				tt.cfg.IngressClassNames,
+				tt.cfg,
 			)
 			require.NoError(t, err)
 			endpoints, err := src.Endpoints(t.Context())
@@ -1757,4 +1746,44 @@ func TestIngressWithConfiguration(t *testing.T) {
 			validateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+}
+
+func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewIngressSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
 }

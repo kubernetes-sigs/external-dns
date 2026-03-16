@@ -38,14 +38,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
-
-	"sigs.k8s.io/external-dns/source/annotations"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 var (
@@ -70,6 +69,7 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -100,19 +100,13 @@ type serviceSource struct {
 func NewServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter, fqdnTemplate string,
-	combineFqdnAnnotation bool, compatibility string,
-	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
-	serviceTypeFilter []string,
-	ignoreHostnameAnnotation bool,
-	labelSelector labels.Selector,
-	resolveLoadBalancerHostname,
-	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+	config *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
+	namespace := config.Namespace
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set the resync period to 0 to prevent processing when nothing has changed
@@ -123,7 +117,7 @@ func NewServiceSource(
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
-	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
+	sTypesFilter, err := newServiceTypesFilter(config.ServiceTypeFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +131,7 @@ func NewServiceSource(
 		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
+		// TODO: move to shared indexer in informer package
 		// Add an indexer to the EndpointSlice informer to index by the service name label
 		err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
 			serviceNameIndexKey: func(obj any) ([]string, error) {
@@ -157,6 +152,7 @@ func NewServiceSource(
 			return nil, err
 		}
 
+		// TODO: move to shared transformer in informer package
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
@@ -216,24 +212,24 @@ func NewServiceSource(
 	return &serviceSource{
 		client:                         kubeClient,
 		namespace:                      namespace,
-		annotationFilter:               annotationFilter,
-		compatibility:                  compatibility,
+		annotationFilter:               config.AnnotationFilter,
+		compatibility:                  config.Compatibility,
 		fqdnTemplate:                   tmpl,
-		combineFQDNAnnotation:          combineFqdnAnnotation,
-		ignoreHostnameAnnotation:       ignoreHostnameAnnotation,
-		publishInternal:                publishInternal,
-		publishHostIP:                  publishHostIP,
-		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
+		combineFQDNAnnotation:          config.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
+		publishInternal:                config.PublishInternal,
+		publishHostIP:                  config.PublishHostIP,
+		alwaysPublishNotReadyAddresses: config.AlwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
 		endpointSlicesInformer:         endpointSlicesInformer,
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		labelSelector:                  labelSelector,
-		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
-		listenEndpointEvents:           listenEndpointEvents,
-		exposeInternalIPv6:             exposeInternalIPv6,
-		excludeUnschedulable:           excludeUnschedulable,
+		labelSelector:                  config.LabelFilter,
+		resolveLoadBalancerHostname:    config.ResolveLoadBalancerHostname,
+		listenEndpointEvents:           config.ListenEndpointEvents,
+		exposeInternalIPv6:             config.ExposeInternalIPv6,
+		excludeUnschedulable:           config.ExcludeUnschedulable,
 	}, nil
 }
 
@@ -255,7 +251,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
+		if annotations.IsControllerMismatch(svc, types.Service) {
 			continue
 		}
 
@@ -283,6 +279,8 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
+
+		endpoint.AttachRefObject(svcEndpoints, events.NewObjectReference(svc, types.Service))
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
@@ -420,7 +418,7 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
-						RecordType: suitableType(target),
+						RecordType: endpoint.SuitableType(target),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -469,7 +467,7 @@ func (sc *serviceSource) getTargetsForDomain(
 				return nil
 			}
 			for _, address := range node.Status.Addresses {
-				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA) {
 					targets = append(targets, address.Address)
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
@@ -792,7 +790,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
-				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
+				if endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA {
 					ipv6IPs = append(ipv6IPs, address.Address)
 				}
 			}
