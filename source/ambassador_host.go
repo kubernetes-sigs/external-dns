@@ -81,13 +81,11 @@ func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
-	labelSelector labels.Selector,
+	cfg *Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
@@ -108,11 +106,11 @@ func NewAmbassadorHostSource(
 	return &ambassadorHostSource{
 		dynamicKubeClient:      dynamicKubeClient,
 		kubeClient:             kubeClient,
-		namespace:              namespace,
-		annotationFilter:       annotationFilter,
+		namespace:              cfg.Namespace,
+		annotationFilter:       cfg.AnnotationFilter,
 		ambassadorHostInformer: ambassadorHostInformer,
 		unstructuredConverter:  uc,
-		labelSelector:          labelSelector,
+		labelSelector:          cfg.LabelFilter,
 	}, nil
 }
 

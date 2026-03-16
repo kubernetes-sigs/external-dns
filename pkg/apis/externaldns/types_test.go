@@ -43,7 +43,7 @@ var (
 		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
 		FQDNTemplate:                           "",
 		Compatibility:                          "",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
 		GoogleBatchChangeSize:                  1000,
 		GoogleBatchChangeInterval:              time.Second,
@@ -152,7 +152,7 @@ var (
 		IgnoreIngressRulesSpec:                 true,
 		FQDNTemplate:                           "{{.Name}}.service.example.com",
 		Compatibility:                          "mate",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
 		GoogleBatchChangeSize:                  100,
 		GoogleBatchChangeInterval:              time.Second * 2,
@@ -612,7 +612,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
 
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
@@ -670,7 +670,7 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 	assert.Equal(t, "json", cfg.LogFormat)
 }
@@ -683,7 +683,7 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	}
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 

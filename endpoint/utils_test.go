@@ -35,6 +35,37 @@ func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
 	}
 }
 
+func TestSuitableType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		// IPv4
+		{"192.168.1.1", RecordTypeA},
+		{"255.255.255.255", RecordTypeA},
+		{"0.0.0.0", RecordTypeA},
+		// IPv6
+		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", RecordTypeAAAA},
+		{"2001:db8:85a3::8a2e:370:7334", RecordTypeAAAA},
+		{"::ffff:192.168.20.3", RecordTypeAAAA}, // IPv4-mapped IPv6
+		{"::1", RecordTypeAAAA},
+		{"::", RecordTypeAAAA},
+		// CNAME (hostname or invalid)
+		{"example.com", RecordTypeCNAME},
+		{"", RecordTypeCNAME},
+		{"256.256.256.256", RecordTypeCNAME},
+		{"192.168.0.1/22", RecordTypeCNAME},
+		{"192.168.1", RecordTypeCNAME},
+		{"abc.def.ghi.jkl", RecordTypeCNAME},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			assert.Equal(t, tt.expected, SuitableType(tt.target))
+		})
+	}
+}
+
 func TestHasEmptyEndpoints(t *testing.T) {
 	tests := []struct {
 		name      string

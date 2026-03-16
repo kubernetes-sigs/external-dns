@@ -97,19 +97,13 @@ type serviceSource struct {
 func NewServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter, fqdnTemplate string,
-	combineFqdnAnnotation bool, compatibility string,
-	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
-	serviceTypeFilter []string,
-	ignoreHostnameAnnotation bool,
-	labelSelector labels.Selector,
-	resolveLoadBalancerHostname,
-	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+	config *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
+	namespace := config.Namespace
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set the resync period to 0 to prevent processing when nothing has changed
@@ -128,7 +122,7 @@ func NewServiceSource(
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
-	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
+	sTypesFilter, err := newServiceTypesFilter(config.ServiceTypeFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +133,10 @@ func NewServiceSource(
 		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
 		podInformer = informerFactory.Core().V1().Pods()
 
+		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+		// TODO: move to shared indexer in informer package
 		// Add an indexer to the EndpointSlice informer to index by the service name label
 		if err = endpointSlicesInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
 			informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
@@ -152,6 +150,19 @@ func NewServiceSource(
 		)); err != nil {
 			return nil, err
 		}
+		// TODO: move to shared transformer in informer package
+		// Transformer is used to reduce the memory usage of the informer.
+		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
+		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
+		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
+			pod, ok := i.(*v1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("object is not a pod")
+			}
+			if pod.UID == "" {
+				// Pod was already transformed and we must be idempotent.
+				return pod, nil
+			}
 
 		if err = podInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Pod](
 			informers.TransformRemoveManagedFields(),
@@ -188,24 +199,24 @@ func NewServiceSource(
 	return &serviceSource{
 		client:                         kubeClient,
 		namespace:                      namespace,
-		annotationFilter:               annotationFilter,
-		compatibility:                  compatibility,
+		annotationFilter:               config.AnnotationFilter,
+		compatibility:                  config.Compatibility,
 		fqdnTemplate:                   tmpl,
-		combineFQDNAnnotation:          combineFqdnAnnotation,
-		ignoreHostnameAnnotation:       ignoreHostnameAnnotation,
-		publishInternal:                publishInternal,
-		publishHostIP:                  publishHostIP,
-		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
+		combineFQDNAnnotation:          config.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
+		publishInternal:                config.PublishInternal,
+		publishHostIP:                  config.PublishHostIP,
+		alwaysPublishNotReadyAddresses: config.AlwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
 		endpointSlicesInformer:         endpointSlicesInformer,
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		labelSelector:                  labelSelector,
-		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
-		listenEndpointEvents:           listenEndpointEvents,
-		exposeInternalIPv6:             exposeInternalIPv6,
-		excludeUnschedulable:           excludeUnschedulable,
+		labelSelector:                  config.LabelFilter,
+		resolveLoadBalancerHostname:    config.ResolveLoadBalancerHostname,
+		listenEndpointEvents:           config.ListenEndpointEvents,
+		exposeInternalIPv6:             config.ExposeInternalIPv6,
+		excludeUnschedulable:           config.ExcludeUnschedulable,
 	}, nil
 }
 
@@ -394,7 +405,7 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
-						RecordType: suitableType(target),
+						RecordType: endpoint.SuitableType(target),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -438,7 +449,7 @@ func (sc *serviceSource) getTargetsForDomain(
 				return nil
 			}
 			for _, address := range node.Status.Addresses {
-				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA) {
 					targets = append(targets, address.Address)
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
@@ -761,7 +772,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
-				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
+				if endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA {
 					ipv6IPs = append(ipv6IPs, address.Address)
 				}
 			}

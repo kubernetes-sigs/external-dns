@@ -127,6 +127,27 @@ func TestDedupEndpoints(t *testing.T) {
 			},
 		},
 		{
+			"two endpoints with same dnsname, same type, same target but different SetIdentifier return two endpoints",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "eu-west-1"},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "eu-west-1"},
+			},
+		},
+		{
+			"two endpoints with same dnsname, same type, same target and same SetIdentifier return one endpoint",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, SetIdentifier: "us-east-1"},
+			},
+		},
+		{
 			"no endpoints returns empty endpoints",
 			[]*endpoint.Endpoint{},
 			[]*endpoint.Endpoint{},
