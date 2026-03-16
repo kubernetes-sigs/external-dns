@@ -27,6 +27,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -127,7 +128,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
-	defer drainAndClose(resp.Body)
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if ct := resp.Header.Get(webhookapi.ContentTypeHeader); ct != webhookapi.MediaTypeFormatAndVersion {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", ct)
@@ -165,13 +166,16 @@ func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, e
 		}
 		// 5xx: retryable server error
 		if resp.StatusCode >= http.StatusInternalServerError {
-			drainAndClose(resp.Body)
+			extdnshttp.DrainAndClose(resp.Body)
 			return nil, fmt.Errorf("server error: status code %d", resp.StatusCode)
 		}
-		// 3xx/4xx: permanent client/redirect error, not worth retrying
+		// 3xx/4xx: permanent error, not worth retrying.
+		// Note: http.Client follows redirects automatically, so a 3xx here means
+		// either a non-redirect 3xx (e.g. 304) or a custom CheckRedirect policy;
+		// it does not mean a normal redirect was left unhandled.
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
 		if resp.StatusCode >= http.StatusMultipleChoices {
-			drainAndClose(resp.Body)
+			extdnshttp.DrainAndClose(resp.Body)
 			return nil, backoff.Permanent(fmt.Errorf("unexpected status code %d", resp.StatusCode))
 		}
 		return resp, nil
@@ -197,7 +201,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		log.Debugf("Failed to perform request: %s", err.Error())
 		return nil, err
 	}
-	defer drainAndClose(resp.Body)
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		recordsErrorsGauge.Gauge.Inc()
@@ -246,7 +250,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	defer drainAndClose(resp.Body)
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusNoContent {
 		applyChangesErrorsGauge.Gauge.Inc()
@@ -296,7 +300,9 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		log.Debugf("Failed executing http request, %s", err)
 		return nil, err
 	}
-	defer drainAndClose(resp.Body)
+	// drainAndClose is deferred here and runs after json.Decode below consumes the
+	// success-path body, so the drain only sees any trailing bytes left unread.
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		adjustEndpointsErrorsGauge.Gauge.Inc()

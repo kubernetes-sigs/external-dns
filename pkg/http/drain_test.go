@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package http
 
 import (
+	"bytes"
 	"io"
 	"strings"
 	"testing"
@@ -36,7 +37,7 @@ func (t *trackingReadCloser) Close() error {
 
 func TestDrainAndClose_DrainsThenCloses(t *testing.T) {
 	rc := &trackingReadCloser{Reader: strings.NewReader("remaining body data")}
-	drainAndClose(rc)
+	DrainAndClose(rc)
 	assert.True(t, rc.closed)
 
 	// Confirm body is fully drained: reader should be at EOF.
@@ -47,6 +48,20 @@ func TestDrainAndClose_DrainsThenCloses(t *testing.T) {
 
 func TestDrainAndClose_EmptyBody(t *testing.T) {
 	rc := &trackingReadCloser{Reader: strings.NewReader("")}
-	drainAndClose(rc)
+	DrainAndClose(rc)
 	assert.True(t, rc.closed)
+}
+
+func TestDrainAndClose_OversizedBody(t *testing.T) {
+	// Body is 1 byte larger than the cap; the excess byte must remain unread so
+	// the connection is discarded rather than pooled — but Close must still be called.
+	oversized := bytes.Repeat([]byte("x"), drainMaxBytes+1)
+	rc := &trackingReadCloser{Reader: bytes.NewReader(oversized)}
+	DrainAndClose(rc)
+	assert.True(t, rc.closed)
+
+	// Exactly one byte should remain after the capped drain.
+	remaining, err := io.ReadAll(rc.Reader)
+	assert.NoError(t, err)
+	assert.Len(t, remaining, 1, "expected exactly 1 byte past the drain cap to remain unread")
 }
