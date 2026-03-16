@@ -20,7 +20,7 @@ Using any of the regex filter flags enables the **regex domain filter** mode, wh
 | `--regex-domain-filter`    | regex | Full regex match — **overrides `--domain-filter`** when set                            |
 | `--regex-domain-exclusion` | regex | Regex that removes matches from `--regex-domain-filter`; can also be used standalone   |
 
-All of these flags are applied to DNS record names. Providers that partition zones before managing records  
+All of these flags are applied to DNS record names. Providers that partition zones before managing records
 (e.g., PowerDNS) also apply the filter to zone names.
 
 ## Plain domain filter
