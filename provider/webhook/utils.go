@@ -20,9 +20,22 @@ import (
 	"io"
 )
 
-// drainAndClose drains the response body before closing it so the underlying
-// TCP connection can be reused by the HTTP client's connection pool.
+const (
+	// drainMaxBytes caps how much of a response body we drain to return the
+	// connection to the pool. A buggy or adversarial server could stream an
+	// unbounded body; reading it all would block indefinitely and waste memory.
+	// On success paths the JSON decoder has already consumed the payload before
+	// the deferred drainAndClose runs, so only trailing bytes remain. On error paths
+	// the body is typically a short error message. 1 MiB is generous for either case.
+	drainMaxBytes = 1 << 20 // 1 MiB
+)
+
+// drainAndClose drains up to drainMaxBytes of the response body before
+// closing it so the underlying TCP connection can be reused by the HTTP
+// client's connection pool. Bytes beyond the cap are left unread; the
+// connection will be discarded rather than pooled in that case, which is
+// acceptable for oversized or malformed responses.
 func drainAndClose(body io.ReadCloser) {
-	_, _ = io.Copy(io.Discard, body)
+	_, _ = io.Copy(io.Discard, io.LimitReader(body, drainMaxBytes))
 	_ = body.Close()
 }

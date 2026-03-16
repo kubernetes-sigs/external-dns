@@ -103,11 +103,11 @@ func init() {
 }
 
 // New creates a webhook provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
+func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
 }
 
-func newProvider(u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func newProvider(u string, readTimeout, writeTimeout time.Duration) (*WebhookPro
 	client := &http.Client{Timeout: readTimeout + writeTimeout}
 
 	// negotiate API information
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,18 @@ func newProvider(u string, readTimeout, writeTimeout time.Duration) (*WebhookPro
 }
 
 func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
-	resp, err := backoff.Retry(context.Background(), func() (*http.Response, error) {
+	resp, err := backoff.Retry(req.Context(), func() (*http.Response, error) {
+		// Reset the body before each attempt so retries send the full payload.
+		// GetBody is set automatically by http.NewRequest for in-memory body types;
+		// it is nil for GET requests (no body), so the block is safely skipped.
+		if req.GetBody != nil {
+			body, err := req.GetBody()
+			if err != nil {
+				return nil, backoff.Permanent(fmt.Errorf("failed to reset request body: %w", err))
+			}
+			req.Body = body
+		}
+
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Debugf("Failed to connect to webhook: %v", err)
