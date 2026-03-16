@@ -29,6 +29,9 @@ import (
 	sdtypes "github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -87,8 +90,18 @@ type AWSSDProvider struct {
 	tags []sdtypes.Tag
 }
 
-// NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter *endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, tags map[string]string, client AWSSDClient) (*AWSSDProvider, error) {
+// New creates an AWS Service Discovery provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	// Check that only compatible Registry is used with AWS-SD
+	if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
+		log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
+		cfg.Registry = "aws-sd"
+	}
+	return newProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(extdnsaws.CreateDefaultV2Config(cfg))), nil
+}
+
+// newProvider initializes a new AWS Cloud Map based Provider.
+func newProvider(domainFilter *endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, tags map[string]string, client AWSSDClient) *AWSSDProvider {
 	p := &AWSSDProvider{
 		client:              client,
 		dryRun:              dryRun,
@@ -99,7 +112,7 @@ func NewAWSSDProvider(domainFilter *endpoint.DomainFilter, namespaceType string,
 		tags:                awsTags(tags),
 	}
 
-	return p, nil
+	return p
 }
 
 // newSdNamespaceFilter returns NamespaceFilter based on the given namespace type configuration.

@@ -661,14 +661,14 @@ func TestDigitalOceanProcessDeleteActions(t *testing.T) {
 	}
 }
 
-func TestNewDigitalOceanProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	t.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
+	_, err := newProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
+	_, err = newProvider(t.Context(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, 50)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
