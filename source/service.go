@@ -38,14 +38,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
-
-	"sigs.k8s.io/external-dns/source/annotations"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 var (
@@ -70,6 +69,7 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 type serviceSource struct {
 	client                kubernetes.Interface
 	namespace             string
@@ -255,7 +255,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
-		if annotations.IsControllerMismatch(svc, types.ContourHTTPProxy) {
+		if annotations.IsControllerMismatch(svc, types.Service) {
 			continue
 		}
 
@@ -283,6 +283,8 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
+
+		endpoint.AttachRefObject(svcEndpoints, events.NewObjectReference(svc, types.Service))
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
@@ -420,7 +422,7 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
-						RecordType: suitableType(target),
+						RecordType: endpoint.SuitableType(target),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -469,7 +471,7 @@ func (sc *serviceSource) getTargetsForDomain(
 				return nil
 			}
 			for _, address := range node.Status.Addresses {
-				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA) {
 					targets = append(targets, address.Address)
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
@@ -792,7 +794,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
-				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
+				if endpoint.SuitableType(address.Address) == endpoint.RecordTypeAAAA {
 					ipv6IPs = append(ipv6IPs, address.Address)
 				}
 			}

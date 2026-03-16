@@ -26,6 +26,49 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
+func TestWithPostProcessorProvider(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		expectProvider string
+		isConfigured   bool
+	}{
+		{
+			name:           "valid provider",
+			input:          "aws",
+			expectProvider: "aws",
+			isConfigured:   true,
+		},
+		{
+			name:         "empty string",
+			input:        "",
+			isConfigured: false,
+		},
+		{
+			name:         "whitespace only",
+			input:        "   ",
+			isConfigured: false,
+		},
+		{
+			name:           "provider with surrounding whitespace",
+			input:          "  aws  ",
+			expectProvider: "aws",
+			isConfigured:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &PostProcessorConfig{}
+			opt := WithPostProcessorProvider(tt.input)
+			opt(cfg)
+
+			require.Equal(t, tt.isConfigured, cfg.isConfigured, "isConfigured mismatch")
+			require.Equal(t, tt.expectProvider, cfg.provider, "provider mismatch")
+		})
+	}
+}
+
 func TestWithTTL(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -153,6 +196,218 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			ms.On("Endpoints").Return(tt.endpoints, nil)
 			ttl, _ := time.ParseDuration(tt.ttl)
 			src := NewPostProcessor(ms, WithTTL(ttl))
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			validateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
+	tests := []struct {
+		title     string
+		provider  string
+		endpoints []*endpoint.Endpoint
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title:    "no provider configured, properties untouched",
+			provider: "",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+		},
+		{
+			title:    "provider configured, all properties match",
+			provider: "aws",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
+		{
+			title:    "provider configured, mixed properties, only provider retained",
+			provider: "aws",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/evaluate-target-health", Value: "true"},
+					},
+				},
+			},
+		},
+		{
+			title:    "provider configured, no matching properties, empty result",
+			provider: "aws",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
+		{
+			title:    "provider agnostic properties without prefix are retained",
+			provider: "aws",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "alias", Value: "true"},
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "alias", Value: "true"},
+						{Name: "aws/evaluate-target-health", Value: "true"},
+					},
+				},
+			},
+		},
+		{
+			title:    "cloudflare retains all properties regardless of prefix",
+			provider: "cloudflare",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "alias", Value: "false"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "alias", Value: "false"},
+						{Name: "aws/evaluate-target-health", Value: "true"},
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					},
+				},
+			},
+		},
+		{
+			title:    "cloudflare properties are sorted",
+			provider: "cloudflare",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					},
+				},
+			},
+		},
+		{
+			title:    "nil endpoint is skipped",
+			provider: "aws",
+			endpoints: []*endpoint.Endpoint{
+				nil,
+				{
+					DNSName: "foo-2",
+					Targets: endpoint.Targets{"1.2.3.5"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+						{Name: "coredns/group", Value: "my-group"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				nil,
+				{
+					DNSName: "foo-2",
+					Targets: endpoint.Targets{"1.2.3.5"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			ms := new(testutils.MockSource)
+			ms.On("Endpoints").Return(tt.endpoints, nil)
+			src := NewPostProcessor(ms, WithPostProcessorProvider(tt.provider))
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)

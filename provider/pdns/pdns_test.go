@@ -808,7 +808,7 @@ type NewPDNSProviderTestSuite struct {
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
-	_, err := NewPDNSProvider(
+	_, err := newProvider(
 		context.Background(),
 		PDNSConfig{
 			Server:       "http://localhost:8081",
@@ -816,7 +816,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		})
 	suite.Error(err, "--pdns-api-key should be specified")
 
-	_, err = NewPDNSProvider(
+	_, err = newProvider(
 		context.Background(),
 		PDNSConfig{
 			Server:       "http://localhost:8081",
@@ -825,7 +825,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		})
 	suite.NoError(err, "--domain-filter should raise no error")
 
-	_, err = NewPDNSProvider(
+	_, err = newProvider(
 		context.Background(),
 		PDNSConfig{
 			Server:       "http://localhost:8081",
@@ -836,7 +836,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 	suite.Error(err, "--dry-run should raise an error")
 
 	// This is our "regular" code path, no error should be thrown
-	_, err = NewPDNSProvider(
+	_, err = newProvider(
 		context.Background(),
 		PDNSConfig{
 			Server:       "http://localhost:8081",
@@ -848,7 +848,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 	newProvider := func(TLSConfig TLSConfig) error {
-		_, err := NewPDNSProvider(
+		_, err := newProvider(
 			context.Background(),
 			PDNSConfig{APIKey: "foo", TLSConfig: TLSConfig})
 		return err
