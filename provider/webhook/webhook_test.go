@@ -545,7 +545,7 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 	defer server.Close()
 
 	client := &http.Client{Timeout: 2 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
 	require.NoError(t, err)
 
 	resp, err := requestWithRetry(client, req)
