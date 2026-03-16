@@ -7,20 +7,21 @@ tags:
 
 # Domain Filter
 
-ExternalDNS provides four flags for controlling which domains it manages:
+ExternalDNS has two modes for selecting which domains it manages: **plain domain filter** and **regex domain filter**.
 
-| Flag                       | Semantics                                                                              |
-|----------------------------|----------------------------------------------------------------------------------------|
-| `--domain-filter`          | Suffix match — includes a domain and all its subdomains                                |
-| `--exclude-domains`        | Suffix match — excludes a domain or subdomain from `--domain-filter`                   |
-| `--regex-domain-filter`    | Full regex match — **overrides `--domain-filter`** when set                            |
-| `--regex-domain-exclusion` | Regex that subtracts matches from `--regex-domain-filter`; can also be used standalone |
+Using any of the regex filter flags enables the **regex domain filter** mode, which overrides and ignores the **plain domain filter** flags.
 
-All of these flags are applied to DNS record names. Providers that partition zones before managing records
-(e.g. PowerDNS) also apply the filter to zone names.
+**Domain filter flags**:
 
-When either regex flag is set, **it takes complete precedence** — `--domain-filter` and
-`--exclude-domains` are ignored entirely.
+| Flag                       | Mode  | Semantics                                                                              |
+| -------------------------- | ----- | -------------------------------------------------------------------------------------- |
+| `--domain-filter`          | plain | Suffix match — includes a domain and all its subdomains                                |
+| `--exclude-domains`        | plain | Suffix match — excludes a domain or subdomain from `--domain-filter`                   |
+| `--regex-domain-filter`    | regex | Full regex match — **overrides `--domain-filter`** when set                            |
+| `--regex-domain-exclusion` | regex | Regex that removes matches from `--regex-domain-filter`; can also be used standalone   |
+
+All of these flags are applied to DNS record names. Providers that partition zones before managing records  
+(e.g., PowerDNS) also apply the filter to zone names.
 
 ## Plain domain filter
 
@@ -61,8 +62,8 @@ Exclusion is always checked first:
 
 1. If `--regex-domain-exclusion` matches → **rejected**
 2. If `--regex-domain-filter` matches → **accepted**
-3. If only `--regex-domain-exclusion` is set and the domain did not match → **accepted** (exclusion-only mode)
-4. If `--regex-domain-filter` is set but does not match → **rejected**
+3. If only `--regex-domain-exclusion` is set (the domain did not match) → **accepted** (exclusion-only mode)
+4. If `--regex-domain-filter` is set (the domain did not match) → **rejected**
 
 ```mermaid
 flowchart TD
