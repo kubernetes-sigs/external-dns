@@ -22,10 +22,10 @@ Sources are responsible for:
 
 ## Available Sources
 
-| **Source Name** | Resources | Filters | Namespace | FQDN Template | Events | Category |
-|:----------------|:----------|:--------|:----------|:--------------|:---------|:---------|
-{{- range . }}
-| **{{ .Name }}** | {{ replace .Resources "," "<br/>" }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} | {{ .Events }} | {{ lower .Category }} |
+| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Resources "Resources" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.Category "Category" }} |
+|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Resources }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.Category }}|
+{{- range .Sources }}
+| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.Category (lower .Category) }} |
 {{- end }}
 
 ## Usage
