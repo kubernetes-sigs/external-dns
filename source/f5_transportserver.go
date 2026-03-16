@@ -68,10 +68,9 @@ func NewF5TransportServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
+	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
 	_, _ = transportServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
@@ -92,8 +91,8 @@ func NewF5TransportServerSource(
 		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
+		namespace:               cfg.Namespace,
+		annotationFilter:        cfg.AnnotationFilter,
 		unstructuredConverter:   uc,
 	}, nil
 }
