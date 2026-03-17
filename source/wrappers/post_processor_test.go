@@ -547,6 +547,25 @@ func TestPostProcessorEndpointsWithResolveLoadBalancerHostname(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
+			title: "mixed IP and CNAME endpoints: CNAMEs are resolved, IP endpoints pass through",
+			lookupIP: func(host string) ([]net.IP, error) {
+				if host == "lb.example.com" {
+					return []net.IP{net.ParseIP("10.0.0.1")}, nil
+				}
+				return nil, errors.New("no such host")
+			},
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeA, "10.0.0.1"),
+			},
+		},
+		{
 			title: "labels are preserved on resolved endpoints",
 			lookupIP: func(string) ([]net.IP, error) {
 				return []net.IP{net.ParseIP("1.2.3.4")}, nil
