@@ -306,11 +306,24 @@ it means the current DNS state does not match what external-dns expects. **This 
 problem, not a software bug.** The correctness of annotations and desired state is the
 operator's responsibility. External-dns cannot auto-correct user-defined configuration: any
 automated correction risks removing or replacing DNS records that services depend on, making
-those services unreachable. Instead, external-dns does its best to make these problems visible so operators can fix them
-deliberately. It has no general conflict-resolution policy: it drops some well-known invalid
-records (such as CNAME self-references), but does not apply a subset, auto-correct arbitrary
-conflicts, or attempt partial best-effort behavior. Retrying the same request without changing
-the input or reconciling the external state will deterministically fail.
+those services unreachable. Instead, external-dns does its best to make these problems visible
+so operators can fix them deliberately. It has no general conflict-resolution policy: it drops
+some well-known invalid records (such as CNAME self-references), but does not apply a subset,
+auto-correct arbitrary conflicts, or attempt partial best-effort behavior. Retrying the same
+request without changing the input or reconciling the external state will deterministically fail.
+
+```mermaid
+flowchart TD
+    A[Kubernetes resources] --> B[external-dns computes plan]
+    B --> C{Apply to DNS provider}
+    C -- Success --> D[DNS records updated]
+    D --> A
+    C -- Conflict error --> E[State mismatch detected]
+    E --> F["No auto-correction<br>auto-fix risks removing records<br>services depend on"]
+    F --> G[Problem surfaced<br>via logs / metrics / events]
+    G --> H[Operator fixes state]
+    H --> A
+```
 
 **Crashloop amplification.** A hard error that causes external-dns to exit leads to a crashloop:
 kubelet restarts the pod, informers resync with full LIST calls to the Kubernetes API for every
