@@ -27,7 +27,7 @@ Sources are responsible for:
 | **ambassador-host** | Host.getambassador.io | annotation,label | all,single | false | false | true | ingress controllers |
 | **connector** | Remote TCP Server |  |  | false | false | false | special |
 | **contour-httpproxy** | HTTPProxy.projectcontour.io | annotation | all,single | true | false | true | ingress controllers |
-| **crd** | DNSEndpoint.externaldns.k8s.io | annotation,label | all,single | false | false | true | externaldns |
+| **crd** | DNSEndpoint.externaldns.k8s.io | annotation,label | all,single | false | true | true | externaldns |
 | **empty** | None |  |  | false | false | false | testing |
 | **f5-transportserver** | TransportServer.cis.f5.com | annotation | all,single | false | false | false | load balancers |
 | **f5-virtualserver** | VirtualServer.cis.f5.com | annotation | all,single | false | false | false | load balancers |
