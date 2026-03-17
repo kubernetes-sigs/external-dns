@@ -1736,6 +1736,38 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				}
 			}(),
 		},
+		{
+			title: "GatewayHostnameAddressResolutionFailure",
+			config: Config{
+				ResolveGatewayLoadBalancerHostname: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatusWithHostname("this.does.not.resolve.invalid"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{gwParentRef("default", "test")},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			// When resolution fails the address is skipped, so no endpoints are produced.
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				`Unable to resolve "this.does.not.resolve.invalid"`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
