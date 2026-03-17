@@ -4,29 +4,29 @@ ExternalDNS sources support a number of annotations on the Kubernetes resources 
 
 The following table documents which sources support which annotations:
 
-| Source       | controller | hostname | internal-hostname | target  | ttl     | (provider-specific) |
-|--------------|------------|----------|-------------------|---------|---------|---------------------|
-| Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |
-| Connector    |            |          |                   |         |         |                     |
-| Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| CRD          |            |          |                   |         |         |                     |
-| F5           |            |          |                   | Yes     | Yes     |                     |
-| Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
-| Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
-| Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Kong         |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Node         | Yes        |          |                   | Yes     | Yes     |                     |
-| OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Pod          |            | Yes      | Yes               | Yes     |         |                     |
-| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |
-| Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Traefik      |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Source       | controller | hostname | internal-hostname | resolve-target | target  | ttl     | (provider-specific) |
+|--------------|------------|----------|-------------------|----------------|---------|---------|---------------------|
+| Ambassador   |            |          |                   |                | Yes     | Yes     | Yes                 |
+| Connector    |            |          |                   |                |         |         |                     |
+| Contour      | Yes        | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
+| CRD          |            |          |                   |                |         |         |                     |
+| F5           |            |          |                   |                | Yes     | Yes     |                     |
+| Gateway      | Yes        | Yes[^1]  |                   | Yes[^4]        | Yes[^4] | Yes     | Yes                 |
+| Gloo         |            |          |                   |                | Yes     | Yes[^5] | Yes[^5]             |
+| Ingress      | Yes        | Yes[^1]  |                   | Yes            | Yes     | Yes     | Yes                 |
+| Istio        | Yes        | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
+| Kong         |            | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
+| Node         | Yes        |          |                   |                | Yes     | Yes     |                     |
+| OpenShift    | Yes        | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
+| Pod          |            | Yes      | Yes               |                | Yes     |         |                     |
+| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       |                | Yes[^3] | Yes     | Yes                 |
+| Skipper      | Yes        | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
+| Traefik      |            | Yes[^1]  |                   |                | Yes     | Yes     | Yes                 |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
-[^4]: For Gateway API sources, annotation placement differs by type. See [Gateway API Annotation Placement](#gateway-api-annotation-placement) for details.
+[^4]: For Gateway API sources, annotation placement differs by type. See [Gateway API Annotation Placement](#gateway-api-annotation-placement) for details. `resolve-target` must be placed on the **Route** resource.
 [^5]: The annotation must be on the listener's `VirtualService`.
 
 ## external-dns.alpha.kubernetes.io/access
@@ -299,6 +299,74 @@ spec:
 
 > ExternalDNS will create an internal DNS record for `my-pod.internal.example.com` targeting the Pod `Status.PodIP`.
 
+## external-dns.alpha.kubernetes.io/resolve-target
+
+Controls whether load balancer hostname targets (CNAME records) are resolved to their underlying
+A/AAAA records at sync time. This is useful when a DNS provider does not support CNAME flattening
+or ALIAS records and a flat IP address record is required.
+
+Supported values:
+
+- `"true"` — resolve the resource's hostname targets to A/AAAA records, even when the global
+  `--resolve-load-balancer-hostname` flag is not set.
+- `"false"` — keep the resource's hostname targets as CNAME records, even when the global
+  `--resolve-load-balancer-hostname` flag is enabled.
+
+If the annotation is absent, the global `--resolve-load-balancer-hostname` flag determines the behaviour.
+
+When resolution is enabled, ExternalDNS performs a DNS lookup for each hostname target and emits the
+resulting IP addresses as A and/or AAAA endpoints. If resolution fails (e.g. the hostname is
+temporarily unresolvable), that target is silently skipped.
+
+### Use Cases for `external-dns.alpha.kubernetes.io/resolve-target` annotation
+
+#### Opt in to resolution for a single Ingress
+
+Resolve load balancer hostnames to IPs for one Ingress without enabling the global flag:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/resolve-target: "true"
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+> ExternalDNS will resolve the Ingress load balancer hostname and publish A/AAAA records instead of a CNAME.
+
+#### Opt out of resolution for a single Gateway Route
+
+Keep hostname targets as CNAME for one HTTPRoute when the global flag is on:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    external-dns.alpha.kubernetes.io/resolve-target: "false"
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - app.example.com
+```
+
+> ExternalDNS will keep the CNAME record for this route, overriding the global flag.
+
 ## external-dns.alpha.kubernetes.io/target
 
 Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA).
@@ -405,9 +473,9 @@ spec:
 ## Gateway API Annotation Placement
 
 When using Gateway API sources (`gateway-httproute`, `gateway-grpcroute`, `gateway-tlsroute`, etc.), annotations
-are read from different resources: **Gateway resource** reads only `target` annotation, while **Route resources**
-(HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`, and
-provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
+are read from different resources: **Gateway resource** reads only the `target` annotation, while **Route resources**
+(HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`,
+`resolve-target`, and provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
 
 For more details and comprehensive examples, see the
 [Gateway API documentation](../sources/gateway-api.md#annotations).
