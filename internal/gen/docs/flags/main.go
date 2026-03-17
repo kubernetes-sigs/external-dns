@@ -85,24 +85,26 @@ func computeFlags() Flags {
 	return flags
 }
 
-type flagColumnWidths struct {
+type columnWidths struct {
 	Flag        int
 	Description int
 }
 
-func computeFlagColumnWidths(flags Flags) flagColumnWidths {
-	names := make([]string, len(flags))
-	descriptions := make([]string, len(flags))
-	for i, f := range flags {
-		names[i] = f.Name
-		descriptions[i] = f.Description
-	}
-	return flagColumnWidths{
-		Flag:        utils.ComputeColumnWidth("Flag", names),
-		Description: utils.ComputeColumnWidth("Description", descriptions),
+func computeFlagColumnWidths(flags Flags) columnWidths {
+	return columnWidths{
+		Flag:        utils.MapColumn("Flag", flags, func(f Flag) string { return f.Name }),
+		Description: utils.MapColumn("Description", flags, func(f Flag) string { return f.Description }),
 	}
 }
 
+type templateData struct {
+	Flags     Flags
+	ColWidths columnWidths
+}
+
 func (f *Flags) generateMarkdownTable() (string, error) {
-	return utils.RenderTemplate(templates, "flags.gotpl", f)
+	return utils.RenderTemplate(templates, "flags.gotpl", templateData{
+		Flags:     *f,
+		ColWidths: computeFlagColumnWidths(*f),
+	})
 }

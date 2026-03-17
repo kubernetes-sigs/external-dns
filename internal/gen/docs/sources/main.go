@@ -104,7 +104,7 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
-type sourceColumnWidths struct {
+type columnWidths struct {
 	Name         int
 	Resources    int
 	Filters      int
@@ -114,36 +114,28 @@ type sourceColumnWidths struct {
 	Category     int
 }
 
-func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
-	names := make([]string, len(sources))
-	resources := make([]string, len(sources))
-	filters := make([]string, len(sources))
-	namespaces := make([]string, len(sources))
-	fqdnTemplates := make([]string, len(sources))
-	events := make([]string, len(sources))
-	categories := make([]string, len(sources))
-	for i, src := range sources {
-		names[i] = "**" + src.Name + "**"
-		resources[i] = strings.ReplaceAll(src.Resources, ",", "<br/>")
-		filters[i] = src.Filters
-		namespaces[i] = src.Namespace
-		fqdnTemplates[i] = src.FQDNTemplate
-		events[i] = src.Events
-		categories[i] = strings.ToLower(src.Category)
-	}
-	return sourceColumnWidths{
-		Name:         utils.ComputeColumnWidth("**Source Name**", names),
-		Resources:    utils.ComputeColumnWidth("Resources", resources),
-		Filters:      utils.ComputeColumnWidth("Filters", filters),
-		Namespace:    utils.ComputeColumnWidth("Namespace", namespaces),
-		FQDNTemplate: utils.ComputeColumnWidth("FQDN Template", fqdnTemplates),
-		Events:       utils.ComputeColumnWidth("Events", events),
-		Category:     utils.ComputeColumnWidth("Category", categories),
+func computeColumnWidths(sources Sources) columnWidths {
+	return columnWidths{
+		Name:         utils.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
+		Resources:    utils.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
+		Filters:      utils.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
+		Namespace:    utils.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
+		FQDNTemplate: utils.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
+		Events:       utils.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		Category:     utils.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
 }
 
+type templateData struct {
+	Sources   Sources
+	ColWidths columnWidths
+}
+
 func (s *Sources) generateMarkdown() (string, error) {
-	return utils.RenderTemplate(templates, "sources.gotpl", s)
+	return utils.RenderTemplate(templates, "sources.gotpl", templateData{
+		Sources:   *s,
+		ColWidths: computeColumnWidths(*s),
+	})
 }
 
 // parseSourceAnnotations parses all Go files in the source directory

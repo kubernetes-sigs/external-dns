@@ -108,6 +108,56 @@ func TestComputeColumnWidth(t *testing.T) {
 	}
 }
 
+func TestMapColumn(t *testing.T) {
+	type item struct{ val string }
+	fn := func(i item) string { return i.val }
+
+	tests := []struct {
+		name   string
+		header string
+		items  []item
+		want   int
+	}{
+		{
+			name:   "header wins when all values are shorter",
+			header: "Metric Type",
+			items:  []item{{"gauge"}, {"counter"}},
+			want:   len("Metric Type"),
+		},
+		{
+			name:   "value wins when longer than header",
+			header: "Name",
+			items:  []item{{"last_reconcile_timestamp_seconds"}},
+			want:   len("last_reconcile_timestamp_seconds"),
+		},
+		{
+			name:   "empty items returns header length",
+			header: "Subsystem",
+			items:  []item{},
+			want:   len("Subsystem"),
+		},
+		{
+			name:   "empty header and empty items returns zero",
+			header: "",
+			items:  []item{},
+			want:   0,
+		},
+		{
+			name:   "empty header defers to longest value",
+			header: "",
+			items:  []item{{"short"}, {"much longer value"}},
+			want:   len("much longer value"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MapColumn(tt.header, tt.items, fn)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFuncs(t *testing.T) {
 	tests := []struct {
 		tpl, expect string

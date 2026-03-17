@@ -51,7 +51,9 @@ func main() {
 		os.Exit(1)
 	}
 	content += "\n"
-	_ = utils.WriteToFile(path, content)
+	if err := utils.WriteToFile(path, content); err != nil {
+		_ = utils.WriteToFile(path, content)
+	}
 }
 
 func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
@@ -70,16 +72,11 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 		runtimeMetrics = []string{}
 	}
 
-	return utils.RenderTemplate(templates, "metrics.gotpl", struct {
-		Metrics        []*metrics.Metric
-		RuntimeMetrics []string
-		ColWidths      columnWidths
-		RuntimeWidth   int
-	}{
+	return utils.RenderTemplate(templates, "metrics.gotpl", templateData{
 		Metrics:        m.Metrics,
 		RuntimeMetrics: runtimeMetrics,
-		ColWidths:      colWidths,
-		RuntimeWidth:   runtimeWidth,
+		ColWidths:      computeColumnWidths(m.Metrics),
+		RuntimeWidth:   utils.ComputeColumnWidth("Name", runtimeMetrics),
 	})
 }
 
@@ -108,8 +105,14 @@ func getRuntimeMetrics(gatherer prometheus.Gatherer) []string {
 			runtimeMetrics = append(runtimeMetrics, name)
 		}
 	}
-	sort.Strings(runtimeMetrics)
 	return runtimeMetrics
+}
+
+type templateData struct {
+	Metrics        []*metrics.Metric
+	RuntimeMetrics []string
+	ColWidths      columnWidths
+	RuntimeWidth   int
 }
 
 type columnWidths struct {
@@ -120,24 +123,10 @@ type columnWidths struct {
 }
 
 func computeColumnWidths(ms []*metrics.Metric) columnWidths {
-	names := make([]string, len(ms))
-	types := make([]string, len(ms))
-	subsystems := make([]string, len(ms))
-	helps := make([]string, len(ms))
-	for i, m := range ms {
-		names[i] = m.Name
-		types[i] = m.Type
-		subsystems[i] = m.Subsystem
-		helps[i] = m.Help
-	}
 	return columnWidths{
-		Name:      utils.ComputeColumnWidth("Name", names),
-		Type:      utils.ComputeColumnWidth("Metric Type", types),
-		Subsystem: utils.ComputeColumnWidth("Subsystem", subsystems),
-		Help:      utils.ComputeColumnWidth("Help", helps),
+		Name:      utils.MapColumn("Name", ms, func(m *metrics.Metric) string { return m.Name }),
+		Type:      utils.MapColumn("Metric Type", ms, func(m *metrics.Metric) string { return m.Type }),
+		Subsystem: utils.MapColumn("Subsystem", ms, func(m *metrics.Metric) string { return m.Subsystem }),
+		Help:      utils.MapColumn("Help", ms, func(m *metrics.Metric) string { return m.Help }),
 	}
-}
-
-func computeRuntimeWidth(ms []string) int {
-	return utils.ComputeColumnWidth("Name", ms)
 }

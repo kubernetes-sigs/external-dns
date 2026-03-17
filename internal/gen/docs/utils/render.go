@@ -18,6 +18,7 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"os"
 	"strings"
@@ -69,9 +70,14 @@ func FuncMap() template.FuncMap {
 
 // ComputeColumnWidth returns the maximum string length among the header and all values.
 func ComputeColumnWidth(header string, values []string) int {
+	return MapColumn(header, values, func(s string) string { return s })
+}
+
+// MapColumn returns the max width among the header and fn applied to each item.
+func MapColumn[T any](header string, items []T, fn func(T) string) int {
 	w := len(header)
-	for _, v := range values {
-		w = max(w, len(v))
+	for _, item := range items {
+		w = max(w, len(fn(item)))
 	}
 	return w
 }
