@@ -17,7 +17,6 @@ limitations under the License.
 package awssd
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -168,7 +167,7 @@ func TestAWSSDProvider_Records(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	endpoints, _ := provider.Records(context.Background())
+	endpoints, _ := provider.Records(t.Context())
 
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 }
@@ -196,7 +195,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// apply creates
 	err := provider.ApplyChanges(ctx, &plan.Changes{
@@ -206,7 +205,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 
 	// make sure services were created
 	assert.Len(t, api.services["private"], 3)
-	existingServices, _ := provider.ListServicesByNamespaceID(context.Background(), namespaces["private"].Id)
+	existingServices, _ := provider.ListServicesByNamespaceID(t.Context(), namespaces["private"].Id)
 	assert.NotNil(t, existingServices["service1"])
 	assert.NotNil(t, existingServices["service2"])
 	assert.NotNil(t, existingServices["service3"])
@@ -215,7 +214,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	endpoints, _ := provider.Records(ctx)
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
-	ctx = context.Background()
+	ctx = t.Context()
 	// apply deletes
 	err = provider.ApplyChanges(ctx, &plan.Changes{
 		Delete: expectedEndpoints,
@@ -252,14 +251,14 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// apply creates
 	_ = provider.ApplyChanges(ctx, &plan.Changes{
 		Create: oldEndpoints,
 	})
 
-	ctx = context.Background()
+	ctx = t.Context()
 
 	// apply update
 	_ = provider.ApplyChanges(ctx, &plan.Changes{
@@ -313,7 +312,7 @@ func TestAWSSDProvider_ListNamespaces(t *testing.T) {
 	} {
 		provider := newTestAWSSDProvider(api, tc.domainFilter, tc.namespaceTypeFilter, "")
 
-		result, err := provider.ListNamespaces(context.Background())
+		result, err := provider.ListNamespaces(t.Context())
 		require.NoError(t, err)
 
 		expectedMap := make(map[string]*sdtypes.NamespaceSummary)
@@ -379,7 +378,7 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 	} {
 		provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-		result, err := provider.ListServicesByNamespaceID(context.Background(), namespaces["private"].Id)
+		result, err := provider.ListServicesByNamespaceID(t.Context(), namespaces["private"].Id)
 		require.NoError(t, err)
 		assert.Equal(t, tc.expectedServices, result)
 	}
@@ -404,7 +403,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
 	// A type
-	_, err := provider.CreateService(context.Background(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
+	_, err := provider.CreateService(t.Context(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "A-srv",
 		},
@@ -428,7 +427,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	}
 
 	// AAAA type
-	_, err = provider.CreateService(context.Background(), aws.String("private"), aws.String("AAAA-srv"), &endpoint.Endpoint{
+	_, err = provider.CreateService(t.Context(), aws.String("private"), aws.String("AAAA-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "AAAA-srv",
 		},
@@ -451,7 +450,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	}
 
 	// CNAME type
-	_, err = provider.CreateService(context.Background(), aws.String("private"), aws.String("CNAME-srv"), &endpoint.Endpoint{
+	_, err = provider.CreateService(t.Context(), aws.String("private"), aws.String("CNAME-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "CNAME-srv",
 		},
@@ -474,7 +473,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	}
 
 	// ALIAS type
-	_, err = provider.CreateService(context.Background(), aws.String("private"), aws.String("ALIAS-srv"), &endpoint.Endpoint{
+	_, err = provider.CreateService(t.Context(), aws.String("private"), aws.String("ALIAS-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "ALIAS-srv",
 		},
@@ -516,7 +515,7 @@ func TestAWSSDProvider_CreateServiceDryRun(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 	provider.dryRun = true
 
-	service, err := provider.CreateService(context.Background(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
+	service, err := provider.CreateService(t.Context(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "A-srv",
 		},
@@ -546,7 +545,7 @@ func TestAWSSDProvider_CreateService_LabelNotSet(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner-123")
 
-	service, err := provider.CreateService(context.Background(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
+	service, err := provider.CreateService(t.Context(), aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			"wrong-unsupported-label": "A-srv",
 		},
@@ -594,7 +593,7 @@ func TestAWSSDProvider_UpdateService(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
 	// update service with different TTL
-	err := provider.UpdateService(context.Background(), services["private"]["srv1"], &endpoint.Endpoint{
+	err := provider.UpdateService(t.Context(), services["private"]["srv1"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeA,
 		RecordTTL:  100,
 	})
@@ -639,7 +638,7 @@ func TestAWSSDProvider_UpdateService_DryRun(t *testing.T) {
 	provider.dryRun = true
 
 	// update service with different TTL
-	err := provider.UpdateService(context.Background(), services["private"]["srv1"], &endpoint.Endpoint{
+	err := provider.UpdateService(t.Context(), services["private"]["srv1"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeAAAA,
 		RecordTTL:  100,
 	})
@@ -697,17 +696,17 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner-id")
 
 	// delete first service
-	err := provider.DeleteService(context.Background(), services["private"]["srv1"])
+	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
 	assert.NoError(t, err)
 	assert.Len(t, api.services["private"], 3)
 
 	// delete third service
-	err = provider.DeleteService(context.Background(), services["private"]["srv3"])
+	err = provider.DeleteService(t.Context(), services["private"]["srv3"])
 	assert.NoError(t, err)
 	assert.Len(t, api.services["private"], 2)
 
 	// delete service with no description
-	err = provider.DeleteService(context.Background(), services["private"]["srv4"])
+	err = provider.DeleteService(t.Context(), services["private"]["srv4"])
 	assert.NoError(t, err)
 
 	expected := map[string]*sdtypes.Service{
@@ -758,7 +757,7 @@ func TestAWSSDProvider_DeleteServiceEmptyDescription_Logging(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner-id")
 
 	// delete service
-	err := provider.DeleteService(context.Background(), services["private"]["srv1"])
+	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
 	assert.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 
@@ -794,7 +793,7 @@ func TestAWSSDProvider_DeleteServiceDryRun(t *testing.T) {
 	provider.dryRun = true
 
 	// delete first service
-	err := provider.DeleteService(context.Background(), services["private"]["srv1"])
+	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
 	assert.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 }
@@ -873,7 +872,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	expectedInstances := make(map[string]*sdtypes.Instance)
 
 	// IPv4-based instance
-	err := provider.RegisterInstance(context.Background(), services["private"]["a-srv"], &endpoint.Endpoint{
+	err := provider.RegisterInstance(t.Context(), services["private"]["a-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeA,
 		DNSName:    "service1.private.com.",
 		RecordTTL:  300,
@@ -894,7 +893,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// AWS ELB instance (ALIAS)
-	err = provider.RegisterInstance(context.Background(), services["private"]["alias-srv"], &endpoint.Endpoint{
+	err = provider.RegisterInstance(t.Context(), services["private"]["alias-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service1.private.com.",
 		RecordTTL:  300,
@@ -915,7 +914,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// AWS NLB instance (ALIAS)
-	_ = provider.RegisterInstance(context.Background(), services["private"]["alias-srv"], &endpoint.Endpoint{
+	_ = provider.RegisterInstance(t.Context(), services["private"]["alias-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service1.private.com.",
 		RecordTTL:  300,
@@ -929,7 +928,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// CNAME instance
-	_ = provider.RegisterInstance(context.Background(), services["private"]["cname-srv"], &endpoint.Endpoint{
+	_ = provider.RegisterInstance(t.Context(), services["private"]["cname-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service2.private.com.",
 		RecordTTL:  300,
@@ -943,7 +942,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// IPv6-based instance
-	provider.RegisterInstance(context.Background(), services["private"]["aaaa-srv"], &endpoint.Endpoint{
+	provider.RegisterInstance(t.Context(), services["private"]["aaaa-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeAAAA,
 		DNSName:    "service4.private.com.",
 		RecordTTL:  300,
@@ -1003,7 +1002,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	_ = provider.DeregisterInstance(context.Background(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
+	_ = provider.DeregisterInstance(t.Context(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 
 	assert.Empty(t, instances["srv1"])
 }

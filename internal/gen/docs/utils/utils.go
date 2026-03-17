@@ -48,5 +48,25 @@ func FuncMap() template.FuncMap {
 		"capitalize": cases.Title(language.English, cases.Compact).String,
 		"replace":    strings.ReplaceAll,
 		"lower":      strings.ToLower,
+		"bold": func(s string) string {
+			return "**" + s + "**"
+		},
+		// padRight pads s with spaces on the right to the given width.
+		"padRight": func(width int, s string) string {
+			return fmt.Sprintf("%-*s", width, s)
+		},
+		// leftSep generates a left-aligned markdown table separator of the given column width.
+		"leftSep": func(width int) string {
+			return strings.Repeat("-", width+1)
+		},
 	}
+}
+
+// ComputeColumnWidth returns the maximum string length among the header and all values.
+func ComputeColumnWidth(header string, values []string) int {
+	w := len(header)
+	for _, v := range values {
+		w = max(w, len(v))
+	}
+	return w
 }

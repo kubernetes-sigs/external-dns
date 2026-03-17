@@ -17,7 +17,6 @@ limitations under the License.
 package rfc2136
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"math/rand"
@@ -186,7 +185,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub, zoneNames ...string) (provider
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider([]string{""}, 0, zoneNames, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zoneNames, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, error) {
@@ -197,15 +196,15 @@ func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136TLSStubProvider(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
-	return NewRfc2136Provider([]string{"rfc2136-host"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136TLSStubProviderWithHosts(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
-	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithReverse(stub *rfc2136Stub) (provider.Provider, error) {
@@ -218,7 +217,7 @@ func createRfc2136StubProviderWithReverse(stub *rfc2136Stub) (provider.Provider,
 	}
 
 	zones := []string{"foo.com", "3.2.1.in-addr.arpa"}
-	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, true, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, true, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, error) {
@@ -230,7 +229,7 @@ func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Provider, error) {
@@ -242,7 +241,7 @@ func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Prov
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (provider.Provider, error) {
@@ -253,7 +252,7 @@ func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, strategy, stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, strategy, stub)
 }
 
 func createRfc2136StubProviderWithBatchChangeSize(stub *rfc2136Stub, batchChangeSize int) (provider.Provider, error) {
@@ -264,7 +263,7 @@ func createRfc2136StubProviderWithBatchChangeSize(stub *rfc2136Stub, batchChange
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", batchChangeSize, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", batchChangeSize, tlsConfig, "", stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -291,7 +290,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 1, "expected single record")
@@ -310,7 +309,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	provider, err := createRfc2136StubProviderWithReverse(stub)
 	assert.NoError(t, err)
 
-	err = provider.ApplyChanges(context.Background(), &plan.Changes{
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "demo.foo.com",
@@ -329,7 +328,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 func TestRfc2136TLSConfig(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -369,7 +368,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigWithMultiHosts(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -414,7 +413,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigNoVerify(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -454,7 +453,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 func TestRfc2136TLSConfigClientAuth(t *testing.T) {
 	stub := newStub()
 
-	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
 	assert.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
@@ -468,7 +467,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 -----END CERTIFICATE-----
 `))
 
-	certFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.crt")
+	certFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.crt")
 	assert.NoError(t, err)
 	defer os.Remove(certFile.Name())
 	_, err = certFile.Write([]byte(
@@ -484,7 +483,7 @@ goRP/fRfTTTLwLg8UBpUAmALX8A8HBSBaUlTTQcaImbcwU4DRSbv5JEA8tM1mWrA
 -----END CERTIFICATE-----
 `))
 
-	keyFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.key")
+	keyFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.key")
 	assert.NoError(t, err)
 	defer os.Remove(keyFile.Name())
 	_, err = keyFile.Write([]byte(
@@ -537,7 +536,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub, "barfoo.com", "foo.com", "bar.com", "foobar.com")
 	assert.NoError(t, err)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
 	assert.Len(t, recs, 6)
@@ -610,7 +609,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -668,7 +667,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -738,7 +737,7 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
@@ -795,7 +794,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
@@ -833,7 +832,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	p = &plan.Changes{
@@ -865,7 +864,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 4)
@@ -1001,7 +1000,7 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 		UpdateNew: newRecords,
 	}
 
-	err = provider.ApplyChanges(context.Background(), p)
+	err = provider.ApplyChanges(t.Context(), p)
 	assert.NoError(t, err)
 
 	assert.Len(t, stub.updateMsgs, 4)
@@ -1010,4 +1009,83 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	assert.Contains(t, stub.updateMsgs[0].String(), "\nv2.foo.com.\t0\tNONE\tA\t10.0.0.2\nv2.foo.com.\t400\tIN\tA\t10.0.1.2\n")
 	assert.Contains(t, stub.updateMsgs[2].String(), "\nv3.foo.com.\t0\tNONE\tA\t10.0.0.3\nv3.foo.com.\t400\tIN\tA\t10.0.1.3\n")
 	assert.Contains(t, stub.updateMsgs[2].String(), "\nv4.foo.com.\t0\tNONE\tA\t10.0.0.4\nv4.foo.com.\t400\tIN\tA\t10.0.1.4\n")
+}
+
+// Test stub that simulates nameserver connection failures
+type failingRfc2136Stub struct {
+	rfc2136Stub
+}
+
+func (r *failingRfc2136Stub) SendMessage(_ *dns.Msg) error {
+	return fmt.Errorf("failed to connect: dial tcp: lookup unreachable-nameserver: no such host")
+}
+
+func (r *failingRfc2136Stub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	return nil, fmt.Errorf("failed to connect for transfer: dial tcp: lookup unreachable-nameserver: no such host")
+}
+
+// Test that nameserver failures return SoftError to prevent crashes
+func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
+	// Create a stub that will fail all operations
+	failingStub := &failingRfc2136Stub{
+		rfc2136Stub: rfc2136Stub{
+			output:                make([]*dns.Envelope, 0),
+			updateMsgs:            make([]*dns.Msg, 0),
+			createMsgs:            make([]*dns.Msg, 0),
+			nameservers:           []string{"unreachable-nameserver:53"},
+			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+			loadBalancingStrategy: "round-robin",
+		},
+	}
+
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	providerInstance, err := newProvider(
+		[]string{"unreachable-nameserver"},
+		53,
+		[]string{"example.com"},
+		false,
+		"key",
+		"secret",
+		"hmac-sha512",
+		true,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		failingStub,
+	)
+	assert.NoError(t, err)
+
+	// Test that Records() returns a SoftError when nameserver fails
+	_, err = providerInstance.Records(t.Context())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
+
+	// Test that ApplyChanges() returns a SoftError when nameserver fails
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "test.example.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+			},
+		},
+	}
+	err = providerInstance.ApplyChanges(t.Context(), p)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }

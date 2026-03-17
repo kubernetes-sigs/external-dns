@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
@@ -58,7 +57,7 @@ func TestEchoSourceReturnGivenSources(t *testing.T) {
 	}}
 	e := testutils.NewMockSource(startEndpoints...)
 
-	endpoints, err := e.Endpoints(context.Background())
+	endpoints, err := e.Endpoints(t.Context())
 	if err != nil {
 		t.Errorf("Expected no error but got %s", err.Error())
 	}
@@ -127,7 +126,7 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 			echo := testutils.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.expected)
 		})
@@ -209,7 +208,7 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 			echo := testutils.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
-			endpoints, err := src.Endpoints(context.Background())
+			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err, "failed to get Endpoints")
 
 			validateEndpoints(t, endpoints, tt.expected)

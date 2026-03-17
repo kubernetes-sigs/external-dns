@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/gob"
 	"net"
 	"testing"
@@ -131,7 +130,7 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			}
 			cs, _ := NewConnectorSource(addr)
 
-			endpoints, err := cs.Endpoints(context.Background())
+			endpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {

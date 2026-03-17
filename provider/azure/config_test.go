@@ -17,7 +17,6 @@ limitations under the License.
 package azure
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -166,7 +165,7 @@ func TestCustomHeaderPolicyWithRetries(t *testing.T) {
 		},
 	)
 	// Create request and execute
-	req, err := azruntime.NewRequest(context.Background(), http.MethodGet, "https://example.com")
+	req, err := azruntime.NewRequest(t.Context(), http.MethodGet, "https://example.com")
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}

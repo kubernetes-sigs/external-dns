@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	routev1 "github.com/openshift/api/route/v1"
-	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/openshift/client-go/route/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,19 +40,16 @@ type OCPRouteSuite struct {
 }
 
 func (suite *OCPRouteSuite) SetupTest() {
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	var err error
 
 	suite.sc, err = NewOcpRouteSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-		labels.Everything(),
-		"",
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -143,15 +140,13 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewOcpRouteSource(
-				context.TODO(),
-				fake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				false,
-				labelSelector,
-				"",
+				t.Context(),
+				fake.NewClientset(),
+				&Config{
+					AnnotationFilter: ti.annotationFilter,
+					FQDNTemplate:     ti.fqdnTemplate,
+					LabelFilter:      labelSelector,
+				},
 			)
 
 			if ti.expectError {
@@ -516,31 +511,28 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
-
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 			// Create a Kubernetes testing client
-			fakeClient := fake.NewSimpleClientset()
-			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
+			fakeClient := fake.NewClientset()
+			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(t.Context(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(tc.labelFilter)
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
-				"",
-				"",
-				"{{.Name}}",
-				false,
-				false,
-				labelSelector,
-				tc.ocpRouterName,
+				&Config{
+					FQDNTemplate:  "{{.Name}}",
+					LabelFilter:   labelSelector,
+					OCPRouterName: tc.ocpRouterName,
+				},
 			)
 			require.NoError(t, err)
 
-			res, err := source.Endpoints(context.Background())
+			res, err := source.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {

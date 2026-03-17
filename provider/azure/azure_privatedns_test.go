@@ -23,6 +23,7 @@ import (
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -263,7 +264,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 			createPrivateMockRecordSetWithNameAndTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
 		}, 3)
 
-	actual, err := provider.Records(context.Background())
+	actual, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +300,7 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 			createPrivateMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
 
-	actual, err := provider.Records(context.Background())
+	actual, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +427,7 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -449,7 +450,7 @@ func TestAzurePrivateDNSNameFilter(t *testing.T) {
 			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		}, 3)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -544,7 +545,7 @@ func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, 
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

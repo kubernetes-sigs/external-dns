@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -59,12 +60,14 @@ func TestNodeSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewNodeSource(
 				t.Context(),
 				fake.NewClientset(),
-				tt.annotationFilter,
-				tt.fqdnTemplate,
-				labels.Everything(),
-				true,
-				true,
-				false,
+				&Config{
+					AnnotationFilter:         tt.annotationFilter,
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: false,
+					ExcludeUnschedulable:     true,
+					ExposeInternalIPv6:       true,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -364,12 +367,13 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewNodeSource(
 				t.Context(),
 				kubeClient,
-				"",
-				tt.fqdnTemplate,
-				labels.Everything(),
-				true,
-				true,
-				tt.combineFQDN,
+				&Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					ExcludeUnschedulable:     true,
+					ExposeInternalIPv6:       true,
+					CombineFQDNAndAnnotation: tt.combineFQDN,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 

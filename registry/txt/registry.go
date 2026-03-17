@@ -28,6 +28,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/mapper"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -113,10 +115,18 @@ func (im *existingTXTs) reset() {
 	im.entries = make(map[recordKey]struct{})
 }
 
-// NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
+// New creates a TXTRegistry from the given configuration.
+func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
+		cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
+		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
+		cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
+}
+
+// newRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
 // generate new format TXT records, otherwise it generates both old and new formats for
 // backwards compatibility.
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
+func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,

@@ -43,7 +43,7 @@ var (
 		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
 		FQDNTemplate:                           "",
 		Compatibility:                          "",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
 		GoogleBatchChangeSize:                  1000,
 		GoogleBatchChangeInterval:              time.Second,
@@ -76,6 +76,8 @@ var (
 		AzureResourceGroup:                     "",
 		AzureSubscriptionID:                    "",
 		AzureMaxRetriesCount:                   3,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
@@ -122,7 +124,6 @@ var (
 		CRDSourceKind:                                 "DNSEndpoint",
 		TransIPAccountName:                            "",
 		TransIPPrivateKeyFile:                         "",
-		DigitalOceanAPIPageSize:                       50,
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:                        50,
 		RFC2136Host:                                   []string{""},
@@ -150,7 +151,7 @@ var (
 		IgnoreIngressRulesSpec:                 true,
 		FQDNTemplate:                           "{{.Name}}.service.example.com",
 		Compatibility:                          "mate",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
 		GoogleBatchChangeSize:                  100,
 		GoogleBatchChangeInterval:              time.Second * 2,
@@ -185,6 +186,8 @@ var (
 		AzureResourceGroup:                     "arg",
 		AzureSubscriptionID:                    "arg",
 		AzureMaxRetriesCount:                   4,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      true,
 		CloudflareCustomHostnames:              true,
 		CloudflareCustomHostnamesMinTLSVersion: "1.3",
@@ -239,7 +242,6 @@ var (
 		NS1IgnoreSSL:                                  true,
 		TransIPAccountName:                            "transip",
 		TransIPPrivateKeyFile:                         "/path/to/transip.key",
-		DigitalOceanAPIPageSize:                       100,
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
@@ -416,7 +418,6 @@ func TestParseFlags(t *testing.T) {
 				"--ns1-ignoressl",
 				"--transip-account=transip",
 				"--transip-keyfile=/path/to/transip.key",
-				"--digitalocean-api-page-size=100",
 				"--managed-record-types=A",
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
@@ -426,6 +427,7 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
+				"--batch-change-size=200",
 			},
 			envVars: map[string]string{},
 			expected: func(cfg *Config) {
@@ -541,12 +543,12 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_NS1_IGNORESSL":                                     "1",
 				"EXTERNAL_DNS_TRANSIP_ACCOUNT":                                   "transip",
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
-				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
 				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+				"EXTERNAL_DNS_BATCH_CHANGE_SIZE":                                 "200",
 			},
 			expected: func(cfg *Config) {
 				assert.Equal(t, overriddenConfig, cfg)
@@ -606,7 +608,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
 
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
@@ -664,7 +666,7 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 	assert.Equal(t, "json", cfg.LogFormat)
 }
@@ -677,7 +679,7 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	}
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 

@@ -47,20 +47,20 @@ DNS records will be automatically created in multiple situations:
 
 Record configuration should occur via resource annotations. Supported annotations:
 
-|   Annotations |   |
-|---|---|
-|Tag   |external-dns.alpha.kubernetes.io/controller   |
-|Description   |  Tells a DNS controller to process this service. This is useful when running different DNS controllers at the same time (or different versions of the same controller). |
-| Details | The v1 implementation of dns-controller would look for service annotations `dns-controller` and `dns-controller/v1` but not for `mate/v1` or `dns-controller/v2` |
-|Default   | dns-controller  |
-|Example|dns-controller/v1|
-|Required| false |
-|---|---|
-|Tag   |external-dns.alpha.kubernetes.io/hostname   |
-|Description   |  Fully qualified name of the desired record |
-|Default| none |
-|Example|foo.example.org|
-|Required| Only for services. Ingress hostname is retrieved from `spec.rules.host` meta data on ingress |
+| Annotations |                                                                                                                                                                        |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Tag         | external-dns.alpha.kubernetes.io/controller                                                                                                                            |
+| Description | Tells a DNS controller to process this service. This is useful when running different DNS controllers at the same time (or different versions of the same controller). |
+| Details     | The v1 implementation of dns-controller would look for service annotations `dns-controller` and `dns-controller/v1` but not for `mate/v1` or `dns-controller/v2`       |
+| Default     | dns-controller                                                                                                                                                         |
+| Example     | dns-controller/v1                                                                                                                                                      |
+| Required    | false                                                                                                                                                                  |
+| ---         | ---                                                                                                                                                                    |
+| Tag         | external-dns.alpha.kubernetes.io/hostname                                                                                                                              |
+| Description | Fully qualified name of the desired record                                                                                                                             |
+| Default     | none                                                                                                                                                                   |
+| Example     | foo.example.org                                                                                                                                                        |
+| Required    | Only for services. Ingress hostname is retrieved from `spec.rules.host` meta data on ingress                                                                           |
 
 ### Compatibility
 
@@ -70,13 +70,13 @@ External DNS should be compatible with annotations used by three above mentioned
 
 Mate does not require services/ingress to be tagged. Therefore, it is not safe to run both Mate and External-DNS simultaneously. The idea is that initial release (?) of External DNS will support Mate annotations, which indicates the hostname to be created. Therefore the switch should be simple.
 
-|Annotations |  |
-|---|---|
-|Tag   |zalando.org/dnsname  |
-|Description   |  Hostname to be registered |
-|Default   | Empty(falls back to template based approach) |
-|Example|foo.example.org|
-|Required| false|
+| Annotations |                                              |
+|-------------|----------------------------------------------|
+| Tag         | zalando.org/dnsname                          |
+| Description | Hostname to be registered                    |
+| Default     | Empty(falls back to template based approach) |
+| Example     | foo.example.org                              |
+| Required    | false                                        |
 
 **route53-kubernetes**
 

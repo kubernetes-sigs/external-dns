@@ -17,11 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
@@ -797,7 +797,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 				tt.source.fqdnTemplate = tmpl
 			}
 
-			got, err := tt.source.Endpoints(context.Background())
+			got, err := tt.source.Endpoints(t.Context())
 			if err != nil && !tt.wantErr {
 				t.Errorf("Got error, but does not want to get an error: %v", err)
 			}
@@ -831,7 +831,7 @@ func TestResourceLabelIsSet(t *testing.T) {
 		},
 	}
 
-	got, _ := source.Endpoints(context.Background())
+	got, _ := source.Endpoints(t.Context())
 	for _, ep := range got {
 		if _, ok := ep.Labels[endpoint.ResourceLabelKey]; !ok {
 			t.Errorf("Failed to set resource label on ep %v", ep)

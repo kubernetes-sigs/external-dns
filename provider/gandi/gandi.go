@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -51,7 +52,7 @@ type GandiProvider struct {
 	DryRun        bool
 }
 
-func NewGandiProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
+func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
 	key, ok_key := os.LookupEnv("GANDI_KEY")
 	pat, ok_pat := os.LookupEnv("GANDI_PAT")
 	if !ok_key && !ok_pat {
@@ -81,6 +82,11 @@ func NewGandiProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiP
 		DryRun:        dryRun,
 	}
 	return gandiProvider, nil
+}
+
+// New creates a Gandi provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.DryRun)
 }
 
 func (p *GandiProvider) Zones() ([]string, error) {

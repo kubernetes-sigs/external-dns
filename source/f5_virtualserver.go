@@ -67,10 +67,9 @@ func NewF5VirtualServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
+	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
 	_, _ = virtualServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
@@ -91,8 +90,8 @@ func NewF5VirtualServerSource(
 		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
+		namespace:             cfg.Namespace,
+		annotationFilter:      cfg.AnnotationFilter,
 		unstructuredConverter: uc,
 	}, nil
 }
@@ -160,11 +159,11 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 			targets = append(targets, virtualServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
 
 		for _, alias := range virtualServer.Spec.HostAliases {
 			if alias != "" {
-				endpoints = append(endpoints, EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+				endpoints = append(endpoints, endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
 			}
 		}
 	}

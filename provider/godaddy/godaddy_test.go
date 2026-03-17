@@ -17,7 +17,6 @@ limitations under the License.
 package godaddy
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -161,7 +160,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 		},
 	}, nil).Once()
 
-	zones, records, err := provider.zonesRecords(context.TODO(), true)
+	zones, records, err := provider.zonesRecords(t.Context(), true)
 
 	assert.NoError(err)
 
@@ -193,7 +192,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 	// Error on getting zones list
 	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
-	zones, records, err = provider.zonesRecords(context.TODO(), false)
+	zones, records, err = provider.zonesRecords(t.Context(), false)
 	assert.Error(err)
 	assert.Nil(zones)
 	assert.Nil(records)
@@ -208,7 +207,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 	client.On("Get", "/v1/domains/example.net/records").Return(nil, ErrAPIDown).Once()
 
-	zones, records, err = provider.zonesRecords(context.TODO(), false)
+	zones, records, err = provider.zonesRecords(t.Context(), false)
 
 	assert.Error(err)
 	assert.Nil(zones)
@@ -224,7 +223,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 	client.On("Get", "/v1/domains/example.net/records").Return(nil, ErrAPIDown).Once()
 
-	zones, records, err = provider.zonesRecords(context.TODO(), false)
+	zones, records, err = provider.zonesRecords(t.Context(), false)
 	assert.Error(err)
 	assert.Nil(zones)
 	assert.Nil(records)
@@ -278,7 +277,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		},
 	}, nil).Once()
 
-	endpoints, err := provider.Records(context.TODO())
+	endpoints, err := provider.Records(t.Context())
 	assert.NoError(err)
 
 	// Little fix for multi targets endpoint
@@ -321,7 +320,7 @@ func TestGoDaddyRecords(t *testing.T) {
 
 	// Error getting zone
 	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
-	endpoints, err = provider.Records(context.TODO())
+	endpoints, err = provider.Records(t.Context())
 	assert.Error(err)
 	assert.Nil(endpoints)
 	client.AssertExpectations(t)
@@ -386,7 +385,7 @@ func TestGoDaddyChange(t *testing.T) {
 	// Delete entry
 	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(nil, nil).Once()
 
-	assert.NoError(provider.ApplyChanges(context.TODO(), &changes))
+	assert.NoError(provider.ApplyChanges(t.Context(), &changes))
 
 	client.AssertExpectations(t)
 }
@@ -454,7 +453,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 		}},
 	}, errors.New(operationFailedTestReason)).Once()
 
-	assert.Error(provider.ApplyChanges(context.TODO(), &changes))
+	assert.Error(provider.ApplyChanges(t.Context(), &changes))
 
 	client.AssertExpectations(t)
 }

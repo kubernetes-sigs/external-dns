@@ -37,8 +37,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type MockClientGenerator struct {
@@ -279,7 +280,7 @@ func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, err
 func (m *minimalMockClientGenerator) RESTConfig() (*rest.Config, error) { return nil, errMock }
 
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := &minimalMockClientGenerator{}
 	cfg := &Config{LabelFilter: labels.NewSelector()}
 
@@ -444,7 +445,7 @@ func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 // TestSingletonClientGenerator_RESTConfig_SharedAcrossClients verifies singleton is shared
 func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
 	gen := &SingletonClientGenerator{
-		KubeConfig:     "",
+		KubeConfig:     "/nonexistent/path/to/kubeconfig",
 		APIServerURL:   "",
 		RequestTimeout: 30 * time.Second,
 	}

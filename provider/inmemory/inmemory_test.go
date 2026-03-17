@@ -17,11 +17,11 @@ limitations under the License.
 package inmemory
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -99,7 +99,7 @@ func testInMemoryRecords(t *testing.T) {
 			im.client = c
 			f := filter{domain: ti.zone}
 			im.filter = &f
-			records, err := im.Records(context.Background())
+			records, err := im.Records(t.Context())
 			if ti.expectError {
 				assert.Nil(t, records)
 				assert.EqualError(t, err, ErrZoneNotFound.Error())
@@ -549,7 +549,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 			c.zones = getInitData()
 			im.client = c
 
-			err := im.ApplyChanges(context.Background(), ti.changes)
+			err := im.ApplyChanges(t.Context(), ti.changes)
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {

@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 

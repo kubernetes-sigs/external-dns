@@ -288,7 +288,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
 		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
@@ -664,8 +664,7 @@ func gwHost(host string) (string, bool) {
 
 // isIPAddr returns whether s in an IP address.
 func isIPAddr(s string) bool {
-	_, err := netip.ParseAddr(s)
-	return err == nil
+	return endpoint.SuitableType(s) != endpoint.RecordTypeCNAME
 }
 
 // isDNS1123Domain returns whether s is a valid domain name according to RFC 1123.

@@ -62,7 +62,7 @@ func (mock *MockInitializeHandler) HandleInitialize(ctx context.Context, _ middl
 }
 
 func Test_InitializedTimedOperationMiddleware(t *testing.T) {
-	testContext := context.Background()
+	testContext := t.Context()
 	mockInitializeHandler := &MockInitializeHandler{}
 
 	_, _, err := initializeTimedOperationMiddleware.HandleInitialize(testContext, middleware.InitializeInput{}, mockInitializeHandler)
@@ -80,7 +80,7 @@ func (mock *MockDeserializeHandler) HandleDeserialize(_ context.Context, _ middl
 }
 
 func Test_ExtractAWSRequestParameters(t *testing.T) {
-	testContext := context.Background()
+	testContext := t.Context()
 	middleware.WithStackValue(testContext, requestMetricsKey{}, requestMetrics{StartTime: time.Now()})
 
 	mockDeserializeHandler := &MockDeserializeHandler{}

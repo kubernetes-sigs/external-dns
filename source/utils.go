@@ -15,7 +15,6 @@ package source
 
 import (
 	"fmt"
-	"net/netip"
 	"slices"
 	"strings"
 
@@ -23,24 +22,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
-
-// suitableType returns the DNS resource record type suitable for the target.
-// In this case type A/AAAA for IPs and type CNAME for everything else.
-// TODO: move this to the endpoint package?
-func suitableType(target string) string {
-	netIP, err := netip.ParseAddr(target)
-	if err != nil {
-		return endpoint.RecordTypeCNAME
-	}
-	switch {
-	case netIP.Is4():
-		return endpoint.RecordTypeA
-	case netIP.Is6():
-		return endpoint.RecordTypeAAAA
-	default:
-		return endpoint.RecordTypeCNAME
-	}
-}
 
 // ParseIngress parses an ingress string in the format "namespace/name" or "name".
 // It returns the namespace and name extracted from the string, or an error if the format is invalid.

@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -106,19 +107,19 @@ func TestErrorHandling(t *testing.T) {
 	}
 
 	p.api.(*testPiholeClientV6).trigger = "AERROR"
-	_, err := p.Records(context.Background())
+	_, err := p.Records(t.Context())
 	if err.Error() != "AERROR" {
 		t.Fatal(err)
 	}
 
 	p.api.(*testPiholeClientV6).trigger = "AAAAERROR"
-	_, err = p.Records(context.Background())
+	_, err = p.Records(t.Context())
 	if err.Error() != "AAAAERROR" {
 		t.Fatal(err)
 	}
 
 	p.api.(*testPiholeClientV6).trigger = "CNAMEERROR"
-	_, err = p.Records(context.Background())
+	_, err = p.Records(t.Context())
 	if err.Error() != "CNAMEERROR" {
 		t.Fatal(err)
 	}
@@ -127,12 +128,12 @@ func TestErrorHandling(t *testing.T) {
 
 func TestNewPiholeProviderV6(t *testing.T) {
 	// Test invalid configuration
-	_, err := NewPiholeProvider(PiholeConfig{APIVersion: "7"})
+	_, err := newProvider(PiholeConfig{APIVersion: "7"})
 	if err == nil {
 		t.Error("Expected error from invalid configuration")
 	}
 	// Test valid configuration
-	_, err = NewPiholeProvider(PiholeConfig{Server: "test.example.com", APIVersion: "6"})
+	_, err = newProvider(PiholeConfig{Server: "test.example.com", APIVersion: "6"})
 	if err != nil {
 		t.Error("Expected no error from valid configuration, got:", err)
 	}
@@ -146,7 +147,7 @@ func TestProviderV6(t *testing.T) {
 	}
 
 	t.Run("Initial Records", func(t *testing.T) {
-		records, err := p.Records(context.Background())
+		records, err := p.Records(t.Context())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,11 +165,11 @@ func TestProviderV6(t *testing.T) {
 			{DNSName: "test2.example.com", Targets: []string{"fc00::1:192:168:1:2"}, RecordType: endpoint.RecordTypeAAAA},
 			{DNSName: "test3.example.com", Targets: []string{"fc00::1:192:168:1:3"}, RecordType: endpoint.RecordTypeAAAA},
 		}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{Create: records}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{Create: records}); err != nil {
 			t.Fatal(err)
 		}
 
-		newRecords, err := p.Records(context.Background())
+		newRecords, err := p.Records(t.Context())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,11 +187,11 @@ func TestProviderV6(t *testing.T) {
 
 	t.Run("Delete Records", func(t *testing.T) {
 		recordToDeleteA := &endpoint.Endpoint{DNSName: "test3.example.com", Targets: []string{"192.168.1.3"}, RecordType: endpoint.RecordTypeA}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{Delete: []*endpoint.Endpoint{recordToDeleteA}}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{recordToDeleteA}}); err != nil {
 			t.Fatal(err)
 		}
 		recordToDeleteAAAA := &endpoint.Endpoint{DNSName: "test3.example.com", Targets: []string{"fc00::1:192:168:1:3"}, RecordType: endpoint.RecordTypeAAAA}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{Delete: []*endpoint.Endpoint{recordToDeleteAAAA}}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{recordToDeleteAAAA}}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -200,7 +201,7 @@ func TestProviderV6(t *testing.T) {
 			{DNSName: "test1.example.com", Targets: []string{"fc00::1:192:168:1:1"}, RecordType: endpoint.RecordTypeAAAA},
 			{DNSName: "test2.example.com", Targets: []string{"fc00::1:192:168:1:2"}, RecordType: endpoint.RecordTypeAAAA},
 		}
-		newRecords, err := p.Records(context.Background())
+		newRecords, err := p.Records(t.Context())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -226,7 +227,7 @@ func TestProviderV6(t *testing.T) {
 			{DNSName: "test2.example.com", Targets: []string{"10.0.0.1"}, RecordType: endpoint.RecordTypeA},
 			{DNSName: "test2.example.com", Targets: []string{"fc00::1:10:0:0:1"}, RecordType: endpoint.RecordTypeAAAA},
 		}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -236,7 +237,7 @@ func TestProviderV6(t *testing.T) {
 			{DNSName: "test1.example.com", Targets: []string{"fc00::1:192:168:1:1"}, RecordType: endpoint.RecordTypeAAAA},
 			{DNSName: "test2.example.com", Targets: []string{"fc00::1:10:0:0:1"}, RecordType: endpoint.RecordTypeAAAA},
 		}
-		newRecords, err := p.Records(context.Background())
+		newRecords, err := p.Records(t.Context())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -265,7 +266,7 @@ func TestProviderV6MultipleTargets(t *testing.T) {
 		initialRecords := []*endpoint.Endpoint{
 			{DNSName: "multi.example.com", Targets: []string{"192.168.1.1", "192.168.1.2"}, RecordType: endpoint.RecordTypeA},
 		}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{Create: initialRecords}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{Create: initialRecords}); err != nil {
 			t.Fatal(err)
 		}
 		requests.clear()
@@ -279,7 +280,7 @@ func TestProviderV6MultipleTargets(t *testing.T) {
 			{DNSName: "multi.example.com", Targets: []string{"192.168.1.4"}, RecordType: endpoint.RecordTypeA},
 			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3"}, RecordType: endpoint.RecordTypeA}, // Duplicate to test deduplication
 		}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -307,7 +308,7 @@ func TestProviderV6MultipleTargets(t *testing.T) {
 		updateNew := []*endpoint.Endpoint{
 			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3", "192.168.1.4"}, RecordType: endpoint.RecordTypeA},
 		}
-		if err := p.ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
 			t.Fatal(err)
 		}
 

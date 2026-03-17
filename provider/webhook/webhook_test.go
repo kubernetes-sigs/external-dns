@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -36,12 +35,12 @@ import (
 )
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := NewWebhookProvider("://invalid-url")
+	_, err := newProvider("://invalid-url")
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := NewWebhookProvider("http://nonexistent.url")
+	_, err := newProvider("http://nonexistent.url")
 	require.Error(t, err)
 }
 
@@ -53,7 +52,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
@@ -64,7 +63,7 @@ func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "status code < 500")
 }
@@ -79,7 +78,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -97,7 +96,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(svr.URL)
 	require.Error(t, err)
 }
 
@@ -113,7 +112,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -132,9 +131,9 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	endpoints, err := provider.Records(context.TODO())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
@@ -154,9 +153,9 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	_, err = p.Records(context.Background())
+	_, err = p.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -199,7 +198,7 @@ func TestRecords_DecodeError(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(context.Background())
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
 }
@@ -240,14 +239,14 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
 
 	successfulApplyChanges = false
 
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
@@ -258,7 +257,7 @@ func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := wpr.ApplyChanges(context.Background(), nil)
+	err := wpr.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
@@ -269,7 +268,7 @@ func TestApplyChanges_GetFailed(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := p.ApplyChanges(context.TODO(), &plan.Changes{})
+	err := p.ApplyChanges(t.Context(), &plan.Changes{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported protocol scheme")
 }
@@ -286,10 +285,10 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.NotErrorIs(t, err, provider.SoftError)
 	assert.Contains(t, err.Error(), "failed to apply changes with code 511")
@@ -323,7 +322,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -359,7 +358,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -403,7 +402,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(svr.URL)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -419,7 +418,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			},
 		},
 	}
-	err = p.ApplyChanges(context.TODO(), &plan.Changes{
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			e,
 		},

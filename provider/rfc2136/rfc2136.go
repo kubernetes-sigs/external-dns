@@ -33,6 +33,8 @@ import (
 	"github.com/bodgit/tsig/gss"
 	"github.com/miekg/dns"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -109,8 +111,20 @@ type rfc2136Actions interface {
 	IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error)
 }
 
-// NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+// New creates an RFC2136 provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                cfg.RFC2136UseTLS,
+		SkipTLSVerify:         cfg.RFC2136SkipTLSVerify,
+		CAFilePath:            cfg.TLSCA,
+		ClientCertFilePath:    cfg.TLSClientCert,
+		ClientCertKeyFilePath: cfg.TLSClientCertKey,
+	}
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+}
+
+// newProvider is a factory function for OpenStack rfc2136 providers
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName, secret, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR, gssTsig bool, krb5Username, krb5Password, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -312,7 +326,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		if lastErr != nil {
 			r.lastErr = lastErr
-			return nil, lastErr
+			return nil, provider.NewSoftError(lastErr)
 		}
 	}
 
@@ -466,7 +480,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("RFC2136 had errors in one or more of its batches: %v", errs)
+		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
 	}
 
 	return nil
@@ -625,7 +639,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 
 	r.lastErr = lastErr
-	return lastErr
+	return provider.NewSoftError(lastErr)
 }
 
 func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {

@@ -17,7 +17,6 @@ limitations under the License.
 package transip
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -32,7 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-func newProvider() *TransIPProvider {
+func newTestProvider() *TransIPProvider {
 	return &TransIPProvider{
 		zoneMap: provider.ZoneIDName{},
 	}
@@ -175,7 +174,7 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 }
 
 func TestZoneNameForDNSName(t *testing.T) {
-	p := newProvider()
+	p := newTestProvider()
 	p.zoneMap.Add("example.com", "example.com")
 
 	zoneName, err := p.zoneNameForDNSName("www.example.com")
@@ -251,10 +250,10 @@ func TestProviderRecords(t *testing.T) {
 	}
 
 	// set up provider
-	p := newProvider()
+	p := newTestProvider()
 	p.domainRepo = domain.Repository{Client: client}
 
-	endpoints, err := p.Records(context.TODO())
+	endpoints, err := p.Records(t.Context())
 	if assert.NoError(t, err) {
 		if assert.Len(t, endpoints, 4) {
 			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
@@ -271,7 +270,7 @@ func TestProviderEntriesForEndpoint(t *testing.T) {
 	client := &fakeClient{}
 
 	// set up provider
-	p := newProvider()
+	p := newTestProvider()
 	p.domainRepo = domain.Repository{Client: client}
 	p.zoneMap.Add("example.com", "example.com")
 
