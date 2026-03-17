@@ -112,7 +112,7 @@ The targets of the DNS entries created from a \*Route are sourced from the follo
 2. Otherwise, iterates over that parent Gateway's `status.addresses`,
    adding each address's `value`.
 
-   If the `--resolve-gateway-load-balancer-hostname` flag is specified, any address with type
+   If the `--resolve-load-balancer-hostname` flag is specified, any address with type
    `Hostname` is queried through DNS and any resulting IP addresses are added instead of the hostname,
    producing `A`/`AAAA` records rather than a `CNAME`.
 

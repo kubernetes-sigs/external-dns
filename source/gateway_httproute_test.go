@@ -1691,7 +1691,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "GatewayHostnameAddressResolution",
 			config: Config{
-				ResolveGatewayLoadBalancerHostname: true,
+				ResolveLoadBalancerHostname: true,
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
@@ -1739,7 +1739,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "GatewayHostnameAddressResolutionFailure",
 			config: Config{
-				ResolveGatewayLoadBalancerHostname: true,
+				ResolveLoadBalancerHostname: true,
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{

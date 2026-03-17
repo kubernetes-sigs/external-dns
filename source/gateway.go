@@ -228,7 +228,7 @@ func newGatewayRouteSource(
 		fqdnTemplate:                tmpl,
 		combineFQDNAnnotation:       config.CombineFQDNAndAnnotation,
 		ignoreHostnameAnnotation:    config.IgnoreHostnameAnnotation,
-		resolveLoadBalancerHostname: config.ResolveGatewayLoadBalancerHostname,
+		resolveLoadBalancerHostname: config.ResolveLoadBalancerHostname,
 	}
 	return src, nil
 }
