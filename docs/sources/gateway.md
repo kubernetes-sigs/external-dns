@@ -113,8 +113,12 @@ The targets of the DNS entries created from a \*Route are sourced from the follo
    adding each address's `value`.
 
    If the `--resolve-gateway-load-balancer-hostname` flag is specified, any address with type
-   `Hostname` is queried through DNS and any resulting IP addresses are added instead of the hostname.
-   A DNS query failure results in zero targets being added for that address.
+   `Hostname` is queried through DNS and any resulting IP addresses are added instead of the hostname,
+   producing `A`/`AAAA` records rather than a `CNAME`.
+
+   If DNS resolution fails for a hostname address (e.g. the hostname is unresolvable or the DNS
+   server is unavailable), the error is logged  the `Endpoint` of that address is skipped entirely. If all of a Gateway's addresses fail to resolve, the route will produce no
+   endpoints for that reconciliation cycle and will be retried on the next sync.
 
 The targets from each parent Gateway matching the \*Route are then combined and de-duplicated.
 
