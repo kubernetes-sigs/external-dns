@@ -53,7 +53,6 @@ TTL must be a positive value.
 | `Civo`         |    No     |
 | `Cloudflare`   |    Yes    |
 | `CoreDNS`      |    No     |
-| `DigitalOcean` |    Yes    |
 | `DNSSimple`    |    Yes    |
 | `Exoscale`     |    Yes    |
 | `Gandi`        |    Yes    |
@@ -119,11 +118,6 @@ By default it will be 300s.
 
 CloudFlare overrides the value to "auto" when the TTL is 0.
 
-### DigitalOcean Provider
-
-The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
-This value is a constant in the provider code.
-
 ### DNSimple Provider
 
 The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
@@ -134,7 +128,7 @@ Previously with the Google Provider, TTL's were hard-coded to 300s.
 For safety, the Google Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
 
-For the moment, it is impossible to use a TTL value of 0 with the AWS, DigitalOcean, or Google Providers.
+For the moment, it is impossible to use a TTL value of 0 with the AWS or Google Providers.
 This behavior may change in the future.
 
 ### Linode Provider

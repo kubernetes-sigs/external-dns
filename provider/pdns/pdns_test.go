@@ -149,6 +149,16 @@ var (
 		},
 	}
 
+	// RRSet with PTR record
+	RRSetPTRRecord = pgo.RrSet{
+		Name:  "4.3.2.1.in-addr.arpa.",
+		Type_: endpoint.RecordTypePTR,
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "host.example.com", Disabled: false, SetPtr: false},
+		},
+	}
+
 	endpointsDisabledRecord = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}
@@ -197,6 +207,7 @@ var (
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
 		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
+		endpoint.NewEndpointWithTTL("4.3.2.1.in-addr.arpa", endpoint.RecordTypePTR, endpoint.TTL(300), "host.example.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -342,7 +353,7 @@ var (
 		Type_:  "Zone",
 		Url:    "/api/v1/servers/localhost/zones/example.com.",
 		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord},
+		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord, RRSetPTRRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
@@ -1023,6 +1034,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 		endpoint.RecordTypeMX:    true,
 		endpoint.RecordTypeSRV:   true,
 		endpoint.RecordTypeNS:    true,
+		endpoint.RecordTypePTR:   true,
 	}
 
 	for _, z := range zlist {

@@ -68,6 +68,7 @@ var trailingTypes = []string{
 	endpoint.RecordTypeMX,
 	endpoint.RecordTypeSRV,
 	endpoint.RecordTypeNS,
+	endpoint.RecordTypePTR,
 	"ALIAS",
 }
 

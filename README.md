@@ -48,7 +48,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 - [Civo](https://www.civo.com)
 - [CloudFlare](https://www.cloudflare.com/dns)
-- [DigitalOcean](https://www.digitalocean.com/products/networking)
 - [DNSimple](https://dnsimple.com/)
 - [PowerDNS](https://www.powerdns.com/)
 - [CoreDNS](https://coredns.io/)
@@ -96,6 +95,7 @@ from the usage of any externally developed webhook.
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
 | deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
+| DigitalOcean          | https://github.com/amoniacou/external-dns-digitalocean-webhook       |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
@@ -147,7 +147,6 @@ The following table clarifies the current status of the providers according to t
 | AzureDNS                        | Stable |                  |
 | Civo                            | Alpha  | @alejandrojnm    |
 | CloudFlare                      | Beta   |                  |
-| DigitalOcean                    | Alpha  |                  |
 | DNSimple                        | Alpha  |                  |
 | PowerDNS                        | Alpha  |                  |
 | CoreDNS                         | Alpha  |                  |
@@ -205,7 +204,6 @@ The following tutorials are provided:
 - [Civo](docs/tutorials/civo.md)
 - [Cloudflare](docs/tutorials/cloudflare.md)
 - [CoreDNS](docs/tutorials/coredns.md)
-- [DigitalOcean](docs/tutorials/digitalocean.md)
 - [DNSimple](docs/tutorials/dnsimple.md)
 - [Exoscale](docs/tutorials/exoscale.md)
 - [ExternalName Services](docs/tutorials/externalname.md)
