@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -37,6 +36,8 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -77,22 +78,18 @@ func NewIstioVirtualServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
-	namespace string,
-	annotationFilter string,
-	fqdnTemplate string,
-	combineFQDNAnnotation bool,
-	ignoreHostnameAnnotation bool,
+	cfg *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
+	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(cfg.Namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1beta1().VirtualServices()
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
@@ -128,11 +125,11 @@ func NewIstioVirtualServiceSource(
 	return &virtualServiceSource{
 		kubeClient:               kubeClient,
 		istioClient:              istioClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
+		namespace:                cfg.Namespace,
+		annotationFilter:         cfg.AnnotationFilter,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFQDNAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
 		vServiceInformer:         virtualServiceInformer,
 		gatewayInformer:          gatewayInformer,
@@ -157,11 +154,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	log.Debugf("Found %d virtualservice in namespace %s", len(virtualServices), sc.namespace)
 
 	for _, vService := range virtualServices {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := vService.Annotations[annotations.ControllerKey]
-		if ok && controller != annotations.ControllerValue {
-			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
-				vService.Namespace, vService.APIVersion, vService.Name, controller, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
 			continue
 		}
 
@@ -181,8 +174,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			return nil, err
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from VirtualService %s/%s", vService.Namespace, vService.Name)
+		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
 
@@ -190,12 +182,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	// TODO: sort on endpoint creation
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.
@@ -251,7 +238,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		if err != nil {
 			return endpoints, err
 		}
-		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -323,7 +310,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 			}
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -337,7 +324,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 					return endpoints, err
 				}
 			}
-			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 

@@ -143,13 +143,13 @@ func TestLinodeConvertRecordType(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestNewLinodeProvider(t *testing.T) {
-	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+func TestNewProvider(t *testing.T) {
+	t.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.Error(t, err)
 }
 
@@ -183,7 +183,7 @@ func TestLinodeFetchZonesNoFilters(t *testing.T) {
 	).Return(createZones(), nil).Once()
 
 	expected := createZones()
-	actual, err := provider.fetchZones(context.Background())
+	actual, err := provider.fetchZones(t.Context())
 	require.NoError(t, err)
 
 	mockDomainClient.AssertExpectations(t)
@@ -209,7 +209,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 		{ID: 1, Domain: "foo.com"},
 		{ID: 3, Domain: "baz.com"},
 	}
-	actual, err := provider.fetchZones(context.Background())
+	actual, err := provider.fetchZones(t.Context())
 	require.NoError(t, err)
 
 	mockDomainClient.AssertExpectations(t)
@@ -264,7 +264,7 @@ func TestLinodeRecords(t *testing.T) {
 		mock.Anything,
 	).Return(createBazRecords(), nil).Once()
 
-	actual, err := provider.Records(context.Background())
+	actual, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	expected := []*endpoint.Endpoint{
@@ -361,7 +361,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
-	err := provider.ApplyChanges(context.Background(), &plan.Changes{
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{{
 			DNSName:    "create.bar.io",
 			RecordType: "A",
@@ -441,7 +441,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
-	err := provider.ApplyChanges(context.Background(), &plan.Changes{
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
 		// From 1 target to 2
 		UpdateNew: []*endpoint.Endpoint{{
 			DNSName:    "example.com",
@@ -497,7 +497,7 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 		11,
 	).Return(nil).Once()
 
-	err := provider.ApplyChanges(context.Background(), &plan.Changes{
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
 		// From 2 targets to 1
 		UpdateNew: []*endpoint.Endpoint{{
 			DNSName:    "example.com",
@@ -534,7 +534,7 @@ func TestLinodeApplyChangesNoChanges(t *testing.T) {
 		mock.Anything,
 	).Return([]linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}}, nil).Once()
 
-	err := provider.ApplyChanges(context.Background(), &plan.Changes{})
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{})
 	require.NoError(t, err)
 
 	mockDomainClient.AssertExpectations(t)

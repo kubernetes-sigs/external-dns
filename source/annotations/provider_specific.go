@@ -29,6 +29,12 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			Value: "true",
 		})
 	}
+	if v, ok := annotations[RecordTypeKey]; ok {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  endpoint.ProviderSpecificRecordType,
+			Value: v,
+		})
+	}
 	setIdentifier := ""
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
@@ -55,6 +61,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Value: v,
 			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
+			// TODO: unlike other providers which normalise to "provider/attr",
+			// Cloudflare retains the full annotation key as the property name
+			// (e.g. "external-dns.alpha.kubernetes.io/cloudflare-proxied").
+			// This is why RetainProviderProperties has a special case for cloudflare.
+			// Should be aligned with the standard convention in a future change.
 			switch {
 			case strings.Contains(k, CloudflareCustomHostnameKey):
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{

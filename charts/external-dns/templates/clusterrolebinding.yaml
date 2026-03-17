@@ -14,6 +14,11 @@ subjects:
     name: {{ template "external-dns.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 {{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
+{{- /*
+     If namespaced=true and gatewayNamespace is NOT set, bind the namespaces ClusterRole.
+     If gatewayNamespace IS set, we skip cluster-scoped RBAC entirely.
+  */ -}}
+{{- if not .Values.gatewayNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -29,6 +34,7 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "external-dns.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 {{- if .Values.gatewayNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1

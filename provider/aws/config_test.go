@@ -17,7 +17,6 @@ limitations under the License.
 package aws
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -27,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -48,7 +48,7 @@ func Test_newV2Config(t *testing.T) {
 		// when
 		cfg, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+		creds, err := cfg.Credentials.Retrieve(t.Context())
 
 		// then
 		assert.NoError(t, err)
@@ -66,7 +66,7 @@ func Test_newV2Config(t *testing.T) {
 		// when
 		cfg, err := newV2Config(AWSSessionConfig{})
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+		creds, err := cfg.Credentials.Retrieve(t.Context())
 
 		// then
 		assert.NoError(t, err)
@@ -114,7 +114,7 @@ func Test_newV2Config(t *testing.T) {
 			"AWS_SECRET_ACCESS_KEY": "topsecret",
 		})
 
-		hook := testutils.LogsUnderTestWithLogLevel(logrus.InfoLevel, t)
+		hook := logtest.LogsUnderTestWithLogLevel(logrus.InfoLevel, t)
 		defer hook.Reset()
 
 		// when
@@ -124,7 +124,7 @@ func Test_newV2Config(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		testutils.TestHelperLogContainsWithLogLevel(
+		logtest.TestHelperLogContainsWithLogLevel(
 			"Assuming role: arn:aws:iam::123456789012:role/example",
 			logrus.InfoLevel,
 			hook,
@@ -148,7 +148,7 @@ func Test_newV2Config(t *testing.T) {
 }
 
 func prepareCredentialsFile(t *testing.T) (*os.File, error) {
-	credsFile, err := os.CreateTemp("", "aws-*.creds")
+	credsFile, err := os.CreateTemp(t.TempDir(), "aws-*.creds")
 	require.NoError(t, err)
 	_, err = credsFile.WriteString("[profile1]\naws_access_key_id=AKID1234\naws_secret_access_key=SECRET1\n\n[profile2]\naws_access_key_id=AKID2345\naws_secret_access_key=SECRET2\n")
 	require.NoError(t, err)
@@ -202,12 +202,12 @@ func TestCreateV2Configs(t *testing.T) {
 
 		// then
 		require.Len(t, configs, 2)
-		creds, err := configs["profile1"].Credentials.Retrieve(context.Background())
+		creds, err := configs["profile1"].Credentials.Retrieve(t.Context())
 		require.NoError(t, err)
 		assert.Equal(t, "AKID1234", creds.AccessKeyID)
 		assert.Equal(t, "SECRET1", creds.SecretAccessKey)
 
-		creds, err = configs["profile2"].Credentials.Retrieve(context.Background())
+		creds, err = configs["profile2"].Credentials.Retrieve(t.Context())
 		require.NoError(t, err)
 		assert.Equal(t, "AKID2345", creds.AccessKeyID)
 		assert.Equal(t, "SECRET2", creds.SecretAccessKey)
@@ -227,7 +227,7 @@ func TestCreateConfigFatalOnError(t *testing.T) {
 		})
 
 		exitCode := 0
-		_ = testutils.TestHelperWithLogExitFunc(func(code int) {
+		_ = logtest.TestHelperWithLogExitFunc(func(code int) {
 			exitCode = code
 			panic("exit")
 		})
@@ -244,7 +244,7 @@ func TestCreateConfigFatalOnError(t *testing.T) {
 		})
 
 		exitCode := 0
-		_ = testutils.TestHelperWithLogExitFunc(func(code int) {
+		_ = logtest.TestHelperWithLogExitFunc(func(code int) {
 			exitCode = code
 			panic("exit")
 		})

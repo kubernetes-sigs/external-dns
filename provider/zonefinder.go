@@ -27,7 +27,12 @@ import (
 type ZoneIDName map[string]string
 
 func (z ZoneIDName) Add(zoneID, zoneName string) {
-	z[zoneID] = zoneName
+	var err error
+	z[zoneID], err = idna.Profile.ToUnicode(zoneName)
+	if err != nil {
+		log.Warnf("failed to convert zonename %q to its Unicode form: %v", zoneName, err)
+		z[zoneID] = zoneName
+	}
 }
 
 // FindZone identifies the most suitable DNS zone for a given hostname.

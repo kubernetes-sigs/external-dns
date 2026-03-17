@@ -24,12 +24,15 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
 
@@ -44,6 +47,11 @@ const (
 
 	randomPrefixLabel     = "prefix"
 	providerSpecificGroup = "coredns/group"
+)
+
+var (
+	// avoids allocating a new slice on every call
+	skipLabels = []string{"originalText", "prefix", "resource"}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
@@ -261,8 +269,13 @@ func newETCDClient(owner string, strictlyOwned bool) (coreDNSClient, error) {
 	return etcdClient{c, owner, strictlyOwned}, nil
 }
 
-// NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+// New creates a CoreDNS/SkyDNS provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.CoreDNSStrictlyOwned, cfg.DryRun)
+}
+
+// newProvider is a CoreDNS provider constructor
+func newProvider(domainFilter *endpoint.DomainFilter, prefix, owner string, strictlyOwned, dryRun bool) (provider.Provider, error) {
 	client, err := newETCDClient(owner, strictlyOwned)
 	if err != nil {
 		return nil, err
@@ -286,17 +299,6 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, boo
 		}
 	}
 	return nil, false
-}
-
-// findLabelInTargets takes an ep.Targets string slice and looks for an element in it. If found it will
-// return its string value, otherwise it will return empty string and a bool of false.
-func findLabelInTargets(targets []string, label string) (string, bool) {
-	for _, target := range targets {
-		if target == label {
-			return target, true
-		}
-	}
-	return "", false
 }
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
@@ -441,10 +443,10 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 	// Clean outdated labels
 	for label, labelPrefix := range ep.Labels {
-		if shouldSkipLabel(label) {
+		if slices.Contains(skipLabels, label) {
 			continue
 		}
-		if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+		if !slices.Contains(ep.Targets, label) {
 			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
 			log.Infof("Delete key %s", key)
 			if p.dryRun {
@@ -456,12 +458,6 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		}
 	}
 	return services, nil
-}
-
-func shouldSkipLabel(label string) bool {
-	skip := []string{"originalText", "prefix", "resource"}
-	_, ok := findLabelInTargets(skip, label)
-	return ok
 }
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.

@@ -35,22 +35,18 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
-
-// TestMain initializes annotation keys before running tests.
-// This is needed because init() was removed from annotations package.
-func TestMain(m *testing.M) {
-	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
-	m.Run()
-}
 
 type ServiceSuite struct {
 	suite.Suite
@@ -85,21 +81,10 @@ func (suite *ServiceSuite) SetupTest() {
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -130,7 +115,7 @@ func testServiceSourceImplementsSource(t *testing.T) {
 func testServiceSourceNewServiceSource(t *testing.T) {
 	t.Parallel()
 
-	for _, ti := range []struct {
+	for _, tc := range []struct {
 		title              string
 		annotationFilter   string
 		fqdnTemplate       string
@@ -163,30 +148,21 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 		},
 	} {
 
-		t.Run(ti.title, func(t *testing.T) {
+		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewServiceSource(
-				context.TODO(),
+				t.Context(),
 				fake.NewClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				"",
-				false,
-				false,
-				false,
-				ti.serviceTypesFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+				&Config{
+					FQDNTemplate:      tc.fqdnTemplate,
+					AnnotationFilter:  tc.annotationFilter,
+					ServiceTypeFilter: tc.serviceTypesFilter,
+					LabelFilter:       labels.Everything(),
+				},
 			)
 
-			if ti.expectError {
+			if tc.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
@@ -197,9 +173,9 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
-	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip4", "example.com")
+	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip4", "example.com")
 	assert.NoError(t, err)
-	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip6", "example.com")
+	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip6", "example.com")
 	assert.NoError(t, err)
 
 	t.Parallel()
@@ -1139,41 +1115,33 @@ func testServiceSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var sourceLabel labels.Selector
+			sourceLabel := labels.Everything()
 			if tc.serviceLabelSelector != "" {
 				sourceLabel, err = labels.Parse(tc.serviceLabelSelector)
 				require.NoError(t, err)
-			} else {
-				sourceLabel = labels.Everything()
 			}
 
 			// Create our object under test and get the endpoints.
-			client, err := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				tc.combineFQDNAndAnnotation,
-				tc.compatibility,
-				false,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				sourceLabel,
-				tc.resolveLoadBalancerHostname,
-				false,
-				false,
-				false,
+			client, err := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:                tc.fqdnTemplate,
+					AnnotationFilter:            tc.annotationFilter,
+					ServiceTypeFilter:           tc.serviceTypesFilter,
+					CombineFQDNAndAnnotation:    tc.combineFQDNAndAnnotation,
+					Compatibility:               tc.compatibility,
+					Namespace:                   tc.targetNamespace,
+					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
+					IgnoreHostnameAnnotation:    tc.ignoreHostnameAnnotation,
+					LabelFilter:                 sourceLabel,
+				},
 			)
 
 			require.NoError(t, err)
 
-			res, err := client.Endpoints(context.Background())
+			res, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -1363,33 +1331,26 @@ func testMultipleServicesEndpoints(t *testing.T) {
 					},
 				}
 
-				_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+				_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			// Create our object under test and get the endpoints.
-			client, err := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				tc.combineFQDNAndAnnotation,
-				tc.compatibility,
-				false,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+			client, err := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					ServiceTypeFilter:        tc.serviceTypesFilter,
+					CombineFQDNAndAnnotation: tc.combineFQDNAndAnnotation,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
-			res, err := client.Endpoints(context.Background())
+			res, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -1663,39 +1624,29 @@ func TestClusterIpServices(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var labelSelector labels.Selector
+			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
 				labelSelector, err = labels.Parse(tc.labelSelector)
 				require.NoError(t, err)
-			} else {
-				labelSelector = labels.Everything()
 			}
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labelSelector,
-				false,
-				false,
-				false,
-				false,
+			client, _ := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					PublishInternal:          true,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					LabelFilter:              labelSelector,
+				},
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -2449,7 +2400,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 			// Create the nodes
 			for _, node := range tc.nodes {
-				if _, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{}); err != nil {
+				if _, err := kubernetes.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{}); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -2475,7 +2426,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				}
 
-				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
+				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(t.Context(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -2498,32 +2449,25 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				tc.exposeInternalIPv6,
-				tc.ignoreUnscheduledNodes,
+			client, _ := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					AnnotationFilter:         tc.annotationFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExposeInternalIPv6:       tc.exposeInternalIPv6,
+					ExcludeUnschedulable:     tc.ignoreUnscheduledNodes,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -3354,7 +3298,7 @@ func TestHeadlessServices(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			var endpointSliceEndpoints []discoveryv1.Endpoint
@@ -3376,7 +3320,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				}
 
-				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(t.Context(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				ep := discoveryv1.Endpoint{
@@ -3403,36 +3347,28 @@ func TestHeadlessServices(t *testing.T) {
 				AddressType: discoveryv1.AddressTypeIPv4,
 				Endpoints:   endpointSliceEndpoints,
 			}
-			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(context.Background(), endpointSlice, metav1.CreateOptions{})
+			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(t.Context(), endpointSlice, metav1.CreateOptions{})
 			require.NoError(t, err)
 			for _, node := range tc.nodes {
-				_, err = kubernetes.CoreV1().Nodes().Create(context.Background(), &node, metav1.CreateOptions{})
+				_, err = kubernetes.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				tc.exposeInternalIPv6,
-				false,
+			client, _ := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					ServiceTypeFilter:        tc.serviceTypesFilter,
+					Compatibility:            tc.compatibility,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExposeInternalIPv6:       tc.exposeInternalIPv6,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -3548,24 +3484,12 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(
-		t.Context(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -3901,43 +3825,31 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 	}
 
 	for _, svc := range headless {
-		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
 	for _, pod := range pods {
-		_, err := kubernetes.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := kubernetes.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
 	for _, ep := range endpoints {
-		_, err := kubernetes.DiscoveryV1().EndpointSlices(ep.Namespace).Create(context.Background(), ep, metav1.CreateOptions{})
+		_, err := kubernetes.DiscoveryV1().EndpointSlices(ep.Namespace).Create(t.Context(), ep, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(
-		t.Context(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			LabelFilter:          labels.Everything(),
+			ExcludeUnschedulable: true,
+		},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
 
-	got, err := src.Endpoints(context.Background())
+	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 
 	want := []*endpoint.Endpoint{
@@ -4326,7 +4238,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			var endpointsSlicesEndpoints []discoveryv1.Endpoint
@@ -4347,7 +4259,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 					},
 				}
 
-				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(t.Context(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				ep := discoveryv1.Endpoint{
@@ -4370,32 +4282,25 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				AddressType: discoveryv1.AddressTypeIPv4,
 				Endpoints:   endpointsSlicesEndpoints,
 			}
-			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(context.Background(), endpointSlice, metav1.CreateOptions{})
+			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(t.Context(), endpointSlice, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				true,
+			client, _ := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					Namespace:                tc.targetNamespace,
+					LabelFilter:              labels.Everything(),
+					Compatibility:            tc.compatibility,
+					FQDNTemplate:             tc.fqdnTemplate,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExcludeUnschedulable:     true,
+					PublishHostIP:            true,
+					PublishInternal:          true,
+				},
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -4581,32 +4486,24 @@ func TestExternalServices(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				context.TODO(),
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				false,
-				tc.serviceTypeFilter,
-				tc.ignoreHostnameAnnotation,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				true,
+			client, _ := NewServiceSource(t.Context(), kubernetes,
+				&Config{
+					FQDNTemplate:             tc.fqdnTemplate,
+					Compatibility:            tc.compatibility,
+					ServiceTypeFilter:        tc.serviceTypeFilter,
+					Namespace:                tc.targetNamespace,
+					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+					ExcludeUnschedulable:     true,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints(context.Background())
+			endpoints, err := client.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -4645,32 +4542,20 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		},
 	}
 
-	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(b.Context(), service, metav1.CreateOptions{})
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(
-		context.TODO(),
-		kubernetes,
-		v1.NamespaceAll,
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	client, err := NewServiceSource(b.Context(), kubernetes,
+		&Config{
+			Namespace:            v1.NamespaceAll,
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(b, err)
 
 	for b.Loop() {
-		_, err := client.Endpoints(context.Background())
+		_, err := client.Endpoints(b.Context())
 		require.NoError(b, err)
 	}
 }
@@ -4746,33 +4631,22 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		},
 	}
 
-	for _, ts := range tests {
-		t.Run(ts.name, func(t *testing.T) {
-			svc, err := NewServiceSource(
-				t.Context(),
-				fake.NewClientset(),
-				"default",
-				"",
-				"",
-				false,
-				"",
-				true,
-				false,
-				false,
-				ts.svcFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				false,
-				false,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
+				&Config{
+					Namespace:                      "default",
+					ServiceTypeFilter:              tc.svcFilter,
+					AlwaysPublishNotReadyAddresses: true,
+					LabelFilter:                    labels.Everything(),
+				},
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
 			if !ok {
 				require.Fail(t, "expected serviceSource")
 			}
-			ts.asserts(svcSrc)
+			tc.asserts(svcSrc)
 		})
 	}
 }
@@ -4780,24 +4654,12 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
 
-	svc, err := NewServiceSource(
-		context.TODO(),
-		fake.NewClientset(),
-		"default",
-		"",
-		"",
-		false,
-		"",
-		false,
-		false,
-		false,
-		serviceTypeFilter,
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+	svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
+		&Config{
+			Namespace:         "default",
+			ServiceTypeFilter: serviceTypeFilter,
+			LabelFilter:       labels.Everything(),
+		},
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
@@ -4862,8 +4724,6 @@ func TestNewServiceTypes(t *testing.T) {
 }
 
 func TestFilterByServiceType_WithFixture(t *testing.T) {
-	namespace := "testns"
-
 	tests := []struct {
 		name            string
 		filter          *serviceTypes
@@ -4872,7 +4732,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 	}{
 		{
 			name: "all types of services with filter enabled for ServiceTypeNodePort and ServiceTypeClusterIP",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("kube-system", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4889,7 +4749,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "all types of services with filter enabled for ServiceTypeLoadBalancer",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4905,7 +4765,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "enabled for ServiceTypeLoadBalancer when not all types are present",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
 				v1.ServiceTypeExternalName: 2,
@@ -4920,7 +4780,7 @@ func TestFilterByServiceType_WithFixture(t *testing.T) {
 		},
 		{
 			name: "filter disabled returns all services",
-			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+			currentServices: createTestServicesByType("default", map[v1.ServiceType]int{
 				v1.ServiceTypeLoadBalancer: 3,
 				v1.ServiceTypeNodePort:     4,
 				v1.ServiceTypeClusterIP:    5,
@@ -4960,24 +4820,13 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should not error when creating the source
-	src, err := NewServiceSource(
-		ctx,
-		fakeClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		true,
+	src, err := NewServiceSource(ctx, fakeClient,
+		&Config{
+			FQDNTemplate:         "{{.Name}}",
+			Namespace:            "default",
+			ExcludeUnschedulable: true,
+			LabelFilter:          labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5044,28 +4893,14 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		},
 	}
 
-	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 	require.NoError(t, err)
-
 	// Should not error when creating the source
-	src, err := NewServiceSource(
-		ctx,
-		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-		labels.Everything(),
-		false,
-		false,
-		false,
-		false,
+	src, err := NewServiceSource(ctx, fakeClient,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+			LabelFilter:  labels.Everything(),
+		},
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5109,7 +4944,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 }
 
 // createTestServicesByType creates the requested number of services per type in the given namespace.
-func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]int) []*v1.Service {
+func createTestServicesByType(ns string, typeCounts map[v1.ServiceType]int) []*v1.Service {
 	var services []*v1.Service
 	idx := 0
 	for svcType, count := range typeCounts {
@@ -5117,7 +4952,7 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 			svc := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("svc-%s-%d", svcType, idx),
-					Namespace: namespace,
+					Namespace: ns,
 				},
 				Spec: v1.ServiceSpec{
 					Type: svcType,
@@ -5188,13 +5023,13 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		name    string
 		filter  []string
 		times   int
-		asserts func(t *testing.T, s *serviceSource)
+		asserts func(t *testing.T)
 	}{
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5204,7 +5039,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should trigger only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
 			times:  1,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 0)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5214,7 +5049,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure only service event handler",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5224,7 +5059,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
 			times:  2,
-			asserts: func(t *testing.T, s *serviceSource) {
+			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
@@ -5259,7 +5094,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 
 			assert.Equal(t, tt.times, infSvc.times+infEdp.times+infNode.times)
 
-			tt.asserts(t, svcSource)
+			tt.asserts(t)
 		})
 	}
 }
@@ -5309,9 +5144,6 @@ func TestConvertToEndpointSlices(t *testing.T) {
 
 func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5330,7 +5162,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
 }
@@ -5338,9 +5170,6 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 // Test for processEndpointSlice: publishPodIPs true and unsupported address type triggers log.Debugf skip
 func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
@@ -5359,7 +5188,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
 }
@@ -5367,9 +5196,6 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 // Test for missing coverage: publishPodIPs false scenario
 func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5392,7 +5218,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Targets should be added when publishPodIPs is false")
 }
@@ -5400,9 +5226,6 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 // Test for missing coverage: not ready endpoints with publishNotReadyAddresses true
 func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5425,7 +5248,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	publishNotReadyAddresses := true // This should allow not-ready endpoints
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Not ready endpoints should be processed when publishNotReadyAddresses is true")
 }
@@ -5485,7 +5308,7 @@ func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 		},
 	}
 
-	client := fake.NewSimpleClientset(node)
+	client := fake.NewClientset(node)
 	kubeInformers := kubeinformers.NewSharedInformerFactory(client, 0)
 	nodeInformer := kubeInformers.Core().V1().Nodes()
 
@@ -5669,9 +5492,6 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 // Test for missing coverage: pod with hostname creates additional headless domains
 func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	sc := &serviceSource{}
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
-	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5695,7 +5515,7 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	publishNotReadyAddresses := false
 
 	result := sc.processHeadlessEndpointsFromSlices(
-		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 
 	assert.NotEmpty(t, result, "Should create targets for pod with hostname")
@@ -5713,6 +5533,215 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 
 	assert.True(t, foundBaseHostname, "Should create endpoint for base hostname")
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
+}
+
+func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "01",
+				Name:      "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "02",
+				Name:      "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewServiceSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Service, len(elements))
+}
+
+func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
+	now := metav1.Now()
+
+	makeNode := func(name, ip string) *v1.Node {
+		return &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Status:     v1.NodeStatus{Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: ip}}},
+		}
+	}
+
+	makePod := func(name, nodeName string, ready bool, deletionTimestamp *metav1.Time) *v1.Pod {
+		readiness := v1.ConditionFalse
+		if ready {
+			readiness = v1.ConditionTrue
+		}
+		return &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "testing", DeletionTimestamp: deletionTimestamp},
+			Spec:       v1.PodSpec{NodeName: nodeName},
+			Status: v1.PodStatus{
+				Phase:      v1.PodRunning,
+				Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: readiness}},
+			},
+		}
+	}
+
+	makeResourceSource := func(t *testing.T, nodes []*v1.Node, pods []*v1.Pod) *serviceSource {
+		t.Helper()
+		client := fake.NewClientset()
+		inf := kubeinformers.NewSharedInformerFactory(client, 0)
+		nodeInformer := inf.Core().V1().Nodes()
+		podInformer := inf.Core().V1().Pods()
+		for _, n := range nodes {
+			require.NoError(t, nodeInformer.Informer().GetStore().Add(n))
+		}
+		for _, p := range pods {
+			require.NoError(t, podInformer.Informer().GetStore().Add(p))
+		}
+		return &serviceSource{podInformer: podInformer, nodeInformer: nodeInformer}
+	}
+
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "testing"},
+		Spec: v1.ServiceSpec{
+			Type:                  v1.ServiceTypeNodePort,
+			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+		},
+	}
+
+	// nodeNames extracts node names from a result slice for easy assertion.
+	nodeNames := func(nodes []*v1.Node) []string {
+		names := make([]string, len(nodes))
+		for i, n := range nodes {
+			names[i] = n.Name
+		}
+		sort.Strings(names)
+		return names
+	}
+
+	t.Run("best pod wins during rolling update regardless of iteration order", func(t *testing.T) {
+		// node1: not-ready replacement pod + ready existing pod (rolling update)
+		// node2: single ready pod
+		// The informer cache is a Go map so pod iteration order is randomised
+		// each call. Over 100 iterations pod-0 will be processed before pod-1
+		// roughly half the time, reliably triggering the bug if present.
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // not-ready replacement
+				makePod("pod-1", "node1", true, nil),  // ready existing
+				makePod("pod-2", "node2", true, nil),  // ready
+			},
+		)
+		for i := range 100 {
+			got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+			require.Containsf(t, got, "node1", "iteration %d: node1 dropped despite having a ready pod", i)
+			require.Containsf(t, got, "node2", "iteration %d: node2 dropped despite having a ready pod", i)
+		}
+	})
+
+	t.Run("best pod state wins per node deterministically", func(t *testing.T) {
+		// Explicitly verify that each priority upgrade path lands in the correct tier,
+		// independent of iteration order.
+		//   node1: notReady pod + readyNonTerminating pod  → must appear in nodes (top tier)
+		//   node2: notReady pod + readyTerminating pod     → must appear in nodesReady (mid tier)
+		//   node3: notReady pod only                       → must appear in nodesRunning (low tier)
+		// Because node1 is in the top tier the fallback switch returns only node1.
+		sc := makeResourceSource(t,
+			[]*v1.Node{
+				makeNode("node1", "54.10.11.1"),
+				makeNode("node2", "54.10.11.2"),
+				makeNode("node3", "54.10.11.3"),
+			},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", false, nil), // notReady
+				makePod("pod-1", "node1", true, nil),  // readyNonTerminating — upgrades node1
+				makePod("pod-2", "node2", false, nil), // notReady
+				makePod("pod-3", "node2", true, &now), // readyTerminating — upgrades node2
+				makePod("pod-4", "node3", false, nil), // notReady only
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got, "fallback should select the top-tier node only")
+	})
+
+	t.Run("falls back to nodesReady when all ready pods are terminating", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", true, &now)}, // ready + terminating
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("falls back to nodesRunning when no pod is ready", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{makePod("pod-0", "node1", false, nil)}, // running, not ready
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips pods that are not in Running phase", func(t *testing.T) {
+		pendingPod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "pod-pending", Namespace: "testing"},
+			Spec:       v1.PodSpec{NodeName: "node1"},
+			Status:     v1.PodStatus{Phase: v1.PodPending},
+		}
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{pendingPod},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
+
+	t.Run("skips pods whose node is not found in the informer", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{}, // node1 not registered
+			[]*v1.Pod{makePod("pod-0", "node1", true, nil)},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Empty(t, got)
+	})
+
+	t.Run("returns nil when pod list is empty", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1")},
+			[]*v1.Pod{},
+		)
+		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
+		assert.Nil(t, got)
+	})
+
+	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {
+		sc := makeResourceSource(t,
+			[]*v1.Node{makeNode("node1", "54.10.11.1"), makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),  // ready, non-terminating
+				makePod("pod-1", "node2", true, &now), // ready, terminating
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
 }
 
 // Helper function to find endpoint by record type

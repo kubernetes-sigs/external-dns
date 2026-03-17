@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -53,14 +54,9 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 			_, err := NewPodSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				"",
-				false,
-				"",
-				tt.fqdnTemplate,
-				false,
-				"",
-				nil)
+				&Config{
+					FQDNTemplate: tt.fqdnTemplate,
+				})
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -444,14 +440,11 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				false,
-				tt.sourceDomain,
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				nil)
+				&Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: tt.combineFQDN,
+					PodSourceDomain:          tt.sourceDomain,
+				})
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -508,14 +501,11 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 			src, err := NewPodSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				false,
-				tt.sourceDomain,
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				nil)
+				&Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: tt.combineFQDN,
+					PodSourceDomain:          tt.sourceDomain,
+				})
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())

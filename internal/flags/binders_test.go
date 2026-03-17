@@ -29,7 +29,7 @@ import (
 
 type badSetter struct{}
 
-func (b *badSetter) Set(s string) error { return errors.New("bad default") }
+func (b *badSetter) Set(_ string) error { return errors.New("bad default") }
 
 func TestKingpinBinderParsesAllTypes(t *testing.T) {
 	app := kingpin.New("test", "")

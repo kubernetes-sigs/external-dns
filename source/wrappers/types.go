@@ -27,10 +27,12 @@ import (
 type Config struct {
 	defaultTargets      []string
 	forceDefaultTargets bool
+	provider            string
 	nat64Networks       []string
 	targetNetFilter     []string
 	excludeTargetNets   []string
 	minTTL              time.Duration
+	preferAlias         bool
 	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
@@ -80,6 +82,20 @@ func WithMinTTL(ttl time.Duration) Option {
 	}
 }
 
+// WithProvider sets the DNS provider name, used to filter provider-specific
+// endpoint properties to only those belonging to the configured provider.
+func WithProvider(input string) Option {
+	return func(o *Config) {
+		o.provider = input
+	}
+}
+
+func WithPreferAlias(enabled bool) Option {
+	return func(o *Config) {
+		o.preferAlias = enabled
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -120,7 +136,8 @@ func WrapSources(
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)
 		opts.addSourceWrapper("target-filter")
 	}
-	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL))
+	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
+		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
 	return combinedSource, nil
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -351,22 +350,26 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -644,22 +647,26 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -785,22 +792,26 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1114,22 +1125,27 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, true, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					TraefikEnableLegacy:      true,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1407,22 +1423,27 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(oldIngressRouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(oldIngressRouteTCPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, true, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					TraefikEnableLegacy:      true,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(oldIngressRouteTCPGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(oldIngressRouteTCPGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1548,22 +1569,27 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(oldIngressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(oldIngressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, true, false)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					TraefikEnableLegacy:      true,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(oldIngressRouteUDPGVR).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(oldIngressRouteUDPGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1710,28 +1736,34 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, ti.enableLegacy, ti.disableNew)
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:                defaultTraefikNamespace,
+					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					TraefikEnableLegacy:      ti.enableLegacy,
+					TraefikDisableNew:        ti.disableNew,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, ti.expected, endpoints)
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
 
 func TestAddEventHandler_AllBranches(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	handlerCalled := false
 	handler := func() { handlerCalled = true }
 
@@ -1783,8 +1815,7 @@ func TestAddEventHandler_AllBranches(t *testing.T) {
 
 type FakeInformer struct {
 	mock.Mock
-	informer cache.SharedIndexInformer
-	lister   cache.GenericLister
+	lister cache.GenericLister
 }
 
 func (f *FakeInformer) Informer() cache.SharedIndexInformer {

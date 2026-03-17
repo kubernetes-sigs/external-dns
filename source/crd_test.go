@@ -18,7 +18,6 @@ package source
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,8 +41,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 
+	"sigs.k8s.io/external-dns/source/types"
+
+	log "github.com/sirupsen/logrus"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type CRDSuite struct {
@@ -435,7 +441,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "illegal target CNAME",
+			title:                "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
 			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
 			apiVersion:           apiv1alpha1.GroupVersion.String(),
 			registeredKind:       apiv1alpha1.DNSEndpointKind,
@@ -452,8 +458,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectEndpoints: true,
+		},
+		{
+			title:                "CNAME target without trailing dot (relative name)",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "internal.example.com",
+					Targets:    endpoint.Targets{"backend.cluster.local"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  300,
+				},
+			},
+			expectEndpoints: true,
 		},
 		{
 			title:                "illegal target NAPTR",
@@ -518,6 +543,48 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: false,
 			expectError:     false,
 		},
+		{
+			title:                "MX Record allowing trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com."},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
+			title:                "MX Record without trailing dot in target",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"example.com"},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
@@ -537,7 +604,13 @@ func testCRDSourceEndpoints(t *testing.T) {
 			// At present, client-go's fake.RESTClient (used by crd_test.go) is known to cause race conditions when used
 			// with informers: https://github.com/kubernetes/kubernetes/issues/95372
 			// So don't start the informer during testing.
-			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, false)
+			cs, err := NewCRDSource(restClient, &Config{
+				Namespace:        ti.namespace,
+				AnnotationFilter: ti.annotationFilter,
+				LabelFilter:      labelSelector,
+				CRDSourceKind:    ti.kind,
+				UpdateEvents:     false,
+			}, scheme)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
@@ -567,11 +640,83 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}
 }
 
+func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
+	for _, ti := range []struct {
+		title       string
+		endpoints   []*endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			title: "A record with trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4."},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+		},
+		{
+			title: "NAPTR record without trailing dot warns with fix suggestion",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"_sip._udp.example.org"},
+					RecordType: endpoint.RecordTypeNAPTR,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+		},
+		{
+			title: "CNAME with empty targets produces no warning",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			restClient := fakeRESTClient(ti.endpoints, apiv1alpha1.GroupVersion.String(), apiv1alpha1.DNSEndpointKind, "foo", "test", nil, nil, t)
+
+			scheme := runtime.NewScheme()
+			require.NoError(t, apiv1alpha1.AddToScheme(scheme))
+
+			cs, err := NewCRDSource(restClient, &Config{
+				Namespace:        "foo",
+				AnnotationFilter: "",
+				LabelFilter:      labels.Everything(),
+				CRDSourceKind:    apiv1alpha1.DNSEndpointKind,
+				UpdateEvents:     false,
+			}, scheme)
+			require.NoError(t, err)
+
+			_, err = cs.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			if ti.wantWarning == "" {
+				require.Empty(t, hook.Entries, "expected no warnings to be logged")
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
+}
+
 func TestCRDSource_NoInformer(t *testing.T) {
 	cs := &crdSource{informer: nil}
 	called := false
 
-	cs.AddEventHandler(context.Background(), func() { called = true })
+	cs.AddEventHandler(t.Context(), func() { called = true })
 	require.False(t, called, "handler must not be called when informer is nil")
 }
 
@@ -695,7 +840,7 @@ func TestCRDSource_Watch(t *testing.T) {
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	t.Helper()
 	cs := src.(*crdSource)
-	result, err := cs.List(context.Background(), &metav1.ListOptions{})
+	result, err := cs.List(t.Context(), &metav1.ListOptions{})
 	if expectError {
 		require.Errorf(t, err, "Received err %v", err)
 	} else {
@@ -739,7 +884,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		GroupVersion:         apiv1alpha1.GroupVersion,
 		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
 		NegotiatedSerializer: codecFactory,
-		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Header:     make(http.Header),
@@ -762,6 +907,49 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	for _, ep := range res {
 		require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 	}
+}
+
+func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
+	typeCounts := map[string]int{
+		endpoint.RecordTypeA:    2,
+		endpoint.RecordTypeAAAA: 3,
+	}
+
+	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
+
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	// TODO: reduce duplication and move to pkg/client/fakes
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       objBody(codecFactory.LegacyCodec(apiv1alpha1.GroupVersion), &elements),
+			}, nil
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:     client,
+		namespace:     "test-ns",
+		crdResource:   "dnsendpoints",
+		codec:         runtime.NewParameterCodec(scheme),
+		labelSelector: labels.Everything(),
+	}
+
+	endpoints, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.CRD, len(elements.Items))
 }
 
 func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeControllerSource, crdSource) {
@@ -795,6 +983,7 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
 					Namespace: namespace,
+					UID:       k8stypes.UID(fmt.Sprintf("uid-%d", idx)),
 				},
 				Spec: apiv1alpha1.DNSEndpointSpec{
 					Endpoints: []*endpoint.Endpoint{

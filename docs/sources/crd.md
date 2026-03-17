@@ -152,6 +152,8 @@ spec:
     - example.com
 ```
 
+> **Note:** CNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
+
 * Example for record type `NS`
 
 ```yaml

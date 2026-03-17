@@ -28,7 +28,10 @@ import (
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/provider/blueprint"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -56,15 +59,15 @@ type AzurePrivateDNSProvider struct {
 	userAssignedIdentityClientID string
 	activeDirectoryAuthorityHost string
 	zonesClient                  PrivateZonesClient
-	zonesCache                   *zonesCache[privatedns.PrivateZone]
+	zonesCache                   *blueprint.ZoneCache[[]privatedns.PrivateZone]
 	recordSetsClient             PrivateRecordSetsClient
 	maxRetriesCount              int
 }
 
-// NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
+// newPrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func newPrivateDNSProvider(configFile string, domainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzurePrivateDNSProvider, error) {
 	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %w", configFile, err)
@@ -92,10 +95,27 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter *endpoint.Domain
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
-		zonesCache:                   &zonesCache[privatedns.PrivateZone]{duration: zonesCacheDuration},
+		zonesCache:                   blueprint.NewZoneCache[[]privatedns.PrivateZone](zonesCacheDuration),
 		recordSetsClient:             recordSetsClient,
 		maxRetriesCount:              maxRetriesCount,
 	}, nil
+}
+
+// NewPrivate creates an Azure Private DNS provider from the given configuration.
+func NewPrivate(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newPrivateDNSProvider(
+		cfg.AzureConfigFile,
+		domainFilter,
+		endpoint.NewDomainFilter(cfg.ZoneNameFilter),
+		provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+		cfg.AzureSubscriptionID,
+		cfg.AzureResourceGroup,
+		cfg.AzureUserAssignedIdentityClientID,
+		cfg.AzureActiveDirectoryAuthorityHost,
+		cfg.AzureZonesCacheDuration,
+		cfg.AzureMaxRetriesCount,
+		cfg.DryRun,
+	)
 }
 
 // Records gets the current records.
@@ -183,11 +203,12 @@ func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *pla
 }
 
 func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.PrivateZone, error) {
-	log.Debugf("Retrieving Azure Private DNS zones for Resource Group '%s'", p.resourceGroup)
 	if !p.zonesCache.Expired() {
-		log.Debugf("Using cached Azure Private DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(p.zonesCache.Get()))
-		return p.zonesCache.Get(), nil
+		cachedZones := p.zonesCache.Get()
+		log.Debugf("Using cached Azure Private DNS zones for resource group: %s zone count: %d.", p.resourceGroup, len(cachedZones))
+		return cachedZones, nil
 	}
+	log.Debugf("Retrieving Azure Private DNS zones for resource group: %s.", p.resourceGroup)
 	var zones []privatedns.PrivateZone
 
 	pager := p.zonesClient.NewListByResourceGroupPager(p.resourceGroup, &privatedns.PrivateZonesClientListByResourceGroupOptions{Top: nil})
@@ -197,8 +218,6 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 			return nil, err
 		}
 		for _, zone := range nextResult.Value {
-			log.Debugf("Validating Zone: %v", *zone.Name)
-
 			if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 				zones = append(zones, *zone)
 			} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
@@ -208,7 +227,6 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 		}
 	}
 
-	log.Debugf("Found %d Azure Private DNS zone(s). Updating zones cache", len(zones))
 	p.zonesCache.Reset(zones)
 	return zones, nil
 }

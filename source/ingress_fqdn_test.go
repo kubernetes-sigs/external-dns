@@ -18,12 +18,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -63,15 +65,10 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				"",
-				"",
-				tt.fqdnTemplate,
-				false,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				[]string{},
+				&Config{
+					FQDNTemplate: tt.fqdnTemplate,
+					LabelFilter:  labels.NewSelector(),
+				},
 			)
 
 			if tt.expectError {
@@ -165,7 +162,6 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			fqdnTemplate: `{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname "nip.io" }}example.org{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
 			},
 		},
@@ -325,15 +321,11 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				true,
-				false,
-				false,
-				false,
-				labels.Everything(),
-				[]string{},
+				&Config{
+					FQDNTemplate:             tt.fqdnTemplate,
+					CombineFQDNAndAnnotation: true,
+					LabelFilter:              labels.Everything(),
+				},
 			)
 
 			require.NoError(t, err)

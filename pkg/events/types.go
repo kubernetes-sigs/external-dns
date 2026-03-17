@@ -72,6 +72,8 @@ type (
 		reason  Reason
 	}
 
+	// ObjectReference holds metadata about a Kubernetes object for event correlation.
+	// TODO: consider make fields private. Ensuring data integrity, encapsulation and immutability.
 	ObjectReference struct {
 		Kind       string
 		ApiVersion string
@@ -82,11 +84,8 @@ type (
 	}
 
 	Config struct {
-		kubeConfig   string
-		apiServerURL string
-		timeout      time.Duration
-		emitEvents   sets.Set[Reason]
-		dryRun       bool
+		emitEvents sets.Set[Reason]
+		dryRun     bool
 	}
 
 	// EndpointInfo defines the interface for endpoint data needed to create events.
@@ -226,14 +225,6 @@ func sanitize(input string) string {
 	sanitized = invalidChars.ReplaceAllString(sanitized, "-")
 
 	return fmt.Sprintf("%v.%x", sanitized, t.UnixNano())
-}
-
-func WithKubeConfig(kubeConfig string, url string, timeout time.Duration) ConfigOption {
-	return func(c *Config) {
-		c.kubeConfig = kubeConfig
-		c.apiServerURL = url
-		c.timeout = timeout
-	}
 }
 
 func WithDryRun(dryRun bool) ConfigOption {

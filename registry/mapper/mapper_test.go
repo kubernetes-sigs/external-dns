@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -77,6 +78,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			input:            "srv-foo.example.com",
 			wantEndpointName: "foo.example.com",
 			wantRecordType:   endpoint.RecordTypeSRV,
+		},
+		{
+			name:             "prefix with PTR record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "ptr-2.49.168.192.in-addr.arpa",
+			wantEndpointName: "2.49.168.192.in-addr.arpa",
+			wantRecordType:   endpoint.RecordTypePTR,
 		},
 		{
 			name:             "prefix with NAPTR record type in affix",
@@ -140,6 +148,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			input:            "srv-foo.example.com",
 			wantEndpointName: "foo.example.com",
 			wantRecordType:   endpoint.RecordTypeSRV,
+		},
+		{
+			name:             "default prefix with PTR record",
+			mapper:           NewAffixNameMapper("", "", ""),
+			input:            "ptr-2.49.168.192.in-addr.arpa",
+			wantEndpointName: "2.49.168.192.in-addr.arpa",
+			wantRecordType:   endpoint.RecordTypePTR,
 		},
 		{
 			name:             "no affix with NAPTR record",
@@ -229,6 +244,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "srv-foo.example.com",
 		},
 		{
+			name:        "prefix with PTR record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "2.49.168.192.in-addr.arpa",
+			recordType:  endpoint.RecordTypePTR,
+			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
+		},
+		{
 			name:        "prefix with NAPTR record type in affix",
 			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
 			dns:         "foo.example.com",
@@ -304,6 +326,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeSRV,
 			wantTXTName: "srv-foo.example.com",
+		},
+		{
+			name:        "default prefix with PTR record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "2.49.168.192.in-addr.arpa",
+			recordType:  endpoint.RecordTypePTR,
+			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
 		},
 		{
 			name:        "no affix with NAPTR record",
@@ -544,8 +573,8 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 		},
 		{
 			input:        "ptr-zone.example.com",
-			expectedName: "ptr-zone.example.com",
-			expectedType: "",
+			expectedName: "zone.example.com",
+			expectedType: "PTR",
 		},
 		{
 			input:        "zone.example.com",

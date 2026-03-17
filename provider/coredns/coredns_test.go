@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 
 	"github.com/stretchr/testify/require"
@@ -179,7 +180,7 @@ func TestAServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	if len(endpoints) != 1 {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
@@ -209,7 +210,7 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	if len(endpoints) != 1 {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
@@ -239,7 +240,7 @@ func TestTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	if len(endpoints) != 1 {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
@@ -271,7 +272,7 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	if len(endpoints) != len(expectedTargets) {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
@@ -311,7 +312,7 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	if len(endpoints) != len(expectedTargets) {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
@@ -351,7 +352,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
-	err := coredns.ApplyChanges(context.Background(), changes1)
+	err := coredns.ApplyChanges(t.Context(), changes1)
 	require.NoError(t, err)
 
 	expectedServices1 := map[string][]*Service{
@@ -368,7 +369,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
 	}
-	records, _ := coredns.Records(context.Background())
+	records, _ := coredns.Records(t.Context())
 	for _, ep := range records {
 		if ep.DNSName == "domain1.local" {
 			changes2.UpdateOld = append(changes2.UpdateOld, ep)
@@ -408,7 +409,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
 	}
-	err = coredns.ApplyChanges(context.Background(), changes4)
+	err = coredns.ApplyChanges(t.Context(), changes4)
 	require.NoError(t, err)
 
 	expectedServices4 := map[string][]*Service{
@@ -435,12 +436,12 @@ func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
 			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-	err := coredns.ApplyChanges(context.Background(), changes1)
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	err := coredns.ApplyChanges(t.Context(), changes1)
 	require.NoError(t, err)
 
-	testutils.TestHelperLogContains("Skipping record \"domain1.local\" due to domain filter", hook, t)
-	testutils.TestHelperLogContains("Skipping record \"domain2.local\" due to domain filter", hook, t)
+	logtest.TestHelperLogContains("Skipping record \"domain1.local\" due to domain filter", hook, t)
+	logtest.TestHelperLogContains("Skipping record \"domain2.local\" due to domain filter", hook, t)
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) error {
@@ -520,7 +521,7 @@ func TestGetServices_Success(t *testing.T) {
 		},
 	}
 
-	result, err := c.GetServices(context.Background(), "/prefix")
+	result, err := c.GetServices(t.Context(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "example.com", result[0].Host)
@@ -552,7 +553,7 @@ func TestGetServices_Duplicate(t *testing.T) {
 			},
 		}, nil)
 
-	result, err := c.GetServices(context.Background(), "/prefix")
+	result, err := c.GetServices(t.Context(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 }
@@ -586,7 +587,7 @@ func TestGetServices_Multiple(t *testing.T) {
 			},
 		}, nil)
 
-	result, err := c.GetServices(context.Background(), "/prefix")
+	result, err := c.GetServices(t.Context(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, priority, result[1].Priority)
@@ -630,7 +631,7 @@ func TestGetServices_FilterOutOtherServicesOwnerSetButNothingChanged(t *testing.
 			},
 		}, nil)
 
-	result, err := c.GetServices(context.Background(), "/prefix")
+	result, err := c.GetServices(t.Context(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 3)
 }
@@ -673,7 +674,7 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 			},
 		}, nil)
 
-	result, err := c.GetServices(context.Background(), "/prefix")
+	result, err := c.GetServices(t.Context(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "owner", result[0].Owner)
@@ -701,7 +702,7 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 			},
 		}, nil)
 
-	_, err := c.GetServices(context.Background(), "/prefix")
+	_, err := c.GetServices(t.Context(), "/prefix")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "/prefix/1")
 }
@@ -717,7 +718,7 @@ func TestGetServices_GetError(t *testing.T) {
 	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
 		Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
-	_, err := c.GetServices(context.Background(), "/prefix")
+	_, err := c.GetServices(t.Context(), "/prefix")
 	assert.Error(t, err)
 	assert.EqualError(t, err, "etcd failure")
 }
@@ -753,7 +754,7 @@ func TestDeleteService(t *testing.T) {
 				},
 			}
 
-			err := c.DeleteService(context.Background(), tt.key)
+			err := c.DeleteService(t.Context(), tt.key)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -892,7 +893,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 				strictlyOwned: true,
 			}
 
-			err := c.DeleteService(context.Background(), tt.key)
+			err := c.DeleteService(t.Context(), tt.key)
 
 			require.NoError(t, err)
 			mockKV.AssertExpectations(t)
@@ -1150,7 +1151,7 @@ func TestSaveService(t *testing.T) {
 				strictlyOwned: tt.strictlyOwned,
 			}
 
-			err = c.SaveService(context.Background(), tt.service)
+			err = c.SaveService(t.Context(), tt.service)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -1161,7 +1162,7 @@ func TestSaveService(t *testing.T) {
 	}
 }
 
-func TestNewCoreDNSProvider(t *testing.T) {
+func TestNewProvider(t *testing.T) {
 	tests := []struct {
 		name    string
 		envs    map[string]string
@@ -1188,7 +1189,7 @@ func TestNewCoreDNSProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.TestHelperEnvSetter(t, tt.envs)
 
-			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
+			provider, err := newProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.errMsg)
@@ -1315,7 +1316,7 @@ func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
 			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
 		},
 	}
-	coredns.ApplyChanges(context.Background(), changes1)
+	coredns.ApplyChanges(t.Context(), changes1)
 
 	expectedServices1 := map[string][]*Service{
 		"/skydns/local/domain1": {{Host: "5.5.5.5", Group: "test1"}},
@@ -1335,7 +1336,7 @@ func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := coredns.Records(context.Background())
+	endpoints, err := coredns.Records(t.Context())
 	require.NoError(t, err)
 	if prop, ok := endpoints[0].GetProviderSpecificProperty(providerSpecificGroup); !ok {
 		t.Error("go no Group name")
@@ -1356,7 +1357,7 @@ func TestRecordsIncludeLabelOwnerWithStrictlyOwned(t *testing.T) {
 		coreDNSPrefix: defaultCoreDNSPrefix,
 		strictlyOwned: true,
 	}
-	endpoints, err := coredns.Records(context.Background())
+	endpoints, err := coredns.Records(t.Context())
 	require.NoError(t, err)
 	for _, ep := range endpoints {
 		assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
@@ -1375,7 +1376,7 @@ func TestRecordsIncludeOwnerASLabelWithoutStrictlyOwned(t *testing.T) {
 		coreDNSPrefix: defaultCoreDNSPrefix,
 		strictlyOwned: false,
 	}
-	endpoints, err := coredns.Records(context.Background())
+	endpoints, err := coredns.Records(t.Context())
 	require.NoError(t, err)
 	for _, ep := range endpoints {
 		assert.Empty(t, ep.Labels[endpoint.OwnerLabelKey])

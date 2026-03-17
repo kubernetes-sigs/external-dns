@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"net/netip"
 	"sort"
 	"strings"
 	"text/template"
@@ -264,10 +263,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 			continue
 		}
 
-		// Check controller annotation to see if we are responsible.
-		if v, ok := annots[annotations.ControllerKey]; ok && v != annotations.ControllerValue {
-			log.Debugf("Skipping %s %s/%s because controller value does not match, found: %s, required: %s",
-				src.rtKind, meta.Namespace, meta.Name, v, annotations.ControllerValue)
+		if annotations.IsControllerMismatch(meta, src.rtKind) {
 			continue
 		}
 
@@ -276,6 +272,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		if err != nil {
 			return nil, err
 		}
+		// TODO: does not follow the pattern of other sources to log empty hostTargets
 		if len(hostTargets) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
@@ -287,13 +284,13 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
 		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
 		endpoints = append(endpoints, routeEndpoints...)
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {
@@ -652,8 +649,7 @@ func gwHost(host string) (string, bool) {
 
 // isIPAddr returns whether s in an IP address.
 func isIPAddr(s string) bool {
-	_, err := netip.ParseAddr(s)
-	return err == nil
+	return endpoint.SuitableType(s) != endpoint.RecordTypeCNAME
 }
 
 // isDNS1123Domain returns whether s is a valid domain name according to RFC 1123.

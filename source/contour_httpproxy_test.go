@@ -92,11 +92,10 @@ func (suite *HTTPProxySuite) SetupTest() {
 	suite.source, err = NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			Namespace:    "default",
+			FQDNTemplate: "{{.Name}}",
+		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
 
@@ -187,13 +186,13 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 			fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 			_, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
+				&Config{
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+				},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -288,13 +287,11 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			if source, err := newTestHTTPProxySource(); err != nil {
-				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy()); err != nil {
-				require.NoError(t, err)
-			} else {
-				validateEndpoints(t, endpoints, ti.expected)
-			}
+			source, err := newTestHTTPProxySource()
+			require.NoError(t, err)
+
+			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1050,22 +1047,24 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
-				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
+				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(t.Context(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			httpProxySource, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
-				ti.targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
+				&Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				},
 			)
 			require.NoError(t, err)
 
-			res, err := httpProxySource.Endpoints(context.Background())
+			res, err := httpProxySource.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1084,11 +1083,9 @@ func newTestHTTPProxySource() (*httpProxySource, error) {
 	src, err := NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+		},
 	)
 	if err != nil {
 		return nil, err

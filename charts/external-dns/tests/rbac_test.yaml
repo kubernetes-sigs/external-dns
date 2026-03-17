@@ -229,19 +229,19 @@ tests:
           value: rbac-external-dns-viewer
         template: clusterrolebinding.yaml
 
-  - it: should create all required resources when namespaced=true and gatewayNamespace is specified
+  - it: should create only namespaced RBAC when namespaced=true and gatewayNamespace is specified
     set:
       namespaced: true
       gatewayNamespace: gateway-ns
       sources:
         - gateway-httproute
     asserts:
-      # Should have: main Role + ClusterRole for namespaces + Gateway Role
+      # Should have: main Role + Gateway Role only (no cluster-scoped RBAC)
       - hasDocuments:
-          count: 3
+          count: 2
         template: clusterrole.yaml
       - hasDocuments:
-          count: 3
+          count: 2
         template: clusterrolebinding.yaml
 
       # Main role should exist and contain route permissions but NOT gateway permissions
@@ -272,12 +272,18 @@ tests:
           value: rbac-external-dns
         template: clusterrole.yaml
 
-      # ClusterRole for namespaces should exist
+      # Both documents should be Roles (no ClusterRole present)
       - isKind:
-          of: ClusterRole
+          of: Role
         documentSelector:
           path: metadata.name
-          value: rbac-external-dns-namespaces
+          value: rbac-external-dns
+        template: clusterrole.yaml
+      - isKind:
+          of: Role
+        documentSelector:
+          path: metadata.name
+          value: rbac-external-dns-gateway
         template: clusterrole.yaml
 
       # Gateway role should exist and have gateway permissions only

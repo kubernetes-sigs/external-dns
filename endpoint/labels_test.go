@@ -105,7 +105,7 @@ func (suite *LabelsSuite) TestEncryptionFailed() {
 	_ = foo.Serialize(false, true, []byte("wrong-key"))
 
 	suite.True(fatalCrash, "should fail if encryption key is wrong")
-	suite.Contains(b.String(), "Failed to encrypt the text")
+	suite.Contains(b.String(), "Failed to encrypt the text:")
 }
 
 func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {

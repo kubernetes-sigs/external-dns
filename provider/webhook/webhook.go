@@ -25,6 +25,7 @@ import (
 	"net/url"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -100,7 +101,12 @@ func init() {
 	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
 }
 
-func NewWebhookProvider(u string) (*WebhookProvider, error) {
+// New creates a webhook provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(cfg.WebhookProviderURL)
+}
+
+func newProvider(u string) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -155,7 +161,7 @@ func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, e
 }
 
 // Records will make a GET call to remoteServerURL/records and return the results
-func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p WebhookProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	recordsRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
 

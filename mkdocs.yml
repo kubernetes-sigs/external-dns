@@ -38,6 +38,7 @@ nav:
       - Rate Limits: docs/advanced/rate-limits.md
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md
+      - Domain Filter: docs/advanced/domain-filter.md
       - Configuration Precedence: docs/advanced/configuration-precedence.md
       - Split Horizon DNS: docs/advanced/split-horizon.md
   - Contributing:
@@ -71,8 +72,9 @@ markdown_extensions:
   - extra
   - admonition
   - smarty
-  - sane_lists
   - nl2br
+  - mdx_truly_sane_lists:
+      nested_indent: 2
   - attr_list
   - def_list
   - footnotes

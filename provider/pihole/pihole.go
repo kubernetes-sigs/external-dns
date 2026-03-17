@@ -22,6 +22,9 @@ import (
 	"slices"
 
 	"github.com/google/go-cmp/cmp"
+	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -31,6 +34,10 @@ import (
 // ErrNoPiholeServer is returned when there is no Pihole server configured
 // in the environment.
 var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
+
+const (
+	warningMsg = "Pi-hole v5 API support is deprecated. Set --pihole-api-version=\"6\" to use the Pi-hole v6 API. The v5 API will be removed in a future release."
+)
 
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
@@ -61,14 +68,29 @@ type piholeEntryKey struct {
 	RecordType string
 }
 
-// NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
-func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
+// New creates a Pi-hole provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		PiholeConfig{
+			Server:                cfg.PiholeServer,
+			Password:              cfg.PiholePassword,
+			TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+			DomainFilter:          domainFilter,
+			DryRun:                cfg.DryRun,
+			APIVersion:            cfg.PiholeApiVersion,
+		},
+	)
+}
+
+// newProvider initializes a new Pi-hole Local DNS based Provider.
+func newProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	var api piholeAPI
 	var err error
 	switch cfg.APIVersion {
 	case "6":
 		api, err = newPiholeClientV6(cfg)
 	default:
+		log.Warn(warningMsg)
 		api, err = newPiholeClient(cfg)
 	}
 	if err != nil {

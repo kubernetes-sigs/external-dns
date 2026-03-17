@@ -78,8 +78,13 @@ type LinodeChangeDelete struct {
 	DomainRecord linodego.DomainRecord
 }
 
-// NewLinodeProvider initializes a new Linode DNS based Provider.
-func NewLinodeProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
+// New creates a Linode provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.DryRun)
+}
+
+// newProvider initializes a new Linode DNS based Provider.
+func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
 	token, ok := os.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")

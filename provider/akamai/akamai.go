@@ -28,6 +28,8 @@ import (
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -87,8 +89,24 @@ type akamaiZone struct {
 	Zone       string `json:"zone"`
 }
 
-// NewAkamaiProvider initializes a new Akamai DNS based Provider.
-func NewAkamaiProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provider.Provider, error) {
+// New creates an Akamai provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		AkamaiConfig{
+			DomainFilter:          domainFilter,
+			ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+			ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
+			ClientToken:           cfg.AkamaiClientToken,
+			ClientSecret:          cfg.AkamaiClientSecret,
+			AccessToken:           cfg.AkamaiAccessToken,
+			EdgercPath:            cfg.AkamaiEdgercPath,
+			EdgercSection:         cfg.AkamaiEdgercSection,
+			DryRun:                cfg.DryRun,
+		}, nil)
+}
+
+// newAkamaiProvider initializes a new Akamai DNS based Provider.
+func newProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provider.Provider, error) {
 	var edgeGridConfig edgegrid.Config
 
 	// environment overrides edgerc file but config needs to be complete
@@ -255,7 +273,7 @@ func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {

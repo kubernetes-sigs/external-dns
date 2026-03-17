@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -32,9 +33,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
-
-	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/source/informers"
 
@@ -70,18 +68,12 @@ func NewF5TransportServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
+	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
-	_, _ = transportServerInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-			},
-		},
-	)
+	_, _ = transportServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -99,8 +91,8 @@ func NewF5TransportServerSource(
 		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
+		namespace:               cfg.Namespace,
+		annotationFilter:        cfg.AnnotationFilter,
 		unstructuredConverter:   uc,
 	}, nil
 }
@@ -133,12 +125,9 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
-	endpoints, err := ts.endpointsFromTransportServers(transportServers)
-	if err != nil {
-		return nil, err
-	}
+	endpoints := ts.endpointsFromTransportServers(transportServers)
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
@@ -148,7 +137,7 @@ func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler fu
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
-func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) ([]*endpoint.Endpoint, error) {
+func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
@@ -170,10 +159,10 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 			targets = append(targets, transportServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

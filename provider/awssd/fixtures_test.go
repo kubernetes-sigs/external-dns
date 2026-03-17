@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -160,7 +161,7 @@ func (s *AWSSDClientStub) ListServices(_ context.Context, input *sd.ListServices
 	}, nil
 }
 
-func (s *AWSSDClientStub) RegisterInstance(ctx context.Context, input *sd.RegisterInstanceInput, _ ...func(options *sd.Options)) (*sd.RegisterInstanceOutput, error) {
+func (s *AWSSDClientStub) RegisterInstance(_ context.Context, input *sd.RegisterInstanceInput, _ ...func(options *sd.Options)) (*sd.RegisterInstanceOutput, error) {
 	srvInstances, ok := s.instances[*input.ServiceId]
 	if !ok {
 		srvInstances = make(map[string]*sdtypes.Instance)
