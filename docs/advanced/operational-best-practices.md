@@ -46,10 +46,10 @@ section below.
 
 **Scaling**
 
-- [ ] Raise [`--request-timeout`](#request-timeout) (default `30s`) if you observe
-  `context deadline exceeded` during startup on large clusters.
-- [ ] Tune [`--interval`, `--events`, and `--min-event-sync-interval`](#sync-interval-and-event-driven-reconciliation)
-  for your expected change frequency.
+- [ ] Scope resources at every level — service type, label, annotation, domain, zone ID. See
+  [Scope resources](#scope-resources).
+- [ ] Split into multiple instances for large zone sets or source mixes, each with a distinct --txt-owner-id` and non-overlapping domain scope. See [Split instances](#split-instances).
+- [ ] Tune reconcile frequency and raise `--request-timeout` on large clusters. See [Reduce reconcile pressure](#reduce-reconcile-pressure).
 
 **Observability**
 
@@ -226,33 +226,37 @@ RBAC is scoped tightly enough to surface it.
 
 ## Scaling on Large Clusters
 
-### Request timeout
+Scaling external-dns comes down to three principles applied in combination:
 
-The `--request-timeout` flag governs both Kubernetes API client request timeouts and informer
-cache synchronization. The default is `30s`. On clusters with many objects per resource type the
-informer sync alone can exceed this, causing startup failures with `context deadline exceeded`.
+### Scope resources
 
-```sh
---request-timeout=120s
-```
+The fewer Kubernetes objects external-dns watches and the fewer DNS zones it manages, the lower
+its steady-state memory, API call volume, and reconcile duration. Apply filters at every
+available level — service type, label, annotation, domain, and zone ID.
 
-Raise this value when you see deadline errors in logs during startup. A value of 2–3× the
-expected informer sync duration is a reasonable starting point; setting it too high can mask
-genuine connectivity problems.
+See [Resource Scope and Memory](#resource-scope-and-memory) and
+[Domain Filter](domain-filter.md) for details.
 
-### Sync interval and event-driven reconciliation
+### Split instances
 
-For large zones with infrequent record changes, a longer `--interval` reduces steady-state API
-load:
+A single external-dns instance managing a large number of zones or sources will have a large
+reconcile surface and long reconcile cycles. Splitting into multiple instances — each responsible
+for a distinct zone set, namespace, or source type — reduces per-instance load and makes
+failures smaller in blast radius.
 
-```sh
---interval=5m
---events                          # also trigger sync on Kubernetes resource changes
---min-event-sync-interval=30s     # debounce bursts of rapid changes
-```
+Each instance must have a distinct `--txt-owner-id` and non-overlapping `--domain-filter` or
+`--zone-id-filter` scopes to avoid ownership conflicts. See
+[State Conflicts and Ownership](#state-conflicts-and-ownership).
 
-For batch change sizing, per-provider caching, and provider-specific rate-limit flags, see
-[DNS provider API rate limits](rate-limits.md).
+### Reduce reconcile pressure
+
+Tune reconcile frequency to match your actual change rate rather than running at the default
+interval. Use event-driven reconciliation to react quickly to real changes while keeping
+background polling infrequent. Raise `--request-timeout` if informer cache sync exceeds the
+default on large clusters.
+
+For per-provider flags covering batch change sizing, record caching, and zone list caching, see
+[DNS provider API rate limits](rate-limits.md) and [Provider Notes](#provider-notes).
 
 ## Observability
 
