@@ -112,6 +112,10 @@ The targets of the DNS entries created from a \*Route are sourced from the follo
 2. Otherwise, iterates over that parent Gateway's `status.addresses`,
    adding each address's `value`.
 
+   If the `--resolve-gateway-load-balancer-hostname` flag is specified, any address with type
+   `Hostname` is queried through DNS and any resulting IP addresses are added instead of the hostname.
+   A DNS query failure results in zero targets being added for that address.
+
 The targets from each parent Gateway matching the \*Route are then combined and de-duplicated.
 
 ## Dualstack Routes

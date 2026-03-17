@@ -143,9 +143,9 @@ type gatewayRouteSource struct {
 
 	nsInformer coreinformers.NamespaceInformer
 
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
-	ignoreHostnameAnnotation bool
+	fqdnTemplate                *template.Template
+	combineFQDNAnnotation       bool
+	ignoreHostnameAnnotation    bool
 	resolveLoadBalancerHostname bool
 }
 
@@ -227,10 +227,10 @@ func newGatewayRouteSource(
 
 		nsInformer: nsInformer,
 
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    config.CombineFQDNAndAnnotation,
-		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
-		resolveLoadBalancerHostname: config.ResolveLoadBalancerHostname,
+		fqdnTemplate:                tmpl,
+		combineFQDNAnnotation:       config.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation:    config.IgnoreHostnameAnnotation,
+		resolveLoadBalancerHostname: config.ResolveGatewayLoadBalancerHostname,
 	}
 	return src, nil
 }

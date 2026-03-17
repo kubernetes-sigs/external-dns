@@ -11,6 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
+| `--[no-]resolve-gateway-load-balancer-hostname` | Resolve the hostname of LoadBalancer addresses in Gateway status to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
 | `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
