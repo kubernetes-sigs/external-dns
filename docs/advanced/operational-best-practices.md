@@ -72,9 +72,9 @@ section below.
 - [ ] Configure batch change size and interval for your provider if you manage large or
   frequently-changing zones. See [DNS provider API rate limits](rate-limits.md) for per-provider
   flags.
-- [ ] Enable zone list caching if your provider supports it. Zone enumeration is an API call on
+- [ ] Enable zone caching if your provider supports it. Zone enumeration is an API call on
   every reconcile; caching it reduces provider API pressure significantly for stable zone sets.
-  See [Zone list caching](#zone-list-caching) for supported providers and flags.
+  See [Zone caching](#zone-list-caching) for supported providers and flags.
 - [ ] Scope provider credentials (API keys, IAM roles) to only the zones external-dns manages.
   Zone filtering flags express intent but are not an enforcement boundary — the credentials are.
   See [Scope provider credentials to specific zones](#scope-provider-credentials-to-specific-zones).
