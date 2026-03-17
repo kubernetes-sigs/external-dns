@@ -57,11 +57,12 @@ type PodDependencies struct {
 
 // ScenarioConfig holds the wrapper configuration for a scenario.
 type ScenarioConfig struct {
-	Sources             []string `json:"sources"`
-	DefaultTargets      []string `json:"defaultTargets"`
-	ForceDefaultTargets bool     `json:"forceDefaultTargets"`
-	TargetNetFilter     []string `json:"targetNetFilter"`
-	ServiceTypeFilter   []string `json:"serviceTypeFilter"`
+	Sources                     []string `json:"sources"`
+	DefaultTargets              []string `json:"defaultTargets"`
+	ForceDefaultTargets         bool     `json:"forceDefaultTargets"`
+	TargetNetFilter             []string `json:"targetNetFilter"`
+	ServiceTypeFilter           []string `json:"serviceTypeFilter"`
+	ResolveLoadBalancerHostname bool     `json:"resolveLoadBalancerHostname"`
 }
 
 // ParsedResources holds the parsed Kubernetes resources from a scenario.

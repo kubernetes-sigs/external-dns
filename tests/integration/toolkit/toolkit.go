@@ -239,11 +239,12 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 // scenarioToConfig creates a source.Config for testing with the scenario config.
 func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
 	return source.NewSourceConfig(&externaldns.Config{
-		Sources:             scenarioCfg.Sources,
-		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
-		DefaultTargets:      scenarioCfg.DefaultTargets,
-		ForceDefaultTargets: scenarioCfg.ForceDefaultTargets,
-		TargetNetFilter:     scenarioCfg.TargetNetFilter,
+		Sources:                     scenarioCfg.Sources,
+		ServiceTypeFilter:           scenarioCfg.ServiceTypeFilter,
+		DefaultTargets:              scenarioCfg.DefaultTargets,
+		ForceDefaultTargets:         scenarioCfg.ForceDefaultTargets,
+		TargetNetFilter:             scenarioCfg.TargetNetFilter,
+		ResolveLoadBalancerHostname: scenarioCfg.ResolveLoadBalancerHostname,
 	})
 }
 
@@ -267,7 +268,8 @@ func CreateWrappedSource(
 		wrappers.WithNAT64Networks(cfg.NAT64Networks),
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
+		wrappers.WithMinTTL(cfg.MinTTL),
+		wrappers.WithResolveLoadBalancerHostname(cfg.ResolveLoadBalancerHostname))
 
 	return wrappers.WrapSources(sources, opts)
 }

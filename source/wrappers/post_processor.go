@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"maps"
 	"net"
 	"strings"
 	"time"
@@ -105,10 +106,6 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 
-	if !pp.cfg.isConfigured {
-		return endpoints, nil
-	}
-
 	var result []*endpoint.Endpoint
 	for _, ep := range endpoints {
 		if ep == nil {
@@ -124,7 +121,13 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				ep.WithProviderSpecific("alias", "true")
 			}
 		}
-		if pp.cfg.resolveLoadBalancerHostname && ep.RecordType == endpoint.RecordTypeCNAME {
+		// Per-endpoint annotation overrides the global flag.
+		shouldResolve := pp.cfg.resolveLoadBalancerHostname
+		if v, ok := ep.Labels[annotations.ResolveTargetKey]; ok {
+			shouldResolve = v == "true"
+			delete(ep.Labels, annotations.ResolveTargetKey)
+		}
+		if shouldResolve && ep.RecordType == endpoint.RecordTypeCNAME {
 			var ipTargets endpoint.Targets
 			for _, target := range ep.Targets {
 				ips, err := pp.cfg.lookupIP(target)
@@ -142,9 +145,7 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			}
 			resolved := endpoint.EndpointsForHostname(ep.DNSName, ipTargets, ep.RecordTTL, ep.ProviderSpecific, ep.SetIdentifier, "")
 			for _, r := range resolved {
-				for k, v := range ep.Labels {
-					r.Labels[k] = v
-				}
+				maps.Copy(r.Labels, ep.Labels)
 			}
 			result = append(result, resolved...)
 			continue

@@ -67,6 +67,11 @@ var (
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	// The annotation used for defining the desired hostname source for gateways
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+	// ResolveTargetKey is the per-resource annotation that controls whether
+	// the PostProcessor should resolve the LoadBalancer hostname to IP addresses.
+	// "true" enables resolution even when the global flag is off;
+	// "false" skips resolution even when the global flag is on.
+	ResolveTargetKey = AnnotationKeyPrefix + "resolve-target"
 )
 
 // SetAnnotationPrefix sets a custom annotation prefix and rebuilds all annotation keys.
@@ -103,4 +108,5 @@ func SetAnnotationPrefix(prefix string) {
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+	ResolveTargetKey = AnnotationKeyPrefix + "resolve-target"
 }

@@ -9,6 +9,7 @@
 # | config.forceDefaultTargets             | bool     | --force-default-targets flag             |
 # | config.targetNetFilter                 | []string | --target-net-filter flag values          |
 # | config.serviceTypeFilter               | []string | --service-type-filter flag values        |
+# | config.resolveLoadBalancerHostname      | bool     | --resolve-load-balancer-hostname flag    |
 # | resources                              | []object | K8s resources with optional dependencies |
 # | resources[].resource                   | object   | K8s resource (Ingress, Service, etc.)    |
 # | resources[].dependencies               | object   | Auto-generated dependent resources       |
@@ -231,3 +232,126 @@ scenarios:
       - dnsName: example.local
         targets: ["1.2.3.4"]
         recordType: A
+
+  - name: ingress-loadbalancer-hostname-resolved-to-a-record
+    description: >
+      Test that when --resolve-load-balancer-hostname is enabled, an Ingress whose
+      LoadBalancer status contains a hostname (example.com) has the CNAME resolved
+      to A records with the known IP addresses of example.com.
+    config:
+      sources: ["ingress"]
+      resolveLoadBalancerHostname: true
+    resources:
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: svc.example.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: example.com
+    expected:
+      - dnsName: svc.example.com
+        targets: ["104.18.26.120", "104.18.27.120"]
+        recordType: A
+      - dnsName: svc.example.com
+        targets: ["2606:4700::6812:1a78", "2606:4700::6812:1b78"]
+        recordType: AAAA
+
+  - name: ingress-loadbalancer-hostname-resolved-via-annotation
+    description: >
+      Test that the per-resource annotation
+      external-dns.alpha.kubernetes.io/resolve-target: "true"
+      triggers hostname resolution even when the global --resolve-load-balancer-hostname
+      flag is not set.
+    config:
+      sources: ["ingress"]
+    resources:
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              external-dns.alpha.kubernetes.io/resolve-target: "true"
+          spec:
+            rules:
+              - host: svc.example.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: example.com
+    expected:
+      - dnsName: svc.example.com
+        targets: ["104.18.26.120", "104.18.27.120"]
+        recordType: A
+      - dnsName: svc.example.com
+        targets: ["2606:4700::6812:1a78", "2606:4700::6812:1b78"]
+        recordType: AAAA
+
+  - name: ingress-loadbalancer-hostname-kept-as-cname-via-annotation
+    description: >
+      Test that the per-resource annotation
+      external-dns.alpha.kubernetes.io/resolve-target: "false"
+      suppresses hostname resolution even when the global --resolve-load-balancer-hostname
+      flag is enabled.
+    config:
+      sources: ["ingress"]
+      resolveLoadBalancerHostname: true
+    resources:
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              external-dns.alpha.kubernetes.io/resolve-target: "false"
+          spec:
+            rules:
+              - host: svc.example.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: lb.example.com
+    expected:
+      - dnsName: svc.example.com
+        targets: ["lb.example.com"]
+        recordType: CNAME
