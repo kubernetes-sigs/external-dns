@@ -127,6 +127,7 @@ This runs [`scripts/generate-crd.sh`](../../scripts/generate-crd.sh) which:
 3. Copies the CRD (with filtered annotations) into `charts/external-dns/crds/`
 
 The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `go.tool.mod` at generation time and is updated automatically.
+
 ### Integration Tests
 
 Integration tests live in `tests/integration/` and verify behavior that spans multiple sources or wrappers together, using a fake Kubernetes client — no real cluster is required.
