@@ -197,7 +197,6 @@ type Config struct {
 	NS1MinTTLSeconds                              int
 	TransIPAccountName                            string
 	TransIPPrivateKeyFile                         string
-	DigitalOceanAPIPageSize                       int
 	ManagedDNSRecordTypes                         []string
 	ExcludeDNSRecordTypes                         []string
 	GoDaddyAPIKey                                 string `secure:"yes"`
@@ -276,7 +275,6 @@ var defaultConfig = &Config{
 	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:                "DNSEndpoint",
 	DefaultTargets:               []string{},
-	DigitalOceanAPIPageSize:      50,
 	DomainFilter:                 []string{},
 	DryRun:                       false,
 	ExcludeDNSRecordTypes:        []string{},
@@ -407,7 +405,6 @@ var ProviderNames = []string{
 	ProviderCivo,
 	ProviderCloudflare,
 	ProviderCoreDNS,
-	ProviderDigitalOcean,
 	ProviderDNSimple,
 	ProviderExoscale,
 	ProviderGandi,
@@ -626,7 +623,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)", defaultConfig.NS1Endpoint, &cfg.NS1Endpoint)
 	b.BoolVar("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)", defaultConfig.NS1IgnoreSSL, &cfg.NS1IgnoreSSL)
 	b.IntVar("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.", cfg.NS1MinTTLSeconds, &cfg.NS1MinTTLSeconds)
-	b.IntVar("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.", defaultConfig.DigitalOceanAPIPageSize, &cfg.DigitalOceanAPIPageSize)
 	// GoDaddy flags
 	b.StringVar("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)", defaultConfig.GoDaddyAPIKey, &cfg.GoDaddyAPIKey)
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)

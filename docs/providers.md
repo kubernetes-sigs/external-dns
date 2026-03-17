@@ -12,7 +12,6 @@ Provider supported configurations
 | Civo          | n/a        | yes     | n/a                   |
 | Cloudflare    | n/a        | yes     | 1                     |
 | CoreDNS       | n/a        | yes     | n/a                   |
-| DigitalOcean  | n/a        | yes     | 300                   |
 | DNSSimple     | n/a        | yes     | 3600                  |
 | Exoscale      | n/a        | yes     | n/a                   |
 | Gandi         | n/a        | no      | 600                   |
