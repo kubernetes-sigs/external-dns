@@ -319,6 +319,16 @@ attempted again. Each restart repeats the cycle, progressively increasing LIST t
 the Kubernetes API server. On large clusters or at high restart frequency this can contribute to
 Kubernetes API throttling that affects other controllers and workloads — not just external-dns.
 
+```mermaid
+flowchart LR
+    A[Conflict error<br>from provider] --> B[Hard exit]
+    B --> C[kubelet restarts pod]
+    C --> D[Informers resync<br>full LIST calls to<br>Kubernetes API]
+    D --> E[Same conflicting<br>batch applied]
+    E --> A
+    D -. "pressure accumulates\non each restart" .-> F[Kubernetes API<br>throttling]
+```
+
 A hard error that kills the process does not increment `external_dns_controller_consecutive_soft_errors`
 — that metric tracks soft errors only. Monitor pod restarts via
 `kube_pod_container_status_restarts_total` and alert on crashloop backoff (`CrashLoopBackOff`
