@@ -51,9 +51,7 @@ func main() {
 		os.Exit(1)
 	}
 	content += "\n"
-	if err := utils.WriteToFile(path, content); err != nil {
-		_ = utils.WriteToFile(path, content)
-	}
+	_ = utils.WriteToFile(path, content)
 }
 
 func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
