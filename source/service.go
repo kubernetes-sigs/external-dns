@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"net"
 	"slices"
 	"sort"
 	"strings"
@@ -661,13 +660,8 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 		}
 		if lb.Hostname != "" {
 			if resolveLoadBalancerHostname {
-				ips, err := net.LookupIP(lb.Hostname)
-				if err != nil {
-					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
-					continue
-				}
-				for _, ip := range ips {
-					targets = append(targets, ip.String())
+				for _, ip := range resolveHostnameToIPs(lb.Hostname) {
+					targets = append(targets, ip)
 				}
 			} else {
 				targets = append(targets, lb.Hostname)

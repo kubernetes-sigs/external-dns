@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"net"
 	"sort"
 	"strings"
 	"text/template"
@@ -427,13 +426,8 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
 						if c.src.resolveLoadBalancerHostname && addr.Type != nil && *addr.Type == v1.HostnameAddressType {
-							ips, err := net.LookupIP(addr.Value)
-							if err != nil {
-								log.Errorf("Unable to resolve %q: %v", addr.Value, err)
-								continue
-							}
-							for _, ip := range ips {
-								hostTargets[host] = append(hostTargets[host], ip.String())
+							for _, ip := range resolveHostnameToIPs(addr.Value) {
+								hostTargets[host] = append(hostTargets[host], ip)
 							}
 						} else {
 							hostTargets[host] = append(hostTargets[host], addr.Value)

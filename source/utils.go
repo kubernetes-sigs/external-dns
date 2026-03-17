@@ -15,6 +15,7 @@ package source
 
 import (
 	"fmt"
+	"net"
 	"slices"
 	"strings"
 
@@ -22,6 +23,21 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
+
+// resolveHostnameToIPs resolves a hostname to its IP addresses via DNS.
+// On failure it logs the error and returns nil, so the caller can skip the address.
+func resolveHostnameToIPs(hostname string) []string {
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		log.Errorf("Unable to resolve %q: %v", hostname, err)
+		return nil
+	}
+	result := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		result = append(result, ip.String())
+	}
+	return result
+}
 
 // ParseIngress parses an ingress string in the format "namespace/name" or "name".
 // It returns the namespace and name extracted from the string, or an error if the format is invalid.
