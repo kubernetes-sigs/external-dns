@@ -19,13 +19,12 @@ package tlsutils
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
 var (
@@ -159,7 +158,7 @@ func TestCreateTLSConfig(t *testing.T) {
 
 			if tc.caFile != "" {
 				path := fmt.Sprintf("%s/caFile", dir)
-				err := render.WriteToFile(path, tc.caFile)
+				err := os.WriteFile(path, []byte(tc.caFile), 0644)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), path)
 			}
@@ -170,14 +169,14 @@ func TestCreateTLSConfig(t *testing.T) {
 
 			if tc.certFile != "" {
 				path := fmt.Sprintf("%s/certFile", dir)
-				err := render.WriteToFile(path, tc.certFile)
+				err := os.WriteFile(path, []byte(tc.certFile), 0644)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_CERT_FILE", tc.prefix), path)
 			}
 
 			if tc.keyFile != "" {
 				path := fmt.Sprintf("%s/keyFile", dir)
-				err := render.WriteToFile(path, tc.keyFile)
+				err := os.WriteFile(path, []byte(tc.keyFile), 0644)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_KEY_FILE", tc.prefix), path)
 			}
