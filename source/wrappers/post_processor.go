@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"net"
 	"strings"
 	"time"
 
@@ -34,10 +35,12 @@ type postProcessor struct {
 }
 
 type PostProcessorConfig struct {
-	ttl          int64
-	provider     string
-	preferAlias  bool
-	isConfigured bool
+	ttl                         int64
+	provider                    string
+	preferAlias                 bool
+	resolveLoadBalancerHostname bool
+	lookupIP                    func(string) ([]net.IP, error)
+	isConfigured                bool
 }
 
 type PostProcessorOption func(*PostProcessorConfig)
@@ -74,10 +77,24 @@ func WithPostProcessorPreferAlias(enabled bool) PostProcessorOption {
 	}
 }
 
+// WithPostProcessorResolveLoadBalancerHostname enables resolving CNAME targets that are
+// hostnames to their A/AAAA IP addresses via DNS, replacing the CNAME endpoint.
+func WithPostProcessorResolveLoadBalancerHostname(enabled bool) PostProcessorOption {
+	return func(cfg *PostProcessorConfig) {
+		cfg.resolveLoadBalancerHostname = enabled
+		if enabled {
+			cfg.isConfigured = true
+		}
+	}
+}
+
 func NewPostProcessor(source source.Source, opts ...PostProcessorOption) source.Source {
 	cfg := PostProcessorConfig{}
 	for _, opt := range opts {
 		opt(&cfg)
+	}
+	if cfg.lookupIP == nil {
+		cfg.lookupIP = net.LookupIP
 	}
 	return &postProcessor{source: source, cfg: cfg}
 }
@@ -92,8 +109,10 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return endpoints, nil
 	}
 
+	var result []*endpoint.Endpoint
 	for _, ep := range endpoints {
 		if ep == nil {
+			result = append(result, nil)
 			continue
 		}
 		ep.WithMinTTL(pp.cfg.ttl)
@@ -105,9 +124,35 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				ep.WithProviderSpecific("alias", "true")
 			}
 		}
+		if pp.cfg.resolveLoadBalancerHostname && ep.RecordType == endpoint.RecordTypeCNAME {
+			var ipTargets endpoint.Targets
+			for _, target := range ep.Targets {
+				ips, err := pp.cfg.lookupIP(target)
+				if err != nil {
+					log.Errorf("Unable to resolve %q: %v", target, err)
+					continue
+				}
+				for _, ip := range ips {
+					ipTargets = append(ipTargets, ip.String())
+				}
+			}
+			if len(ipTargets) == 0 {
+				// All resolutions failed; skip this endpoint entirely.
+				continue
+			}
+			resolved := endpoint.EndpointsForHostname(ep.DNSName, ipTargets, ep.RecordTTL, ep.ProviderSpecific, ep.SetIdentifier, "")
+			for _, r := range resolved {
+				for k, v := range ep.Labels {
+					r.Labels[k] = v
+				}
+			}
+			result = append(result, resolved...)
+			continue
+		}
+		result = append(result, ep)
 	}
 
-	return endpoints, nil
+	return result, nil
 }
 
 func (pp *postProcessor) AddEventHandler(ctx context.Context, handler func()) {

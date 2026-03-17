@@ -174,6 +174,7 @@ type Config struct {
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
 	ResolveServiceLoadBalancerHostname            bool
+	ResolveLoadBalancerHostname                   bool
 	RFC2136Host                                   []string
 	RFC2136Port                                   int
 	RFC2136Zone                                   []string
@@ -505,6 +506,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
 	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
+	b.BoolVar("resolve-load-balancer-hostname", "Resolve the hostname of LoadBalancer addresses in source status to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
 	// Flags related to Gloo

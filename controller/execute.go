@@ -204,7 +204,8 @@ func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error)
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL),
 		wrappers.WithProvider(cfg.Provider),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
+		wrappers.WithPreferAlias(cfg.PreferAlias),
+		wrappers.WithResolveLoadBalancerHostname(cfg.ResolveLoadBalancerHostname))
 	return wrappers.WrapSources(sources, opts)
 }
 
