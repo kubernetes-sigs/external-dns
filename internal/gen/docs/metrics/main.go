@@ -26,7 +26,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 
 	// these imports are necessary for the code generation process.
@@ -51,7 +51,7 @@ func main() {
 		os.Exit(1)
 	}
 	content += "\n"
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
@@ -70,11 +70,11 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 		runtimeMetrics = []string{}
 	}
 
-	return utils.RenderTemplate(templates, "metrics.gotpl", templateData{
+	return render.RenderTemplate(templates, "metrics.gotpl", templateData{
 		Metrics:        m.Metrics,
 		RuntimeMetrics: runtimeMetrics,
 		ColWidths:      computeColumnWidths(m.Metrics),
-		RuntimeWidth:   utils.ComputeColumnWidth("Name", runtimeMetrics),
+		RuntimeWidth:   render.ComputeColumnWidth("Name", runtimeMetrics),
 	})
 }
 
@@ -122,9 +122,9 @@ type columnWidths struct {
 
 func computeColumnWidths(ms []*metrics.Metric) columnWidths {
 	return columnWidths{
-		Name:      utils.MapColumn("Name", ms, func(m *metrics.Metric) string { return m.Name }),
-		Type:      utils.MapColumn("Metric Type", ms, func(m *metrics.Metric) string { return m.Type }),
-		Subsystem: utils.MapColumn("Subsystem", ms, func(m *metrics.Metric) string { return m.Subsystem }),
-		Help:      utils.MapColumn("Help", ms, func(m *metrics.Metric) string { return m.Help }),
+		Name:      render.MapColumn("Name", ms, func(m *metrics.Metric) string { return m.Name }),
+		Type:      render.MapColumn("Metric Type", ms, func(m *metrics.Metric) string { return m.Type }),
+		Subsystem: render.MapColumn("Subsystem", ms, func(m *metrics.Metric) string { return m.Subsystem }),
+		Help:      render.MapColumn("Help", ms, func(m *metrics.Metric) string { return m.Help }),
 	}
 }

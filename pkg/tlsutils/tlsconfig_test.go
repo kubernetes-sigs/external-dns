@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
 var (
@@ -159,7 +159,7 @@ func TestCreateTLSConfig(t *testing.T) {
 
 			if tc.caFile != "" {
 				path := fmt.Sprintf("%s/caFile", dir)
-				err := utils.WriteToFile(path, tc.caFile)
+				err := render.WriteToFile(path, tc.caFile)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), path)
 			}
@@ -170,14 +170,14 @@ func TestCreateTLSConfig(t *testing.T) {
 
 			if tc.certFile != "" {
 				path := fmt.Sprintf("%s/certFile", dir)
-				err := utils.WriteToFile(path, tc.certFile)
+				err := render.WriteToFile(path, tc.certFile)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_CERT_FILE", tc.prefix), path)
 			}
 
 			if tc.keyFile != "" {
 				path := fmt.Sprintf("%s/keyFile", dir)
-				err := utils.WriteToFile(path, tc.keyFile)
+				err := render.WriteToFile(path, tc.keyFile)
 				require.NoError(t, err)
 				t.Setenv(fmt.Sprintf("%s_KEY_FILE", tc.prefix), path)
 			}

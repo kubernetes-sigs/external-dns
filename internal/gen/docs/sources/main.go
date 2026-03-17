@@ -28,7 +28,7 @@ import (
 	"slices"
 	"strings"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
 const (
@@ -84,7 +84,7 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
 		os.Exit(1)
 	}
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 // discoverSources scans the source directory and discovers all source implementations
@@ -116,13 +116,13 @@ type columnWidths struct {
 
 func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
-		Name:         utils.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
-		Resources:    utils.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
-		Filters:      utils.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
-		Namespace:    utils.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
-		FQDNTemplate: utils.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
-		Events:       utils.MapColumn("Events", sources, func(s Source) string { return s.Events }),
-		Category:     utils.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
+		Name:         render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
+		Resources:    render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
+		Filters:      render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
+		Namespace:    render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
+		FQDNTemplate: render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
+		Events:       render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		Category:     render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
 }
 
@@ -132,7 +132,7 @@ type templateData struct {
 }
 
 func (s *Sources) generateMarkdown() (string, error) {
-	return utils.RenderTemplate(templates, "sources.gotpl", templateData{
+	return render.RenderTemplate(templates, "sources.gotpl", templateData{
 		Sources:   *s,
 		ColWidths: computeColumnWidths(*s),
 	})

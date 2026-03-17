@@ -22,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -56,7 +56,7 @@ func main() {
 		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
 	}
 	content += "\n"
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 func computeFlags() Flags {
@@ -92,8 +92,8 @@ type columnWidths struct {
 
 func computeFlagColumnWidths(flags Flags) columnWidths {
 	return columnWidths{
-		Flag:        utils.MapColumn("Flag", flags, func(f Flag) string { return f.Name }),
-		Description: utils.MapColumn("Description", flags, func(f Flag) string { return f.Description }),
+		Flag:        render.MapColumn("Flag", flags, func(f Flag) string { return f.Name }),
+		Description: render.MapColumn("Description", flags, func(f Flag) string { return f.Description }),
 	}
 }
 
@@ -103,7 +103,7 @@ type templateData struct {
 }
 
 func (f *Flags) generateMarkdownTable() (string, error) {
-	return utils.RenderTemplate(templates, "flags.gotpl", templateData{
+	return render.RenderTemplate(templates, "flags.gotpl", templateData{
 		Flags:     *f,
 		ColWidths: computeFlagColumnWidths(*f),
 	})
