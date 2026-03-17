@@ -96,7 +96,7 @@ func getRuntimeMetrics(gatherer prometheus.Gatherer) []string {
 		return nil
 	}
 
-	var runtimeMetrics []string
+	runtimeMetrics := make([]string, 0, len(mfs))
 	for _, mf := range mfs {
 		name := mf.GetName()
 		if !strings.HasPrefix(name, "external_dns") {
