@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"net"
+	"net/netip"
 	"testing"
 	"time"
 
@@ -32,6 +34,7 @@ import (
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -51,6 +54,15 @@ func gatewayStatus(ips ...string) v1.GatewayStatus {
 		addrs[i] = v1.GatewayStatusAddress{Type: &typ, Value: ip}
 	}
 	return v1.GatewayStatus{Addresses: addrs}
+}
+
+func gatewayStatusWithHostname(hostname string) v1.GatewayStatus {
+	typ := v1.HostnameAddressType
+	return v1.GatewayStatus{
+		Addresses: []v1.GatewayStatusAddress{
+			{Type: &typ, Value: hostname},
+		},
+	}
 }
 
 func httpRouteStatus(refs ...v1.ParentReference) v1.HTTPRouteStatus {
@@ -1646,6 +1658,83 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			logExpectations: []string{
 				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
 			},
+		},
+		{
+			title:      "GatewayHostnameAddressNoresolution",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatusWithHostname("lb.example.com"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{gwParentRef("default", "test")},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			// Without the flag, hostname addresses are passed through as CNAME targets.
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("test.example.internal", endpoint.RecordTypeCNAME, 0, "lb.example.com"),
+			},
+		},
+		{
+			title: "GatewayHostnameAddressResolution",
+			config: Config{
+				ResolveGatewayLoadBalancerHostname: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatusWithHostname("example.com"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{gwParentRef("default", "test")},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			// With the flag, hostname addresses are resolved to IPs.
+			endpoints: func() []*endpoint.Endpoint {
+				ip4, _ := net.DefaultResolver.LookupNetIP(context.Background(), "ip4", "example.com")
+				ip6, _ := net.DefaultResolver.LookupNetIP(context.Background(), "ip6", "example.com")
+				all := append([]netip.Addr(nil), ip4...)
+				all = append(all, ip6...)
+				return []*endpoint.Endpoint{
+					{
+						DNSName:    "test.example.internal",
+						RecordType: endpoint.RecordTypeA,
+						Targets:    testutils.NewTargetsFromAddr(ip4),
+						RecordTTL:  0,
+					},
+					{
+						DNSName:    "test.example.internal",
+						RecordType: endpoint.RecordTypeAAAA,
+						Targets:    testutils.NewTargetsFromAddr(ip6),
+						RecordTTL:  0,
+					},
+				}
+			}(),
 		},
 	}
 	for _, tt := range tests {
