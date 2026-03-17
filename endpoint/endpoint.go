@@ -441,7 +441,6 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
-<<<<<<< feat-metric-skipped_records_owner_mismatch_total
 // GetNakedDomain returns the parent domain of the DNS name (without the first label).
 // For example, "www.example.com" returns "example.com".
 // For apex/two-label names like "example.com", the full name is returned unchanged.
@@ -454,7 +453,8 @@ func (e *Endpoint) GetNakedDomain() string {
 		return e.DNSName
 	}
 	return parts[1]
-=======
+}
+
 // NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
 // It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
 func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {
@@ -464,7 +464,6 @@ func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, err
 	}
 	ptrName := strings.TrimSuffix(revAddr, ".")
 	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
->>>>>>> master
 }
 
 func (e *Endpoint) String() string {

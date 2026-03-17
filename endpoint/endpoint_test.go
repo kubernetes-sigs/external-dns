@@ -1682,7 +1682,6 @@ func TestGetBoolProviderSpecificProperty(t *testing.T) {
 	}
 }
 
-<<<<<<< feat-metric-skipped_records_owner_mismatch_total
 func TestGetOwnerId(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1804,7 +1803,11 @@ func TestGetNakedDomain(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.endpoint.GetNakedDomain()
 			assert.Equal(t, tt.expected, result)
-=======
+
+		})
+	}
+}
+
 func TestRequestedRecordType(t *testing.T) {
 	ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4").
 		WithProviderSpecific(ProviderSpecificRecordType, "ptr")
@@ -1865,7 +1868,6 @@ func TestNewPTREndpoint(t *testing.T) {
 			assert.Equal(t, RecordTypePTR, ep.RecordType)
 			assert.Equal(t, tt.ttl, ep.RecordTTL)
 			assert.Equal(t, Targets(tt.hostnames), ep.Targets)
->>>>>>> master
 		})
 	}
 }
