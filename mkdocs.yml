@@ -35,6 +35,7 @@ nav:
       - Monitoring: docs/monitoring/*
       - MultiTarget: docs/proposal/multi-target.md
       - NAT64: docs/advanced/nat64.md
+      - PTR Records: docs/advanced/ptr-records.md
       - Rate Limits: docs/advanced/rate-limits.md
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md

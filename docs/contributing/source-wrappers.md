@@ -32,6 +32,7 @@ Wrappers solve these key challenges:
 | `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
 |    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
 |   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
+|    `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
 
 ### Use Cases
 
@@ -117,6 +118,8 @@ source := NewMultiSource(actualSources, defaultTargets)
 source = NewDedupSource(source)
 source = NewNAT64Source(source, cfg.NAT64Networks)
 source = NewTargetFilterSource(source, targetFilter)
+source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))
+source = NewPTRSource(source, createPTR)
 ```
 
 Each wrapper processes the output of the previous one.
@@ -154,6 +157,8 @@ sequenceDiagram
     DedupWrapper->>Source: Call Endpoints(ctx)
     Source-->>DedupWrapper: Return []*Endpoint
     DedupWrapper-->>Wrapper: Return de-duplicated []*Endpoint
+    Wrapper-->>Wrapper: PostProcessor: set TTL, alias
+    Wrapper-->>Wrapper: PTRSource: generate PTR from A/AAAA
     Wrapper-->>Plan: Return transformed []*Endpoint
 
     ExternalDNS->>Provider: ApplyChanges(plan)
