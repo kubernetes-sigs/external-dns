@@ -33,6 +33,8 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
+	ptrSupported        bool            // PTR is in --managed-record-types
+	createPTR           bool            // --create-ptr default for all A/AAAA records
 	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
@@ -96,6 +98,25 @@ func WithPreferAlias(enabled bool) Option {
 	}
 }
 
+// WithPTRSupported indicates whether PTR is included in --managed-record-types.
+// When false the PTR source wrapper is not installed at all, so no reverse
+// records are generated regardless of the --create-ptr flag.
+func WithPTRSupported(supported bool) Option {
+	return func(o *Config) {
+		o.ptrSupported = supported
+	}
+}
+
+// WithCreatePTR sets the global default for automatic PTR record creation
+// (the --create-ptr flag). When true, every A/AAAA endpoint gets a PTR record
+// unless the resource opts out via annotation. When false, only resources that
+// explicitly request PTR via annotation produce reverse records.
+func WithCreatePTR(enabled bool) Option {
+	return func(o *Config) {
+		o.createPTR = enabled
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -135,6 +156,10 @@ func wrapSources(
 	if targetFilter.IsEnabled() {
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)
 		opts.addSourceWrapper("target-filter")
+	}
+	if opts.ptrSupported {
+		combinedSource = NewPTRSource(combinedSource, opts.createPTR)
+		opts.addSourceWrapper("ptr")
 	}
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))
