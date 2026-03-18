@@ -39,6 +39,8 @@ func Build(ctx context.Context, cfg *source.Config) (source.Source, error) {
 		WithMinTTL(cfg.MinTTL),
 		WithProvider(cfg.Provider),
 		WithPreferAlias(cfg.PreferAlias),
+		WithPTRSupported(cfg.PTRSupported),
+		WithCreatePTR(cfg.CreatePTR),
 	)
 	return wrapSources(sources, opts)
 }

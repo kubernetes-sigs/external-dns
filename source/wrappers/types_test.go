@@ -99,7 +99,7 @@ func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
 		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig() // createPTR defaults to false
-	src, err := WrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
 	require.NoError(t, err)
 	assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
 
@@ -114,7 +114,7 @@ func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig(WithPTRSupported(true), WithCreatePTR(true))
-	src, err := WrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
 	require.NoError(t, err)
 	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
 
@@ -131,7 +131,7 @@ func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
 		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig(WithPTRSupported(true)) // createPTR defaults to false
-	src, err := WrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
 	require.NoError(t, err)
 	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
 

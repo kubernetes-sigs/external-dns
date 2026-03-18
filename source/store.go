@@ -102,6 +102,8 @@ type Config struct {
 	MinTTL                         time.Duration
 	UnstructuredResources          []string
 	PreferAlias                    bool
+	PTRSupported                   bool
+	CreatePTR                      bool
 
 	sources []string
 
@@ -175,6 +177,8 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		UnstructuredResources:          cfg.UnstructuredResources,
 		TemplateEngine:                 tmpls,
 		PreferAlias:                    cfg.PreferAlias,
+		PTRSupported:                   cfg.IsPTRSupported(),
+		CreatePTR:                      cfg.CreatePTR || cfg.RFC2136CreatePTR,
 		sources:                        cfg.Sources,
 	}
 	for _, opt := range opts {

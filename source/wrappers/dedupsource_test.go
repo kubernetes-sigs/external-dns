@@ -570,9 +570,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				// Find endpoints by DNS name since order may vary
 				var svcEndpoint, ingEndpoint *endpoint.Endpoint
 				for _, e := range ep {
-					if e.DNSName == "a.example.com" {
+					switch e.DNSName {
+					case "a.example.com":
 						svcEndpoint = e
-					} else if e.DNSName == "b.example.com" {
+					case "b.example.com":
 						ingEndpoint = e
 					}
 				}
