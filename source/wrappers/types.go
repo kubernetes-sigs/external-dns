@@ -130,7 +130,10 @@ func WrapSources(
 	sources []source.Source,
 	opts *Config,
 ) (source.Source, error) {
-	combinedSource := NewDedupSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets))
+	combinedSource := NewPostProcessor(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets), WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
+	WithPostProcessorProvider(opts.provider))
+	opts.addSourceWrapper("post-processor")
+	combinedSource = NewDedupSource(combinedSource)
 	opts.addSourceWrapper("dedup")
 	if len(opts.nat64Networks) > 0 {
 		var err error
@@ -145,8 +148,7 @@ func WrapSources(
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)
 		opts.addSourceWrapper("target-filter")
 	}
-	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
-		WithPostProcessorProvider(opts.provider), WithPostProcessorResolveLoadBalancerHostname(opts.resolveLoadBalancerHostname))
-	opts.addSourceWrapper("post-processor")
+	combinedSource = NewResolveSource(combinedSource, opts.resolveLoadBalancerHostname)
+	opts.addSourceWrapper("resolve")
 	return combinedSource, nil
 }

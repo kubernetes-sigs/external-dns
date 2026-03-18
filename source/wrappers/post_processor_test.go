@@ -17,8 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"errors"
-	"net"
 	"testing"
 	"time"
 
@@ -495,109 +493,6 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
-		})
-	}
-}
-
-// withLookupIP is a test-only PostProcessorOption that replaces the DNS lookup function.
-func withLookupIP(fn func(string) ([]net.IP, error)) PostProcessorOption {
-	return func(cfg *PostProcessorConfig) {
-		cfg.lookupIP = fn
-	}
-}
-
-func TestPostProcessorEndpointsWithResolveLoadBalancerHostname(t *testing.T) {
-	tests := []struct {
-		title     string
-		lookupIP  func(string) ([]net.IP, error)
-		endpoints []*endpoint.Endpoint
-		expected  []*endpoint.Endpoint
-	}{
-		{
-			title:    "A/AAAA endpoints pass through unchanged",
-			lookupIP: func(string) ([]net.IP, error) { return nil, errors.New("should not be called") },
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-			},
-		},
-		{
-			title: "CNAME with resolvable hostname is replaced by A and AAAA records",
-			lookupIP: func(string) ([]net.IP, error) {
-				return []net.IP{net.ParseIP("1.2.3.4"), net.ParseIP("2001:db8::1")}, nil
-			},
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeAAAA, "2001:db8::1"),
-			},
-		},
-		{
-			title:    "CNAME with unresolvable hostname is skipped",
-			lookupIP: func(string) ([]net.IP, error) { return nil, errors.New("no such host") },
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
-			},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
-			title: "mixed IP and CNAME endpoints: CNAMEs are resolved, IP endpoints pass through",
-			lookupIP: func(host string) ([]net.IP, error) {
-				if host == "lb.example.com" {
-					return []net.IP{net.ParseIP("10.0.0.1")}, nil
-				}
-				return nil, errors.New("no such host")
-			},
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeA, "10.0.0.1"),
-			},
-		},
-		{
-			title: "labels are preserved on resolved endpoints",
-			lookupIP: func(string) ([]net.IP, error) {
-				return []net.IP{net.ParseIP("1.2.3.4")}, nil
-			},
-			endpoints: []*endpoint.Endpoint{
-				func() *endpoint.Endpoint {
-					ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com")
-					ep.Labels = endpoint.Labels{"resource": "gateway/default/test"}
-					return ep
-				}(),
-			},
-			expected: []*endpoint.Endpoint{
-				func() *endpoint.Endpoint {
-					ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeA, "1.2.3.4")
-					ep.Labels = endpoint.Labels{"resource": "gateway/default/test"}
-					return ep
-				}(),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.title, func(t *testing.T) {
-			ms := new(testutils.MockSource)
-			ms.On("Endpoints").Return(tt.endpoints, nil)
-			src := NewPostProcessor(ms,
-				WithPostProcessorResolveLoadBalancerHostname(true),
-				withLookupIP(tt.lookupIP),
-			)
-
-			got, err := src.Endpoints(t.Context())
-			require.NoError(t, err)
-			validateEndpoints(t, got, tt.expected)
 		})
 	}
 }
