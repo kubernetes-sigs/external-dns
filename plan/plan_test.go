@@ -416,6 +416,20 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	suite.False(changes.HasChanges())
 }
 
+func (suite *PlanTestSuite) TestHasChangesCreate() {
+	changes := &Changes{
+		Create: []*endpoint.Endpoint{suite.fooV1Cname},
+	}
+	suite.True(changes.HasChanges())
+}
+
+func (suite *PlanTestSuite) TestHasChangesDelete() {
+	changes := &Changes{
+		Delete: []*endpoint.Endpoint{suite.fooV1Cname},
+	}
+	suite.True(changes.HasChanges())
+}
+
 func (suite *PlanTestSuite) TestHasChanges() {
 	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
 	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
@@ -1032,7 +1046,7 @@ func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
 		Desired:        desired,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
-		OldOwnerId:     "foo",
+		OldOwnerID:     "foo",
 	}
 
 	changes := p.Calculate().Changes
@@ -1126,7 +1140,7 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 				Desired:        []*endpoint.Endpoint{test.desired},
 				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
-			b := plan.shouldUpdateProviderSpecific(test.desired, test.current)
+			b := plan.providerSpecificChanged(test.desired, test.current)
 			assert.Equal(t, test.shouldUpdate, b)
 		})
 	}
