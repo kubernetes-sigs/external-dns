@@ -380,9 +380,6 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			ep := endpoints[i]
 			dnsname := provider.EnsureTrailingDot(ep.DNSName)
 			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
-				// The assumption here is that there will only ever be one target
-				// per (ep.DNSName, ep.RecordType) tuple, which holds true for
-				// external-dns v5.0.0-alpha onwards
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
@@ -573,6 +570,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 			return err
 		}
 	}
+
 	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }
