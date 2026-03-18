@@ -109,13 +109,14 @@ func discoverSources(dir string) (Sources, error) {
 }
 
 type sourceColumnWidths struct {
-	Name         int
-	Resources    int
-	Filters      int
-	Namespace    int
-	FQDNTemplate int
-	Events       int
-	Category     int
+	Name             int
+	Resources        int
+	Filters          int
+	Namespace        int
+	FQDNTemplate     int
+	Events           int
+	ProviderSpecific int
+	Category         int
 }
 
 func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
@@ -126,6 +127,7 @@ func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
 	fqdnTemplates := make([]string, len(sources))
 	events := make([]string, len(sources))
 	categories := make([]string, len(sources))
+	providerSpecifics := make([]string, len(sources))
 	for i, src := range sources {
 		names[i] = "**" + src.Name + "**"
 		resources[i] = strings.ReplaceAll(src.Resources, ",", "<br/>")
@@ -133,16 +135,18 @@ func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
 		namespaces[i] = src.Namespace
 		fqdnTemplates[i] = src.FQDNTemplate
 		events[i] = src.Events
+		providerSpecifics[i] = src.ProviderSpecific
 		categories[i] = strings.ToLower(src.Category)
 	}
 	return sourceColumnWidths{
-		Name:         utils.ComputeColumnWidth("**Source Name**", names),
-		Resources:    utils.ComputeColumnWidth("Resources", resources),
-		Filters:      utils.ComputeColumnWidth("Filters", filters),
-		Namespace:    utils.ComputeColumnWidth("Namespace", namespaces),
-		FQDNTemplate: utils.ComputeColumnWidth("FQDN Template", fqdnTemplates),
-		Events:       utils.ComputeColumnWidth("Events", events),
-		Category:     utils.ComputeColumnWidth("Category", categories),
+		Name:             utils.ComputeColumnWidth("**Source Name**", names),
+		Resources:        utils.ComputeColumnWidth("Resources", resources),
+		Filters:          utils.ComputeColumnWidth("Filters", filters),
+		Namespace:        utils.ComputeColumnWidth("Namespace", namespaces),
+		FQDNTemplate:     utils.ComputeColumnWidth("FQDN Template", fqdnTemplates),
+		Events:           utils.ComputeColumnWidth("Events", events),
+		ProviderSpecific: utils.ComputeColumnWidth("Provider Specific", providerSpecifics),
+		Category:         utils.ComputeColumnWidth("Category", categories),
 	}
 }
 
