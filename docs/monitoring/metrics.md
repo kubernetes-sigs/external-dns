@@ -24,29 +24,30 @@ curl https://localhost:7979/metrics
 > Full metric name is constructed as follows:
 > `external_dns_<subsystem>_<name>`
 
-| Name                             | Metric Type | Subsystem        | Help                                                                                                                                               |
-|:---------------------------------|:------------|:-----------------|:---------------------------------------------------------------------------------------------------------------------------------------------------|
-| build_info                       | Gauge       |                  | A metric with a constant '1' value labeled with 'version' and 'revision' of external_dns and the 'go_version', 'os' and the 'arch' used the build. |
-| consecutive_soft_errors          | Gauge       | controller       | Number of consecutive soft errors in reconciliation loop.                                                                                          |
-| last_reconcile_timestamp_seconds | Gauge       | controller       | Timestamp of last attempted sync with the DNS provider                                                                                             |
-| last_sync_timestamp_seconds      | Gauge       | controller       | Timestamp of last successful sync with the DNS provider                                                                                            |
-| no_op_runs_total                 | Counter     | controller       | Number of reconcile loops ending up with no changes on the DNS provider side.                                                                      |
-| verified_records                 | Gauge       | controller       | Number of DNS records that exists both in source and registry (vector).                                                                            |
-| request_duration_seconds         | Summaryvec  | http             | The HTTP request latencies in seconds.                                                                                                             |
-| cache_apply_changes_calls        | Counter     | provider         | Number of calls to the provider cache ApplyChanges.                                                                                                |
-| cache_records_calls              | Counter     | provider         | Number of calls to the provider cache Records list.                                                                                                |
-| endpoints_total                  | Gauge       | registry         | Number of Endpoints in the registry                                                                                                                |
-| errors_total                     | Counter     | registry         | Number of Registry errors.                                                                                                                         |
-| records                          | Gauge       | registry         | Number of registry records partitioned by label name (vector).                                                                                     |
-| endpoints_total                  | Gauge       | source           | Number of Endpoints in all sources                                                                                                                 |
-| errors_total                     | Counter     | source           | Number of Source errors.                                                                                                                           |
-| records                          | Gauge       | source           | Number of source records partitioned by label name (vector).                                                                                       |
-| adjustendpoints_errors_total     | Gauge       | webhook_provider | Errors with AdjustEndpoints method                                                                                                                 |
-| adjustendpoints_requests_total   | Gauge       | webhook_provider | Requests with AdjustEndpoints method                                                                                                               |
-| applychanges_errors_total        | Gauge       | webhook_provider | Errors with ApplyChanges method                                                                                                                    |
-| applychanges_requests_total      | Gauge       | webhook_provider | Requests with ApplyChanges method                                                                                                                  |
-| records_errors_total             | Gauge       | webhook_provider | Errors with Records method                                                                                                                         |
-| records_requests_total           | Gauge       | webhook_provider | Requests with Records method                                                                                                                       |
+| Name                                    | Metric Type | Subsystem        | Help                                                                                                                                               |
+|:----------------------------------------|:------------|:-----------------|:---------------------------------------------------------------------------------------------------------------------------------------------------|
+| build_info                              | Gauge       |                  | A metric with a constant '1' value labeled with 'version' and 'revision' of external_dns and the 'go_version', 'os' and the 'arch' used the build. |
+| consecutive_soft_errors                 | Gauge       | controller       | Number of consecutive soft errors in reconciliation loop.                                                                                          |
+| last_reconcile_timestamp_seconds        | Gauge       | controller       | Timestamp of last attempted sync with the DNS provider                                                                                             |
+| last_sync_timestamp_seconds             | Gauge       | controller       | Timestamp of last successful sync with the DNS provider                                                                                            |
+| no_op_runs_total                        | Counter     | controller       | Number of reconcile loops ending up with no changes on the DNS provider side.                                                                      |
+| verified_records                        | Gauge       | controller       | Number of DNS records that exists both in source and registry (vector).                                                                            |
+| request_duration_seconds                | Summaryvec  | http             | The HTTP request latencies in seconds.                                                                                                             |
+| cache_apply_changes_calls               | Counter     | provider         | Number of calls to the provider cache ApplyChanges.                                                                                                |
+| cache_records_calls                     | Counter     | provider         | Number of calls to the provider cache Records list.                                                                                                |
+| endpoints_total                         | Gauge       | registry         | Number of Endpoints in the registry                                                                                                                |
+| errors_total                            | Counter     | registry         | Number of Registry errors.                                                                                                                         |
+| records                                 | Gauge       | registry         | Number of registry records partitioned by label name (vector).                                                                                     |
+| skipped_records_owner_mismatch_per_sync | Gauge       | registry         | Number of records skipped with owner mismatch for each record type, owner mismatch ID and domain (vector).                                         |
+| endpoints_total                         | Gauge       | source           | Number of Endpoints in all sources                                                                                                                 |
+| errors_total                            | Counter     | source           | Number of Source errors.                                                                                                                           |
+| records                                 | Gauge       | source           | Number of source records partitioned by label name (vector).                                                                                       |
+| adjustendpoints_errors_total            | Gauge       | webhook_provider | Errors with AdjustEndpoints method                                                                                                                 |
+| adjustendpoints_requests_total          | Gauge       | webhook_provider | Requests with AdjustEndpoints method                                                                                                               |
+| applychanges_errors_total               | Gauge       | webhook_provider | Errors with ApplyChanges method                                                                                                                    |
+| applychanges_requests_total             | Gauge       | webhook_provider | Requests with ApplyChanges method                                                                                                                  |
+| records_errors_total                    | Gauge       | webhook_provider | Errors with Records method                                                                                                                         |
+| records_requests_total                  | Gauge       | webhook_provider | Requests with Records method                                                                                                                       |
 
 ## Available Go Runtime Metrics
 
