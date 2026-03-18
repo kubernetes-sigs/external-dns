@@ -39,6 +39,7 @@ func NewDedupSource(source source.Source) source.Source {
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
+	resetMetrics()
 	result := make([]*endpoint.Endpoint, 0)
 	collected := make(map[string]struct{})
 
@@ -55,6 +56,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 		// validate endpoint before normalization
 		if ok := ep.CheckEndpoint(); !ok {
 			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))
+			invalidEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}
 
@@ -66,6 +68,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
+			deduplicatedEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}
 

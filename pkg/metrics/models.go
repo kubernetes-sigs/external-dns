@@ -96,6 +96,13 @@ func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
 	g.Gauge.WithLabelValues(toLower(lvs)...).Add(value)
 }
 
+// Reset removes all label combinations from the gauge vector.
+// Use Reset() at the start of each collection cycle followed by
+// AddWithLabels() to prevent stale label combinations from persisting.
+func (g GaugeVecMetric) Reset() {
+	g.Gauge.Reset()
+}
+
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace
 	return GaugeMetric{
