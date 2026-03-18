@@ -106,49 +106,54 @@ func (t Targets) Len() int {
 	return len(t)
 }
 
+// Less reports whether element i should sort before element j.
+// IP addresses are preferred over FQDNs; within the same kind, string order is used.
 func (t Targets) Less(i, j int) bool {
-	ipi, err := netip.ParseAddr(t[i])
-	if err != nil {
-		return t[i] < t[j]
-	}
+	ipi, _ := netip.ParseAddr(t[i])
+	ipj, _ := netip.ParseAddr(t[j])
 
-	ipj, err := netip.ParseAddr(t[j])
-	if err != nil {
-		return t[i] < t[j]
+	if ipi.IsValid() != ipj.IsValid() {
+		return ipi.IsValid() // prefer IP addresses over FQDNs
 	}
-
-	return ipi.String() < ipj.String()
+	if ipi.IsValid() {
+		return ipi.String() < ipj.String()
+	}
+	return t[i] < t[j]
 }
 
 func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares two Targets and returns true if they are identical (case-insensitive)
+// Same reports whether t and o contain the same targets (case-insensitive, order-independent).
+// IPv6 addresses are normalized before comparison to handle shortened forms (e.g. ::1 == ::0001).
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
 	}
-	sort.Stable(t)
-	sort.Stable(o)
+	sort.Sort(t)
+	sort.Sort(o)
 
 	for i, e := range t {
 		if !strings.EqualFold(e, o[i]) {
-			// IPv6 can be shortened, so it should be parsed for equality checking
-			ipA, err := netip.ParseAddr(e)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
+			// IPv6 can be shortened, so it should be parsed for equality checking.
+			// Parse errors result in netip.Addr{} whose IsValid() returns false — used intentionally below.
+			ipA, _ := netip.ParseAddr(e)
+			ipB, _ := netip.ParseAddr(o[i])
 
-			ipB, err := netip.ParseAddr(o[i])
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			if log.IsLevelEnabled(log.DebugLevel) {
+				if !ipA.IsValid() {
+					log.WithFields(log.Fields{
+						"targets":           t,
+						"comparisonTargets": o,
+					}).Debugf("Couldn't parse %s as an IP address", e)
+				}
+				if !ipB.IsValid() {
+					log.WithFields(log.Fields{
+						"targets":           t,
+						"comparisonTargets": o,
+					}).Debugf("Couldn't parse %s as an IP address", o[i])
+				}
 			}
 
 			// IPv6 Address Shortener == IPv6 Address Expander
@@ -161,11 +166,10 @@ func (t Targets) Same(o Targets) bool {
 	return true
 }
 
-// IsLess should fulfill the requirement to compare two targets and choose the 'lesser' one.
-// In the past target was a simple string so simple string comparison could be used. Now we define 'less'
-// as either being the shorter list of targets or where the first entry is less.
-// FIXME We really need to define under which circumstances a list Targets is considered 'less'
-// than another.
+// IsLess reports whether t should be considered less than o.
+// A shorter list is always less. For equal-length lists, the first differing element determines order:
+// IP addresses are preferred over FQDNs; between two IPs, netip.Addr.Less is used; otherwise string order.
+// FIXME We really need to define under which circumstances a list Targets is considered 'less' than another.
 func (t Targets) IsLess(o Targets) bool {
 	if len(t) < len(o) {
 		return true
@@ -181,38 +185,37 @@ func (t Targets) IsLess(o Targets) bool {
 		if e != o[i] {
 			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
 			// This prevents behavior like `1-2-3-4.example.com` being "less" than `1.2.3.4` when doing lexicographical string comparison.
-			ipA, err := netip.ParseAddr(e)
-			if err != nil {
-				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
-				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
-				// non-obvious issues with the records being created.
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
+			// Parse errors result in netip.Addr{} whose IsValid() returns false — used intentionally below.
+			// Still log when a target can't be parsed as an IP in case a provider is experiencing
+			// non-obvious issues with the records being created.
+			ipA, _ := netip.ParseAddr(e)
+			ipB, _ := netip.ParseAddr(o[i])
 
-			ipB, err := netip.ParseAddr(o[i])
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			if log.IsLevelEnabled(log.DebugLevel) {
+				if !ipA.IsValid() {
+					log.WithFields(log.Fields{
+						"targets":           t,
+						"comparisonTargets": o,
+					}).Debugf("Couldn't parse %s as an IP address", e)
+				}
+				if !ipB.IsValid() {
+					log.WithFields(log.Fields{
+						"targets":           t,
+						"comparisonTargets": o,
+					}).Debugf("Couldn't parse %s as an IP address", o[i])
+				}
 			}
 
 			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
 			// If one is a valid IP and the other is not, prefer the IP address (consider it "less").
 			// If neither is a valid IP, use lexicographical string comparison to determine which string sorts first alphabetically.
-			switch {
-			case ipA.IsValid() && ipB.IsValid():
-				return ipA.Less(ipB)
-			case ipA.IsValid() && !ipB.IsValid():
-				return true
-			case !ipA.IsValid() && ipB.IsValid():
-				return false
-			default:
-				return e < o[i]
+			if ipA.IsValid() != ipB.IsValid() {
+				return ipA.IsValid()
 			}
+			if ipA.IsValid() {
+				return ipA.Less(ipB)
+			}
+			return e < o[i]
 		}
 	}
 	return false

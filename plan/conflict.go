@@ -68,43 +68,34 @@ func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[stri
 		return row.records
 	}
 
-	cname := false
-	other := false
+	cname, other := false, false
 	for _, c := range row.candidates {
 		if c.RecordType == endpoint.RecordTypeCNAME {
 			cname = true
 		} else {
 			other = true
 		}
-
 		if cname && other {
 			break
 		}
 	}
 
-	// conflict was found, remove candidates of non-preferred record types
-	if cname && other {
-		log.Infof("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
-		records := map[string]*domainEndpoints{}
-		for recordType, recs := range row.records {
-			// policy is to prefer the non-CNAME record types when a conflict is found
-			if recordType == endpoint.RecordTypeCNAME {
-				// discard candidates of conflicting records
-				// keep current so they can be deleted
-				records[recordType] = &domainEndpoints{
-					current:    recs.current,
-					candidates: []*endpoint.Endpoint{},
-				}
-			} else {
-				records[recordType] = recs
-			}
-		}
-
-		return records
+	if !cname || !other {
+		return row.records
 	}
 
-	// no conflict, return all records types
-	return row.records
+	// conflict was found: prefer non-CNAME record types, discard CNAME candidates
+	// but keep current CNAME so it can be deleted
+	log.Infof("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
+	records := make(map[string]*domainEndpoints, len(row.records))
+	for recordType, recs := range row.records {
+		if recordType == endpoint.RecordTypeCNAME {
+			records[recordType] = &domainEndpoints{current: recs.current, candidates: []*endpoint.Endpoint{}}
+			continue
+		}
+		records[recordType] = recs
+	}
+	return records
 }
 
 // compareEndpoints compares two endpoints by their targets for use in sort/min operations.
