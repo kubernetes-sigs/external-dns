@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package factory
 
 import (
 	"reflect"
@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/awssd"
 	"sigs.k8s.io/external-dns/registry/dynamodb"
 	"sigs.k8s.io/external-dns/registry/noop"
@@ -34,10 +35,10 @@ import (
 )
 
 var (
-	_ Registry = &awssd.AWSSDRegistry{}
-	_ Registry = &dynamodb.DynamoDBRegistry{}
-	_ Registry = &noop.NoopRegistry{}
-	_ Registry = &txt.TXTRegistry{}
+	_ registry.Registry = &awssd.AWSSDRegistry{}
+	_ registry.Registry = &dynamodb.DynamoDBRegistry{}
+	_ registry.Registry = &noop.NoopRegistry{}
+	_ registry.Registry = &txt.TXTRegistry{}
 )
 
 func TestSelectRegistry(t *testing.T) {
@@ -51,7 +52,7 @@ func TestSelectRegistry(t *testing.T) {
 		{
 			name: "dynamoDB registry",
 			cfg: &externaldns.Config{
-				Registry:               DYNAMODB,
+				Registry:               externaldns.RegistryDynamoDB,
 				AWSDynamoDBRegion:      "us-west-2",
 				AWSDynamoDBTable:       "test-table",
 				TXTOwnerID:             "owner-id",
@@ -67,7 +68,7 @@ func TestSelectRegistry(t *testing.T) {
 		{
 			name: "noop registry",
 			cfg: &externaldns.Config{
-				Registry: NOOP,
+				Registry: externaldns.RegistryNoop,
 			},
 			provider: &fakeprovider.MockProvider{},
 			wantErr:  false,
@@ -76,7 +77,7 @@ func TestSelectRegistry(t *testing.T) {
 		{
 			name: "TXT registry",
 			cfg: &externaldns.Config{
-				Registry:               TXT,
+				Registry:               externaldns.RegistryTXT,
 				TXTPrefix:              "prefix",
 				TXTOwnerID:             "owner-id",
 				TXTCacheInterval:       60,
@@ -91,7 +92,7 @@ func TestSelectRegistry(t *testing.T) {
 		{
 			name: "aws-sd registry",
 			cfg: &externaldns.Config{
-				Registry:   AWSSD,
+				Registry:   externaldns.RegistryAWSSD,
 				TXTOwnerID: "owner-id",
 			},
 			provider: &fakeprovider.MockProvider{},
@@ -111,7 +112,7 @@ func TestSelectRegistry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reg, err := SelectRegistry(tt.cfg, tt.provider)
+			reg, err := Select(tt.cfg, tt.provider)
 
 			if tt.wantErr {
 				require.Nil(t, reg)
@@ -129,7 +130,7 @@ func TestSelectRegistryUnknown(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.Registry = "nope"
 
-	reg, err := SelectRegistry(cfg, inmemory.NewInMemoryProvider())
+	reg, err := Select(cfg, inmemory.NewInMemoryProvider())
 	require.Error(t, err)
 	require.Nil(t, reg)
 }

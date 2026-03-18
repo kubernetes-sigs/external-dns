@@ -182,3 +182,64 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 	assert.Contains(t, value.Name, "fake-object.")
 	assert.Contains(t, value.Reason, RecordReady)
 }
+
+func TestController_ProcessNextWorkItem_RequeuesOnError(t *testing.T) {
+	log.SetLevel(log.ErrorLevel)
+	ctx := t.Context()
+
+	createAttempts := 0
+	kubeClient := fake.NewClientset()
+	kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
+		createAttempts++
+		if createAttempts <= maxTriesPerEvent {
+			return true, nil, fmt.Errorf("transient API error")
+		}
+		return true, nil, nil
+	})
+
+	eventCreated := make(chan struct{}, 1)
+	kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
+		createAttempts++
+		if createAttempts <= maxTriesPerEvent {
+			return true, nil, fmt.Errorf("transient API error")
+		}
+		eventCreated <- struct{}{}
+		return true, nil, nil
+	})
+
+	ctrl := &Controller{
+		client:     kubeClient.EventsV1(),
+		emitEvents: sets.New[Reason](RecordReady),
+		queue: workqueue.NewTypedRateLimitingQueueWithConfig[any](
+			workqueue.NewTypedMaxOfRateLimiter[any](
+				workqueue.NewTypedItemFastSlowRateLimiter[any](1*time.Millisecond, 1*time.Millisecond, 5),
+			),
+			workqueue.TypedRateLimitingQueueConfig[any]{Name: controllerName},
+		),
+		hostname:        controllerName,
+		maxQueuedEvents: maxQueuedEvents,
+	}
+
+	ctrl.Run(ctx)
+
+	event := NewEvent(NewObjectReference(&v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-object",
+			Namespace: v1.NamespaceDefault,
+			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
+		},
+	}, "fake-source"), "record created", ActionCreate, RecordReady)
+
+	ctrl.Add(event)
+
+	select {
+	case <-eventCreated:
+		assert.Greater(t, createAttempts, 1, "event should have been retried at least once")
+	case <-time.After(5 * time.Second):
+		t.Fatalf("event was not retried and delivered; only %d attempt(s) made", createAttempts)
+	}
+}

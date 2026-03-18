@@ -17,6 +17,11 @@ limitations under the License.
 package externaldns
 
 const (
+	RegistryTXT      = "txt"
+	RegistryNoop     = "noop"
+	RegistryDynamoDB = "dynamodb"
+	RegistryAWSSD    = "aws-sd"
+
 	ProviderAkamai       = "akamai"
 	ProviderAlibabaCloud = "alibabacloud"
 	ProviderAWS          = "aws"
@@ -28,7 +33,6 @@ const (
 	ProviderCloudflare   = "cloudflare"
 	ProviderCoreDNS      = "coredns"
 	ProviderSkyDNS       = "skydns"
-	ProviderDigitalOcean = "digitalocean"
 	ProviderDNSimple     = "dnsimple"
 	ProviderExoscale     = "exoscale"
 	ProviderGandi        = "gandi"

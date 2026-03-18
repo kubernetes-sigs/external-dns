@@ -52,20 +52,20 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "", "", time.Hour, "", []string{}, []string{}, false, nil, "")
+	_, err := newRegistry(p, "txt", "", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	_, err = NewTXTRegistry(p, "", "txt", "", time.Hour, "", []string{}, []string{}, false, nil, "")
+	_, err = newRegistry(p, "", "txt", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, err := newRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 
-	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, err = newRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	_, err = newRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
 	_, ok := r.mapper.(mapper.AffixNameMapper)
@@ -74,16 +74,16 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, p, r.provider)
 
 	aesKey := []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^")
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	_, err = newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, aesKey, "")
+	_, err = newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, aesKey, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil, "")
+	_, err = newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil, "")
 	require.Error(t, err)
 
-	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
+	r, err = newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(mapper.AffixNameMapper)
@@ -261,13 +261,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
-	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ = newRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -426,13 +426,13 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
-	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ = newRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
@@ -583,7 +583,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -622,12 +622,12 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ = newRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -666,12 +666,12 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
+	r, _ = newRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -714,7 +714,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.cname-multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -795,7 +795,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	_ = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{},
 	})
-	r, _ := NewTXTRegistry(p, "prefix%{record_type}.", "", "owner-1", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "prefix%{record_type}.", "", "owner-1", time.Hour, "", []string{}, []string{}, false, nil, "")
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newCNAMEEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "owner-1", "ingress/default/my-ingress"),
@@ -838,7 +838,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
-	r, _ := NewTXTRegistry(p, "", "-%{record_type}suffix", "owner-2", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "-%{record_type}suffix", "owner-2", time.Hour, "", []string{}, []string{}, false, nil, "")
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newCNAMEEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "owner-2", "ingress/default/my-ingress"),
@@ -905,7 +905,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "wildcard", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "-txt", "owner", time.Hour, "wildcard", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1001,7 +1001,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1161,7 +1161,7 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -1273,7 +1273,7 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -1370,7 +1370,7 @@ func TestNewTXTScheme(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	r, err := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 
 	changes := &plan.Changes{
@@ -1437,7 +1437,7 @@ func TestGenerateTXT(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
@@ -1457,7 +1457,7 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXTBeforeMigration := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
 
@@ -1472,7 +1472,7 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 		},
 	}
 
-	rMigrated, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "owner")
+	rMigrated, _ := newRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "owner")
 	gotTXTAfterMigration := rMigrated.generateTXTRecord(record)
 	assert.Equal(t, expectedTXTAfterMigration, gotTXTAfterMigration)
 
@@ -1493,7 +1493,7 @@ func TestGenerateTXTForAAAA(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
@@ -1511,7 +1511,7 @@ func TestFailGenerateTXT(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(cnameRecord)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
@@ -1531,7 +1531,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"), "")
+	r, _ := newRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"), "")
 	records, _ := r.Records(ctx)
 	changes := &plan.Changes{
 		Delete: records,
@@ -1579,7 +1579,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	// new cluster has same ingress host as other cluster and uses CNAME ingress address
@@ -1662,7 +1662,7 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+			r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 			records := r.generateTXTRecord(tc.endpoint)
 
 			assert.Len(t, records, tc.expectedRecords, tc.description)
@@ -1692,7 +1692,7 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 	require.NoError(t, err)
 	ctx := t.Context()
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1742,7 +1742,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
@@ -1947,7 +1947,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 
 					// When: Apply changes to recreate missing A records
 					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
-					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, "")
+					registry, err := newRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, "")
 					assert.NoError(t, err)
 
 					expectedRecords := append(existing, expectedCreate...) // nolint:gocritic
@@ -1988,7 +1988,7 @@ func TestTXTRecordMigration(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 
-	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	err = r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -2012,7 +2012,7 @@ func TestTXTRecordMigration(t *testing.T) {
 
 	assert.Equal(t, expectedTXTRecords[0].Targets, newTXTRecord[0].Targets)
 
-	r, _ = NewTXTRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "foo")
+	r, _ = newRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "foo")
 
 	updatedRecords, _ := r.Records(ctx)
 
@@ -2040,7 +2040,7 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 
-	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+	r, _ := newRegistry(p, "%{record_type}-", "", "foo", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
 
 	createdRecords := newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ownerID, nil)
 	txtRecord := r.generateTXTRecord(createdRecords)

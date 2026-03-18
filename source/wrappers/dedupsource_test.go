@@ -108,11 +108,11 @@ func TestDedupEndpoints(t *testing.T) {
 			"two endpoints with same dnsname, different record type, and same target return two endpoints",
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 		},
 		{
@@ -312,9 +312,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
 			},
 		},
 		{
@@ -339,6 +337,35 @@ func TestDedupEndpointsValidation(t *testing.T) {
 				{DNSName: "1.0.0.10.in-addr.arpa", RecordType: endpoint.RecordTypePTR, Targets: endpoint.Targets{"10.0.0.1"}},
 			},
 			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "A record with record-type annotation passes through",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+			},
+		},
+		{
+			name: "duplicate A records with same record-type annotation are deduped",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+			},
+		},
+		{
+			name: "A records with and without record-type annotation are deduped by identity key",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificRecordType, Value: "PTR"}}},
+			},
 		},
 	}
 

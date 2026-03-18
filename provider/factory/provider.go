@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
-	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/gandi"
@@ -91,7 +90,6 @@ func providers(selector string) (ProviderConstructor, bool) {
 		externaldns.ProviderCloudflare:   cloudflare.New,
 		externaldns.ProviderCoreDNS:      coredns.New,
 		externaldns.ProviderSkyDNS:       coredns.New,
-		externaldns.ProviderDigitalOcean: digitalocean.New,
 		externaldns.ProviderDNSimple:     dnsimple.New,
 		externaldns.ProviderExoscale:     exoscale.New,
 		externaldns.ProviderGandi:        gandi.New,

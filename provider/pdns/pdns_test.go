@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	pgo "github.com/ffledgling/pdns-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -148,6 +149,16 @@ var (
 		},
 	}
 
+	// RRSet with PTR record
+	RRSetPTRRecord = pgo.RrSet{
+		Name:  "4.3.2.1.in-addr.arpa.",
+		Type_: endpoint.RecordTypePTR,
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "host.example.com", Disabled: false, SetPtr: false},
+		},
+	}
+
 	endpointsDisabledRecord = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}
@@ -196,6 +207,7 @@ var (
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
 		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
+		endpoint.NewEndpointWithTTL("4.3.2.1.in-addr.arpa", endpoint.RecordTypePTR, endpoint.TTL(300), "host.example.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -341,7 +353,7 @@ var (
 		Type_:  "Zone",
 		Url:    "/api/v1/servers/localhost/zones/example.com.",
 		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord},
+		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord, RRSetPTRRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
@@ -1022,6 +1034,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 		endpoint.RecordTypeMX:    true,
 		endpoint.RecordTypeSRV:   true,
 		endpoint.RecordTypeNS:    true,
+		endpoint.RecordTypePTR:   true,
 	}
 
 	for _, z := range zlist {
@@ -1307,4 +1320,142 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSGetDomainFilter() {
 
 func TestNewPDNSProviderTestSuite(t *testing.T) {
 	suite.Run(t, new(NewPDNSProviderTestSuite))
+}
+
+// TestPDNSPartitionZonesRegexBehavior compares two regex forms for --domain-filter
+// and shows how the choice of regex affects zone partitioning correctness.
+func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
+	newZone := func(name string) pgo.Zone {
+		return pgo.Zone{Id: name, Name: name, Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}}
+	}
+
+	zoneNames := func(zz []pgo.Zone) []string {
+		names := make([]string, len(zz))
+		for i, z := range zz {
+			names[i] = z.Name
+		}
+		return names
+	}
+
+	tests := []struct {
+		name         string
+		zones        []pgo.Zone
+		regex        string
+		regexExclude string
+		assertions   func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone)
+	}{
+		{
+			// Worst case: no subdomain zone exists at all.
+			// Both apex zones fail the regex → filtered is empty →
+			// ConvertEndpointsToZones logs "Ignoring Endpoint" for every record.
+			//
+			//   "example.com" → no label prefix  → residual  ← BUG
+			//   "other.com"   → no match at all  → residual  ← BUG
+			name: "complete wipeout: subdomain-only regex with only apex zones leaves filtered empty",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("other.com."),
+			},
+			regex: `^[\w-]+\.example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.Empty(t, filtered,
+					"no zone matches the subdomain-only regex — every record will be ignored")
+				assert.ElementsMatch(t, []string{"example.com.", "other.com."}, zoneNames(residual),
+					"both zones land in residual: records in example.com. silently dropped")
+			},
+		},
+		{
+			// Partial match: a sub-zone happens to exist, so sub.example.com. is
+			// managed but the apex example.com. and the deep zone are still lost.
+			//
+			//   "example.com"                 → no label at all        → residual  ← BUG
+			//   "sub.example.com"             → one label "sub"        → filtered
+			//   "long.domainname.example.com" → [\w-]+ can't span dots → residual  ← BUG
+			//   "simexample.com"              → no .example.com suffix  → residual  ✓
+			//   "mock.test"                   → no match                → residual  ✓
+			name: "partial match: subdomain-only regex misses apex and multi-label zones",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("sub.example.com."),
+				newZone("long.domainname.example.com."),
+				newZone("simexample.com."),
+				newZone("mock.test."),
+			},
+			regex: `^[\w-]+\.example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.Equal(t, []string{"sub.example.com."}, zoneNames(filtered),
+					"only the single-label subdomain zone matches")
+				assert.Contains(t, zoneNames(residual), "example.com.",
+					"zone apex lands in residual: its records would be ignored")
+				assert.Contains(t, zoneNames(residual), "long.domainname.example.com.",
+					"multi-label zone lands in residual: [\\w-]+ cannot span dots")
+				assert.Contains(t, zoneNames(residual), "simexample.com.")
+				assert.Contains(t, zoneNames(residual), "mock.test.")
+			},
+		},
+		{
+			// Exclusion regex takes priority: zones matching regexExclusion are
+			// rejected before the inclusion regex is checked.
+			//
+			//   "example.com"         → inclusion matches, exclusion does not → filtered  ✓
+			//   "staging.example.com" → inclusion matches, exclusion matches  → residual  ✓
+			//   "prod.example.com"    → inclusion matches, exclusion does not → filtered  ✓
+			//   "mock.test"           → inclusion does not match              → residual  ✓
+			name:         "exclusion regex overrides inclusion: staging zones are excluded",
+			regexExclude: `^staging\.`,
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("staging.example.com."),
+				newZone("prod.example.com."),
+				newZone("mock.test."),
+			},
+			regex: `^([\w-]+\.)*example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.ElementsMatch(t, []string{"example.com.", "prod.example.com."}, zoneNames(filtered),
+					"only non-excluded example.com zones must be filtered")
+				assert.ElementsMatch(t, []string{"staging.example.com.", "mock.test."}, zoneNames(residual),
+					"staging zone is excluded by regexExclusion; mock.test does not match inclusion")
+			},
+		},
+		{
+			// ([\w-]+\.)* with zero repetitions matches the apex; one or more
+			// repetitions match subdomain zones at any depth.
+			// Suffix similarity (simexample.com) is rejected by the dot-boundary.
+			//
+			//   "example.com"                 → 0 repetitions          → filtered  ✓
+			//   "sub.example.com"             → 1 repetition "sub."    → filtered  ✓
+			//   "long.domainname.example.com" → 2 repetitions          → filtered  ✓
+			//   "simexample.com"              → no dot-boundary match   → residual  ✓
+			//   "mock.test"                   → no match                → residual  ✓
+			name: "zone-aware regex (* quantifier) matches apex and all subdomain depths",
+			zones: []pgo.Zone{
+				newZone("example.com."),
+				newZone("sub.example.com."),
+				newZone("long.domainname.example.com."),
+				newZone("simexample.com."),
+				newZone("mock.test."),
+			},
+			regex: `^([\w-]+\.)*example\.com$`,
+			assertions: func(t *testing.T, filtered []pgo.Zone, residual []pgo.Zone) {
+				assert.ElementsMatch(t,
+					[]string{"example.com.", "sub.example.com.", "long.domainname.example.com."},
+					zoneNames(filtered),
+					"apex and all subdomain zones must be filtered")
+				assert.ElementsMatch(t, []string{"simexample.com.", "mock.test."}, zoneNames(residual),
+					"only truly unrelated zones must be residual")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var exclusion *regexp.Regexp
+			if tt.regexExclude != "" {
+				exclusion = regexp.MustCompile(tt.regexExclude)
+			}
+			df := endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), exclusion)
+			filtered, residual := partitionZones(tt.zones, df)
+			tt.assertions(t, filtered, residual)
+		})
+	}
 }
