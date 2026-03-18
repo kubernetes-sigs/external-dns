@@ -47,6 +47,65 @@ func TestWriteToFile(t *testing.T) {
 	}
 }
 
+func TestComputeColumnWidth(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+		values []string
+		want   int
+	}{
+		{
+			name:   "header wins when all values are shorter",
+			header: "Metric Type",
+			values: []string{"gauge", "counter"},
+			want:   len("Metric Type"),
+		},
+		{
+			name:   "value wins when longer than header",
+			header: "Name",
+			values: []string{"last_reconcile_timestamp_seconds"},
+			want:   len("last_reconcile_timestamp_seconds"),
+		},
+		{
+			name:   "empty values returns header length",
+			header: "Subsystem",
+			values: []string{},
+			want:   len("Subsystem"),
+		},
+		{
+			name:   "empty header and empty values returns zero",
+			header: "",
+			values: []string{},
+			want:   0,
+		},
+		{
+			name:   "empty header defers to longest value",
+			header: "",
+			values: []string{"short", "much longer value"},
+			want:   len("much longer value"),
+		},
+		{
+			name:   "empty string values do not shrink below header",
+			header: "Help",
+			values: []string{"", ""},
+			want:   len("Help"),
+		},
+		{
+			name:   "tie between header and value returns that length",
+			header: "exact",
+			values: []string{"exact"},
+			want:   len("exact"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ComputeColumnWidth(tt.header, tt.values)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFuncs(t *testing.T) {
 	tests := []struct {
 		tpl, expect string

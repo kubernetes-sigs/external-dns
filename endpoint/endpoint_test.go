@@ -1079,6 +1079,51 @@ func TestCheckEndpoint(t *testing.T) {
 			expected: true,
 		},
 		{
+			description: "Valid AAAA record",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid A record - not an IP",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"not-an-ip"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid A record - IPv6 address",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"2001:db8::1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid AAAA record - IPv4 address",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"192.168.1.1"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid AAAA record - not an IP",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeAAAA,
+				Targets:    Targets{"not-an-ip"},
+			},
+			expected: false,
+		},
+		{
 			description: "A record with alias=true is valid",
 			endpoint: Endpoint{
 				DNSName:          "example.com",
@@ -1633,6 +1678,196 @@ func TestGetBoolProviderSpecificProperty(t *testing.T) {
 			value, exists := tt.endpoint.GetBoolProviderSpecificProperty(tt.key)
 			assert.Equal(t, tt.expectedValue, value)
 			assert.Equal(t, tt.expectedExists, exists)
+		})
+	}
+}
+
+func TestGetOwnerId(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint *Endpoint
+		expected string
+	}{
+		{
+			name: "owner label is set",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "my-owner",
+				},
+			},
+			expected: "my-owner",
+		},
+		{
+			name: "owner label is empty string",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "",
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "owner label is not set",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					"other-label": "value",
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "labels map is empty",
+			endpoint: &Endpoint{
+				Labels: Labels{},
+			},
+			expected: "",
+		},
+		{
+			name: "labels map is nil",
+			endpoint: &Endpoint{
+				Labels: nil,
+			},
+			expected: "",
+		},
+		{
+			name: "multiple labels with owner",
+			endpoint: &Endpoint{
+				Labels: Labels{
+					OwnerLabelKey: "owner-123",
+					"other-key":   "other-value",
+				},
+			},
+			expected: "owner-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetOwner()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetNakedDomain(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint *Endpoint
+		expected string
+	}{
+		{
+			name: "standard subdomain",
+			endpoint: &Endpoint{
+				DNSName: "www.example.com",
+			},
+			expected: "example.com",
+		},
+		{
+			name: "nested subdomain",
+			endpoint: &Endpoint{
+				DNSName: "api.v1.example.com",
+			},
+			expected: "v1.example.com",
+		},
+		{
+			name: "root domain only",
+			endpoint: &Endpoint{
+				DNSName: "example.com",
+			},
+			expected: "example.com",
+		},
+		{
+			name: "single label (no dots)",
+			endpoint: &Endpoint{
+				DNSName: "localhost",
+			},
+			expected: "localhost",
+		},
+		{
+			name: "empty DNS name",
+			endpoint: &Endpoint{
+				DNSName: "",
+			},
+			expected: "",
+		},
+		{
+			name: "deeply nested subdomain",
+			endpoint: &Endpoint{
+				DNSName: "a.b.c.d.example.com",
+			},
+			expected: "b.c.d.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetNakedDomain()
+			assert.Equal(t, tt.expected, result)
+
+		})
+	}
+}
+
+func TestRequestedRecordType(t *testing.T) {
+	ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4").
+		WithProviderSpecific(ProviderSpecificRecordType, "ptr")
+	val, ok := ep.RequestedRecordType()
+	assert.True(t, ok)
+	assert.Equal(t, "ptr", val)
+
+	ep2 := NewEndpoint("example.com", RecordTypeA, "1.2.3.4")
+	_, ok = ep2.RequestedRecordType()
+	assert.False(t, ok)
+}
+
+func TestNewPTREndpoint(t *testing.T) {
+	tests := []struct {
+		name      string
+		target    string
+		ttl       TTL
+		hostnames []string
+		wantName  string
+		wantErr   bool
+	}{
+		{
+			name:      "IPv4",
+			target:    "192.168.49.2",
+			ttl:       300,
+			hostnames: []string{"web.example.com"},
+			wantName:  "2.49.168.192.in-addr.arpa",
+		},
+		{
+			name:      "IPv6",
+			target:    "2001:db8::1",
+			ttl:       600,
+			hostnames: []string{"v6.example.com"},
+			wantName:  "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+		},
+		{
+			name:      "multiple hostnames",
+			target:    "10.0.0.1",
+			ttl:       60,
+			hostnames: []string{"a.example.com", "b.example.com"},
+			wantName:  "1.0.0.10.in-addr.arpa",
+		},
+		{
+			name:    "invalid target",
+			target:  "not-an-ip",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep, err := NewPTREndpoint(tt.target, tt.ttl, tt.hostnames...)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantName, ep.DNSName)
+			assert.Equal(t, RecordTypePTR, ep.RecordType)
+			assert.Equal(t, tt.ttl, ep.RecordTTL)
+			assert.Equal(t, Targets(tt.hostnames), ep.Targets)
 		})
 	}
 }

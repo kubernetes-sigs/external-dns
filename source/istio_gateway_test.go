@@ -100,11 +100,9 @@ func (suite *GatewaySuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.Name}}",
+		},
 	)
 	suite.NoError(err, "should initialize gateway source")
 	suite.NoError(err, "should succeed")
@@ -174,11 +172,11 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
+				&Config{
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					AnnotationFilter:         ti.annotationFilter,
+				},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1535,11 +1533,13 @@ func testGatewayEndpoints(t *testing.T) {
 				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
+				&Config{
+					Namespace:                targetNamespace,
+					FQDNTemplate:             ti.fqdnTemplate,
+					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					AnnotationFilter:         ti.annotationFilter,
+				},
 			)
 			require.NoError(t, err)
 
@@ -1648,11 +1648,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				"",
-				"",
-				"",
-				false,
-				false,
+				&Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -1733,11 +1729,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		t.Context(),
 		fakeClient,
 		istiofake.NewSimpleClientset(),
-		"",
-		"",
-		"",
-		false,
-		false)
+		&Config{})
 	require.NoError(t, err)
 	gwSource, ok := src.(*gatewaySource)
 	require.True(t, ok)
@@ -1890,11 +1882,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		fakeKubeClient,
 		fakeIstioClient,
-		"",
-		"",
-		"",
-		false,
-		false,
+		&Config{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, src)
@@ -1931,11 +1919,9 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			FQDNTemplate: "{{.FQDN}}",
+		},
 	)
 	if err != nil {
 		return nil, err

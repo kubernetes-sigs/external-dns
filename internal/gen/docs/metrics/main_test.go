@@ -29,7 +29,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-const pathToDocs = "%s/../../../../docs/monitoring"
+const (
+	pathToDocs        = "%s/../../../../docs/monitoring"
+	knownMetricsCount = 22
+)
 
 func TestComputeMetrics(t *testing.T) {
 	reg := metrics.RegisterMetric
@@ -38,7 +41,7 @@ func TestComputeMetrics(t *testing.T) {
 		t.Errorf("Expected not empty metrics registry, got %d", len(reg.Metrics))
 	}
 
-	assert.Len(t, reg.Metrics, 21)
+	assert.Len(t, reg.Metrics, knownMetricsCount)
 }
 
 func TestGenerateMarkdownTableRenderer(t *testing.T) {
@@ -48,7 +51,7 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Contains(t, got, "# Available Metrics\n\n<!-- THIS FILE MUST NOT BE EDITED BY HAND -->\n")
-	assert.Contains(t, got, "| Metric Type | Subsystem   |  Help")
+	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Help |")
 }
 
 func TestGenerateMarkdownTableWithSingleMetric(t *testing.T) {

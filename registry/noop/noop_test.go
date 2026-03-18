@@ -36,7 +36,8 @@ func TestNoopRegistry(t *testing.T) {
 
 func testNoopInit(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	r, err := NewNoopRegistry(p)
+	r := newRegistry(p)
+	var err error
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 }
@@ -56,7 +57,7 @@ func testNoopRecords(t *testing.T) {
 		Create: inmemoryRecords,
 	})
 
-	r, _ := NewNoopRegistry(p)
+	r := newRegistry(p)
 
 	eps, err := r.Records(ctx)
 	require.NoError(t, err)
@@ -93,7 +94,7 @@ func testNoopApplyChanges(t *testing.T) {
 	})
 
 	// wrong changes
-	r, _ := NewNoopRegistry(p)
+	r := newRegistry(p)
 	err := r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{

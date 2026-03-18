@@ -29,6 +29,12 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			Value: "true",
 		})
 	}
+	if v, ok := annotations[RecordTypeKey]; ok {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  endpoint.ProviderSpecificRecordType,
+			Value: v,
+		})
+	}
 	setIdentifier := ""
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
