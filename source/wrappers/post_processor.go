@@ -123,9 +123,9 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		}
 		// Per-endpoint annotation overrides the global flag.
 		shouldResolve := pp.cfg.resolveLoadBalancerHostname
-		if v, ok := ep.Labels[annotations.ResolveTargetKey]; ok {
+		if v, ok := ep.GetProviderSpecificProperty("resolve-target"); ok {
 			shouldResolve = v == "true"
-			delete(ep.Labels, annotations.ResolveTargetKey)
+			ep.DeleteProviderSpecificProperty("resolve-target")
 		}
 		if shouldResolve && ep.RecordType == endpoint.RecordTypeCNAME {
 			var ipTargets endpoint.Targets

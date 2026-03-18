@@ -286,16 +286,6 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		for host, targets := range hostTargets {
 			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
-
-		// Propagate the per-resource annotation as a label so the PostProcessor can
-		// apply or suppress hostname resolution on a per-Ingress basis.
-		if v, ok := annots[annotations.ResolveTargetKey]; ok {
-			for _, ep := range routeEndpoints {
-				if ep != nil {
-					ep.WithLabel(annotations.ResolveTargetKey, v)
-				}
-			}
-		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
 		endpoints = append(endpoints, routeEndpoints...)

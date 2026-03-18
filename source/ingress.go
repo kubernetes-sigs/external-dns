@@ -157,16 +157,6 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
-		// Propagate the per-resource annotation as a label so the PostProcessor can
-		// apply or suppress hostname resolution on a per-Ingress basis.
-		if v, ok := ing.Annotations[annotations.ResolveTargetKey]; ok {
-			for _, ep := range ingEndpoints {
-				if ep != nil {
-					ep.WithLabel(annotations.ResolveTargetKey, v)
-				}
-			}
-		}
-
 		// apply template if host is missing on ingress
 		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
 			ingEndpoints,
