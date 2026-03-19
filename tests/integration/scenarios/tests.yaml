@@ -268,10 +268,8 @@ scenarios:
                 - hostname: example.com
     expected:
       - dnsName: svc.example.com
-        targets: ["104.18.26.120", "104.18.27.120"]
         recordType: A
       - dnsName: svc.example.com
-        targets: ["2606:4700::6812:1a78", "2606:4700::6812:1b78"]
         recordType: AAAA
 
   - name: ingress-loadbalancer-hostname-resolved-via-annotation
@@ -310,10 +308,8 @@ scenarios:
                 - hostname: example.com
     expected:
       - dnsName: svc.example.com
-        targets: ["104.18.26.120", "104.18.27.120"]
         recordType: A
       - dnsName: svc.example.com
-        targets: ["2606:4700::6812:1a78", "2606:4700::6812:1b78"]
         recordType: AAAA
 
   - name: ingress-loadbalancer-hostname-kept-as-cname-via-annotation

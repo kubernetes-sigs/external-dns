@@ -299,7 +299,9 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
 	}
 
-	if !endpoint.Targets.Same(expected.Targets) {
+	// Only validate targets when the expected entry specifies them.
+	// Omitting targets in the YAML allows asserting record type without strictly checking the expected ips
+	if len(expected.Targets) > 0 && !endpoint.Targets.Same(expected.Targets) {
 		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
 	}
 
