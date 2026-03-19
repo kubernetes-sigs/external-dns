@@ -110,6 +110,7 @@ func TestParseSourceAnnotations(t *testing.T) {
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 type testSource struct {
 	client string
 }
@@ -129,6 +130,7 @@ type testSource struct {
 	assert.Equal(t, "all,single", source.Namespace)
 	assert.Equal(t, "true", source.FQDNTemplate)
 	assert.Equal(t, "false", source.Events)
+	assert.Equal(t, "true", source.ProviderSpecific)
 }
 
 func TestParseSourceAnnotations_SkipsTestFiles(t *testing.T) {
@@ -180,8 +182,10 @@ type secondSource struct {}
 	assert.Len(t, sources, 2)
 	assert.Equal(t, "first", sources[0].Name)
 	assert.Equal(t, "false", sources[0].Events)
+	assert.Equal(t, "false", sources[0].ProviderSpecific)
 	assert.Equal(t, "second", sources[1].Name)
 	assert.Equal(t, "true", sources[1].Events)
+	assert.Equal(t, "false", sources[1].ProviderSpecific)
 }
 
 func TestParseFile_IgnoresNonSourceTypes(t *testing.T) {

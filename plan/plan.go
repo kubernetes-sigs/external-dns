@@ -17,7 +17,6 @@ limitations under the License.
 package plan
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,9 +26,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/idna"
 )
-
-// PropertyComparator is used in Plan for comparing the previous and current custom annotations.
-type PropertyComparator func(name string, previous string, current string) bool
 
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
@@ -54,7 +50,7 @@ type Plan struct {
 	// OwnerID of records to manage
 	OwnerID string
 	// Old owner ID we migrate from
-	OldOwnerId string
+	OldOwnerID string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -125,10 +121,6 @@ type domainEndpoints struct {
 	candidates []*endpoint.Endpoint
 }
 
-func (t planTableRow) String() string {
-	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
-}
-
 func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].current = append(t.rows[key].current, e)
@@ -137,8 +129,9 @@ func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 
 func (t *planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
-	t.rows[key].candidates = append(t.rows[key].candidates, e)
-	t.rows[key].records[e.RecordType].candidates = append(t.rows[key].records[e.RecordType].candidates, e)
+	row := t.rows[key]
+	row.candidates = append(row.candidates, e)
+	row.records[e.RecordType].candidates = append(row.records[e.RecordType].candidates, e)
 }
 
 func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
@@ -189,12 +182,16 @@ func (p *Plan) Calculate() *Plan {
 	}
 	changes := p.calculateChanges(t)
 
+	// Return a minimal plan with only the fields relevant to callers.
+	// ManagedRecords is reset to the canonical defaults (A/AAAA/CNAME) —
+	// this is intentional: it restores the default managed set regardless
+	// of what was passed in, preventing callers that chain off Calculate()
+	// from accidentally inheriting a non-default managed record configuration.
+	// See: https://github.com/kubernetes-sigs/external-dns/pull/1915
 	plan := &Plan{
-		Current: p.Current,
-		Desired: p.Desired,
-		Changes: changes,
-		// The default for ExternalDNS is to always only consider A/AAAA and CNAMEs.
-		// Everything else is an add on or something to be considered.
+		Current:        p.Current,
+		Desired:        p.Desired,
+		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}
 
@@ -261,16 +258,15 @@ func (p *Plan) appendTakenDNSNameChanges(
 			if !current.IsOwnedBy(p.OwnerID) {
 				ownersMatch = false
 				recordOwnerMismatch(p.OwnerID, current)
+				if log.IsLevelEnabled(log.DebugLevel) {
+					log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[endpoint.OwnerLabelKey], p.OwnerID)
+				}
 			}
 		}
 	}
 
 	if ownersMatch {
 		changes.Create = append(changes.Create, rowChanges.Create...)
-	} else if log.GetLevel() == log.DebugLevel {
-		for _, current := range row.current {
-			log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[endpoint.OwnerLabelKey], p.OwnerID)
-		}
 	}
 }
 
@@ -305,15 +301,15 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	update := t.resolver.ResolveUpdate(current, candidates)
 
 	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
-		p.shouldUpdateProviderSpecific(update, current) || p.isOldOwnerIdSetAndDifferent(current) {
+		p.providerSpecificChanged(update, current) || p.isOldOwnerIDSetAndDifferent(current) {
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
 	}
 }
 
-func (p *Plan) isOldOwnerIdSetAndDifferent(current *endpoint.Endpoint) bool {
-	return len(p.OldOwnerId) != 0 && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerId
+func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {
+	return p.OldOwnerID != "" && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerID
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
@@ -337,8 +333,8 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
+func (p *Plan) providerSpecificChanged(desired, current *endpoint.Endpoint) bool {
+	desiredProperties := make(map[string]endpoint.ProviderSpecificProperty, len(desired.ProviderSpecific))
 
 	for _, d := range desired.ProviderSpecific {
 		desiredProperties[d.Name] = d
@@ -365,7 +361,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
 func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.MatchAllDomainFilters, managedRecords, excludeRecords []string) []*endpoint.Endpoint {
-	filtered := []*endpoint.Endpoint{}
+	filtered := make([]*endpoint.Endpoint, 0, len(records))
 
 	for _, record := range records {
 		// Ignore records that do not match the domain filter provided

@@ -22,10 +22,10 @@ Sources are responsible for:
 
 ## Available Sources
 
-| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Resources "Resources" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.Category "Category" }} |
-|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Resources }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.Category }}|
+| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.ProviderSpecific "Provider Specific" }} | {{ padRight .ColWidths.Category "Category" }} | {{ padRight .ColWidths.Resources "Resources" }} |
+|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.ProviderSpecific }}|:{{ leftSep .ColWidths.Category }}|:{{ leftSep .ColWidths.Resources }}|
 {{- range .Sources }}
-| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.Category (lower .Category) }} |
+| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.ProviderSpecific .ProviderSpecific }} | {{ padRight $.ColWidths.Category (lower .Category) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} |
 {{- end }}
 
 ## Usage

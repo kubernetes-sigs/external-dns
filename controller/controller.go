@@ -112,7 +112,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ManagedRecords: c.ManagedRecordTypes,
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
-		OldOwnerId:     c.TXTOwnerOld,
+		OldOwnerID:     c.TXTOwnerOld,
 	}
 
 	plan = plan.Calculate()
