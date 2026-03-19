@@ -86,7 +86,7 @@ func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[stri
 
 	// conflict was found: prefer non-CNAME record types, discard CNAME candidates
 	// but keep current CNAME so it can be deleted
-	log.Infof("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
+	log.Warnf("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
 	records := make(map[string]*domainEndpoints, len(row.records))
 	for recordType, recs := range row.records {
 		if recordType == endpoint.RecordTypeCNAME {

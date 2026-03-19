@@ -22,12 +22,14 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type PlanTestSuite struct {
@@ -1144,4 +1146,36 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 			assert.Equal(t, test.shouldUpdate, b)
 		})
 	}
+}
+
+func TestOwnerMismatchLogsDebug(t *testing.T) {
+	const wantMsg = "owner id does not match"
+
+	// current A record owned by someone else; desired CNAME owned by us.
+	// The CNAME has no current record → triggers a create, which activates
+	// the owner-check block and the debug log.
+	current := &endpoint.Endpoint{
+		DNSName:    "foo",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		Labels:     map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "foo",
+		RecordType: endpoint.RecordTypeCNAME,
+		Targets:    endpoint.Targets{"bar.example.com"},
+		Labels:     map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	p.Calculate()
+	logtest.TestHelperLogContainsWithLogLevel(wantMsg, log.DebugLevel, hook, t)
 }

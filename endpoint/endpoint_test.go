@@ -19,6 +19,7 @@ package endpoint
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -692,6 +693,59 @@ func TestFilterEndpointsByOwnerIDWithRecordTypeCNAME(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ApplyEndpointFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterEndpointsByOwnerID_Logs(t *testing.T) {
+	const (
+		msgMismatch = "owner id does not match"
+		msgMissing  = "missing owner label"
+	)
+
+	matching := &Endpoint{DNSName: "foo.com", RecordType: RecordTypeA, Labels: Labels{OwnerLabelKey: "foo"}}
+	mismatch := &Endpoint{DNSName: "bar.com", RecordType: RecordTypeA, Labels: Labels{OwnerLabelKey: "bar"}}
+	noLabel := &Endpoint{DNSName: "baz.com", RecordType: RecordTypeA}
+
+	tests := []struct {
+		name     string
+		eps      []*Endpoint
+		wantLogs []string
+	}{
+		{
+			name: "no log: all endpoints match owner",
+			eps:  []*Endpoint{matching},
+		},
+		{
+			name:     "logs owner mismatch",
+			eps:      []*Endpoint{matching, mismatch},
+			wantLogs: []string{msgMismatch},
+		},
+		{
+			name:     "logs missing owner label",
+			eps:      []*Endpoint{matching, noLabel},
+			wantLogs: []string{msgMissing},
+		},
+		{
+			name:     "logs both mismatch and missing label",
+			eps:      []*Endpoint{matching, mismatch, noLabel},
+			wantLogs: []string{msgMismatch, msgMissing},
+		},
+	}
+
+	allMsgs := []string{msgMismatch, msgMissing}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			FilterEndpointsByOwnerID("foo", tt.eps)
+			for _, msg := range allMsgs {
+				if slices.Contains(tt.wantLogs, msg) {
+					logtest.TestHelperLogContainsWithLogLevel(msg, log.DebugLevel, hook, t)
+				} else {
+					logtest.TestHelperLogNotContains(msg, hook, t)
+				}
 			}
 		})
 	}

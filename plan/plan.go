@@ -131,7 +131,7 @@ func (t *planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	row := t.rows[key]
 	row.candidates = append(row.candidates, e)
-	row.records[e.RecordType].candidates = append(rec.candidates, e)
+	row.records[e.RecordType].candidates = append(row.records[e.RecordType].candidates, e)
 }
 
 func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
