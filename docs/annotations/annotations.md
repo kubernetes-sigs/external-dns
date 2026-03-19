@@ -320,7 +320,7 @@ temporarily unresolvable), that target is silently skipped.
 
 ### Use Cases for `external-dns.alpha.kubernetes.io/resolve-target` annotation
 
-#### Opt in to resolution for a single Ingress
+#### Opt in to resolution for a single Source
 
 Resolve load balancer hostnames to IPs for one Ingress without enabling the global flag:
 
@@ -347,22 +347,29 @@ spec:
 
 > ExternalDNS will resolve the Ingress load balancer hostname and publish A/AAAA records instead of a CNAME.
 
-#### Opt out of resolution for a single Gateway Route
+#### Opt out of resolution for a single Source Route
 
-Keep hostname targets as CNAME for one HTTPRoute when the global flag is on:
+Keep hostname targets as CNAME for one Ingress when the global flag is on:
 
 ```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: my-route
+  name: my-ingress
   annotations:
     external-dns.alpha.kubernetes.io/resolve-target: "false"
 spec:
-  parentRefs:
-    - name: my-gateway
-  hostnames:
-    - app.example.com
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
 ```
 
 > ExternalDNS will keep the CNAME record for this route, overriding the global flag.
