@@ -69,6 +69,7 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
 type serviceSource struct {
 	client                kubernetes.Interface

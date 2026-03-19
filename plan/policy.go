@@ -21,7 +21,7 @@ type Policy interface {
 	Apply(changes *Changes) *Changes
 }
 
-// Policies is a registry of available policies.
+// Policies is a registry of available policies, keyed by name.
 var Policies = map[string]Policy{
 	"sync":        &SyncPolicy{},
 	"upsert-only": &UpsertOnlyPolicy{},
@@ -31,7 +31,7 @@ var Policies = map[string]Policy{
 // SyncPolicy allows for full synchronization of DNS records.
 type SyncPolicy struct{}
 
-// Apply applies the sync policy which returns the set of changes as is.
+// Apply is a pass-through: sync allows all changes without restriction.
 func (p *SyncPolicy) Apply(changes *Changes) *Changes {
 	return changes
 }

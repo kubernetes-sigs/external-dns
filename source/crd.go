@@ -56,6 +56,7 @@ import (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=true
+// +externaldns:source:provider-specific=true
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string

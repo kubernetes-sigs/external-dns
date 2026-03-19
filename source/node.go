@@ -46,6 +46,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
 type nodeSource struct {
 	client                kubernetes.Interface
