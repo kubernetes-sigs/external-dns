@@ -210,6 +210,10 @@ namespaced: false
 # (no ClusterRole/ClusterRoleBinding) for Gateway sources.
 gatewayNamespace:  # @schema type:[string, null]; default: null
 
+# -- Source namespace to watch for Kubernetes resources other than Gateway API gateways.
+# Used only when `namespaced=true`. Defaults to Release.Namespace
+sourceNamespace:  # @schema type:[string, null]; default: null
+
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:
   - service

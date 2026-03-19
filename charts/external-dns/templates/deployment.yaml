@@ -109,7 +109,7 @@ spec:
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}
-            - --namespace={{ .Release.Namespace }}
+            - --namespace={{ default .Release.Namespace .Values.sourceNamespace }}
             {{- end }}
             {{- if .Values.gatewayNamespace }}
             - --gateway-namespace={{ .Values.gatewayNamespace }}

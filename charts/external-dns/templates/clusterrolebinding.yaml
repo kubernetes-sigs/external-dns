@@ -3,6 +3,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: {{ .Values.namespaced | ternary "RoleBinding" "ClusterRoleBinding" }}
 metadata:
   name: {{ printf "%s-viewer" (include "external-dns.fullname" .) }}
+  {{- if and .Values.namespaced .Values.sourceNamespace }}
+  namespace: {{ .Values.sourceNamespace }}
+  {{- end }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
 roleRef:

@@ -840,6 +840,13 @@
       "description": "If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.",
       "type": "boolean"
     },
+    "sourceNamespace": {
+      "description": "Source namespace to watch for Kubernetes resources other than Gateway API gateways. Used only when `namespaced=true`. Defaults to Release.Namespace",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "sources": {
       "description": "_Kubernetes_ resources to monitor for DNS entries.",
       "type": "array",

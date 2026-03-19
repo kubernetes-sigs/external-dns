@@ -60,7 +60,7 @@ For set up for a specific provider using the Helm chart, see the following links
 ## Namespace Scoped Installation
 
 `external-dns` supports running on a namespace-only scope, too.
-If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`. By default, they are set up in the same namespace that `external-dns` itself is installed to. This can be changed via the `sourceNamespace` value.
 
 Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
 
@@ -180,6 +180,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | serviceMonitor.targetLabels | list | `[]` | Provide target labels for the `ServiceMonitor`. |
 | serviceMonitor.tlsConfig | object | `{}` | Configure the `ServiceMonitor` [TLS config](https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#tlsconfig). |
 | shareProcessNamespace | bool | `false` | If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled. |
+| sourceNamespace | string | `nil` | Source namespace to watch for Kubernetes resources other than Gateway API gateways. Used only when `namespaced=true`. Defaults to Release.Namespace |
 | sources | list | `["service","ingress"]` | _Kubernetes_ resources to monitor for DNS entries. |
 | terminationGracePeriodSeconds | int | `nil` | Termination grace period for the `Pod` in seconds. |
 | tolerations | list | `[]` | Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
