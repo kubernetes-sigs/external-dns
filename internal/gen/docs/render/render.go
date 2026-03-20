@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package utils
+package render
 
 import (
+	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 	"text/template"
@@ -26,17 +28,21 @@ import (
 	"golang.org/x/text/language"
 )
 
+// WriteToFile writes the given content to a file, creating or truncating it.
 func WriteToFile(filename string, content string) error {
-	file, fileErr := os.Create(filename)
-	if fileErr != nil {
-		_ = fmt.Errorf("failed to create file: %w", fileErr)
+	return os.WriteFile(filename, []byte(content), 0644)
+}
+
+// RenderTemplate parses and executes a named Go template from the given filesystem.
+func RenderTemplate(fsys fs.FS, name string, data any) (string, error) {
+	tmpl := template.New("").Funcs(FuncMap())
+	template.Must(tmpl.ParseFS(fsys, "templates/*.gotpl"))
+
+	var b bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&b, name, data); err != nil {
+		return "", err
 	}
-	defer file.Close()
-	_, writeErr := file.WriteString(content)
-	if writeErr != nil {
-		_ = fmt.Errorf("failed to write to file: %s", filename)
-	}
-	return nil
+	return b.String(), nil
 }
 
 // FuncMap returns a mapping of all of the functions that Engine has.
@@ -64,9 +70,14 @@ func FuncMap() template.FuncMap {
 
 // ComputeColumnWidth returns the maximum string length among the header and all values.
 func ComputeColumnWidth(header string, values []string) int {
+	return MapColumn(header, values, func(s string) string { return s })
+}
+
+// MapColumn returns the max width among the header and fn applied to each item.
+func MapColumn[T any](header string, items []T, fn func(T) string) int {
 	w := len(header)
-	for _, v := range values {
-		w = max(w, len(v))
+	for _, item := range items {
+		w = max(w, len(fn(item)))
 	}
 	return w
 }

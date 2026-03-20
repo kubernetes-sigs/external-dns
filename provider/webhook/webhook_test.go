@@ -34,13 +34,18 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
+const (
+	testReadTimeout  = 5 * time.Millisecond
+	testWriteTimeout = 10 * time.Millisecond
+)
+
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := newProvider("://invalid-url")
+	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := newProvider("http://nonexistent.url")
+	_, err := newProvider(t.Context(), "http://nonexistent.url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
@@ -52,7 +57,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
@@ -63,9 +68,9 @@ func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "status code < 500")
+	require.Contains(t, err.Error(), "unexpected status code 400")
 }
 
 func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
@@ -78,7 +83,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -96,7 +101,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
@@ -112,7 +117,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -131,7 +136,7 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(svr.URL)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
@@ -153,7 +158,7 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	_, err = p.Records(t.Context())
 	require.Error(t, err)
@@ -166,7 +171,7 @@ func TestRecords_HTTPRequestErrorMissingHost0(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := wpr.Records(nil)
+	_, err := wpr.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
@@ -177,7 +182,7 @@ func TestRecords_HTTPRequestErrorMissingHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := wpr.Records(nil)
+	_, err := wpr.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported protocol scheme")
 }
@@ -217,7 +222,7 @@ func TestRecords_NonOKStatusCode(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(nil)
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get records with code 511")
 }
@@ -239,7 +244,7 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
@@ -285,7 +290,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 
 	err = p.ApplyChanges(t.Context(), nil)
@@ -322,7 +327,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(svr.URL)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -358,7 +363,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -402,7 +407,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -472,7 +477,7 @@ func TestAdjustEndpoints_NonOKStatusCode(t *testing.T) {
 
 	_, err := p.AdjustEndpoints(endpoints)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to AdjustEndpoints with code  511")
+	assert.Contains(t, err.Error(), "failed to AdjustEndpoints with code 511")
 }
 
 func TestAdjustEndpoints_DecodeError(t *testing.T) {
@@ -529,4 +534,28 @@ func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
 	resp, err := requestWithRetry(client, req)
 	require.Error(t, err)
 	require.Nil(t, resp)
+}
+
+func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "ok")
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, 3, attempts)
 }
