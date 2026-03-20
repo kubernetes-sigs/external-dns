@@ -28,6 +28,7 @@ import (
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -96,6 +97,20 @@ func NewIstioGatewaySource(
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
+
+	if err = ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)); err != nil {
+		return nil, err
+	}
+
+	if err = gatewayInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkingv1beta1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
 	)); err != nil {
 		return nil, err
 	}

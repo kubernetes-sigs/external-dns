@@ -188,11 +188,8 @@ func NewGlooSource(
 		if err := inf.Informer().SetTransform(unstructuredTransformer); err != nil {
 			return nil, err
 		}
+		_, _ = inf.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
-
-	_, _ = proxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())

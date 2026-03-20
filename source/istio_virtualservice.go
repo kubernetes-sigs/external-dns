@@ -111,6 +111,20 @@ func NewIstioVirtualServiceSource(
 		return nil, err
 	}
 
+	if err = virtualServiceInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1beta1.VirtualService](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)); err != nil {
+		return nil, err
+	}
+
+	if err = gatewayInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1beta1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)); err != nil {
+		return nil, err
+	}
+
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())

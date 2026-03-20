@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -317,5 +318,17 @@ func TestPopulateGVK(t *testing.T) {
 
 		populateGVK(obj)
 		assert.Equal(t, gvk, obj.GroupVersionKind())
+	})
+
+	t.Run("Istio Gateway not in k8s scheme, Kind populated via reflection fallback", func(t *testing.T) {
+		// Istio types are not registered in k8s.io/client-go/kubernetes/scheme, so the
+		// scheme lookup fails. populateGVK falls back to reflection and derives Kind
+		// from the Go struct name. Group and Version remain empty.
+		gw := &networkingv1beta1.Gateway{}
+		require.Empty(t, gw.Kind)
+
+		populateGVK(gw)
+		assert.Equal(t, "Gateway", gw.Kind)
+		assert.Empty(t, gw.APIVersion) // Group/Version unknown without the Istio scheme
 	})
 }

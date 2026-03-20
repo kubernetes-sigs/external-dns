@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 )
@@ -132,15 +133,18 @@ func TransformerWithOptions[T interface {
 // knows what type it requested. Populating it here makes cached objects self-describing
 // for templates and logging without any per-reconciliation overhead.
 func populateGVK(obj runtime.Object) {
-	if obj.GetObjectKind().GroupVersionKind().Kind != "" {
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Kind != "" {
 		return
 	}
 	gvks, _, err := scheme.Scheme.ObjectKinds(obj)
 	if err == nil && len(gvks) > 0 {
-		obj.GetObjectKind().SetGroupVersionKind(gvks[0])
+		gvk = gvks[0]
+	} else {
+		// Fallback to reflection for types not registered in the scheme.
+		gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
 	}
-	// For types not registered in the scheme (e.g. *unstructured.Unstructured), the
-	// GVK is already carried by the object itself — nothing to do.
+	obj.GetObjectKind().SetGroupVersionKind(gvk)
 }
 
 // clearStatusConditions zeroes out the Status.Conditions field on obj if it exists.
