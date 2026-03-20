@@ -17,45 +17,20 @@ limitations under the License.
 package wrappers
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// stubClientGenerator satisfies source.ClientGenerator for sources that do not
-// require any Kubernetes client (e.g. the "fake" source).
-type stubClientGenerator struct{}
-
-func (stubClientGenerator) KubeClient() (kubernetes.Interface, error) {
-	return nil, fmt.Errorf("KubeClient: not available in stub")
-}
-func (stubClientGenerator) GatewayClient() (gateway.Interface, error) {
-	return nil, fmt.Errorf("GatewayClient: not available in stub")
-}
-func (stubClientGenerator) IstioClient() (istioclient.Interface, error) {
-	return nil, fmt.Errorf("IstioClient: not available in stub")
-}
-func (stubClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
-	return nil, fmt.Errorf("DynamicKubernetesClient: not available in stub")
-}
-func (stubClientGenerator) OpenShiftClient() (openshift.Interface, error) {
-	return nil, fmt.Errorf("OpenShiftClient: not available in stub")
-}
-func (stubClientGenerator) RESTConfig() (*rest.Config, error) {
-	return nil, fmt.Errorf("RESTConfig: not available in stub")
+func stubConfig(extCfg *externaldns.Config) *source.Config {
+	return source.NewSourceConfig(extCfg, source.WithClientGenerator(testutils.StubClientGenerator{}))
 }
 
 func TestBuildWrappedSource(t *testing.T) {
@@ -66,27 +41,25 @@ func TestBuildWrappedSource(t *testing.T) {
 	}{
 		{
 			name: "fake source with no extra wrappers",
-			cfg: source.NewSourceConfig(&externaldns.Config{
-				Sources: []string{types.Fake},
-			}),
+			cfg:  stubConfig(&externaldns.Config{Sources: []string{types.Fake}}),
 		},
 		{
 			name: "fake source with target filter wrapper",
-			cfg: source.NewSourceConfig(&externaldns.Config{
+			cfg: stubConfig(&externaldns.Config{
 				Sources:         []string{types.Fake},
 				TargetNetFilter: []string{"10.0.0.0/8"},
 			}),
 		},
 		{
 			name: "fake source with NAT64 networks",
-			cfg: source.NewSourceConfig(&externaldns.Config{
+			cfg: stubConfig(&externaldns.Config{
 				Sources:       []string{types.Fake},
 				NAT64Networks: []string{"2001:db8::/96"},
 			}),
 		},
 		{
 			name: "fake source with minTTL, provider, and preferAlias",
-			cfg: source.NewSourceConfig(&externaldns.Config{
+			cfg: stubConfig(&externaldns.Config{
 				Sources:     []string{types.Fake},
 				MinTTL:      300 * time.Second,
 				Provider:    "aws",
@@ -95,22 +68,20 @@ func TestBuildWrappedSource(t *testing.T) {
 		},
 		{
 			name: "fake source with exclude target nets",
-			cfg: source.NewSourceConfig(&externaldns.Config{
+			cfg: stubConfig(&externaldns.Config{
 				Sources:           []string{types.Fake},
 				TargetNetFilter:   []string{"10.0.0.0/8"},
 				ExcludeTargetNets: []string{"10.1.0.0/16"},
 			}),
 		},
 		{
-			name: "unknown source returns error",
-			cfg: source.NewSourceConfig(&externaldns.Config{
-				Sources: []string{"does-not-exist"},
-			}),
+			name:    "unknown source returns error",
+			cfg:     stubConfig(&externaldns.Config{Sources: []string{"does-not-exist"}}),
 			wantErr: true,
 		},
 		{
 			name: "invalid NAT64 network returns error",
-			cfg: source.NewSourceConfig(&externaldns.Config{
+			cfg: stubConfig(&externaldns.Config{
 				Sources:       []string{types.Fake},
 				NAT64Networks: []string{"not-a-cidr"},
 			}),
@@ -120,7 +91,7 @@ func TestBuildWrappedSource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			src, err := BuildWrappedSource(t.Context(), tt.cfg, stubClientGenerator{})
+			src, err := Build(t.Context(), tt.cfg)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

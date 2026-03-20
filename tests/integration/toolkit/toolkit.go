@@ -237,7 +237,7 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 }
 
 // scenarioToConfig creates a source.Config for testing with the scenario config.
-func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
+func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) *source.Config {
 	return source.NewSourceConfig(&externaldns.Config{
 		Sources:             scenarioCfg.Sources,
 		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
@@ -248,7 +248,7 @@ func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
 		NAT64Networks:       scenarioCfg.NAT64Networks,
 		Provider:            scenarioCfg.Provider,
 		PreferAlias:         scenarioCfg.PreferAlias,
-	})
+	}, opts...)
 }
 
 // CreateWrappedSource builds all named sources using a mock client and wraps
@@ -257,7 +257,8 @@ func CreateWrappedSource(
 	ctx context.Context,
 	client *fake.Clientset,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	return wrappers.BuildWrappedSource(ctx, scenarioToConfig(scenarioCfg), newMockClientGenerator(client))
+	cfg := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	return wrappers.Build(ctx, cfg)
 }
 
 // TODO: copied from source/wrappers/source_test.go - unify in following PR

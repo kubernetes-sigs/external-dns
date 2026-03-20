@@ -293,7 +293,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	src, err := wrappers.BuildWrappedSource(ctx, sCfg, sCfg.ClientGenerator())
+	src, err := wrappers.Build(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),

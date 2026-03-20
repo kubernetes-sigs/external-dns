@@ -22,12 +22,11 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
-// BuildWrappedSource builds all named sources via the provided ClientGenerator
-// and wraps them with the standard pipeline (dedup, optional NAT64, optional
-// target filter, post-processor). Accepting an explicit ClientGenerator allows
-// callers such as integration tests to inject a fake client.
-func BuildWrappedSource(ctx context.Context, cfg *source.Config, clientGen source.ClientGenerator) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg, clientGen)
+// Build creates all named sources using cfg's ClientGenerator and wraps them
+// with the standard pipeline (dedup, optional NAT64, optional target filter,
+// post-processor). Inject a custom ClientGenerator via source.WithClientGenerator.
+func Build(ctx context.Context, cfg *source.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
 	if err != nil {
 		return nil, err
 	}

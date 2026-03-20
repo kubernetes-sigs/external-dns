@@ -82,7 +82,7 @@ func Execute() {
 	go handleSigterm(cancel)
 
 	sCfg := source.NewSourceConfig(cfg)
-	endpointsSource, err := wrappers.BuildWrappedSource(ctx, sCfg, sCfg.ClientGenerator())
+	endpointsSource, err := wrappers.Build(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
