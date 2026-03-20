@@ -244,32 +244,20 @@ func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
 		DefaultTargets:      scenarioCfg.DefaultTargets,
 		ForceDefaultTargets: scenarioCfg.ForceDefaultTargets,
 		TargetNetFilter:     scenarioCfg.TargetNetFilter,
+		ExcludeTargetNets:   scenarioCfg.ExcludeTargetNets,
+		NAT64Networks:       scenarioCfg.NAT64Networks,
+		Provider:            scenarioCfg.Provider,
+		PreferAlias:         scenarioCfg.PreferAlias,
 	})
 }
 
-// CreateWrappedSource creates sources using source.BuildWithConfig and wraps them with wrappers.WrapSources.
-// TODO: could we reuse the same source.BuildWithConfig() code as the controller instead of duplicating it here? It would require refactoring to allow passing in a custom client generator, but it would ensure we're testing the same code as the controller.
+// CreateWrappedSource builds all named sources using a mock client and wraps
+// them with the same pipeline used by the controller.
 func CreateWrappedSource(
 	ctx context.Context,
 	client *fake.Clientset,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	clientGen := newMockClientGenerator(client)
-	cfg := scenarioToConfig(scenarioCfg)
-
-	// TODO: copied from controller/execute.go#buildSources
-	sources, err := source.ByNames(ctx, cfg, clientGen)
-	if err != nil {
-		return nil, err
-	}
-	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
-
-	return wrappers.WrapSources(sources, opts)
+	return wrappers.BuildWrappedSource(ctx, scenarioToConfig(scenarioCfg), newMockClientGenerator(client))
 }
 
 // TODO: copied from source/wrappers/source_test.go - unify in following PR

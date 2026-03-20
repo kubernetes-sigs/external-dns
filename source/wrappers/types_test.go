@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuildSourceWithWrappers(t *testing.T) {
+func TestWrapSources(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -74,7 +74,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := WrapSources(nil, tt.cfg)
+			_, err := wrapSources(nil, tt.cfg)
 			require.NoError(t, err)
 			tt.asserts(t, tt.cfg)
 		})
@@ -83,7 +83,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 func TestWrapSources_NAT64Error(t *testing.T) {
 	cfg := NewConfig(WithNAT64Networks([]string{"badnet"}))
-	src, err := WrapSources(nil, cfg)
+	src, err := wrapSources(nil, cfg)
 	assert.Nil(t, src)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create NAT64 source wrapper")

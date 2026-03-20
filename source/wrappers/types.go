@@ -114,10 +114,10 @@ func (o *Config) isSourceWrapperInstrumented(name string) bool {
 	return ok
 }
 
-// WrapSources combines multiple sources into a single source,
+// wrapSources combines multiple sources into a single source,
 // applies optional NAT64 and target network filtering wrappers, and sets a minimum TTL.
 // It registers each applied wrapper in the Config for instrumentation.
-func WrapSources(
+func wrapSources(
 	sources []source.Source,
 	opts *Config,
 ) (source.Source, error) {
