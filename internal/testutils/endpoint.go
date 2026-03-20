@@ -89,7 +89,7 @@ func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 	}
 	sa, sb := cloneAndSort(a), cloneAndSort(b)
 	for i := range sa {
-		if !reflect.DeepEqual(sa[i].Labels, sb[i].Labels) {
+		if !maps.Equal(sa[i].Labels, sb[i].Labels) {
 			return false
 		}
 	}
