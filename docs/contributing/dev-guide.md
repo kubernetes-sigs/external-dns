@@ -25,6 +25,31 @@ Building and/or testing `external-dns` requires additional tooling.
 - [spectral](https://github.com/stoplightio/spectral)
 - [python](https://www.python.org/downloads/)
 
+### Go Tools
+
+Additional Go-based tools are managed in [`go.tool.mod`](../../go.tool.mod) and used for code generation:
+
+| Tool                                                                  | Purpose                                            |
+|-----------------------------------------------------------------------|----------------------------------------------------|
+| [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods       |
+| [yq](https://github.com/mikefarah/yq)                                 | YAML processing (splitting, filtering CRD outputs) |
+| [yamlfmt](https://github.com/google/yamlfmt)                          | YAML formatting                                    |
+
+List all installed Go tools:
+
+```sh
+make go-tools
+```
+
+Update Go tools to their latest versions:
+
+```sh
+make update-tools-deps
+```
+
+> **Note:** Updates are done manually because Dependabot does not yet support `go.tool.mod`
+> ([dependabot-core#12050](https://github.com/dependabot/dependabot-core/issues/12050)).
+
 ## First Steps
 
 ***Configure Development Environment***
@@ -86,6 +111,22 @@ func TestMe(t *testing.T) {
   testutils.TestHelperLogNotContains("this message should not be shown", hook, t)
 }
 ```
+
+## CRD Generation
+
+The `DNSEndpoint` CRD manifest is generated from Go types using `controller-gen` and must be regenerated whenever the types in `endpoint/` or `apis/` change.
+
+```sh
+make crd
+```
+
+This runs [`scripts/generate-crd.sh`](../../scripts/generate-crd.sh) which:
+
+1. Generates `DeepCopy` methods for types in `endpoint/` and `apis/`
+2. Generates the CRD manifest into `config/crd/standard/`
+3. Copies the CRD (with filtered annotations) into `charts/external-dns/crds/`
+
+The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `go.tool.mod` at generation time and is updated automatically.
 
 ### Integration Tests
 

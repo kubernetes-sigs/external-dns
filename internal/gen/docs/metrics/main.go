@@ -17,23 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"os"
-	"reflect"
 	"slices"
 	"sort"
 	"strings"
-	"text/template"
-	"unsafe"
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 
-	// the imports is necessary for the code generation process.
+	// these imports are necessary for the code generation process.
 	_ "sigs.k8s.io/external-dns/controller"
 	_ "sigs.k8s.io/external-dns/provider"
 	_ "sigs.k8s.io/external-dns/provider/webhook"
@@ -55,17 +51,14 @@ func main() {
 		os.Exit(1)
 	}
 	content += "\n"
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
-	tmpl := template.New("").Funcs(utils.FuncMap())
-	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
-
 	sortMetrics(m.Metrics)
 	var runtimeMetrics []string
 	if withRuntime {
-		runtimeMetrics = getRuntimeMetrics(prometheus.DefaultRegisterer)
+		runtimeMetrics = getRuntimeMetrics(prometheus.DefaultGatherer)
 		// available when promhttp.Handler() is activated
 		runtimeMetrics = append(runtimeMetrics, []string{
 			"process_network_receive_bytes_total",
@@ -77,26 +70,12 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 		runtimeMetrics = []string{}
 	}
 
-	colWidths := computeColumnWidths(m.Metrics)
-	runtimeWidth := computeRuntimeWidth(runtimeMetrics)
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "metrics.gotpl", struct {
-		Metrics        []*metrics.Metric
-		RuntimeMetrics []string
-		ColWidths      columnWidths
-		RuntimeWidth   int
-	}{
+	return render.RenderTemplate(templates, "metrics.gotpl", templateData{
 		Metrics:        m.Metrics,
 		RuntimeMetrics: runtimeMetrics,
-		ColWidths:      colWidths,
-		RuntimeWidth:   runtimeWidth,
+		ColWidths:      computeColumnWidths(m.Metrics),
+		RuntimeWidth:   render.ComputeColumnWidth("Name", runtimeMetrics),
 	})
-
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
 }
 
 // sortMetrics sorts the given slice of metrics by their subsystem and name.
@@ -110,26 +89,28 @@ func sortMetrics(metrics []*metrics.Metric) {
 	})
 }
 
-// getRuntimeMetrics retrieves the list of runtime metrics from the Prometheus library.
-func getRuntimeMetrics(reg prometheus.Registerer) []string {
-	var runtimeMetrics []string
-
-	// hacks to get the runtime metrics from prometheus library
-	// safe to do because it's a just a documentation generator
-	values := reflect.ValueOf(reg).Elem().FieldByName("dimHashesByName")
-	values = reflect.NewAt(values.Type(), unsafe.Pointer(values.UnsafeAddr())).Elem()
-
-	switch v := values.Interface().(type) {
-	case map[string]uint64:
-		for k := range v {
-			if !strings.HasPrefix(k, "external_dns") {
-				runtimeMetrics = append(runtimeMetrics, k)
-			}
-		}
-	default:
+// getRuntimeMetrics retrieves the list of runtime metrics from the Prometheus registry.
+func getRuntimeMetrics(gatherer prometheus.Gatherer) []string {
+	mfs, err := gatherer.Gather()
+	if err != nil {
+		return nil
 	}
-	sort.Strings(runtimeMetrics)
+
+	runtimeMetrics := make([]string, 0, len(mfs))
+	for _, mf := range mfs {
+		name := mf.GetName()
+		if !strings.HasPrefix(name, "external_dns") {
+			runtimeMetrics = append(runtimeMetrics, name)
+		}
+	}
 	return runtimeMetrics
+}
+
+type templateData struct {
+	Metrics        []*metrics.Metric
+	RuntimeMetrics []string
+	ColWidths      columnWidths
+	RuntimeWidth   int
 }
 
 type columnWidths struct {
@@ -140,24 +121,10 @@ type columnWidths struct {
 }
 
 func computeColumnWidths(ms []*metrics.Metric) columnWidths {
-	names := make([]string, len(ms))
-	types := make([]string, len(ms))
-	subsystems := make([]string, len(ms))
-	helps := make([]string, len(ms))
-	for i, m := range ms {
-		names[i] = m.Name
-		types[i] = m.Type
-		subsystems[i] = m.Subsystem
-		helps[i] = m.Help
-	}
 	return columnWidths{
-		Name:      utils.ComputeColumnWidth("Name", names),
-		Type:      utils.ComputeColumnWidth("Metric Type", types),
-		Subsystem: utils.ComputeColumnWidth("Subsystem", subsystems),
-		Help:      utils.ComputeColumnWidth("Help", helps),
+		Name:      render.MapColumn("Name", ms, func(m *metrics.Metric) string { return m.Name }),
+		Type:      render.MapColumn("Metric Type", ms, func(m *metrics.Metric) string { return m.Type }),
+		Subsystem: render.MapColumn("Subsystem", ms, func(m *metrics.Metric) string { return m.Subsystem }),
+		Help:      render.MapColumn("Help", ms, func(m *metrics.Metric) string { return m.Help }),
 	}
-}
-
-func computeRuntimeWidth(ms []string) int {
-	return utils.ComputeColumnWidth("Name", ms)
 }
