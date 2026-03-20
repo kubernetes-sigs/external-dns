@@ -18,6 +18,8 @@ package wrappers
 
 import (
 	"context"
+	"maps"
+	"net"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -27,31 +29,91 @@ import (
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
+// It optionally resolves CNAME targets (load balancer hostnames) to their underlying
+// A/AAAA IP addresses via DNS lookup before deduplication.
 type dedupSource struct {
-	source source.Source
+	source              source.Source
+	resolveLoadBalancer bool
+	lookupIP            func(string) ([]net.IP, error)
+}
+
+// DedupSourceOption is a functional option for dedupSource.
+type DedupSourceOption func(*dedupSource)
+
+// WithDedupResolveLoadBalancerHostname enables resolving CNAME targets to A/AAAA records
+// before deduplication.
+func WithDedupResolveLoadBalancerHostname(enabled bool) DedupSourceOption {
+	return func(ds *dedupSource) {
+		ds.resolveLoadBalancer = enabled
+	}
 }
 
 // NewDedupSource creates a new dedupSource wrapping the provided Source.
-func NewDedupSource(source source.Source) source.Source {
-	return &dedupSource{source: source}
+func NewDedupSource(source source.Source, opts ...DedupSourceOption) source.Source {
+	ds := &dedupSource{
+		source:   source,
+		lookupIP: net.LookupIP,
+	}
+	for _, opt := range opts {
+		opt(ds)
+	}
+	return ds
 }
 
-// Endpoints collects endpoints from its wrapped source and returns them without duplicates.
-func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+// Endpoints collects endpoints from its wrapped source, optionally resolves CNAME targets,
+// and returns them without duplicates.
+func (ds *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
-	result := make([]*endpoint.Endpoint, 0)
-	collected := make(map[string]struct{})
 
-	endpoints, err := ms.source.Endpoints(ctx)
+	raw, err := ds.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, ep := range endpoints {
+	// Resolve CNAME targets to A/AAAA records before deduplication.
+	resolved := make([]*endpoint.Endpoint, 0, len(raw))
+	for _, ep := range raw {
 		if ep == nil {
 			continue
 		}
 
+		shouldResolve := ds.resolveLoadBalancer
+		if v, ok := ep.GetProviderSpecificProperty("resolve-target"); ok {
+			shouldResolve = v == "true"
+			ep.DeleteProviderSpecificProperty("resolve-target")
+		}
+
+		if shouldResolve && ep.RecordType == endpoint.RecordTypeCNAME {
+			var ipTargets endpoint.Targets
+			for _, target := range ep.Targets {
+				ips, err := ds.lookupIP(target)
+				if err != nil {
+					log.Errorf("Unable to resolve %q: %v", target, err)
+					continue
+				}
+				for _, ip := range ips {
+					ipTargets = append(ipTargets, ip.String())
+				}
+			}
+			if len(ipTargets) == 0 {
+				// All resolutions failed; skip this endpoint entirely.
+				continue
+			}
+			eps := endpoint.EndpointsForHostname(ep.DNSName, ipTargets, ep.RecordTTL, ep.ProviderSpecific, ep.SetIdentifier, "")
+			for _, r := range eps {
+				maps.Copy(r.Labels, ep.Labels)
+			}
+			resolved = append(resolved, eps...)
+			continue
+		}
+
+		resolved = append(resolved, ep)
+	}
+
+	// Deduplicate.
+	result := make([]*endpoint.Endpoint, 0, len(resolved))
+	collected := make(map[string]struct{})
+	for _, ep := range resolved {
 		// validate endpoint before normalization
 		if ok := ep.CheckEndpoint(); !ok {
 			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))

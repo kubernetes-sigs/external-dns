@@ -25,16 +25,15 @@ import (
 )
 
 type Config struct {
-	defaultTargets              []string
-	forceDefaultTargets         bool
-	provider                    string
-	nat64Networks               []string
-	targetNetFilter             []string
-	excludeTargetNets           []string
-	minTTL                      time.Duration
-	preferAlias                 bool
-	resolveLoadBalancerHostname bool
-	sourceWrappers              map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
+	defaultTargets      []string
+	forceDefaultTargets bool
+	provider            string
+	nat64Networks       []string
+	targetNetFilter     []string
+	excludeTargetNets   []string
+	minTTL              time.Duration
+	preferAlias         bool
+	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 func NewConfig(opts ...Option) *Config {
@@ -97,14 +96,6 @@ func WithPreferAlias(enabled bool) Option {
 	}
 }
 
-// WithResolveLoadBalancerHostname enables resolving CNAME targets in endpoint results to
-// IP addresses, producing A/AAAA records instead of CNAME records.
-func WithResolveLoadBalancerHostname(enabled bool) Option {
-	return func(o *Config) {
-		o.resolveLoadBalancerHostname = enabled
-	}
-}
-
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -130,9 +121,7 @@ func WrapSources(
 	sources []source.Source,
 	opts *Config,
 ) (source.Source, error) {
-	combinedSource := NewResolveSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets), opts.resolveLoadBalancerHostname)
-	opts.addSourceWrapper("resolve")
-	combinedSource = NewDedupSource(combinedSource)
+	combinedSource := NewDedupSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets))
 	opts.addSourceWrapper("dedup")
 	if len(opts.nat64Networks) > 0 {
 		var err error
