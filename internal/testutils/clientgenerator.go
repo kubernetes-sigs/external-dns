@@ -43,6 +43,7 @@ type MockClientGenerator struct {
 	IstioClientValue             istioclient.Interface
 	DynamicKubernetesClientValue dynamic.Interface
 	OpenShiftClientValue         openshift.Interface
+	RESTConfigValue              *rest.Config
 }
 
 // stubClientGenerator implements source.ClientGenerator where all methods
@@ -105,7 +106,8 @@ func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 func (m *MockClientGenerator) RESTConfig() (*rest.Config, error) {
 	args := m.Called()
 	if args.Error(1) == nil {
-		return args.Get(0).(*rest.Config), nil
+		m.RESTConfigValue = args.Get(0).(*rest.Config)
+		return m.RESTConfigValue, nil
 	}
 	return nil, args.Error(1)
 }
