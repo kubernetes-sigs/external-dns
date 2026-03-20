@@ -773,7 +773,7 @@ func TestPodSource(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, ep := range endpoints {
 				// TODO: source should always set the resource label key. currently not supported by the pod source.

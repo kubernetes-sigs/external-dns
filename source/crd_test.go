@@ -653,7 +653,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate received endpoints against expected endpoints.
-			validateEndpoints(t, receivedEndpoints, ti.endpoints)
+			testutils.ValidateEndpoints(t, receivedEndpoints, ti.endpoints)
 
 			for _, e := range receivedEndpoints {
 				// TODO: at the moment not all sources apply ResourceLabelKey

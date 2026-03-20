@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,7 +102,7 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err, "failed to get Endpoints")
-	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		newTestEndpoint("api-annotation.foobar.internal", ips...),
 		newTestEndpoint("api-template.foobar.internal", ips...),
 	})

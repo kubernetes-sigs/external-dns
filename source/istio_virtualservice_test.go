@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -746,7 +748,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			} else if endpoints, err := source.endpointsFromVirtualService(t.Context(), ti.vsconfig.Config()); err != nil {
 				require.NoError(t, err)
 			} else {
-				validateEndpoints(t, endpoints, ti.expected)
+				testutils.ValidateEndpoints(t, endpoints, ti.expected)
 			}
 		})
 	}
@@ -2036,7 +2038,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }
@@ -2356,7 +2358,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 			res, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, res, tt.expected)
+			testutils.ValidateEndpoints(t, res, tt.expected)
 		})
 	}
 }

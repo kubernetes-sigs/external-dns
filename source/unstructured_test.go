@@ -470,7 +470,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 
 			for _, ep := range endpoints {
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
@@ -577,7 +577,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 				assert.Nil(t, result)
 				return
 			}
-			validateEndpoints(t, result, tc.expected)
+			testutils.ValidateEndpoints(t, result, tc.expected)
 		})
 	}
 }

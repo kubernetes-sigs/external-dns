@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -313,7 +315,7 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			require.NoError(t, err)
 
 			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1093,7 +1095,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }

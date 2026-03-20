@@ -128,7 +128,7 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err, "failed to get Endpoints")
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -211,7 +211,7 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err, "failed to get Endpoints")
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

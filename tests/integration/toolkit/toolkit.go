@@ -20,9 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"reflect"
-	"sort"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -38,7 +35,6 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
@@ -270,84 +266,4 @@ func CreateWrappedSource(
 		wrappers.WithMinTTL(cfg.MinTTL))
 
 	return wrappers.WrapSources(sources, opts)
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func ValidateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
-	t.Helper()
-
-	if len(endpoints) != len(expected) {
-		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
-	}
-
-	// Make sure endpoints are sorted - validateEndpoint() depends on it.
-	sortEndpoints(endpoints)
-	sortEndpoints(expected)
-
-	for i := range endpoints {
-		validateEndpoint(t, endpoints[i], expected[i])
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
-	t.Helper()
-
-	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
-	}
-
-	if !endpoint.Targets.Same(expected.Targets) {
-		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
-	}
-
-	if endpoint.RecordTTL != expected.RecordTTL {
-		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
-	}
-
-	// if a non-empty record type is expected, check that it matches.
-	if endpoint.RecordType != expected.RecordType {
-		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
-	}
-
-	// if non-empty labels are expected, check that they match.
-	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
-		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
-	}
-
-	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
-		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
-		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
-	}
-
-	if endpoint.SetIdentifier != expected.SetIdentifier {
-		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, endpoint.SetIdentifier)
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func sortEndpoints(endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		sort.Strings(ep.Targets)
-	}
-	sort.Slice(endpoints, func(i, k int) bool {
-		// Sort by DNSName, RecordType, and Targets
-		ei, ek := endpoints[i], endpoints[k]
-		if ei.DNSName != ek.DNSName {
-			return ei.DNSName < ek.DNSName
-		}
-		if ei.RecordType != ek.RecordType {
-			return ei.RecordType < ek.RecordType
-		}
-		// Targets are sorted ahead of time.
-		for j, ti := range ei.Targets {
-			if j >= len(ek.Targets) {
-				return true
-			}
-			if tk := ek.Targets[j]; ti != tk {
-				return ti < tk
-			}
-		}
-		return false
-	})
 }

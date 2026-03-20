@@ -532,7 +532,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			hostnames := source.hostNamesFromGateway(gatewayCfg)
 			endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg)
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1550,7 +1550,7 @@ func testGatewayEndpoints(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }
@@ -1656,7 +1656,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 			res, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, res, tt.expected)
+			testutils.ValidateEndpoints(t, res, tt.expected)
 		})
 	}
 }
@@ -1890,7 +1890,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 
-	validateEndpoints(t, got, []*endpoint.Endpoint{
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
 	})
 }

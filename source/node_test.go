@@ -472,7 +472,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
 				logtest.TestHelperLogContains(entry, hook, t)
@@ -586,7 +586,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		}
 
 		// Validate returned endpoints against desired endpoints.
-		validateEndpoints(t, endpoints, tc.expected)
+		testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 		for _, ep := range endpoints {

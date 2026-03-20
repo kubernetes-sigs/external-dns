@@ -32,6 +32,7 @@ import (
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -1684,7 +1685,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
-			validateEndpoints(t, endpoints, tt.endpoints)
+			testutils.ValidateEndpoints(t, endpoints, tt.endpoints)
 
 			for _, msg := range tt.logExpectations {
 				logtest.TestHelperLogContains(msg, hook, t)

@@ -199,7 +199,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -411,7 +411,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -492,7 +492,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
