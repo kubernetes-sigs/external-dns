@@ -121,17 +121,17 @@ func NewTraefikSource(
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
-		_, _ = ingressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustAddEventHandler(ingressRouteInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(ingressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(ingressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
 	}
 	if cfg.TraefikEnableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
-		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustAddEventHandler(oldIngressRouteInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(oldIngressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(oldIngressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -424,24 +424,24 @@ func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
 	if ts.ingressRouteInformer != nil {
-		_, _ = ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteInformer != nil {
-		_, _ = ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteInformer.Informer(), eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteTCP")
 	if ts.ingressRouteTcpInformer != nil {
-		_, _ = ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteTcpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteTcpInformer != nil {
-		_, _ = ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteTcpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteUDP")
 	if ts.ingressRouteUdpInformer != nil {
-		_, _ = ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteUdpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteUdpInformer != nil {
-		_, _ = ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteUdpInformer.Informer(), eventHandlerFunc(handler))
 	}
 }
 

@@ -77,29 +77,23 @@ func NewPodSource(
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
-	if err := podInformer.Informer().AddIndexers(informers.IndexerWithOptions[*v1.Pod](
+	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
-	)); err != nil {
-		return nil, err
-	}
-	if err := podInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Pod](
+	))
+	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
-	)); err != nil {
-		return nil, err
-	}
-	if err := nodeInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Node](
+	))
+	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
-	)); err != nil {
-		return nil, err
-	}
+	))
 
-	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(podInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -127,7 +121,7 @@ func NewPodSource(
 }
 
 func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
-	_, _ = ps.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ps.podInformer.Informer(), eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {

@@ -111,16 +111,14 @@ func NewServiceSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 
-	if err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Service](
+	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*v1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
-	)); err != nil {
-		return nil, err
-	}
+	))
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
 	sTypesFilter, err := newServiceTypesFilter(config.ServiceTypeFilter)
@@ -136,41 +134,32 @@ func NewServiceSource(
 
 		// TODO: move to shared indexer in informer package
 		// Add an indexer to the EndpointSlice informer to index by the service name label
-		if err = endpointSlicesInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
+		informers.MustAddIndexers(endpointSlicesInformer.Informer(), informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
 			informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
-		)); err != nil {
-			return nil, err
-		}
-
-		if err = endpointSlicesInformer.Informer().SetTransform(informers.TransformerWithOptions[*discoveryv1.EndpointSlice](
+		))
+		informers.MustSetTransform(endpointSlicesInformer.Informer(), informers.TransformerWithOptions[*discoveryv1.EndpointSlice](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
-		)); err != nil {
-			return nil, err
-		}
-		if err = podInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Pod](
+		))
+		informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 			informers.TransformKeepAnnotationPrefix(annotations.AnnotationKeyPrefix),
-		)); err != nil {
-			return nil, err
-		}
+		))
 
-		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustAddEventHandler(endpointSlicesInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(podInformer.Informer(), informers.DefaultEventHandler())
 	}
 
 	var nodeInformer coreinformers.NodeInformer
 	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
 		nodeInformer = informerFactory.Core().V1().Nodes()
-		if err = nodeInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Node](
+		informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 			informers.TransformRemoveStatusConditions(),
-		)); err != nil {
-			return nil, err
-		}
-		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		))
+		informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -836,9 +825,9 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.serviceInformer.Informer(), eventHandlerFunc(handler))
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
-		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(sc.endpointSlicesInformer.Informer(), eventHandlerFunc(handler))
 	}
 }
 

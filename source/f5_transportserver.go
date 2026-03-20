@@ -74,7 +74,7 @@ func NewF5TransportServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
-	_, _ = transportServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -134,7 +134,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TransportServer")
 
-	_, _ = ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ts.transportServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers

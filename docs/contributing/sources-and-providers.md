@@ -84,18 +84,16 @@ objects self-describing in the cache.
 
 #### Transformers
 
-Call `SetTransform` on every informer **before** `factory.Start()`. Use
+Call `MustSetTransform` on every informer **before** `factory.Start()`. Use
 `TransformerWithOptions[T]` with the options appropriate for the resource:
 
 ```go
-if err = myInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.MyResource](
+informers.MustSetTransform(myInformer.Informer(), informers.TransformerWithOptions[*v1.MyResource](
     informers.TransformRemoveManagedFields(),     // always — can be megabytes per object
     informers.TransformRemoveLastAppliedConfig(), // always — full JSON snapshot stored as annotation
     informers.TransformRemoveStatusConditions(),  // when Status.Conditions is not used by the source
     informers.TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"), // when only specific annotations are needed
-)); err != nil {
-    return nil, err
-}
+))
 ```
 
 `TransformRemoveManagedFields` and `TransformRemoveLastAppliedConfig` should be
@@ -103,7 +101,10 @@ applied to every informer. `TransformRemoveStatusConditions` can be omitted only
 if the source reads `Status.Conditions` for endpoint generation.
 
 The transformer also restores `TypeMeta` (Kind/APIVersion) that informers strip,
-making cached objects self-describing for FQDN templates and logging.
+making cached objects self-describing for FQDN templates and logging. For types
+registered in the core k8s scheme (Services, Pods, Nodes, Ingresses, …) the full
+Group/Version/Kind is set. For CRD-backed types (e.g. Istio Gateway) the Kind is
+derived from the Go struct name via reflection; Group and Version remain empty.
 
 #### Indexers
 
@@ -112,20 +113,16 @@ annotation/label filters, or by a label value that references another resource:
 
 ```go
 // Filter by annotation/label selectors (index key = object's own namespace/name)
-if err = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*v1.MyResource](
+informers.MustAddIndexers(myInformer.Informer(), informers.IndexerWithOptions[*v1.MyResource](
     informers.IndexSelectorWithAnnotationFilter(annotationFilter),
     informers.IndexSelectorWithLabelSelector(labelSelector),
-)); err != nil {
-    return nil, err
-}
+))
 
 // Index by a label's value rather than the object's own name
 // (e.g. EndpointSlices indexed by the Service they belong to)
-if err = myInformer.Informer().AddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
+informers.MustAddIndexers(myInformer.Informer(), informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
     informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
-)); err != nil {
-    return nil, err
-}
+))
 ```
 
 All indexed objects are stored under the `informers.IndexWithSelectors` key.
@@ -147,15 +144,27 @@ Add a new option only when **all three** conditions hold:
    type assertions that break the generic design; write a dedicated indexer
    instead.
 
+#### Event handlers
+
+Use `MustAddEventHandler` instead of the `_, _ = informer.AddEventHandler(...)` idiom.
+`AddEventHandler` only returns an error when the informer has already been stopped. The
+helper logs a warning rather than panicking, because unlike `SetTransform`/`AddIndexers`,
+event handlers are also registered at runtime (from `Source.AddEventHandler`), where a
+stopped informer can be a transient shutdown condition rather than a programming error:
+
+```go
+informers.MustAddEventHandler(myInformer.Informer(), informers.DefaultEventHandler())
+```
+
 #### Ordering
 
 Always configure the informer in this order before starting the factory:
 
 ```go
-if err = myInformer.Informer().SetTransform(...); err != nil { return nil, err } // 1. how objects are stored
-if err = myInformer.Informer().AddIndexers(...); err != nil { return nil, err }  // 2. how objects are looked up
-_, _ = myInformer.Informer().AddEventHandler(...)                                // 3. who is notified
-factory.Start(ctx.Done())                                                        // 4. start — SetTransform errors after this
+informers.MustSetTransform(myInformer.Informer(), ...)       // 1. how objects are stored
+informers.MustAddIndexers(myInformer.Informer(), ...)        // 2. how objects are looked up
+informers.MustAddEventHandler(myInformer.Informer(), ...)    // 3. who is notified
+factory.Start(ctx.Done())                                    // 4. start — Must* helpers panic after this
 ```
 
 ## Usage

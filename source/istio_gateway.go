@@ -93,32 +93,24 @@ func NewIstioGatewaySource(
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	if err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
+	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*corev1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
-	)); err != nil {
-		return nil, err
-	}
-
-	if err = ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+	))
+	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
-	)); err != nil {
-		return nil, err
-	}
-
-	if err = gatewayInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkingv1beta1.Gateway](
+	))
+	informers.MustSetTransform(gatewayInformer.Informer(), informers.TransformerWithOptions[*networkingv1beta1.Gateway](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
-	)); err != nil {
-		return nil, err
-	}
+	))
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(gatewayInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 	istioInformerFactory.Start(ctx.Done())
@@ -209,7 +201,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
-	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.gatewayInformer.Informer(), eventHandlerFunc(handler))
 }
 
 func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {

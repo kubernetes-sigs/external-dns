@@ -239,9 +239,9 @@ func newGatewayRouteSource(
 func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
-	_, _ = src.gwInformer.Informer().AddEventHandler(eventHandler)
-	_, _ = src.rtInformer.Informer().AddEventHandler(eventHandler)
-	_, _ = src.nsInformer.Informer().AddEventHandler(eventHandler)
+	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
+	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
+	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {

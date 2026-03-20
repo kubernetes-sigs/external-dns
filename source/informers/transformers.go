@@ -14,6 +14,7 @@ limitations under the License.
 package informers
 
 import (
+	"fmt"
 	"maps"
 	"reflect"
 	"slices"
@@ -125,6 +126,15 @@ func TransformerWithOptions[T interface {
 			clearStatusConditions(entity)
 		}
 		return entity, nil
+	}
+}
+
+// MustSetTransform calls SetTransform on the informer and panics on error.
+// SetTransform only errors if the informer has already been started, which is a
+// programming error — callers must invoke it before factory.Start().
+func MustSetTransform(informer cache.SharedInformer, fn cache.TransformFunc) {
+	if err := informer.SetTransform(fn); err != nil {
+		panic(fmt.Sprintf("SetTransform called on started informer: %v", err))
 	}
 }
 

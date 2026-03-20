@@ -156,23 +156,18 @@ func NewGlooSource(
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	if err := serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Service](
+	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*v1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
-	)); err != nil {
-		return nil, err
-	}
-
-	if err := ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+	))
+	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
-	)); err != nil {
-		return nil, err
-	}
+	))
 
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 
 	dynamicInformerFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicKubeClient, 0)
 
@@ -185,10 +180,8 @@ func NewGlooSource(
 		informers.TransformRemoveLastAppliedConfig(),
 	)
 	for _, inf := range []kubeinformers.GenericInformer{proxyInformer, virtualServiceInformer, gatewayInformer} {
-		if err := inf.Informer().SetTransform(unstructuredTransformer); err != nil {
-			return nil, err
-		}
-		_, _ = inf.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustSetTransform(inf.Informer(), unstructuredTransformer)
+		informers.MustAddEventHandler(inf.Informer(), informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
