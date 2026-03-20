@@ -24,7 +24,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -155,6 +156,21 @@ func NewGlooSource(
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
+	if err := serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*v1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	)); err != nil {
+		return nil, err
+	}
+
+	if err := ingressInformer.Informer().SetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)); err != nil {
+		return nil, err
+	}
+
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
@@ -163,6 +179,16 @@ func NewGlooSource(
 	proxyInformer := dynamicInformerFactory.ForResource(proxyGVR)
 	virtualServiceInformer := dynamicInformerFactory.ForResource(virtualServiceGVR)
 	gatewayInformer := dynamicInformerFactory.ForResource(gatewayGVR)
+
+	unstructuredTransformer := informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)
+	for _, inf := range []kubeinformers.GenericInformer{proxyInformer, virtualServiceInformer, gatewayInformer} {
+		if err := inf.Informer().SetTransform(unstructuredTransformer); err != nil {
+			return nil, err
+		}
+	}
 
 	_, _ = proxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
@@ -314,7 +340,7 @@ func (gs *glooSource) proxyTargets(name string, namespace string) (endpoint.Targ
 
 	var targets endpoint.Targets
 	switch svc.Spec.Type {
-	case corev1.ServiceTypeLoadBalancer:
+	case v1.ServiceTypeLoadBalancer:
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
