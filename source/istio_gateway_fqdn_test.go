@@ -16,10 +16,12 @@ package source
 import (
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	istionetworking "istio.io/api/networking/v1beta1"
-	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,7 +86,7 @@ func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
 func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 	for _, tt := range []struct {
 		title        string
-		gateways     []*networkingv1beta1.Gateway
+		gateways     []*networkingv1.Gateway
 		services     []*v1.Service
 		fqdnTemplate string
 		combineFqdn  bool
@@ -97,7 +99,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "my-gateway.test.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-gateway",
@@ -137,7 +139,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			combineFqdn: true,
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-gateway",
@@ -178,7 +180,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "api-gateway.kube-system.cluster.local", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"::ffff:192.1.56.10"}},
 				{DNSName: "api-gateway.production.cluster.local", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "api-gateway",
@@ -243,7 +245,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "multi-gateway.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.0.1"}},
 				{DNSName: "multi-gateway.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.0.1"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "multi-gateway",
@@ -281,7 +283,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "app.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"172.16.0.1"}},
 				{DNSName: "combined-gateway.internal.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"172.16.0.1"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "combined-gateway",
@@ -318,7 +320,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 		},
 		{
 			title: "templating with labels",
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "labeled-gateway",
@@ -345,7 +347,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 			title:        "srv record with node port and cluster ip services without external ips",
 			fqdnTemplate: "{{.Name}}.example.com",
 			expected:     []*endpoint.Endpoint{},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "labeled-gateway",
@@ -403,7 +405,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "nodeport-external.tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.132.253"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "nodeport-external",
@@ -445,7 +447,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "www.bookinfo.http.443.tld.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.132.253"}},
 				{DNSName: "bookinfo.dns.8080.tld.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.132.253"}},
 			},
-			gateways: []*networkingv1beta1.Gateway{
+			gateways: []*networkingv1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "nodeport-external",
@@ -486,6 +488,76 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			title:        "Kind=Gateway matches — FQDN generated from template",
+			fqdnTemplate: `{{if eq .Kind "Gateway"}}{{.Name}}.gw.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "my-gateway.gw.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"example.org"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			title:        "Kind=Service does not match Gateway — no FQDN from template",
+			fqdnTemplate: `{{if eq .Kind "Service"}}{{.Name}}.svc.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"example.org"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -497,7 +569,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 			}
 
 			for _, gw := range tt.gateways {
-				_, err := istioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+				_, err := istioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -518,7 +590,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

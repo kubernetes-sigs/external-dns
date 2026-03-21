@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -637,7 +639,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }

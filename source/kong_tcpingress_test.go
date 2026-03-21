@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -420,7 +422,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

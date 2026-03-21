@@ -1174,7 +1174,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, res, tc.expected)
+			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
 }
@@ -1383,7 +1383,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, res, tc.expected)
+			testutils.ValidateEndpoints(t, res, tc.expected)
 			// Test that endpoint resourceLabelKey matches desired endpoint
 			sort.SliceStable(res, func(i, j int) bool {
 				return strings.Compare(res[i].DNSName, res[j].DNSName) < 0
@@ -1679,7 +1679,7 @@ func TestClusterIpServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -2500,7 +2500,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -3401,7 +3401,7 @@ func TestHeadlessServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -3522,7 +3522,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 
-	validateEndpoints(t, got, []*endpoint.Endpoint{
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "service/default/istio-ingressgateway"),
 	})
 }
@@ -3885,7 +3885,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		{DNSName: "kafka-2.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.4"}},
 	}
 
-	validateEndpoints(t, got, want)
+	testutils.ValidateEndpoints(t, got, want)
 }
 
 // TestHeadlessServices tests that headless services generate the correct endpoints.
@@ -4333,7 +4333,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
@@ -4536,7 +4536,7 @@ func TestExternalServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {

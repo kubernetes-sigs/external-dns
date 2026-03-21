@@ -84,7 +84,7 @@ func testNat64Source(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// Validate that the mock source was called.
 			mockSource.AssertExpectations(t)

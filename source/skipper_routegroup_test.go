@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -307,7 +309,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.source.endpointsFromRouteGroup(tt.rg)
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }
@@ -832,7 +834,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 				t.Fatal("Got no error, but we want to get an error")
 			}
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }

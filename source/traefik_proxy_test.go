@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -403,7 +405,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -700,7 +702,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -845,7 +847,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1179,7 +1181,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1477,7 +1479,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1623,7 +1625,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1791,7 +1793,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

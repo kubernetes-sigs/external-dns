@@ -23,10 +23,10 @@ import (
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
-	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
-	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
+	networkingv1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +69,7 @@ type gatewaySource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
-	gatewayInformer          networkingv1beta1informer.GatewayInformer
+	gatewayInformer          networkingv1informer.GatewayInformer
 	ingressInformer          netinformers.IngressInformer
 }
 
@@ -90,7 +90,7 @@ func NewIstioGatewaySource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
-	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
+	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*corev1.Service](
@@ -102,7 +102,7 @@ func NewIstioGatewaySource(
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
-	informers.MustSetTransform(gatewayInformer.Informer(), informers.TransformerWithOptions[*networkingv1beta1.Gateway](
+	informers.MustSetTransform(gatewayInformer.Informer(), informers.TransformerWithOptions[*networkingv1.Gateway](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
@@ -140,7 +140,9 @@ func NewIstioGatewaySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	gwList, err := sc.istioClient.NetworkingV1beta1().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
+	// TODO: replace direct API call with indexer to serve from the local cache
+	// and avoid per-reconciliation round-trips to the API server.
+	gwList, err := sc.istioClient.NetworkingV1().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +192,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		log.Debugf("Endpoints generated from %q '%s/%s.%s': %q", gateway.Kind, gateway.Namespace, gateway.APIVersion, gateway.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
@@ -204,7 +206,7 @@ func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	informers.MustAddEventHandler(sc.gatewayInformer.Informer(), eventHandlerFunc(handler))
 }
 
-func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -230,7 +232,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -245,7 +247,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) 
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
@@ -269,7 +271,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway) []string {
+func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {

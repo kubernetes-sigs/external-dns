@@ -258,7 +258,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
 		})
 	}
 }
@@ -357,7 +357,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
 		})
 	}
 }
@@ -1434,7 +1434,7 @@ func testIngressEndpoints(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range res {
@@ -1744,7 +1744,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 			require.NoError(t, err)
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

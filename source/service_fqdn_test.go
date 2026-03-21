@@ -896,7 +896,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
