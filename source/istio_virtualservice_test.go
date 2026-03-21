@@ -33,7 +33,6 @@ import (
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -2218,7 +2217,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 				Status:     v1alpha1.IstioStatus{},
 			},
 		}, want: &networkingv1beta1.Gateway{
-			TypeMeta:   metav1.TypeMeta{},
+			TypeMeta:   metav1.TypeMeta{Kind: "Gateway"},
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
 			Spec:       istionetworking.Gateway{},
 			Status:     v1alpha1.IstioStatus{},
@@ -2362,90 +2361,165 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 }
 
 func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-service",
-			Namespace: "default",
-			Labels: map[string]string{
-				"label1": "value1",
-				"label2": "value2",
-				"label3": "value3",
-			},
-			Annotations: map[string]string{
-				"user-annotation": "value",
-				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-				"external-dns.alpha.kubernetes.io/random":   "value",
-				"other/annotation":                          "value",
-			},
-			UID: "someuid",
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				"selector":  "one",
-				"selector2": "two",
-				"selector3": "three",
-			},
-			ExternalIPs: []string{"1.2.3.4"},
-			Ports: []v1.ServicePort{
-				{
-					Name:       "http",
-					Port:       80,
-					TargetPort: intstr.FromInt32(8080),
-					Protocol:   v1.ProtocolTCP,
-				},
-				{
-					Name:       "https",
-					Port:       443,
-					TargetPort: intstr.FromInt32(8443),
-					Protocol:   v1.ProtocolTCP,
-				},
-			},
-			Type: v1.ServiceTypeLoadBalancer,
-		},
-		Status: v1.ServiceStatus{
-			LoadBalancer: v1.LoadBalancerStatus{
-				Ingress: []v1.LoadBalancerIngress{
-					{IP: "5.6.7.8", Hostname: "lb.example.com"},
-				},
-			},
-			Conditions: []metav1.Condition{
-				{
-					Type:               "Available",
-					Status:             metav1.ConditionTrue,
-					Reason:             "MinimumReplicasAvailable",
-					Message:            "Service is available",
-					LastTransitionTime: metav1.Now(),
-				},
-			},
-		},
+	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *virtualServiceSource {
+		t.Helper()
+		src, err := NewIstioVirtualServiceSource(t.Context(), kClient, istioClient, &Config{})
+		require.NoError(t, err)
+		vs, ok := src.(*virtualServiceSource)
+		require.True(t, ok)
+		return vs
 	}
 
-	fakeClient := fake.NewClientset()
+	t.Run("service strips managed fields and status conditions", func(t *testing.T) {
+		svc := &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "fake-service",
+				Namespace: "default",
+				Labels: map[string]string{
+					"label1": "value1",
+					"label2": "value2",
+					"label3": "value3",
+				},
+				Annotations: map[string]string{
+					"user-annotation": "value",
+					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+					"external-dns.alpha.kubernetes.io/random":   "value",
+					"other/annotation":                          "value",
+					v1.LastAppliedConfigAnnotation:              `{"apiVersion":"v1"}`,
+				},
+				UID: "someuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Selector:    map[string]string{"selector": "one"},
+				ExternalIPs: []string{"1.2.3.4"},
+				Type:        v1.ServiceTypeLoadBalancer,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{{IP: "5.6.7.8"}},
+				},
+				Conditions: []metav1.Condition{
+					{Type: "Available", Status: metav1.ConditionTrue, Reason: "Ready"},
+				},
+			},
+		}
+		vs := newSource(t, fake.NewClientset(svc), istiofake.NewSimpleClientset())
 
-	_, err := fakeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
-	require.NoError(t, err)
+		retrieved, err := vs.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+		require.NoError(t, err)
 
-	src, err := NewIstioVirtualServiceSource(
-		t.Context(),
-		fakeClient,
-		istiofake.NewSimpleClientset(),
-		&Config{})
-	require.NoError(t, err)
-	gwSource, ok := src.(*virtualServiceSource)
-	require.True(t, ok)
+		assert.Equal(t, svc.Name, retrieved.Name)
+		assert.Equal(t, svc.Labels, retrieved.Labels)
+		assert.Equal(t, svc.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+		// Status.LoadBalancer preserved — used for endpoint generation
+		assert.Equal(t, svc.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+		// Status.Conditions stripped
+		assert.Empty(t, retrieved.Status.Conditions)
+	})
 
-	rService, err := gwSource.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
-	require.NoError(t, err)
+	t.Run("ingress strips managed fields", func(t *testing.T) {
+		ingress := &networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-ingress",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":              "value",
+					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
+				},
+				UID: "ingressuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+			Status: networkv1.IngressStatus{
+				LoadBalancer: networkv1.IngressLoadBalancerStatus{
+					Ingress: []networkv1.IngressLoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		}
+		vs := newSource(t, fake.NewClientset(ingress), istiofake.NewSimpleClientset())
 
-	assert.Equal(t, svc.Name, rService.Name)
-	assert.Empty(t, rService.Labels)
-	assert.Empty(t, rService.Annotations)
-	assert.Empty(t, rService.UID)
-	assert.NotEmpty(t, rService.Status.LoadBalancer)
-	assert.Empty(t, rService.Status.Conditions)
-	assert.Equal(t, map[string]string{
-		"selector":  "one",
-		"selector2": "two",
-		"selector3": "three",
-	}, rService.Spec.Selector)
+		retrieved, err := vs.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, ingress.Name, retrieved.Name)
+		assert.Equal(t, ingress.Labels, retrieved.Labels)
+		assert.Equal(t, ingress.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+		// Status.LoadBalancer preserved — used for endpoint generation
+		assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	})
+
+	t.Run("virtualservice strips managed fields", func(t *testing.T) {
+		vsObj := &networkingv1beta1.VirtualService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vs",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":              "value",
+					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+				},
+				UID: "vsuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+		}
+		istioClient := istiofake.NewSimpleClientset()
+		_, err := istioClient.NetworkingV1beta1().VirtualServices(vsObj.Namespace).Create(t.Context(), vsObj, metav1.CreateOptions{})
+		require.NoError(t, err)
+		vs := newSource(t, fake.NewClientset(), istioClient)
+
+		retrieved, err := vs.vServiceInformer.Lister().VirtualServices(vsObj.Namespace).Get(vsObj.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, vsObj.Name, retrieved.Name)
+		assert.Equal(t, vsObj.Labels, retrieved.Labels)
+		assert.Equal(t, vsObj.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+	})
+
+	t.Run("gateway strips managed fields", func(t *testing.T) {
+		gw := &networkingv1beta1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-gateway",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":              "value",
+					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+				},
+				UID: "gatewayuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+		}
+		istioClient := istiofake.NewSimpleClientset()
+		_, err := istioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+		vs := newSource(t, fake.NewClientset(), istioClient)
+
+		retrieved, err := vs.gatewayInformer.Lister().Gateways(gw.Namespace).Get(gw.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, gw.Name, retrieved.Name)
+		assert.Equal(t, gw.Labels, retrieved.Labels)
+		assert.Equal(t, gw.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+	})
 }

@@ -75,8 +75,14 @@ func NewNodeSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
+	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+
 	// Add default resource event handler to properly initialize informer.
-	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -157,7 +163,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 }
 
 func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
-	_, _ = ns.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ns.nodeInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
