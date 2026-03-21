@@ -208,6 +208,91 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			},
 			expected: endpoint.Targets{"158.123.32.23"},
 		},
+		{
+			// Gateway selector is a SUPERSET of the service selector: the service is
+			// missing a label the gateway requires. The index returns the service as a
+			// candidate (it has the first queried k=v), but MatchesServiceSelector must
+			// reject it because the remaining required label is absent.
+			name: "gateway selector is superset of service selector — no match",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"istio": "ingressgateway", "app": "required"},
+			expected:  endpoint.Targets{},
+		},
+		{
+			// Reproduces the bug from PR #5708: the gateway selector is a strict subset of
+			// the service's spec.selector. A hash-of-full-selector index would miss this.
+			name: "gateway selector is subset of service selector",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "release": "istio"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"istio": "ingressgateway"},
+			expected:  endpoint.Targets{"10.0.0.1"},
+		},
+		{
+			// Two services share the same first index entry ("istio=ingressgateway") but
+			// only one satisfies the full gateway selector. Validates that MatchesServiceSelector
+			// correctly eliminates the false positive returned by the index.
+			name: "index returns multiple candidates, post-filter eliminates false positives",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw-a", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "app": "foo"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw-b", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "app": "bar"},
+						ExternalIPs: []string{"10.0.0.2"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"istio": "ingressgateway", "app": "foo"},
+			expected:  endpoint.Targets{"10.0.0.1"},
+		},
+		{
+			// Empty gateway selector takes the lister path (no index key to query) and
+			// returns all services in the namespace — same behaviour as MatchesServiceSelector({}, _) = true.
+			name: "empty selector returns all services",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "svc-a", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "foo"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "svc-b", Namespace: "default"},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "bar"},
+						ExternalIPs: []string{"10.0.0.2"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{},
+			expected:  endpoint.Targets{"10.0.0.1", "10.0.0.2"},
+		},
 	}
 
 	for _, tt := range tests {
