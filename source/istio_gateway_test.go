@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	istionetworking "istio.io/api/networking/v1beta1"
-	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
@@ -1525,7 +1525,7 @@ func testGatewayEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
-				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(ti.targetNamespace).Create(t.Context(), gatewayCfg, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1().Gateways(ti.targetNamespace).Create(t.Context(), gatewayCfg, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1626,7 +1626,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			gw := &networkingv1beta1.Gateway{
+			gw := &networkingv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "fake-gateway",
 					Namespace: "default",
@@ -1641,7 +1641,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				},
 			}
 
-			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+			_, err = fakeIstioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			src, err := NewIstioGatewaySource(
@@ -1763,7 +1763,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 	})
 
 	t.Run("gateway strips managed fields", func(t *testing.T) {
-		gw := &networkingv1beta1.Gateway{
+		gw := &networkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-gateway",
 				Namespace: "default",
@@ -1779,7 +1779,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 			},
 		}
 		istioClient := istiofake.NewSimpleClientset()
-		_, err := istioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+		_, err := istioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 		require.NoError(t, err)
 		gs := newSource(t, fake.NewClientset(), istioClient)
 
@@ -1799,7 +1799,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	fakeKubeClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
-	gw := &networkingv1beta1.Gateway{
+	gw := &networkingv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "argocd",
 			Namespace: "argocd",
@@ -1920,7 +1920,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+	_, err := fakeIstioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewIstioGatewaySource(
@@ -2028,8 +2028,8 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() *networkingv1beta1.Gateway {
-	gw := &networkingv1beta1.Gateway{
+func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
+	gw := &networkingv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
