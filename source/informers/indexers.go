@@ -16,6 +16,7 @@ package informers
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,6 +32,10 @@ const (
 type IndexSelectorOptions struct {
 	annotationFilter labels.Selector
 	labelSelector    labels.Selector
+	// indexByLabelKey, when set, uses the value of this label as the index key
+	// instead of the object's own name. Useful for indexing objects by a "parent"
+	// resource they reference via a label (e.g. EndpointSlices by Service name).
+	indexByLabelKey string
 }
 
 func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
@@ -49,6 +54,16 @@ func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelector
 func IndexSelectorWithLabelSelector(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
 		options.labelSelector = input
+	}
+}
+
+// IndexSelectorWithLabelKey configures IndexerWithOptions to use the value of the given
+// label key as the index key instead of the object's own name. Useful when objects
+// reference a "parent" resource via a label (e.g. EndpointSlices carry
+// kubernetes.io/service-name pointing at their owning Service).
+func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		options.indexByLabelKey = key
 	}
 }
 
@@ -89,9 +104,36 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			if options.labelSelector != nil && !options.labelSelector.Matches(labels.Set(entity.GetLabels())) {
 				return nil, nil
 			}
-			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: entity.GetName()}.String()
+			name := entity.GetName()
+			if options.indexByLabelKey != "" {
+				name = entity.GetLabels()[options.indexByLabelKey]
+				if name == "" {
+					return nil, nil
+				}
+			}
+			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()
 			return []string{key}, nil
 		},
+	}
+}
+
+// MustAddIndexers calls AddIndexers on the informer and panics on error.
+// AddIndexers only errors if the informer has already been stopped, which is a
+// programming error — callers must invoke it before factory.Start().
+func MustAddIndexers(informer cache.SharedIndexInformer, indexers cache.Indexers) {
+	if err := informer.AddIndexers(indexers); err != nil {
+		panic(fmt.Sprintf("AddIndexers called on stopped informer: %v", err))
+	}
+}
+
+// MustAddEventHandler calls AddEventHandler on the informer and logs a warning on error.
+// AddEventHandler only errors if the informer has already been stopped. Unlike
+// MustSetTransform and MustAddIndexers (which are called exclusively at setup time),
+// AddEventHandler is also called at runtime (e.g. from Source.AddEventHandler), where a
+// stopped informer may be a transient shutdown condition rather than a programming error.
+func MustAddEventHandler(informer cache.SharedInformer, handler cache.ResourceEventHandler) {
+	if _, err := informer.AddEventHandler(handler); err != nil {
+		log.Warnf("AddEventHandler called on stopped informer: %v", err)
 	}
 }
 

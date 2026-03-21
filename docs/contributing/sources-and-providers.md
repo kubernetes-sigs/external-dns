@@ -3,6 +3,7 @@ tags:
   - sources
   - providers
   - contributing
+  - informers
 ---
 
 # Sources and Providers
@@ -74,6 +75,103 @@ type myNewSource struct {
 * `+externaldns:source:events` - Kubernetes [`events`](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/) support  (true, false)
 
 After adding annotations, run `make generate-sources-documentation` to update sources file.
+
+### Informer Patterns
+
+When adding a new source that watches Kubernetes resources via informers, apply
+the following patterns from `source/informers` to keep memory usage low and
+objects self-describing in the cache.
+
+#### Transformers
+
+Call `MustSetTransform` on every informer **before** `factory.Start()`. Use
+`TransformerWithOptions[T]` with the options appropriate for the resource:
+
+```go
+informers.MustSetTransform(myInformer.Informer(), informers.TransformerWithOptions[*v1.MyResource](
+    informers.TransformRemoveManagedFields(),     // always — can be megabytes per object
+    informers.TransformRemoveLastAppliedConfig(), // always — full JSON snapshot stored as annotation
+    informers.TransformRemoveStatusConditions(),  // when Status.Conditions is not used by the source
+    informers.TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"), // when only specific annotations are needed
+))
+```
+
+`TransformRemoveManagedFields` and `TransformRemoveLastAppliedConfig` should be
+applied to every informer. `TransformRemoveStatusConditions` can be omitted only
+if the source reads `Status.Conditions` for endpoint generation.
+
+The transformer also restores `TypeMeta` (Kind/APIVersion) that informers strip,
+making cached objects self-describing for FQDN templates and logging. For types
+registered in the core k8s scheme (Services, Pods, Nodes, Ingresses, …) the full
+Group/Version/Kind is set. For CRD-backed types (e.g. Istio Gateway) the Kind is
+derived from the Go struct name via reflection; Group and Version remain empty.
+
+#### Indexers
+
+Use `IndexerWithOptions[T]` when the source needs to look up objects by
+annotation/label filters, or by a label value that references another resource:
+
+```go
+// Filter by annotation/label selectors (index key = object's own namespace/name)
+informers.MustAddIndexers(myInformer.Informer(), informers.IndexerWithOptions[*v1.MyResource](
+    informers.IndexSelectorWithAnnotationFilter(annotationFilter),
+    informers.IndexSelectorWithLabelSelector(labelSelector),
+))
+
+// Index by a label's value rather than the object's own name
+// (e.g. EndpointSlices indexed by the Service they belong to)
+informers.MustAddIndexers(myInformer.Informer(), informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
+    informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
+))
+```
+
+All indexed objects are stored under the `informers.IndexWithSelectors` key.
+
+##### When to add a new `IndexSelectorWith*` option
+
+Add a new option only when **all three** conditions hold:
+
+1. **No existing option expresses the needed logic** — the current set covers
+   annotation filter, label selector match, and label-value-as-key. If none
+   of those express your filter or key derivation, a new option is warranted.
+2. **The pattern is reusable across more than one source or resource type** —
+   if the logic is tightly coupled to a single type's fields, write a dedicated
+   standalone `cache.Indexers` function instead of extending the shared options
+   struct.
+3. **The logic operates solely on `metav1.Object`** — `IndexerWithOptions`
+   works generically via labels, annotations, name, and namespace. If you need
+   type-specific fields (e.g. `Spec.Selector` on a Service), the logic requires
+   type assertions that break the generic design; write a dedicated indexer
+   instead.
+
+#### Event handlers
+
+Use `MustAddEventHandler` instead of the `_, _ = informer.AddEventHandler(...)` idiom.
+`AddEventHandler` only returns an error when the informer has already been stopped. The
+helper logs a warning rather than panicking, because unlike `SetTransform`/`AddIndexers`,
+event handlers are also registered at runtime (from `Source.AddEventHandler`), where a
+stopped informer can be a transient shutdown condition rather than a programming error:
+
+```go
+informers.MustAddEventHandler(myInformer.Informer(), informers.DefaultEventHandler())
+```
+
+#### Ordering
+
+Always configure the informer in this order before starting the factory:
+
+```go
+informers.MustSetTransform(myInformer.Informer(), ...)       // 1. how objects are stored
+informers.MustAddIndexers(myInformer.Informer(), ...)        // 2. how objects are looked up
+informers.MustAddEventHandler(myInformer.Informer(), ...)    // 3. who is notified
+factory.Start(ctx.Done())                                    // 4. start — Must* helpers panic after this
+```
+
+## Usage
+
+You can choose any combination of sources and providers on the command line.
+Given a cluster on AWS you would most likely want to use the Service and Ingress Source in combination with the AWS provider.
+`Service` + `InMemory` is useful for testing your service collecting functionality, whereas `Fake` + `Google` is useful for testing that the Google provider behaves correctly, etc.
 
 ## Providers
 

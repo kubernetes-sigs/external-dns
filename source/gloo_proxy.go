@@ -24,7 +24,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -155,8 +156,18 @@ func NewGlooSource(
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*v1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
+	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 
 	dynamicInformerFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicKubeClient, 0)
 
@@ -164,9 +175,14 @@ func NewGlooSource(
 	virtualServiceInformer := dynamicInformerFactory.ForResource(virtualServiceGVR)
 	gatewayInformer := dynamicInformerFactory.ForResource(gatewayGVR)
 
-	_, _ = proxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	unstructuredTransformer := informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)
+	for _, inf := range []kubeinformers.GenericInformer{proxyInformer, virtualServiceInformer, gatewayInformer} {
+		informers.MustSetTransform(inf.Informer(), unstructuredTransformer)
+		informers.MustAddEventHandler(inf.Informer(), informers.DefaultEventHandler())
+	}
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
@@ -314,7 +330,7 @@ func (gs *glooSource) proxyTargets(name string, namespace string) (endpoint.Targ
 
 	var targets endpoint.Targets
 	switch svc.Spec.Type {
-	case corev1.ServiceTypeLoadBalancer:
+	case v1.ServiceTypeLoadBalancer:
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
