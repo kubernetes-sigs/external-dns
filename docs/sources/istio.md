@@ -3,9 +3,9 @@
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-**Note:** Using the Istio Gateway source requires Istio >=1.0.0.
+**Note:** Using the Istio Gateway source requires Istio >=1.22. Earlier versions do not serve the `networking.istio.io/v1` API used by this source.
 
-**Note:** Currently supported versions are `1.25` and `1.26` with `v1beta1` stored version.
+**Note:** Currently supported versions are `1.25` and `1.26`. Both `v1beta1` and `v1` stored versions are supported as the API server converts transparently.
 
 - [Support status of Istio releases](https://istio.io/latest/docs/releases/supported-releases/)
 
