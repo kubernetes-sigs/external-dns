@@ -22,7 +22,7 @@ The following table represents the methods to implement mapped to their HTTP met
 ### Provider endpoints
 
 | Provider method | HTTP Method | Route            | Description                              |
-| --------------- | ----------- | ---------------- | ---------------------------------------- |
+|-----------------|-------------|------------------|------------------------------------------|
 | Negotiate       | GET         | /                | Negotiate `DomainFilter`                 |
 | Records         | GET         | /records         | Get records                              |
 | AdjustEndpoints | POST        | /adjustendpoints | Provider specific adjustments of records |
@@ -38,6 +38,10 @@ The default recommended port for the provider endpoints is `8888`, and should li
 
 **NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
 
+**NOTE**: the `--webhook-provider-read-timeout` and `--webhook-provider-write-timeout` flags control the outbound HTTP client timeout.
+The total client timeout is the sum of both values and covers the full round-trip: writing the request body, waiting for the response,
+and reading the response body. Requests that exceed this deadline are cancelled and treated as a failure.
+
 ### Exposed endpoints
 
 | Provider method | HTTP Method | Route    | Description                                                                                  |
@@ -52,6 +56,40 @@ The default recommended port for the exposed endpoints is `8080`, and it should 
 The Webhook provider supports custom annotations for DNS records. This feature allows users to define additional configuration options for DNS records managed by the Webhook provider. Custom annotations are defined using the annotation format `external-dns.alpha.kubernetes.io/webhook-<custom-annotation>`.
 
 Custom annotations can be used to influence DNS record creation and updates. Providers implementing the Webhook API should document the custom annotations they support and how they affect DNS record management.
+
+## Best practices for webhook provider authors
+
+### Status codes
+
+Use the correct HTTP status codes — they directly control ExternalDNS retry behaviour:
+
+| Situation | Status code | Effect |
+| --------- | ----------- | ------ |
+| Success (`Records`, `AdjustEndpoints`) | `200 OK` | Accepted |
+| Success (`ApplyChanges`) | `204 No Content` | Accepted |
+| Transient error (rate limit, upstream timeout, etc.) | `5xx` | Retried by ExternalDNS |
+| Permanent error (bad request, auth failure, etc.) | `4xx` | Not retried; logged as failure |
+| Redirects | `3xx` | Treated as a permanent failure; do not use |
+
+### Response bodies and connection reuse
+
+ExternalDNS drains response bodies before closing them so that TCP connections can be returned to the pool and reused. To keep this effective:
+
+- **Always write a complete response body**, even for errors. An empty JSON object `{}` or a plain-text message is fine.
+- **Keep error response bodies small** (well under 1 MiB). ExternalDNS caps the drain at 1 MiB; bodies larger than that cause the connection to be discarded rather than pooled, increasing latency and resource usage on both sides.
+- **Do not stream indefinitely.** Finish writing the response and close it promptly.
+
+### Timeouts and cancellation
+
+ExternalDNS propagates request context to all outbound calls. When the controller shuts down or a request times out, the in-flight HTTP connection is cancelled. Providers should:
+
+- Handle abrupt connection drops gracefully — do not treat a cancelled request as a reason to roll back partially applied changes without verifying state first.
+- Respond within the deadline configured by `--webhook-provider-read-timeout` and `--webhook-provider-write-timeout` (default values apply when unset). Long-running DNS API calls should have their own internal timeout shorter than the ExternalDNS deadline.
+
+### Memory and goroutine hygiene
+
+- Close request bodies after reading them to avoid goroutine leaks on the webhook provider side.
+- Avoid holding references to decoded request payloads longer than needed; `plan.Changes` and endpoint slices can be large for zones with many records.
 
 ## Provider registry
 

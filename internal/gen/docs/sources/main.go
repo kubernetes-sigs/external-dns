@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"go/ast"
@@ -28,9 +27,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"text/template"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
 const (
@@ -70,9 +68,9 @@ type Source struct {
 
 type Sources []Source
 
-// It generates a markdown file
-// with the supported sources and writes it to the 'docs/sources/index.md' file.
-// to re-generate `docs/sources/index.md` execute 'go run internal/gen/docs/sources/main.go'
+// main generates a markdown file with the supported sources
+// and writes it to the 'docs/sources/index.md' file.
+// To re-generate, execute 'go run internal/gen/docs/sources/main.go'.
 func main() {
 	cPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/sources/index.md", cPath)
@@ -88,7 +86,7 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
 		os.Exit(1)
 	}
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 // discoverSources scans the source directory and discovers all source implementations
@@ -100,7 +98,7 @@ func discoverSources(dir string) (Sources, error) {
 		return nil, err
 	}
 
-	// Sort sources by category, then by name
+	// Sort sources by name
 	slices.SortFunc(sources, func(a, b Source) int {
 		return strings.Compare(a.Name, b.Name)
 	})
@@ -108,7 +106,7 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
-type sourceColumnWidths struct {
+type columnWidths struct {
 	Name             int
 	Resources        int
 	Filters          int
@@ -119,56 +117,29 @@ type sourceColumnWidths struct {
 	Category         int
 }
 
-func computeSourceColumnWidths(sources Sources) sourceColumnWidths {
-	names := make([]string, len(sources))
-	resources := make([]string, len(sources))
-	filters := make([]string, len(sources))
-	namespaces := make([]string, len(sources))
-	fqdnTemplates := make([]string, len(sources))
-	events := make([]string, len(sources))
-	categories := make([]string, len(sources))
-	providerSpecifics := make([]string, len(sources))
-	for i, src := range sources {
-		names[i] = "**" + src.Name + "**"
-		resources[i] = strings.ReplaceAll(src.Resources, ",", "<br/>")
-		filters[i] = src.Filters
-		namespaces[i] = src.Namespace
-		fqdnTemplates[i] = src.FQDNTemplate
-		events[i] = src.Events
-		providerSpecifics[i] = src.ProviderSpecific
-		categories[i] = strings.ToLower(src.Category)
-	}
-	return sourceColumnWidths{
-		Name:             utils.ComputeColumnWidth("**Source Name**", names),
-		Resources:        utils.ComputeColumnWidth("Resources", resources),
-		Filters:          utils.ComputeColumnWidth("Filters", filters),
-		Namespace:        utils.ComputeColumnWidth("Namespace", namespaces),
-		FQDNTemplate:     utils.ComputeColumnWidth("FQDN Template", fqdnTemplates),
-		Events:           utils.ComputeColumnWidth("Events", events),
-		ProviderSpecific: utils.ComputeColumnWidth("Provider Specific", providerSpecifics),
-		Category:         utils.ComputeColumnWidth("Category", categories),
+func computeColumnWidths(sources Sources) columnWidths {
+	return columnWidths{
+		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
+		Resources:        render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
+		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
+		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
+		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
+		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
+		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
 }
 
+type templateData struct {
+	Sources   Sources
+	ColWidths columnWidths
+}
+
 func (s *Sources) generateMarkdown() (string, error) {
-	tmpl := template.New("").Funcs(utils.FuncMap())
-	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
-
-	sources := *s
-	colWidths := computeSourceColumnWidths(sources)
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "sources.gotpl", struct {
-		Sources   Sources
-		ColWidths sourceColumnWidths
-	}{
-		Sources:   sources,
-		ColWidths: colWidths,
+	return render.RenderTemplate(templates, "sources.gotpl", templateData{
+		Sources:   *s,
+		ColWidths: computeColumnWidths(*s),
 	})
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
 }
 
 // parseSourceAnnotations parses all Go files in the source directory
@@ -177,13 +148,13 @@ func parseSourceAnnotations(sourceDir string) (Sources, error) {
 	var sources Sources
 
 	// Walk through the source directory
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(sourceDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip directories and non-Go files
-		if info.IsDir() || !strings.HasSuffix(path, ".go") {
+		if d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
 
