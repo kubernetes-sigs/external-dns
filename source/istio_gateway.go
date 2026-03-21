@@ -140,6 +140,8 @@ func NewIstioGatewaySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// TODO: replace direct API call with indexer to serve from the local cache
+	// and avoid per-reconciliation round-trips to the API server.
 	gwList, err := sc.istioClient.NetworkingV1().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -190,7 +192,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		log.Debugf("Endpoints generated from %q '%s/%s.%s': %q", gateway.Kind, gateway.Namespace, gateway.APIVersion, gateway.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 

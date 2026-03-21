@@ -149,6 +149,8 @@ func NewIstioVirtualServiceSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// TODO: replace direct API call with indexer to serve from the local cache
+	// and avoid per-reconciliation round-trips to the API server.
 	virtualServices, err := sc.vServiceInformer.Lister().VirtualServices(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -187,7 +189,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		log.Debugf("Endpoints generated from %q '%s/%s.%s': %q", vService.Kind, vService.Namespace, vService.APIVersion, vService.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(vService.Kind), vService.Namespace, vService.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
