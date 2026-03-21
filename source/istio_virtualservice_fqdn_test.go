@@ -81,7 +81,6 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 }
 
 func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
-	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
 	for _, tt := range []struct {
 		title           string
 		virtualServices []*networkingv1.VirtualService
@@ -627,6 +626,93 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Status: v1.ServiceStatus{
 						LoadBalancer: v1.LoadBalancerStatus{
 							Ingress: []v1.LoadBalancerIngress{{IP: "192.168.1.100"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			title:        "Kind=VirtualService matches — FQDN generated from template",
+			fqdnTemplate: `{{if eq .Kind "VirtualService"}}{{.Name}}.vs.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "app.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "my-virtualservice.vs.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			virtualServices: []*networkingv1.VirtualService{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-virtualservice", Namespace: "default"},
+					Spec: istionetworking.VirtualService{
+						Hosts:    []string{"app.example.org"},
+						Gateways: []string{"my-gateway"},
+					},
+				},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"*"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			title:        "Kind=Service does not match VirtualService — no FQDN from template",
+			fqdnTemplate: `{{if eq .Kind "Service"}}{{.Name}}.svc.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "app.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			virtualServices: []*networkingv1.VirtualService{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-virtualservice", Namespace: "default"},
+					Spec: istionetworking.VirtualService{
+						Hosts:    []string{"app.example.org"},
+						Gateways: []string{"my-gateway"},
+					},
+				},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"*"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
 						},
 					},
 				},

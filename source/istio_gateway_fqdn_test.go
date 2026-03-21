@@ -486,6 +486,76 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			title:        "Kind=Gateway matches — FQDN generated from template",
+			fqdnTemplate: `{{if eq .Kind "Gateway"}}{{.Name}}.gw.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "my-gateway.gw.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"example.org"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			title:        "Kind=Service does not match Gateway — no FQDN from template",
+			fqdnTemplate: `{{if eq .Kind "Service"}}{{.Name}}.svc.example.com{{end}}`,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			gateways: []*networkingv1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Spec: istionetworking.Gateway{
+						Selector: map[string]string{"istio": "ingressgateway"},
+						Servers:  []*istionetworking.Server{{Hosts: []string{"example.org"}}},
+					},
+				},
+			},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "istio-ingressgateway",
+						Namespace: "default",
+						Labels:    map[string]string{"istio": "ingressgateway"},
+					},
+					Spec: v1.ServiceSpec{
+						Type:     v1.ServiceTypeLoadBalancer,
+						Selector: map[string]string{"istio": "ingressgateway"},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{
+							Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
