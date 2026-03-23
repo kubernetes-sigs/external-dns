@@ -17,7 +17,6 @@ limitations under the License.
 package wrappers
 
 import (
-	"net"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
