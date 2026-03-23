@@ -83,7 +83,7 @@ func TestResolveSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title: "CNAME without resolve-target annotation passes through unchanged",
+			title:    "CNAME without resolve-target annotation passes through unchanged",
 			lookupIP: func(string) ([]net.IP, error) { return nil, errors.New("should not be called") },
 			endpoints: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
