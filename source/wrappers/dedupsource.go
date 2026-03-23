@@ -29,24 +29,16 @@ import (
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
-// It optionally resolves CNAME targets (load balancer hostnames) to their underlying
-// A/AAAA IP addresses via DNS lookup before deduplication.
+// It resolves CNAME targets (load balancer hostnames) to their underlying A/AAAA IP addresses
+// via DNS lookup before deduplication, when the endpoint has a "resolve-target" provider-specific
+// property set to "true".
 type dedupSource struct {
-	source              source.Source
-	resolveLoadBalancer bool
-	lookupIP            func(string) ([]net.IP, error)
+	source   source.Source
+	lookupIP func(string) ([]net.IP, error)
 }
 
 // DedupSourceOption is a functional option for dedupSource.
 type DedupSourceOption func(*dedupSource)
-
-// WithDedupResolveLoadBalancerHostname enables resolving CNAME targets to A/AAAA records
-// before deduplication.
-func WithDedupResolveLoadBalancerHostname(enabled bool) DedupSourceOption {
-	return func(ds *dedupSource) {
-		ds.resolveLoadBalancer = enabled
-	}
-}
 
 // NewDedupSource creates a new dedupSource wrapping the provided Source.
 func NewDedupSource(source source.Source, opts ...DedupSourceOption) source.Source {
@@ -77,7 +69,7 @@ func (ds *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		shouldResolve := ds.resolveLoadBalancer
+		shouldResolve := false
 		if v, ok := ep.GetProviderSpecificProperty("resolve-target"); ok {
 			shouldResolve = v == "true"
 			ep.DeleteProviderSpecificProperty("resolve-target")

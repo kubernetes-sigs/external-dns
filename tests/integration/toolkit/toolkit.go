@@ -244,7 +244,6 @@ func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
 		DefaultTargets:              scenarioCfg.DefaultTargets,
 		ForceDefaultTargets:         scenarioCfg.ForceDefaultTargets,
 		TargetNetFilter:             scenarioCfg.TargetNetFilter,
-		ResolveLoadBalancerHostname: scenarioCfg.ResolveLoadBalancerHostname,
 	})
 }
 
@@ -268,8 +267,7 @@ func CreateWrappedSource(
 		wrappers.WithNAT64Networks(cfg.NAT64Networks),
 		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithResolveLoadBalancerHostname(cfg.ResolveLoadBalancerHostname))
+		wrappers.WithMinTTL(cfg.MinTTL))
 
 	return wrappers.WrapSources(sources, opts)
 }

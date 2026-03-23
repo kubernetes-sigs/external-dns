@@ -62,7 +62,6 @@ type ScenarioConfig struct {
 	ForceDefaultTargets         bool     `json:"forceDefaultTargets"`
 	TargetNetFilter             []string `json:"targetNetFilter"`
 	ServiceTypeFilter           []string `json:"serviceTypeFilter"`
-	ResolveLoadBalancerHostname bool     `json:"resolveLoadBalancerHostname"`
 }
 
 // ParsedResources holds the parsed Kubernetes resources from a scenario.

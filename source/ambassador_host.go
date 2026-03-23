@@ -206,7 +206,7 @@ func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Co
 		return nil, err
 	}
 
-	targets := extractLoadBalancerTargets(svc, false)
+	targets := extractLoadBalancerTargets(svc)
 
 	return targets, nil
 }

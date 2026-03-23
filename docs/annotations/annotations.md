@@ -307,12 +307,10 @@ or ALIAS records and a flat IP address record is required.
 
 Supported values:
 
-- `"true"` — resolve the resource's hostname targets to A/AAAA records, even when the global
-  `--resolve-load-balancer-hostname` flag is not set.
-- `"false"` — keep the resource's hostname targets as CNAME records, even when the global
-  `--resolve-load-balancer-hostname` flag is enabled.
+- `"true"` — resolve the resource's hostname targets to A/AAAA records.
+- `"false"` — keep the resource's hostname targets as CNAME records.
 
-If the annotation is absent, the global `--resolve-load-balancer-hostname` flag determines the behaviour.
+If the annotation is absent, hostname targets are kept as CNAME records (the default behaviour).
 
 When resolution is enabled, ExternalDNS performs a DNS lookup for each hostname target and emits the
 resulting IP addresses as A and/or AAAA endpoints. If resolution fails (e.g. the hostname is
@@ -322,7 +320,7 @@ temporarily unresolvable), that target is silently skipped.
 
 #### Opt in to resolution for a single Source
 
-Resolve load balancer hostnames to IPs for one Ingress without enabling the global flag:
+Resolve load balancer hostnames to IPs for one Ingress:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -349,7 +347,7 @@ spec:
 
 #### Opt out of resolution for a single Source Route
 
-Keep hostname targets as CNAME for one Ingress when the global flag is on:
+Keep hostname targets as CNAME for one Ingress:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -372,7 +370,7 @@ spec:
                   number: 80
 ```
 
-> ExternalDNS will keep the CNAME record for this route, overriding the global flag.
+> ExternalDNS will keep the CNAME record for this route.
 
 ## external-dns.alpha.kubernetes.io/target
 
