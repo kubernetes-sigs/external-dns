@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fqdn
+package template
 
 import (
 	"errors"
 	"testing"
-	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,74 +29,73 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestParseTemplate(t *testing.T) {
+func TestNewEngine(t *testing.T) {
 	for _, tt := range []struct {
-		name                     string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
+		name        string
+		fqdn        string
+		target      string
+		fqdnTarget  string
+		errContains string
 	}{
 		{
-			name:         "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
+			name:        "invalid fqdn template",
+			fqdn:        "{{.Name",
+			errContains: `parse --fqdn-template: "{{.Name"`,
 		},
 		{
-			name:        "valid empty template",
-			expectError: false,
+			name: "empty fqdn template",
 		},
 		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			name: "valid fqdn template",
+			fqdn: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
+			name: "valid fqdn template with multiple hosts",
+			fqdn: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
 		},
 		{
-			name:                     "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
+			name: "replace template function",
+			fqdn: "{{\"hello.world\" | replace \".\" \"-\"}}.ext-dns.test.com",
 		},
 		{
-			name:             "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			name: "isIPv4 template function with valid IPv4",
+			fqdn: "{{if isIPv4 \"192.168.1.1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
 		},
 		{
-			name:         "replace template function",
-			expectError:  false,
-			fqdnTemplate: "{{\"hello.world\" | replace \".\" \"-\"}}.ext-dns.test.com",
+			name: "isIPv4 template function with invalid IPv4",
+			fqdn: "{{if isIPv4 \"not.an.ip.addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
 		},
 		{
-			name:         "isIPv4 template function with valid IPv4",
-			expectError:  false,
-			fqdnTemplate: "{{if isIPv4 \"192.168.1.1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			name: "isIPv6 template function with valid IPv6",
+			fqdn: "{{if isIPv6 \"2001:db8::1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
 		},
 		{
-			name:         "isIPv4 template function with invalid IPv4",
-			expectError:  false,
-			fqdnTemplate: "{{if isIPv4 \"not.an.ip.addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			name: "isIPv6 template function with invalid IPv6",
+			fqdn: "{{if isIPv6 \"not:ipv6:addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
 		},
 		{
-			name:         "isIPv6 template function with valid IPv6",
-			expectError:  false,
-			fqdnTemplate: "{{if isIPv6 \"2001:db8::1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			name:        "invalid target template",
+			target:      "{{.Status.LoadBalancer.Ingress",
+			errContains: `parse --target-template: "{{.Status.LoadBalancer.Ingress"`,
 		},
 		{
-			name:         "isIPv6 template function with invalid IPv6",
-			expectError:  false,
-			fqdnTemplate: "{{if isIPv6 \"not:ipv6:addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			name:   "valid target template",
+			target: "{{.Name}}.targets.example.com",
+		},
+		{
+			name:        "invalid fqdn-target template",
+			fqdnTarget:  "{{.Name}}.example.com:{{.Status",
+			errContains: `parse --fqdn-target-template: "{{.Name}}.example.com:{{.Status"`,
+		},
+		{
+			name:       "valid fqdn-target template",
+			fqdnTarget: "{{.Name}}.example.com:{{.Name}}.targets.example.com",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseTemplate(tt.fqdnTemplate)
-			if tt.expectError {
-				assert.Error(t, err)
+			_, err := NewEngine(tt.fqdn, tt.target, tt.fqdnTarget, false)
+			if tt.errContains != "" {
+				assert.ErrorContains(t, err, tt.errContains)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -105,7 +103,17 @@ func TestParseTemplate(t *testing.T) {
 	}
 }
 
-func TestExecTemplate(t *testing.T) {
+func TestTemplateEngineIsConfigured(t *testing.T) {
+	empty, err := NewEngine("", "", "", false)
+	require.NoError(t, err)
+	assert.False(t, empty.IsConfigured())
+
+	configured, err := NewEngine("{{ .Name }}.example.com", "", "", false)
+	require.NoError(t, err)
+	assert.True(t, configured.IsConfigured())
+}
+
+func TestExecFQDN(t *testing.T) {
 	tests := []struct {
 		name    string
 		tmpl    string
@@ -334,26 +342,26 @@ func TestExecTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpl, err := ParseTemplate(tt.tmpl)
+			engine, err := NewEngine(tt.tmpl, "", "", false)
 			require.NoError(t, err)
 
-			got, err := ExecTemplate(tmpl, tt.obj)
+			got, err := engine.ExecFQDN(tt.obj)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestExecTemplateEmptyObject(t *testing.T) {
-	tmpl, err := ParseTemplate("{{ toLower .Labels.department }}.example.org")
+func TestExecFQDNNilObject(t *testing.T) {
+	engine, err := NewEngine("{{ toLower .Labels.department }}.example.org", "", "", false)
 	require.NoError(t, err)
-	_, err = ExecTemplate(tmpl, nil)
+	_, err = engine.ExecFQDN(nil)
 	assert.Error(t, err)
 }
 
-func TestExecTemplatePopulatesEmptyKind(t *testing.T) {
+func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 	// Test that Kind is populated when initially empty (simulates informer behavior)
-	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
 	require.NoError(t, err)
 
 	// Create object with empty TypeMeta (Kind == "")
@@ -367,7 +375,7 @@ func TestExecTemplatePopulatesEmptyKind(t *testing.T) {
 	// Kind should be empty initially
 	assert.Empty(t, obj.GetObjectKind().GroupVersionKind().Kind)
 
-	got, err := ExecTemplate(tmpl, obj)
+	got, err := engine.ExecFQDN(obj)
 	require.NoError(t, err)
 
 	// Kind should now be populated via reflection
@@ -375,9 +383,9 @@ func TestExecTemplatePopulatesEmptyKind(t *testing.T) {
 	assert.Equal(t, []string{"testObject.test.example.com"}, got)
 }
 
-func TestExecTemplatePreservesExistingKind(t *testing.T) {
+func TestExecFQDNPreservesExistingKind(t *testing.T) {
 	// Test that existing Kind is not overwritten
-	tmpl, err := ParseTemplate("{{ .Kind }}.{{ .Name }}.example.com")
+	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
 	require.NoError(t, err)
 
 	obj := &testObject{
@@ -391,7 +399,7 @@ func TestExecTemplatePreservesExistingKind(t *testing.T) {
 		},
 	}
 
-	got, err := ExecTemplate(tmpl, obj)
+	got, err := engine.ExecFQDN(obj)
 	require.NoError(t, err)
 
 	// Kind should remain unchanged
@@ -399,275 +407,8 @@ func TestExecTemplatePreservesExistingKind(t *testing.T) {
 	assert.Equal(t, []string{"CustomKind.test.example.com"}, got)
 }
 
-func TestFqdnTemplate(t *testing.T) {
-	tests := []struct {
-		name          string
-		fqdnTemplate  string
-		expectedError bool
-	}{
-		{
-			name:          "empty template",
-			fqdnTemplate:  "",
-			expectedError: false,
-		},
-		{
-			name:          "valid template",
-			fqdnTemplate:  "{{ .Name }}.example.com",
-			expectedError: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpl, err := ParseTemplate(tt.fqdnTemplate)
-			if tt.expectedError {
-				require.Error(t, err)
-				assert.Nil(t, tmpl)
-			} else {
-				require.NoError(t, err)
-				if tt.fqdnTemplate == "" {
-					assert.Nil(t, tmpl)
-				} else {
-					assert.NotNil(t, tmpl)
-				}
-			}
-		})
-	}
-}
-
-func TestReplace(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		oldValue string
-		newValue string
-		target   string
-		expected string
-	}{
-		{
-			name:     "simple replacement",
-			oldValue: "old",
-			newValue: "new",
-			target:   "old-value",
-			expected: "new-value",
-		},
-		{
-			name:     "multiple replacements",
-			oldValue: ".",
-			newValue: "-",
-			target:   "hello.world.com",
-			expected: "hello-world-com",
-		},
-		{
-			name:     "no replacement needed",
-			oldValue: "x",
-			newValue: "y",
-			target:   "hello-world",
-			expected: "hello-world",
-		},
-		{
-			name:     "empty strings",
-			oldValue: "",
-			newValue: "",
-			target:   "test",
-			expected: "test",
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result := replace(tt.oldValue, tt.newValue, tt.target)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestIsIPv6String(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		input    string
-		expected bool
-	}{
-		{
-			name:     "valid IPv6",
-			input:    "2001:db8::1",
-			expected: true,
-		},
-		{
-			name:     "valid IPv6 with multiple segments",
-			input:    "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-			expected: true,
-		},
-		{
-			name:     "valid IPv4-mapped IPv6",
-			input:    "::ffff:192.168.1.1",
-			expected: true,
-		},
-		{
-			name:     "invalid IPv6",
-			input:    "not:ipv6:addr",
-			expected: false,
-		},
-		{
-			name:     "IPv4 address",
-			input:    "192.168.1.1",
-			expected: false,
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: false,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isIPv6String(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestIsIPv4String(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		input    string
-		expected bool
-	}{
-		{
-			name:     "valid IPv4",
-			input:    "192.168.1.1",
-			expected: true,
-		},
-		{
-			name:     "invalid IPv4",
-			input:    "256.256.256.256",
-			expected: false,
-		},
-		{
-			name:     "IPv6 address",
-			input:    "2001:db8::1",
-			expected: false,
-		},
-		{
-			name:     "invalid format",
-			input:    "not.an.ip",
-			expected: false,
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: false,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isIPv4String(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestHasKey(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		m        map[string]string
-		key      string
-		expected bool
-	}{
-		{
-			name:     "key exists with non-empty value",
-			m:        map[string]string{"foo": "bar"},
-			key:      "foo",
-			expected: true,
-		},
-		{
-			name:     "key exists with empty value",
-			m:        map[string]string{"service.kubernetes.io/headless": ""},
-			key:      "service.kubernetes.io/headless",
-			expected: true,
-		},
-		{
-			name:     "key does not exist",
-			m:        map[string]string{"foo": "bar"},
-			key:      "baz",
-			expected: false,
-		},
-		{
-			name:     "nil map",
-			m:        nil,
-			key:      "foo",
-			expected: false,
-		},
-		{
-			name:     "empty map",
-			m:        map[string]string{},
-			key:      "foo",
-			expected: false,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result := hasKey(tt.m, tt.key)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestFromJson(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		input    string
-		expected any
-	}{
-		{
-			name:     "map of strings",
-			input:    `{"dns":"entry1.internal.tld","target":"10.10.10.10"}`,
-			expected: map[string]any{"dns": "entry1.internal.tld", "target": "10.10.10.10"},
-		},
-		{
-			name:  "slice of maps",
-			input: `[{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
-			expected: []any{
-				map[string]any{"dns": "entry1.internal.tld", "target": "10.10.10.10"},
-				map[string]any{"dns": "entry2.example.tld", "target": "my.cluster.local"},
-			},
-		},
-		{
-			name:     "null input",
-			input:    "null",
-			expected: nil,
-		},
-		{
-			name:     "empty object",
-			input:    "{}",
-			expected: map[string]any{},
-		},
-		{
-			name:     "string value",
-			input:    `"hello"`,
-			expected: "hello",
-		},
-		{
-			name:     "invalid json",
-			input:    "not valid json",
-			expected: nil,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result := fromJson(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-type testObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-}
-
-func (t *testObject) DeepCopyObject() runtime.Object {
-	return &testObject{
-		TypeMeta:   t.TypeMeta,
-		ObjectMeta: *t.ObjectMeta.DeepCopy(),
-	}
-}
-
-func TestExecTemplateExecutionError(t *testing.T) {
-	tmpl, err := ParseTemplate("{{ call .Name }}")
+func TestExecFQDNExecutionError(t *testing.T) {
+	engine, err := NewEngine("{{ call .Name }}", "", "", false)
 	require.NoError(t, err)
 
 	obj := &metav1.PartialObjectMetadata{
@@ -680,14 +421,18 @@ func TestExecTemplateExecutionError(t *testing.T) {
 		},
 	}
 
-	_, err = ExecTemplate(tmpl, obj)
+	_, err = engine.ExecFQDN(obj)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to apply template on TestKind default/test-name")
 }
 
-func TestCombineWithTemplatedEndpoints(t *testing.T) {
-	// Create a dummy template for tests that need one
-	dummyTemplate := template.Must(template.New("test").Parse("{{.Name}}"))
+func TestCombineWithEndpoints(t *testing.T) {
+	configured, err := NewEngine("{{.Name}}", "", "", false)
+	require.NoError(t, err)
+	configuredCombine, err := NewEngine("{{.Name}}", "", "", true)
+	require.NoError(t, err)
+	unconfigured, err := NewEngine("", "", "", false)
+	require.NoError(t, err)
 
 	annotationEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
@@ -704,55 +449,52 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                  string
-		endpoints             []*endpoint.Endpoint
-		fqdnTemplate          *template.Template
-		combineFQDNAnnotation bool
-		templateFunc          func() ([]*endpoint.Endpoint, error)
-		want                  []*endpoint.Endpoint
-		wantErr               bool
+		name         string
+		endpoints    []*endpoint.Endpoint
+		engine       Engine
+		templateFunc func() ([]*endpoint.Endpoint, error)
+		want         []*endpoint.Endpoint
+		wantErr      bool
 	}{
 		{
-			name:         "nil template returns original endpoints",
+			name:         "unconfigured engine returns original endpoints",
 			endpoints:    annotationEndpoints,
-			fqdnTemplate: nil,
+			engine:       unconfigured,
 			templateFunc: successTemplateFunc,
 			want:         annotationEndpoints,
 		},
 		{
 			name:         "combine=false with existing endpoints returns original",
 			endpoints:    annotationEndpoints,
-			fqdnTemplate: dummyTemplate,
+			engine:       configured,
 			templateFunc: successTemplateFunc,
 			want:         annotationEndpoints,
 		},
 		{
 			name:         "combine=false with empty endpoints returns templated",
 			endpoints:    []*endpoint.Endpoint{},
-			fqdnTemplate: dummyTemplate,
+			engine:       configured,
 			templateFunc: successTemplateFunc,
 			want:         templatedEndpoints,
 		},
 		{
-			name:                  "combine=true appends templated to existing",
-			endpoints:             annotationEndpoints,
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: true,
-			templateFunc:          successTemplateFunc,
-			want:                  append(annotationEndpoints, templatedEndpoints...),
+			name:         "combine=true appends templated to existing",
+			endpoints:    annotationEndpoints,
+			engine:       configuredCombine,
+			templateFunc: successTemplateFunc,
+			want:         append(annotationEndpoints, templatedEndpoints...),
 		},
 		{
-			name:                  "combine=true with empty endpoints returns templated",
-			endpoints:             []*endpoint.Endpoint{},
-			fqdnTemplate:          dummyTemplate,
-			combineFQDNAnnotation: true,
-			templateFunc:          successTemplateFunc,
-			want:                  templatedEndpoints,
+			name:         "combine=true with empty endpoints returns templated",
+			endpoints:    []*endpoint.Endpoint{},
+			engine:       configuredCombine,
+			templateFunc: successTemplateFunc,
+			want:         templatedEndpoints,
 		},
 		{
 			name:         "template error is propagated",
 			endpoints:    []*endpoint.Endpoint{},
-			fqdnTemplate: dummyTemplate,
+			engine:       configured,
 			templateFunc: errorTemplateFunc,
 			want:         nil,
 			wantErr:      true,
@@ -760,7 +502,7 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 		{
 			name:         "nil endpoints with combine=false returns templated",
 			endpoints:    nil,
-			fqdnTemplate: dummyTemplate,
+			engine:       configured,
 			templateFunc: successTemplateFunc,
 			want:         templatedEndpoints,
 		},
@@ -768,10 +510,8 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CombineWithTemplatedEndpoints(
+			got, err := tt.engine.CombineWithEndpoints(
 				tt.endpoints,
-				tt.fqdnTemplate,
-				tt.combineFQDNAnnotation,
 				tt.templateFunc,
 			)
 			if tt.wantErr {
@@ -782,5 +522,17 @@ func TestCombineWithTemplatedEndpoints(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+type testObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+func (t *testObject) DeepCopyObject() runtime.Object {
+	return &testObject{
+		TypeMeta:   t.TypeMeta,
+		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
 }

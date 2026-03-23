@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // Validates that ingressSource is a Source
@@ -63,8 +64,8 @@ func (suite *IngressSuite) SetupTest() {
 		context.TODO(),
 		fakeClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
-			LabelFilter:  labels.Everything(),
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
 		},
 	)
 	suite.NoError(err, "should initialize ingress source")
@@ -122,10 +123,9 @@ func TestNewIngressSource(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				&Config{
-					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
-					IngressClassNames:        ti.ingressClassNames,
+					AnnotationFilter:  ti.annotationFilter,
+					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					IngressClassNames: ti.ingressClassNames,
 				},
 			)
 			if ti.expectError {
@@ -1418,8 +1418,7 @@ func testIngressEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
 					IgnoreIngressRulesSpec:   ti.ignoreIngressRulesSpec,

@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -33,8 +32,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // nodeSource is an implementation of Source for Kubernetes Node objects.
@@ -49,10 +48,9 @@ import (
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
 type nodeSource struct {
-	client                kubernetes.Interface
-	annotationFilter      string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
+	client           kubernetes.Interface
+	annotationFilter string
+	templateEngine   template.Engine
 
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
@@ -65,11 +63,6 @@ func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	cfg *Config) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
@@ -92,14 +85,13 @@ func NewNodeSource(
 	}
 
 	return &nodeSource{
-		client:                kubeClient,
-		annotationFilter:      cfg.AnnotationFilter,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: cfg.CombineFQDNAndAnnotation,
-		nodeInformer:          nodeInformer,
-		labelSelector:         cfg.LabelFilter,
-		excludeUnschedulable:  cfg.ExcludeUnschedulable,
-		exposeInternalIPv6:    cfg.ExposeInternalIPv6,
+		client:               kubeClient,
+		annotationFilter:     cfg.AnnotationFilter,
+		templateEngine:       cfg.TemplateEngine,
+		nodeInformer:         nodeInformer,
+		labelSelector:        cfg.LabelFilter,
+		excludeUnschedulable: cfg.ExcludeUnschedulable,
+		exposeInternalIPv6:   cfg.ExposeInternalIPv6,
 	}, nil
 }
 
@@ -132,17 +124,15 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
-		if ns.fqdnTemplate == nil || ns.combineFQDNAnnotation {
+		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		nodeEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
 			nodeEndpoints,
-			ns.fqdnTemplate,
-			ns.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) { return ns.endpointsFromNodeTemplate(node) },
 		)
 		if err != nil {
@@ -168,7 +158,7 @@ func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
 
 // endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
 func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endpoint, error) {
-	names, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
+	names, err := ns.templateEngine.ExecFQDN(node)
 	if err != nil {
 		return nil, err
 	}

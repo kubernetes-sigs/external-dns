@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
@@ -38,8 +37,8 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
@@ -61,8 +60,8 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
+	annotationFilter         string
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
 	gatewayInformer          networkingv1informer.GatewayInformer
@@ -76,11 +75,6 @@ func NewIstioGatewaySource(
 	istioClient istioclient.Interface,
 	cfg *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
@@ -126,8 +120,8 @@ func NewIstioGatewaySource(
 
 	return &gatewaySource{
 		namespace:                cfg.Namespace,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		annotationFilter:         cfg.AnnotationFilter,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
 		gatewayInformer:          gatewayInformer,
@@ -165,12 +159,10 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if host is missing on gateway
-		gwEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		gwEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			gwEndpoints,
-			sc.fqdnTemplate,
-			sc.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) {
-				hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
+				hostnames, err := sc.templateEngine.ExecFQDN(gateway)
 				if err != nil {
 					return nil, err
 				}

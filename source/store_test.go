@@ -33,6 +33,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -319,4 +320,75 @@ func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
 	// This is documented in the TODO comment on SingletonClientGenerator
 	require.NoError(t, err2, "Second call does not return error due to sync.Once bug")
 	require.NoError(t, err3, "Third call does not return error due to sync.Once bug")
+}
+
+func TestNewSourceConfig(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *externaldns.Config
+		wantConfigured bool
+		wantCombining  bool
+		wantErr        bool
+	}{
+		{
+			name: "no templates configured",
+			cfg:  &externaldns.Config{},
+		},
+		{
+			name: "fqdn template only",
+			cfg: &externaldns.Config{
+				FQDNTemplate: "{{.Name}}.example.com",
+			},
+			wantConfigured: true,
+		},
+		{
+			name: "fqdn template with combine",
+			cfg: &externaldns.Config{
+				FQDNTemplate:             "{{.Name}}.example.com",
+				CombineFQDNAndAnnotation: true,
+			},
+			wantConfigured: true,
+			wantCombining:  true,
+		},
+		{
+			name: "all three templates configured",
+			cfg: &externaldns.Config{
+				FQDNTemplate:             "{{.Name}}.example.com",
+				TargetTemplate:           "{{.Name}}.targets.example.com",
+				FQDNTargetTemplate:       "{{.Name}}.example.com:{{.Name}}.targets.example.com",
+				CombineFQDNAndAnnotation: true,
+			},
+			wantConfigured: true,
+			wantCombining:  true,
+		},
+		{
+			name:    "invalid fqdn template",
+			cfg:     &externaldns.Config{FQDNTemplate: "{{.Name"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid target template",
+			cfg:     &externaldns.Config{TargetTemplate: "{{.Status.LoadBalancer.Ingress"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid fqdn-target template",
+			cfg:     &externaldns.Config{FQDNTargetTemplate: "{{.Name}}.example.com:{{.Status"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewSourceConfig(tt.cfg)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			tmpl := got.TemplateEngine
+			assert.Equal(t, tt.wantConfigured, tmpl.IsConfigured(), "IsConfigured")
+			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
+		})
+	}
 }

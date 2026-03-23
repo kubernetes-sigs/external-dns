@@ -233,7 +233,7 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 }
 
 // scenarioToConfig creates a source.Config for testing with the scenario config.
-func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) *source.Config {
+func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) (*source.Config, error) {
 	return source.NewSourceConfig(&externaldns.Config{
 		Sources:             scenarioCfg.Sources,
 		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
@@ -253,6 +253,9 @@ func CreateWrappedSource(
 	ctx context.Context,
 	client *fake.Clientset,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	cfg := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	if err != nil {
+		return nil, err
+	}
 	return wrappers.Build(ctx, cfg)
 }

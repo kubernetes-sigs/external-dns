@@ -81,7 +81,10 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	sCfg := source.NewSourceConfig(cfg)
+	sCfg, err := source.NewSourceConfig(cfg)
+	if err != nil {
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
+	}
 	endpointsSource, err := wrappers.Build(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer

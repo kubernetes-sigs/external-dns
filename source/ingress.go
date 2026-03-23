@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
@@ -37,7 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 const (
@@ -67,8 +66,7 @@ type ingressSource struct {
 	namespace                string
 	annotationFilter         string
 	ingressClassNames        []string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
@@ -81,11 +79,6 @@ func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	cfg *Config) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
 	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
@@ -126,8 +119,7 @@ func NewIngressSource(
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
 		ingressClassNames:        cfg.IngressClassNames,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
@@ -164,10 +156,8 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			ingEndpoints,
-			sc.fqdnTemplate,
-			sc.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
 		)
 		if err != nil {
@@ -188,7 +178,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, ing)
+	hostnames, err := sc.templateEngine.ExecFQDN(ing)
 	if err != nil {
 		return nil, err
 	}

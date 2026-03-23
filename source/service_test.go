@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/informers/fakes"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 type ServiceSuite struct {
@@ -83,8 +84,8 @@ func (suite *ServiceSuite) SetupTest() {
 		context.TODO(),
 		fakeClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
-			LabelFilter:  labels.Everything(),
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
 		},
 	)
 	suite.NoError(err, "should initialize service source")
@@ -102,7 +103,6 @@ func TestServiceSource(t *testing.T) {
 
 	suite.Run(t, new(ServiceSuite))
 	t.Run("Interface", testServiceSourceImplementsSource)
-	t.Run("NewServiceSource", testServiceSourceNewServiceSource)
 	t.Run("Endpoints", testServiceSourceEndpoints)
 	t.Run("MultipleServices", testMultipleServicesEndpoints)
 }
@@ -110,66 +110,6 @@ func TestServiceSource(t *testing.T) {
 // testServiceSourceImplementsSource tests that serviceSource is a valid Source.
 func testServiceSourceImplementsSource(t *testing.T) {
 	assert.Implements(t, (*Source)(nil), new(serviceSource))
-}
-
-// testServiceSourceNewServiceSource tests that NewServiceSource doesn't return an error.
-func testServiceSourceNewServiceSource(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		title              string
-		annotationFilter   string
-		fqdnTemplate       string
-		serviceTypesFilter []string
-		expectError        bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-		{
-			title:              "non-empty service types filter",
-			expectError:        false,
-			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
-		},
-	} {
-
-		t.Run(tc.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewServiceSource(
-				t.Context(),
-				fake.NewClientset(),
-				&Config{
-					FQDNTemplate:      tc.fqdnTemplate,
-					AnnotationFilter:  tc.annotationFilter,
-					ServiceTypeFilter: tc.serviceTypesFilter,
-					LabelFilter:       labels.Everything(),
-				},
-			)
-
-			if tc.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
@@ -1152,10 +1092,9 @@ func testServiceSourceEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:                tc.fqdnTemplate,
+					TemplateEngine:              templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
 					AnnotationFilter:            tc.annotationFilter,
 					ServiceTypeFilter:           tc.serviceTypesFilter,
-					CombineFQDNAndAnnotation:    tc.combineFQDNAndAnnotation,
 					Compatibility:               tc.compatibility,
 					Namespace:                   tc.targetNamespace,
 					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
@@ -1363,10 +1302,9 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
 					AnnotationFilter:         tc.annotationFilter,
 					ServiceTypeFilter:        tc.serviceTypesFilter,
-					CombineFQDNAndAnnotation: tc.combineFQDNAndAnnotation,
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
@@ -1660,7 +1598,7 @@ func TestClusterIpServices(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         tc.annotationFilter,
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
@@ -2480,7 +2418,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         tc.annotationFilter,
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
@@ -3382,7 +3320,7 @@ func TestHeadlessServices(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
@@ -4316,7 +4254,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 					Namespace:                tc.targetNamespace,
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExcludeUnschedulable:     true,
 					PublishHostIP:            true,
@@ -4517,7 +4455,7 @@ func TestExternalServices(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					FQDNTemplate:             tc.fqdnTemplate,
+					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
 					Namespace:                tc.targetNamespace,
@@ -4855,7 +4793,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
-			FQDNTemplate:         "{{.Name}}",
+			TemplateEngine:       templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 			Namespace:            "default",
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
@@ -4951,8 +4889,8 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
-			LabelFilter:  labels.Everything(),
+			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
 		},
 	)
 	require.NoError(t, err)
