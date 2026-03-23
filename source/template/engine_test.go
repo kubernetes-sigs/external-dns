@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestNewTemplateEngine(t *testing.T) {
+func TestNewEngine(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
 		fqdn        string
@@ -342,7 +342,8 @@ func TestExecFQDN(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			engine := mustEngine(t, tt.tmpl)
+			engine, err := NewEngine(tt.tmpl, "", "", false)
+			require.NoError(t, err)
 
 			got, err := engine.ExecFQDN(tt.obj)
 			require.NoError(t, err)
@@ -352,14 +353,16 @@ func TestExecFQDN(t *testing.T) {
 }
 
 func TestExecFQDNNilObject(t *testing.T) {
-	engine := mustEngine(t, "{{ toLower .Labels.department }}.example.org")
-	_, err := engine.ExecFQDN(nil)
+	engine, err := NewEngine("{{ toLower .Labels.department }}.example.org", "", "", false)
+	require.NoError(t, err)
+	_, err = engine.ExecFQDN(nil)
 	assert.Error(t, err)
 }
 
 func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 	// Test that Kind is populated when initially empty (simulates informer behavior)
-	engine := mustEngine(t, "{{ .Kind }}.{{ .Name }}.example.com")
+	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
+	require.NoError(t, err)
 
 	// Create object with empty TypeMeta (Kind == "")
 	obj := &testObject{
@@ -382,7 +385,8 @@ func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 
 func TestExecFQDNPreservesExistingKind(t *testing.T) {
 	// Test that existing Kind is not overwritten
-	engine := mustEngine(t, "{{ .Kind }}.{{ .Name }}.example.com")
+	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
+	require.NoError(t, err)
 
 	obj := &testObject{
 		TypeMeta: metav1.TypeMeta{
@@ -404,7 +408,8 @@ func TestExecFQDNPreservesExistingKind(t *testing.T) {
 }
 
 func TestExecFQDNExecutionError(t *testing.T) {
-	engine := mustEngine(t, "{{ call .Name }}")
+	engine, err := NewEngine("{{ call .Name }}", "", "", false)
+	require.NoError(t, err)
 
 	obj := &metav1.PartialObjectMetadata{
 		TypeMeta: metav1.TypeMeta{
@@ -416,7 +421,7 @@ func TestExecFQDNExecutionError(t *testing.T) {
 		},
 	}
 
-	_, err := engine.ExecFQDN(obj)
+	_, err = engine.ExecFQDN(obj)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to apply template on TestKind default/test-name")
 }
@@ -518,13 +523,6 @@ func TestCombineWithEndpoints(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func mustEngine(t *testing.T, fqdnStr string) Engine {
-	t.Helper()
-	engine, err := NewEngine(fqdnStr, "", "", false)
-	require.NoError(t, err)
-	return engine
 }
 
 type testObject struct {

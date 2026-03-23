@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 type podSpec struct {
@@ -220,7 +221,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				t.Context(), client,
 				&Config{
 					Namespace:        tt.namespace,
-					TemplateEngine:   mustTemplateEngine(t, "{{ .Name }}.tld.org", "", "", false),
+					TemplateEngine:   testutil.MustEngine(t, "{{ .Name }}.tld.org", "", "", false),
 					AnnotationFilter: tt.annotationFilter,
 					LabelFilter:      selector,
 				})

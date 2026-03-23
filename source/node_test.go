@@ -43,6 +43,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestNodeSource(t *testing.T) {
@@ -395,7 +396,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubeClient,
 				&Config{
 					AnnotationFilter:     tc.annotationFilter,
-					TemplateEngine:       mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
+					TemplateEngine:       testutil.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
 					ExcludeUnschedulable: tc.excludeUnschedulable,
@@ -509,7 +510,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			kubeClient,
 			&Config{
 				AnnotationFilter:     tc.annotationFilter,
-				TemplateEngine:       mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
+				TemplateEngine:       testutil.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
 				ExcludeUnschedulable: tc.excludeUnschedulable,

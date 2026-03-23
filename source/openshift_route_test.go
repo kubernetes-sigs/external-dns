@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 type OCPRouteSuite struct {
@@ -50,7 +51,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 		context.TODO(),
 		fakeClient,
 		&Config{
-			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: testutil.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},
 	)
@@ -502,7 +503,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				t.Context(),
 				fakeClient,
 				&Config{
-					TemplateEngine: mustTemplateEngine(t, "{{.Name}}", "", "", false),
+					TemplateEngine: testutil.MustEngine(t, "{{.Name}}", "", "", false),
 					LabelFilter:    labelSelector,
 					OCPRouterName:  tc.ocpRouterName,
 				},

@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -1228,7 +1229,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 
 		// Should not error when creating the source
 		src, err := NewPodSource(t.Context(), fakeClient, &Config{
-			TemplateEngine: mustTemplateEngine(t, "template", "", "", false),
+			TemplateEngine: testutil.MustEngine(t, "template", "", "", false),
 		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)

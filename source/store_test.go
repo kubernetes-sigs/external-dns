@@ -34,7 +34,6 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -392,12 +391,4 @@ func TestNewSourceConfig(t *testing.T) {
 			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
 		})
 	}
-}
-
-// mustTemplateEngine creates a Engine with all three templates and combine flag.
-func mustTemplateEngine(t *testing.T, fqdnStr, targetStr, fqdnTargetStr string, combine bool) template.Engine {
-	t.Helper()
-	engine, err := template.NewEngine(fqdnStr, targetStr, fqdnTargetStr, combine)
-	require.NoError(t, err)
-	return engine
 }

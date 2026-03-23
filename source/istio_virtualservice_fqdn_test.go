@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
@@ -57,7 +58,7 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					TemplateEngine:           mustTemplateEngine(t, tt.fqdnTemplate, "", "", false),
+					TemplateEngine:           testutil.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
 			)
@@ -732,7 +733,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					TemplateEngine:           mustTemplateEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					TemplateEngine:           testutil.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},
 			)

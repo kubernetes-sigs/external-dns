@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
@@ -320,7 +321,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					TemplateEngine:       mustTemplateEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					TemplateEngine:       testutil.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
 					ExcludeUnschedulable: true,
 					ExposeInternalIPv6:   true,
 					LabelFilter:          labels.Everything(),

@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
@@ -820,9 +821,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.templates != "" {
 				if tt.combineFQDN {
-					tt.source.templateEngine = mustTemplateEngine(t, tt.templates, "", "", true)
+					tt.source.templateEngine = testutil.MustEngine(t, tt.templates, "", "", true)
 				} else {
-					tt.source.templateEngine = mustTemplateEngine(t, tt.templates, "", "", false)
+					tt.source.templateEngine = testutil.MustEngine(t, tt.templates, "", "", false)
 				}
 			}
 

@@ -36,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -96,7 +97,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 		fakeDynamicClient,
 		&Config{
 			Namespace:      "default",
-			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: testutil.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
@@ -1016,7 +1017,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           testutil.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -1042,7 +1043,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 		t.Context(),
 		fakeDynamicClient,
 		&Config{
-			TemplateEngine: mustTemplateEngine(t, "{{.Name}}", "", "", false),
+			TemplateEngine: testutil.MustEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
 	if err != nil {

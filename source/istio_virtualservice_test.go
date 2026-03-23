@@ -39,6 +39,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
@@ -120,7 +121,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: testutil.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize virtualservice source")
@@ -1959,7 +1960,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           testutil.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -2044,7 +2045,7 @@ func newTestVirtualServiceSource(t *testing.T, loadBalancerList []fakeIngressGat
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			TemplateEngine: mustTemplateEngine(t, "{{ .Name }}", "", "", false),
+			TemplateEngine: testutil.MustEngine(t, "{{ .Name }}", "", "", false),
 		},
 	)
 	if err != nil {

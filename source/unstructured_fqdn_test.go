@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
@@ -839,7 +840,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					LabelFilter:           selector,
 					UnstructuredResources: tt.cfg.resources,
-					TemplateEngine:        mustTemplateEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),
+					TemplateEngine:        testutil.MustEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),
 				},
 			)
 			require.NoError(t, err)
@@ -992,7 +993,7 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			engine := mustTemplateEngine(t, tt.tmpl, "", "", false)
+			engine := testutil.MustEngine(t, tt.tmpl, "", "", false)
 
 			wrapped := newUnstructuredWrapper(tt.obj)
 			got, err := engine.ExecFQDN(wrapped)

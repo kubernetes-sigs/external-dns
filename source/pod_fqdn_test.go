@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
@@ -403,7 +404,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					TemplateEngine:  mustTemplateEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					TemplateEngine:  testutil.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
 					PodSourceDomain: tt.sourceDomain,
 				})
 			require.NoError(t, err)
@@ -463,7 +464,7 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					TemplateEngine:  mustTemplateEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					TemplateEngine:  testutil.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
 					PodSourceDomain: tt.sourceDomain,
 				})
 			require.NoError(t, err)

@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
@@ -95,7 +96,7 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create GRPCRoute")
 
 	src, err := NewGatewayGRPCRouteSource(ctx, clients, &Config{
-		TemplateEngine: mustTemplateEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
+		TemplateEngine: testutil.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway GRPCRoute Source")
 
