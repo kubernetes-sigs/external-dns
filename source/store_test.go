@@ -387,7 +387,7 @@ func TestNewSourceConfig(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			tmpl := got.Templates
+			tmpl := got.TemplateEngine
 			assert.Equal(t, tt.wantConfigured, tmpl.IsConfigured(), "IsConfigured")
 			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
 		})

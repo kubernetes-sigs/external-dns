@@ -223,7 +223,7 @@ func newGatewayRouteSource(
 
 		nsInformer: nsInformer,
 
-		templateEngine:           config.Templates,
+		templateEngine:           config.TemplateEngine,
 		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
 	}
 	return src, nil

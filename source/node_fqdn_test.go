@@ -320,7 +320,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					Templates:            mustTemplateEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					TemplateEngine:       mustTemplateEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
 					ExcludeUnschedulable: true,
 					ExposeInternalIPv6:   true,
 					LabelFilter:          labels.Everything(),

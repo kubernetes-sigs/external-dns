@@ -89,7 +89,7 @@ func NewContourHTTPProxySource(
 		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
-		templateEngine:           cfg.Templates,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		httpProxyInformer:        httpProxyInformer,
 		unstructuredConverter:    uc,

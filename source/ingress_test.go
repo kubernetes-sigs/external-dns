@@ -63,8 +63,8 @@ func (suite *IngressSuite) SetupTest() {
 		context.TODO(),
 		fakeClient,
 		&Config{
-			Templates:   mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
-			LabelFilter: labels.Everything(),
+			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
 		},
 	)
 	suite.NoError(err, "should initialize ingress source")
@@ -123,7 +123,7 @@ func TestNewIngressSource(t *testing.T) {
 				fake.NewClientset(),
 				&Config{
 					AnnotationFilter:  ti.annotationFilter,
-					Templates:         mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:    mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IngressClassNames: ti.ingressClassNames,
 				},
 			)
@@ -1417,7 +1417,7 @@ func testIngressEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					Templates:                mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
 					IgnoreIngressRulesSpec:   ti.ignoreIngressRulesSpec,

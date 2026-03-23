@@ -50,8 +50,8 @@ func (suite *OCPRouteSuite) SetupTest() {
 		context.TODO(),
 		fakeClient,
 		&Config{
-			Templates:   mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
-			LabelFilter: labels.Everything(),
+			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
 		},
 	)
 
@@ -502,9 +502,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				t.Context(),
 				fakeClient,
 				&Config{
-					Templates:     mustTemplateEngine(t, "{{.Name}}", "", "", false),
-					LabelFilter:   labelSelector,
-					OCPRouterName: tc.ocpRouterName,
+					TemplateEngine: mustTemplateEngine(t, "{{.Name}}", "", "", false),
+					LabelFilter:    labelSelector,
+					OCPRouterName:  tc.ocpRouterName,
 				},
 			)
 			require.NoError(t, err)

@@ -63,7 +63,7 @@ type Config struct {
 	AnnotationFilter               string
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
-	Templates                      template.Engine
+	TemplateEngine                 template.Engine
 	IgnoreHostnameAnnotation       bool
 	IgnoreNonHostNetworkPods       bool
 	IgnoreIngressTLSSpec           bool
@@ -171,7 +171,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		NAT64Networks:                  cfg.NAT64Networks,
 		MinTTL:                         cfg.MinTTL,
 		UnstructuredResources:          cfg.UnstructuredResources,
-		Templates:                      tmpls,
+		TemplateEngine:                 tmpls,
 		PreferAlias:                    cfg.PreferAlias,
 		sources:                        cfg.Sources,
 	}

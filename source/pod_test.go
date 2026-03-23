@@ -1228,7 +1228,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 
 		// Should not error when creating the source
 		src, err := NewPodSource(t.Context(), fakeClient, &Config{
-			Templates: mustTemplateEngine(t, "template", "", "", false),
+			TemplateEngine: mustTemplateEngine(t, "template", "", "", false),
 		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)

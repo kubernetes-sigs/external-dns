@@ -839,7 +839,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					LabelFilter:           selector,
 					UnstructuredResources: tt.cfg.resources,
-					Templates:             mustTemplateEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),
+					TemplateEngine:        mustTemplateEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),
 				},
 			)
 			require.NoError(t, err)

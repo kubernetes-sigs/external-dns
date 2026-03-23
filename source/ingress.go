@@ -119,7 +119,7 @@ func NewIngressSource(
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
 		ingressClassNames:        cfg.IngressClassNames,
-		templateEngine:           cfg.Templates,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,

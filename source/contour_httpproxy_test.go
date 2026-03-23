@@ -95,8 +95,8 @@ func (suite *HTTPProxySuite) SetupTest() {
 		context.TODO(),
 		fakeDynamicClient,
 		&Config{
-			Namespace: "default",
-			Templates: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			Namespace:      "default",
+			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
@@ -1016,7 +1016,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					Templates:                mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -1042,7 +1042,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 		t.Context(),
 		fakeDynamicClient,
 		&Config{
-			Templates: mustTemplateEngine(t, "{{.Name}}", "", "", false),
+			TemplateEngine: mustTemplateEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
 	if err != nil {

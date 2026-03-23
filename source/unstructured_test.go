@@ -462,7 +462,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 					AnnotationFilter:      tt.cfg.annotationFilter,
 					LabelFilter:           labelSelector,
 					UnstructuredResources: tt.cfg.resources,
-					Templates:             mustTemplateEngine(t, "", "", "", tt.cfg.combine),
+					TemplateEngine:        mustTemplateEngine(t, "", "", "", tt.cfg.combine),
 				},
 			)
 			require.NoError(t, err)

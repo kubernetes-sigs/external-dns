@@ -87,7 +87,7 @@ func NewOcpRouteSource(
 		client:                   ocpClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
-		templateEngine:           cfg.Templates,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		routeInformer:            informer,
 		labelSelector:            cfg.LabelFilter,

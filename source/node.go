@@ -87,7 +87,7 @@ func NewNodeSource(
 	return &nodeSource{
 		client:               kubeClient,
 		annotationFilter:     cfg.AnnotationFilter,
-		templateEngine:       cfg.Templates,
+		templateEngine:       cfg.TemplateEngine,
 		nodeInformer:         nodeInformer,
 		labelSelector:        cfg.LabelFilter,
 		excludeUnschedulable: cfg.ExcludeUnschedulable,

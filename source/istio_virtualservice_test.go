@@ -120,7 +120,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			Templates: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize virtualservice source")
@@ -1959,7 +1959,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					Templates:                mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -2044,7 +2044,7 @@ func newTestVirtualServiceSource(t *testing.T, loadBalancerList []fakeIngressGat
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			Templates: mustTemplateEngine(t, "{{ .Name }}", "", "", false),
+			TemplateEngine: mustTemplateEngine(t, "{{ .Name }}", "", "", false),
 		},
 	)
 	if err != nil {

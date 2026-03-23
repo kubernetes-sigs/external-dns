@@ -95,7 +95,7 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create UDPRoute")
 
 	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
-		Templates: mustTemplateEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
+		TemplateEngine: mustTemplateEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
 

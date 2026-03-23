@@ -104,7 +104,7 @@ func NewUnstructuredFQDNSource(
 	}
 
 	return &unstructuredSource{
-		templateEngine: cfg.Templates,
+		templateEngine: cfg.TemplateEngine,
 		informers:      resourceInformers,
 	}, nil
 }

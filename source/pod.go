@@ -108,7 +108,7 @@ func NewPodSource(
 		compatibility:            cfg.Compatibility,
 		ignoreNonHostNetworkPods: cfg.IgnoreNonHostNetworkPods,
 		podSourceDomain:          cfg.PodSourceDomain,
-		templateEngine:           cfg.Templates,
+		templateEngine:           cfg.TemplateEngine,
 	}, nil
 }
 

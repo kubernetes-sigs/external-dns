@@ -168,7 +168,7 @@ func NewServiceSource(
 		namespace:                      namespace,
 		annotationFilter:               config.AnnotationFilter,
 		compatibility:                  config.Compatibility,
-		templateEngine:                 config.Templates,
+		templateEngine:                 config.TemplateEngine,
 		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
 		publishInternal:                config.PublishInternal,
 		publishHostIP:                  config.PublishHostIP,

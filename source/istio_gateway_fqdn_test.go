@@ -58,7 +58,7 @@ func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         tt.annotationFilter,
-					Templates:                mustTemplateEngine(t, tt.fqdnTemplate, "", "", false),
+					TemplateEngine:           mustTemplateEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
 			)
@@ -565,7 +565,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					Templates:                mustTemplateEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					TemplateEngine:           mustTemplateEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},
 			)

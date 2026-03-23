@@ -270,8 +270,8 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					Templates:   mustTemplateEngine(t, tt.fqdnTemplate, "", "", true),
-					LabelFilter: labels.Everything(),
+					TemplateEngine: mustTemplateEngine(t, tt.fqdnTemplate, "", "", true),
+					LabelFilter:    labels.Everything(),
 				},
 			)
 

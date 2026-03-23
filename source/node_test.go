@@ -395,7 +395,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubeClient,
 				&Config{
 					AnnotationFilter:     tc.annotationFilter,
-					Templates:            mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
+					TemplateEngine:       mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
 					ExcludeUnschedulable: tc.excludeUnschedulable,
@@ -509,7 +509,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			kubeClient,
 			&Config{
 				AnnotationFilter:     tc.annotationFilter,
-				Templates:            mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
+				TemplateEngine:       mustTemplateEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
 				ExcludeUnschedulable: tc.excludeUnschedulable,

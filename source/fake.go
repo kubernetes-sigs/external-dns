@@ -55,7 +55,7 @@ const (
 )
 
 // NewFakeSource creates a new fakeSource with the given config.
-// TODO: support cfg.Templates by rendering the FQDN template against a synthetic
+// TODO: support cfg.TemplateEngine by rendering the FQDN template against a synthetic
 // Kubernetes object (e.g. metav1.PartialObjectMetadata) so that --fqdn-template
 // is honored when --source=fake is used for dry-runs.
 func NewFakeSource(_ *Config) (Source, error) {

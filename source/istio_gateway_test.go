@@ -101,7 +101,7 @@ func (suite *GatewaySuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			Templates: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: mustTemplateEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize gateway source")
@@ -1471,7 +1471,7 @@ func testGatewayEndpoints(t *testing.T) {
 				fakeIstioClient,
 				&Config{
 					Namespace:                targetNamespace,
-					Templates:                mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           mustTemplateEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					AnnotationFilter:         ti.annotationFilter,
 				},
@@ -1900,7 +1900,7 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			Templates: mustTemplateEngine(t, "{{.FQDN}}", "", "", false),
+			TemplateEngine: mustTemplateEngine(t, "{{.FQDN}}", "", "", false),
 		},
 	)
 	if err != nil {

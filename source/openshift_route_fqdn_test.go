@@ -342,7 +342,7 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					Namespace:        "",
 					AnnotationFilter: "",
-					Templates:        mustTemplateEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					TemplateEngine:   mustTemplateEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					LabelFilter:      labels.Everything(),
 					OCPRouterName:    "",
 				},

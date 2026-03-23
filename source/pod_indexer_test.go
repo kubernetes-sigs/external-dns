@@ -220,7 +220,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				t.Context(), client,
 				&Config{
 					Namespace:        tt.namespace,
-					Templates:        mustTemplateEngine(t, "{{ .Name }}.tld.org", "", "", false),
+					TemplateEngine:   mustTemplateEngine(t, "{{ .Name }}.tld.org", "", "", false),
 					AnnotationFilter: tt.annotationFilter,
 					LabelFilter:      selector,
 				})

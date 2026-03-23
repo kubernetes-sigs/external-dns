@@ -231,7 +231,7 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 		namespace:                cfg.Namespace,
 		apiEndpoint:              apiEndpoint,
 		annotationFilter:         cfg.AnnotationFilter,
-		templateEngine:           cfg.Templates,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}, nil
 }

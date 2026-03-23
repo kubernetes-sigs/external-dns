@@ -96,7 +96,7 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create TLSRoute")
 
 	src, err := NewGatewayTLSRouteSource(ctx, clients, &Config{
-		Templates: mustTemplateEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
+		TemplateEngine: mustTemplateEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway TLSRoute Source")
 
