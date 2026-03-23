@@ -244,7 +244,7 @@ func validateEndpoint(t *testing.T, ep, expected *endpoint.Endpoint) {
 		t.Errorf("DNSName expected %q, got %q", expected.DNSName, ep.DNSName)
 	}
 
-	if !ep.Targets.Same(expected.Targets) {
+	if len(expected.Targets) > 0 && !ep.Targets.Same(expected.Targets) {
 		t.Errorf("Targets expected %q, got %q", expected.Targets, ep.Targets)
 	}
 

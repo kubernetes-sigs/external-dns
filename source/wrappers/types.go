@@ -121,7 +121,9 @@ func wrapSources(
 	sources []source.Source,
 	opts *Config,
 ) (source.Source, error) {
-	combinedSource := NewDedupSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets))
+	combinedSource := NewResolveSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets))
+	opts.addSourceWrapper("resolve")
+	combinedSource = NewDedupSource(combinedSource)
 	opts.addSourceWrapper("dedup")
 	if len(opts.nat64Networks) > 0 {
 		var err error

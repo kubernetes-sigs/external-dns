@@ -34,7 +34,7 @@ func withLookupIP(fn func(string) ([]net.IP, error)) resolveSourceOption {
 	}
 }
 
-func TestResolveSourceEndpointsGlobalFlag(t *testing.T) {
+func TestResolveSourceEndpoints(t *testing.T) {
 	tests := []struct {
 		title     string
 		lookupIP  func(string) ([]net.IP, error)
@@ -54,12 +54,16 @@ func TestResolveSourceEndpointsGlobalFlag(t *testing.T) {
 			},
 		},
 		{
-			title: "CNAME with resolvable hostname is replaced by A and AAAA records",
+			title: "CNAME with resolve-target:true is replaced by A and AAAA records",
 			lookupIP: func(string) ([]net.IP, error) {
 				return []net.IP{net.ParseIP("1.2.3.4"), net.ParseIP("2001:db8::1")}, nil
 			},
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
+				func() *endpoint.Endpoint {
+					ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com")
+					ep.WithProviderSpecific("resolve-target", "true")
+					return ep
+				}(),
 			},
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeA, "1.2.3.4"),
@@ -67,30 +71,25 @@ func TestResolveSourceEndpointsGlobalFlag(t *testing.T) {
 			},
 		},
 		{
-			title:    "CNAME with unresolvable hostname is skipped",
+			title:    "CNAME with resolve-target:true and unresolvable hostname is skipped",
 			lookupIP: func(string) ([]net.IP, error) { return nil, errors.New("no such host") },
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
+				func() *endpoint.Endpoint {
+					ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com")
+					ep.WithProviderSpecific("resolve-target", "true")
+					return ep
+				}(),
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title: "mixed IP and CNAME endpoints: CNAMEs are resolved, IP endpoints pass through",
-			lookupIP: func(host string) ([]net.IP, error) {
-				if host == "lb.example.com" {
-					return []net.IP{net.ParseIP("10.0.0.1")}, nil
-				}
-				return nil, errors.New("no such host")
-			},
+			title: "CNAME without resolve-target annotation passes through unchanged",
+			lookupIP: func(string) ([]net.IP, error) { return nil, errors.New("should not be called") },
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -102,6 +101,7 @@ func TestResolveSourceEndpointsGlobalFlag(t *testing.T) {
 				func() *endpoint.Endpoint {
 					ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com")
 					ep.Labels = endpoint.Labels{"resource": "gateway/default/test"}
+					ep.WithProviderSpecific("resolve-target", "true")
 					return ep
 				}(),
 			},
@@ -118,11 +118,16 @@ func TestResolveSourceEndpointsGlobalFlag(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			ms := new(testutils.MockSource)
 			ms.On("Endpoints").Return(tt.endpoints, nil)
-			src := NewResolveSource(ms, true, withLookupIP(tt.lookupIP))
+			src := NewResolveSource(ms, withLookupIP(tt.lookupIP))
 
 			got, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, got, tt.expected)
+			require.Len(t, got, len(tt.expected))
+			for i, ep := range got {
+				require.Equal(t, tt.expected[i].DNSName, ep.DNSName)
+				require.Equal(t, tt.expected[i].RecordType, ep.RecordType)
+				require.Equal(t, tt.expected[i].Targets, ep.Targets)
+			}
 		})
 	}
 }
@@ -133,30 +138,21 @@ func TestResolveSourceEndpointsPerAnnotation(t *testing.T) {
 	}
 	tests := []struct {
 		title           string
-		globalFlag      bool
 		annotationValue string // empty means annotation absent
 		expectResolved  bool
 	}{
 		{
-			title:           "annotation true, global flag off → resolves",
-			globalFlag:      false,
+			title:           "annotation true → resolves",
 			annotationValue: "true",
 			expectResolved:  true,
 		},
 		{
-			title:           "annotation false, global flag on → keeps CNAME",
-			globalFlag:      true,
+			title:           "annotation false → keeps CNAME",
 			annotationValue: "false",
 			expectResolved:  false,
 		},
 		{
-			title:          "no annotation, global flag on → resolves",
-			globalFlag:     true,
-			expectResolved: true,
-		},
-		{
-			title:          "no annotation, global flag off → keeps CNAME",
-			globalFlag:     false,
+			title:          "no annotation → keeps CNAME",
 			expectResolved: false,
 		},
 	}
@@ -169,7 +165,7 @@ func TestResolveSourceEndpointsPerAnnotation(t *testing.T) {
 
 			ms := new(testutils.MockSource)
 			ms.On("Endpoints").Return([]*endpoint.Endpoint{ep}, nil)
-			src := NewResolveSource(ms, tt.globalFlag, withLookupIP(stubLookup))
+			src := NewResolveSource(ms, withLookupIP(stubLookup))
 
 			got, err := src.Endpoints(t.Context())
 			require.NoError(t, err)

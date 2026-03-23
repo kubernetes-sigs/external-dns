@@ -30,29 +30,26 @@ import (
 // resolveSource is a Source wrapper that resolves CNAME targets (load balancer hostnames)
 // to their underlying A/AAAA IP addresses via DNS lookup.
 //
-// The global flag enables resolution for all CNAME endpoints. Individual endpoints can
-// override this via the "resolve-target" provider-specific property:
+// Resolution is controlled per-endpoint via the "resolve-target" provider-specific property:
 //
-//	"true"  – resolve even when the global flag is off
-//	"false" – keep as CNAME even when the global flag is on
+//	"true"  – resolve this endpoint's hostname targets to A/AAAA records
+//	"false" – keep this endpoint's hostname targets as CNAME records
 //
 // The property is always consumed (deleted) by this wrapper so it does not leak
 // to downstream components.
 type resolveSource struct {
-	source     source.Source
-	globalFlag bool
-	lookupIP   func(string) ([]net.IP, error)
+	source   source.Source
+	lookupIP func(string) ([]net.IP, error)
 }
 
 // resolveSourceOption is a functional option for resolveSource.
 type resolveSourceOption func(*resolveSource)
 
 // NewResolveSource creates a new resolveSource wrapping src.
-func NewResolveSource(src source.Source, globalFlag bool, opts ...resolveSourceOption) source.Source {
+func NewResolveSource(src source.Source, opts ...resolveSourceOption) source.Source {
 	rs := &resolveSource{
-		source:     src,
-		globalFlag: globalFlag,
-		lookupIP:   net.LookupIP,
+		source:   src,
+		lookupIP: net.LookupIP,
 	}
 	for _, opt := range opts {
 		opt(rs)
@@ -73,7 +70,7 @@ func (rs *resolveSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		shouldResolve := rs.globalFlag
+		shouldResolve := false
 		if v, ok := ep.GetProviderSpecificProperty("resolve-target"); ok {
 			shouldResolve = v == "true"
 			ep.DeleteProviderSpecificProperty("resolve-target")
