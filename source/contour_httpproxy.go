@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
@@ -53,7 +53,7 @@ type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         string
-	templateEngine           templateegine.Engine
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	httpProxyInformer        kubeinformers.GenericInformer
 	unstructuredConverter    *UnstructuredConverter

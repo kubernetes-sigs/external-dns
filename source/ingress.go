@@ -36,7 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 const (
@@ -66,7 +66,7 @@ type ingressSource struct {
 	namespace                string
 	annotationFilter         string
 	ingressClassNames        []string
-	templateEngine           templateegine.Engine
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool

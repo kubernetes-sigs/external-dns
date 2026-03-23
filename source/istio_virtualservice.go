@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // IstioMeshGateway is the built in gateway for all sidecars
@@ -65,7 +65,7 @@ type virtualServiceSource struct {
 	istioClient              istioclient.Interface
 	namespace                string
 	annotationFilter         string
-	templateEngine           templateegine.Engine
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
 	vServiceInformer         networkingv1informer.VirtualServiceInformer

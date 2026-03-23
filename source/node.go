@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // nodeSource is an implementation of Source for Kubernetes Node objects.
@@ -50,7 +50,7 @@ import (
 type nodeSource struct {
 	client           kubernetes.Interface
 	annotationFilter string
-	templateEngine   templateegine.Engine
+	templateEngine   template.Engine
 
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector

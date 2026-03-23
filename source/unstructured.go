@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -55,7 +55,7 @@ import (
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
 type unstructuredSource struct {
-	templateEngine templateegine.Engine
+	templateEngine template.Engine
 	informers      []kubeinformers.GenericInformer
 }
 

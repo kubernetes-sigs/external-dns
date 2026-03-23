@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -72,7 +72,7 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	labelSelector    labels.Selector
-	templateEngine   templateegine.Engine
+	templateEngine   template.Engine
 
 	ignoreHostnameAnnotation       bool
 	publishInternal                bool

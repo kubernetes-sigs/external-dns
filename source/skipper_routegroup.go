@@ -38,7 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 const (
@@ -63,7 +63,7 @@ type routeGroupSource struct {
 	namespace                string
 	apiEndpoint              string
 	annotationFilter         string
-	templateEngine           templateegine.Engine
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 }
 

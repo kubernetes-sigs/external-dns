@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/templateegine"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -52,7 +52,7 @@ import (
 type podSource struct {
 	client         kubernetes.Interface
 	namespace      string
-	templateEngine templateegine.Engine
+	templateEngine template.Engine
 
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
