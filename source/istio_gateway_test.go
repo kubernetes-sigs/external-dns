@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/template/testutil"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -102,7 +102,7 @@ func (suite *GatewaySuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			TemplateEngine: testutil.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize gateway source")
@@ -1472,7 +1472,7 @@ func testGatewayEndpoints(t *testing.T) {
 				fakeIstioClient,
 				&Config{
 					Namespace:                targetNamespace,
-					TemplateEngine:           testutil.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					AnnotationFilter:         ti.annotationFilter,
 				},
@@ -1901,7 +1901,7 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			TemplateEngine: testutil.MustEngine(t, "{{.FQDN}}", "", "", false),
+			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
 		},
 	)
 	if err != nil {

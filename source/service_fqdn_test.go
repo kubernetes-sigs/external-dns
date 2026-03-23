@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/template/testutil"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
@@ -876,7 +876,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			}
 
 			cfg := &Config{
-				TemplateEngine:                 testutil.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+				TemplateEngine:                 templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
 				PublishHostIP:                  tt.publishHostIp,
 				ServiceTypeFilter:              tt.serviceTypesFilter,
 				PublishInternal:                true,

@@ -38,7 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/template/testutil"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestUnstructuredWrapperImplementsKubeObject(t *testing.T) {
@@ -463,7 +463,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 					AnnotationFilter:      tt.cfg.annotationFilter,
 					LabelFilter:           labelSelector,
 					UnstructuredResources: tt.cfg.resources,
-					TemplateEngine:        testutil.MustEngine(t, "", "", "", tt.cfg.combine),
+					TemplateEngine:        templatetest.MustEngine(t, "", "", "", tt.cfg.combine),
 				},
 			)
 			require.NoError(t, err)

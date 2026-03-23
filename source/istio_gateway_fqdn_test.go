@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/template/testutil"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
@@ -59,7 +59,7 @@ func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         tt.annotationFilter,
-					TemplateEngine:           testutil.MustEngine(t, tt.fqdnTemplate, "", "", false),
+					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
 			)
@@ -566,7 +566,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					TemplateEngine:           testutil.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},
 			)
