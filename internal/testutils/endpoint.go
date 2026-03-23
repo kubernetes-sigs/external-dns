@@ -244,6 +244,8 @@ func validateEndpoint(t *testing.T, ep, expected *endpoint.Endpoint) {
 		t.Errorf("DNSName expected %q, got %q", expected.DNSName, ep.DNSName)
 	}
 
+	// Skip target comparison when the expected entry has no targets specified,
+	// allowing tests to assert record type without pinning dynamic IPs (e.g. resolved A/AAAA records).
 	if len(expected.Targets) > 0 && !ep.Targets.Same(expected.Targets) {
 		t.Errorf("Targets expected %q, got %q", expected.Targets, ep.Targets)
 	}
