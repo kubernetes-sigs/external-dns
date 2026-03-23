@@ -22,7 +22,6 @@ import (
 	"maps"
 	"slices"
 	"strings"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 
@@ -39,8 +38,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -56,11 +55,8 @@ import (
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
 type unstructuredSource struct {
-	combineFqdnAnnotation bool
-	fqdnTemplate          *template.Template
-	targetTemplate        *template.Template
-	fqdnTargetTemplate    *template.Template
-	informers             []kubeinformers.GenericInformer
+	templateEngine template.Engine
+	informers      []kubeinformers.GenericInformer
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -70,21 +66,6 @@ func NewUnstructuredFQDNSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	fqdnTmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
-	targetTmpl, err := fqdn.ParseTemplate(cfg.TargetTemplate)
-	if err != nil {
-		return nil, err
-	}
-
-	fqdnTargetTmpl, err := fqdn.ParseTemplate(cfg.FQDNTargetTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	gvrs, err := discoverResources(kubeClient, cfg.UnstructuredResources)
 	if err != nil {
 		return nil, err
@@ -123,11 +104,8 @@ func NewUnstructuredFQDNSource(
 	}
 
 	return &unstructuredSource{
-		fqdnTemplate:          fqdnTmpl,
-		targetTemplate:        targetTmpl,
-		fqdnTargetTemplate:    fqdnTargetTmpl,
-		informers:             resourceInformers,
-		combineFqdnAnnotation: cfg.CombineFQDNAndAnnotation,
+		templateEngine: cfg.TemplateEngine,
+		informers:      resourceInformers,
 	}, nil
 }
 
@@ -171,8 +149,8 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
 
-		fqdnTargetEdps, err := fqdn.CombineWithTemplatedEndpoints(
-			annotationEdps, us.fqdnTargetTemplate, us.combineFqdnAnnotation,
+		fqdnTargetEdps, err := us.templateEngine.CombineWithEndpoints(
+			annotationEdps,
 			func() ([]*endpoint.Endpoint, error) {
 				return us.endpointsFromFQDNTargetTemplate(el)
 			},
@@ -181,8 +159,8 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 			return nil, err
 		}
 
-		edps, err := fqdn.CombineWithTemplatedEndpoints(
-			fqdnTargetEdps, us.fqdnTemplate, us.combineFqdnAnnotation,
+		edps, err := us.templateEngine.CombineWithEndpoints(
+			fqdnTargetEdps,
 			func() ([]*endpoint.Endpoint, error) {
 				return us.endpointsFromTemplate(el)
 			},
@@ -209,7 +187,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
 func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(us.fqdnTemplate, el)
+	hostnames, err := us.templateEngine.ExecFQDN(el)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +195,9 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 		return nil, nil
 	}
 
-	var targets []string
-	if us.targetTemplate != nil {
-		targets, err = fqdn.ExecTemplate(us.targetTemplate, el)
-		if err != nil {
-			return nil, err
-		}
+	targets, err := us.templateEngine.ExecTarget(el)
+	if err != nil {
+		return nil, err
 	}
 
 	return EndpointsForHostsAndTargets(hostnames, targets), nil
@@ -231,7 +206,7 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 // endpointsFromFQDNTargetTemplate creates endpoints from a template that returns host:target pairs.
 // Each pair creates a single endpoint with 1:1 mapping between host and target.
 func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	pairs, err := fqdn.ExecTemplate(us.fqdnTargetTemplate, el)
+	pairs, err := us.templateEngine.ExecFQDNTarget(el)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +272,7 @@ func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
 }
 
 // newUnstructuredWrapper creates a wrapper around an *unstructured.Unstructured,
-// exposing typed convenience fields for templates alongside raw map sections.
+// exposing typed convenience fields for templateEngine alongside raw map sections.
 func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 	w := &unstructuredWrapper{
 		Unstructured: u,

@@ -290,7 +290,8 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	sCfg := source.NewSourceConfig(cfg)
+	sCfg, err := source.NewSourceConfig(cfg)
+	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	src, err := wrappers.Build(ctx, sCfg)

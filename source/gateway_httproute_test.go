@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -951,7 +952,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "FQDNTemplate",
 			config: Config{
-				FQDNTemplate: "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ",
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ", "", "", false),
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
@@ -997,8 +998,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "CombineFQDN",
 			config: Config{
-				FQDNTemplate:             "combine-{{.Name}}.internal",
-				CombineFQDNAndAnnotation: true,
+				TemplateEngine: templatetest.MustEngine(t, "combine-{{.Name}}.internal", "", "", true),
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{

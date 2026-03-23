@@ -36,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -95,8 +96,8 @@ func (suite *HTTPProxySuite) SetupTest() {
 		context.TODO(),
 		fakeDynamicClient,
 		&Config{
-			Namespace:    "default",
-			FQDNTemplate: "{{.Name}}",
+			Namespace:      "default",
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
@@ -138,71 +139,6 @@ func TestHTTPProxy(t *testing.T) {
 	suite.Run(t, new(HTTPProxySuite))
 	t.Run("endpointsFromHTTPProxy", testEndpointsFromHTTPProxy)
 	t.Run("Endpoints", testHTTPProxyEndpoints)
-}
-
-func TestNewContourHTTPProxySource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "contour.heptio.com/ingress.class=contour",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			fakeDynamicClient, _ := newDynamicKubernetesClient()
-
-			_, err := NewContourHTTPProxySource(
-				t.Context(),
-				fakeDynamicClient,
-				&Config{
-					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
-				},
-			)
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func testEndpointsFromHTTPProxy(t *testing.T) {
@@ -311,7 +247,7 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			source, err := newTestHTTPProxySource()
+			source, err := newTestHTTPProxySource(t)
 			require.NoError(t, err)
 
 			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
@@ -1081,8 +1017,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -1101,14 +1036,14 @@ func testHTTPProxyEndpoints(t *testing.T) {
 }
 
 // httpproxy specific helper functions
-func newTestHTTPProxySource() (*httpProxySource, error) {
+func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
-		context.TODO(),
+		t.Context(),
 		fakeDynamicClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
+			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
 	if err != nil {

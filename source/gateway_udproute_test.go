@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
@@ -95,8 +96,7 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create UDPRoute")
 
 	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
-		FQDNTemplate:             "{{.Name}}-template.foobar.internal",
-		CombineFQDNAndAnnotation: true,
+		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
 

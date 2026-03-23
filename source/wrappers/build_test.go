@@ -29,8 +29,11 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-func stubConfig(extCfg *externaldns.Config) *source.Config {
-	return source.NewSourceConfig(extCfg, source.WithClientGenerator(testutils.StubClientGenerator{}))
+func stubConfig(t *testing.T, extCfg *externaldns.Config) *source.Config {
+	t.Helper()
+	cfg, err := source.NewSourceConfig(extCfg, source.WithClientGenerator(testutils.StubClientGenerator{}))
+	require.NoError(t, err)
+	return cfg
 }
 
 func TestBuildWrappedSource(t *testing.T) {
@@ -41,25 +44,25 @@ func TestBuildWrappedSource(t *testing.T) {
 	}{
 		{
 			name: "fake source with no extra wrappers",
-			cfg:  stubConfig(&externaldns.Config{Sources: []string{types.Fake}}),
+			cfg:  stubConfig(t, &externaldns.Config{Sources: []string{types.Fake}}),
 		},
 		{
 			name: "fake source with target filter wrapper",
-			cfg: stubConfig(&externaldns.Config{
+			cfg: stubConfig(t, &externaldns.Config{
 				Sources:         []string{types.Fake},
 				TargetNetFilter: []string{"10.0.0.0/8"},
 			}),
 		},
 		{
 			name: "fake source with NAT64 networks",
-			cfg: stubConfig(&externaldns.Config{
+			cfg: stubConfig(t, &externaldns.Config{
 				Sources:       []string{types.Fake},
 				NAT64Networks: []string{"2001:db8::/96"},
 			}),
 		},
 		{
 			name: "fake source with minTTL, provider, and preferAlias",
-			cfg: stubConfig(&externaldns.Config{
+			cfg: stubConfig(t, &externaldns.Config{
 				Sources:     []string{types.Fake},
 				MinTTL:      300 * time.Second,
 				Provider:    "aws",
@@ -68,7 +71,7 @@ func TestBuildWrappedSource(t *testing.T) {
 		},
 		{
 			name: "fake source with exclude target nets",
-			cfg: stubConfig(&externaldns.Config{
+			cfg: stubConfig(t, &externaldns.Config{
 				Sources:           []string{types.Fake},
 				TargetNetFilter:   []string{"10.0.0.0/8"},
 				ExcludeTargetNets: []string{"10.1.0.0/16"},
@@ -76,12 +79,12 @@ func TestBuildWrappedSource(t *testing.T) {
 		},
 		{
 			name:    "unknown source returns error",
-			cfg:     stubConfig(&externaldns.Config{Sources: []string{"does-not-exist"}}),
+			cfg:     stubConfig(t, &externaldns.Config{Sources: []string{"does-not-exist"}}),
 			wantErr: true,
 		},
 		{
 			name: "invalid NAT64 network returns error",
-			cfg: stubConfig(&externaldns.Config{
+			cfg: stubConfig(t, &externaldns.Config{
 				Sources:       []string{types.Fake},
 				NAT64Networks: []string{"not-a-cidr"},
 			}),

@@ -43,74 +43,14 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestNodeSource(t *testing.T) {
 	t.Parallel()
 
-	t.Run("NewNodeSource", testNodeSourceNewNodeSource)
 	t.Run("Endpoints", testNodeSourceEndpoints)
 	t.Run("EndpointsIPv6", testNodeEndpointsWithIPv6)
-}
-
-// testNodeSourceNewNodeSource tests that NewNodeService doesn't return an error.
-func testNodeSourceNewNodeSource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title            string
-		annotationFilter string
-		fqdnTemplate     string
-		expectError      bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "complex template",
-			expectError:  false,
-			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewNodeSource(
-				t.Context(),
-				fake.NewClientset(),
-				&Config{
-					AnnotationFilter:     ti.annotationFilter,
-					FQDNTemplate:         ti.fqdnTemplate,
-					LabelFilter:          labels.Everything(),
-					ExcludeUnschedulable: true,
-					ExposeInternalIPv6:   true,
-				},
-			)
-
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 // testNodeSourceEndpoints tests that various node generate the correct endpoints.
@@ -456,7 +396,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubeClient,
 				&Config{
 					AnnotationFilter:     tc.annotationFilter,
-					FQDNTemplate:         tc.fqdnTemplate,
+					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
 					ExcludeUnschedulable: tc.excludeUnschedulable,
@@ -570,7 +510,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			kubeClient,
 			&Config{
 				AnnotationFilter:     tc.annotationFilter,
-				FQDNTemplate:         tc.fqdnTemplate,
+				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
 				ExcludeUnschedulable: tc.excludeUnschedulable,
