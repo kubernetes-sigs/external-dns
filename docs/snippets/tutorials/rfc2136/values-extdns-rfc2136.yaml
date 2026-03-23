@@ -11,7 +11,7 @@ extraArgs:
   - --rfc2136-tsig-secret=96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8=
   - --rfc2136-tsig-secret-alg=hmac-sha256
   - --rfc2136-tsig-axfr
-  - --rfc2136-create-ptr
+  - --create-ptr
   - --managed-record-types=A
   - --managed-record-types=AAAA
   - --managed-record-types=CNAME

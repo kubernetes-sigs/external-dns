@@ -22,6 +22,6 @@ You will then use the following mix of options:
 - `--domain-filter=10.0.0.in-addr.arpa`
 - `--source=pod`
 - `--pod-source-domain=example.org`
-- `--rfc2136-create-ptr`
+- `--create-ptr`
 - `--rfc2136-zone=example.org`
 - `--rfc2136-zone=10.0.0.in-addr.arpa`

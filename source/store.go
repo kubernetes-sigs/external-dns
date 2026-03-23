@@ -178,7 +178,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		TemplateEngine:                 tmpls,
 		PreferAlias:                    cfg.PreferAlias,
 		PTRSupported:                   cfg.IsPTRSupported(),
-		CreatePTR:                      cfg.CreatePTR || cfg.RFC2136CreatePTR,
+		CreatePTR:                      cfg.CreatePTR,
 		sources:                        cfg.Sources,
 	}
 	for _, opt := range opts {

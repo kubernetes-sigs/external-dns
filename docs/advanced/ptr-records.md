@@ -112,9 +112,3 @@ A/AAAA endpoints regardless of source, including DNSEndpoint.
   provider if this applies to your setup.
 - PTR records whose forward hostname does not match `--domain-filter` are automatically cleaned up.
 - PTR records are tracked by the TXT registry like any other record type, so ownership is preserved across restarts.
-
-## Deprecation of `--rfc2136-create-ptr`
-
-The `--rfc2136-create-ptr` flag is deprecated in favor of `--create-ptr`. If `--rfc2136-create-ptr` is set,
-it is treated as `--create-ptr` for backward compatibility. Migrate to `--create-ptr` and remove
-`--rfc2136-create-ptr` from your configuration.
