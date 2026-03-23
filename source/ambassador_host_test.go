@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -648,7 +650,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
 			// Validate returned endpoints against expected endpoints.
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

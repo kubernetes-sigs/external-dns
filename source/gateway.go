@@ -94,7 +94,8 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=HTTPRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-grpcroute
 // +externaldns:source:category=Gateway API
@@ -102,7 +103,8 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=GRPCRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-tcproute
 // +externaldns:source:category=Gateway API
@@ -110,7 +112,8 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=TCPRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-tlsroute
 // +externaldns:source:category=Gateway API
@@ -118,7 +121,8 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:resources=TLSRoute.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-udproute
 // +externaldns:source:category=Gateway API
@@ -127,6 +131,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 type gatewayRouteSource struct {
 	gwName      string
 	gwNamespace string
@@ -234,9 +239,9 @@ func newGatewayRouteSource(
 func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
-	_, _ = src.gwInformer.Informer().AddEventHandler(eventHandler)
-	_, _ = src.rtInformer.Informer().AddEventHandler(eventHandler)
-	_, _ = src.nsInformer.Informer().AddEventHandler(eventHandler)
+	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
+	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
+	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {

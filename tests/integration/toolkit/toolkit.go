@@ -20,9 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"reflect"
-	"sort"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -38,7 +35,6 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
@@ -237,119 +233,26 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 }
 
 // scenarioToConfig creates a source.Config for testing with the scenario config.
-func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
+func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) *source.Config {
 	return source.NewSourceConfig(&externaldns.Config{
-		Sources:                     scenarioCfg.Sources,
-		ServiceTypeFilter:           scenarioCfg.ServiceTypeFilter,
-		DefaultTargets:              scenarioCfg.DefaultTargets,
-		ForceDefaultTargets:         scenarioCfg.ForceDefaultTargets,
-		TargetNetFilter:             scenarioCfg.TargetNetFilter,
-	})
+		Sources:             scenarioCfg.Sources,
+		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
+		DefaultTargets:      scenarioCfg.DefaultTargets,
+		ForceDefaultTargets: scenarioCfg.ForceDefaultTargets,
+		TargetNetFilter:     scenarioCfg.TargetNetFilter,
+		ExcludeTargetNets:   scenarioCfg.ExcludeTargetNets,
+		NAT64Networks:       scenarioCfg.NAT64Networks,
+		Provider:            scenarioCfg.Provider,
+		PreferAlias:         scenarioCfg.PreferAlias,
+	}, opts...)
 }
 
-// CreateWrappedSource creates sources using source.BuildWithConfig and wraps them with wrappers.WrapSources.
-// TODO: could we reuse the same source.BuildWithConfig() code as the controller instead of duplicating it here? It would require refactoring to allow passing in a custom client generator, but it would ensure we're testing the same code as the controller.
+// CreateWrappedSource builds all named sources using a mock client and wraps
+// them with the same pipeline used by the controller.
 func CreateWrappedSource(
 	ctx context.Context,
 	client *fake.Clientset,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	clientGen := newMockClientGenerator(client)
-	cfg := scenarioToConfig(scenarioCfg)
-
-	// TODO: copied from controller/execute.go#buildSources
-	sources, err := source.ByNames(ctx, cfg, clientGen)
-	if err != nil {
-		return nil, err
-	}
-	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
-
-	return wrappers.WrapSources(sources, opts)
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func ValidateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
-	t.Helper()
-
-	if len(endpoints) != len(expected) {
-		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
-	}
-
-	// Make sure endpoints are sorted - validateEndpoint() depends on it.
-	sortEndpoints(endpoints)
-	sortEndpoints(expected)
-
-	for i := range endpoints {
-		validateEndpoint(t, endpoints[i], expected[i])
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
-	t.Helper()
-
-	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
-	}
-
-	// Only validate targets when the expected entry specifies them.
-	// Omitting targets in the YAML allows asserting record type without strictly checking the expected ips
-	if len(expected.Targets) > 0 && !endpoint.Targets.Same(expected.Targets) {
-		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
-	}
-
-	if endpoint.RecordTTL != expected.RecordTTL {
-		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
-	}
-
-	// if a non-empty record type is expected, check that it matches.
-	if endpoint.RecordType != expected.RecordType {
-		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
-	}
-
-	// if non-empty labels are expected, check that they match.
-	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
-		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
-	}
-
-	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
-		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
-		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
-	}
-
-	if endpoint.SetIdentifier != expected.SetIdentifier {
-		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, endpoint.SetIdentifier)
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func sortEndpoints(endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		sort.Strings(ep.Targets)
-	}
-	sort.Slice(endpoints, func(i, k int) bool {
-		// Sort by DNSName, RecordType, and Targets
-		ei, ek := endpoints[i], endpoints[k]
-		if ei.DNSName != ek.DNSName {
-			return ei.DNSName < ek.DNSName
-		}
-		if ei.RecordType != ek.RecordType {
-			return ei.RecordType < ek.RecordType
-		}
-		// Targets are sorted ahead of time.
-		for j, ti := range ei.Targets {
-			if j >= len(ek.Targets) {
-				return true
-			}
-			if tk := ek.Targets[j]; ti != tk {
-				return ti < tk
-			}
-		}
-		return false
-	})
+	cfg := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	return wrappers.Build(ctx, cfg)
 }

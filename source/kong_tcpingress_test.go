@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +31,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // This is a compile-time validation that kongTCPIngressSource is a Source.
@@ -341,6 +344,47 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "TCPIngress with provider-specific annotation",
+			tcpProxy: TCPIngress{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+					Kind:       "TCPIngress",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "tcp-ingress-provider-specific",
+					Namespace: defaultKongNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
+						"kubernetes.io/ingress.class":               "kong",
+						annotations.AWSPrefix + "weight":            "10",
+					},
+				},
+				Status: tcpIngressStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
+							{
+								IP: "1.2.3.4",
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.com",
+					Targets:    []string{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "tcpingress/kong/tcp-ingress-provider-specific",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {
@@ -378,7 +422,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

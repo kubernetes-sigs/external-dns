@@ -407,6 +407,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"Skipping node node1 because it is unschedulable",
 			},
 		},
+		{
+			title:              "provider-specific annotation is not supported and is ignored",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.AWSPrefix + "weight": "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
@@ -460,7 +472,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
 				logtest.TestHelperLogContains(entry, hook, t)
@@ -574,13 +586,64 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		}
 
 		// Validate returned endpoints against desired endpoints.
-		validateEndpoints(t, endpoints, tc.expected)
+		testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 		for _, ep := range endpoints {
 			require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 		}
 	}
+}
+
+func TestTransformerInNodeSource(t *testing.T) {
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake-node",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+			},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.4"},
+			},
+			Conditions: []v1.NodeCondition{
+				{Type: v1.NodeReady, Status: v1.ConditionTrue},
+			},
+		},
+	}
+
+	kubeClient := fake.NewClientset()
+	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	ns, ok := src.(*nodeSource)
+	require.True(t, ok)
+
+	retrieved, err := ns.nodeInformer.Lister().Get(node.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, node.Name, retrieved.Name)
+	assert.Equal(t, node.Labels, retrieved.Labels)
+	assert.Equal(t, node.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Status.Addresses must be preserved — used for endpoint generation
+	assert.Equal(t, node.Status.Addresses, retrieved.Status.Addresses)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
 }
 
 func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {

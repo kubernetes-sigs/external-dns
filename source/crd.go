@@ -27,9 +27,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/pkg/events"
-	"sigs.k8s.io/external-dns/source/types"
-
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/types"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,6 +56,7 @@ import (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=true
+// +externaldns:source:provider-specific=true
 type crdSource struct {
 	crdClient        rest.Interface
 	namespace        string
@@ -155,7 +156,7 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 		log.Debug("Adding event handler for CRD")
 		// Right now there is no way to remove event handler from informer, see:
 		// https://github.com/kubernetes/kubernetes/issues/79610
-		_, _ = cs.informer.AddEventHandler(
+		informers.MustAddEventHandler(cs.informer,
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(_ any) {
 					handler()

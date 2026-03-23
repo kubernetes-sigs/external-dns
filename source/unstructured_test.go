@@ -405,6 +405,44 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/prod-platform-vm"),
 			},
 		},
+		{
+			title: "provider-specific annotation is not supported and is ignored",
+			cfg: cfg{
+				resources: []string{"machines.v1beta1.cluster.x-k8s.io"},
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "cluster.x-k8s.io/v1beta1",
+						"kind":       "Machine",
+						"metadata": map[string]any{
+							"name":      "control-plane",
+							"namespace": "default",
+							"labels": map[string]any{
+								"cluster.x-k8s.io/cluster-name":  "test-cluster",
+								"cluster.x-k8s.io/control-plane": "",
+							},
+							"annotations": map[string]any{
+								annotations.HostnameKey:      "control-plane.example.com",
+								annotations.TargetKey:        "10.0.0.1",
+								annotations.CloudflarePrefix: "cloudflare-specific-annotation",
+							},
+						},
+						"spec": map[string]any{
+							"clusterName": "test-cluster",
+							"bootstrap": map[string]any{
+								"dataSecretName": "control-plane-bootstrap",
+							},
+							"version": "v1.26.0",
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("control-plane.example.com", endpoint.RecordTypeA, "10.0.0.1").
+					WithLabel(endpoint.ResourceLabelKey, "machine/default/control-plane"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
@@ -432,7 +470,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 
 			for _, ep := range endpoints {
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
@@ -539,7 +577,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 				assert.Nil(t, result)
 				return
 			}
-			validateEndpoints(t, result, tc.expected)
+			testutils.ValidateEndpoints(t, result, tc.expected)
 		})
 	}
 }

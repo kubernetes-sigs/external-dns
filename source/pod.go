@@ -26,9 +26,7 @@ import (
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	v1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -50,6 +48,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
 type podSource struct {
 	client                kubernetes.Interface
@@ -78,50 +77,23 @@ func NewPodSource(
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
-	err := podInformer.Informer().AddIndexers(informers.IndexerWithOptions[*corev1.Pod](
+	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
 	))
+	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to add indexers to pod informer: %w", err)
-	}
-
-	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-
-	if cfg.FQDNTemplate == "" {
-		// Transformer is used to reduce the memory usage of the informer.
-		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
-		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		// When fqdnTemplate is used the entire pod needs to be provided to the rendering call, but the informer itself becomes unneeded.
-		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
-			pod, ok := i.(*corev1.Pod)
-			if !ok {
-				return nil, fmt.Errorf("object is not a pod")
-			}
-			// UID is retained so that event correlation works; the transform
-			// is idempotent by construction.
-			return &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					// Name/namespace must always be kept for the informer to work.
-					Name:      pod.Name,
-					Namespace: pod.Namespace,
-					// Used by the controller. This includes non-external-dns prefixed annotations.
-					Annotations: pod.Annotations,
-					UID:         pod.UID,
-				},
-				Spec: corev1.PodSpec{
-					HostNetwork: pod.Spec.HostNetwork,
-					NodeName:    pod.Spec.NodeName,
-				},
-				Status: corev1.PodStatus{
-					PodIP: pod.Status.PodIP,
-				},
-			}, nil
-		})
-	}
-
-	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(podInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -149,7 +121,7 @@ func NewPodSource(
 }
 
 func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
-	_, _ = ps.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ps.podInformer.Informer(), eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -157,7 +129,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, key := range indexKeys {
-		pod, err := informers.GetByKey[*corev1.Pod](ps.podInformer.Informer().GetIndexer(), key)
+		pod, err := informers.GetByKey[*v1.Pod](ps.podInformer.Informer().GetIndexer(), key)
 		if err != nil {
 			continue
 		}
@@ -182,7 +154,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 	return MergeEndpoints(endpoints), nil
 }
 
-func (ps *podSource) endpointsFromPodAnnotations(pod *corev1.Pod) []*endpoint.Endpoint {
+func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoint {
 	endpointMap := make(map[endpoint.EndpointKey][]string)
 	ps.addPodEndpointsToEndpointMap(endpointMap, pod)
 
@@ -193,7 +165,7 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *corev1.Pod) []*endpoint.En
 	return endpoints
 }
 
-func (ps *podSource) endpointsFromPodTemplate(pod *corev1.Pod) ([]*endpoint.Endpoint, error) {
+func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint, error) {
 	hostsMap, err := ps.hostsFromTemplate(pod)
 	if err != nil {
 		return nil, err
@@ -206,7 +178,7 @@ func (ps *podSource) endpointsFromPodTemplate(pod *corev1.Pod) ([]*endpoint.Endp
 	return endpoints, nil
 }
 
-func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod) {
+func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod) {
 	if ps.ignoreNonHostNetworkPods && !pod.Spec.HostNetwork {
 		log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
 		return
@@ -220,7 +192,7 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 	ps.addPodSourceDomainEndpoints(endpointMap, pod, targets)
 }
 
-func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		for _, domain := range domainList {
@@ -233,7 +205,7 @@ func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endp
 	}
 }
 
-func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.HostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		if len(targets) == 0 {
@@ -244,7 +216,7 @@ func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.End
 	}
 }
 
-func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod) {
+func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod) {
 	if ps.compatibility == "kops-dns-controller" {
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
@@ -260,7 +232,7 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 	}
 }
 
-func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
 	if ps.podSourceDomain != "" {
 		domain := pod.Name + "." + ps.podSourceDomain
 		if len(targets) == 0 {
@@ -270,7 +242,7 @@ func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.Endpoi
 	}
 }
 
-func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, domainList []string) {
+func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domainList []string) {
 	node, err := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 	if err != nil {
 		log.Debugf("Get node[%s] of pod[%s] error: %v; ignoring", pod.Spec.NodeName, pod.GetName(), err)
@@ -280,14 +252,14 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 		for _, address := range node.Status.Addresses {
 			recordType := endpoint.SuitableType(address.Address)
 			// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-			if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+			if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
 				addToEndpointMap(endpointMap, pod, domain, recordType, address.Address)
 			}
 		}
 	}
 }
 
-func (ps *podSource) hostsFromTemplate(pod *corev1.Pod) (map[endpoint.EndpointKey][]string, error) {
+func (ps *podSource) hostsFromTemplate(pod *v1.Pod) (map[endpoint.EndpointKey][]string, error) {
 	hosts, err := fqdn.ExecTemplate(ps.fqdnTemplate, pod)
 	if err != nil {
 		return nil, fmt.Errorf("skipping generating endpoints from template for pod %s: %w", pod.Name, err)
@@ -312,7 +284,7 @@ func (ps *podSource) hostsFromTemplate(pod *corev1.Pod) (map[endpoint.EndpointKe
 	return result, nil
 }
 
-func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string, domainList ...string) {
+func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string, domainList ...string) {
 	for _, domain := range domainList {
 		for _, target := range targets {
 			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(target), target)
@@ -320,7 +292,7 @@ func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod 
 	}
 }
 
-func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, domain string, recordType string, address string) {
+func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domain string, recordType string, address string) {
 	key := endpoint.EndpointKey{
 		DNSName:    domain,
 		RecordType: recordType,

@@ -19,7 +19,7 @@ package testutils
 import (
 	"net/netip"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -73,7 +73,7 @@ func TestExampleSameEndpoints(t *testing.T) {
 		},
 	}
 
-	sort.Sort(byAllFields(eps))
+	slices.SortFunc(eps, compareEndpoints)
 
 	expectedOrder := []string{
 		"abc.com",

@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"testing"
@@ -35,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 // Logger
@@ -115,50 +114,6 @@ func TestConfigureLogger(t *testing.T) {
 					assert.IsType(t, &log.TextFormatter{}, log.StandardLogger().Formatter)
 				}
 			}
-		})
-	}
-}
-
-func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name    string
-		cfg     *externaldns.Config
-		asserts func(*testing.T, *externaldns.Config)
-	}{
-		{
-			name: "configuration with target filter wrapper",
-			cfg: &externaldns.Config{
-				APIServerURL:    svr.URL,
-				Sources:         []string{"fake"},
-				TargetNetFilter: []string{"10.0.0.0/8"},
-			},
-		},
-		{
-			name: "configuration with nat64 networks",
-			cfg: &externaldns.Config{
-				APIServerURL:  svr.URL,
-				Sources:       []string{"fake"},
-				NAT64Networks: []string{"2001:db8::/96"},
-			},
-		},
-		{
-			name: "default configuration",
-			cfg: &externaldns.Config{
-				APIServerURL: svr.URL,
-				Sources:      []string{"fake"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
-			require.NoError(t, err)
 		})
 	}
 }
@@ -338,7 +293,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	sCfg := source.NewSourceConfig(cfg)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	src, err := buildSource(ctx, sCfg)
+	src, err := wrappers.Build(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),

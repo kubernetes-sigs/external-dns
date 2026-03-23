@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -276,11 +278,38 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "Routegroup with provider-specific annotation creates endpoint with provider-specific property",
+			source: &routeGroupSource{},
+			rg: createTestRouteGroup(
+				"namespace1",
+				"rg1",
+				map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				[]string{"rg1.k8s.example"},
+				[]routeGroupLoadBalancer{
+					{
+						Hostname: "lb.example.org",
+					},
+				},
+			),
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.source.endpointsFromRouteGroup(tt.rg)
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }
@@ -805,7 +834,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 				t.Fatal("Got no error, but we want to get an error")
 			}
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }

@@ -705,6 +705,37 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"provider-specific annotation is not supported and is ignored",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.HostnameKey:          "a.foo.example.org",
+							annotations.AWSPrefix + "weight": "10",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
@@ -742,7 +773,7 @@ func TestPodSource(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, ep := range endpoints {
 				// TODO: source should always set the resource label key. currently not supported by the pod source.
@@ -1128,8 +1159,10 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		// Metadata
 		assert.Equal(t, "test-name", retrieved.Name)
 		assert.Equal(t, "test-ns", retrieved.Namespace)
+		assert.Equal(t, pod.UID, retrieved.UID)
+		assert.Equal(t, pod.Labels, retrieved.Labels)
+		assert.Equal(t, pod.Annotations, retrieved.Annotations) // no lastAppliedConfig in test data
 		assert.NotEmpty(t, retrieved.UID)
-		assert.Empty(t, retrieved.Labels)
 		// Filtered
 		assert.Equal(t, map[string]string{
 			"user-annotation": "value",
@@ -1138,21 +1171,19 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			"other/annotation":                          "value",
 		}, retrieved.Annotations)
 
-		// Spec
-		assert.Empty(t, retrieved.Spec.Containers)
-		assert.Empty(t, retrieved.Spec.Hostname)
+		// Spec — fully preserved
+		assert.NotEmpty(t, retrieved.Spec.Containers)
+		assert.Equal(t, "test-hostname", retrieved.Spec.Hostname)
 		assert.Equal(t, "test-node", retrieved.Spec.NodeName)
 		assert.True(t, retrieved.Spec.HostNetwork)
 
-		// Status
-		assert.Empty(t, retrieved.Status.ContainerStatuses)
-		assert.Empty(t, retrieved.Status.InitContainerStatuses)
-		assert.Empty(t, retrieved.Status.HostIP)
+		// Status — conditions stripped, rest preserved
 		assert.Equal(t, "127.0.0.1", retrieved.Status.PodIP)
-		assert.Empty(t, retrieved.Status.Conditions)
+		assert.Equal(t, "127.0.0.2", retrieved.Status.HostIP)
+		assert.Empty(t, retrieved.Status.Conditions) // removed by TransformRemoveStatusConditions
 	})
 
-	t.Run("transformer is not used when fqdnTemplate is set", func(t *testing.T) {
+	t.Run("transformer is always applied regardless of fqdnTemplate", func(t *testing.T) {
 		fakeClient := fake.NewClientset()
 
 		pod := &v1.Pod{

@@ -53,6 +53,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
 type unstructuredSource struct {
 	combineFqdnAnnotation bool
@@ -103,17 +104,16 @@ func NewUnstructuredFQDNSource(
 		informer := informerFactory.ForResource(gvr)
 
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
-		err := informer.Informer().AddIndexers(
-			informers.IndexerWithOptions[*unstructured.Unstructured](
-				informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
-				informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
-			),
-		)
-		if err != nil {
-			return nil, err
-		}
+		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		))
+		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
 
-		_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
 		resourceInformers = append(resourceInformers, informer)
 	}
 
@@ -267,7 +267,7 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 // AddEventHandler adds an event handler that is called when resources change.
 func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
 	for _, informer := range us.informers {
-		_, _ = informer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(informer.Informer(), eventHandlerFunc(handler))
 	}
 }
 

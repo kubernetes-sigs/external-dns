@@ -3,11 +3,9 @@
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-**Note:** Using the Istio Gateway source requires Istio >=1.0.0.
+**Note:** Using the Istio Gateway source requires Istio >=1.22. Earlier versions do not serve the `networking.istio.io/v1` API used by this source.
 
-**Note:** Currently supported versions are `1.25` and `1.26` with `v1beta1` stored version.
-
-- [Support status of Istio releases](https://istio.io/latest/docs/releases/supported-releases/)
+**Note:** Any Istio release >=1.22 that is within the [Istio support window](https://istio.io/latest/docs/releases/supported-releases/) is supported. Both `v1beta1` and `v1` stored versions are supported as the API server converts transparently.
 
 - Manifest (for clusters without RBAC enabled)
 - Manifest (for clusters with RBAC enabled)
@@ -167,7 +165,7 @@ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/ist
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -189,7 +187,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: httpbin
@@ -218,7 +216,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -240,7 +238,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: httpbin
@@ -302,7 +300,7 @@ To support setups where an Ingress resource is used provision an external LB you
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway

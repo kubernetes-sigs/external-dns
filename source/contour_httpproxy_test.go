@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -282,6 +284,28 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "provider-specific annotation is converted to endpoint property",
+			httpProxy: fakeHTTPProxy{
+				host: "foo.bar",
+				annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				loadBalancer: fakeLoadBalancerService{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {
@@ -291,7 +315,7 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			require.NoError(t, err)
 
 			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1071,7 +1095,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }

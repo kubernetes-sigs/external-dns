@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/informers/fakes"
 )
 
 type ServiceSuite struct {
@@ -1078,6 +1079,30 @@ func testServiceSourceEndpoints(t *testing.T) {
 				{DNSName: "foobar-v6.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::2"}},
 			},
 		},
+		{
+			title:              "provider-specific annotation is converted to endpoint property",
+			svcNamespace:       "testing",
+			svcName:            "foo",
+			svcType:            v1.ServiceTypeLoadBalancer,
+			labels:             map[string]string{},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
+			annotations: map[string]string{
+				annotations.HostnameKey:          "foo.example.org",
+				annotations.AWSPrefix + "weight": "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -1149,7 +1174,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, res, tc.expected)
+			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
 }
@@ -1358,7 +1383,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, res, tc.expected)
+			testutils.ValidateEndpoints(t, res, tc.expected)
 			// Test that endpoint resourceLabelKey matches desired endpoint
 			sort.SliceStable(res, func(i, j int) bool {
 				return strings.Compare(res[i].DNSName, res[j].DNSName) < 0
@@ -1654,7 +1679,7 @@ func TestClusterIpServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -2475,7 +2500,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -3376,7 +3401,7 @@ func TestHeadlessServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }
@@ -3497,7 +3522,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 
-	validateEndpoints(t, got, []*endpoint.Endpoint{
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "service/default/istio-ingressgateway"),
 	})
 }
@@ -3860,7 +3885,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		{DNSName: "kafka-2.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.4"}},
 	}
 
-	validateEndpoints(t, got, want)
+	testutils.ValidateEndpoints(t, got, want)
 }
 
 // TestHeadlessServices tests that headless services generate the correct endpoints.
@@ -4308,7 +4333,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
@@ -4511,7 +4536,7 @@ func TestExternalServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
@@ -4808,15 +4833,23 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 
-	// Create a dummy EndpointSlice without the service name label
-	endpointSlice := &discoveryv1.EndpointSlice{
+	es := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-slice",
 			Namespace: "default",
-			Labels:    map[string]string{}, // No discoveryv1.LabelServiceName
+			Name:      "test-slice",
+			Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
+			Annotations: map[string]string{
+				"some-annotation": "value",
+			},
+			UID: "esuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
+			},
 		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
 	}
-	_, err := fakeClient.DiscoveryV1().EndpointSlices("default").Create(ctx, endpointSlice, metav1.CreateOptions{})
+	_, err := fakeClient.DiscoveryV1().EndpointSlices("default").Create(ctx, es, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// Should not error when creating the source
@@ -4834,14 +4867,14 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 
 	// Try to get EndpointSlices by index; should not panic or error, should return empty slice
 	indexer := ss.endpointSlicesInformer.Informer().GetIndexer()
-	slices, err := indexer.ByIndex(serviceNameIndexKey, "default/foo")
+	slices, err := indexer.ByIndex(informers.IndexWithSelectors, "default/foo")
 	require.NoError(t, err)
 	require.Empty(t, slices)
 
 	// Insert an object of the wrong type into the indexer; indexFunc should return an error and Add() should panic
 	require.PanicsWithError(t,
-		"unable to calculate an index entry for key \"default/not-an-endpointslice\" on index \"serviceName\": "+
-			"expected *v1.EndpointSlice but got *v1.Service instead",
+		"unable to calculate an index entry for key \"default/not-an-endpointslice\" on index \"withSelectors\": "+
+			"object is not of type **v1.EndpointSlice",
 		func() {
 			_ = indexer.Add(&v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
@@ -4855,6 +4888,23 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 func TestPodTransformerInServiceSource(t *testing.T) {
 	ctx := t.Context()
 	fakeClient := fake.NewClientset()
+
+	es := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "test-slice",
+			Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
+			Annotations: map[string]string{
+				"some-annotation": "value",
+			},
+			UID: "esuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
+			},
+		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
+	}
 
 	pod := &v1.Pod{
 		Spec: v1.PodSpec{
@@ -4895,6 +4945,9 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 
 	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 	require.NoError(t, err)
+	_, err = fakeClient.DiscoveryV1().EndpointSlices(es.Namespace).Create(t.Context(), es, metav1.CreateOptions{})
+	require.NoError(t, err)
+
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
@@ -4912,28 +4965,22 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	// Metadata
 	assert.Equal(t, "test-name", retrieved.Name)
 	assert.Equal(t, "test-ns", retrieved.Namespace)
-	assert.Empty(t, retrieved.UID)
-	assert.Equal(t, map[string]string{
-		"label1": "value1",
-		"label2": "value2",
-		"label3": "value3",
-	}, retrieved.Labels)
-	// Filtered
+	assert.Equal(t, pod.UID, retrieved.UID)
+	assert.Equal(t, pod.Labels, retrieved.Labels)
+	// Annotations filtered to external-dns prefix only
 	assert.Equal(t, map[string]string{
 		"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
 		"external-dns.alpha.kubernetes.io/random":   "value",
 	}, retrieved.Annotations)
 
-	// Spec
-	assert.Empty(t, retrieved.Spec.Containers)
+	// Spec — fully preserved
+	assert.NotEmpty(t, retrieved.Spec.Containers)
 	assert.Equal(t, "test-hostname", retrieved.Spec.Hostname)
 	assert.Equal(t, "test-node", retrieved.Spec.NodeName)
 
-	// Status
-	assert.Empty(t, retrieved.Status.ContainerStatuses)
-	assert.Empty(t, retrieved.Status.InitContainerStatuses)
+	// Status — fully preserved
 	assert.Equal(t, "127.0.0.2", retrieved.Status.HostIP)
-	assert.Empty(t, retrieved.Status.PodIP)
+	assert.Equal(t, "127.0.0.1", retrieved.Status.PodIP)
 	assert.ElementsMatch(t, []v1.PodCondition{{
 		Type:   v1.PodReady,
 		Status: v1.ConditionTrue,
@@ -4941,6 +4988,124 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		Type:   v1.ContainersReady,
 		Status: v1.ConditionFalse,
 	}}, retrieved.Status.Conditions)
+
+	// EndpointSlice — managedFields stripped, everything else preserved
+	retrievedES, err := ss.endpointSlicesInformer.Lister().EndpointSlices(es.Namespace).Get(es.Name)
+	require.NoError(t, err)
+	assert.Empty(t, retrievedES.ManagedFields)
+	assert.Equal(t, es.Labels, retrievedES.Labels)
+	assert.Equal(t, es.Annotations, retrievedES.Annotations)
+	assert.Equal(t, es.Endpoints, retrievedES.Endpoints)
+}
+
+func TestNodeTransformerInServiceSource(t *testing.T) {
+	ctx := t.Context()
+
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-node",
+			Labels: map[string]string{
+				"label1": "value1",
+			},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.4"},
+			},
+			Conditions: []v1.NodeCondition{
+				{Type: v1.NodeReady, Status: v1.ConditionTrue},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(node)
+
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		ServiceTypeFilter: []string{string(v1.ServiceTypeNodePort)},
+		LabelFilter:       labels.Everything(),
+	})
+	require.NoError(t, err)
+	ss, ok := src.(*serviceSource)
+	require.True(t, ok)
+
+	retrieved, err := ss.nodeInformer.Lister().Get(node.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, node.Name, retrieved.Name)
+	assert.Equal(t, node.Labels, retrieved.Labels)
+	assert.Equal(t, node.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Status.Addresses preserved — used for endpoint generation
+	assert.Equal(t, node.Status.Addresses, retrieved.Status.Addresses)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
+}
+
+func TestServiceTransformerInServiceSource(t *testing.T) {
+	ctx := t.Context()
+
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type:        v1.ServiceTypeLoadBalancer,
+			ExternalIPs: []string{"1.2.3.4"},
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{{IP: "5.6.7.8"}},
+			},
+			Conditions: []metav1.Condition{
+				{Type: "Available", Status: metav1.ConditionTrue, Reason: "Ready"},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(svc)
+
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		Namespace:   svc.Namespace,
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+	ss, ok := src.(*serviceSource)
+	require.True(t, ok)
+
+	retrieved, err := ss.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, svc.Name, retrieved.Name)
+	assert.Equal(t, svc.Labels, retrieved.Labels)
+	assert.Equal(t, svc.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Spec and Status.LoadBalancer preserved — used for endpoint generation
+	assert.Equal(t, svc.Spec.ExternalIPs, retrieved.Spec.ExternalIPs)
+	assert.Equal(t, svc.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
 }
 
 // createTestServicesByType creates the requested number of services per type in the given namespace.
@@ -5016,9 +5181,9 @@ func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
 }
 
 func TestServiceSource_AddEventHandler(t *testing.T) {
-	var fakeServiceInformer *informers.FakeServiceInformer
-	var fakeEdpInformer *informers.FakeEndpointSliceInformer
-	var fakeNodeInformer *informers.FakeNodeInformer
+	var fakeServiceInformer *fakes.FakeServiceInformer
+	var fakeEdpInformer *fakes.FakeEndpointSliceInformer
+	var fakeNodeInformer *fakes.FakeNodeInformer
 	tests := []struct {
 		name    string
 		filter  []string
@@ -5068,15 +5233,15 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeServiceInformer = new(informers.FakeServiceInformer)
+			fakeServiceInformer = new(fakes.FakeServiceInformer)
 			infSvc := testInformer{}
 			fakeServiceInformer.On("Informer").Return(&infSvc)
 
-			fakeEdpInformer = new(informers.FakeEndpointSliceInformer)
+			fakeEdpInformer = new(fakes.FakeEndpointSliceInformer)
 			infEdp := testInformer{}
 			fakeEdpInformer.On("Informer").Return(&infEdp)
 
-			fakeNodeInformer = new(informers.FakeNodeInformer)
+			fakeNodeInformer = new(fakes.FakeNodeInformer)
 			infNode := testInformer{}
 			fakeNodeInformer.On("Informer").Return(&infNode)
 

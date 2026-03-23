@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
@@ -1673,7 +1675,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				require.NoError(t, err, "failed to create Namespace")
 			}
 
-			clients := new(MockClientGenerator)
+			clients := new(testutils.MockClientGenerator)
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
@@ -1684,7 +1686,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
-			validateEndpoints(t, endpoints, tt.endpoints)
+			testutils.ValidateEndpoints(t, endpoints, tt.endpoints)
 
 			for _, msg := range tt.logExpectations {
 				logtest.TestHelperLogContains(msg, hook, t)
