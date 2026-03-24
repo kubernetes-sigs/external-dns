@@ -467,8 +467,8 @@ flowchart TD
     Wait --> End
     Success --> End
 
-    style Start fill:#90EE90
-    style Success fill:#90EE90
+    style Start fill:#90EE90,color:#000
+    style Success fill:#90EE90,color:#000
     style Create fill:#ADD8E6,color:#000
     style Update fill:#ADD8E6,color:#000
     style Skip fill:#FFB6C1,color:#000
