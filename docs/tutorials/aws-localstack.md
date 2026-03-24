@@ -390,45 +390,6 @@ graph TB
     style awscli fill:#ff9900,color:#fff
 ```
 
-### Network Communication Flow
-
-**Description:** This diagram shows the complete network flow with LocalStack running inside the cluster.
-ExternalDNS watches application resources (Services/Ingresses) and communicates directly with LocalStack using the Kubernetes service DNS name. The service routes traffic to the LocalStack pod.
-The host machine accesses LocalStack through a NodePort or port-forward (shown as 127.0.0.1:32379) for management operations with AWS CLI.
-
-```mermaid
-graph TB
-    subgraph "Host Machine"
-        CLI[AWS CLI / kubectl]
-    end
-
-    subgraph "Kind Cluster"
-        subgraph "Namespace: external-dns"
-            ED[ExternalDNS Pod]
-        end
-
-        subgraph "Namespace: localstack"
-            LSSVC[Service: localstack<br/>ClusterIP<br/>localstack.localstack.svc.cluster.local:4566]
-            LS[LocalStack Pod<br/>Port 4566]
-        end
-
-        subgraph "Namespace: default"
-            APP[Application Pods<br/>Services/Ingresses]
-        end
-
-        ED -->|1. Watches for changes| APP
-        ED -->|2. HTTP API calls to:<br/>localstack.localstack.svc.cluster.local:4566<br/>Create/Update Route53 records| LSSVC
-        LSSVC -->|3. Forwards to Pod| LS
-    end
-
-    CLI -.->|AWS CLI commands<br/>AWS_ENDPOINT_URL=127.0.0.1:32379| LSSVC
-
-    style ED fill:#326ce5,color:#fff
-    style LS fill:#ff9900,color:#fff
-    style LSSVC fill:#ff9900,color:#fff
-    style APP fill:#a9dfbf,color:#000
-```
-
 ### DNS Record Creation Flow
 
 **Description:** This sequence diagram demonstrates the automated DNS lifecycle management. When you create a Service with an ExternalDNS annotation, ExternalDNS detects the new resource, extracts the hostname, and creates corresponding DNS records in LocalStack.
@@ -437,13 +398,11 @@ It also creates TXT records for ownership tracking. When the Service is deleted,
 ```mermaid
 sequenceDiagram
     participant User
-    participant kubectl
     participant K8s as Kubernetes API
     participant ED as ExternalDNS
     participant LS as LocalStack Route53
 
-    User->>kubectl: kubectl apply -f service.yaml
-    kubectl->>K8s: Create Service with annotation
+    User->>K8s: kubectl apply -f service.yaml
     K8s->>K8s: Service created
 
     Note over ED: Watches for Service changes
@@ -459,8 +418,7 @@ sequenceDiagram
 
     Note over ED: Continues watching for changes
 
-    User->>kubectl: kubectl delete service nginx
-    kubectl->>K8s: Delete Service
+    User->>K8s: kubectl delete service nginx
     K8s->>ED: Service deletion event
     ED->>LS: Delete A record
     ED->>LS: Delete TXT record
