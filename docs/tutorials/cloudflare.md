@@ -372,6 +372,24 @@ The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
 
+### Known limitation: `-` sentinel and DNS record lifecycle
+
+The `-` sentinel prevents external-dns from **creating or updating** custom hostnames. However, when a DNS record is deleted (e.g., due to an HTTPRoute parentRef change that causes zero resolved targets), external-dns deletes all custom hostnames associated with that record as part of the DNS record cleanup -- regardless of the `-` annotation.
+
+This means that infrastructure changes affecting DNS record lifecycle (gateway transitions, parentRef changes) can trigger custom hostname deletion and re-creation even when the annotation is set to `-`. The custom hostname will be re-created by whatever controller manages it (e.g., an operator), but SSL re-provisioning (~1-3 minutes) causes a brief disruption.
+
+### Migrating custom hostname management to another controller
+
+To fully migrate custom hostname management away from external-dns (e.g., to a dedicated Kubernetes operator):
+
+1. **Set the annotation to `-`** on all relevant endpoints. This tells external-dns to stop creating and updating custom hostnames. The other controller can now manage them.
+
+2. **Verify the other controller is managing all custom hostnames correctly.** Both can coexist safely at this stage -- `-` prevents external-dns from interfering with creates/updates.
+
+3. **Disable custom hostnames in external-dns entirely** by removing the `--cloudflare-custom-hostnames` flag (or setting it to false) and redeploying. When disabled, external-dns does not perform any custom hostname operations -- no creates, no updates, and no deletes. DNS record lifecycle (A/CNAME records) continues normally without any custom hostname side effects.
+
+Step 3 is important: until custom hostnames are fully disabled in external-dns, DNS record changes (such as gateway transitions) can still trigger custom hostname deletion as a side effect. Disabling the feature cleanly breaks this tie.
+
 ## Setting Cloudflare DNS Record Tags
 
 Cloudflare allows you to add descriptive tags to DNS records. This can be useful for organizing your records.
