@@ -469,8 +469,8 @@ flowchart TD
 
     style Start fill:#90EE90
     style Success fill:#90EE90
-    style Create fill:#326ce5,color:#000
-    style Update fill:#326ce5,color:#000
+    style Create fill:#ADD8E6,color:#000
+    style Update fill:#ADD8E6,color:#000
     style Skip fill:#FFB6C1,color:#000
     style Skip2 fill:#FFB6C1,color:#000
     style Skip3 fill:#FFB6C1,color:#000
