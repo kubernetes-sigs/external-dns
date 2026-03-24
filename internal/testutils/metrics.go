@@ -61,14 +61,8 @@ func TestHelperVerifyMetricsGaugeVectorWithLabelsFunc(t *testing.T, expected flo
 // Unspecified labels (e.g. status) are ignored, so this supports partial matching.
 func SummaryVecSampleCount(t *testing.T, sv *prometheus.SummaryVec, match prometheus.Labels) uint64 {
 	t.Helper()
-	ch := make(chan prometheus.Metric, 64)
-	go func() { sv.Collect(ch); close(ch) }()
 	var total uint64
-	for m := range ch {
-		var dm dto.Metric
-		if err := m.Write(&dm); err != nil {
-			continue
-		}
+	for _, dm := range collectAll(sv) {
 		lbls := make(map[string]string, len(dm.GetLabel()))
 		for _, lp := range dm.GetLabel() {
 			lbls[lp.GetName()] = lp.GetValue()
@@ -87,11 +81,11 @@ func SummaryVecSampleCount(t *testing.T, sv *prometheus.SummaryVec, match promet
 	return total
 }
 
-// collectAll drains all current observations from a GaugeVec into a slice.
-func collectAll(metric *prometheus.GaugeVec) []*dto.Metric {
+// collectAll drains all current observations from a Collector into a slice.
+func collectAll(collector prometheus.Collector) []*dto.Metric {
 	ch := make(chan prometheus.Metric, 1024)
 	go func() {
-		metric.Collect(ch)
+		collector.Collect(ch)
 		close(ch)
 	}()
 	var result []*dto.Metric

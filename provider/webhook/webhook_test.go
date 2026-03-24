@@ -567,7 +567,7 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-		json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil))
+		assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
 	}))
 	defer svr.Close()
 
