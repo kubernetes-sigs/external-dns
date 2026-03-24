@@ -69,12 +69,12 @@ func conditionWithStatus(conditionType string, status metav1.ConditionStatus) me
 	}
 }
 
-func acceptedCondition(conditionType string) metav1.Condition {
-	return conditionWithStatus(conditionType, metav1.ConditionTrue)
+func acceptedCondition() metav1.Condition {
+	return conditionWithStatus("Accepted", metav1.ConditionTrue)
 }
 
-func rejectedCondition(conditionType string) metav1.Condition {
-	return conditionWithStatus(conditionType, metav1.ConditionFalse)
+func rejectedCondition() metav1.Condition {
+	return conditionWithStatus("Accepted", metav1.ConditionFalse)
 }
 
 func listenerSetAcceptedStatus(names ...v1.SectionName) v1.ListenerSetStatus {
@@ -82,11 +82,11 @@ func listenerSetAcceptedStatus(names ...v1.SectionName) v1.ListenerSetStatus {
 	for _, name := range names {
 		listeners = append(listeners, v1.ListenerEntryStatus{
 			Name:       name,
-			Conditions: []metav1.Condition{acceptedCondition(string(v1.ListenerEntryConditionAccepted))},
+			Conditions: []metav1.Condition{acceptedCondition()},
 		})
 	}
 	return v1.ListenerSetStatus{
-		Conditions: []metav1.Condition{acceptedCondition(string(v1.ListenerSetConditionAccepted))},
+		Conditions: []metav1.Condition{acceptedCondition()},
 		Listeners:  listeners,
 	}
 }
@@ -721,7 +721,7 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusRequired(t *testing.T) {
 			}},
 		},
 		Status: v1.ListenerSetStatus{
-			Conditions: []metav1.Condition{acceptedCondition(string(v1.ListenerSetConditionAccepted))},
+			Conditions: []metav1.Condition{acceptedCondition()},
 		},
 	}
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
@@ -783,10 +783,10 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusNotAccepted(t *testing.T) 
 			}},
 		},
 		Status: v1.ListenerSetStatus{
-			Conditions: []metav1.Condition{acceptedCondition(string(v1.ListenerSetConditionAccepted))},
+			Conditions: []metav1.Condition{acceptedCondition()},
 			Listeners: []v1.ListenerEntryStatus{{
 				Name:       "app",
-				Conditions: []metav1.Condition{rejectedCondition(string(v1.ListenerEntryConditionAccepted))},
+				Conditions: []metav1.Condition{rejectedCondition()},
 			}},
 		},
 	}
