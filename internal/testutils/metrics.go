@@ -63,22 +63,25 @@ func SummaryVecSampleCount(t *testing.T, sv *prometheus.SummaryVec, match promet
 	t.Helper()
 	var total uint64
 	for _, dm := range collectAll(sv) {
-		lbls := make(map[string]string, len(dm.GetLabel()))
-		for _, lp := range dm.GetLabel() {
-			lbls[lp.GetName()] = lp.GetValue()
-		}
-		matched := true
-		for k, v := range match {
-			if lbls[k] != v {
-				matched = false
-				break
-			}
-		}
-		if matched {
+		if labelsMatch(dm, match) {
 			total += dm.GetSummary().GetSampleCount()
 		}
 	}
 	return total
+}
+
+// labelsMatch reports whether dm contains all key/value pairs in match (case-insensitive, partial).
+func labelsMatch(dm *dto.Metric, match map[string]string) bool {
+	lbls := make(map[string]string, len(dm.GetLabel()))
+	for _, lp := range dm.GetLabel() {
+		lbls[lp.GetName()] = lp.GetValue()
+	}
+	for k, v := range match {
+		if !strings.EqualFold(lbls[k], v) {
+			return false
+		}
+	}
+	return true
 }
 
 // collectAll drains all current observations from a Collector into a slice.
@@ -100,29 +103,13 @@ func collectAll(collector prometheus.Collector) []*dto.Metric {
 }
 
 // sumMetricsWithLabels sums all metric values that match the provided labels (partial match supported).
-// Label matching is case-insensitive since metrics are stored in lowercase.
 func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]string) float64 {
 	var sum float64
 	for _, dm := range collectAll(metric) {
-		// Check if all matchLabels are present with correct values (case-insensitive)
-		metricLabels := make(map[string]string)
-		for _, lp := range dm.Label {
-			metricLabels[lp.GetName()] = lp.GetValue()
-		}
-
-		matches := true
-		for k, v := range matchLabels {
-			if !strings.EqualFold(metricLabels[k], v) {
-				matches = false
-				break
-			}
-		}
-
-		if matches && dm.Gauge != nil {
+		if labelsMatch(dm, matchLabels) && dm.Gauge != nil {
 			sum += dm.Gauge.GetValue()
 		}
 	}
-
 	return sum
 }
 
