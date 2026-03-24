@@ -25,10 +25,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
@@ -558,4 +562,66 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, 3, attempts)
+}
+
+func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil))
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	_, ok := p.client.Transport.(*extdnshttp.CustomRoundTripper)
+	assert.True(t, ok, "webhook provider client should use an instrumented transport")
+}
+
+func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+		case webhookapi.UrlRecords:
+			assert.NoError(t, json.NewEncoder(w).Encode([]*endpoint.Endpoint{}))
+		}
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	before := httpDurationSampleCount(t, "records", http.MethodGet)
+
+	_, err = p.Records(t.Context())
+	require.NoError(t, err)
+
+	assert.Greater(t, httpDurationSampleCount(t, "records", http.MethodGet), before,
+		"external_dns_http_request_duration_seconds should be incremented for a Records call")
+}
+
+// httpDurationSampleCount returns the total sample count of external_dns_http_request_duration_seconds
+// across all status codes for the given path and method labels, or 0 if no matching samples exist yet.
+func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 64)
+	go func() {
+		extdnshttp.RequestDurationMetric.SummaryVec.Collect(ch)
+		close(ch)
+	}()
+	var total uint64
+	for m := range ch {
+		var dm dto.Metric
+		require.NoError(t, m.Write(&dm))
+		lbls := make(map[string]string, len(dm.GetLabel()))
+		for _, lp := range dm.GetLabel() {
+			lbls[lp.GetName()] = lp.GetValue()
+		}
+		if lbls[metrics.LabelPath] == path && lbls[metrics.LabelMethod] == method {
+			total += dm.GetSummary().GetSampleCount()
+		}
+	}
+	return total
 }
