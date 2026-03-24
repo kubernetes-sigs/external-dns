@@ -55,13 +55,12 @@ const (
 )
 
 // NewFakeSource creates a new fakeSource with the given config.
-func NewFakeSource(fqdnTemplate string) (Source, error) {
-	if fqdnTemplate == "" {
-		fqdnTemplate = defaultFQDNTemplate
-	}
-
+// TODO: support cfg.TemplateEngine by rendering the FQDN template against a synthetic
+// Kubernetes object (e.g. metav1.PartialObjectMetadata) so that --fqdn-template
+// is honored when --source=fake is used for dry-runs.
+func NewFakeSource(_ *Config) (Source, error) {
 	return &fakeSource{
-		dnsName: fqdnTemplate,
+		dnsName: defaultFQDNTemplate,
 	}, nil
 }
 

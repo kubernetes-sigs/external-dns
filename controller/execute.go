@@ -81,8 +81,11 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	sCfg := source.NewSourceConfig(cfg)
-	endpointsSource, err := buildSource(ctx, sCfg)
+	sCfg, err := source.NewSourceConfig(cfg)
+	if err != nil {
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
+	}
+	endpointsSource, err := wrappers.Build(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -186,26 +189,6 @@ func configureLogger(cfg *externaldns.Config) {
 		log.Fatalf("failed to parse log level: %v", err)
 	}
 	log.SetLevel(ll)
-}
-
-// buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
-// It initializes the source configuration, generates the required sources, and combines them into a single,
-// deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
-	if err != nil {
-		return nil, err
-	}
-	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithProvider(cfg.Provider),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
-	return wrappers.WrapSources(sources, opts)
 }
 
 // handleSigterm listens for a SIGTERM signal and triggers the provided cancel function

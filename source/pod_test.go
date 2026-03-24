@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -991,7 +992,6 @@ func TestPodSourceLogs(t *testing.T) {
 			}
 
 			src, err := NewPodSource(ctx, kubernetes, &Config{
-				FQDNTemplate:             "",
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
 			})
 			require.NoError(t, err)
@@ -1229,7 +1229,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 
 		// Should not error when creating the source
 		src, err := NewPodSource(t.Context(), fakeClient, &Config{
-			FQDNTemplate: "template",
+			TemplateEngine: templatetest.MustEngine(t, "template", "", "", false),
 		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)

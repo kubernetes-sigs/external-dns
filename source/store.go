@@ -36,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -62,10 +63,7 @@ type Config struct {
 	AnnotationFilter               string
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
-	FQDNTemplate                   string
-	TargetTemplate                 string
-	FQDNTargetTemplate             string
-	CombineFQDNAndAnnotation       bool
+	TemplateEngine                 template.Engine
 	IgnoreHostnameAnnotation       bool
 	IgnoreNonHostNetworkPods       bool
 	IgnoreIngressTLSSpec           bool
@@ -107,20 +105,35 @@ type Config struct {
 
 	sources []string
 
-	// clientGen is lazily initialized on first access for efficiency
-	clientGen     *SingletonClientGenerator
+	// clientGen is lazily initialized on first access for efficiency.
+	// It may be overridden at construction time via WithClientGenerator.
+	clientGen     ClientGenerator
 	clientGenOnce sync.Once
 }
 
-func NewSourceConfig(cfg *externaldns.Config) *Config {
+// OverrideConfigOption configures a Config.
+type OverrideConfigOption func(*Config)
+
+// WithClientGenerator sets a custom ClientGenerator, overriding the default
+// SingletonClientGenerator. Intended for testing.
+func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
+	return func(cfg *Config) {
+		cfg.clientGen = gen
+	}
+}
+
+func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
-	return &Config{
+	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	c := &Config{
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
-		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
@@ -158,31 +171,38 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		NAT64Networks:                  cfg.NAT64Networks,
 		MinTTL:                         cfg.MinTTL,
 		UnstructuredResources:          cfg.UnstructuredResources,
-		FQDNTemplate:                   cfg.FQDNTemplate,
-		TargetTemplate:                 cfg.TargetTemplate,
-		FQDNTargetTemplate:             cfg.FQDNTargetTemplate,
+		TemplateEngine:                 tmpls,
 		PreferAlias:                    cfg.PreferAlias,
 		sources:                        cfg.Sources,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
 }
 
-// ClientGenerator returns a SingletonClientGenerator from this Config's connection settings.
-// The generator is created once and cached for subsequent calls.
-// This ensures consistent Kubernetes client creation across all sources using this configuration.
+// ClientGenerator returns the ClientGenerator for this Config.
+// If one was not provided via WithClientGenerator, a SingletonClientGenerator is
+// lazily created from the Config's connection settings.
 //
 // The timeout behavior is special-cased: when UpdateEvents is true, the timeout is set to 0
 // (no timeout) to allow long-running watch operations for event-driven source updates.
-func (cfg *Config) ClientGenerator() *SingletonClientGenerator {
+func (cfg *Config) ClientGenerator() ClientGenerator {
 	cfg.clientGenOnce.Do(func() {
-		cfg.clientGen = &SingletonClientGenerator{
-			KubeConfig:   cfg.KubeConfig,
-			APIServerURL: cfg.APIServerURL,
-			RequestTimeout: func() time.Duration {
-				if cfg.UpdateEvents {
-					return 0
-				}
-				return cfg.RequestTimeout
-			}(),
+		// nil-check is intentional: WithClientGenerator may have pre-set clientGen
+		// at construction time. sync.Once ensures thread-safe lazy init for the
+		// default case without overwriting an injected generator.
+		if cfg.clientGen == nil {
+			cfg.clientGen = &SingletonClientGenerator{
+				KubeConfig:   cfg.KubeConfig,
+				APIServerURL: cfg.APIServerURL,
+				RequestTimeout: func() time.Duration {
+					if cfg.UpdateEvents {
+						return 0
+					}
+					return cfg.RequestTimeout
+				}(),
+			}
 		}
 	})
 	return cfg.clientGen
@@ -425,7 +445,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 	case types.OpenShiftRoute:
 		return buildOpenShiftRouteSource(ctx, p, cfg)
 	case types.Fake:
-		return NewFakeSource(cfg.FQDNTemplate)
+		return NewFakeSource(cfg)
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
 	case types.CRD:

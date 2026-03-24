@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
@@ -340,12 +341,11 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					Namespace:                "",
-					AnnotationFilter:         "",
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: !tt.combineFqdn,
-					LabelFilter:              labels.Everything(),
-					OCPRouterName:            "",
+					Namespace:        "",
+					AnnotationFilter: "",
+					TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					LabelFilter:      labels.Everything(),
+					OCPRouterName:    "",
 				},
 			)
 			require.NoError(t, err)

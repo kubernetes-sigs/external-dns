@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -101,7 +102,7 @@ func (suite *GatewaySuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize gateway source")
@@ -121,70 +122,6 @@ func TestGateway(t *testing.T) {
 	suite.Run(t, new(GatewaySuite))
 	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
 	t.Run("Endpoints", testGatewayEndpoints)
-}
-
-func TestNewIstioGatewaySource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/gateway.class=nginx",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewIstioGatewaySource(
-				t.Context(),
-				fake.NewClientset(),
-				istiofake.NewSimpleClientset(),
-				&Config{
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
-					AnnotationFilter:         ti.annotationFilter,
-				},
-			)
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func testEndpointsFromGatewayConfig(t *testing.T) {
@@ -527,7 +464,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			t.Parallel()
 
 			gatewayCfg := ti.config.Config()
-			source, err := newTestGatewaySource(ti.lbServices, ti.ingresses)
+			source, err := newTestGatewaySource(t, ti.lbServices, ti.ingresses)
 			require.NoError(t, err)
 			hostnames := source.hostNamesFromGateway(gatewayCfg)
 			endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg)
@@ -1535,8 +1472,7 @@ func testGatewayEndpoints(t *testing.T) {
 				fakeIstioClient,
 				&Config{
 					Namespace:                targetNamespace,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					AnnotationFilter:         ti.annotationFilter,
 				},
@@ -1941,31 +1877,31 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 }
 
 // gateway specific helper functions
-func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
+func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
 	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, ing := range ingressList {
 		ingress := ing.Ingress()
-		_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+		_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	src, err := NewIstioGatewaySource(
-		context.TODO(),
+		t.Context(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			FQDNTemplate: "{{.FQDN}}",
+			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
 		},
 	)
 	if err != nil {

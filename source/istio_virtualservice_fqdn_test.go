@@ -18,7 +18,6 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	istionetworking "istio.io/api/networking/v1beta1"
 	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
@@ -30,6 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
@@ -37,25 +37,16 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 		title            string
 		annotationFilter string
 		fqdnTemplate     string
-		expectError      bool
 	}{
 		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
+			title: "valid empty template",
 		},
 		{
 			title:        "valid template",
-			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
 			title:        "valid template with multiple hosts",
-			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
 		},
 	} {
@@ -67,17 +58,12 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: false,
+					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
 			)
 
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -747,8 +733,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				&Config{
 					Namespace:                "",
 					AnnotationFilter:         "",
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: !tt.combineFqdn,
+					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},
 			)

@@ -61,7 +61,11 @@ type ScenarioConfig struct {
 	DefaultTargets      []string `json:"defaultTargets"`
 	ForceDefaultTargets bool     `json:"forceDefaultTargets"`
 	TargetNetFilter     []string `json:"targetNetFilter"`
+	ExcludeTargetNets   []string `json:"excludeTargetNets"`
+	NAT64Networks       []string `json:"nat64Networks"`
 	ServiceTypeFilter   []string `json:"serviceTypeFilter"`
+	Provider            string   `json:"provider"`
+	PreferAlias         bool     `json:"preferAlias"`
 }
 
 // ParsedResources holds the parsed Kubernetes resources from a scenario.

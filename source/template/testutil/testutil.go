@@ -14,17 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package toolkit
+package testutil
 
 import (
-	"k8s.io/client-go/kubernetes/fake"
+	"testing"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
-	"sigs.k8s.io/external-dns/source"
+	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/source/template"
 )
 
-// newMockClientGenerator returns a ClientGenerator whose KubeClient returns the
-// provided fake clientset.
-func newMockClientGenerator(client *fake.Clientset) source.ClientGenerator {
-	return testutils.NewFakeClientGenerator(client)
+// MustEngine creates an Engine with all three templates and combine flag, failing the test on error.
+func MustEngine(t testing.TB, fqdnStr, targetStr, fqdnTargetStr string, combine bool) template.Engine {
+	t.Helper()
+	engine, err := template.NewEngine(fqdnStr, targetStr, fqdnTargetStr, combine)
+	require.NoError(t, err)
+	return engine
 }

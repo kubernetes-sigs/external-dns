@@ -39,6 +39,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
@@ -120,7 +121,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize virtualservice source")
@@ -143,70 +144,6 @@ func TestVirtualService(t *testing.T) {
 	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
 	t.Run("Endpoints", testVirtualServiceEndpoints)
 	t.Run("gatewaySelectorMatchesService", testGatewaySelectorMatchesService)
-}
-
-func TestNewIstioVirtualServiceSource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/gateway.class=nginx",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewIstioVirtualServiceSource(
-				t.Context(),
-				fake.NewClientset(),
-				istiofake.NewSimpleClientset(),
-				&Config{
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
-					AnnotationFilter:         ti.annotationFilter,
-				},
-			)
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func testVirtualServiceBindsToGateway(t *testing.T) {
@@ -742,7 +679,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				ti.vsconfig.namespace = "test"
 			}
 
-			if source, err := newTestVirtualServiceSource(ti.lbServices, ti.ingresses, []fakeGatewayConfig{ti.gwconfig}); err != nil {
+			if source, err := newTestVirtualServiceSource(t, ti.lbServices, ti.ingresses, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
 			} else if endpoints, err := source.endpointsFromVirtualService(t.Context(), ti.vsconfig.Config()); err != nil {
 				require.NoError(t, err)
@@ -2023,8 +1960,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -2074,13 +2010,13 @@ func testGatewaySelectorMatchesService(t *testing.T) {
 	}
 }
 
-func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress, gwList []fakeGatewayConfig) (*virtualServiceSource, error) {
+func newTestVirtualServiceSource(t *testing.T, loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress, gwList []fakeGatewayConfig) (*virtualServiceSource, error) {
 	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -2088,7 +2024,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 
 	for _, ing := range ingressList {
 		ingress := ing.Ingress()
-		_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+		_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -2098,18 +2034,18 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 		gwObj := gw.Config()
 		// use create instead of add
 		// https://github.com/kubernetes/client-go/blob/92512ee2b8cf6696e9909245624175b7f0c971d9/testing/fixture.go#LL336C3-L336C52
-		_, err := fakeIstioClient.NetworkingV1().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
+		_, err := fakeIstioClient.NetworkingV1().Gateways(gw.namespace).Create(t.Context(), gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	src, err := NewIstioVirtualServiceSource(
-		context.TODO(),
+		t.Context(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		&Config{
-			FQDNTemplate: "{{ .Name }}",
+			TemplateEngine: templatetest.MustEngine(t, "{{ .Name }}", "", "", false),
 		},
 	)
 	if err != nil {
@@ -2169,21 +2105,21 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		expectedErrStr string
 	}{
 		{name: "EmptyGateway", fields: fields{
-			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
+			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(t, nil, nil, nil); return vs }(),
 		}, args: args{
 			ctx:            t.Context(),
 			gatewayStr:     "",
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MeshGateway", fields: fields{
-			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
+			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(t, nil, nil, nil); return vs }(),
 		}, args: args{
 			ctx:            t.Context(),
 			gatewayStr:     IstioMeshGateway,
 			virtualService: nil,
 		}, want: nil, expectedErrStr: ""},
 		{name: "MissingGateway", fields: fields{
-			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
+			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(t, nil, nil, nil); return vs }(),
 		}, args: args{
 			ctx:        t.Context(),
 			gatewayStr: "doesnt/exist",
@@ -2195,7 +2131,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			},
 		}, want: nil, expectedErrStr: ""},
 		{name: "InvalidGatewayStr", fields: fields{
-			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(nil, nil, nil); return vs }(),
+			virtualServiceSource: func() *virtualServiceSource { vs, _ := newTestVirtualServiceSource(t, nil, nil, nil); return vs }(),
 		}, args: args{
 			ctx:            t.Context(),
 			gatewayStr:     "1/2/3/",
@@ -2203,7 +2139,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		}, want: nil, expectedErrStr: "invalid ingress name (name or namespace/name) found \"1/2/3/\""},
 		{name: "ExistingGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource {
-				vs, _ := newTestVirtualServiceSource(nil, nil, []fakeGatewayConfig{{
+				vs, _ := newTestVirtualServiceSource(t, nil, nil, []fakeGatewayConfig{{
 					namespace: "bar",
 					name:      "foo",
 				}})
