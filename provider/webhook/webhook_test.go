@@ -26,11 +26,11 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -602,26 +602,10 @@ func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
 		"external_dns_http_request_duration_seconds should be incremented for a Records call")
 }
 
-// httpDurationSampleCount returns the total sample count of external_dns_http_request_duration_seconds
-// across all status codes for the given path and method labels, or 0 if no matching samples exist yet.
 func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
 	t.Helper()
-	ch := make(chan prometheus.Metric, 64)
-	go func() {
-		extdnshttp.RequestDurationMetric.SummaryVec.Collect(ch)
-		close(ch)
-	}()
-	var total uint64
-	for m := range ch {
-		var dm dto.Metric
-		require.NoError(t, m.Write(&dm))
-		lbls := make(map[string]string, len(dm.GetLabel()))
-		for _, lp := range dm.GetLabel() {
-			lbls[lp.GetName()] = lp.GetValue()
-		}
-		if lbls[metrics.LabelPath] == path && lbls[metrics.LabelMethod] == method {
-			total += dm.GetSummary().GetSampleCount()
-		}
-	}
-	return total
+	return testutils.SummaryVecSampleCount(t, &extdnshttp.RequestDurationMetric.SummaryVec, prometheus.Labels{
+		metrics.LabelPath:   path,
+		metrics.LabelMethod: method,
+	})
 }
