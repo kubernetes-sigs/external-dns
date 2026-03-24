@@ -118,8 +118,7 @@ Deploy with helm and minimal configuration.
 Add the `external-dns` helm repository and check available versions
 
 ```sh
-helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
-helm repo update
+helm repo add --force-update external-dns https://kubernetes-sigs.github.io/external-dns/
 helm search repo external-dns --versions
 ```
 
