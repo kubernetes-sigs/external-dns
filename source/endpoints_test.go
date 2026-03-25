@@ -211,7 +211,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 		{
 			// Gateway selector is a SUPERSET of the service selector: the service is
 			// missing a label the gateway requires. The index returns the service as a
-			// candidate (it has the first queried k=v), but MatchesServiceSelector must
+			// candidate (it has the first queried k=v), but the label selector must
 			// reject it because the remaining required label is absent.
 			name: "gateway selector is superset of service selector — no match",
 			services: []*corev1.Service{
@@ -246,7 +246,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 		},
 		{
 			// Two services share the same first index entry ("istio=ingressgateway") but
-			// only one satisfies the full gateway selector. Validates that MatchesServiceSelector
+			// only one satisfies the full gateway selector. Validates that the label selector
 			// correctly eliminates the false positive returned by the index.
 			name: "index returns multiple candidates, post-filter eliminates false positives",
 			services: []*corev1.Service{
@@ -271,7 +271,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 		},
 		{
 			// Empty gateway selector takes the lister path (no index key to query) and
-			// returns all services in the namespace — same behaviour as MatchesServiceSelector({}, _) = true.
+			// returns all services in the namespace — same behaviour as an empty label selector matching everything.
 			name: "empty selector returns all services",
 			services: []*corev1.Service{
 				{

@@ -42,18 +42,6 @@ func ParseIngress(ingress string) (string, string, error) {
 	return namespace, name, err
 }
 
-// MatchesServiceSelector checks if all key-value pairs in the selector map
-// are present and match the corresponding key-value pairs in the svcSelector map.
-// It returns true if all pairs match, otherwise it returns false.
-func MatchesServiceSelector(selector, svcSelector map[string]string) bool {
-	for k, v := range selector {
-		if lbl, ok := svcSelector[k]; !ok || lbl != v {
-			return false
-		}
-	}
-	return true
-}
-
 // MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)
 // by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
 // This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.

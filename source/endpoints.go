@@ -35,8 +35,9 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 		return nil, fmt.Errorf("failed to list labels for services in namespace %q: %w", namespace, err)
 	}
 
+	labelsSelector := labels.SelectorFromSet(selector)
 	for _, service := range services {
-		if !MatchesServiceSelector(selector, service.Spec.Selector) {
+		if !labelsSelector.Matches(labels.Set(service.Spec.Selector)) {
 			continue
 		}
 

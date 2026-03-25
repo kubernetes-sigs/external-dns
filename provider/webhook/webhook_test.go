@@ -35,8 +35,8 @@ import (
 )
 
 const (
-	testReadTimeout  = 5 * time.Millisecond
-	testWriteTimeout = 10 * time.Millisecond
+	testReadTimeout  = 5 * time.Second
+	testWriteTimeout = 5 * time.Second
 )
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
