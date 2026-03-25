@@ -51,7 +51,7 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Contains(t, got, "# Available Metrics\n\n<!-- THIS FILE MUST NOT BE EDITED BY HAND -->\n")
-	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Help |")
+	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Labels | Help |")
 }
 
 func TestGenerateMarkdownTableWithSingleMetric(t *testing.T) {

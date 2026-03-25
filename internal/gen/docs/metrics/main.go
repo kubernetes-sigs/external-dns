@@ -117,6 +117,7 @@ type columnWidths struct {
 	Name      int
 	Type      int
 	Subsystem int
+	Labels    int
 	Help      int
 }
 
@@ -125,6 +126,7 @@ func computeColumnWidths(ms []*metrics.Metric) columnWidths {
 		Name:      render.MapColumn("Name", ms, func(m *metrics.Metric) string { return m.Name }),
 		Type:      render.MapColumn("Metric Type", ms, func(m *metrics.Metric) string { return m.Type }),
 		Subsystem: render.MapColumn("Subsystem", ms, func(m *metrics.Metric) string { return m.Subsystem }),
+		Labels:    render.MapColumn("Labels", ms, func(m *metrics.Metric) string { return strings.Join(m.Labels, ", ") }),
 		Help:      render.MapColumn("Help", ms, func(m *metrics.Metric) string { return m.Help }),
 	}
 }

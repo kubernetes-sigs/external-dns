@@ -58,6 +58,7 @@ theme:
     - navigation.instant
     - navigation.tabs
     - navigation.tabs.sticky
+    - tags
 
 extra:
   version:

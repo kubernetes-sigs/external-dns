@@ -1,3 +1,7 @@
+---
+tags: ["tutorial", "coredns", "etcd", "kind"]
+---
+
 # CoreDNS with etcd backend
 
 ## Overview
@@ -27,7 +31,7 @@ Before you start, ensure you have:
 - `CoreDNS` [helm chart](https://github.com/coredns/helm)
 - Optional
   - `dnstools` container for testing
-  - `etcdctl` to interat with [etcd](https://etcd.io/docs/v3.4/dev-guide/interacting_v3/)
+  - `etcdctl` to interact with [etcd](https://etcd.io/docs/v3.4/dev-guide/interacting_v3/)
 
 ## Bootstrap Environment
 

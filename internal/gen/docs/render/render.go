@@ -54,6 +54,7 @@ func FuncMap() template.FuncMap {
 		"capitalize": cases.Title(language.English, cases.Compact).String,
 		"replace":    strings.ReplaceAll,
 		"lower":      strings.ToLower,
+		"join":       strings.Join,
 		"bold": func(s string) string {
 			return "**" + s + "**"
 		},
