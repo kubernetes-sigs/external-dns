@@ -95,6 +95,7 @@ func newCrdSource(ctx context.Context, c crCache.Cache, crWriter client.Client) 
 		informer: inf,
 	}
 
+	// TODO: consider solution similar to informerFactory.Start
 	go c.Start(ctx)
 	if !c.WaitForCacheSync(ctx) {
 		return nil, fmt.Errorf("cache failed to sync")
