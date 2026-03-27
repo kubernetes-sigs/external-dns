@@ -119,11 +119,20 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	var endpoints []*endpoint.Endpoint
+	endpoints := make([]*endpoint.Endpoint, 0, len(list.Items))
 	for i := range list.Items {
 		dnsEndpoint := &list.Items[i]
 		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
+			if ep == nil {
+				log.Warnf(
+					"Skipping nil endpoint in DNSEndpoint %s/%s at spec.endpoints",
+					dnsEndpoint.Namespace,
+					dnsEndpoint.Name,
+				)
+				continue
+			}
+
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
