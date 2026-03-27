@@ -17,6 +17,7 @@ limitations under the License.
 package google
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 	dns "google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
 
