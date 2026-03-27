@@ -57,23 +57,19 @@ var defaultTTL int64 = 3600
 var domainIDs = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
 var groups = map[string][]egoscale.DNSDomainRecord{
 	domainIDs[0]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("CNAME"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v1"), Type: new("TXT"), Content: new("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("CNAME"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[1]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("A"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v3"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("A"), Content: new("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v3"), Type: new("ALIAS"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[2]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v1"), Type: new("TXT"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[3]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v4"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v4"), Type: new("ALIAS"), Content: new("test"), TTL: &defaultTTL},
 	},
-}
-
-func strPtr(s string) *string {
-	return &s
 }
 
 type ExoscaleClientStub struct{}
@@ -85,8 +81,8 @@ func NewExoscaleClientStub() EgoscaleClientI {
 
 func (ep *ExoscaleClientStub) ListDNSDomains(_ context.Context, _ string) ([]egoscale.DNSDomain, error) {
 	domains := []egoscale.DNSDomain{
-		{ID: &domainIDs[0], UnicodeName: strPtr("foo.com")},
-		{ID: &domainIDs[1], UnicodeName: strPtr("bar.com")},
+		{ID: &domainIDs[0], UnicodeName: new("foo.com")},
+		{ID: &domainIDs[1], UnicodeName: new("bar.com")},
 	}
 	return domains, nil
 }

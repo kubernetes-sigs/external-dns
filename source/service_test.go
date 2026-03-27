@@ -3366,7 +3366,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				ClusterIPs:            []string{"10.118.223.3"},
 				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "http2",
@@ -3387,7 +3387,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					Ingress: []v1.LoadBalancerIngress{
 						{
 							IP:     "34.66.66.77",
-							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+							IPMode: new(v1.LoadBalancerIPModeVIP),
 						},
 					},
 				},
@@ -3411,7 +3411,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				ClusterIPs:            []string{"10.118.220.130"},
 				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "upd-dns",
@@ -3432,7 +3432,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					Ingress: []v1.LoadBalancerIngress{
 						{
 							IP:     "34.66.66.77",
-							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+							IPMode: new(v1.LoadBalancerIPModeVIP),
 						},
 					},
 				},
@@ -3484,9 +3484,9 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 				Type:                  v1.ServiceTypeClusterIP,
 				ClusterIP:             v1.ClusterIPNone,
 				ClusterIPs:            []string{v1.ClusterIPNone},
-				InternalTrafficPolicy: testutils.ToPtr(v1.ServiceInternalTrafficPolicyCluster),
+				InternalTrafficPolicy: new(v1.ServiceInternalTrafficPolicyCluster),
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "web",
@@ -3519,9 +3519,9 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 				Type:                  v1.ServiceTypeClusterIP,
 				ClusterIP:             v1.ClusterIPNone,
 				ClusterIPs:            []string{v1.ClusterIPNone},
-				InternalTrafficPolicy: testutils.ToPtr(v1.ServiceInternalTrafficPolicyCluster),
+				InternalTrafficPolicy: new(v1.ServiceInternalTrafficPolicyCluster),
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "web",
@@ -3680,47 +3680,47 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			Endpoints: []discoveryv1.Endpoint{
 				{
 					Addresses: []string{"10.244.1.2"},
-					Hostname:  testutils.ToPtr("kafka-0"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-0"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-0",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 				{
 					Addresses: []string{"10.244.1.3"},
-					Hostname:  testutils.ToPtr("kafka-1"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-1"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-1",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 				{
 					Addresses: []string{"10.244.1.4"},
-					Hostname:  testutils.ToPtr("kafka-2"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-2"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-2",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 			},
@@ -3740,47 +3740,47 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			Endpoints: []discoveryv1.Endpoint{
 				{
 					Addresses: []string{"10.244.1.2"},
-					Hostname:  testutils.ToPtr("kafka-0"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-0"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-0",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 				{
 					Addresses: []string{"10.244.1.3"},
-					Hostname:  testutils.ToPtr("kafka-1"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-1"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-1",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 				{
 					Addresses: []string{"10.244.1.4"},
-					Hostname:  testutils.ToPtr("kafka-2"),
-					NodeName:  testutils.ToPtr("local-dev-worker"),
+					Hostname:  new("kafka-2"),
+					NodeName:  new("local-dev-worker"),
 					TargetRef: &v1.ObjectReference{
 						Kind:      "Pod",
 						Name:      "kafka-2",
 						Namespace: "default",
 					},
 					Conditions: discoveryv1.EndpointConditions{
-						Ready:       testutils.ToPtr(true),
-						Serving:     testutils.ToPtr(true),
-						Terminating: testutils.ToPtr(false),
+						Ready:       new(true),
+						Serving:     new(true),
+						Terminating: new(false),
 					},
 				},
 			},
@@ -5254,7 +5254,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "missing-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: new(true)},
 			},
 		},
 	}
@@ -5280,7 +5280,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "some-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: new(true)},
 			},
 		},
 	}
@@ -5306,7 +5306,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: new(true)},
 				Addresses:  []string{"10.0.0.1"},
 			},
 		},
@@ -5336,7 +5336,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(false)}, // Not ready
+				Conditions: discoveryv1.EndpointConditions{Ready: new(false)}, // Not ready
 				Addresses:  []string{"10.0.0.1"},
 			},
 		},
@@ -5602,7 +5602,7 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: new(true)},
 				Addresses:  []string{"10.0.0.1"},
 			},
 		},

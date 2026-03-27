@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -372,12 +371,12 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &dns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:      to.Ptr(ttl),
+				TTL:      new(ttl),
 				ARecords: aRecords,
 			},
 		}, nil
@@ -385,21 +384,21 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &dns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:         to.Ptr(ttl),
+				TTL:         new(ttl),
 				AaaaRecords: aaaaRecords,
 			},
 		}, nil
 	case dns.RecordTypeCNAME:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: new(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -414,7 +413,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				MxRecords: mxRecords,
 			},
 		}, nil
@@ -422,19 +421,19 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			nsRecords[i] = &dns.NsRecord{
-				Nsdname: to.Ptr(target),
+				Nsdname: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				NsRecords: nsRecords,
 			},
 		}, nil
 	case dns.RecordTypeTXT:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				TxtRecords: []*dns.TxtRecord{
 					{
 						Value: []*string{

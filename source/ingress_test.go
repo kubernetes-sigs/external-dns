@@ -1517,7 +1517,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("nginx"),
+						IngressClassName: new("nginx"),
 						Rules: []networkv1.IngressRule{
 							{Host: "app.example.com"},
 						},
@@ -1549,7 +1549,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						Annotations: map[string]string{},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("alb"),
+						IngressClassName: new("alb"),
 						TLS: []networkv1.IngressTLS{
 							{
 								Hosts: []string{"*.example.com"},
@@ -1585,7 +1585,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("alb"),
+						IngressClassName: new("alb"),
 						TLS: []networkv1.IngressTLS{
 							{
 								Hosts: []string{"*.example.com"},
@@ -1621,7 +1621,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("alb"),
+						IngressClassName: new("alb"),
 						Rules: []networkv1.IngressRule{
 							{Host: "some.subdomain.mydomain.com"},
 						},
@@ -1661,7 +1661,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("alb"),
+						IngressClassName: new("alb"),
 						Rules: []networkv1.IngressRule{
 							{Host: "some.subdomain.mydomain.com"},
 						},
@@ -1693,7 +1693,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("alb"),
+						IngressClassName: new("alb"),
 						Rules: []networkv1.IngressRule{
 							{Host: "app.example.com"},
 						},

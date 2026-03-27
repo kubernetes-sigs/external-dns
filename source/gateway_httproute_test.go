@@ -571,12 +571,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						{
 							Name:     "foo",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("foo.example.internal"),
+							Hostname: new(v1.Hostname("foo.example.internal")),
 						},
 						{
 							Name:     "bar",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("bar.example.internal"),
+							Hostname: new(v1.Hostname("bar.example.internal")),
 						},
 					},
 				},
@@ -612,12 +612,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						{
 							Name:     "foo",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("foo.example.internal"),
+							Hostname: new(v1.Hostname("foo.example.internal")),
 						},
 						{
 							Name:     "bar",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("bar.example.internal"),
+							Hostname: new(v1.Hostname("bar.example.internal")),
 						},
 					},
 				},
@@ -653,19 +653,19 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						{
 							Name:     "foo",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("foo.example.internal"),
+							Hostname: new(v1.Hostname("foo.example.internal")),
 							Port:     80,
 						},
 						{
 							Name:     "bar",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("bar.example.internal"),
+							Hostname: new(v1.Hostname("bar.example.internal")),
 							Port:     80,
 						},
 						{
 							Name:     "qux",
 							Protocol: v1.HTTPProtocolType,
-							Hostname: hostnamePtr("qux.example.internal"),
+							Hostname: new(v1.Hostname("qux.example.internal")),
 							Port:     8080,
 						},
 					},
@@ -700,7 +700,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
-						Hostname: hostnamePtr("*.example.internal"),
+						Hostname: new(v1.Hostname("*.example.internal")),
 					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
@@ -732,7 +732,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
-						Hostname: hostnamePtr("foo.example.internal"),
+						Hostname: new(v1.Hostname("foo.example.internal")),
 					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
@@ -764,7 +764,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
-						Hostname: hostnamePtr("*.example.internal"),
+						Hostname: new(v1.Hostname("*.example.internal")),
 					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
@@ -796,7 +796,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
-						Hostname: hostnamePtr("foo.example.internal"),
+						Hostname: new(v1.Hostname("foo.example.internal")),
 					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
@@ -1120,7 +1120,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("default", "one"),
 					Spec: v1.GatewaySpec{
 						Listeners: []v1.Listener{{
-							Hostname: hostnamePtr("*.one.internal"),
+							Hostname: new(v1.Hostname("*.one.internal")),
 							Protocol: v1.HTTPProtocolType,
 						}},
 					},
@@ -1130,7 +1130,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("default", "two"),
 					Spec: v1.GatewaySpec{
 						Listeners: []v1.Listener{{
-							Hostname: hostnamePtr("*.two.internal"),
+							Hostname: new(v1.Hostname("*.two.internal")),
 							Protocol: v1.HTTPProtocolType,
 						}},
 					},
@@ -1694,5 +1694,3 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		})
 	}
 }
-
-func hostnamePtr(val v1.Hostname) *v1.Hostname { return &val }

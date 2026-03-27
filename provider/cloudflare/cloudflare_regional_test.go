@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -1204,21 +1203,21 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			recordType:             "A",
 			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 			initialRegionKey:       "",
-			expectedRegionKey:      testutils.ToPtr("us"),
+			expectedRegionKey:      new("us"),
 		},
 		{
 			name:                   "AAAA record with regional services enabled",
 			recordType:             "AAAA",
 			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 			initialRegionKey:       "",
-			expectedRegionKey:      testutils.ToPtr("us"),
+			expectedRegionKey:      new("us"),
 		},
 		{
 			name:                   "CNAME record with regional services enabled",
 			recordType:             "CNAME",
 			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 			initialRegionKey:       "",
-			expectedRegionKey:      testutils.ToPtr("us"),
+			expectedRegionKey:      new("us"),
 		},
 
 		// Unsupported types should NOT get region key even when enabled
@@ -1252,7 +1251,7 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			recordType:             "A",
 			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 			initialRegionKey:       "eu",
-			expectedRegionKey:      testutils.ToPtr("eu"),
+			expectedRegionKey:      new("eu"),
 		},
 	}
 
