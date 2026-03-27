@@ -165,7 +165,7 @@ func populateGVK(obj runtime.Object) {
 // not on the hot path of every endpoint reconciliation.
 func clearStatusConditions(obj any) {
 	val := reflect.ValueOf(obj)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 	if !val.IsValid() {
@@ -176,7 +176,7 @@ func clearStatusConditions(obj any) {
 		return
 	}
 	// Status may itself be a pointer (dereference if so)
-	if statusField.Kind() == reflect.Ptr {
+	if statusField.Kind() == reflect.Pointer {
 		if statusField.IsNil() {
 			return
 		}
