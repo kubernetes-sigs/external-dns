@@ -355,8 +355,8 @@ func TestProviderSpecificPropertyNameConvention(t *testing.T) {
 	props, _ := ProviderSpecificAnnotations(annotations)
 	for _, prop := range props {
 		name := prop.Name
-		slashIdx := strings.Index(name, "/")
-		if slashIdx == -1 {
+		providerSegment, _, ok := strings.Cut(name, "/")
+		if !ok {
 			// No slash: provider-agnostic property (e.g. "alias") — always OK.
 			continue
 		}
@@ -366,7 +366,6 @@ func TestProviderSpecificPropertyNameConvention(t *testing.T) {
 		}
 		// All other providers must use the short "provider/attr" form.
 		// The segment before "/" must be a plain word with no dots.
-		providerSegment := name[:slashIdx]
 		assert.NotContains(t, providerSegment, ".",
 			"property %q uses a full annotation name; only cloudflare is allowed to — use the short \"provider/attr\" form instead", name)
 	}
