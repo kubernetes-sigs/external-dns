@@ -140,6 +140,7 @@ func (suite *ByNamesTestSuite) TestSourceNotFound() {
 func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(testutils.MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
+	mockClientGenerator.On("RESTConfig").Return(nil, errors.New("foo"))
 
 	sourceUnderTest := []string{
 		types.Node, types.Service, types.Ingress, types.Pod, types.IstioGateway, types.IstioVirtualService,

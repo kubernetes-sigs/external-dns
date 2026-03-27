@@ -615,19 +615,13 @@ func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	return NewOcpRouteSource(ctx, ocpClient, cfg)
 }
 
-// buildCRDSource creates a CRD source for exposing custom resources as DNS records.
-// Uses a specialized CRD client created via NewCRDClientForAPIVersionKind.
-// Parameter order: crdClient, namespace, kind, annotationFilter, labelFilter, scheme, updateEvents
-func buildCRDSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, error) {
-	client, err := p.KubeClient()
+// buildCRDSource creates a CRD source for exposing DNSEndpoint custom resources as DNS records.
+func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+	restConfig, err := p.RESTConfig()
 	if err != nil {
 		return nil, err
 	}
-	crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return NewCRDSource(crdClient, cfg, scheme)
+	return NewCRDSource(ctx, restConfig, cfg)
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.

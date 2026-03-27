@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -73,6 +74,10 @@ func Execute() {
 		defer klog.ClearLogger()
 		klog.SetLogger(logr.Discard())
 	}
+
+	// controller-runtime prints a stack trace warning if its logger is never initialized.
+	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
+	crlog.SetLogger(logr.Discard())
 
 	log.Info(externaldns.Banner())
 
