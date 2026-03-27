@@ -236,6 +236,10 @@ type EndpointKey struct {
 	Target        string
 }
 
+func (ep EndpointKey) String() string {
+	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
+}
+
 type ObjectRef = events.ObjectReference
 
 // Endpoint is a high-level way of a connection between a service and an IP
