@@ -11,7 +11,7 @@ concurrency:
   group: chart-release
   cancel-in-progress: false
 
-permissions: read-all
+permissions: {}
 
 jobs:
   release:

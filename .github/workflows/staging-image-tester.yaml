@@ -14,7 +14,6 @@ jobs:
   build:
     permissions:
       contents: read  #  to fetch code (actions/checkout)
-      checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
 
     name: Build
     runs-on: ubuntu-latest
@@ -24,7 +23,7 @@ jobs:
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v6.3.0
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version-file: go.mod
       id: go

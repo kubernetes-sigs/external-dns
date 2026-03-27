@@ -11,7 +11,7 @@ concurrency:
   group: chart-pr-${{ github.ref }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions: {}
 
 jobs:
   lint-test:

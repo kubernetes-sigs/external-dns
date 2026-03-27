@@ -28,7 +28,7 @@ jobs:
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v6.3.0
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version-file: go.mod
         check-latest: true
@@ -45,7 +45,7 @@ jobs:
       run: make go-test
 
     - name: Send coverage
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2
       with:
         file: profile.cov
         format: golang
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2
       with:
         parallel-finished: true
         carryforward: "run-ubuntu-latest,run-macos-latest"
