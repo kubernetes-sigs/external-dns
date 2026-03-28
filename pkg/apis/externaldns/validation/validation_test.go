@@ -74,6 +74,14 @@ func TestValidateFlags(t *testing.T) {
 	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
+	cfg.AnnotationFilter = "kubernetes.io/gateway.class in (alb, nginx)"
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.AnnotationFilter = "kubernetes.io/gateway.name in (a b)"
+	require.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
 	cfg.AnnotationPrefix = ""
 	require.Error(t, ValidateConfig(cfg))
 
