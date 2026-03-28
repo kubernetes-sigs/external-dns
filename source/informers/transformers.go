@@ -22,6 +22,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -32,10 +33,11 @@ import (
 // All options operate on the metav1.Object interface (or via reflection for Status
 // fields) and are therefore applicable to any Kubernetes resource type.
 type TransformOptions struct {
-	removeManagedFields     bool
-	removeLastAppliedConfig bool
-	removeStatusConditions  bool
-	keepAnnotationPrefixes  []string
+	removeManagedFields       bool
+	removeLastAppliedConfig   bool
+	removeStatusConditions    bool
+	keepAnnotationPrefixes    []string
+	requireAnnotationSelector labels.Selector
 }
 
 // TransformRemoveManagedFields strips managedFields from the object's metadata.
@@ -72,6 +74,16 @@ func TransformKeepAnnotationPrefix(prefixes ...string) func(*TransformOptions) {
 	}
 }
 
+// TransformRequireAnnotation is a local guard against annotation mutation:
+// the Kubernetes API does not support annotation selectors in List/Watch.
+// Do not use when an indexer handles annotation filtering.
+// A nil or empty selector is a no-op.
+func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions) {
+	return func(o *TransformOptions) {
+		o.requireAnnotationSelector = selector
+	}
+}
+
 // TransformerWithOptions returns a cache.TransformFunc that modifies objects of type T
 // in place to reduce the memory footprint of the informer cache. All options operate
 // on the metav1.Object interface or via reflection, making the transformer applicable
@@ -103,6 +115,11 @@ func TransformerWithOptions[T interface {
 		entity, ok := obj.(T)
 		if !ok {
 			return nil, nil
+		}
+		if sel := options.requireAnnotationSelector; sel != nil && !sel.Empty() {
+			if !sel.Matches(labels.Set(entity.GetAnnotations())) {
+				return nil, nil
+			}
 		}
 		populateGVK(entity)
 		if options.removeManagedFields {
@@ -138,10 +155,7 @@ func MustSetTransform(informer cache.SharedInformer, fn cache.TransformFunc) {
 	}
 }
 
-// populateGVK sets TypeMeta (Kind/APIVersion) on obj if it is missing.
-// Kubernetes informers strip TypeMeta from cached objects because the client already
-// knows what type it requested. Populating it here makes cached objects self-describing
-// for templates and logging without any per-reconciliation overhead.
+// populateGVK restores TypeMeta (Kind/APIVersion) stripped by the Kubernetes informer.
 func populateGVK(obj runtime.Object) {
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	if gvk.Kind != "" {
