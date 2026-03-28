@@ -81,36 +81,6 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 	return newCrdSource(ctx, c, crWriter, cfg.Namespace, cfg.LabelFilter)
 }
 
-// newCrdSource wires a cache and writer into a running crdSource.
-func newCrdSource(ctx context.Context, c crcache.Cache, crWriter client.Client, namespace string, labelSelector labels.Selector) (*crdSource, error) {
-	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
-	if err != nil {
-		return nil, err
-	}
-
-	_, _ = inf.AddEventHandler(informers.DefaultEventHandler())
-
-	listOpts := []client.ListOption{client.InNamespace(namespace)}
-	if labelSelector != nil && !labelSelector.Empty() {
-		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector})
-	}
-
-	cs := &crdSource{
-		crReader: c,
-		crWriter: crWriter,
-		informer: inf,
-		listOpts: listOpts,
-	}
-
-	// TODO: consider solution similar to informerFactory.Start
-	go c.Start(ctx)
-	if !c.WaitForCacheSync(ctx) {
-		return nil, fmt.Errorf("cache failed to sync")
-	}
-
-	return cs, nil
-}
-
 func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("crd: adding event handler")
 	// Right now there is no way to remove event handler from informer, see:
@@ -133,7 +103,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if ep == nil {
-				log.Warnf(
+				log.Debugf(
 					"Skipping nil endpoint in DNSEndpoint %s/%s at spec.endpoints",
 					dnsEndpoint.Namespace,
 					dnsEndpoint.Name,
@@ -194,6 +164,58 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	return MergeEndpoints(endpoints), nil
+}
+
+// newCrdSource wires a cache and writer into a running crdSource.
+func newCrdSource(
+	ctx context.Context,
+	c crcache.Cache,
+	crWriter client.Client,
+	namespace string,
+	labelSelector labels.Selector) (*crdSource, error) {
+	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
+	if err != nil {
+		return nil, err
+	}
+
+	_, _ = inf.AddEventHandler(informers.DefaultEventHandler())
+
+	listOpts := []client.ListOption{client.InNamespace(namespace)}
+	if labelSelector != nil && !labelSelector.Empty() {
+		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector})
+	}
+
+	cs := &crdSource{
+		crReader: c,
+		crWriter: crWriter,
+		informer: inf,
+		listOpts: listOpts,
+	}
+
+	if err := startAndSync(ctx, c); err != nil {
+		return nil, err
+	}
+
+	return cs, nil
+}
+
+// startAndSync starts the cache in a goroutine and waits for it to sync.
+// Returns an error if the cache fails to start or sync.
+func startAndSync(ctx context.Context, c crcache.Cache) error {
+	errCh := make(chan error, 1)
+	go func() { errCh <- c.Start(ctx) }()
+	if !c.WaitForCacheSync(ctx) {
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return fmt.Errorf("cache failed to sync: %w", err)
+			}
+			return fmt.Errorf("cache failed to sync")
+		case <-ctx.Done():
+			return fmt.Errorf("cache failed to sync: %w", ctx.Err())
+		}
+	}
+	return nil
 }
 
 // buildCacheOptions constructs the controller-runtime cache options for the

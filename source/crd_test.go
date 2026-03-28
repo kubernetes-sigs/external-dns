@@ -780,6 +780,55 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 	}
 }
 
+func TestStartAndSync(t *testing.T) {
+	tests := []struct {
+		name     string
+		startErr error
+		syncOK   bool
+		wantErr  string
+	}{
+		{
+			name:   "success",
+			syncOK: true,
+		},
+		{
+			name:     "sync fails, start error available",
+			startErr: fmt.Errorf("connection refused"),
+			syncOK:   false,
+			wantErr:  "cache failed to sync: connection refused",
+		},
+		{
+			name:    "sync fails, no start error",
+			syncOK:  false,
+			wantErr: "cache failed to sync",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &startSyncFakeCache{startErr: tc.startErr, syncOK: tc.syncOK}
+			err := startAndSync(t.Context(), c)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// startSyncFakeCache is a minimal crcache.Cache stub for TestStartAndSync.
+// It embeds fakeCRDCache to satisfy the full interface; only Start and
+// WaitForCacheSync are overridden.
+type startSyncFakeCache struct {
+	fakeCRDCache
+	startErr error
+	syncOK   bool
+}
+
+func (f *startSyncFakeCache) Start(_ context.Context) error      { return f.startErr }
+func (f *startSyncFakeCache) WaitForCacheSync(_ context.Context) bool { return f.syncOK }
+
 // fakeCRDCache implements crCache.Cache for unit tests.
 // Reads are backed by a fake.Client so test fixtures are populated with
 // WithObjects; cache lifecycle methods are no-ops that return immediately.
