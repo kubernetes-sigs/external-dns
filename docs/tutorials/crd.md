@@ -111,3 +111,23 @@ spec:
     - 50 50 "S" "SIPS+D2T" "" _sips._tcp.test.example.com.
     - 100 50 "S" "SIP+D2U" "" _sip._udp.test.example.com.
 ```
+
+### DNSEndpoint with an LUA record (PowerDNS Exclusive)
+
+Here's an example of a `DNSEndpoint` with an LUA record:
+To test this add --managed-record-types=LUA in the deployment args.
+```yaml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: test-lua
+  namespace: default
+spec:
+  endpoints:
+  - dnsName: test.example.com
+    recordTTL: 180
+    recordType: LUA
+    targets:
+    - A "ifportup(443, {{' 192.168.1.1'}, {'192.168.1.2'}})
+```

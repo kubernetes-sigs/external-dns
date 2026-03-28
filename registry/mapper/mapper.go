@@ -36,6 +36,7 @@ var (
 		endpoint.RecordTypePTR,
 		endpoint.RecordTypeSRV,
 		endpoint.RecordTypeNAPTR,
+		endpoint.RecordTypeLUA,
 	}
 )
 

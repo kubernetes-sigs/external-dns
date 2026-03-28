@@ -94,6 +94,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeNAPTR,
 		},
 		{
+			name:             "prefix with LUA record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "lua-foo.example.com",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeLUA,
+		},
+		{
 			name:             "suffix with A record type in affix",
 			mapper:           NewAffixNameMapper("", "-%{record_type}", ""),
 			input:            "foo-a.example.com",
@@ -162,6 +169,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			input:            "naptr-foo.example.com",
 			wantEndpointName: "foo.example.com",
 			wantRecordType:   endpoint.RecordTypeNAPTR,
+		},
+		{
+			name:             "no affix with LUA record",
+			mapper:           NewAffixNameMapper("", "", ""),
+			input:            "lua-foo.example.com",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeLUA,
 		},
 		{
 			name:             "suffix with txt record",
@@ -258,6 +272,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "naptr-foo.example.com",
 		},
 		{
+			name:        "prefix with LUA record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeLUA,
+			wantTXTName: "lua-foo.example.com",
+		},
+		{
 			name:        "suffix with A record type in affix",
 			mapper:      NewAffixNameMapper("", "-%{record_type}", ""),
 			dns:         "foo.example.com",
@@ -340,6 +361,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeNAPTR,
 			wantTXTName: "naptr-foo.example.com",
+		},
+		{
+			name:        "no affix with LUA record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeLUA,
+			wantTXTName: "lua-foo.example.com",
 		},
 	}
 

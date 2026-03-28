@@ -158,7 +158,14 @@ var (
 			{Content: "host.example.com", Disabled: false, SetPtr: false},
 		},
 	}
-
+	RRSetLUARecord = pgo.RrSet{
+		Name:  "lua.example.com.",
+		Type_: endpoint.RecordTypeLUA,
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "A \"ifportup(443, {{'192.168.1.1'}, {'192.168.1.1'}})\"", Disabled: false, SetPtr: false},
+		},
+	}
 	endpointsDisabledRecord = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}

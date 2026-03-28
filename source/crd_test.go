@@ -441,6 +441,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
+			title:                "Create LUA record",
+			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
+			apiVersion:           apiv1alpha1.GroupVersion.String(),
+			registeredKind:       apiv1alpha1.DNSEndpointKind,
+			kind:                 apiv1alpha1.DNSEndpointKind,
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{`A "ifportup(443, {{'192.168.1.1'}, {'192.168.1.1'}})`},
+					RecordType: endpoint.RecordTypeLUA,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
 			title:                "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
 			registeredAPIVersion: apiv1alpha1.GroupVersion.String(),
 			apiVersion:           apiv1alpha1.GroupVersion.String(),
