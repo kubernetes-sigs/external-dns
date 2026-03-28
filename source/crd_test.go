@@ -35,7 +35,7 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	toolscache "k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
-	crCache "sigs.k8s.io/controller-runtime/pkg/cache"
+	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -62,7 +62,7 @@ func (suite *CRDSuite) SetupTest() {
 // dnsEndpointByObj extracts the single ByObject entry for DNSEndpoint from
 // cache options. The map key is a pointer so we cannot look it up directly —
 // we iterate instead.
-func dnsEndpointByObj(t *testing.T, opts crCache.Options) crCache.ByObject {
+func dnsEndpointByObj(t *testing.T, opts crcache.Options) crcache.ByObject {
 	t.Helper()
 	for obj, bo := range opts.ByObject {
 		if _, ok := obj.(*apiv1alpha1.DNSEndpoint); ok {
@@ -813,11 +813,11 @@ type fakeCRDCache struct {
 	informer      toolscache.SharedIndexInformer
 }
 
-func (f *fakeCRDCache) GetInformer(_ context.Context, _ client.Object, _ ...crCache.InformerGetOption) (crCache.Informer, error) {
+func (f *fakeCRDCache) GetInformer(_ context.Context, _ client.Object, _ ...crcache.InformerGetOption) (crcache.Informer, error) {
 	return f.informer, nil
 }
 
-func (f *fakeCRDCache) GetInformerForKind(_ context.Context, _ schema.GroupVersionKind, _ ...crCache.InformerGetOption) (crCache.Informer, error) {
+func (f *fakeCRDCache) GetInformerForKind(_ context.Context, _ schema.GroupVersionKind, _ ...crcache.InformerGetOption) (crcache.Informer, error) {
 	return f.informer, nil
 }
 
