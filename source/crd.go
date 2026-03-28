@@ -221,7 +221,7 @@ func startAndSync(ctx context.Context, c crcache.Cache) error {
 // buildCacheOptions constructs the controller-runtime cache options for the
 // given namespace and label selector. Extracted so the namespace/label scoping
 // logic can be unit-tested without a running API server.
-func buildCacheOptions(namespace string, labelFilter labels.Selector, annotationSelector labels.Selector) (crcache.Options, error) {
+func buildCacheOptions(namespace string, labelFilter, annotationSelector labels.Selector) (crcache.Options, error) {
 	scheme := runtime.NewScheme()
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
