@@ -25,6 +25,10 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,11 +37,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	toolscache "k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	log "github.com/sirupsen/logrus"
 
@@ -593,6 +599,52 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 	}
 }
 
+func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	obj := &apiv1alpha1.DNSEndpoint{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "test",
+			Namespace:  "default",
+			Generation: 2,
+		},
+		Status: apiv1alpha1.DNSEndpointStatus{
+			ObservedGeneration: 1, // differs from Generation → update will be attempted
+		},
+		Spec: apiv1alpha1.DNSEndpointSpec{
+			Endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+	}
+
+	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
+
+	// Wrap the writer so Status().Update() always fails.
+	failWriter := interceptor.NewClient(fakeCache.Client.(client.WithWatch), interceptor.Funcs{
+		SubResourceUpdate: func(
+			_ context.Context,
+			_ client.Client,
+			subResource string,
+			_ client.Object,
+			_ ...client.SubResourceUpdateOption) error {
+			if subResource == "status" {
+				return fmt.Errorf("status update forbidden")
+			}
+			return nil
+		},
+	})
+
+	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil)
+	require.NoError(t, err)
+
+	endpoints, err := cs.Endpoints(t.Context())
+	require.NoError(t, err, "status update failure must not propagate as an error")
+	require.Len(t, endpoints, 1, "endpoints must still be returned despite the update failure")
+
+	logtest.TestHelperLogContainsWithLogLevel("Could not update ObservedGeneration", log.WarnLevel, hook, t)
+}
+
 func TestCRDSource_AddEventHandler_Add(t *testing.T) {
 	ctx := t.Context()
 	watcher, cs := helperCreateWatcherWithInformer(t)
@@ -782,10 +834,12 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 
 func TestStartAndSync(t *testing.T) {
 	tests := []struct {
-		name     string
-		startErr error
-		syncOK   bool
-		wantErr  string
+		name       string
+		startErr   error
+		syncOK     bool
+		blockStart bool
+		cancelCtx  bool
+		wantErr    string
 	}{
 		{
 			name:   "success",
@@ -802,12 +856,25 @@ func TestStartAndSync(t *testing.T) {
 			syncOK:  false,
 			wantErr: "cache failed to sync",
 		},
+		{
+			name:       "sync fails, context cancelled before start returns",
+			syncOK:     false,
+			blockStart: true,
+			cancelCtx:  true,
+			wantErr:    "cache failed to sync: context canceled",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			c := &startSyncFakeCache{startErr: tc.startErr, syncOK: tc.syncOK}
-			err := startAndSync(t.Context(), c)
+			ctx := t.Context()
+			if tc.cancelCtx {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
+			}
+			c := &startSyncFakeCache{startErr: tc.startErr, syncOK: tc.syncOK, blockStart: tc.blockStart}
+			err := startAndSync(ctx, c)
 			if tc.wantErr == "" {
 				require.NoError(t, err)
 			} else {
@@ -817,16 +884,128 @@ func TestStartAndSync(t *testing.T) {
 	}
 }
 
+// TestNewCRDSource covers the error paths inside NewCRDSource that cannot be
+// reached through newCrdSource (which uses fake caches and writers directly).
+func TestNewCRDSource(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		makeRestCfg      func(t *testing.T) *rest.Config
+		ctxTimeout       time.Duration // 0 → use t.Context() as-is
+		wantErrContains  string
+	}{
+		{
+			// annotations.ParseFilter is called before any network I/O; a
+			// syntactically invalid selector string causes an immediate error.
+			name:             "annotation filter parse error",
+			annotationFilter: "!!!invalid",
+			makeRestCfg:      func(_ *testing.T) *rest.Config { return &rest.Config{Host: "http://ignored"} },
+			wantErrContains:  "couldn't parse the selector string",
+		},
+		{
+			// Bad TLS CA data makes rest.HTTPClientFor fail inside
+			// crcache.New.  client.New is never reached because crcache.New returns
+			// first, but it would fail identically — both call rest.HTTPClientFor with
+			// the same restConfig.
+			name: "cache construction fails: bad TLS cert",
+			makeRestCfg: func(_ *testing.T) *rest.Config {
+				return &rest.Config{
+					Host:            "https://127.0.0.1:1",
+					TLSClientConfig: rest.TLSClientConfig{CAData: []byte("not-a-pem-cert")},
+				}
+			},
+			wantErrContains: "unable to load root certificates",
+		},
+		{
+			// crcache.New and client.New succeed against a fake API server
+			// that serves valid discovery responses.  The informer's LIST calls are
+			// answered with 500, so the cache never finishes its initial sync.
+			// WaitForCacheSync returns false when the context deadline is exceeded,
+			// which triggers the ctx.Done() branch in startAndSync.
+			name:            "cache fails to sync: context deadline exceeded",
+			makeRestCfg:     func(t *testing.T) *rest.Config { return &rest.Config{Host: newFakeDiscoveryServer(t).URL} },
+			ctxTimeout:      3 * time.Second,
+			wantErrContains: "cache failed to sync: context deadline exceeded",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			if tc.ctxTimeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, tc.ctxTimeout)
+				t.Cleanup(cancel)
+			}
+			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{AnnotationFilter: tc.annotationFilter})
+			require.ErrorContains(t, err, tc.wantErrContains)
+		})
+	}
+}
+
+// newFakeDiscoveryServer starts an httptest.Server that serves just enough of
+// the Kubernetes discovery API for crcache.New + client.New to succeed and the
+// DNSEndpoint informer to be registered.
+func newFakeDiscoveryServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		encode := func(v any) {
+			if err := json.NewEncoder(w).Encode(v); err != nil {
+				t.Errorf("fakeDiscoveryServer: json.Encode %s: %v", r.URL.Path, err)
+			}
+		}
+		switch r.URL.Path {
+		case "/api":
+			encode(metav1.APIVersions{
+				TypeMeta: metav1.TypeMeta{Kind: "APIVersions", APIVersion: "v1"},
+				Versions: []string{"v1"},
+			})
+		case "/apis":
+			encode(metav1.APIGroupList{
+				TypeMeta: metav1.TypeMeta{Kind: "APIGroupList", APIVersion: "v1"},
+				Groups: []metav1.APIGroup{{
+					Name:             "externaldns.k8s.io",
+					Versions:         []metav1.GroupVersionForDiscovery{{GroupVersion: "externaldns.k8s.io/v1alpha1", Version: "v1alpha1"}},
+					PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "externaldns.k8s.io/v1alpha1", Version: "v1alpha1"},
+				}},
+			})
+		case "/apis/externaldns.k8s.io/v1alpha1":
+			encode(metav1.APIResourceList{
+				TypeMeta:     metav1.TypeMeta{Kind: "APIResourceList", APIVersion: "v1"},
+				GroupVersion: "externaldns.k8s.io/v1alpha1",
+				APIResources: []metav1.APIResource{{
+					Name:       "dnsendpoints",
+					Namespaced: true,
+					Kind:       "DNSEndpoint",
+					Verbs:      metav1.Verbs{"list", "watch"},
+				}},
+			})
+		default:
+			// Causes the informer's LIST to fail so the cache never syncs.
+			http.Error(w, `{"kind":"Status","apiVersion":"v1","status":"Failure","code":500}`, http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 // startSyncFakeCache is a minimal crcache.Cache stub for TestStartAndSync.
 // It embeds fakeCRDCache to satisfy the full interface; only Start and
 // WaitForCacheSync are overridden.
 type startSyncFakeCache struct {
 	fakeCRDCache
-	startErr error
-	syncOK   bool
+	startErr   error
+	syncOK     bool
+	blockStart bool
 }
 
-func (f *startSyncFakeCache) Start(_ context.Context) error           { return f.startErr }
+func (f *startSyncFakeCache) Start(ctx context.Context) error {
+	if f.blockStart {
+		<-ctx.Done()
+	}
+	return f.startErr
+}
 func (f *startSyncFakeCache) WaitForCacheSync(_ context.Context) bool { return f.syncOK }
 
 // fakeCRDCache implements crCache.Cache for unit tests.
