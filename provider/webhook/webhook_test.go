@@ -25,10 +25,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
@@ -558,4 +562,49 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, 3, attempts)
+}
+
+func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	assert.IsType(t, &extdnshttp.CustomRoundTripper{}, p.client.Transport, "webhook provider client should use an instrumented transport")
+}
+
+func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+		case webhookapi.UrlRecords:
+			assert.NoError(t, json.NewEncoder(w).Encode([]*endpoint.Endpoint{}))
+		}
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	before := httpDurationSampleCount(t, "records", http.MethodGet)
+
+	_, err = p.Records(t.Context())
+	require.NoError(t, err)
+
+	assert.Greater(t, httpDurationSampleCount(t, "records", http.MethodGet), before,
+		"external_dns_http_request_duration_seconds should be incremented for a Records call")
+}
+
+func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
+	t.Helper()
+	return testutils.SummaryVecSampleCount(t, &extdnshttp.RequestDurationMetric.SummaryVec, prometheus.Labels{
+		metrics.LabelPath:   path,
+		metrics.LabelMethod: method,
+	})
 }

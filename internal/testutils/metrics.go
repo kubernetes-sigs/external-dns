@@ -56,11 +56,40 @@ func TestHelperVerifyMetricsGaugeVectorWithLabelsFunc(t *testing.T, expected flo
 	}
 }
 
-// collectAll drains all current observations from a GaugeVec into a slice.
-func collectAll(metric *prometheus.GaugeVec) []*dto.Metric {
+// SummaryVecSampleCount returns the total observation count from a SummaryVec
+// across all label combinations that match every key/value pair in match.
+// Unspecified labels (e.g. status) are ignored, so this supports partial matching.
+func SummaryVecSampleCount(t *testing.T, sv *prometheus.SummaryVec, match prometheus.Labels) uint64 {
+	t.Helper()
+	var total uint64
+	for _, dm := range collectAll(sv) {
+		if labelsMatch(dm, match) {
+			total += dm.GetSummary().GetSampleCount()
+		}
+	}
+	return total
+}
+
+// labelsMatch reports whether dm contains all key/value pairs in match (case-insensitive, partial).
+func labelsMatch(dm *dto.Metric, match map[string]string) bool {
+	var matchCount int
+	for _, lp := range dm.GetLabel() {
+		v, found := match[lp.GetName()]
+		if found {
+			if !strings.EqualFold(v, lp.GetValue()) {
+				return false
+			}
+			matchCount++
+		}
+	}
+	return matchCount == len(match)
+}
+
+// collectAll drains all current observations from a Collector into a slice.
+func collectAll(collector prometheus.Collector) []*dto.Metric {
 	ch := make(chan prometheus.Metric, 1024)
 	go func() {
-		metric.Collect(ch)
+		collector.Collect(ch)
 		close(ch)
 	}()
 	var result []*dto.Metric
@@ -75,29 +104,13 @@ func collectAll(metric *prometheus.GaugeVec) []*dto.Metric {
 }
 
 // sumMetricsWithLabels sums all metric values that match the provided labels (partial match supported).
-// Label matching is case-insensitive since metrics are stored in lowercase.
 func sumMetricsWithLabels(metric *prometheus.GaugeVec, matchLabels map[string]string) float64 {
 	var sum float64
 	for _, dm := range collectAll(metric) {
-		// Check if all matchLabels are present with correct values (case-insensitive)
-		metricLabels := make(map[string]string)
-		for _, lp := range dm.Label {
-			metricLabels[lp.GetName()] = lp.GetValue()
-		}
-
-		matches := true
-		for k, v := range matchLabels {
-			if !strings.EqualFold(metricLabels[k], v) {
-				matches = false
-				break
-			}
-		}
-
-		if matches && dm.Gauge != nil {
+		if labelsMatch(dm, matchLabels) && dm.Gauge != nil {
 			sum += dm.Gauge.GetValue()
 		}
 	}
-
 	return sum
 }
 

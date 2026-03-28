@@ -34,6 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -697,6 +698,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		title                    string
 		targetNamespace          string
 		annotationFilter         string
+		labelFilter              labels.Selector
 		lbServices               []fakeIngressGatewayService
 		ingresses                []fakeIngress
 		gwConfigs                []fakeGatewayConfig
@@ -1157,10 +1159,128 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:            "invalid annotation filter expression",
-			annotationFilter: "kubernetes.io/gateway.name in (a b)",
-			expected:         []*endpoint.Endpoint{},
-			expectError:      true,
+			title:            "valid matching annotation filter label",
+			annotationFilter: "kubernetes.io/virtualservice.class=nginx",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/virtualservice.class": "nginx",
+					},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter label",
+			annotationFilter: "kubernetes.io/virtualservice.class=nginx",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/virtualservice.class": "alb",
+					},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:       "valid matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "istio-vs"}),
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					labels:    map[string]string{"app": "istio-vs"},
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:       "valid non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "istio-vs"}),
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					labels:    map[string]string{"app": "other"},
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title: "gateway ingress annotation; ingress not found",
@@ -1959,6 +2079,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
+					LabelFilter:              ti.labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
@@ -2032,6 +2153,7 @@ type fakeVirtualServiceConfig struct {
 	name        string
 	gateways    []string
 	annotations map[string]string
+	labels      map[string]string
 	dnsnames    []string
 	exportTo    string
 }
@@ -2050,6 +2172,7 @@ func (c fakeVirtualServiceConfig) Config() *networkingv1.VirtualService {
 			Name:        c.name,
 			Namespace:   c.namespace,
 			Annotations: c.annotations,
+			Labels:      c.labels,
 		},
 		Spec: *vs.DeepCopy(),
 	}

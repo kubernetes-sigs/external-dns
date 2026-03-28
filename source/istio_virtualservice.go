@@ -31,7 +31,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -56,13 +55,11 @@ const IstioMeshGateway = "mesh"
 // +externaldns:source:category=Service Mesh
 // +externaldns:source:description=Creates DNS entries from Istio VirtualService resources
 // +externaldns:source:resources=VirtualService.networking.istio.io
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type virtualServiceSource struct {
-	kubeClient               kubernetes.Interface
-	istioClient              istioclient.Interface
 	namespace                string
 	annotationFilter         string
 	templateEngine           template.Engine
@@ -107,6 +104,11 @@ func NewIstioVirtualServiceSource(
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
+	informers.MustAddIndexers(virtualServiceInformer.Informer(), informers.IndexerWithOptions[*networkingv1.VirtualService](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
 	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
@@ -125,8 +127,6 @@ func NewIstioVirtualServiceSource(
 	}
 
 	return &virtualServiceSource{
-		kubeClient:               kubeClient,
-		istioClient:              istioClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
 		templateEngine:           cfg.TemplateEngine,
@@ -141,22 +141,19 @@ func NewIstioVirtualServiceSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	// TODO: replace direct API call with indexer to serve from the local cache
-	// and avoid per-reconciliation round-trips to the API server.
-	virtualServices, err := sc.vServiceInformer.Lister().VirtualServices(sc.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-	virtualServices, err = annotations.Filter(virtualServices, sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	indexer := sc.vServiceInformer.Informer().GetIndexer()
+	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
 
-	var endpoints []*endpoint.Endpoint
+	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
 
-	log.Debugf("Found %d virtualservice in namespace %s", len(virtualServices), sc.namespace)
+	log.Debugf("Found %d virtualservice in namespace %s", len(indexKeys), sc.namespace)
 
-	for _, vService := range virtualServices {
+	for _, key := range indexKeys {
+		vService, err := informers.GetByKey[*networkingv1.VirtualService](indexer, key)
+		if err != nil || vService == nil {
+			continue
+		}
+
 		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
 			continue
 		}
@@ -245,13 +242,6 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 }
 
 // append a target to the list of targets unless it's already in the list
-func appendUnique(targets []string, target string) []string {
-	if slices.Contains(targets, target) {
-		return targets
-	}
-	return append(targets, target)
-}
-
 func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, vService *networkingv1.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
@@ -271,7 +261,9 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 			return targets, err
 		}
 		for _, target := range tgs {
-			targets = appendUnique(targets, target)
+			if !slices.Contains(targets, target) {
+				targets = append(targets, target)
+			}
 		}
 	}
 	return targets, nil

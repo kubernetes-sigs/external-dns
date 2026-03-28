@@ -35,7 +35,9 @@ import (
 )
 
 const (
-	passwordMask = "******"
+	passwordMask  = "******"
+	LogFormatText = "text"
+	LogFormatJSON = "json"
 )
 
 // Config is a project-wide configuration

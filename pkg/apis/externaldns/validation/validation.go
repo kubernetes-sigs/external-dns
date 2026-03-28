@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -51,6 +52,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--label-filter does not specify a valid label selector")
 	}
 
+	if _, err := metav1.ParseToLabelSelector(cfg.AnnotationFilter); err != nil {
+		return errors.New("--annotation-filter does not specify a valid label selector")
+	}
+
 	if cfg.AnnotationPrefix == "" {
 		return errors.New("--annotation-prefix cannot be empty")
 	}
@@ -62,7 +67,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 }
 
 func preValidateConfig(cfg *externaldns.Config) error {
-	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
+	if cfg.LogFormat != externaldns.LogFormatText && cfg.LogFormat != externaldns.LogFormatJSON {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
 	}
 	if len(cfg.Sources) == 0 {
