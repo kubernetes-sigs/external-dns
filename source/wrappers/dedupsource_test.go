@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -181,6 +182,28 @@ func TestDedupEndpoints(t *testing.T) {
 			mockSource.AssertExpectations(t)
 		})
 	}
+
+	t.Run("wrapped source error is propagated", func(t *testing.T) {
+		mockSource := new(testutils.MockSource)
+		mockSource.On("Endpoints").Return([]*endpoint.Endpoint(nil), assert.AnError)
+		src := NewDedupSource(mockSource)
+		_, err := src.Endpoints(t.Context())
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("nil endpoint is skipped", func(t *testing.T) {
+		mockSource := new(testutils.MockSource)
+		mockSource.On("Endpoints").Return([]*endpoint.Endpoint{
+			nil,
+			{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+		}, nil)
+		src := NewDedupSource(mockSource)
+		endpoints, err := src.Endpoints(t.Context())
+		require.NoError(t, err)
+		testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+			{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+		})
+	})
 }
 
 func TestDedupSource_AddEventHandler(t *testing.T) {

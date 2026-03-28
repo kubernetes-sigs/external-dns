@@ -625,7 +625,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			ambassador.AddToScheme(ambassadorScheme)
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
 
-			namespace := "default"
+			namespace := v1.NamespaceDefault
 
 			// Create Ambassador service
 			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &ti.service, metav1.CreateOptions{})
@@ -671,7 +671,7 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 		svc    string
 		errstr string
 	}{
-		{"svc", "default", "svc", ""},
+		{"svc", v1.NamespaceDefault, "svc", ""},
 		{"ns/svc", "ns", "svc", ""},
 		{"svc.ns", "ns", "svc", ""},
 		{"svc.ns.foo.bar", "ns.foo.bar", "svc", ""},

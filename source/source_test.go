@@ -23,6 +23,23 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+func TestEventHandlerFunc(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		call func(eventHandlerFunc)
+	}{
+		{"OnAdd", func(fn eventHandlerFunc) { fn.OnAdd(nil, false) }},
+		{"OnUpdate", func(fn eventHandlerFunc) { fn.OnUpdate(nil, nil) }},
+		{"OnDelete", func(fn eventHandlerFunc) { fn.OnDelete(nil) }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			tt.call(func() { called = true })
+			assert.True(t, called)
+		})
+	}
+}
+
 func TestGetLabelSelector(t *testing.T) {
 	tests := []struct {
 		name             string

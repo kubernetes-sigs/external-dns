@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -88,6 +89,88 @@ func testTXTRegistryNew(t *testing.T) {
 
 	_, ok = r.mapper.(mapper.AffixNameMapper)
 	assert.True(t, ok)
+}
+
+// errProvider is a provider whose Records call always returns an error.
+type errProvider struct {
+	provider.BaseProvider
+	err error
+}
+
+func (p *errProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, p.err
+}
+
+func (p *errProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error { return nil }
+
+func TestTXTRegistry_Records_ProviderError(t *testing.T) {
+	p := &errProvider{err: assert.AnError}
+	r, err := newRegistry(p, "", "", "owner", 0, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	_, err = r.Records(t.Context())
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestTXTRegistry_OwnerID(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "my-owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	assert.Equal(t, "my-owner", r.OwnerID())
+}
+
+func TestTXTRegistry_GetDomainFilter(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	assert.Equal(t, p.GetDomainFilter(), r.GetDomainFilter())
+}
+
+// nilLabelsProvider returns a single non-TXT endpoint with nil Labels.
+type nilLabelsProvider struct {
+	provider.BaseProvider
+}
+
+func (p *nilLabelsProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	ep := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	ep.Labels = nil
+	return []*endpoint.Endpoint{ep}, nil
+}
+
+func (p *nilLabelsProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error { return nil }
+
+func TestTXTRegistry_Records_NilLabels(t *testing.T) {
+	r, err := newRegistry(&nilLabelsProvider{}, "", "", "owner", 0, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	endpoints, err := r.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 1)
+	assert.NotNil(t, endpoints[0].Labels)
+}
+
+func TestNew(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	cfg := &externaldns.Config{
+		TXTOwnerID:            "owner",
+		TXTPrefix:             "prefix-",
+		TXTCacheInterval:      time.Minute,
+		ManagedDNSRecordTypes: []string{endpoint.RecordTypeA},
+		ExcludeDNSRecordTypes: []string{},
+	}
+	r, err := New(cfg, p)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestTXTRegistry_AdjustEndpoints(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	got, err := r.AdjustEndpoints(eps)
+	require.NoError(t, err)
+	assert.Equal(t, eps, got)
 }
 
 func testTXTRegistryRecords(t *testing.T) {

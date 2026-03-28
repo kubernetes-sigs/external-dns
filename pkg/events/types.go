@@ -151,14 +151,17 @@ func (e *Event) description() string {
 	return fmt.Sprintf("%s/%s/%s", e.ref.Kind, e.ref.Namespace, e.ref.Name)
 }
 
+// Action returns the action associated with the event (e.g. Created, Updated, Deleted).
 func (e *Event) Action() Action {
 	return e.action
 }
 
+// Reason returns the reason associated with the event (e.g. RecordReady, RecordError).
 func (e *Event) Reason() Reason {
 	return e.reason
 }
 
+// EventType returns the Kubernetes event type (Normal or Warning).
 func (e *Event) EventType() EventType {
 	return e.eType
 }
@@ -227,6 +230,7 @@ func sanitize(input string) string {
 	return fmt.Sprintf("%v.%x", sanitized, t.UnixNano())
 }
 
+// WithDryRun returns a ConfigOption that sets dry-run mode; events are skipped when enabled.
 func WithDryRun(dryRun bool) ConfigOption {
 	return func(c *Config) {
 		c.dryRun = dryRun

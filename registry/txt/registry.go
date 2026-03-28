@@ -168,10 +168,12 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 	}, nil
 }
 
+// GetDomainFilter returns the domain filter from the underlying provider.
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return im.provider.GetDomainFilter()
 }
 
+// OwnerID returns the owner identifier used to label records managed by this registry.
 func (im *TXTRegistry) OwnerID() string {
 	return im.ownerID
 }
@@ -221,9 +223,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			// record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
 			continue
-		}
-		if err != nil {
-			return nil, err
 		}
 
 		endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)

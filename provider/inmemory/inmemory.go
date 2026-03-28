@@ -142,11 +142,7 @@ func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, er
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for zoneID := range im.Zones() {
-		records, err := im.client.Records(zoneID)
-		if err != nil {
-			return nil, err
-		}
-
+		records, _ := im.client.Records(zoneID)
 		endpoints = append(endpoints, copyEndpoints(records)...)
 	}
 

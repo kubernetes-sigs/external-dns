@@ -170,6 +170,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantEndpointName: "txt-foo.example.com",
 			wantRecordType:   "",
 		},
+		{
+			name:             "both prefix and suffix set returns empty",
+			mapper:           NewAffixNameMapper("pre-", "-suf", ""),
+			input:            "pre-a-foo-suf.example.com",
+			wantEndpointName: "",
+			wantRecordType:   "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -551,6 +558,33 @@ func TestDropSuffix(t *testing.T) {
 			rClean, _ := mapper.dropAffixExtractType(r[0])
 			actualOutput := rClean + "." + r[1]
 			assert.Equal(t, expectedOutput, actualOutput)
+		})
+	}
+}
+
+func TestDropAffixExtractType_NoMatch(t *testing.T) {
+	tests := []struct {
+		name   string
+		mapper AffixNameMapper
+		input  string
+	}{
+		{
+			name:   "prefix mapper input missing prefix",
+			mapper: NewAffixNameMapper("foo-", "", ""),
+			input:  "bar.example.com",
+		},
+		{
+			name:   "suffix mapper input missing suffix",
+			mapper: NewAffixNameMapper("", "-foo", ""),
+			input:  "bar.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotType := tt.mapper.dropAffixExtractType(tt.input)
+			assert.Empty(t, gotName)
+			assert.Empty(t, gotType)
 		})
 	}
 }

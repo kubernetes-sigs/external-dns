@@ -369,6 +369,21 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:        "unresolvable LB hostname is skipped when resolveLoadBalancerHostname is true",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeLoadBalancer,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			externalIPs:                 []string{},
+			lbs:                         []string{"this-host-does-not-exist.invalid"},
+			serviceTypesFilter:          []string{},
+			resolveLoadBalancerHostname: true,
+			expected:                    []*endpoint.Endpoint{},
+		},
+		{
 			title:        "annotated services can omit trailing dot",
 			svcNamespace: "testing",
 			svcName:      "foo",
@@ -2343,6 +2358,43 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				Spec: v1.NodeSpec{
 					Unschedulable: false,
 				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::3"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::4"},
+					},
+				},
+			}},
+		},
+		{
+			title:            "annotated NodePort service with TTL produces SRV endpoint with TTL",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+				annotations.TtlKey:      "300",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV, RecordTTL: 300},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA, RecordTTL: 300},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA, RecordTTL: 300},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{Name: "node1"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{Name: "node2"},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -4626,6 +4678,40 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
+}
+
+func TestIsPodStatusReady(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		status v1.PodStatus
+		want   bool
+	}{
+		{
+			name: "PodReady condition true",
+			status: v1.PodStatus{Conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+			}},
+			want: true,
+		},
+		{
+			name: "PodReady condition false",
+			status: v1.PodStatus{Conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			}},
+			want: false,
+		},
+		{
+			name: "no PodReady condition returns false",
+			status: v1.PodStatus{Conditions: []v1.PodCondition{
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+			}},
+			want: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isPodStatusReady(tt.status))
+		})
+	}
 }
 
 func TestNewServiceTypes(t *testing.T) {

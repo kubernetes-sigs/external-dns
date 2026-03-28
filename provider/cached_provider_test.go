@@ -93,6 +93,27 @@ func newTestProviderFunc(t *testing.T) *testProviderFunc {
 	}
 }
 
+func TestNewCachedProvider(t *testing.T) {
+	inner := newTestProviderFunc(t)
+	delay := 5 * time.Minute
+	cp := NewCachedProvider(inner, delay)
+	assert.Equal(t, inner, cp.Provider)
+	assert.Equal(t, delay, cp.RefreshDelay)
+	assert.Nil(t, cp.cache)
+	assert.True(t, cp.lastRead.IsZero())
+}
+
+func TestCachedProviderRecordsError(t *testing.T) {
+	testProvider := newTestProviderFunc(t)
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
+		return nil, assert.AnError
+	}
+	cp := NewCachedProvider(testProvider, 0)
+	_, err := cp.Records(t.Context())
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, cp.cache)
+}
+
 func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 	testProvider := newTestProviderFunc(t)
 	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {

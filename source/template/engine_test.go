@@ -113,6 +113,69 @@ func TestTemplateEngineIsConfigured(t *testing.T) {
 	assert.True(t, configured.IsConfigured())
 }
 
+func TestEngine_Combining(t *testing.T) {
+	t.Run("false when not set", func(t *testing.T) {
+		e, err := NewEngine("{{ .Name }}.example.com", "", "", false)
+		require.NoError(t, err)
+		assert.False(t, e.Combining())
+	})
+	t.Run("true when set", func(t *testing.T) {
+		e, err := NewEngine("{{ .Name }}.example.com", "", "", true)
+		require.NoError(t, err)
+		assert.True(t, e.Combining())
+	})
+}
+
+func TestEngine_ExecTarget(t *testing.T) {
+	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+
+	t.Run("returns targets from template", func(t *testing.T) {
+		e, err := NewEngine("", "{{ .Name }}.target.example.com", "", false)
+		require.NoError(t, err)
+		got, err := e.ExecTarget(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"svc.target.example.com"}, got)
+	})
+	t.Run("returns empty when target template is unset", func(t *testing.T) {
+		e, err := NewEngine("", "", "", false)
+		require.NoError(t, err)
+		got, err := e.ExecTarget(obj)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+	t.Run("propagates execution error", func(t *testing.T) {
+		e, err := NewEngine("", "{{index . 0}}", "", false)
+		require.NoError(t, err)
+		_, err = e.ExecTarget(obj)
+		require.Error(t, err)
+	})
+}
+
+func TestEngine_ExecFQDNTarget(t *testing.T) {
+	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+
+	t.Run("returns fqdn:target pairs from template", func(t *testing.T) {
+		e, err := NewEngine("", "", "{{ .Name }}.example.com:1.2.3.4", false)
+		require.NoError(t, err)
+		got, err := e.ExecFQDNTarget(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"svc.example.com:1.2.3.4"}, got)
+	})
+	t.Run("returns empty when fqdn-target template is unset", func(t *testing.T) {
+		e, err := NewEngine("", "", "", false)
+		require.NoError(t, err)
+		got, err := e.ExecFQDNTarget(obj)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+	t.Run("propagates execution error", func(t *testing.T) {
+		e, err := NewEngine("", "", "{{index . 0}}", false)
+		require.NoError(t, err)
+		_, err = e.ExecFQDNTarget(obj)
+		require.Error(t, err)
+	})
+}
+
 func TestExecFQDN(t *testing.T) {
 	tests := []struct {
 		name    string

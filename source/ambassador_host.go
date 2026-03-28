@@ -24,6 +24,7 @@ import (
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -242,7 +243,7 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 		// If here, we have no separator, so the whole string is the service, and
 		// we can assume the default namespace.
 		name := service
-		namespace := "default"
+		namespace := corev1.NamespaceDefault
 
 		return namespace, name, nil
 	} else if len(parts) == 2 {

@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 type mockObjectMetaAccessor struct {
@@ -205,6 +207,13 @@ func TestEndpointsForHostname(t *testing.T) {
 			resource:         "",
 			expected:         []*Endpoint(nil),
 		},
+		{
+			// NewEndpointWithTTL returns nil for labels > 63 chars; the nil is skipped.
+			name:     "hostname with label exceeding 63 characters returns no endpoints",
+			hostname: "this-label-is-way-too-long-and-exceeds-the-sixty-three-character-limit.example.com",
+			targets:  Targets{"192.0.2.1"},
+			expected: []*Endpoint(nil),
+		},
 	}
 
 	for _, tt := range tests {
@@ -212,5 +221,19 @@ func TestEndpointsForHostname(t *testing.T) {
 			result := EndpointsForHostname(tt.hostname, tt.targets, tt.ttl, tt.providerSpecific, tt.setIdentifier, tt.resource)
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func TestAttachRefObject(t *testing.T) {
+	ref := &events.ObjectReference{Kind: "Service", Namespace: "default", Name: "svc"}
+	eps := []*Endpoint{
+		NewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
+		NewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
+	}
+
+	AttachRefObject(eps, ref)
+
+	for _, ep := range eps {
+		assert.Same(t, ref, ep.RefObject())
 	}
 }

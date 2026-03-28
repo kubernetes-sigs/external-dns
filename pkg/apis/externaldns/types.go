@@ -471,9 +471,6 @@ func (cfg *Config) String() string {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
-			if f.Type.Kind() != reflect.String {
-				continue
-			}
 			v := reflect.ValueOf(&temp).Elem().Field(i)
 			if v.String() != "" {
 				v.SetString(passwordMask)

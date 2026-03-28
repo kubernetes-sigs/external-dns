@@ -1840,3 +1840,82 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
 }
+
+func TestNewIngressSource_Errors(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		title   string
+		cfg     *Config
+		ctx     func() context.Context
+		wantErr string
+	}{
+		{
+			title: "getLabelSelector error propagates",
+			cfg: &Config{
+				IngressClassNames: []string{"nginx"},
+				AnnotationFilter:  "=invalid",
+				LabelFilter:       labels.Everything(),
+			},
+			ctx:     t.Context,
+			wantErr: "invalid",
+		},
+		{
+			title: "WaitForCacheSync error propagates",
+			cfg: &Config{
+				LabelFilter: labels.Everything(),
+			},
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return ctx
+			},
+			wantErr: "failed to sync",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			t.Parallel()
+			_, err := NewIngressSource(tt.ctx(), fake.NewClientset(), tt.cfg)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestIngressSource_Errors(t *testing.T) {
+	t.Parallel()
+
+	t.Run("annotations.Filter error propagates", func(t *testing.T) {
+		t.Parallel()
+		sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
+		require.NoError(t, err)
+		// Inject an invalid annotationFilter post-construction to bypass constructor validation.
+		sc.(*ingressSource).annotationFilter = "=invalid"
+		_, err = sc.Endpoints(t.Context())
+		require.Error(t, err)
+	})
+
+	t.Run("endpointsFromTemplate ExecFQDN error propagates", func(t *testing.T) {
+		t.Parallel()
+		// {{index . 0}} parses fine but fails at runtime for *networkv1.Ingress.
+		// An ingress with no rule hosts yields empty ingEndpoints, so CombineWithEndpoints
+		// calls endpointsFromTemplate which calls ExecFQDN.
+		ing := &networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"},
+		}
+		fakeClient := fake.NewClientset(ing)
+		sc, err := NewIngressSource(t.Context(), fakeClient, &Config{
+			TemplateEngine: templatetest.MustEngine(t, "{{index . 0}}", "", "", false),
+			LabelFilter:    labels.Everything(),
+		})
+		require.NoError(t, err)
+		_, err = sc.Endpoints(t.Context())
+		require.Error(t, err)
+	})
+}
+
+func TestIngressSource_AddEventHandler(t *testing.T) {
+	t.Parallel()
+	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	sc.AddEventHandler(t.Context(), func() {})
+}

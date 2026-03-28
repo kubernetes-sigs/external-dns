@@ -19,6 +19,7 @@ package wrappers
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -131,6 +132,16 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+
+	t.Run("wrapped source error is propagated", func(t *testing.T) {
+		t.Parallel()
+		m := testutils.NewMockSource()
+		m.On("Endpoints").Unset()
+		m.On("Endpoints").Return([]*endpoint.Endpoint(nil), assert.AnError)
+		src := NewTargetFilterSource(m, NewMockTargetNetFilter([]string{}))
+		_, err := src.Endpoints(t.Context())
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func TestTargetFilterConcreteTargetFilter(t *testing.T) {
