@@ -826,7 +826,7 @@ type startSyncFakeCache struct {
 	syncOK   bool
 }
 
-func (f *startSyncFakeCache) Start(_ context.Context) error      { return f.startErr }
+func (f *startSyncFakeCache) Start(_ context.Context) error           { return f.startErr }
 func (f *startSyncFakeCache) WaitForCacheSync(_ context.Context) bool { return f.syncOK }
 
 // fakeCRDCache implements crCache.Cache for unit tests.
