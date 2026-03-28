@@ -37,8 +37,6 @@ type TransformOptions struct {
 	removeLastAppliedConfig   bool
 	removeStatusConditions    bool
 	keepAnnotationPrefixes    []string
-	requireNamespace          string
-	requireLabelSelector      labels.Selector
 	requireAnnotationSelector labels.Selector
 }
 
@@ -76,25 +74,10 @@ func TransformKeepAnnotationPrefix(prefixes ...string) func(*TransformOptions) {
 	}
 }
 
-// TransformRequireNamespace drops objects whose namespace does not match the given namespace.
-// An empty namespace is a no-op (all objects are kept).
-func TransformRequireNamespace(namespace string) func(*TransformOptions) {
-	return func(o *TransformOptions) {
-		o.requireNamespace = namespace
-	}
-}
-
-// TransformRequireLabels drops objects whose labels do not match selector from the cache.
-// A nil or empty selector is a no-op (all objects are kept).
-func TransformRequireLabels(selector labels.Selector) func(*TransformOptions) {
-	return func(o *TransformOptions) {
-		o.requireLabelSelector = selector
-	}
-}
-
-// TransformRequireAnnotation drops objects whose annotations do not match selector from
-// the cache. Use annotations.ParseFilter to obtain a selector from an annotation filter
-// string. A nil or empty selector is a no-op (all objects are kept).
+// TransformRequireAnnotation is a local guard against annotation mutation: the Kubernetes API
+// does not support annotation selectors in List/Watch, and a MODIFIED event (not DELETED) is
+// sent when annotations change. Do not use when an indexer handles annotation filtering.
+// A nil or empty selector is a no-op.
 func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions) {
 	return func(o *TransformOptions) {
 		o.requireAnnotationSelector = selector
@@ -132,14 +115,6 @@ func TransformerWithOptions[T interface {
 		entity, ok := obj.(T)
 		if !ok {
 			return nil, nil
-		}
-		if ns := options.requireNamespace; ns != "" && entity.GetNamespace() != ns {
-			return nil, nil
-		}
-		if sel := options.requireLabelSelector; sel != nil && !sel.Empty() {
-			if !sel.Matches(labels.Set(entity.GetLabels())) {
-				return nil, nil
-			}
 		}
 		if sel := options.requireAnnotationSelector; sel != nil && !sel.Empty() {
 			if !sel.Matches(labels.Set(entity.GetAnnotations())) {

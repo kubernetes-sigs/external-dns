@@ -185,73 +185,6 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 	})
 }
 
-func TestTransformRequireNamespace(t *testing.T) {
-	t.Run("matching namespace keeps object", func(t *testing.T) {
-		svc := fakeService() // namespace: ns
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireNamespace("ns"))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-	})
-
-	t.Run("non-matching namespace drops object", func(t *testing.T) {
-		svc := fakeService() // namespace: ns
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireNamespace("other"))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got)
-	})
-
-	t.Run("empty namespace is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireNamespace(""))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-}
-
-func TestTransformRequireLabels(t *testing.T) {
-	t.Run("matching selector keeps object", func(t *testing.T) {
-		svc := fakeService() // labels: env=prod, team=devops
-		sel, err := labels.Parse("env=prod")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireLabels(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-		assert.Equal(t, svc.Name, got.(*corev1.Service).Name)
-	})
-
-	t.Run("non-matching selector drops object", func(t *testing.T) {
-		svc := fakeService() // labels: env=prod, team=devops
-		sel, err := labels.Parse("env=staging")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireLabels(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got)
-	})
-
-	t.Run("nil selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireLabels(nil))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-
-	t.Run("empty selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireLabels(labels.Everything()))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-}
-
 func TestTransformRequireAnnotation(t *testing.T) {
 	t.Run("matching selector keeps object", func(t *testing.T) {
 		svc := fakeService() // annotations include external-dns.alpha.kubernetes.io/hostname=example.com
@@ -290,6 +223,24 @@ func TestTransformRequireAnnotation(t *testing.T) {
 		got, err := transform(svc)
 		require.NoError(t, err)
 		assert.NotNil(t, got)
+	})
+
+	t.Run("drops object after annotation mutation (simulates MODIFIED event)", func(t *testing.T) {
+		sel, err := labels.Parse("external-dns.alpha.kubernetes.io/hostname=example.com")
+		require.NoError(t, err)
+		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
+
+		// First call: annotation matches, object is admitted.
+		svc := fakeService() // annotations include external-dns.alpha.kubernetes.io/hostname=example.com
+		got, err := transform(svc)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+
+		// Annotation mutates — simulate MODIFIED event with new value.
+		svc.Annotations["external-dns.alpha.kubernetes.io/hostname"] = "other.com"
+		got, err = transform(svc)
+		require.NoError(t, err)
+		assert.Nil(t, got, "mutated object must be dropped as a local guard")
 	})
 }
 

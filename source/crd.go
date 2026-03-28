@@ -52,6 +52,7 @@ type crdSource struct {
 	crReader client.Reader
 	crWriter client.Client // status writes
 	informer crcache.Informer
+	listOpts []client.ListOption
 }
 
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
@@ -77,11 +78,11 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 		return nil, err
 	}
 
-	return newCrdSource(ctx, c, crWriter)
+	return newCrdSource(ctx, c, crWriter, cfg.Namespace, cfg.LabelFilter)
 }
 
 // newCrdSource wires a cache and writer into a running crdSource.
-func newCrdSource(ctx context.Context, c crcache.Cache, crWriter client.Client) (*crdSource, error) {
+func newCrdSource(ctx context.Context, c crcache.Cache, crWriter client.Client, namespace string, labelSelector labels.Selector) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
 		return nil, err
@@ -89,10 +90,16 @@ func newCrdSource(ctx context.Context, c crcache.Cache, crWriter client.Client) 
 
 	_, _ = inf.AddEventHandler(informers.DefaultEventHandler())
 
+	listOpts := []client.ListOption{client.InNamespace(namespace)}
+	if labelSelector != nil && !labelSelector.Empty() {
+		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector})
+	}
+
 	cs := &crdSource{
 		crReader: c,
 		crWriter: crWriter,
 		informer: inf,
+		listOpts: listOpts,
 	}
 
 	// TODO: consider solution similar to informerFactory.Start
@@ -116,7 +123,7 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 // cache level via buildCacheOptions; target-format validation is applied here.
 func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	list := &apiv1alpha1.DNSEndpointList{}
-	if err := cs.crReader.List(ctx, list); err != nil {
+	if err := cs.crReader.List(ctx, list, cs.listOpts...); err != nil {
 		return nil, err
 	}
 
@@ -199,15 +206,13 @@ func buildCacheOptions(namespace string, labelFilter labels.Selector, annotation
 	}
 
 	nsMap := map[string]crcache.Config{
-		namespace: {}, // "" == NamespaceAll and this is the server-side filter
+		namespace: {}, // "" == NamespaceAll
 	}
 	byObj := crcache.ByObject{
 		Namespaces: nsMap,
 		Transform: informers.TransformerWithOptions[*apiv1alpha1.DNSEndpoint](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
-			informers.TransformRequireNamespace(namespace),
-			informers.TransformRequireLabels(labelFilter),
 			informers.TransformRequireAnnotation(annotationSelector),
 		),
 	}

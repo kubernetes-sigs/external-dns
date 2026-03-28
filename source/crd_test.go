@@ -107,30 +107,6 @@ func TestBuildCacheOptions(t *testing.T) {
 		require.Nil(t, byObj.Label)
 	})
 
-	t.Run("transform keeps object matching label filter", func(t *testing.T) {
-		sel := labels.SelectorFromSet(labels.Set{"app": "foo"})
-		opts, err := buildCacheOptions("", sel, nil)
-		require.NoError(t, err)
-		byObj := dnsEndpointByObj(t, opts)
-
-		obj := &apiv1alpha1.DNSEndpoint{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"app": "foo"}}}
-		got, err := byObj.Transform(obj)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-	})
-
-	t.Run("transform drops object not matching label filter", func(t *testing.T) {
-		sel := labels.SelectorFromSet(labels.Set{"app": "foo"})
-		opts, err := buildCacheOptions("", sel, nil)
-		require.NoError(t, err)
-		byObj := dnsEndpointByObj(t, opts)
-
-		obj := &apiv1alpha1.DNSEndpoint{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"app": "bar"}}}
-		got, err := byObj.Transform(obj)
-		require.NoError(t, err)
-		require.Nil(t, got)
-	})
-
 	t.Run("transform keeps object matching annotation filter", func(t *testing.T) {
 		opts, err := buildCacheOptions("", nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
 		require.NoError(t, err)
@@ -520,7 +496,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{
 				ti.namespaceFilter, ti.labelSelector, ti.annotationSelector}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
@@ -602,7 +578,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
@@ -715,7 +691,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	}
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(crds.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
 	require.NoError(t, err)
 
 	res, err := cs.Endpoints(t.Context())
@@ -735,7 +711,7 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(elements.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -763,7 +739,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}, 2*time.Second, 10*time.Millisecond)
 
 	fakeCache := newFakeCRDCache(t, informer, fakeCRDCacheFilter{})
-	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client)
+	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil)
 	require.NoError(t, err)
 
 	return watcher, cs
@@ -836,8 +812,9 @@ type fakeCRDCacheFilter struct {
 }
 
 // newFakeCRDCache builds a test cache backed by the given objects.
-// It applies the same admission filtering as the real cache built by buildCacheOptions:
-// namespace scope, label selector, and annotation filter are all applied via the transform.
+// Annotation filtering is applied via the transform (mirroring buildCacheOptions).
+// Namespace and label filtering are applied at read time by the fake client, mirroring
+// the crReader.List options used in Endpoints().
 // When informer is nil a real SharedIndexInformer backed by a FakeControllerSource
 // is created to satisfy newCrdSource's GetInformer call; it is not started.
 func newFakeCRDCache(t *testing.T, informer toolscache.SharedIndexInformer, filter fakeCRDCacheFilter, objs ...client.Object) *fakeCRDCache {
