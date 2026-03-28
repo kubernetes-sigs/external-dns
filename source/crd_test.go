@@ -176,7 +176,7 @@ func testCRDSourceImplementsSource(t *testing.T) {
 func testCRDSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
-		namespaceFilter          string
+		namespaceFilter    string
 		objectNamespace    string
 		endpoints          []*endpoint.Endpoint
 		expectEndpoints    bool
@@ -188,7 +188,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}{
 		{
 			title:           "endpoints within a specific namespace",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -202,7 +202,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "no endpoints within a specific namespace",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "bar",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -215,7 +215,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd with no targets (relies on default-targets)",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -229,7 +229,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with single endpoint",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -243,7 +243,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with multiple endpoints",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -263,7 +263,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:              "valid crd gvk with annotation and non matching annotation filter",
-			namespace:          "foo",
+			namespaceFilter:    "foo",
 			objectNamespace:    "foo",
 			annotations:        map[string]string{"test": "that"},
 			annotationSelector: labels.SelectorFromSet(labels.Set{"test": "filter_something_else"}),
@@ -278,7 +278,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:              "valid crd gvk with annotation and matching annotation filter",
-			namespace:          "foo",
+			namespaceFilter:    "foo",
 			objectNamespace:    "foo",
 			annotations:        map[string]string{"test": "that"},
 			annotationSelector: labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -294,7 +294,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with label and non matching label filter",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "filter_something_else"}),
@@ -309,7 +309,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with label and matching label filter",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -325,7 +325,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create NS record",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -341,7 +341,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create SRV record",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -357,7 +357,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create NAPTR record",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -373,7 +373,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -389,7 +389,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "CNAME target without trailing dot (relative name)",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -405,7 +405,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "illegal target NAPTR",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -420,7 +420,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid target TXT",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -436,7 +436,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "illegal target A",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -451,7 +451,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "MX Record allowing trailing dot in target",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -467,7 +467,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "MX Record without trailing dot in target",
-			namespace:       "foo",
+			namespaceFilter: "foo",
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -483,8 +483,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "provider-specific properties are passed through from DNSEndpoint spec",
-			namespace:       "foo",
-			objectNamespace: "foo",
+			namespaceFilter: "bar",
+			objectNamespace: "bar",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "subdomain.example.org",
@@ -518,7 +518,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{ti.namespace, ti.labelSelector, ti.annotationSelector}, obj)
+			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{
+				ti.namespaceFilter, ti.labelSelector, ti.annotationSelector}, obj)
 			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client)
 			require.NoError(t, err)
 
