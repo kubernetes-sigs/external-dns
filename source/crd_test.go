@@ -18,19 +18,17 @@ package source
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -57,13 +55,6 @@ import (
 var (
 	_ Source = &crdSource{}
 )
-
-type CRDSuite struct {
-	suite.Suite
-}
-
-func (suite *CRDSuite) SetupTest() {
-}
 
 // dnsEndpointByObj extracts the single ByObject entry for DNSEndpoint from
 // cache options. The map key is a pointer so we cannot look it up directly —
@@ -137,14 +128,7 @@ func TestBuildCacheOptions(t *testing.T) {
 }
 
 func TestCRDSource(t *testing.T) {
-	suite.Run(t, new(CRDSuite))
-	t.Run("Interface", testCRDSourceImplementsSource)
 	t.Run("Endpoints", testCRDSourceEndpoints)
-}
-
-// testCRDSourceImplementsSource tests that crdSource is a valid Source.
-func testCRDSourceImplementsSource(t *testing.T) {
-	require.Implements(t, (*Source)(nil), new(crdSource))
 }
 
 // testCRDSourceEndpoints tests various scenarios of using CRD source.
@@ -162,7 +146,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 		objectNamespace    string
 		endpoints          []*endpoint.Endpoint
 		expectEndpoints    bool
-		expectError        bool
 		annotationSelector labels.Selector
 		labelSelector      labels.Selector
 		annotations        map[string]string
@@ -506,10 +489,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
-			if ti.expectError {
-				require.Error(t, err)
-				return
-			}
 			require.NoError(t, err)
 
 			if !ti.expectEndpoints {
@@ -644,75 +623,62 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 	logtest.TestHelperLogContainsWithLogLevel("Could not update ObservedGeneration", log.WarnLevel, hook, t)
 }
 
-func TestCRDSource_AddEventHandler_Add(t *testing.T) {
-	ctx := t.Context()
-	watcher, cs := helperCreateWatcherWithInformer(t)
-
-	var counter atomic.Int32
-	cs.AddEventHandler(ctx, func() {
-		counter.Add(1)
-	})
-
-	obj := &unstructured.Unstructured{}
-	obj.SetName("test")
-
-	watcher.Add(obj)
-
-	require.Eventually(t, func() bool {
-		return counter.Load() == 1
-	}, 2*time.Second, 10*time.Millisecond)
-}
-
-func TestCRDSource_AddEventHandler_Update(t *testing.T) {
-	ctx := t.Context()
-	watcher, cs := helperCreateWatcherWithInformer(t)
-
-	var counter atomic.Int32
-	cs.AddEventHandler(ctx, func() {
-		counter.Add(1)
-	})
-
-	obj := unstructured.Unstructured{}
-	obj.SetName("test")
-	obj.SetNamespace("default")
-	obj.SetUID("9be5b64e-3ee9-11f0-88ee-1eb95c6fd730")
-
-	watcher.Add(&obj)
-
-	require.Eventually(t, func() bool {
-		return len(watcher.Items) == 1
-	}, 2*time.Second, 10*time.Millisecond)
-
-	modified := obj.DeepCopy()
-	modified.SetLabels(map[string]string{"new-label": "this"})
-	watcher.Modify(modified)
-
-	require.Eventually(t, func() bool {
-		return len(watcher.Items) == 1
-	}, 2*time.Second, 10*time.Millisecond)
-
-	require.Eventually(t, func() bool {
-		return counter.Load() == 2
-	}, 2*time.Second, 10*time.Millisecond)
-}
-
-func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
-	ctx := t.Context()
-	watcher, cs := helperCreateWatcherWithInformer(t)
-
-	var counter atomic.Int32
-	cs.AddEventHandler(ctx, func() {
-		counter.Add(1)
-	})
-
-	obj := &unstructured.Unstructured{}
-	obj.SetName("test")
-
-	watcher.Delete(obj)
-
-	require.Eventually(t, func() bool {
-		return counter.Load() == 1
-	}, 2*time.Second, 10*time.Millisecond)
+func TestCRDSource_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		name      string
+		inject    func(t *testing.T, watcher *cachetesting.FakeControllerSource)
+		wantCount int32
+	}{
+		{
+			name: "Add",
+			inject: func(_ *testing.T, watcher *cachetesting.FakeControllerSource) {
+				obj := &unstructured.Unstructured{}
+				obj.SetName("test")
+				watcher.Add(obj)
+			},
+			wantCount: 1,
+		},
+		{
+			name: "Delete",
+			inject: func(_ *testing.T, watcher *cachetesting.FakeControllerSource) {
+				obj := &unstructured.Unstructured{}
+				obj.SetName("test")
+				watcher.Delete(obj)
+			},
+			wantCount: 1,
+		},
+		{
+			name: "Update",
+			inject: func(t *testing.T, watcher *cachetesting.FakeControllerSource) {
+				obj := unstructured.Unstructured{}
+				obj.SetName("test")
+				obj.SetNamespace("default")
+				obj.SetUID("9be5b64e-3ee9-11f0-88ee-1eb95c6fd730")
+				watcher.Add(&obj)
+				require.Eventually(t, func() bool {
+					return len(watcher.Items) == 1
+				}, 2*time.Second, 10*time.Millisecond)
+				modified := obj.DeepCopy()
+				modified.SetLabels(map[string]string{"new-label": "this"})
+				watcher.Modify(modified)
+				require.Eventually(t, func() bool {
+					return len(watcher.Items) == 1
+				}, 2*time.Second, 10*time.Millisecond)
+			},
+			wantCount: 2,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			watcher, cs := helperCreateWatcherWithInformer(t)
+			var counter atomic.Int32
+			cs.AddEventHandler(t.Context(), func() { counter.Add(1) })
+			tc.inject(t, watcher)
+			require.Eventually(t, func() bool {
+				return counter.Load() == tc.wantCount
+			}, 2*time.Second, 10*time.Millisecond)
+		})
+	}
 }
 
 func validateCRDResource(t *testing.T, fakeClient client.Client, namespace, name string) {
