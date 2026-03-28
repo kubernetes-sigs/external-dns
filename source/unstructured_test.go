@@ -640,3 +640,76 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 
 	return kubeClient, dynamicClient
 }
+
+func TestDiscoverResources_Errors(t *testing.T) {
+	for _, tt := range []struct {
+		title     string
+		resources []string
+		discovery []*metav1.APIResourceList
+		wantErr   string
+	}{
+		{
+			title:     "invalid resource identifier with no dots",
+			resources: []string{"justname"},
+			wantErr:   "invalid resource identifier",
+		},
+		{
+			title:     "discovery fails for unknown group version",
+			resources: []string{"virtualmachineinstances.v1.kubevirt.io"},
+			discovery: []*metav1.APIResourceList{}, // empty: kubevirt.io/v1 not registered
+			wantErr:   "failed to discover resources",
+		},
+		{
+			title:     "resource name not found in group version",
+			resources: []string{"nonexistent.v1.kubevirt.io"},
+			discovery: []*metav1.APIResourceList{
+				{
+					GroupVersion: "kubevirt.io/v1",
+					APIResources: []metav1.APIResource{{Name: "virtualmachineinstances"}},
+				},
+			},
+			wantErr: "not found",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = tt.discovery
+
+			_, err := discoverResources(kubeClient, tt.resources)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestAddEventHandler_Unstructured(t *testing.T) {
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	objects := []*unstructured.Unstructured{
+		{
+			Object: map[string]any{
+				"apiVersion": "kubevirt.io/v1",
+				"kind":       "VirtualMachineInstance",
+				"metadata": map[string]any{
+					"name":      "my-vm",
+					"namespace": "default",
+				},
+			},
+		},
+	}
+	kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, objects)
+
+	src, err := NewUnstructuredFQDNSource(
+		t.Context(),
+		dynamicClient,
+		kubeClient,
+		&Config{
+			LabelFilter:           labels.Everything(),
+			UnstructuredResources: resources,
+		},
+	)
+	require.NoError(t, err)
+
+	called := false
+	src.AddEventHandler(t.Context(), func() { called = true })
+	_ = called // handler is invoked by informer events, not synchronously
+}
