@@ -51,7 +51,7 @@ import (
 type crdSource struct {
 	crReader client.Reader
 	crWriter client.Client // status writes
-	informer crCache.Informer
+	informer crcache.Informer
 }
 
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
@@ -66,7 +66,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 		return nil, err
 	}
 
-	c, err := crCache.New(restConfig, opts)
+	c, err := crcache.New(restConfig, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 }
 
 // newCrdSource wires a cache and writer into a running crdSource.
-func newCrdSource(ctx context.Context, c crCache.Cache, crWriter client.Client) (*crdSource, error) {
+func newCrdSource(ctx context.Context, c crcache.Cache, crWriter client.Client) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
 		return nil, err
@@ -192,16 +192,16 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 // buildCacheOptions constructs the controller-runtime cache options for the
 // given namespace and label selector. Extracted so the namespace/label scoping
 // logic can be unit-tested without a running API server.
-func buildCacheOptions(namespace string, labelFilter labels.Selector, annotationSelector labels.Selector) (crCache.Options, error) {
+func buildCacheOptions(namespace string, labelFilter labels.Selector, annotationSelector labels.Selector) (crcache.Options, error) {
 	scheme := runtime.NewScheme()
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
-		return crCache.Options{}, err
+		return crcache.Options{}, err
 	}
 
-	nsMap := map[string]crCache.Config{
+	nsMap := map[string]crcache.Config{
 		namespace: {}, // "" == NamespaceAll
 	}
-	byObj := crCache.ByObject{
+	byObj := crcache.ByObject{
 		Namespaces: nsMap,
 		Transform: informers.TransformerWithOptions[*apiv1alpha1.DNSEndpoint](
 			informers.TransformRemoveManagedFields(),
@@ -214,9 +214,9 @@ func buildCacheOptions(namespace string, labelFilter labels.Selector, annotation
 	if labelFilter != nil && !labelFilter.Empty() {
 		byObj.Label = labelFilter
 	}
-	return crCache.Options{
+	return crcache.Options{
 		Scheme: scheme,
-		ByObject: map[client.Object]crCache.ByObject{
+		ByObject: map[client.Object]crcache.ByObject{
 			&apiv1alpha1.DNSEndpoint{}: byObj,
 		},
 	}, nil
