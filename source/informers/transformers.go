@@ -74,9 +74,9 @@ func TransformKeepAnnotationPrefix(prefixes ...string) func(*TransformOptions) {
 	}
 }
 
-// TransformRequireAnnotation is a local guard against annotation mutation: the Kubernetes API
-// does not support annotation selectors in List/Watch, and a MODIFIED event (not DELETED) is
-// sent when annotations change. Do not use when an indexer handles annotation filtering.
+// TransformRequireAnnotation is a local guard against annotation mutation:
+// the Kubernetes API does not support annotation selectors in List/Watch.
+// Do not use when an indexer handles annotation filtering.
 // A nil or empty selector is a no-op.
 func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions) {
 	return func(o *TransformOptions) {
