@@ -165,7 +165,7 @@ func collectGaugeVecMetrics(metric *prometheus.GaugeVec) string {
 			pairs = append(pairs, fmt.Sprintf("%s=%.0f", v, sum))
 		}
 		sort.Strings(pairs)
-		sb.WriteString(fmt.Sprintf("  %s: %s\n", name, strings.Join(pairs, ", ")))
+		fmt.Fprintf(&sb, "  %s: %s\n", name, strings.Join(pairs, ", "))
 	}
 
 	// Output detailed metrics
@@ -176,7 +176,7 @@ func collectGaugeVecMetrics(metric *prometheus.GaugeVec) string {
 			labels = append(labels, fmt.Sprintf("%s=%q", k, v))
 		}
 		sort.Strings(labels)
-		sb.WriteString(fmt.Sprintf("  {%s} = %.2f\n", strings.Join(labels, ", "), e.value))
+		fmt.Fprintf(&sb, "  {%s} = %.2f\n", strings.Join(labels, ", "), e.value)
 	}
 
 	return sb.String()
