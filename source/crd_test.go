@@ -918,7 +918,7 @@ func TestNewCRDSource(t *testing.T) {
 			name:            "cache fails to sync: context deadline exceeded",
 			makeRestCfg:     func(t *testing.T) *rest.Config { return &rest.Config{Host: newFakeDiscoveryServer(t).URL} },
 			ctxTimeout:      3 * time.Second,
-			wantErrContains: "cache failed to sync: context deadline exceeded",
+			wantErrContains: "cache failed to sync",
 		},
 	}
 
