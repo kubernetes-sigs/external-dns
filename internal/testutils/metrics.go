@@ -72,16 +72,17 @@ func SummaryVecSampleCount(t *testing.T, sv *prometheus.SummaryVec, match promet
 
 // labelsMatch reports whether dm contains all key/value pairs in match (case-insensitive, partial).
 func labelsMatch(dm *dto.Metric, match map[string]string) bool {
-	lbls := make(map[string]string, len(dm.GetLabel()))
+	var matchCount int
 	for _, lp := range dm.GetLabel() {
-		lbls[lp.GetName()] = lp.GetValue()
-	}
-	for k, v := range match {
-		if !strings.EqualFold(lbls[k], v) {
-			return false
+		v, found := match[lp.GetName()]
+		if found {
+			if !strings.EqualFold(v, lp.GetValue()) {
+				return false
+			}
+			matchCount++
 		}
 	}
-	return true
+	return matchCount == len(match)
 }
 
 // collectAll drains all current observations from a Collector into a slice.

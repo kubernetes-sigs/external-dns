@@ -574,8 +574,7 @@ func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
 	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 
-	_, ok := p.client.Transport.(*extdnshttp.CustomRoundTripper)
-	assert.True(t, ok, "webhook provider client should use an instrumented transport")
+	assert.IsType(t, &extdnshttp.CustomRoundTripper{}, p.client.Transport, "webhook provider client should use an instrumented transport")
 }
 
 func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
