@@ -115,7 +115,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	// covers the entire round-trip — writing the request body + waiting for + reading the response
-	client := &http.Client{Timeout: readTimeout + writeTimeout}
+	client := extdnshttp.NewInstrumentedClient(&http.Client{Timeout: readTimeout + writeTimeout})
 
 	// negotiate API information
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
