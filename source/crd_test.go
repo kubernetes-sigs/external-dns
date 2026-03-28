@@ -176,7 +176,7 @@ func testCRDSourceImplementsSource(t *testing.T) {
 func testCRDSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
-		namespace          string
+		namespaceFilter          string
 		objectNamespace    string
 		endpoints          []*endpoint.Endpoint
 		expectEndpoints    bool
