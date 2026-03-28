@@ -620,7 +620,6 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
 
-	// Wrap the writer so Status().Update() always fails.
 	failWriter := interceptor.NewClient(fakeCache.Client.(client.WithWatch), interceptor.Funcs{
 		SubResourceUpdate: func(
 			_ context.Context,
@@ -895,18 +894,15 @@ func TestNewCRDSource(t *testing.T) {
 		wantErrContains  string
 	}{
 		{
-			// annotations.ParseFilter is called before any network I/O; a
-			// syntactically invalid selector string causes an immediate error.
 			name:             "annotation filter parse error",
 			annotationFilter: "!!!invalid",
 			makeRestCfg:      func(_ *testing.T) *rest.Config { return &rest.Config{Host: "http://ignored"} },
 			wantErrContains:  "couldn't parse the selector string",
 		},
 		{
-			// Bad TLS CA data makes rest.HTTPClientFor fail inside
-			// crcache.New.  client.New is never reached because crcache.New returns
-			// first, but it would fail identically — both call rest.HTTPClientFor with
-			// the same restConfig.
+			// crcache.New and client.New share the same restConfig and the same
+			// HTTP-client construction path, so they can't be isolated: any config
+			// that would make client.New fail makes crcache.New fail first.
 			name: "cache construction fails: bad TLS cert",
 			makeRestCfg: func(_ *testing.T) *rest.Config {
 				return &rest.Config{
@@ -917,11 +913,8 @@ func TestNewCRDSource(t *testing.T) {
 			wantErrContains: "unable to load root certificates",
 		},
 		{
-			// crcache.New and client.New succeed against a fake API server
-			// that serves valid discovery responses.  The informer's LIST calls are
-			// answered with 500, so the cache never finishes its initial sync.
-			// WaitForCacheSync returns false when the context deadline is exceeded,
-			// which triggers the ctx.Done() branch in startAndSync.
+			// A fake discovery server lets crcache.New succeed; returning 500 for
+			// all LIST calls prevents the informer from ever syncing.
 			name:            "cache fails to sync: context deadline exceeded",
 			makeRestCfg:     func(t *testing.T) *rest.Config { return &rest.Config{Host: newFakeDiscoveryServer(t).URL} },
 			ctxTimeout:      3 * time.Second,
