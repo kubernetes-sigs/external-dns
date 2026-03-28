@@ -199,7 +199,7 @@ func buildCacheOptions(namespace string, labelFilter labels.Selector, annotation
 	}
 
 	nsMap := map[string]crcache.Config{
-		namespace: {}, // "" == NamespaceAll
+		namespace: {}, // "" == NamespaceAll and this is the server-side filter
 	}
 	byObj := crcache.ByObject{
 		Namespaces: nsMap,

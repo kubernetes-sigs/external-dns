@@ -530,14 +530,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if len(receivedEndpoints) == 0 && !ti.expectEndpoints {
+			if !ti.expectEndpoints {
+				require.Empty(t, receivedEndpoints)
 				return
 			}
 
-			if ti.expectEndpoints {
-				validateCRDResource(t, fakeCache.Client, ti.objectNamespace, "test")
-			}
-
+			validateCRDResource(t, fakeCache.Client, ti.objectNamespace, "test")
 			testutils.ValidateEndpoints(t, receivedEndpoints, ti.endpoints)
 
 			for _, e := range receivedEndpoints {
