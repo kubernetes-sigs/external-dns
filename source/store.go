@@ -295,16 +295,7 @@ type SingletonClientGenerator struct {
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.kubeOnce.Do(func() {
-		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
-			return
-		}
-		p.kubeClient, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			return
-		}
-		log.Infof("Created Kubernetes client %s", config.Host)
+		p.kubeClient, err = kubeclient.NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout, p.QPS, p.Burst)
 	})
 	return p.kubeClient, err
 }

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/flowcontrol"
@@ -34,16 +35,8 @@ import (
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
-// InstrumentedRESTConfig creates a REST config with request instrumentation for monitoring.
-// Adds HTTP transport wrapper for Prometheus metrics collection and request timeout configuration.
-//
-// Metrics: Wraps the transport with pkg/http.NewInstrumentedTransport to collect
-// HTTP request duration metrics for all Kubernetes API calls.
-//
-// Timeout: Applies the specified request timeout to prevent hanging requests.
-//
-// Rate limiting: When qps > 0, overrides the client-go built-in defaults (5 QPS / 10 burst).
-// When qps == 0 (the default), client-go built-in defaults apply.
+// InstrumentedRESTConfig builds a REST config with Prometheus transport metrics, request timeout,
+// and a token-bucket rate limiter. When qps > 0, it overrides the client-go defaults (5 QPS / 10 burst).
 func InstrumentedRESTConfig(
 	kubeConfig, apiServerURL string,
 	requestTimeout time.Duration,
@@ -70,6 +63,20 @@ func InstrumentedRESTConfig(
 		delegate: flowcontrol.NewTokenBucketRateLimiter(config.QPS, config.Burst),
 	}
 	return config, nil
+}
+
+// NewKubeClient creates an instrumented Kubernetes client from the given config parameters.
+func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration, qps, burst int) (kubernetes.Interface, error) {
+	config, err := InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout, qps, burst)
+	if err != nil {
+		return nil, err
+	}
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Created Kubernetes client %s", config.Host)
+	return client, nil
 }
 
 // buildRestConfig returns the REST client configuration for Kubernetes API access.
