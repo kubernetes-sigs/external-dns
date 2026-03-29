@@ -270,7 +270,6 @@ avoid starving higher-priority controllers.
 # Lower limits for a low-priority instance on a busy cluster
 --kube-api-qps=2
 --kube-api-burst=5
-
 ```
 
 When the limit is hit, external-dns logs an error containing
