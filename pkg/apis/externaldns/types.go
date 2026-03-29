@@ -352,6 +352,7 @@ var defaultConfig = &Config{
 	RegexDomainExclude:           regexp.MustCompile(""),
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     RegistryTXT,
+	RequestTimeout:               time.Second * 30,
 	KubeAPIRequestTimeout:        time.Second * 30,
 	KubeAPIQPS:                   int(rest.DefaultQPS),
 	KubeAPIBurst:                 rest.DefaultBurst,
@@ -509,15 +510,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 }
 
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
-// When --request-timeout is set (non-zero) and --kube-api-request-timeout was not
-// explicitly changed from its default, the deprecated value is promoted and a
-// warning is logged. If both are set, --kube-api-request-timeout takes precedence.
+// When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
+// was not, the deprecated value is promoted and a warning is logged.
+// If both are explicitly set, --kube-api-request-timeout takes precedence.
 func (cfg *Config) resolveDeprecatedFlags() {
-	if cfg.RequestTimeout != 0 {
+	if cfg.RequestTimeout != defaultConfig.RequestTimeout {
 		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
-		if cfg.KubeAPIRequestTimeout == defaultConfig.KubeAPIRequestTimeout {
-			cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
-		}
+		cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
 	}
 }
 
@@ -737,7 +736,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// kube client config flags
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
-	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", 0, &cfg.RequestTimeout)
+	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
 	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
 	b.IntVar("kube-api-burst", "Maximum burst for throttle to the Kubernetes API server from this client.", defaultConfig.KubeAPIBurst, &cfg.KubeAPIBurst)

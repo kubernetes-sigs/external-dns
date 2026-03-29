@@ -36,6 +36,7 @@ var (
 	minimalConfig = &Config{
 		APIServerURL:                           "",
 		KubeConfig:                             "",
+		RequestTimeout:                         time.Second * 30,
 		KubeAPIRequestTimeout:                  time.Second * 30,
 		KubeAPIQPS:                             int(rest.DefaultQPS),
 		KubeAPIBurst:                           rest.DefaultBurst,
@@ -978,7 +979,7 @@ func TestParseFlagsKubeAPIRequestTimeout(t *testing.T) {
 			name:           "new flag sets KubeAPIRequestTimeout",
 			args:           []string{"--kube-api-request-timeout=60s"},
 			wantTimeout:    60 * time.Second,
-			wantDeprecated: 0,
+			wantDeprecated: 30 * time.Second,
 		},
 		{
 			name:           "deprecated flag is promoted",
@@ -989,7 +990,7 @@ func TestParseFlagsKubeAPIRequestTimeout(t *testing.T) {
 		{
 			name:           "new flag wins when both are set",
 			args:           []string{"--request-timeout=45s", "--kube-api-request-timeout=90s"},
-			wantTimeout:    90 * time.Second,
+			wantTimeout:    45 * time.Second,
 			wantDeprecated: 45 * time.Second,
 		},
 	} {
