@@ -47,4 +47,6 @@ fi
 
 if $ok; then
     echo "OK: all versions match ($cloudbuild_ver)"
+else
+    exit 1
 fi
