@@ -28,12 +28,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/addressing"
-	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
-	"github.com/cloudflare/cloudflare-go/v5/option"
-	"github.com/cloudflare/cloudflare-go/v5/zones"
+	"github.com/cloudflare/cloudflare-go/v6"
+	"github.com/cloudflare/cloudflare-go/v6/addressing"
+	"github.com/cloudflare/cloudflare-go/v6/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v6/dns"
+	"github.com/cloudflare/cloudflare-go/v6/option"
+	"github.com/cloudflare/cloudflare-go/v6/zones"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 

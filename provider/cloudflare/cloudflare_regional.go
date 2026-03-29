@@ -22,8 +22,8 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/addressing"
+	"github.com/cloudflare/cloudflare-go/v6"
+	"github.com/cloudflare/cloudflare-go/v6/addressing"
 
 	log "github.com/sirupsen/logrus"
 

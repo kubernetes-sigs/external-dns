@@ -23,9 +23,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v6"
+	"github.com/cloudflare/cloudflare-go/v6/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v6/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 

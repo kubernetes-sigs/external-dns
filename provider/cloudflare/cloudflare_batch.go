@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v6"
+	"github.com/cloudflare/cloudflare-go/v6/dns"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -25,7 +25,7 @@ require (
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/civo/civogo v0.7.0
-	github.com/cloudflare/cloudflare-go/v5 v5.1.0
+	github.com/cloudflare/cloudflare-go/v6 v6.8.0
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dnsimple/dnsimple-go v1.7.0
