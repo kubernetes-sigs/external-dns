@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -295,7 +293,12 @@ type SingletonClientGenerator struct {
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.kubeOnce.Do(func() {
-		p.kubeClient, err = kubeclient.NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout, p.QPS, p.Burst)
+		var config *rest.Config
+		config, err = p.RESTConfig()
+		if err != nil {
+			return
+		}
+		p.kubeClient, err = kubeclient.NewKubeClient(config)
 	})
 	return p.kubeClient, err
 }
@@ -333,7 +336,12 @@ func (p *SingletonClientGenerator) GatewayClient() (gateway.Interface, error) {
 func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) {
 	var err error
 	p.istioOnce.Do(func() {
-		p.istioClient, err = NewIstioClient(p.KubeConfig, p.APIServerURL)
+		var config *rest.Config
+		config, err = p.RESTConfig()
+		if err != nil {
+			return
+		}
+		p.istioClient, err = NewIstioClient(config)
 	})
 	return p.istioClient, err
 }
@@ -696,26 +704,8 @@ func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config
 	return NewUnstructuredFQDNSource(ctx, dynamicClient, kubeClient, cfg)
 }
 
-// NewIstioClient returns a new Istio client object. It uses the configured
-// KubeConfig attribute to connect to the cluster. If KubeConfig isn't provided
-// it defaults to using the recommended default.
-// NB: Istio controls the creation of the underlying Kubernetes client, so we
-// have no ability to tack on transport wrappers (e.g., Prometheus request
-// wrappers) to the client's config at this level. Furthermore, the Istio client
-// constructor does not expose the ability to override the Kubernetes API server endpoint,
-// so the apiServerURL config attribute has no effect.
-func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Clientset, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	restCfg, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
+// NewIstioClient returns a new Istio client object from the given REST config.
+func NewIstioClient(restCfg *rest.Config) (*istioclient.Clientset, error) {
 	ic, err := istioclient.NewForConfig(restCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create istio client: %w", err)

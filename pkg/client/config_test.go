@@ -45,6 +45,18 @@ func TestGetRestConfig_WithKubeConfig(t *testing.T) {
 	assert.Equal(t, svr.URL, config.Host)
 }
 
+func TestNewKubeClient(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer svr.Close()
+
+	config, err := InstrumentedRESTConfig(writeKubeConfig(t, svr.URL), "", 30*time.Second, 0, 0)
+	require.NoError(t, err)
+
+	client, err := NewKubeClient(config)
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+}
+
 func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()

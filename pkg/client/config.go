@@ -65,12 +65,8 @@ func InstrumentedRESTConfig(
 	return config, nil
 }
 
-// NewKubeClient creates an instrumented Kubernetes client from the given config parameters.
-func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration, qps, burst int) (kubernetes.Interface, error) {
-	config, err := InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout, qps, burst)
-	if err != nil {
-		return nil, err
-	}
+// NewKubeClient creates a Kubernetes client from the given REST config.
+func NewKubeClient(config *rest.Config) (kubernetes.Interface, error) {
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
