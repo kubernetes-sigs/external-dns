@@ -1925,3 +1925,32 @@ func TestNewPTREndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpointKey_String(t *testing.T) {
+	tests := []struct {
+		name string
+		key  EndpointKey
+		want string
+	}{
+		{
+			name: "empty key",
+			key:  EndpointKey{},
+			want: `{"" "" "" "0" ""}`},
+		{
+			name: "complete key",
+			key: EndpointKey{
+				DNSName:       "example.com",
+				RecordType:    RecordTypeA,
+				SetIdentifier: "test-set",
+				RecordTTL:     300,
+				Target:        "127.0.0.1",
+			},
+			want: `{"example.com" "A" "test-set" "300" "127.0.0.1"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.key.String())
+		})
+	}
+}
