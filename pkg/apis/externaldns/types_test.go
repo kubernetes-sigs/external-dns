@@ -1004,8 +1004,6 @@ func TestParseFlagsKubeAPIRequestTimeout(t *testing.T) {
 }
 
 func TestParseFlagsKubeAPIRateLimit(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "")
-
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags([]string{
 		"--provider=aws",
@@ -1019,8 +1017,6 @@ func TestParseFlagsKubeAPIRateLimit(t *testing.T) {
 }
 
 func TestParseFlagsKubeAPIRateLimitDefaults(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "")
-
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags([]string{
 		"--provider=aws",
