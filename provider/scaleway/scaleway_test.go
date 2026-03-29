@@ -402,7 +402,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("3.3.3.3"),
+							Data: new("3.3.3.3"),
 							Name: "me",
 							Type: domain.RecordTypeA,
 						},
@@ -411,7 +411,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("1.1.1.1"),
+							Data: new("1.1.1.1"),
 							Name: "here",
 							Type: domain.RecordTypeA,
 						},
@@ -420,7 +420,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("1.1.1.2"),
+							Data: new("1.1.1.2"),
 							Name: "here",
 							Type: domain.RecordTypeA,
 						},
@@ -461,7 +461,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("1.1.1.1"),
+							Data: new("1.1.1.1"),
 							Name: "here.is.my",
 							Type: domain.RecordTypeA,
 						},
@@ -470,7 +470,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("4.4.4.4"),
+							Data: new("4.4.4.4"),
 							Name: "my",
 							Type: domain.RecordTypeA,
 						},
@@ -479,7 +479,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				{
 					Delete: &domain.RecordChangeDelete{
 						IDFields: &domain.RecordIdentifier{
-							Data: scw.StringPtr("5.5.5.5"),
+							Data: new("5.5.5.5"),
 							Name: "my",
 							Type: domain.RecordTypeA,
 						},

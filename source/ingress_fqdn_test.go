@@ -46,7 +46,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("my-ingress"),
+						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "example.org",
@@ -62,7 +62,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 														},
 													},
 												},
-												PathType: testutils.ToPtr(networkv1.PathTypePrefix),
+												PathType: new(networkv1.PathTypePrefix),
 												Path:     "/",
 											},
 										},
@@ -95,7 +95,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("my-ingress"),
+						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{Host: "example.org"},
 						},
@@ -126,7 +126,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("my-ingress"),
+						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{Host: "example.org"},
 						},
@@ -155,7 +155,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("my-ingress"),
+						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "example.org",
@@ -188,7 +188,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("ingress-with-override"),
+						IngressClassName: new("ingress-with-override"),
 						Rules: []networkv1.IngressRule{
 							{Host: "foo.bar.com"},
 							{Host: "bar.bar.com"},
@@ -226,7 +226,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.ToPtr("ingress-with-override"),
+						IngressClassName: new("ingress-with-override"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "foo.bar.com",

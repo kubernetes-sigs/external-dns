@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -30,8 +31,10 @@ import (
 	discoveryfake "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/types"
@@ -639,4 +642,234 @@ func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*u
 	}
 
 	return kubeClient, dynamicClient
+}
+
+func TestDiscoverResources_Errors(t *testing.T) {
+	for _, tt := range []struct {
+		title     string
+		resources []string
+		discovery []*metav1.APIResourceList
+		wantErr   string
+	}{
+		{
+			title:     "invalid resource identifier with no dots",
+			resources: []string{"justname"},
+			wantErr:   "invalid resource identifier",
+		},
+		{
+			title:     "discovery fails for unknown group version",
+			resources: []string{"virtualmachineinstances.v1.kubevirt.io"},
+			discovery: []*metav1.APIResourceList{}, // empty: kubevirt.io/v1 not registered
+			wantErr:   "failed to discover resources",
+		},
+		{
+			title:     "resource name not found in group version",
+			resources: []string{"nonexistent.v1.kubevirt.io"},
+			discovery: []*metav1.APIResourceList{
+				{
+					GroupVersion: "kubevirt.io/v1",
+					APIResources: []metav1.APIResource{{Name: "virtualmachineinstances"}},
+				},
+			},
+			wantErr: "not found",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = tt.discovery
+
+			_, err := discoverResources(kubeClient, tt.resources)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestAddEventHandler_Unstructured(t *testing.T) {
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	objects := []*unstructured.Unstructured{
+		{
+			Object: map[string]any{
+				"apiVersion": "kubevirt.io/v1",
+				"kind":       "VirtualMachineInstance",
+				"metadata": map[string]any{
+					"name":      "my-vm",
+					"namespace": "default",
+				},
+			},
+		},
+	}
+	kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, objects)
+
+	src, err := NewUnstructuredFQDNSource(
+		t.Context(),
+		dynamicClient,
+		kubeClient,
+		&Config{
+			LabelFilter:           labels.Everything(),
+			UnstructuredResources: resources,
+		},
+	)
+	require.NoError(t, err)
+
+	src.AddEventHandler(t.Context(), func() {})
+}
+
+func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
+	for _, tt := range []struct {
+		title         string
+		resources     []string
+		discovery     []*metav1.APIResourceList
+		dynamicClient dynamic.Interface
+		ctx           func() context.Context
+		wantErr       string
+	}{
+		{
+			title:         "discoverResources error propagates",
+			resources:     []string{"virtualmachineinstances.v1.kubevirt.io"},
+			discovery:     nil, // empty: group/version unknown → discovery fails
+			dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), nil),
+			ctx:           t.Context,
+			wantErr:       "failed to discover",
+		},
+		{
+			title:     "WaitForDynamicCacheSync error propagates",
+			resources: []string{"virtualmachineinstances.v1.kubevirt.io"},
+			discovery: []*metav1.APIResourceList{
+				{
+					GroupVersion: "kubevirt.io/v1",
+					APIResources: []metav1.APIResource{{
+						Name: "virtualmachineinstances", Namespaced: true, Kind: "VirtualMachineInstance",
+					}},
+				},
+			},
+			// Empty scheme: List always returns "no kind registered", so HasSynced() stays false.
+			// Pre-cancelled context: WaitForCacheSync sees a closed stopCh and returns immediately.
+			dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), nil),
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return ctx
+			},
+			wantErr: "failed to sync",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = tt.discovery
+
+			_, err := NewUnstructuredFQDNSource(tt.ctx(), tt.dynamicClient, kubeClient, &Config{
+				LabelFilter:           labels.Everything(),
+				UnstructuredResources: tt.resources,
+			})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+// fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
+// causing GetByKey[*unstructured.Unstructured] to fail the type assertion.
+type fakeTestIndexer struct {
+	cache.Indexer // nil embed; only overridden methods are called in tests
+}
+
+func (f *fakeTestIndexer) ListIndexFuncValues(_ string) []string {
+	return []string{"default/my-vm"}
+}
+
+func (f *fakeTestIndexer) GetByKey(_ string) (any, bool, error) {
+	return "not-an-unstructured-object", true, nil
+}
+
+// fakeTestSharedIndexInformer wraps a cache.SharedIndexInformer with a custom indexer.
+type fakeTestSharedIndexInformer struct {
+	cache.SharedIndexInformer // nil embed
+	indexer                   cache.Indexer
+}
+
+func (f *fakeTestSharedIndexInformer) GetIndexer() cache.Indexer { return f.indexer }
+
+// fakeTestGenericInformer implements kubeinformers.GenericInformer with a custom shared informer.
+type fakeTestGenericInformer struct {
+	inf cache.SharedIndexInformer
+}
+
+func (f *fakeTestGenericInformer) Informer() cache.SharedIndexInformer { return f.inf }
+func (f *fakeTestGenericInformer) Lister() cache.GenericLister         { panic("not needed") }
+
+// TestEndpointsFromInformer_GetByKeyError verifies that a GetByKey type-assertion failure
+// causes the object to be skipped (continue) rather than returning an error.
+func TestEndpointsFromInformer_GetByKeyError(t *testing.T) {
+	idx := &fakeTestIndexer{}
+	inf := &fakeTestSharedIndexInformer{indexer: idx}
+
+	src := &unstructuredSource{
+		informers: []kubeinformers.GenericInformer{
+			&fakeTestGenericInformer{inf: inf},
+		},
+	}
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, endpoints)
+}
+
+// TestUnstructuredSource_TemplateErrors verifies that template execution errors propagate
+// correctly through endpointsFromTemplate/endpointsFromFQDNTargetTemplate → endpointsFromInformer → Endpoints.
+// {{index . 0}} reliably fails at runtime for *unstructuredWrapper (can't index a struct).
+func TestUnstructuredSource_TemplateErrors(t *testing.T) {
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	objects := []*unstructured.Unstructured{
+		{
+			Object: map[string]any{
+				"apiVersion": "kubevirt.io/v1",
+				"kind":       "VirtualMachineInstance",
+				"metadata": map[string]any{
+					"name":      "my-vm",
+					"namespace": "default",
+				},
+			},
+		},
+	}
+
+	for _, tt := range []struct {
+		title              string
+		fqdnTemplate       string
+		targetTemplate     string
+		fqdnTargetTemplate string
+	}{
+		{
+			title:        "ExecFQDN runtime error propagates to Endpoints",
+			fqdnTemplate: "{{index . 0}}",
+		},
+		{
+			title:          "ExecTarget runtime error propagates to Endpoints",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "{{index . 0}}",
+		},
+		{
+			title:              "ExecFQDNTarget runtime error propagates to Endpoints",
+			fqdnTargetTemplate: "{{index . 0}}",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, objects)
+
+			src, err := NewUnstructuredFQDNSource(
+				t.Context(),
+				dynamicClient,
+				kubeClient,
+				&Config{
+					LabelFilter:           labels.Everything(),
+					UnstructuredResources: resources,
+					TemplateEngine:        templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, false),
+				},
+			)
+			require.NoError(t, err)
+
+			_, err = src.Endpoints(t.Context())
+			require.Error(t, err)
+		})
+	}
 }

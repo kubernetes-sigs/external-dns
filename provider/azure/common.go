@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 )
@@ -41,7 +40,7 @@ func parseMxTarget[T dns.MxRecord | privatedns.MxRecord](mxTarget string) (T, er
 	}
 
 	return T{
-		Preference: to.Ptr(int32(preference)),
-		Exchange:   to.Ptr(exchange),
+		Preference: new(int32(preference)),
+		Exchange:   new(exchange),
 	}, nil
 }

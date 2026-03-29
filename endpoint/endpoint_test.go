@@ -155,6 +155,62 @@ func TestSameFailures(t *testing.T) {
 	}
 }
 
+func TestEndpoint_Describe(t *testing.T) {
+	ep := &Endpoint{
+		DNSName:       "example.com",
+		SetIdentifier: "owner-1",
+		RecordType:    RecordTypeA,
+		Targets:       Targets{"1.2.3.4", "5.6.7.8"},
+	}
+	assert.Equal(t, "record:example.com, owner:owner-1, type:A, targets:1.2.3.4, 5.6.7.8", ep.Describe())
+}
+
+func TestEndpoint_Getters(t *testing.T) {
+	ep := &Endpoint{
+		DNSName:    "example.com",
+		RecordType: RecordTypeA,
+		RecordTTL:  TTL(300),
+		Targets:    Targets{"1.2.3.4", "5.6.7.8"},
+	}
+	t.Run("GetDNSName", func(t *testing.T) {
+		assert.Equal(t, "example.com", ep.GetDNSName())
+	})
+	t.Run("GetRecordType", func(t *testing.T) {
+		assert.Equal(t, RecordTypeA, ep.GetRecordType())
+	})
+	t.Run("GetRecordTTL", func(t *testing.T) {
+		assert.Equal(t, int64(300), ep.GetRecordTTL())
+	})
+	t.Run("GetTargets", func(t *testing.T) {
+		assert.Equal(t, []string{"1.2.3.4", "5.6.7.8"}, ep.GetTargets())
+	})
+}
+
+func TestEndpoint_WithLabel(t *testing.T) {
+	t.Run("nil Labels map is initialised", func(t *testing.T) {
+		ep := &Endpoint{} // Labels is nil
+		result := ep.WithLabel("key", "value")
+		assert.Equal(t, "value", ep.Labels["key"])
+		assert.Same(t, ep, result)
+	})
+
+	t.Run("existing Labels map is updated", func(t *testing.T) {
+		ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4") // Labels already initialised
+		ep.WithLabel("key", "value")
+		assert.Equal(t, "value", ep.Labels["key"])
+	})
+}
+
+func TestSame_ParseErrorLogged(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+	// Two different hostnames: neither parses as IP, triggering both err != nil branches.
+	result := Targets{"a.example.com"}.Same(Targets{"b.example.com"})
+
+	assert.False(t, result)
+	logtest.TestHelperLogContains("Couldn't parse", hook, t)
+}
+
 func TestIsLess(t *testing.T) {
 	testsA := []Targets{
 		{""},
@@ -1081,6 +1137,13 @@ func TestNewMXTarget(t *testing.T) {
 	}
 }
 
+func TestMXTarget_Getters(t *testing.T) {
+	m, err := NewMXRecord("10 mail.example.com")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(10), *m.GetPriority())
+	assert.Equal(t, "mail.example.com", *m.GetHost())
+}
+
 func TestCheckEndpoint(t *testing.T) {
 	tests := []struct {
 		description string
@@ -1922,6 +1985,35 @@ func TestNewPTREndpoint(t *testing.T) {
 			assert.Equal(t, RecordTypePTR, ep.RecordType)
 			assert.Equal(t, tt.ttl, ep.RecordTTL)
 			assert.Equal(t, Targets(tt.hostnames), ep.Targets)
+		})
+	}
+}
+
+func TestEndpointKey_String(t *testing.T) {
+	tests := []struct {
+		name string
+		key  EndpointKey
+		want string
+	}{
+		{
+			name: "empty key",
+			key:  EndpointKey{},
+			want: `{"" "" "" "0" ""}`},
+		{
+			name: "complete key",
+			key: EndpointKey{
+				DNSName:       "example.com",
+				RecordType:    RecordTypeA,
+				SetIdentifier: "test-set",
+				RecordTTL:     300,
+				Target:        "127.0.0.1",
+			},
+			want: `{"example.com" "A" "test-set" "300" "127.0.0.1"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.key.String())
 		})
 	}
 }

@@ -372,7 +372,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		if err != nil {
 			return fmt.Errorf("deleting dynamodb record: %w", err)
 		}
-		return fmt.Errorf("deleting dynamodb record %q: %s: %s", record, response.Error.Code, *response.Error.Message)
+		return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
 	})
 }
 

@@ -98,14 +98,17 @@ func NewTargets(target ...string) Targets {
 	return set.New(target...).SortedList()
 }
 
+// String returns the targets joined by semicolons.
 func (t Targets) String() string {
 	return strings.Join(t, ";")
 }
 
+// Len returns the number of targets, satisfying sort.Interface.
 func (t Targets) Len() int {
 	return len(t)
 }
 
+// Less reports whether target i sorts before target j, using IP-aware comparison for valid addresses.
 func (t Targets) Less(i, j int) bool {
 	ipi, err := netip.ParseAddr(t[i])
 	if err != nil {
@@ -120,6 +123,7 @@ func (t Targets) Less(i, j int) bool {
 	return ipi.String() < ipj.String()
 }
 
+// Swap exchanges targets at positions i and j, satisfying sort.Interface.
 func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
@@ -234,6 +238,10 @@ type EndpointKey struct {
 	SetIdentifier string
 	RecordTTL     TTL
 	Target        string
+}
+
+func (ep EndpointKey) String() string {
+	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
 }
 
 type ObjectRef = events.ObjectReference
@@ -422,6 +430,7 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 	return e
 }
 
+// RefObject returns the Kubernetes object reference associated with this endpoint.
 func (e *Endpoint) RefObject() *events.ObjectReference {
 	return e.refObject
 }
@@ -466,10 +475,12 @@ func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, err
 	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
 }
 
+// String returns a human-readable representation of the endpoint in zone-file style.
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
+// Describe returns a compact summary of the endpoint suitable for logging.
 func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
@@ -597,6 +608,7 @@ func (m *MXTarget) GetHost() *string {
 	return &m.host
 }
 
+// ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
 func (t Targets) ValidateIPRecord(recordType string) bool {
 	for _, target := range t {
 		addr, err := netip.ParseAddr(target)
@@ -616,6 +628,7 @@ func (t Targets) ValidateIPRecord(recordType string) bool {
 	return true
 }
 
+// ValidateMXRecord reports whether all targets are valid MX record values (priority + host).
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
 		_, err := NewMXRecord(target)
@@ -628,6 +641,7 @@ func (t Targets) ValidateMXRecord() bool {
 	return true
 }
 
+// ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
 		// SRV records must have a priority, weight, a port value and a target e.g. "10 5 5060 example.com."

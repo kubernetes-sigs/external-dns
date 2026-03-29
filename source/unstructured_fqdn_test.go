@@ -820,6 +820,66 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
+		{
+			title: "fqdnTargetTemplate pair without colon separator is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: "nocolonseparator",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "fqdnTargetTemplate pair with empty host is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: ":10.0.0.1",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "fqdnTargetTemplate pair with empty target is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: "host.example.com:",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)

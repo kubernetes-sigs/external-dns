@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
 
@@ -122,8 +121,8 @@ func (client *mockRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, 
 
 func createMockZone(zone string, id string) *dns.Zone {
 	return &dns.Zone{
-		ID:   to.Ptr(id),
-		Name: to.Ptr(zone),
+		ID:   new(id),
+		Name: new(zone),
 	}
 }
 
@@ -131,11 +130,11 @@ func aRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProper
 	aRecords := make([]*dns.ARecord, len(values))
 	for i, value := range values {
 		aRecords[i] = &dns.ARecord{
-			IPv4Address: to.Ptr(value),
+			IPv4Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:      to.Ptr(ttl),
+		TTL:      new(ttl),
 		ARecords: aRecords,
 	}
 }
@@ -144,20 +143,20 @@ func aaaaRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPro
 	aaaaRecords := make([]*dns.AaaaRecord, len(values))
 	for i, value := range values {
 		aaaaRecords[i] = &dns.AaaaRecord{
-			IPv6Address: to.Ptr(value),
+			IPv6Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:         to.Ptr(ttl),
+		TTL:         new(ttl),
 		AaaaRecords: aaaaRecords,
 	}
 }
 
 func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		CnameRecord: &dns.CnameRecord{
-			Cname: to.Ptr(values[0]),
+			Cname: new(values[0]),
 		},
 	}
 }
@@ -169,7 +168,7 @@ func mxRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 		mxRecords[i] = &mxRecord
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		MxRecords: mxRecords,
 	}
 }
@@ -178,21 +177,21 @@ func nsRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 	nsRecords := make([]*dns.NsRecord, len(values))
 	for i, value := range values {
 		nsRecords[i] = &dns.NsRecord{
-			Nsdname: to.Ptr(value),
+			Nsdname: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		NsRecords: nsRecords,
 	}
 }
 
 func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		TxtRecords: []*dns.TxtRecord{
 			{
-				Value: []*string{to.Ptr(values[0])},
+				Value: []*string{new(values[0])},
 			},
 		},
 	}
@@ -200,7 +199,7 @@ func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 
 func othersRecordSetPropertiesGetter(_ []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 	}
 }
 
@@ -232,8 +231,8 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = othersRecordSetPropertiesGetter
 	}
 	return &dns.RecordSet{
-		Name:       to.Ptr(name),
-		Type:       to.Ptr("Microsoft.Network/dnszones/" + recordType),
+		Name:       new(name),
+		Type:       new("Microsoft.Network/dnszones/" + recordType),
 		Properties: getterFunc(values, ttl),
 	}
 }

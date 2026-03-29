@@ -33,8 +33,6 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
-
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
@@ -138,7 +136,7 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 				Name: podName,
 			},
 			Conditions: discoveryv1.EndpointConditions{
-				Ready: testutils.ToPtr(true),
+				Ready: new(true),
 			},
 		})
 	}

@@ -1802,7 +1802,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				ClusterIPs:            []string{"10.118.223.3"},
 				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "http2",
@@ -1823,7 +1823,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					Ingress: []v1.LoadBalancerIngress{
 						{
 							IP:     "34.66.66.77",
-							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+							IPMode: new(v1.LoadBalancerIPModeVIP),
 						},
 					},
 				},
@@ -1844,7 +1844,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				ClusterIPs:            []string{"10.118.220.130"},
 				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
 				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
-				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
 				Ports: []v1.ServicePort{
 					{
 						Name:       "upd-dns",
@@ -1865,7 +1865,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					Ingress: []v1.LoadBalancerIngress{
 						{
 							IP:     "34.66.66.77",
-							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+							IPMode: new(v1.LoadBalancerIPModeVIP),
 						},
 					},
 				},

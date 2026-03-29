@@ -513,6 +513,23 @@ func (c *customObject) DeepCopyObject() runtime.Object {
 	}
 }
 
+func TestEvent_Accessors(t *testing.T) {
+	ref := &ObjectReference{Kind: "Pod", Namespace: "default", Name: "nginx"}
+	ev := NewEvent(ref, "msg", ActionDelete, RecordDeleted)
+
+	assert.Equal(t, ActionDelete, ev.Action())
+	assert.Equal(t, RecordDeleted, ev.Reason())
+	assert.Equal(t, EventTypeNormal, ev.EventType())
+}
+
+func TestWithDryRun(t *testing.T) {
+	cfg := NewConfig(WithDryRun(true))
+	assert.True(t, cfg.dryRun)
+
+	cfg = NewConfig(WithDryRun(false))
+	assert.False(t, cfg.dryRun)
+}
+
 func TestNewObjectReference_ReflectionFallback(t *testing.T) {
 	// Test that when object type is not in scheme, reflection is used to get Kind
 	obj := &customObject{

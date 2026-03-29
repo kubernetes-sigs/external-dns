@@ -36,14 +36,10 @@ func SuitableType(target string) string {
 	if err != nil {
 		return RecordTypeCNAME
 	}
-	switch {
-	case ip.Is4():
+	if ip.Is4() {
 		return RecordTypeA
-	case ip.Is6():
-		return RecordTypeAAAA
-	default:
-		return RecordTypeCNAME
 	}
+	return RecordTypeAAAA
 }
 
 // HasNoEmptyEndpoints checks if the endpoint list is empty and logs

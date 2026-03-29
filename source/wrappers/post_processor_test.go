@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -202,6 +203,14 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+
+	t.Run("wrapped source error is propagated", func(t *testing.T) {
+		ms := new(testutils.MockSource)
+		ms.On("Endpoints").Return([]*endpoint.Endpoint(nil), assert.AnError)
+		src := NewPostProcessor(ms, WithTTL(time.Second))
+		_, err := src.Endpoints(t.Context())
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
