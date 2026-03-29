@@ -19,10 +19,11 @@ package validation
 import (
 	"testing"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/rest"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -104,11 +105,11 @@ func TestValidateFlags(t *testing.T) {
 			burst   int
 			wantErr bool
 		}{
-			{name: "zero QPS and burst (use defaults)", qps: 0, burst: 0, wantErr: false},
 			{name: "positive QPS and burst", qps: 10, burst: 20, wantErr: false},
-			{name: "negative QPS", qps: -1, burst: 0, wantErr: true},
-			{name: "negative burst", qps: 0, burst: -1, wantErr: true},
-			{name: "both negative", qps: -1, burst: -1, wantErr: true},
+			{name: "zero QPS", qps: 0, burst: 10, wantErr: true},
+			{name: "zero burst", qps: 5, burst: 0, wantErr: true},
+			{name: "negative QPS", qps: -1, burst: 10, wantErr: true},
+			{name: "negative burst", qps: 5, burst: -1, wantErr: true},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := newValidConfig(t)
@@ -130,6 +131,8 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "test-provider"
+	cfg.KubeAPIQPS = int(rest.DefaultQPS)
+	cfg.KubeAPIBurst = rest.DefaultBurst
 
 	require.NoError(t, ValidateConfig(cfg))
 
@@ -181,6 +184,8 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.Provider = "rfc2136"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 50
+	cfg.KubeAPIQPS = int(rest.DefaultQPS)
+	cfg.KubeAPIBurst = rest.DefaultBurst
 
 	err := ValidateConfig(cfg)
 
@@ -298,6 +303,8 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 			RFC2136KerberosPassword: "test-pass",
 			RFC2136MinTTL:           3600,
 			RFC2136BatchChangeSize:  50,
+			KubeAPIQPS:              int(rest.DefaultQPS),
+			KubeAPIBurst:            rest.DefaultBurst,
 		},
 	}
 
@@ -374,13 +381,16 @@ func TestValidateGoodAkamaiConfig(t *testing.T) {
 			AkamaiClientSecret:          "test-secret",
 			AkamaiAccessToken:           "test-access-token",
 			AkamaiEdgercPath:            "/path/to/edgerc",
+			KubeAPIQPS:                  int(rest.DefaultQPS),
+			KubeAPIBurst:                rest.DefaultBurst,
 		},
 		{
 			LogFormat:        "json",
 			Sources:          []string{"test-source"},
 			Provider:         "akamai",
 			AnnotationPrefix: "external-dns.alpha.kubernetes.io/",
-			// All Akamai fields can be empty if AkamaiEdgercPath is not specified
+			KubeAPIQPS:       int(rest.DefaultQPS),
+			KubeAPIBurst:     rest.DefaultBurst,
 		},
 	}
 
@@ -412,6 +422,8 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 	cfg.Provider = "azure"
 	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 	cfg.AzureConfigFile = "/path/to/azure.json"
+	cfg.KubeAPIQPS = int(rest.DefaultQPS)
+	cfg.KubeAPIBurst = rest.DefaultBurst
 
 	err := ValidateConfig(cfg)
 

@@ -271,9 +271,6 @@ avoid starving higher-priority controllers.
 --kube-api-qps=2
 --kube-api-burst=5
 
-# Fractional QPS — one request every two seconds
---kube-api-qps=0.5
---kube-api-burst=1
 ```
 
 When the limit is hit, external-dns logs an error containing

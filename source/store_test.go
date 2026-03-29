@@ -394,58 +394,26 @@ func TestNewSourceConfig(t *testing.T) {
 	}
 }
 
-func TestNewSourceConfig_PropagatesKubeAPIRateLimit(t *testing.T) {
-	cfg := &externaldns.Config{
-		KubeAPIQPS:   20,
-		KubeAPIBurst: 40,
-	}
-	got, err := NewSourceConfig(cfg)
-	require.NoError(t, err)
-	assert.Equal(t, 20, got.KubeAPIQPS)
-	assert.Equal(t, 40, got.KubeAPIBurst)
-}
+func TestKubeAPIRateLimitPropagation(t *testing.T) {
+	t.Run("NewSourceConfig propagates QPS and burst", func(t *testing.T) {
+		cfg := &externaldns.Config{
+			KubeAPIQPS:   20,
+			KubeAPIBurst: 40,
+		}
+		got, err := NewSourceConfig(cfg)
+		require.NoError(t, err)
+		assert.Equal(t, 20, got.KubeAPIQPS)
+		assert.Equal(t, 40, got.KubeAPIBurst)
+	})
 
-func TestSingletonClientGenerator_QPSAndBurstPropagation(t *testing.T) {
-	testCases := []struct {
-		name  string
-		qps   int
-		burst int
-	}{
-		{name: "non-zero QPS and burst", qps: 20, burst: 40},
-		{name: "zero QPS and burst (defaults)", qps: 0, burst: 0},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			gen := &SingletonClientGenerator{
-				KubeConfig:     "",
-				APIServerURL:   "",
-				RequestTimeout: 30 * time.Second,
-				QPS:            tc.qps,
-				Burst:          tc.burst,
-			}
-
-			assert.Equal(t, tc.qps, gen.QPS)
-			assert.Equal(t, tc.burst, gen.Burst)
-
-			config, err := gen.RESTConfig()
-			if err == nil {
-				require.NotNil(t, config)
-				assert.Equal(t, tc.qps, int(config.QPS))
-				assert.Equal(t, tc.burst, config.Burst)
-			}
-		})
-	}
-}
-
-func TestConfig_ClientGenerator_PropagatesKubeAPIRateLimit(t *testing.T) {
-	cfg := &Config{
-		KubeAPIQPS:   15,
-		KubeAPIBurst: 30,
-	}
-	gen := cfg.ClientGenerator()
-	scg, ok := gen.(*SingletonClientGenerator)
-	require.True(t, ok, "ClientGenerator should return *SingletonClientGenerator")
-	assert.Equal(t, 15, scg.QPS)
-	assert.Equal(t, 30, scg.Burst)
+	t.Run("ClientGenerator wires QPS and burst into SingletonClientGenerator", func(t *testing.T) {
+		cfg := &Config{
+			KubeAPIQPS:   15,
+			KubeAPIBurst: 30,
+		}
+		scg, ok := cfg.ClientGenerator().(*SingletonClientGenerator)
+		require.True(t, ok)
+		assert.Equal(t, 15, scg.QPS)
+		assert.Equal(t, 30, scg.Burst)
+	})
 }
