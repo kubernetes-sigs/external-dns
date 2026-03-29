@@ -159,7 +159,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		if err := cs.crWriter.Status().Update(ctx, dnsEndpoint); err != nil {
-			log.Warnf("Could not update ObservedGeneration of the CRD: %v", err)
+			log.Warnf("Could not update ObservedGeneration of [%s/%s/%s]: %v",
+				"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
 		}
 	}
 

@@ -211,9 +211,9 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 
 func TestConfig_ClientGenerator_Caching(t *testing.T) {
 	cfg := &Config{
-		KubeConfig:     "/path/to/kubeconfig",
-		APIServerURL:   "https://api.example.com",
-		RequestTimeout: 30 * time.Second,
+		KubeConfig:            "/path/to/kubeconfig",
+		APIServerURL:          "https://api.example.com",
+		KubeAPIRequestTimeout: 30 * time.Second,
 	}
 
 	gen1 := cfg.ClientGenerator()
@@ -273,7 +273,7 @@ func TestSingletonClientGenerator_RESTConfig_TimeoutPropagation(t *testing.T) {
 // TestConfig_ClientGenerator_RESTConfig_Integration verifies Config → ClientGenerator → RESTConfig flow
 func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 	t.Run("normal timeout is propagated", func(t *testing.T) {
-		cfg := &Config{RequestTimeout: 45 * time.Second}
+		cfg := &Config{KubeAPIRequestTimeout: 45 * time.Second}
 
 		config, err := cfg.ClientGenerator().RESTConfig()
 		if err == nil {
@@ -283,7 +283,7 @@ func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 	})
 
 	t.Run("UpdateEvents sets timeout to zero", func(t *testing.T) {
-		cfg := &Config{RequestTimeout: 45 * time.Second, UpdateEvents: true}
+		cfg := &Config{KubeAPIRequestTimeout: 45 * time.Second, UpdateEvents: true}
 
 		config, err := cfg.ClientGenerator().RESTConfig()
 		if err == nil {
@@ -392,4 +392,60 @@ func TestNewSourceConfig(t *testing.T) {
 			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
 		})
 	}
+}
+
+func TestNewSourceConfig_PropagatesKubeAPIRateLimit(t *testing.T) {
+	cfg := &externaldns.Config{
+		KubeAPIQPS:   20,
+		KubeAPIBurst: 40,
+	}
+	got, err := NewSourceConfig(cfg)
+	require.NoError(t, err)
+	assert.Equal(t, 20, got.KubeAPIQPS)
+	assert.Equal(t, 40, got.KubeAPIBurst)
+}
+
+func TestSingletonClientGenerator_QPSAndBurstPropagation(t *testing.T) {
+	testCases := []struct {
+		name  string
+		qps   int
+		burst int
+	}{
+		{name: "non-zero QPS and burst", qps: 20, burst: 40},
+		{name: "zero QPS and burst (defaults)", qps: 0, burst: 0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gen := &SingletonClientGenerator{
+				KubeConfig:     "",
+				APIServerURL:   "",
+				RequestTimeout: 30 * time.Second,
+				QPS:            tc.qps,
+				Burst:          tc.burst,
+			}
+
+			assert.Equal(t, tc.qps, gen.QPS)
+			assert.Equal(t, tc.burst, gen.Burst)
+
+			config, err := gen.RESTConfig()
+			if err == nil {
+				require.NotNil(t, config)
+				assert.Equal(t, tc.qps, int(config.QPS))
+				assert.Equal(t, tc.burst, config.Burst)
+			}
+		})
+	}
+}
+
+func TestConfig_ClientGenerator_PropagatesKubeAPIRateLimit(t *testing.T) {
+	cfg := &Config{
+		KubeAPIQPS:   15,
+		KubeAPIBurst: 30,
+	}
+	gen := cfg.ClientGenerator()
+	scg, ok := gen.(*SingletonClientGenerator)
+	require.True(t, ok, "ClientGenerator should return *SingletonClientGenerator")
+	assert.Equal(t, 15, scg.QPS)
+	assert.Equal(t, 30, scg.Burst)
 }

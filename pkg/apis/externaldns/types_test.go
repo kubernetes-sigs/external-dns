@@ -29,13 +29,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/rest"
 )
 
 var (
 	minimalConfig = &Config{
 		APIServerURL:                           "",
 		KubeConfig:                             "",
-		RequestTimeout:                         time.Second * 30,
+		KubeAPIRequestTimeout:                  time.Second * 30,
+		KubeAPIQPS:                             int(rest.DefaultQPS),
+		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
@@ -140,6 +143,9 @@ var (
 		APIServerURL:                           "http://127.0.0.1:8080",
 		KubeConfig:                             "/some/path",
 		RequestTimeout:                         time.Second * 77,
+		KubeAPIRequestTimeout:                  time.Second * 77,
+		KubeAPIQPS:                             int(rest.DefaultQPS),
+		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
@@ -590,8 +596,6 @@ func TestConfigStringMasksSecureFields(t *testing.T) {
 
 // Default path should use kingpin and parse flags correctly
 func TestParseFlagsDefaultKingpin(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "")
-
 	args := []string{
 		"--provider=aws",
 		"--source=service",
@@ -612,7 +616,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
-	assert.Equal(t, 2*time.Second, cfg.RequestTimeout)
+	assert.Equal(t, 2*time.Second, cfg.KubeAPIRequestTimeout)
 	assert.Equal(t, "ns", cfg.Namespace)
 	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
 	assert.Equal(t, "default", cfg.OCPRouterName)
@@ -648,7 +652,7 @@ func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
 	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
 	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
 	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
+	assert.Equal(t, cfgK.KubeAPIRequestTimeout, cfgC.KubeAPIRequestTimeout)
 	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
 	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
 	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
@@ -961,6 +965,69 @@ func TestBinderParityMapAndRegexp(t *testing.T) {
 	require.NotNil(t, cfgK.RegexDomainFilter)
 	require.NotNil(t, cfgK.AWSSDCreateTag)
 	assert.Equal(t, map[string]string{"foo": "bar"}, cfgK.AWSSDCreateTag)
+}
+
+func TestParseFlagsKubeAPIRequestTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		args           []string
+		wantTimeout    time.Duration
+		wantDeprecated time.Duration
+	}{
+		{
+			name:           "new flag sets KubeAPIRequestTimeout",
+			args:           []string{"--kube-api-request-timeout=60s"},
+			wantTimeout:    60 * time.Second,
+			wantDeprecated: 0,
+		},
+		{
+			name:           "deprecated flag is promoted",
+			args:           []string{"--request-timeout=45s"},
+			wantTimeout:    45 * time.Second,
+			wantDeprecated: 45 * time.Second,
+		},
+		{
+			name:           "new flag wins when both are set",
+			args:           []string{"--request-timeout=45s", "--kube-api-request-timeout=90s"},
+			wantTimeout:    90 * time.Second,
+			wantDeprecated: 45 * time.Second,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=aws", "--source=service"}, tc.args...)))
+			assert.Equal(t, tc.wantTimeout, cfg.KubeAPIRequestTimeout)
+			assert.Equal(t, tc.wantDeprecated, cfg.RequestTimeout)
+		})
+	}
+}
+
+func TestParseFlagsKubeAPIRateLimit(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_CLI", "")
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{
+		"--provider=aws",
+		"--source=service",
+		"--kube-api-qps=10",
+		"--kube-api-burst=20",
+	}))
+
+	assert.Equal(t, 10, cfg.KubeAPIQPS)
+	assert.Equal(t, 20, cfg.KubeAPIBurst)
+}
+
+func TestParseFlagsKubeAPIRateLimitDefaults(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_CLI", "")
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{
+		"--provider=aws",
+		"--source=service",
+	}))
+
+	assert.Equal(t, int(rest.DefaultQPS), cfg.KubeAPIQPS)
+	assert.Equal(t, rest.DefaultBurst, cfg.KubeAPIBurst)
 }
 
 // Kingpin validates enum values at parse time

@@ -49,7 +49,8 @@ section below.
 - [ ] Scope resources at every level — service type, label, annotation, domain, zone ID. See
   [Scope resources](#scope-resources).
 - [ ] Split into multiple instances for large zone sets or source mixes, each with a distinct --txt-owner-id` and non-overlapping domain scope. See [Split instances](#split-instances).
-- [ ] Tune reconcile frequency and raise `--request-timeout` on large clusters. See [Reduce reconcile pressure](#reduce-reconcile-pressure).
+- [ ] Tune reconcile frequency and raise `--kube-api-request-timeout` on large clusters. See [Reduce reconcile pressure](#reduce-reconcile-pressure).
+- [ ] Set `--kube-api-qps` and `--kube-api-burst` if external-dns is throttled by the Kubernetes API or shares API quota with many other controllers. See [Reduce reconcile pressure](#reduce-reconcile-pressure).
 
 **Observability**
 
@@ -252,8 +253,32 @@ Each instance must have a distinct `--txt-owner-id` and non-overlapping `--domai
 
 Tune reconcile frequency to match your actual change rate rather than running at the default
 interval. Use event-driven reconciliation to react quickly to real changes while keeping
-background polling infrequent. Raise `--request-timeout` if informer cache sync exceeds the
-default on large clusters.
+background polling infrequent. Raise `--kube-api-request-timeout` if individual Kubernetes API
+calls time out on a slow or heavily loaded API server (the default is 30s per request).
+
+**Kubernetes API rate limiting.** external-dns inherits client-go's built-in defaults of 5 QPS
+and 10 burst for Kubernetes API calls. On clusters where external-dns manages many sources or
+runs at a high reconcile frequency, these defaults can be too low, causing throttling. On
+clusters where it shares API quota with many other controllers, they may need to be lowered to
+avoid starving higher-priority controllers.
+
+```sh
+# Raise limits for a high-throughput instance managing many sources
+--kube-api-qps=20
+--kube-api-burst=40
+
+# Lower limits for a low-priority instance on a busy cluster
+--kube-api-qps=2
+--kube-api-burst=5
+
+# Fractional QPS — one request every two seconds
+--kube-api-qps=0.5
+--kube-api-burst=1
+```
+
+When the limit is hit, external-dns logs an error containing
+`consider raising --kube-api-qps/--kube-api-burst` to make the cause actionable. Both flags
+default to the client-go built-in values (5 QPS / 10 burst) when not set.
 
 For per-provider flags covering batch change sizing, record caching, and zone list caching, see
 [DNS provider API rate limits](rate-limits.md) and [Provider Notes](#provider-notes).

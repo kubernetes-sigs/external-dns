@@ -206,7 +206,7 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 	if routeGroupVersion == "" {
 		routeGroupVersion = DefaultRoutegroupVersion
 	}
-	cli := newRouteGroupClient(token, tokenPath, cfg.RequestTimeout)
+	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
 
 	u, err := url.Parse(apiServerURL)
 	if err != nil {

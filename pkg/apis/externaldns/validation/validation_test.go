@@ -96,6 +96,32 @@ func TestValidateFlags(t *testing.T) {
 	cfg = newValidConfig(t)
 	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 	require.NoError(t, ValidateConfig(cfg))
+
+	t.Run("kube-api-qps and kube-api-burst", func(t *testing.T) {
+		for _, tc := range []struct {
+			name    string
+			qps     int
+			burst   int
+			wantErr bool
+		}{
+			{name: "zero QPS and burst (use defaults)", qps: 0, burst: 0, wantErr: false},
+			{name: "positive QPS and burst", qps: 10, burst: 20, wantErr: false},
+			{name: "negative QPS", qps: -1, burst: 0, wantErr: true},
+			{name: "negative burst", qps: 0, burst: -1, wantErr: true},
+			{name: "both negative", qps: -1, burst: -1, wantErr: true},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := newValidConfig(t)
+				cfg.KubeAPIQPS = tc.qps
+				cfg.KubeAPIBurst = tc.burst
+				if tc.wantErr {
+					require.Error(t, ValidateConfig(cfg))
+				} else {
+					require.NoError(t, ValidateConfig(cfg))
+				}
+			})
+		}
+	})
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {

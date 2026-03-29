@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/external-dns/internal/flags"
 
@@ -45,6 +46,9 @@ type Config struct {
 	APIServerURL                                  string
 	KubeConfig                                    string
 	RequestTimeout                                time.Duration
+	KubeAPIRequestTimeout                         time.Duration
+	KubeAPIQPS                                    int
+	KubeAPIBurst                                  int
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
 	SkipperRouteGroupVersion                      string
@@ -348,7 +352,9 @@ var defaultConfig = &Config{
 	RegexDomainExclude:           regexp.MustCompile(""),
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     RegistryTXT,
-	RequestTimeout:               time.Second * 30,
+	KubeAPIRequestTimeout:        time.Second * 30,
+	KubeAPIQPS:                   int(rest.DefaultQPS),
+	KubeAPIBurst:                 rest.DefaultBurst,
 	RFC2136BatchChangeSize:       50,
 	RFC2136GSSTSIG:               false,
 	RFC2136Host:                  []string{""},
@@ -498,14 +504,26 @@ func (cfg *Config) ParseFlags(args []string) error {
 	if _, err := App(cfg).Parse(args); err != nil {
 		return err
 	}
+	cfg.resolveDeprecatedFlags()
 	return nil
+}
+
+// resolveDeprecatedFlags reconciles deprecated flags with their replacements.
+// When --request-timeout is set (non-zero) and --kube-api-request-timeout was not
+// explicitly changed from its default, the deprecated value is promoted and a
+// warning is logged. If both are set, --kube-api-request-timeout takes precedence.
+func (cfg *Config) resolveDeprecatedFlags() {
+	if cfg.RequestTimeout != 0 {
+		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
+		if cfg.KubeAPIRequestTimeout == defaultConfig.KubeAPIRequestTimeout {
+			cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
+		}
+	}
 }
 
 func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
-	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
-	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
@@ -716,6 +734,13 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
 	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Accepts comma separated list for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
 	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Accepts comma separated list for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
+
+	// kube client config flags
+	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
+	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", 0, &cfg.RequestTimeout)
+	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
+	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
+	b.IntVar("kube-api-burst", "Maximum burst for throttle to the Kubernetes API server from this client.", defaultConfig.KubeAPIBurst, &cfg.KubeAPIBurst)
 }
 
 func App(cfg *Config) *kingpin.Application {
