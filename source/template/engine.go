@@ -19,9 +19,7 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"maps"
 	"reflect"
-	"slices"
 	"strings"
 	"text/template"
 
@@ -30,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -206,13 +205,13 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
 	hosts := strings.Split(buf.String(), ",")
-	hostnames := make(map[string]struct{}, len(hosts))
+	hostnames := make(set.Set[string], len(hosts))
 	for _, name := range hosts {
 		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
 		if name != "" {
-			hostnames[name] = struct{}{}
+			hostnames.Insert(name)
 		}
 	}
-	return slices.Sorted(maps.Keys(hostnames)), nil
+	return hostnames.SortedList(), nil
 }

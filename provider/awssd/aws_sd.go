@@ -28,13 +28,13 @@ import (
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	sdtypes "github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	log "github.com/sirupsen/logrus"
-
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
 )
 
 const (
@@ -276,15 +276,12 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.End
 		current := updateNewMap[old.DNSName]
 
 		if !old.Targets.Same(current.Targets) {
-			currentTargetsMap := make(map[string]struct{}, len(current.Targets))
-			for _, newTarget := range current.Targets {
-				currentTargetsMap[newTarget] = struct{}{}
-			}
+			currentTargetsSet := sets.New(current.Targets...)
 
 			// If targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
 			targetsToRemove := make(endpoint.Targets, 0)
 			for _, oldTarget := range old.Targets {
-				if _, found := currentTargetsMap[oldTarget]; !found {
+				if !currentTargetsSet.Has(oldTarget) {
 					targetsToRemove = append(targetsToRemove, oldTarget)
 				}
 			}

@@ -18,23 +18,21 @@ package txt
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"errors"
 	"maps"
-
 	"strings"
 	"time"
 
-	b64 "encoding/base64"
-
 	log "github.com/sirupsen/logrus"
-
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/registry"
-	"sigs.k8s.io/external-dns/registry/mapper"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
 const (
@@ -76,7 +74,7 @@ type TXTRegistry struct {
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
 type existingTXTs struct {
-	entries map[recordKey]struct{}
+	entries sets.Set[recordKey]
 }
 
 type recordKey struct {
@@ -86,7 +84,7 @@ type recordKey struct {
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
-		entries: make(map[recordKey]struct{}),
+		entries: make(sets.Set[recordKey]),
 	}
 }
 
@@ -95,7 +93,7 @@ func (im *existingTXTs) add(r *endpoint.Endpoint) {
 		dnsName:       r.DNSName,
 		setIdentifier: r.SetIdentifier,
 	}
-	im.entries[key] = struct{}{}
+	im.entries.Insert(key)
 }
 
 // isAbsent returns true when there is no entry for the given name in the store.
@@ -105,14 +103,13 @@ func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
 		dnsName:       ep.DNSName,
 		setIdentifier: ep.SetIdentifier,
 	}
-	_, ok := im.entries[key]
-	return !ok
+	return !im.entries.Has(key)
 }
 
 func (im *existingTXTs) reset() {
 	// Reset the existing TXT records for the next reconciliation loop.
 	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
-	im.entries = make(map[recordKey]struct{})
+	im.entries = make(sets.Set[recordKey])
 }
 
 // New creates a TXTRegistry from the given configuration.
@@ -203,7 +200,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	endpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
-	txtRecordsMap := map[string]struct{}{}
+	txtRecordsSet := make(sets.Set[string], len(records))
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
@@ -232,7 +229,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: record.SetIdentifier,
 		}
 		labelMap[key] = labels
-		txtRecordsMap[record.DNSName] = struct{}{}
+		txtRecordsSet.Insert(record.DNSName)
 		im.existingTXTs.add(record)
 	}
 
@@ -273,12 +270,12 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// TODO: remove this migration logic in some future release
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
-		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
+		if len(txtRecordsSet) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
-					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
+					if !txtRecordsSet.Has(desiredTXT.DNSName) {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
 				}

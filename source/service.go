@@ -29,6 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/sets"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
@@ -447,13 +448,13 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := make([]string, 0, len(allTargets))
-		deduppedTargets := map[string]struct{}{}
+		deduppedTargets := make(sets.Set[string], len(allTargets))
 		for _, target := range allTargets {
-			if _, ok := deduppedTargets[target]; ok {
+			if deduppedTargets.Has(target) {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
-			deduppedTargets[target] = struct{}{}
+			deduppedTargets.Insert(target)
 			targets = append(targets, target)
 		}
 		ep := endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)

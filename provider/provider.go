@@ -23,6 +23,8 @@ import (
 	"net"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -95,18 +97,14 @@ func EnsureTrailingDot(hostname string) string {
 // added, removed, or left untouched for "current" to be transformed to "desired"
 func Difference(current, desired []string) ([]string, []string, []string) {
 	add, remove, leave := []string{}, []string{}, []string{}
-	index := make(map[string]struct{}, len(current))
-	for _, x := range current {
-		index[x] = struct{}{}
-	}
+	index := sets.New(current...)
 	for _, x := range desired {
-		if _, found := index[x]; found {
+		if index.Has(x) {
 			leave = append(leave, x)
-			delete(index, x)
 		} else {
 			add = append(add, x)
-			delete(index, x)
 		}
+		index.Delete(x)
 	}
 	for x := range index {
 		remove = append(remove, x)
