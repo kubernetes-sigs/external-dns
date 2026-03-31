@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/provider/blueprint"
@@ -30,7 +29,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // mockZonesClient implements the methods of the Azure DNS Zones Client which are used in the Azure Provider
@@ -122,8 +120,8 @@ func (client *mockRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, 
 
 func createMockZone(zone string, id string) *dns.Zone {
 	return &dns.Zone{
-		ID:   to.Ptr(id),
-		Name: to.Ptr(zone),
+		ID:   new(id),
+		Name: new(zone),
 	}
 }
 
@@ -131,11 +129,11 @@ func aRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProper
 	aRecords := make([]*dns.ARecord, len(values))
 	for i, value := range values {
 		aRecords[i] = &dns.ARecord{
-			IPv4Address: to.Ptr(value),
+			IPv4Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:      to.Ptr(ttl),
+		TTL:      new(ttl),
 		ARecords: aRecords,
 	}
 }
@@ -144,20 +142,20 @@ func aaaaRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPro
 	aaaaRecords := make([]*dns.AaaaRecord, len(values))
 	for i, value := range values {
 		aaaaRecords[i] = &dns.AaaaRecord{
-			IPv6Address: to.Ptr(value),
+			IPv6Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:         to.Ptr(ttl),
+		TTL:         new(ttl),
 		AaaaRecords: aaaaRecords,
 	}
 }
 
 func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		CnameRecord: &dns.CnameRecord{
-			Cname: to.Ptr(values[0]),
+			Cname: new(values[0]),
 		},
 	}
 }
@@ -169,7 +167,7 @@ func mxRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 		mxRecords[i] = &mxRecord
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		MxRecords: mxRecords,
 	}
 }
@@ -178,21 +176,21 @@ func nsRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 	nsRecords := make([]*dns.NsRecord, len(values))
 	for i, value := range values {
 		nsRecords[i] = &dns.NsRecord{
-			Nsdname: to.Ptr(value),
+			Nsdname: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		NsRecords: nsRecords,
 	}
 }
 
 func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		TxtRecords: []*dns.TxtRecord{
 			{
-				Value: []*string{to.Ptr(values[0])},
+				Value: []*string{new(values[0])},
 			},
 		},
 	}
@@ -200,7 +198,7 @@ func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 
 func othersRecordSetPropertiesGetter(_ []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 	}
 }
 
@@ -232,8 +230,8 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = othersRecordSetPropertiesGetter
 	}
 	return &dns.RecordSet{
-		Name:       to.Ptr(name),
-		Type:       to.Ptr("Microsoft.Network/dnszones/" + recordType),
+		Name:       new(name),
+		Type:       new("Microsoft.Network/dnszones/" + recordType),
 		Properties: getterFunc(values, ttl),
 	}
 }
@@ -636,7 +634,7 @@ func TestAzureAdjustEndpoints(t *testing.T) {
 		{
 			name: "Azure tags annotation is parsed",
 			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
-				WithProviderSpecific(annotations.AzureTagsKey, "cost-center=12345,owner=backend-team"),
+				WithProviderSpecific("azure/tags", "cost-center=12345,owner=backend-team"),
 			expected: endpoint.ProviderSpecific{
 				{Name: "azure/metadata-cost-center", Value: "12345"},
 				{Name: "azure/metadata-owner", Value: "backend-team"},
@@ -645,7 +643,7 @@ func TestAzureAdjustEndpoints(t *testing.T) {
 		{
 			name: "Azure tags annotation with spaces is parsed correctly",
 			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
-				WithProviderSpecific(annotations.AzureTagsKey, "environment=production, app=myapp "),
+				WithProviderSpecific("azure/tags", "environment=production, app=myapp "),
 			expected: endpoint.ProviderSpecific{
 				{Name: "azure/metadata-environment", Value: "production"},
 				{Name: "azure/metadata-app", Value: "myapp"},
@@ -654,7 +652,7 @@ func TestAzureAdjustEndpoints(t *testing.T) {
 		{
 			name: "Azure tags annotation with empty tags is handled",
 			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
-				WithProviderSpecific(annotations.AzureTagsKey, "key=value,,other=test"),
+				WithProviderSpecific("azure/tags", "key=value,,other=test"),
 			expected: endpoint.ProviderSpecific{
 				{Name: "azure/metadata-key", Value: "value"},
 				{Name: "azure/metadata-other", Value: "test"},
@@ -679,7 +677,7 @@ func TestAzureAdjustEndpoints(t *testing.T) {
 			}
 
 			// Check that the azure-tags property was removed
-			if _, ok := adjusted[0].GetProviderSpecificProperty(annotations.AzureTagsKey); ok {
+			if _, ok := adjusted[0].GetProviderSpecificProperty("azure/tags"); ok {
 				t.Error("azure-tags property should have been removed after parsing")
 			}
 

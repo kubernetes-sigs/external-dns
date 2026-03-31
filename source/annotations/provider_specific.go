@@ -56,7 +56,7 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			})
 		} else if k == AzureTagsKey {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  AzureTagsKey,
+				Name:  "azure/tags",
 				Value: v,
 			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {

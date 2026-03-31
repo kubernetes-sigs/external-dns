@@ -28,18 +28,17 @@ import (
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
 	defaultTTL = 300
 	// Azure-specific provider properties
+	providerSpecificAzureTags      = "azure/tags"
 	providerSpecificMetadataPrefix = "azure/metadata-"
 	providerSpecificMetadataKeys   = "azure/metadata-keys"
 )
@@ -360,12 +359,12 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &dns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:      to.Ptr(ttl),
+				TTL:      new(ttl),
 				ARecords: aRecords,
 				Metadata: metadata,
 			},
@@ -374,12 +373,12 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &dns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:         to.Ptr(ttl),
+				TTL:         new(ttl),
 				AaaaRecords: aaaaRecords,
 				Metadata:    metadata,
 			},
@@ -387,9 +386,9 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.RecordTypeCNAME:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: new(endpoint.Targets[0]),
 				},
 				Metadata: metadata,
 			},
@@ -405,7 +404,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				MxRecords: mxRecords,
 				Metadata:  metadata,
 			},
@@ -414,12 +413,12 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			nsRecords[i] = &dns.NsRecord{
-				Nsdname: to.Ptr(target),
+				Nsdname: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				NsRecords: nsRecords,
 				Metadata:  metadata,
 			},
@@ -427,7 +426,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.RecordTypeTXT:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				TxtRecords: []*dns.TxtRecord{
 					{
 						Value: []*string{
@@ -541,7 +540,7 @@ func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
 	metadata := make(map[string]*string)
 	for key := range strings.SplitSeq(keysStr, ",") {
 		if value, ok := ep.GetProviderSpecificProperty(providerSpecificMetadataPrefix + key); ok && value != "" {
-			metadata[key] = to.Ptr(value)
+			metadata[key] = new(value)
 		}
 	}
 	if len(metadata) == 0 {
@@ -581,13 +580,13 @@ func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string 
 // It parses the azure-tags annotation and converts it to individual metadata properties.
 func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
-		if val, ok := ep.GetProviderSpecificProperty(annotations.AzureTagsKey); ok {
+		if val, ok := ep.GetProviderSpecificProperty(providerSpecificAzureTags); ok {
 			keys := parseAzureTagsAnnotation(ep, val)
 			if len(keys) > 0 {
 				ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
 			}
 			// Remove the original azure-tags property as it's now expanded
-			ep.DeleteProviderSpecificProperty(annotations.AzureTagsKey)
+			ep.DeleteProviderSpecificProperty(providerSpecificAzureTags)
 		}
 	}
 	return endpoints, nil
