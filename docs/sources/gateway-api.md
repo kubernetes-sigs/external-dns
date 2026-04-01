@@ -10,6 +10,7 @@ but still uses the v1alpha2 API for TLSRoutes as they only graduated to v1
 in Gateway API v1.5.0. TCPRoute and UDPRoute remain experimental and are only
 available as v1alpha2.
 
+The current supported version range of Gateway API CRDs is: `v1.1.1` -> `v1.5.1`.
 Continued support for v1alpha2 is NOT guaranteed. At some time in the future,
 Gateway API will graduate TCP/UDP Routes to v1 and ExternalDNS will follow.
 
