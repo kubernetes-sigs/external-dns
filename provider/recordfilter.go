@@ -20,7 +20,7 @@ package provider
 // Currently A, AAAA, CNAME, SRV, TXT and NS record types are supported.
 func SupportedRecordType(recordType string) bool {
 	switch recordType {
-	case "A", "AAAA", "CNAME", "SRV", "TXT", "NS":
+	case "A", "AAAA", "CNAME", "SRV", "TXT", "NS", "PTR", "MX", "DS":
 		return true
 	default:
 		return false

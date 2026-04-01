@@ -41,6 +41,22 @@ func TestRecordTypeFilter(t *testing.T) {
 		},
 		{
 			"MX",
+			true,
+		},
+		{
+			"PTR",
+			true,
+		},
+		{
+			"DA",
+			true,
+		},
+		{
+			"SOA",
+			false,
+		},
+		{
+			"SPF",
 			false,
 		},
 	}
