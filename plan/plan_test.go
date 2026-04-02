@@ -162,7 +162,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
@@ -184,7 +184,7 @@ func (suite *PlanTestSuite) SetupTest() {
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},
@@ -198,7 +198,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},

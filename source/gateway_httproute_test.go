@@ -1107,7 +1107,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("provider-annotations.com", "1.2.3.4").
-					WithProviderSpecific("alias", "true").
+					WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
 					WithSetIdentifier("test-set-identifier"),
 			},
 		},

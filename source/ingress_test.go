@@ -1083,7 +1083,7 @@ func testIngressEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets{"ingress-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name: "alias", Value: "true",
+						Name: endpoint.ProviderSpecificAlias, Value: "true",
 					}},
 				},
 			},
