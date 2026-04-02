@@ -17,12 +17,12 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -93,11 +93,11 @@ func testMultiSourceEndpoints(t *testing.T) {
 			source := NewMultiSource(sources, nil, false)
 
 			// Get endpoints from the source.
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// Validate that the nested sources were called.
 			for _, src := range sources {
@@ -120,7 +120,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 	source := NewMultiSource([]source.Source{src}, nil, false)
 
 	// Get endpoints from our source.
-	_, err := source.Endpoints(context.Background())
+	_, err := source.Endpoints(t.Context())
 	assert.EqualError(t, err, "some error")
 
 	// Validate that the nested source was called.
@@ -158,10 +158,10 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=false (default behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -188,10 +188,10 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=false (default behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -226,10 +226,10 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=true (legacy behavior)
 		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -261,10 +261,10 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		// Test with forceDefaultTargets=true
 		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
-		endpoints, err := source.Endpoints(context.Background())
+		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})

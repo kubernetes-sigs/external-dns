@@ -19,13 +19,13 @@ package tlsutils
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 )
 
 var (
@@ -55,6 +55,13 @@ D2lWusoe2/nEqfDVVWGWlyJ7yOmqaVm/iNUN9B2N2g==
 )
 
 func testingKey(s string) string { return strings.ReplaceAll(s, "TESTING KEY", "PRIVATE KEY") }
+
+func writeTempFile(t *testing.T, dir, name, content, envKey string) {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+	t.Setenv(envKey, path)
+}
 
 func TestCreateTLSConfig(t *testing.T) {
 
@@ -157,29 +164,18 @@ func TestCreateTLSConfig(t *testing.T) {
 			// setup
 			dir := t.TempDir()
 
-			if tc.caFile != "" {
-				path := fmt.Sprintf("%s/caFile", dir)
-				err := utils.WriteToFile(path, tc.caFile)
-				require.NoError(t, err)
-				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), path)
-			}
-
 			if tc.caFile == "ca-path-does-not-exist" {
 				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), "/path/does/not/exist")
+			} else if tc.caFile != "" {
+				writeTempFile(t, dir, "caFile", tc.caFile, fmt.Sprintf("%s_CA_FILE", tc.prefix))
 			}
 
 			if tc.certFile != "" {
-				path := fmt.Sprintf("%s/certFile", dir)
-				err := utils.WriteToFile(path, tc.certFile)
-				require.NoError(t, err)
-				t.Setenv(fmt.Sprintf("%s_CERT_FILE", tc.prefix), path)
+				writeTempFile(t, dir, "certFile", tc.certFile, fmt.Sprintf("%s_CERT_FILE", tc.prefix))
 			}
 
 			if tc.keyFile != "" {
-				path := fmt.Sprintf("%s/keyFile", dir)
-				err := utils.WriteToFile(path, tc.keyFile)
-				require.NoError(t, err)
-				t.Setenv(fmt.Sprintf("%s_KEY_FILE", tc.prefix), path)
+				writeTempFile(t, dir, "keyFile", tc.keyFile, fmt.Sprintf("%s_KEY_FILE", tc.prefix))
 			}
 
 			if tc.serverName != "" {

@@ -112,32 +112,8 @@ sequenceDiagram
 
 ## Supported Sources
 
-Events are emitted for all sources that External-DNS supports. The following table lists the sources and whether they currently emit events.
-If a source does not emit events, it may in the future.
+Events are emitted for all sources that External-DNS supports. Event support is being rolled out
+progressively — if a source does not yet emit events, it may in the future.
 
-| Source                 | Supported |
-|:-----------------------|:---------:|
-| `ambassador-host`      |           |
-| `connector`            |           |
-| `contour-httpproxy`    |           |
-| `crd`                  |           |
-| `empty`                |           |
-| `f5-transportserver`   |           |
-| `f5-virtualserver`     |           |
-| `fake`                 |     ✅    |
-| `gateway-grpcroute`    |           |
-| `gateway-httproute`    |           |
-| `gateway-tcproute`     |           |
-| `gateway-tlsroute`     |           |
-| `gateway-udproute`     |           |
-| `gloo-proxy`           |           |
-| `ingress`              |           |
-| `istio-gateway`        |           |
-| `istio-virtualservice` |           |
-| `kong-tcpingress`      |           |
-| `node`                 |           |
-| `openshift-route`      |           |
-| `pod`                  |           |
-| `service`              |           |
-| `skipper-routegroup`   |           |
-| `traefik-proxy`        |           |
+See the [sources reference](../sources/index.md#available-sources) for the full list and
+per-source event support status.

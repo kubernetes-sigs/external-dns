@@ -30,6 +30,8 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/dns"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -77,9 +79,27 @@ type ociDNSClient interface {
 	PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error)
 }
 
-// LoadOCIConfig reads and parses the OCI ExternalDNS config file at the given
-// path.
-func LoadOCIConfig(path string) (*OCIConfig, error) {
+// New creates an OCI provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	var config *OCIConfig
+	if cfg.OCIAuthInstancePrincipal {
+		if len(cfg.OCICompartmentOCID) == 0 {
+			return nil, fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
+		}
+		authConfig := OCIAuthConfig{UseInstancePrincipal: true}
+		config = &OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+	} else {
+		var err error
+		if config, err = loadOCIConfig(cfg.OCIConfigFile); err != nil {
+			return nil, err
+		}
+	}
+	config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
+	return newProvider(*config, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.OCIZoneScope, cfg.DryRun)
+}
+
+// loadOCIConfig reads and parses the OCI ExternalDNS config file at the given path.
+func loadOCIConfig(path string) (*OCIConfig, error) {
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading OCI config file %q: %w", path, err)
@@ -92,8 +112,8 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 	return &cfg, nil
 }
 
-// NewOCIProvider initializes a new OCI DNS based Provider.
-func NewOCIProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
+// newProvider initializes a new OCI DNS based Provider.
+func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	var err error
 	var configProvider common.ConfigurationProvider

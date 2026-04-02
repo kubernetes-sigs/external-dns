@@ -1023,6 +1023,90 @@ For any given DNS name, only **one** of the following routing policies can be us
   - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
 - Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
+#### Weighted Routing
+
+Route traffic across two Services by weight. Both share the same hostname but carry different identifiers and weights:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-v1
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: app.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: app-v1
+    external-dns.alpha.kubernetes.io/aws-weight: "80"
+spec:
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-v2
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: app.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: app-v2
+    external-dns.alpha.kubernetes.io/aws-weight: "20"
+spec:
+  type: LoadBalancer
+```
+
+> ExternalDNS will create two Route53 weighted record sets for `app.example.com`, sending 80% of traffic to `my-service-v1` and 20% to `my-service-v2`.
+
+#### Failover Routing
+
+Designate a primary and secondary record for active/passive failover:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress-primary
+  annotations:
+    external-dns.alpha.kubernetes.io/set-identifier: my-app-primary
+    external-dns.alpha.kubernetes.io/aws-failover: PRIMARY
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress-secondary
+  annotations:
+    external-dns.alpha.kubernetes.io/set-identifier: my-app-secondary
+    external-dns.alpha.kubernetes.io/aws-failover: SECONDARY
+```
+
+> Route53 will serve the `PRIMARY` record when healthy, and automatically fall back to `SECONDARY` when the health check fails.
+
+#### Latency-Based Routing
+
+Route users to the nearest region by latency:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-us
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: api-us-east-1
+    external-dns.alpha.kubernetes.io/aws-region: us-east-1
+spec:
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-eu
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: api.example.com
+    external-dns.alpha.kubernetes.io/set-identifier: api-eu-west-1
+    external-dns.alpha.kubernetes.io/aws-region: eu-west-1
+spec:
+  type: LoadBalancer
+```
+
+> Route53 will direct each user to the region with the lowest latency.
+
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using

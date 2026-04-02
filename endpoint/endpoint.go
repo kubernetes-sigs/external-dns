@@ -17,12 +17,15 @@ limitations under the License.
 package endpoint
 
 import (
+	"cmp"
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/set"
 
@@ -48,6 +51,14 @@ const (
 	RecordTypeMX = "MX"
 	// RecordTypeNAPTR is a RecordType enum value
 	RecordTypeNAPTR = "NAPTR"
+
+	// TODO: review source/annotations package to consolidate alias key definitions;
+	// currently duplicated here to avoid circular dependency.
+	providerSpecificAlias = "alias"
+
+	// ProviderSpecificRecordType is the provider-specific property name used to
+	// request a particular DNS record type (e.g. "ptr") on an endpoint.
+	ProviderSpecificRecordType = "record-type"
 )
 
 var (
@@ -87,14 +98,17 @@ func NewTargets(target ...string) Targets {
 	return set.New(target...).SortedList()
 }
 
+// String returns the targets joined by semicolons.
 func (t Targets) String() string {
 	return strings.Join(t, ";")
 }
 
+// Len returns the number of targets, satisfying sort.Interface.
 func (t Targets) Len() int {
 	return len(t)
 }
 
+// Less reports whether target i sorts before target j, using IP-aware comparison for valid addresses.
 func (t Targets) Less(i, j int) bool {
 	ipi, err := netip.ParseAddr(t[i])
 	if err != nil {
@@ -109,6 +123,7 @@ func (t Targets) Less(i, j int) bool {
 	return ipi.String() < ipj.String()
 }
 
+// Swap exchanges targets at positions i and j, satisfying sort.Interface.
 func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
@@ -223,6 +238,10 @@ type EndpointKey struct {
 	SetIdentifier string
 	RecordTTL     TTL
 	Target        string
+}
+
+func (ep EndpointKey) String() string {
+	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
 }
 
 type ObjectRef = events.ObjectReference
@@ -368,6 +387,29 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 	}
 }
 
+// RetainProviderProperties retains only properties whose name is prefixed with
+// "provider/" (e.g. "aws/evaluate-target-health" for provider "aws").
+// Properties belonging to other providers are dropped.
+// Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
+// TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
+// annotation form "external-dns.alpha.kubernetes.io/cloudflare-*", so filtering is skipped for
+// cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
+// adopts the standard prefix convention.
+func (e *Endpoint) RetainProviderProperties(provider string) {
+	if len(e.ProviderSpecific) == 0 {
+		return
+	}
+	if provider != "" && provider != "cloudflare" {
+		prefix := provider + "/"
+		e.ProviderSpecific = slices.DeleteFunc(e.ProviderSpecific, func(prop ProviderSpecificProperty) bool {
+			return strings.Contains(prop.Name, "/") && !strings.HasPrefix(prop.Name, prefix)
+		})
+	}
+	slices.SortFunc(e.ProviderSpecific, func(a, b ProviderSpecificProperty) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+}
+
 // WithLabel adds or updates a label for the Endpoint.
 //
 // Example usage:
@@ -388,6 +430,7 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 	return e
 }
 
+// RefObject returns the Kubernetes object reference associated with this endpoint.
 func (e *Endpoint) RefObject() *events.ObjectReference {
 	return e.refObject
 }
@@ -407,10 +450,37 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 	return ok && endpointOwner == ownerID
 }
 
+// GetNakedDomain returns the parent domain of the DNS name (without the first label).
+// For example, "www.example.com" returns "example.com".
+// For apex/two-label names like "example.com", the full name is returned unchanged.
+func (e *Endpoint) GetNakedDomain() string {
+	if e.DNSName == "" {
+		return ""
+	}
+	parts := strings.SplitN(e.DNSName, ".", 2)
+	if len(parts) < 2 || !strings.Contains(parts[1], ".") {
+		return e.DNSName
+	}
+	return parts[1]
+}
+
+// NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
+// It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
+func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {
+	revAddr, err := dns.ReverseAddr(target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
+	}
+	ptrName := strings.TrimSuffix(revAddr, ".")
+	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
+}
+
+// String returns a human-readable representation of the endpoint in zone-file style.
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
+// Describe returns a compact summary of the endpoint suitable for logging.
 func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
@@ -455,9 +525,11 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
-// TODO: review source/annotations package to consolidate alias key definitions;
-// currently duplicated here to avoid circular dependency.
-const providerSpecificAlias = "alias"
+// RequestedRecordType returns the value of the "record-type" provider-specific
+// property, following the same pattern as the alias accessor.
+func (e *Endpoint) RequestedRecordType() (string, bool) {
+	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
+}
 
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
@@ -470,12 +542,24 @@ func (e *Endpoint) CheckEndpoint() bool {
 	}
 
 	switch recordType := e.RecordType; recordType {
+	case RecordTypeA, RecordTypeAAAA:
+		if !e.isAlias() {
+			return e.Targets.ValidateIPRecord(recordType)
+		}
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
 		return e.Targets.ValidateSRVRecord()
+	case RecordTypePTR:
+		return e.ValidatePTRRecord()
 	}
 	return true
+}
+
+// isAlias returns true if the endpoint has the alias provider-specific property set to true.
+func (e *Endpoint) isAlias() bool {
+	val, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	return ok && val
 }
 
 func (e *Endpoint) supportsAlias() bool {
@@ -524,6 +608,27 @@ func (m *MXTarget) GetHost() *string {
 	return &m.host
 }
 
+// ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
+func (t Targets) ValidateIPRecord(recordType string) bool {
+	for _, target := range t {
+		addr, err := netip.ParseAddr(target)
+		if err != nil {
+			log.Debugf("Invalid %s record target: %s is not a valid IP address", recordType, target)
+			return false
+		}
+		if recordType == RecordTypeA && addr.Is6() {
+			log.Debugf("Invalid A record target: %s is an IPv6 address", target)
+			return false
+		}
+		if recordType == RecordTypeAAAA && addr.Is4() {
+			log.Debugf("Invalid AAAA record target: %s is an IPv4 address", target)
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateMXRecord reports whether all targets are valid MX record values (priority + host).
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
 		_, err := NewMXRecord(target)
@@ -536,6 +641,7 @@ func (t Targets) ValidateMXRecord() bool {
 	return true
 }
 
+// ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
 		// SRV records must have a priority, weight, a port value and a target e.g. "10 5 5060 example.com."
@@ -559,6 +665,42 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
+// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
+func (e *Endpoint) ValidatePTRRecord() bool {
+	name := strings.ToLower(e.DNSName)
+	if !isReverseDNSName(name) {
+		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
+		return false
+	}
+	if len(e.Targets) == 0 {
+		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
+		return false
+	}
+	for _, target := range e.Targets {
+		if strings.TrimSpace(target) == "" {
+			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
+			return false
+		}
+		if _, err := netip.ParseAddr(target); err == nil {
+			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
+			return false
+		}
+	}
+	return true
+}
+
+// isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa
+// and has at least one label before the suffix.
+func isReverseDNSName(name string) bool {
+	for _, suffix := range []string{".in-addr.arpa", ".ip6.arpa"} {
+		if prefix, ok := strings.CutSuffix(name, suffix); ok {
+			return len(prefix) > 0 && prefix[0] != '.'
+		}
+	}
+	return false
 }
 
 // GetDNSName returns the DNS name of the endpoint.

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -77,6 +78,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			input:            "srv-foo.example.com",
 			wantEndpointName: "foo.example.com",
 			wantRecordType:   endpoint.RecordTypeSRV,
+		},
+		{
+			name:             "prefix with PTR record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "ptr-2.49.168.192.in-addr.arpa",
+			wantEndpointName: "2.49.168.192.in-addr.arpa",
+			wantRecordType:   endpoint.RecordTypePTR,
 		},
 		{
 			name:             "prefix with NAPTR record type in affix",
@@ -142,6 +150,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeSRV,
 		},
 		{
+			name:             "default prefix with PTR record",
+			mapper:           NewAffixNameMapper("", "", ""),
+			input:            "ptr-2.49.168.192.in-addr.arpa",
+			wantEndpointName: "2.49.168.192.in-addr.arpa",
+			wantRecordType:   endpoint.RecordTypePTR,
+		},
+		{
 			name:             "no affix with NAPTR record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "naptr-foo.example.com",
@@ -153,6 +168,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "txt-foo.example.com",
 			wantEndpointName: "txt-foo.example.com",
+			wantRecordType:   "",
+		},
+		{
+			name:             "both prefix and suffix set returns empty",
+			mapper:           NewAffixNameMapper("pre-", "-suf", ""),
+			input:            "pre-a-foo-suf.example.com",
+			wantEndpointName: "",
 			wantRecordType:   "",
 		},
 	}
@@ -227,6 +249,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeSRV,
 			wantTXTName: "srv-foo.example.com",
+		},
+		{
+			name:        "prefix with PTR record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "2.49.168.192.in-addr.arpa",
+			recordType:  endpoint.RecordTypePTR,
+			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
 		},
 		{
 			name:        "prefix with NAPTR record type in affix",
@@ -304,6 +333,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeSRV,
 			wantTXTName: "srv-foo.example.com",
+		},
+		{
+			name:        "default prefix with PTR record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "2.49.168.192.in-addr.arpa",
+			recordType:  endpoint.RecordTypePTR,
+			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
 		},
 		{
 			name:        "no affix with NAPTR record",
@@ -526,6 +562,33 @@ func TestDropSuffix(t *testing.T) {
 	}
 }
 
+func TestDropAffixExtractType_NoMatch(t *testing.T) {
+	tests := []struct {
+		name   string
+		mapper AffixNameMapper
+		input  string
+	}{
+		{
+			name:   "prefix mapper input missing prefix",
+			mapper: NewAffixNameMapper("foo-", "", ""),
+			input:  "bar.example.com",
+		},
+		{
+			name:   "suffix mapper input missing suffix",
+			mapper: NewAffixNameMapper("", "-foo", ""),
+			input:  "bar.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotType := tt.mapper.dropAffixExtractType(tt.input)
+			assert.Empty(t, gotName)
+			assert.Empty(t, gotType)
+		})
+	}
+}
+
 func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 	tests := []struct {
 		input        string
@@ -544,8 +607,8 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 		},
 		{
 			input:        "ptr-zone.example.com",
-			expectedName: "ptr-zone.example.com",
-			expectedType: "",
+			expectedName: "zone.example.com",
+			expectedType: "PTR",
 		},
 		{
 			input:        "zone.example.com",

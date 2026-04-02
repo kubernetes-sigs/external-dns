@@ -17,14 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"os"
 	"strings"
-	"text/template"
 
-	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
+	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -39,14 +37,14 @@ type Flag struct {
 }
 type Flags []Flag
 
-// AddFlag adds a new flag to the Flags struct
+// addFlag adds a new flag to the Flags slice.
 func (f *Flags) addFlag(name, description string) {
 	*f = append(*f, Flag{Name: name, Description: description})
 }
 
-// It generates a markdown file
-// with the supported flags and writes it to the 'docs/flags.md' file.
-// to re-generate `docs/flags.md` execute 'go run internal/gen/docs/flags/main.go'
+// main generates a markdown file with the supported flags
+// and writes it to the 'docs/flags.md' file.
+// To re-generate, execute 'go run internal/gen/docs/flags/main.go'.
 func main() {
 	testPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/flags.md", testPath)
@@ -58,7 +56,7 @@ func main() {
 		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
 	}
 	content += "\n"
-	_ = utils.WriteToFile(path, content)
+	_ = render.WriteToFile(path, content)
 }
 
 func computeFlags() Flags {
@@ -87,14 +85,26 @@ func computeFlags() Flags {
 	return flags
 }
 
-func (f *Flags) generateMarkdownTable() (string, error) {
-	tmpl := template.New("").Funcs(utils.FuncMap())
-	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
+type columnWidths struct {
+	Flag        int
+	Description int
+}
 
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "flags.gotpl", f)
-	if err != nil {
-		return "", err
+func computeFlagColumnWidths(flags Flags) columnWidths {
+	return columnWidths{
+		Flag:        render.MapColumn("Flag", flags, func(f Flag) string { return f.Name }),
+		Description: render.MapColumn("Description", flags, func(f Flag) string { return f.Description }),
 	}
-	return b.String(), nil
+}
+
+type templateData struct {
+	Flags     Flags
+	ColWidths columnWidths
+}
+
+func (f *Flags) generateMarkdownTable() (string, error) {
+	return render.RenderTemplate(templates, "flags.gotpl", templateData{
+		Flags:     *f,
+		ColWidths: computeFlagColumnWidths(*f),
+	})
 }

@@ -26,7 +26,11 @@ import (
 )
 
 const (
-	defaultRequestTimeout = 60
+	// defaultTimeout is the maximum time in seconds to wait for informer caches
+	// to complete initial sync. This is intentionally longer than the per-request
+	// timeout: a cache sync may require multiple sequential API calls
+	// (LIST + Watch handshake), so the total wait needs to exceed a single request duration.
+	defaultTimeout = 60
 )
 
 type informerFactory interface {
@@ -51,7 +55,7 @@ func waitForCacheSync[K comparable](ctx context.Context, waitFunc func(<-chan st
 	// The function receives a ctx but then creates a new timeout,
 	// effectively overriding whatever deadline the caller may have set.
 	// If the caller passed a context with a 30s timeout, this function ignores it and waits 60s anyway.
-	timeout := defaultRequestTimeout * time.Second
+	timeout := defaultTimeout * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	for typ, done := range waitFunc(ctx.Done()) {

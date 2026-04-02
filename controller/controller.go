@@ -112,7 +112,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ManagedRecords: c.ManagedRecordTypes,
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
-		OldOwnerId:     c.TXTOwnerOld,
+		OldOwnerID:     c.TXTOwnerOld,
 	}
 
 	plan = plan.Calculate()
@@ -122,10 +122,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
+			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError)
 			return err
-		} else {
-			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordReady)
 		}
+		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")

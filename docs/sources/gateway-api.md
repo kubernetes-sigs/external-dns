@@ -25,6 +25,14 @@ GRPCRoutes are available in v1alpha2 and v1 APIs, not v1beta2.
 Therefore, GRPCRoutes use the v1 API which is available in both release channels.
 Unfortunately, this means they will not be available in environments with old CRDs.
 
+ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
+They use the v1 API and allow attaching additional listeners to an existing Gateway.
+Routes that reference a ListenerSet as a parentRef are automatically supported —
+ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
+The `external-dns.alpha.kubernetes.io/target` annotation is also supported on ListenerSet
+resources. When present, it takes precedence over the parent Gateway's target annotation.
+ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
+
 ## Hostnames
 
 HTTPRoute and TLSRoute specs, along with their associated Gateway Listeners, contain hostnames that
@@ -42,6 +50,9 @@ requests/connections won't recognize additional hostnames from the annotation.
 ExternalDNS reads different annotations from different Gateway API resources:
 
 - **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
+- **ListenerSet annotations**: The `external-dns.alpha.kubernetes.io/target` annotation is also supported on
+  ListenerSet resources. When a Route references a ListenerSet, the ListenerSet target annotation takes
+  precedence over the parent Gateway's target annotation. Requires `--gateway-listener-sets`.
 - **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
   resources (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute)
 
@@ -189,7 +200,7 @@ rules:
   resources: ["namespaces"]
   verbs: ["get","watch","list"]
 - apiGroups: ["gateway.networking.k8s.io"]
-  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"]
+  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes","listenersets"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -242,6 +253,8 @@ spec:
         - --gateway-namespace=my-gateway-namespace
         # Optionally, limit Route endpoints to those Gateways matching the given label selector.
         - --gateway-label-filter=my-gateway-label==my-gateway-value
+        # Optionally, enable ListenerSet support for Routes referencing ListenerSet parentRefs.
+        - --gateway-listener-sets
         # Add provider-specific flags...
         - --domain-filter=external-dns-test.my-org.com
         - --provider=google

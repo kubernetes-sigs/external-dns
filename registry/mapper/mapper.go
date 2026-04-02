@@ -33,6 +33,7 @@ var (
 		endpoint.RecordTypeCNAME,
 		endpoint.RecordTypeNS,
 		endpoint.RecordTypeMX,
+		endpoint.RecordTypePTR,
 		endpoint.RecordTypeSRV,
 		endpoint.RecordTypeNAPTR,
 	}

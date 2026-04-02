@@ -17,13 +17,14 @@ limitations under the License.
 package inmemory
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -99,7 +100,7 @@ func testInMemoryRecords(t *testing.T) {
 			im.client = c
 			f := filter{domain: ti.zone}
 			im.filter = &f
-			records, err := im.Records(context.Background())
+			records, err := im.Records(t.Context())
 			if ti.expectError {
 				assert.Nil(t, records)
 				assert.EqualError(t, err, ErrZoneNotFound.Error())
@@ -549,7 +550,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 			c.zones = getInitData()
 			im.client = c
 
-			err := im.ApplyChanges(context.Background(), ti.changes)
+			err := im.ApplyChanges(t.Context(), ti.changes)
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -558,6 +559,77 @@ func testInMemoryApplyChanges(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNew(t *testing.T) {
+	cfg := &externaldns.Config{InMemoryZones: []string{"example.com", "other.org"}}
+	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
+	p, err := New(t.Context(), cfg, domainFilter)
+	require.NoError(t, err)
+	assert.NotNil(t, p)
+	im, ok := p.(*InMemoryProvider)
+	require.True(t, ok)
+	assert.Equal(t, domainFilter, im.domain)
+	zones := im.Zones()
+	assert.Contains(t, zones, "example.com")
+	assert.Contains(t, zones, "other.org")
+}
+
+func TestInMemoryWithLogging(t *testing.T) {
+	p := NewInMemoryProvider(InMemoryWithLogging())
+	require.NoError(t, p.CreateZone("example.com"))
+
+	ep := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	epNew := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "5.6.7.8")
+
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{ep},
+	}))
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{ep},
+		UpdateNew: []*endpoint.Endpoint{epNew},
+	}))
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{epNew},
+	}))
+}
+
+func TestInMemoryWithDomain(t *testing.T) {
+	df := endpoint.NewDomainFilter([]string{"example.com"})
+	p := NewInMemoryProvider(InMemoryWithDomain(df))
+	assert.Equal(t, df, p.domain)
+}
+
+func TestInMemoryInitZones(t *testing.T) {
+	t.Run("zones are created", func(t *testing.T) {
+		p := NewInMemoryProvider(InMemoryInitZones([]string{"example.com", "other.org"}))
+		zones := p.Zones()
+		assert.Contains(t, zones, "example.com")
+		assert.Contains(t, zones, "other.org")
+	})
+	t.Run("duplicate zone logs warning and does not panic", func(t *testing.T) {
+		p := NewInMemoryProvider(InMemoryInitZones([]string{"example.com", "example.com"}))
+		zones := p.Zones()
+		assert.Contains(t, zones, "example.com")
+	})
+}
+
+func TestApplyChanges_UnknownZoneSkipped(t *testing.T) {
+	p := NewInMemoryProvider(InMemoryInitZones([]string{"example.com"}))
+	outside := endpoint.NewEndpoint("foo.other.org", endpoint.RecordTypeA, "1.2.3.4")
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{outside},
+		UpdateOld: []*endpoint.Endpoint{outside},
+		Delete:    []*endpoint.Endpoint{outside},
+	})
+	assert.NoError(t, err)
+}
+
+func TestInMemoryClient_Records_ZoneNotFound(t *testing.T) {
+	c := newInMemoryClient()
+	_, err := c.Records("nonexistent.com")
+	assert.ErrorIs(t, err, ErrZoneNotFound)
 }
 
 func testNewInMemoryProvider(t *testing.T) {

@@ -33,6 +33,8 @@ import (
 	"github.com/goccy/go-yaml"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -95,10 +97,15 @@ type alibabaCloudConfig struct {
 	ExpireTime      time.Time `json:"-"               yaml:"-"`
 }
 
-// NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
+// New creates an Alibaba Cloud provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(cfg.AlibabaCloudConfigFile, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.AlibabaCloudZoneType, cfg.DryRun)
+}
+
+// newAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func newProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := os.ReadFile(configFile)

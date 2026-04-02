@@ -19,13 +19,16 @@ package testutils
 import (
 	"net/netip"
 	"reflect"
-	"sort"
+	"slices"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestExampleSameEndpoints(t *testing.T) {
@@ -69,7 +72,8 @@ func TestExampleSameEndpoints(t *testing.T) {
 			},
 		},
 	}
-	sort.Sort(byAllFields(eps))
+
+	slices.SortFunc(eps, compareEndpoints)
 
 	expectedOrder := []string{
 		"abc.com",
@@ -495,6 +499,80 @@ func TestWithLabel(t *testing.T) {
 	assert.Equal(t, "val", e.Labels["new"])
 }
 
+func TestGenerateTestEndpointsWithDistribution(t *testing.T) {
+	tests := []struct {
+		name          string
+		typeCounts    map[string]int
+		domainWeights map[string]int
+		ownerWeights  map[string]int
+		wantTotal     int
+		wantTypes     map[string]int
+		wantDomains   map[string]int
+		wantOwners    map[string]int
+	}{
+		{
+			name:          "basic distribution",
+			typeCounts:    map[string]int{"A": 6, "CNAME": 4},
+			domainWeights: map[string]int{"example.com": 1, "test.org": 1},
+			ownerWeights:  map[string]int{"owner1": 1, "owner2": 1},
+			wantTotal:     10,
+			wantTypes:     map[string]int{"A": 6, "CNAME": 4},
+			wantDomains:   map[string]int{"example.com": 5, "test.org": 5},
+			wantOwners:    map[string]int{"owner1": 5, "owner2": 5},
+		},
+		{
+			name:          "weighted distribution 2:1",
+			typeCounts:    map[string]int{"A": 9},
+			domainWeights: map[string]int{"example.com": 2, "test.org": 1},
+			ownerWeights:  map[string]int{"owner1": 2, "owner2": 1},
+			wantTotal:     9,
+			wantTypes:     map[string]int{"A": 9},
+			wantDomains:   map[string]int{"example.com": 6, "test.org": 3},
+			wantOwners:    map[string]int{"owner1": 6, "owner2": 3},
+		},
+		{
+			name:          "empty weights use defaults",
+			typeCounts:    map[string]int{"A": 3},
+			domainWeights: map[string]int{},
+			ownerWeights:  map[string]int{},
+			wantTotal:     3,
+			wantTypes:     map[string]int{"A": 3},
+			wantDomains:   map[string]int{"example.com": 3},
+			wantOwners:    map[string]int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eps := GenerateTestEndpointsWithDistribution(tt.typeCounts, tt.domainWeights, tt.ownerWeights)
+
+			assert.Len(t, eps, tt.wantTotal, "total endpoint count")
+
+			// Count actual distributions
+			gotTypes := make(map[string]int)
+			gotDomains := make(map[string]int)
+			gotOwners := make(map[string]int)
+
+			for _, ep := range eps {
+				gotTypes[ep.RecordType]++
+				for domain := range tt.wantDomains {
+					if strings.HasSuffix(ep.DNSName, domain) {
+						gotDomains[domain]++
+						break
+					}
+				}
+				if owner, ok := ep.Labels[endpoint.OwnerLabelKey]; ok {
+					gotOwners[owner]++
+				}
+			}
+
+			assert.Equal(t, tt.wantTypes, gotTypes, "record type distribution")
+			assert.Equal(t, tt.wantDomains, gotDomains, "domain distribution")
+			assert.Equal(t, tt.wantOwners, gotOwners, "owner distribution")
+		})
+	}
+}
+
 func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
 	noOwner := &endpoint.Endpoint{}
 	ownedByFoo := &endpoint.Endpoint{
@@ -543,13 +621,13 @@ func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			endpoint.FilterEndpointsByOwnerID(tt.ownerID, tt.endpoints)
 			for _, m := range tt.messages {
-				TestHelperLogContains(m, hook, t)
+				logtest.TestHelperLogContains(m, hook, t)
 			}
 			for _, m := range tt.messages_not {
-				TestHelperLogNotContains(m, hook, t)
+				logtest.TestHelperLogNotContains(m, hook, t)
 			}
 		})
 	}

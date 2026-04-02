@@ -1,0 +1,29 @@
+# ref: https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
+logLevel: info  # debug, info, warn, error
+policy: sync
+
+provider:
+  name: aws
+
+txtOwnerId: aws-localstack
+
+domainFilters:
+  - example.com
+  - local.tld
+
+sources:
+  - service
+  - ingress
+  - crd
+
+env:
+  - name: AWS_REGION
+    value: eu-west-1
+  - name: AWS_ACCESS_KEY_ID
+    value: foo-fake
+  - name: AWS_SECRET_ACCESS_KEY
+    value: bar-fake
+  - name: AWS_ENDPOINT_URL
+    value: http://localstack.localstack.svc.cluster.local:4566
+
+interval: 1m

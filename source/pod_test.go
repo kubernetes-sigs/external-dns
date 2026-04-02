@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -29,12 +28,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -562,6 +566,66 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
+			"create records based on internal hostname annotation for non-host network pod",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.1",
+					},
+				},
+			},
+		},
+		{
+			"create records based on internal hostname annotation for host network pod",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.1",
+					},
+				},
+			},
+		},
+		{
 			"create records based on pod's target annotation with pod source domain",
 			"",
 			"",
@@ -642,6 +706,37 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"provider-specific annotation is not supported and is ignored",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.HostnameKey:          "a.foo.example.org",
+							annotations.AWSPrefix + "weight": "10",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
@@ -663,7 +758,12 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false, "", nil)
+			client, err := NewPodSource(ctx, kubernetes, &Config{
+				Namespace:                tc.targetNamespace,
+				Compatibility:            tc.compatibility,
+				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
+				PodSourceDomain:          tc.PodSourceDomain,
+			})
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -674,7 +774,7 @@ func TestPodSource(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, ep := range endpoints {
 				// TODO: source should always set the resource label key. currently not supported by the pod source.
@@ -874,7 +974,7 @@ func TestPodSourceLogs(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 			// Create the nodes
 			for _, node := range tc.nodes {
 				if _, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{}); err != nil {
@@ -891,25 +991,27 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil)
+			src, err := NewPodSource(ctx, kubernetes, &Config{
+				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
+			})
 			require.NoError(t, err)
 
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
-			_, err = client.Endpoints(ctx)
+			_, err = src.Endpoints(ctx)
 			require.NoError(t, err)
 
 			// Check if all expected logs are present in actual logs.
 			// We don't do an exact match because logs are globally shared,
 			// making precise comparisons difficult
 			for _, expectedLog := range tc.expectedDebugLogs {
-				testutils.TestHelperLogContains(expectedLog, hook, t)
+				logtest.TestHelperLogContains(expectedLog, hook, t)
 			}
 
 			// Check that no unexpected logs are present.
 			// This ensures that logs are not generated inappropriately.
 			for _, unexpectedLog := range tc.unexpectedDebugLogs {
-				testutils.TestHelperLogNotContains(unexpectedLog, hook, t)
+				logtest.TestHelperLogNotContains(unexpectedLog, hook, t)
 			}
 		})
 	}
@@ -1042,11 +1144,11 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil)
+		src, err := NewPodSource(ctx, fakeClient, &Config{})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1057,8 +1159,10 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		// Metadata
 		assert.Equal(t, "test-name", retrieved.Name)
 		assert.Equal(t, "test-ns", retrieved.Namespace)
-		assert.Empty(t, retrieved.UID)
-		assert.Empty(t, retrieved.Labels)
+		assert.Equal(t, pod.UID, retrieved.UID)
+		assert.Equal(t, pod.Labels, retrieved.Labels)
+		assert.Equal(t, pod.Annotations, retrieved.Annotations) // no lastAppliedConfig in test data
+		assert.NotEmpty(t, retrieved.UID)
 		// Filtered
 		assert.Equal(t, map[string]string{
 			"user-annotation": "value",
@@ -1067,22 +1171,19 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			"other/annotation":                          "value",
 		}, retrieved.Annotations)
 
-		// Spec
-		assert.Empty(t, retrieved.Spec.Containers)
-		assert.Empty(t, retrieved.Spec.Hostname)
+		// Spec — fully preserved
+		assert.NotEmpty(t, retrieved.Spec.Containers)
+		assert.Equal(t, "test-hostname", retrieved.Spec.Hostname)
 		assert.Equal(t, "test-node", retrieved.Spec.NodeName)
 		assert.True(t, retrieved.Spec.HostNetwork)
 
-		// Status
-		assert.Empty(t, retrieved.Status.ContainerStatuses)
-		assert.Empty(t, retrieved.Status.InitContainerStatuses)
-		assert.Empty(t, retrieved.Status.HostIP)
+		// Status — conditions stripped, rest preserved
 		assert.Equal(t, "127.0.0.1", retrieved.Status.PodIP)
-		assert.Empty(t, retrieved.Status.Conditions)
+		assert.Equal(t, "127.0.0.2", retrieved.Status.HostIP)
+		assert.Empty(t, retrieved.Status.Conditions) // removed by TransformRemoveStatusConditions
 	})
 
-	t.Run("transformer is not used when fqdnTemplate is set", func(t *testing.T) {
-		ctx := t.Context()
+	t.Run("transformer is always applied regardless of fqdnTemplate", func(t *testing.T) {
 		fakeClient := fake.NewClientset()
 
 		pod := &v1.Pod{
@@ -1123,11 +1224,13 @@ func TestPodTransformerInPodSource(t *testing.T) {
 			},
 		}
 
-		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "template", false, "", nil)
+		src, err := NewPodSource(t.Context(), fakeClient, &Config{
+			TemplateEngine: templatetest.MustEngine(t, "template", "", "", false),
+		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1141,4 +1244,44 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		assert.NotEmpty(t, retrieved.UID)
 		assert.NotEmpty(t, retrieved.Labels)
 	})
+}
+
+func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "01",
+				Name:      "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "02",
+				Name:      "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewPodSource(
+		t.Context(),
+		fakeClient,
+		&Config{},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Pod, len(elements))
 }

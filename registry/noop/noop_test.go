@@ -17,7 +17,6 @@ limitations under the License.
 package noop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +24,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
@@ -35,15 +35,42 @@ func TestNoopRegistry(t *testing.T) {
 	t.Run("ApplyChanges", testNoopApplyChanges)
 }
 
+func TestNew(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := New(&externaldns.Config{}, p)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestNoopRegistry_OwnerID(t *testing.T) {
+	r := newRegistry(inmemory.NewInMemoryProvider())
+	assert.Empty(t, r.OwnerID())
+}
+
+func TestNoopRegistry_GetDomainFilter(t *testing.T) {
+	p := inmemory.NewInMemoryProvider(inmemory.InMemoryWithDomain(endpoint.NewDomainFilter([]string{"example.com"})))
+	r := newRegistry(p)
+	assert.NotNil(t, r.GetDomainFilter())
+}
+
+func TestNoopRegistry_AdjustEndpoints(t *testing.T) {
+	r := newRegistry(inmemory.NewInMemoryProvider())
+	eps := []*endpoint.Endpoint{endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4")}
+	got, err := r.AdjustEndpoints(eps)
+	require.NoError(t, err)
+	assert.Equal(t, eps, got)
+}
+
 func testNoopInit(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	r, err := NewNoopRegistry(p)
+	r := newRegistry(p)
+	var err error
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 }
 
 func testNoopRecords(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
 	inmemoryRecords := []*endpoint.Endpoint{
@@ -57,7 +84,7 @@ func testNoopRecords(t *testing.T) {
 		Create: inmemoryRecords,
 	})
 
-	r, _ := NewNoopRegistry(p)
+	r := newRegistry(p)
 
 	eps, err := r.Records(ctx)
 	require.NoError(t, err)
@@ -88,13 +115,13 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: inmemoryRecords,
 	})
 
 	// wrong changes
-	r, _ := NewNoopRegistry(p)
+	r := newRegistry(p)
 	err := r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{

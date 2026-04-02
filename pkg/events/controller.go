@@ -111,6 +111,7 @@ func (ec *Controller) processNextWorkItem(ctx context.Context) bool {
 	if err != nil && !apierrors.IsNotFound(err) {
 		if ec.queue.NumRequeues(key) < maxTriesPerEvent {
 			log.Errorf("not able to create event, retrying for key/%s. %v", key, err)
+			ec.queue.AddRateLimited(key)
 			return true
 		}
 		log.Errorf("dropping event %s/%s with key/%q after %d retries. %v", event.Namespace, event.Name, key, ec.queue.NumRequeues(key), err)

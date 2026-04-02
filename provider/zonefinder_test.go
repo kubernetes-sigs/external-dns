@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestZoneIDName(t *testing.T) {
@@ -101,8 +101,34 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "testécassé.fr", zoneName)
 	assert.Equal(t, "234567", zoneID)
 
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("xn--not-a-valid-punycode")
 
-	testutils.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
+	logtest.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
+}
+
+func TestZoneIDName_FindZone_InvalidPunycodeStillFindsZone(t *testing.T) {
+	z := ZoneIDName{}
+	z.Add("zone1", "example.com")
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	// The first label is invalid punycode: ToUnicode fails, the original label is kept
+	// as fallback, and the remaining suffix still matches the zone.
+	zoneID, zoneName := z.FindZone("xn--not-a-valid-punycode.example.com")
+
+	assert.Equal(t, "zone1", zoneID)
+	assert.Equal(t, "example.com", zoneName)
+	logtest.TestHelperLogContains(`Failed to convert label "xn--not-a-valid-punycode"`, hook, t)
+}
+
+func TestZoneIDName_Add_ConversionError(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	z := ZoneIDName{}
+	z.Add("zone1", "xn--not-a-valid-punycode")
+
+	// Conversion fails: original zoneName is stored as fallback.
+	assert.Equal(t, "xn--not-a-valid-punycode", z["zone1"])
+	logtest.TestHelperLogContains(`failed to convert zonename "xn--not-a-valid-punycode" to its Unicode form`, hook, t)
 }

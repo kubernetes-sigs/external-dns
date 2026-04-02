@@ -33,6 +33,21 @@ If you would like to further restrict the API permissions to a specific zone (or
 Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit.
 The AWS Provider [docs](./aws.md#throttling) has some recommendations that can be followed here too, but in particular, consider passing `--cloudflare-dns-records-per-page` with a high value (maximum is 5,000).
 
+## Batch API
+
+The Cloudflare provider submits DNS record changes using Cloudflare's [Batch DNS Records API](https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/batch/).
+All creates, updates, and deletes for a zone are grouped into transactional chunks and sent in a single API call per chunk,
+significantly reducing the total number of requests made.
+
+The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
+In that case, ExternalDNS automatically retries each record change in the chunk individually.
+Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+
+| Flag | Default | Description |
+| :--- | :------ | :---------- |
+| `--batch-change-size` | `200` | Maximum number of DNS operations (creates + updates + deletes) per batch chunk. |
+| `--batch-change-interval` | `1s` | Pause between consecutive batch chunks. |
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.

@@ -17,7 +17,6 @@ limitations under the License.
 package akamai
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -57,7 +56,7 @@ func createAkamaiStubProvider(stub *edgednsStub, domfilter *endpoint.DomainFilte
 		AccessToken:           "test_access_token",
 	}
 
-	prov, err := NewAkamaiProvider(akamaiConfig, stub)
+	prov, err := newProvider(akamaiConfig, stub)
 	aprov := prov.(*AkamaiProvider)
 	return aprov, err
 }
@@ -191,7 +190,7 @@ func TestAkamaiRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -207,7 +206,7 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 	recordsets := make([]any, 0)
 	stub.setOutput("recordset", recordsets)
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	assert.Nil(t, x)
 }
 
@@ -233,7 +232,7 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -366,6 +365,6 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
-	apply := c.ApplyChanges(context.Background(), changes)
+	apply := c.ApplyChanges(t.Context(), changes)
 	assert.NoError(t, apply)
 }

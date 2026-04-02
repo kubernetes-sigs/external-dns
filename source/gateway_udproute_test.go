@@ -25,12 +25,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/annotations"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
@@ -41,7 +45,7 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 
 	gwClient := gatewayfake.NewSimpleClientset()
 	kubeClient := kubefake.NewClientset()
-	clients := new(MockClientGenerator)
+	clients := new(testutils.MockClientGenerator)
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
@@ -92,14 +96,13 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create UDPRoute")
 
 	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
-		FQDNTemplate:             "{{.Name}}-template.foobar.internal",
-		CombineFQDNAndAnnotation: true,
+		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
 
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err, "failed to get Endpoints")
-	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		newTestEndpoint("api-annotation.foobar.internal", ips...),
 		newTestEndpoint("api-template.foobar.internal", ips...),
 	})

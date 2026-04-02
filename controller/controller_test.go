@@ -28,13 +28,16 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/events/fake"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/provider/fakes"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -154,7 +157,7 @@ func getTestSource() *testutils.MockSource {
 
 func getTestConfig() *externaldns.Config {
 	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
+	cfg.Registry = externaldns.RegistryNoop
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	return cfg
 }
@@ -213,7 +216,7 @@ func TestRunOnce(t *testing.T) {
 
 	emitter := fake.NewFakeEventEmitter()
 
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -225,7 +228,7 @@ func TestRunOnce(t *testing.T) {
 		EventEmitter:       emitter,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
@@ -243,7 +246,7 @@ func TestRun(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -254,7 +257,7 @@ func TestRun(t *testing.T) {
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)
@@ -331,7 +334,7 @@ func TestShouldRunOnce(t *testing.T) {
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter *endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
 	cfg := externaldns.NewConfig()
-	cfg.Registry = registry.NOOP
+	cfg.Registry = externaldns.RegistryNoop
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 
 	source := new(testutils.MockSource)
@@ -341,7 +344,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.SelectRegistry(cfg, provider)
+	r, err := registryfactory.Select(cfg, provider)
 	require.NoError(t, err)
 
 	ctrl := &Controller{
@@ -352,7 +355,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
 	assert.Equal(t, 1, provider.RecordsCallCount)
 	require.Len(t, provider.ApplyChangesCalls, len(expectedChanges))
 	for i, change := range expectedChanges {
@@ -520,7 +523,7 @@ func TestToggleRegistry(t *testing.T) {
 		Interval:           interval,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)
@@ -552,4 +555,53 @@ func TestToggleRegistry(t *testing.T) {
 	finalCount := r.failCount
 	r.failCountMu.Unlock()
 	assert.Equal(t, toggleRegistryFailureCount, finalCount, "failCount should be at least %d", toggleRegistryFailureCount)
+}
+
+func TestRunOnce_EmitChangeEvent(t *testing.T) {
+	tests := []struct {
+		name           string
+		applyErr       error
+		expectedReason events.Reason
+		expectErr      bool
+	}{
+		{
+			name:           "emits RecordReady on success",
+			expectedReason: events.RecordReady,
+		},
+		{
+			name:           "emits RecordError on failure",
+			applyErr:       errors.New("apply failed"),
+			expectedReason: events.RecordError,
+			expectErr:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			source := new(testutils.MockSource)
+			source.On("Endpoints").Return([]*endpoint.Endpoint{
+				endpoint.NewEndpoint("dot.com", endpoint.RecordTypeA, "1.2.3.4").
+					WithRefObject(&events.ObjectReference{}),
+			}, nil)
+
+			r, err := registryfactory.Select(getTestConfig(), &fakes.MockProvider{ApplyChangesErr: tt.applyErr})
+			require.NoError(t, err)
+
+			emitter := fake.NewFakeEventEmitter()
+			ctrl := &Controller{
+				Source:             source,
+				Registry:           r,
+				Policy:             &plan.SyncPolicy{},
+				ManagedRecordTypes: []string{endpoint.RecordTypeA},
+				EventEmitter:       emitter,
+			}
+
+			err = ctrl.RunOnce(t.Context())
+			assert.Equal(t, tt.expectErr, err != nil)
+
+			emitter.AssertCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
+				return e.Reason() == tt.expectedReason
+			}))
+		})
+	}
 }
