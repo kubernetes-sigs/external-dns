@@ -3323,7 +3323,7 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expectedAaaa: nil,
 		},
-		// Other record types that has alias properites should be rejected by endpoint validation,
+		// Other record types that has alias properties should be rejected by endpoint validation,
 		// so we don't need to test them here as adjustEndpointAndNewAaaaIfNeeded should not be called for them.
 	}
 
