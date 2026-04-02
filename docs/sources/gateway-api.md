@@ -5,26 +5,24 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 ## Supported API Versions
 
-ExternalDNS now uses the v1 Gateway API for Gateways, HTTPRoutes, and GRPCRoutes
-but still uses the v1alpha2 API for TLSRoutes as they only graduated to v1
-in Gateway API v1.5.0. TCPRoute and UDPRoute remain experimental and are only
-available as v1alpha2.
+ExternalDNS uses Gateway API CRDs, which are distributed at different versions in Standard and/or
+Experimental channels as summarized below:
 
-The current supported version range of Gateway API CRDs is: `v1.1.1` -> `v1.5.1`.
-Continued support for v1alpha2 is NOT guaranteed. At some time in the future,
-Gateway API will graduate TCP/UDP Routes to v1 and ExternalDNS will follow.
+|      Resource      | API Version Used<br> by ExternalDNS | Mininmum Standard<br>Release Channel | Experimental<br>Release Channel |
+|--------------------|-------------------------------------|--------------------------------------|---------------------------------|
+| Gateway            | v1                                  | v1.0.0                               | v1.0.0                          |
+| HTTPRoute          | v1                                  | v1.0.0                               | v1.0.0                          |
+| GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
+| ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
+| TLSRoute           | v1alpha2                            | v1.5.0                               | v1.0.0                          |
+| TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 
-|      Resource      | API Version Used | Minimum Gateway API |
-|--------------------|------------------|---------------------|
-| Gateway            | v1               | v1.0.0              |
-| HTTPRoute          | v1               | v1.0.0              |
-| GRPCRoute          | v1               | v1.0.0              |
-| TLSRoute (current) | v1alpha2         | Experimental        |
-| TCPRoute (current) | v1alpha2         | Experimental        |
-| UDPRoute (current) | v1alpha2         | Experimental        |
-| TLSRoute (future)  | v1               | v1.5.0              |
-| TCPRoute (future)  | v1               | TBD                 |
-| UDPRoute (future)  | v1               | TBD                 |
+Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
+v1 API.
+
+GRPCRoutes were promoted to the Standard channel in Gateway API v1.1.0 and use the
+v1 API.
 
 ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
 They use the v1 API and allow attaching additional listeners to an existing Gateway.
@@ -33,6 +31,14 @@ ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addr
 The `external-dns.alpha.kubernetes.io/target` annotation is also supported on ListenerSet
 resources. When present, it takes precedence over the parent Gateway's target annotation.
 ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
+
+TLSRoutes were promoted to the Standard channel in Gateway API v1.5.0 but have been
+available in the Experimental channel as v1alpha2 since v1.0.0.
+ExternalDNS still uses the v1alpha2 API for compatibility with older CRDs but it
+has been deprecated and will be removed from future releases, at which point ExternalDNS will
+need to migrate to v1. (See [#6247](https://github.com/kubernetes-sigs/external-dns/issues/6247))
+
+TCPRoute and UDPRoute remain experimental and are only available as v1alpha2 in the Experimental channel.
 
 ## Hostnames
 
