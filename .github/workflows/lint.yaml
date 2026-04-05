@@ -37,13 +37,17 @@ jobs:
           exit 1
         fi
 
+    - name: Read golangci-lint version
+      id: lint-version
+      run: echo "version=$(grep -oP 'GOLANGCI_LINT_VERSION\s*=\s*\K\S+' scripts/install-tools.sh)" >> $GITHUB_OUTPUT
+
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
       uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
       with:
         verify: true
         args: --timeout=30m
-        version: v2.11.4
+        version: ${{ steps.lint-version.outputs.version }}
 
     - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
     # https://github.com/pre-commit/action
