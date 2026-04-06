@@ -27,7 +27,7 @@ Building and/or testing `external-dns` requires additional tooling.
 
 ### Go Tools
 
-Additional Go-based tools are managed in [`go.tool.mod`](../../go.tool.mod) and used for code generation:
+Additional Go-based tools are managed in `go.tool.mod` and used for code generation:
 
 | Tool                                                                  | Purpose                                            |
 |-----------------------------------------------------------------------|----------------------------------------------------|
