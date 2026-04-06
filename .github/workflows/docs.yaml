@@ -1,4 +1,4 @@
-name: Release Docs
+name: Docs
 
 on:
   pull_request:
@@ -21,7 +21,7 @@ permissions: {}
 
 jobs:
   build_docs:
-    name: Build Docs
+    name: Lint Docs
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
