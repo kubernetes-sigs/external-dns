@@ -35,12 +35,10 @@ jobs:
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      - run: |
-          pip install -r docs/scripts/requirements.txt
+      - run: pip install -r docs/scripts/requirements.txt
 
-      - name: Build
-        run: |
-          mkdocs build --strict
+      - name: lint and build docs
+        run: mkdocs build --strict
 
   release_docs:
     permissions:
@@ -60,8 +58,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      - run: |
-          pip install -r docs/scripts/requirements.txt
+      - run: pip install -r docs/scripts/requirements.txt
 
       - name: Configure Git user
         run: |
