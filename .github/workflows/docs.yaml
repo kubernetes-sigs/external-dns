@@ -1,12 +1,13 @@
 name: Release Docs
 
 on:
-  push:
-    tags:
-      - "v*"
   # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
   # Can be used to update doc with latest tag
   workflow_dispatch:
+    tag:
+      description: "Build documentation for specified tag value"
+      required: true
+      type: string
 
 permissions: {}
 
@@ -38,9 +39,6 @@ jobs:
 
       - name: build and push
         run: |
-          VERSION="${{ github.ref_name }}"
-          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
-            VERSION="latest"
-          fi
+          VERSION="${{ input.tag }}"
           mike deploy $VERSION --push --update-aliases
           mike set-default --push latest
