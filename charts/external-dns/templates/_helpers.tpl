@@ -68,7 +68,18 @@ Create the name of the service account to use
 The image to use
 */}}
 {{- define "external-dns.image" -}}
-{{- printf "%s:%s" .Values.image.repository (default (printf "v%s" .Chart.AppVersion) .Values.image.tag) }}
+{{- $image := .Values.image.repository -}}
+{{- if ne "" .Values.image.tag -}}
+{{- $tag := default (printf "v%s" .Chart.AppVersion) .Values.image.tag  }}
+{{- $image = printf "%s:%s" $image $tag }}
+{{- end }}
+{{- if not (empty .Values.image.digest) -}}
+{{- $image = printf "%s@%s" $image .Values.image.digest }}
+{{- end }}
+{{- if eq .Values.image.repository $image -}}
+{{- fail "should have at least one of image tag or image digest" }}
+{{- end }}
+{{- $image }}
 {{- end }}
 
 {{/*

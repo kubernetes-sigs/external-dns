@@ -102,6 +102,17 @@ jobs:
           check_command: mdq --version
           version: latest
 
+      - name: Run image digest check
+        run: |
+          set -euo pipefail
+
+          make helm-image-digest
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
+          then
+            echo "Image digest not up to date. Please run make helm-image-digest and commit changes!" >&2
+            exit 1
+          fi
+
       - name: Run CHANGELOG check
         run: |
           set -euo pipefail

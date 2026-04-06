@@ -9,6 +9,8 @@ tests:
     set:
       rbac:
         namespaced: true
+      image:
+        digest: sha256:deadbeef
     asserts:
       - equalRaw:
           value: |
@@ -17,5 +19,5 @@ tests:
             ***********************************************************************
               Chart version: 1.15.0
               App version:   0.15.0
-              Image tag:     registry.k8s.io/external-dns/external-dns:v0.15.0
+              Image tag:     registry.k8s.io/external-dns/external-dns:v0.15.0@sha256:deadbeef
             ***********************************************************************

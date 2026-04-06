@@ -67,5 +67,6 @@ The chart needs to be released in response to an ExternalDNS image release or on
 ### Steps
 
 - Create a PR to update _Chart.yaml_ with the ExternalDNS version in `appVersion`, agreed on chart release version in `version` and `annotations` showing the changes
+- Update the `image.digest` field in _values.yaml_ with the new image digest (SHA256) using `make helm-image-digest`
 - Validate that the chart linting is successful
 - Merge the PR to trigger a GitHub action to release the chart

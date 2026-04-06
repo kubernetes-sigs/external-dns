@@ -13,6 +13,8 @@ image:  # @schema additionalProperties: false
   tag:  # @schema type:[string, null]
   # -- Image pull policy for the `external-dns` container.
   pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always]
+  # -- Image digest (SHA256) for the `external-dns` container (e.g. sha256:abcd1234...).
+  digest: "sha256:ddc7f4212ed09a21024deb1f470a05240837712e74e4b9f6d1f2632ff10672e7"  # @schema type:[string, null]
 
 # -- Image pull secrets.
 imagePullSecrets: []  # @schema item: object

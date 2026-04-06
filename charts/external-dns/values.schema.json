@@ -133,6 +133,13 @@
     "image": {
       "type": "object",
       "properties": {
+        "digest": {
+          "description": "Image digest (SHA256) for the `external-dns` container (e.g. sha256:abcd1234...).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "pullPolicy": {
           "description": "Image pull policy for the `external-dns` container.",
           "type": "string",

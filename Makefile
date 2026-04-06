@@ -211,6 +211,11 @@ helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
 
+.PHONY: helm-image-digest
+#? helm-image-digest: Update image digest in values.yaml from registry
+helm-image-digest:
+	scripts/helm-tools.sh --digest
+
 .PHONY: go-dependency
 #? go-dependency: Dependency maintanance
 go-dependency:

@@ -1,0 +1,59 @@
+suite: Deployment image configurations
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+chart:
+  appVersion: 0.15.0
+tests:
+  - it: should use image tag and digest by default
+    set:
+      image:
+        repository: registry.k8s.io/external-dns/external-dns
+        digest: sha256:deadbeef
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].image
+          value: registry.k8s.io/external-dns/external-dns:v0.15.0@sha256:deadbeef
+
+  - it: should use image tag only when digest is null
+    set:
+      image:
+        repository: registry.k8s.io/external-dns/external-dns
+        digest: ~
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].image
+          value: registry.k8s.io/external-dns/external-dns:v0.15.0
+
+  - it: should use image digest only when tag is empty string
+    set:
+      image:
+        repository: registry.k8s.io/external-dns/external-dns
+        tag: ""
+        digest: sha256:deadbeef
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].image
+          value: registry.k8s.io/external-dns/external-dns@sha256:deadbeef
+
+  - it: should use overridden image tag
+    set:
+      image:
+        repository: registry.k8s.io/external-dns/external-dns
+        tag: v0.1.0
+        digest: sha256:deadbeef
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].image
+          value: registry.k8s.io/external-dns/external-dns:v0.1.0@sha256:deadbeef
+
+  - it: should fails if tag is empty string and digest is empty
+    set:
+      image:
+        repository: registry.k8s.io/external-dns/external-dns
+        tag: ""
+        digest: ~
+    asserts:
+      - failedTemplate:
+          errorMessage: "should have at least one of image tag or image digest"

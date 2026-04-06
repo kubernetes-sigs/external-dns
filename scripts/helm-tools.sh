@@ -23,6 +23,7 @@ cat << EOF
 
 Usage: $(basename "$0") <options>
     -d, --diff          Schema diff validation
+    --digest            Update image digest in values.yaml from registry
     --docs              Re-generate helm documentation
     -h, --help          Display help
     -i, --install       Install required tooling
@@ -107,6 +108,26 @@ show_docs() {
   open "https://github.com/losisin/helm-values-schema-json?tab=readme-ov-file"
 }
 
+image_digest() {
+  APP_VERSION=$(yq '.appVersion' charts/external-dns/Chart.yaml)
+  REPOSITORY=$(yq '.image.repository' charts/external-dns/values.yaml)
+  IMAGE_DIGEST=$(
+    curl -sIL https://${REPOSITORY%%/*}/v2/${REPOSITORY#*/}/manifests/v${APP_VERSION} | \
+      grep "^docker-content-digest:" | head -1 | cut -d' ' -f2 | tr -d '\r'
+  )
+
+  sed -i '/^$/s// #BLANK_LINE/' charts/external-dns/values.yaml # hack to preserve blank lines as yq removes them
+  digest=${IMAGE_DIGEST} yq eval -i ".image.digest = strenv(digest)" charts/external-dns/values.yaml
+  sed -i "s/ *#BLANK_LINE//g" charts/external-dns/values.yaml # restore blank lines
+  go tool -modfile=go.tool.mod yamlfmt \
+    -formatter pad_line_comments=2 \
+    -formatter retain_line_breaks=true \
+    charts/external-dns/values.yaml
+
+  echo "Image digest set to $(yq '.image.digest' charts/external-dns/values.yaml) in values.yaml"
+}
+
+
 function main() {
   case $1 in
     --show-docs)
@@ -120,6 +141,9 @@ function main() {
       ;;
     -d|--diff)
       diff_schema
+      ;;
+    --digest)
+      image_digest
       ;;
     --docs)
       helm_docs
