@@ -68,5 +68,5 @@ jobs:
       - name: build and push
         run: |
           VERSION="${{ inputs.tag }}"
-          mike deploy $VERSION --push --update-aliases
+          mike deploy $VERSION latest --push --update-aliases
           mike set-default --push latest
