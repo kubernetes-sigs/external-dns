@@ -224,7 +224,7 @@ go test ./tests/integration/...
 ## Complete test on local env
 
 It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
-See the [related tutorials](../tutorials/coredns-etc.md) for full instructions.
+See the [related tutorials](../tutorials/coredns-etcd.md) for full instructions.
 
 ### Continuous Integration
 
