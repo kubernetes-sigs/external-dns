@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
   # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
   # Can be used to update doc with latest tag
   workflow_dispatch:
@@ -11,12 +17,33 @@ on:
 permissions: {}
 
 jobs:
+  build_docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "./docs/scripts/requirements.txt"
+
+      - run: |
+          pip install -r docs/scripts/requirements.txt
+
+      - name: Build
+        run: |
+          mkdocs build --strict
+
   release_docs:
     permissions:
       contents: write  #  for mike to push
 
     name: Release Docs
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
