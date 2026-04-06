@@ -1,9 +1,6 @@
 name: Release Docs
 
 on:
-  push:
-    tags:
-      - "v*"
   pull_request:
     branches:
       - master
@@ -13,6 +10,11 @@ on:
   # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
   # Can be used to update doc with latest tag
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Build documentation for specified tag value"
+        required: true
+        type: string
 
 permissions: {}
 
@@ -43,7 +45,7 @@ jobs:
 
     name: Release Docs
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -65,9 +67,6 @@ jobs:
 
       - name: build and push
         run: |
-          VERSION="${{ github.ref_name }}"
-          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
-            VERSION="latest"
-          fi
+          VERSION="${{ inputs.tag }}"
           mike deploy $VERSION --push --update-aliases
           mike set-default --push latest

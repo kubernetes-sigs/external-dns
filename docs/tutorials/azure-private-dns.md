@@ -118,7 +118,7 @@ This is per default done through the file `~/.kube/config`.
 For general background information on this see [kubernetes-docs](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/).
 Azure-CLI features functionality for automatically maintaining this file for AKS-Clusters. See [Azure-Docs](https://docs.microsoft.com/de-de/cli/azure/aks?view=azure-cli-latest#az-aks-get-credentials).
 
-Follow the steps for [azure-dns provider](./azure.md#creating-configuration-file) to create a configuration file.
+Follow the steps for [azure-dns provider](./azure.md#configuration-file) to create a configuration file.
 
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
