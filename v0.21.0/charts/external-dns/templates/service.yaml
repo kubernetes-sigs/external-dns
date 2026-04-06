@@ -1,0 +1,36 @@
+{{- $providerName := include "external-dns.providerName" . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+{{- with .Values.service.ipFamilies }}
+  ipFamilies:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with .Values.service.ipFamilyPolicy }}
+  ipFamilyPolicy: {{ . }}
+{{- end }}
+  type: ClusterIP
+  selector:
+    {{- include "external-dns.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+    {{- if eq $providerName "webhook" }}
+    {{- with .Values.provider.webhook.service }}
+    - name: http-webhook
+      port: {{ .port }}
+      targetPort: http-webhook
+      protocol: TCP
+    {{- end }}
+    {{- end }}

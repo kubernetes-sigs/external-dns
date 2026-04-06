@@ -1,0 +1,746 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package source
+
+import (
+	"fmt"
+	"maps"
+	"math/rand"
+	"testing"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/mock"
+	corev1lister "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/types"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/annotations"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+)
+
+func TestNodeSource(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Endpoints", testNodeSourceEndpoints)
+	t.Run("EndpointsIPv6", testNodeEndpointsWithIPv6)
+}
+
+// testNodeSourceEndpoints tests that various node generate the correct endpoints.
+func testNodeSourceEndpoints(t *testing.T) {
+	for _, tc := range []struct {
+		title                string
+		annotationFilter     string
+		labelSelector        string
+		fqdnTemplate         string
+		nodeName             string
+		nodeAddresses        []v1.NodeAddress
+		labels               map[string]string
+		annotations          map[string]string
+		excludeUnschedulable bool // default to false
+		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
+		unschedulable        bool // default to false
+		expected             []*endpoint.Endpoint
+		expectError          bool
+		expectedLogs         []string
+		expectedAbsentLogs   []string
+	}{
+		{
+			title:              "node with short hostname returns one endpoint",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "node with fqdn returns one endpoint",
+			nodeName:           "node1.example.org",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "ipv6 node with fqdn returns one endpoint",
+			nodeName:           "node1.example.org",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with fqdn template returns endpoint with expanded hostname",
+			fqdnTemplate:       "{{.Name}}.example.org",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "node with fqdn and fqdn template returns one endpoint",
+			fqdnTemplate:       "{{.Name}}.example.org",
+			nodeName:           "node1.example.org",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
+			fqdnTemplate:       "{{.Name}}.example.org",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
+			},
+		},
+		{
+			title:              "node with fqdn template returns two endpoints with dual-stack IP addresses and expanded hostname",
+			fqdnTemplate:       "{{.Name}}.example.org",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with both external and internal IP returns an endpoint with external IP",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "node with both external, internal, and IPv6 IP returns endpoints with external IPs",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with only internal IP returns an endpoint with internal IP",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+			},
+		},
+		{
+			title:              "node with only internal IPs returns endpoints with internal IPs",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with only internal IPs with expose internal IP as false shouldn't return AAAA endpoints with internal IPs",
+			nodeName:           "node1",
+			exposeInternalIPv6: false,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
+			},
+		},
+		{
+			title:              "node with neither external nor internal IP returns no endpoints",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{},
+			expectError:        true,
+		},
+		{
+			title:              "node with target annotation",
+			nodeName:           "node1.example.org",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
+			},
+		},
+		{
+			title:              "annotated node without annotation filter returns endpoint",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "annotated node with matching annotation filter returns endpoint",
+			annotationFilter:   "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "annotated node with non-matching annotation filter returns nothing",
+			annotationFilter:   "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:              "labeled node with matching label selector returns endpoint",
+			labelSelector:      "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "labeled node with non-matching label selector returns nothing",
+			labelSelector:      "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:              "our controller type is dns-controller",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.ControllerKey: annotations.ControllerValue,
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:              "different controller types are ignored",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.ControllerKey: "not-dns-controller",
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:              "ttl not annotated should have RecordTTL.IsConfigured set to false",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+			},
+		},
+		{
+			title:              "ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.TtlKey: "foo",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+			},
+		},
+		{
+			title:              "ttl annotated and is valid should set Record.TTL",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.TtlKey: "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
+			},
+		},
+		{
+			title:                "unschedulable node return nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			exposeInternalIPv6:   true,
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is unschedulable",
+			},
+		},
+		{
+			title:                "unschedulable node returns node with excludeUnschedulable=false",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: false,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expectedAbsentLogs: []string{
+				"Skipping node node1 because it is unschedulable",
+			},
+		},
+		{
+			title:              "provider-specific annotation is not supported and is ignored",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.AWSPrefix + "weight": "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			labelSelector := labels.Everything()
+			if tc.labelSelector != "" {
+				var err error
+				labelSelector, err = labels.Parse(tc.labelSelector)
+				require.NoError(t, err)
+			}
+
+			// Create a Kubernetes testing client
+			kubeClient := fake.NewClientset()
+
+			node := &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        tc.nodeName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: tc.unschedulable,
+				},
+				Status: v1.NodeStatus{
+					Addresses: tc.nodeAddresses,
+				},
+			}
+
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, err := NewNodeSource(
+				t.Context(),
+				kubeClient,
+				&Config{
+					AnnotationFilter:     tc.annotationFilter,
+					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
+					LabelFilter:          labelSelector,
+					ExposeInternalIPv6:   tc.exposeInternalIPv6,
+					ExcludeUnschedulable: tc.excludeUnschedulable,
+				},
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints(t.Context())
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
+
+			for _, entry := range tc.expectedLogs {
+				logtest.TestHelperLogContains(entry, hook, t)
+			}
+			for _, entry := range tc.expectedAbsentLogs {
+				logtest.TestHelperLogNotContains(entry, hook, t)
+			}
+		})
+	}
+}
+
+func testNodeEndpointsWithIPv6(t *testing.T) {
+	for _, tc := range []struct {
+		title                string
+		annotationFilter     string
+		labelSelector        string
+		fqdnTemplate         string
+		nodeName             string
+		nodeAddresses        []v1.NodeAddress
+		labels               map[string]string
+		annotations          map[string]string
+		excludeUnschedulable bool // defaults to false
+		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
+		unschedulable        bool // default to false
+		expected             []*endpoint.Endpoint
+		expectError          bool
+	}{
+		{
+			title:              "node with only internal IPs should return internal IPvs irrespective of exposeInternalIPv6",
+			nodeName:           "node1",
+			exposeInternalIPv6: false,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
+			},
+		},
+		{
+			title:              "node with both external, internal, and IPv6 IP returns endpoints with external IPs",
+			nodeName:           "node1",
+			exposeInternalIPv6: false,
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {
+				Type:    v1.NodeExternalIP,
+				Address: "2001:DB8::8",
+			}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with both external and internal IPs should return internal IPv6 if exposeInternalIPv6 is true",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.5"},
+				{Type: v1.NodeInternalIP, Address: "2001:DB8::9"},
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
+			},
+		},
+	} {
+		labelSelector := labels.Everything()
+		if tc.labelSelector != "" {
+			var err error
+			labelSelector, err = labels.Parse(tc.labelSelector)
+			require.NoError(t, err)
+		}
+
+		// Create a Kubernetes testing client
+		kubeClient := fake.NewClientset()
+
+		node := &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        tc.nodeName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
+			},
+			Spec: v1.NodeSpec{
+				Unschedulable: tc.unschedulable,
+			},
+			Status: v1.NodeStatus{
+				Addresses: tc.nodeAddresses,
+			},
+		}
+
+		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		// Create our object under test and get the endpoints.
+		client, err := NewNodeSource(
+			t.Context(),
+			kubeClient,
+			&Config{
+				AnnotationFilter:     tc.annotationFilter,
+				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
+				LabelFilter:          labelSelector,
+				ExposeInternalIPv6:   tc.exposeInternalIPv6,
+				ExcludeUnschedulable: tc.excludeUnschedulable,
+			},
+		)
+		require.NoError(t, err)
+
+		endpoints, err := client.Endpoints(t.Context())
+		if tc.expectError {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+
+		// Validate returned endpoints against desired endpoints.
+		testutils.ValidateEndpoints(t, endpoints, tc.expected)
+
+		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+		for _, ep := range endpoints {
+			require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+		}
+	}
+}
+
+func TestTransformerInNodeSource(t *testing.T) {
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake-node",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+			},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.4"},
+			},
+			Conditions: []v1.NodeCondition{
+				{Type: v1.NodeReady, Status: v1.ConditionTrue},
+			},
+		},
+	}
+
+	kubeClient := fake.NewClientset()
+	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	ns, ok := src.(*nodeSource)
+	require.True(t, ok)
+
+	retrieved, err := ns.nodeInformer.Lister().Get(node.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, node.Name, retrieved.Name)
+	assert.Equal(t, node.Labels, retrieved.Labels)
+	assert.Equal(t, node.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Status.Addresses must be preserved — used for endpoint generation
+	assert.Equal(t, node.Status.Addresses, retrieved.Status.Addresses)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
+}
+
+func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
+	kubeClient := fake.NewClientset()
+
+	nodes := helperNodeBuilder().
+		withNode(map[string]string{"tenant": "1"}).
+		withNode(map[string]string{"tenant": "2"}).
+		withNode(map[string]string{"tenant": "3"}).
+		withNode(map[string]string{"tenant": "4"}).
+		build()
+
+	for _, node := range nodes.Items {
+		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
+		require.NoError(t, err, "Failed to create node %s", node.Name)
+	}
+
+	client, err := NewNodeSource(
+		t.Context(),
+		kubeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	got, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	for _, ep := range got {
+		assert.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+		assert.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+	}
+}
+
+func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewNodeSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Node, len(elements))
+}
+
+func TestNodeSource_AddEventHandler(t *testing.T) {
+	fakeInformer := new(fakeNodeInformer)
+	inf := testInformer{}
+	fakeInformer.On("Informer").Return(&inf)
+
+	nSource := &nodeSource{
+		nodeInformer: fakeInformer,
+	}
+
+	handlerCalled := false
+	handler := func() { handlerCalled = true }
+
+	nSource.AddEventHandler(t.Context(), handler)
+
+	fakeInformer.AssertNumberOfCalls(t, "Informer", 1)
+	assert.False(t, handlerCalled)
+	assert.Equal(t, 1, inf.times)
+}
+
+type fakeNodeInformer struct {
+	mock.Mock
+}
+
+func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
+	args := f.Called()
+	return args.Get(0).(cache.SharedIndexInformer)
+}
+
+func (f *fakeNodeInformer) Lister() corev1lister.NodeLister {
+	return corev1lister.NewNodeLister(f.Informer().GetIndexer())
+}
+
+type nodeListBuilder struct {
+	nodes []v1.Node
+}
+
+func helperNodeBuilder() *nodeListBuilder {
+	return &nodeListBuilder{nodes: []v1.Node{}}
+}
+
+func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
+	idx := len(b.nodes) + 1
+	nodeName := fmt.Sprintf("ip-10-1-176-%d.internal", idx)
+	b.nodes = append(b.nodes, v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+			Labels: func() map[string]string {
+				base := map[string]string{
+					"test-label":                    "test-value",
+					"name":                          nodeName,
+					"topology.kubernetes.io/region": "eu-west-1",
+					"node.kubernetes.io/lifecycle":  "spot",
+				}
+				maps.Copy(base, labels)
+				return base
+			}(),
+			Annotations: map[string]string{
+				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
+				"external-dns.alpha.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
+			},
+		},
+		Spec: v1.NodeSpec{
+			Unschedulable: false,
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeInternalIP, Address: fmt.Sprintf("10.1.176.%d", idx)},
+				{Type: v1.NodeInternalIP, Address: fmt.Sprintf("fc00:f853:ccd:e793::%d", idx)},
+			},
+		},
+	})
+
+	return b
+}
+
+func (b *nodeListBuilder) build() v1.NodeList {
+	if len(b.nodes) > 1 {
+		// Shuffle the result to ensure randomness in the order.
+		rand.New(rand.NewSource(time.Now().UnixNano()))
+		rand.Shuffle(len(b.nodes), func(i, j int) {
+			b.nodes[i], b.nodes[j] = b.nodes[j], b.nodes[i]
+		})
+	}
+	return v1.NodeList{Items: b.nodes}
+}

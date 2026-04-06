@@ -1,0 +1,21 @@
+suite: NOTES.txt output
+templates:
+  - NOTES.txt
+chart:
+  appVersion: 0.15.0
+  version: 1.15.0
+tests:
+  - it: should display message
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - equalRaw:
+          value: |
+            ***********************************************************************
+            * External DNS                                                        *
+            ***********************************************************************
+              Chart version: 1.15.0
+              App version:   0.15.0
+              Image tag:     registry.k8s.io/external-dns/external-dns:v0.15.0
+            ***********************************************************************

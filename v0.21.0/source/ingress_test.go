@@ -1,0 +1,1921 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package source
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/types"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+)
+
+// Validates that ingressSource is a Source
+var _ Source = &ingressSource{}
+
+type IngressSuite struct {
+	suite.Suite
+	sc             Source
+	fooWithTargets *networkv1.Ingress
+}
+
+func (suite *IngressSuite) SetupTest() {
+	fakeClient := fake.NewClientset()
+
+	suite.fooWithTargets = (fakeIngress{
+		name:      "foo-with-targets",
+		namespace: "default",
+		dnsnames:  []string{"foo"},
+		ips:       []string{"8.8.8.8", "2606:4700:4700::1111"},
+		hostnames: []string{"v1"},
+	}).Ingress()
+	_, err := fakeClient.NetworkingV1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
+	suite.NoError(err, "should succeed")
+
+	suite.sc, err = NewIngressSource(
+		context.TODO(),
+		fakeClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	suite.NoError(err, "should initialize ingress source")
+}
+
+func (suite *IngressSuite) TestResourceLabelIsSet() {
+	endpoints, _ := suite.sc.Endpoints(context.Background())
+	for _, ep := range endpoints {
+		suite.Equal("ingress/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+	}
+}
+
+func TestIngress(t *testing.T) {
+	t.Parallel()
+
+	suite.Run(t, new(IngressSuite))
+	t.Run("endpointsFromIngress", testEndpointsFromIngress)
+	t.Run("endpointsFromIngressHostnameSourceAnnotation", testEndpointsFromIngressHostnameSourceAnnotation)
+	t.Run("Endpoints", testIngressEndpoints)
+}
+
+func TestNewIngressSource(t *testing.T) {
+	t.Parallel()
+
+	for _, ti := range []struct {
+		title                    string
+		annotationFilter         string
+		fqdnTemplate             string
+		combineFQDNAndAnnotation bool
+		expectError              bool
+		ingressClassNames        []string
+	}{
+		{
+			title:            "non-empty annotation filter label",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+		},
+		{
+			title:             "non-empty ingress class name list",
+			expectError:       false,
+			ingressClassNames: []string{"internal", "external"},
+		},
+		{
+			title:             "ingress class name and annotation filter jointly specified",
+			expectError:       true,
+			ingressClassNames: []string{"internal", "external"},
+			annotationFilter:  "kubernetes.io/ingress.class=nginx",
+		},
+	} {
+
+		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewIngressSource(
+				t.Context(),
+				fake.NewClientset(),
+				&Config{
+					AnnotationFilter:  ti.annotationFilter,
+					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					IngressClassNames: ti.ingressClassNames,
+				},
+			)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func testEndpointsFromIngress(t *testing.T) {
+	t.Parallel()
+
+	for _, ti := range []struct {
+		title                    string
+		ingress                  fakeIngress
+		ignoreHostnameAnnotation bool
+		ignoreIngressTLSSpec     bool
+		ignoreIngressRulesSpec   bool
+		expected                 []*endpoint.Endpoint
+	}{
+		{
+			title: "one rule.host one lb.hostname",
+			ingress: fakeIngress{
+				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one lb.IP",
+			ingress: fakeIngress{
+				dnsnames: []string{"foo.bar"},
+				ips:      []string{"8.8.8.8"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one lb.IPv6",
+			ingress: fakeIngress{
+				dnsnames: []string{"foo.bar"},
+				ips:      []string{"2606:4700:4700::1111"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:4700:4700::1111"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two lb.IP, two lb.IPv6 and two lb.Hostname",
+			ingress: fakeIngress{
+				dnsnames:  []string{"foo.bar"},
+				ips:       []string{"8.8.8.8", "127.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"},
+				hostnames: []string{"elb.com", "alb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:4700:4700::1111", "2606:4700:4700::1001"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+				},
+			},
+		},
+		{
+			title: "no rule.host",
+			ingress: fakeIngress{
+				ips:       []string{"8.8.8.8", "127.0.0.1"},
+				hostnames: []string{"elb.com", "alb.com"},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "one empty rule.host",
+			ingress: fakeIngress{
+				dnsnames:  []string{""},
+				ips:       []string{"8.8.8.8", "127.0.0.1"},
+				hostnames: []string{"elb.com", "alb.com"},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "no targets",
+			ingress: fakeIngress{
+				dnsnames: []string{""},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "ignore rules with one rule.host one lb.hostname",
+			ingress: fakeIngress{
+				dnsnames:  []string{"test"},   // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+			},
+			expected:               []*endpoint.Endpoint{},
+			ignoreIngressRulesSpec: true,
+		},
+		{
+			title: "invalid hostname does not generate endpoints",
+			ingress: fakeIngress{
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			realIngress := ti.ingress.Ingress()
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+		})
+	}
+}
+
+func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
+	// Host names and host name annotation provided, with various values of the ingress-hostname-source annotation
+	for _, ti := range []struct {
+		title    string
+		ingress  fakeIngress
+		expected []*endpoint.Endpoint
+	}{
+		{
+			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName:    "foo.baz",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "No ingress-hostname-source annotation, one rule.host",
+			ingress: fakeIngress{
+				dnsnames:  []string{"foo.bar"},
+				hostnames: []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName:    "foo.baz",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "Ingress-hostname-source=defined-hosts-only, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "defined-hosts-only"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "Ingress-hostname-source=annotation-only, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "annotation-only"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.baz",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			realIngress := ti.ingress.Ingress()
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+		})
+	}
+}
+
+func testIngressEndpoints(t *testing.T) {
+	t.Parallel()
+
+	namespace := "testing"
+	for _, ti := range []struct {
+		title                    string
+		targetNamespace          string
+		annotationFilter         string
+		ingressItems             []fakeIngress
+		expected                 []*endpoint.Endpoint
+		expectError              bool
+		fqdnTemplate             string
+		combineFQDNAndAnnotation bool
+		ignoreHostnameAnnotation bool
+		ignoreIngressTLSSpec     bool
+		ignoreIngressRulesSpec   bool
+		ingressLabelSelector     labels.Selector
+		ingressClassNames        []string
+	}{
+		{
+			title:           "no ingress",
+			targetNamespace: "",
+		},
+		{
+			title:           "two simple ingresses",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "ipv6 ingress",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"2001:DB8::1"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2001:DB8::1"},
+				},
+			},
+		},
+		{
+			title:           "dualstack ingress",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8", "2001:DB8::1"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2001:DB8::1"},
+				},
+			},
+		},
+		{
+			title:                  "ignore rules",
+			targetNamespace:        "",
+			ignoreIngressRulesSpec: true,
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "two simple ingresses on different namespaces",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing2",
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "two simple ingresses on different namespaces with target namespace",
+			targetNamespace: "testing1",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing2",
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (alb, nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (alb, nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "tectonic",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:            "invalid annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.name in (a b)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+			expectError: true,
+		},
+		{
+			title:            "valid matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "our controller type is dns-controller",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.ControllerKey: annotations.ControllerValue,
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:           "different controller types are ignored",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.ControllerKey: "some-other-tool",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "template for ingress if host is missing",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.ControllerKey: annotations.ControllerValue,
+					},
+					dnsnames:  []string{},
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"elb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com"},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "another controller annotation skipped even with template",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.ControllerKey: "other-controller",
+					},
+					dnsnames: []string{},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "multiple FQDN template hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					annotations: map[string]string{},
+					dnsnames:    []string{},
+					ips:         []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake1.ext-dna.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+		},
+		{
+			title:           "multiple FQDN template hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					annotations: map[string]string{},
+					dnsnames:    []string{},
+					ips:         []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake1.ext-dna.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dns.test.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dna.test.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+			fqdnTemplate:             "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+			combineFQDNAndAnnotation: true,
+		},
+		{
+			title:           "ingress rules with annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+					},
+					dnsnames: []string{"example2.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "1.2.3.4",
+					},
+					dnsnames: []string{"example3.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example3.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with single tls having single hostname",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with single tls having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org", "example2.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with multiple tls having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org", "example2.org"}, {"example3.org", "example4.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example3.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example4.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with hostname annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with hostname annotation having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "another-dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with hostname and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "ingress-target.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with annotation and custom TTL",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "6",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "1",
+					},
+					dnsnames: []string{"example2.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "10s",
+					},
+					dnsnames: []string{"example3.org"},
+					ips:      []string{"8.8.4.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordTTL:  endpoint.TTL(6),
+				},
+				{
+					DNSName:    "example2.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordTTL:  endpoint.TTL(1),
+				},
+				{
+					DNSName:    "example3.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordTTL:  endpoint.TTL(10),
+				},
+			},
+		},
+		{
+			title:           "ingress rules with alias and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "true",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					ProviderSpecific: endpoint.ProviderSpecific{{
+						Name: "alias", Value: "true",
+					}},
+				},
+			},
+		},
+		{
+			title:           "ingress rules with alias set false and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "false",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title:           "template for ingress with annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "ingress-target.com",
+					},
+					dnsnames: []string{},
+					ips:      []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "1.2.3.4",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dns.test.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake3.ext-dns.test.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "Ingress with empty annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.TargetKey: "",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:                    "ignore hostname annotation",
+			targetNamespace:          "",
+			ignoreHostnameAnnotation: true,
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com",
+					},
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:                "ignore tls section",
+			targetNamespace:      "",
+			ignoreIngressTLSSpec: true,
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:                "reading tls section",
+			targetNamespace:      "",
+			ignoreIngressTLSSpec: false,
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
+		{
+			title:             "ingressClassName filtering",
+			targetNamespace:   "",
+			ingressClassNames: []string{"public", "dmz"},
+			ingressItems: []fakeIngress{
+				{
+					name:        "none",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"none.example.org"}},
+					ips:         []string{"1.0.0.0"},
+				},
+				{
+					name:             "fake-public",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"example.org"}},
+					ips:              []string{"1.2.3.4"},
+					ingressClassName: "public", // match
+				},
+				{
+					name:             "fake-internal",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"int.example.org"}},
+					ips:              []string{"2.3.4.5"},
+					ingressClassName: "internal",
+				},
+				{
+					name:             "fake-dmz",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"dmz.example.org"}},
+					ips:              []string{"3.4.5.6"},
+					ingressClassName: "dmz", // match
+				},
+				{
+					name:        "annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"annodmz.example.org"}},
+					ips:         []string{"4.5.6.7"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz", // match
+					},
+				},
+				{
+					name:        "fake-internal-annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"int-annodmz.example.org"}},
+					ips:         []string{"5.6.7.8"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz", // match but ignored (non-empty ingressClassName)
+					},
+					ingressClassName: "internal",
+				},
+				{
+					name:        "fake-dmz-annotated-internal",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"dmz-annoint.example.org"}},
+					ips:         []string{"6.7.8.9"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "internal",
+					},
+					ingressClassName: "dmz", // match
+				},
+				{
+					name:        "empty-annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"empty-annotdmz.example.org"}},
+					ips:         []string{"7.8.9.0"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz", // match (empty ingressClassName)
+					},
+					ingressClassName: "",
+				},
+				{
+					name:        "empty-annotated-internal",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"empty-annotint.example.org"}},
+					ips:         []string{"8.9.0.1"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "internal",
+					},
+					ingressClassName: "",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName:    "dmz.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"3.4.5.6"},
+				},
+				{
+					DNSName:    "annodmz.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"4.5.6.7"},
+				},
+				{
+					DNSName:    "dmz-annoint.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"6.7.8.9"},
+				},
+				{
+					DNSName:    "empty-annotdmz.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"7.8.9.0"},
+				},
+			},
+		},
+		{
+			ingressLabelSelector: labels.SelectorFromSet(labels.Set{"app": "web-external"}),
+			title:                "ingress with matching labels",
+			targetNamespace:      "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+					labels:    map[string]string{"app": "web-external", "name": "reverse-proxy"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			ingressLabelSelector: labels.SelectorFromSet(labels.Set{"app": "web-external"}),
+			title:                "ingress without matching labels",
+			targetNamespace:      "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+					labels:    map[string]string{"app": "web-internal", "name": "reverse-proxy"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+	} {
+
+		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
+			fakeClient := fake.NewClientset()
+			for _, item := range ti.ingressItems {
+				ingress := item.Ingress()
+				_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			if ti.ingressLabelSelector == nil {
+				ti.ingressLabelSelector = labels.Everything()
+			}
+
+			source, _ := NewIngressSource(
+				t.Context(),
+				fakeClient,
+				&Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
+					IgnoreIngressRulesSpec:   ti.ignoreIngressRulesSpec,
+					LabelFilter:              ti.ingressLabelSelector,
+					IngressClassNames:        ti.ingressClassNames,
+				},
+			)
+			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
+			res, err := source.Endpoints(t.Context())
+			if ti.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			testutils.ValidateEndpoints(t, res, ti.expected)
+
+			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+			for _, ep := range res {
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
+		})
+	}
+}
+
+// ingress specific helper functions
+type fakeIngress struct {
+	dnsnames         []string
+	tlsdnsnames      [][]string
+	ips              []string
+	hostnames        []string
+	namespace        string
+	name             string
+	annotations      map[string]string
+	labels           map[string]string
+	ingressClassName string
+}
+
+func (ing fakeIngress) Ingress() *networkv1.Ingress {
+	ingress := &networkv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   ing.namespace,
+			Name:        ing.name,
+			Annotations: ing.annotations,
+			Labels:      ing.labels,
+		},
+		Spec: networkv1.IngressSpec{
+			Rules:            []networkv1.IngressRule{},
+			IngressClassName: &ing.ingressClassName,
+		},
+		Status: networkv1.IngressStatus{
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				Ingress: []networkv1.IngressLoadBalancerIngress{},
+			},
+		},
+	}
+	for _, dnsname := range ing.dnsnames {
+		ingress.Spec.Rules = append(ingress.Spec.Rules, networkv1.IngressRule{
+			Host: dnsname,
+		})
+	}
+	for _, hosts := range ing.tlsdnsnames {
+		ingress.Spec.TLS = append(ingress.Spec.TLS, networkv1.IngressTLS{
+			Hosts: hosts,
+		})
+	}
+	for _, ip := range ing.ips {
+		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, networkv1.IngressLoadBalancerIngress{
+			IP: ip,
+		})
+	}
+	for _, hostname := range ing.hostnames {
+		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, networkv1.IngressLoadBalancerIngress{
+			Hostname: hostname,
+		})
+	}
+	return ingress
+}
+
+func TestIngressWithConfiguration(t *testing.T) {
+	for _, tt := range []struct {
+		title     string
+		ingresses []*networkv1.Ingress
+		cfg       *Config
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title: "hostname and targets configured as annotations",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.HostnameKey: "bla.example.org",
+							annotations.TargetKey:   "target.example.org",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("nginx"),
+						Rules: []networkv1.IngressRule{
+							{Host: "app.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "app.example.com", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+				{DNSName: "bla.example.org", Targets: endpoint.Targets{"target.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls not ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: false,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "my-ingress",
+						Namespace:   "default",
+						Annotations: map[string]string{},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "*.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with spec.tls with wildcard domains and tls is ignored",
+			cfg: &Config{
+				IgnoreIngressTLSSpec: true,
+			},
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						TLS: []networkv1.IngressTLS{
+							{
+								Hosts: []string{"*.example.com"},
+							},
+						},
+						Rules: []networkv1.IngressRule{
+							{Host: "abc.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: endpoint.Targets{
+						"internal-k8s-some-domain.us-east-1.elb.amazonaws.com",
+						"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+					},
+				},
+			},
+		},
+		{
+			title: "ingress with when AWS ALB controller and NLB with target annotation and CNAME with single target",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+						Annotations: map[string]string{
+							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+							annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "some.subdomain.mydomain.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "internal-k8s-some-domain.us-east-1.elb.amazonaws.com"},
+								{Hostname: "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "some.subdomain.mydomain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com"},
+				},
+			},
+		},
+		{
+			title: "no annotations, multiple ingresses, mixed IP and Hostname targets",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-ingress",
+						Namespace: "default",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "app.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "1.2.3.4"},
+								{Hostname: "foo.tld"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "app.example.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName:    "app.example.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"foo.tld"},
+				},
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+
+			for _, el := range tt.ingresses {
+				_, err := kubeClient.NetworkingV1().Ingresses(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			if tt.cfg == nil {
+				tt.cfg = &Config{}
+			}
+			tt.cfg.LabelFilter = labels.Everything()
+
+			src, err := NewIngressSource(
+				t.Context(),
+				kubeClient,
+				tt.cfg,
+			)
+			require.NoError(t, err)
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+func TestTransformerInIngressSource(t *testing.T) {
+	ingress := &networkv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-ingress",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation": "value",
+				"external-dns.alpha.kubernetes.io/hostname": "ingress.example.com",
+				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"networking.k8s.io/v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Spec: networkv1.IngressSpec{
+			Rules: []networkv1.IngressRule{
+				{Host: "app.example.com"},
+			},
+		},
+		Status: networkv1.IngressStatus{
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				Ingress: []networkv1.IngressLoadBalancerIngress{
+					{IP: "1.2.3.4"},
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(ingress)
+
+	src, err := NewIngressSource(t.Context(), fakeClient, &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	is, ok := src.(*ingressSource)
+	require.True(t, ok)
+
+	retrieved, err := is.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, ingress.Name, retrieved.Name)
+	assert.Equal(t, ingress.Labels, retrieved.Labels)
+	assert.Equal(t, ingress.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, corev1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	assert.Contains(t, retrieved.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+	// Status.LoadBalancer preserved — used for endpoint generation
+	assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	// Spec preserved
+	assert.Equal(t, ingress.Spec.Rules, retrieved.Spec.Rules)
+}
+
+func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
+	elements := []runtime.Object{
+		&networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "1.2.3",
+				},
+				UID: "uid-1",
+			},
+		},
+		&networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "bar",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "bar.example.com",
+					annotations.TargetKey:   "3.4.5",
+				},
+				UID: "uid-2",
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewIngressSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			LabelFilter: labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
+}
+
+func TestNewIngressSource_Errors(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		title   string
+		cfg     *Config
+		ctx     func() context.Context
+		wantErr string
+	}{
+		{
+			title: "getLabelSelector error propagates",
+			cfg: &Config{
+				IngressClassNames: []string{"nginx"},
+				AnnotationFilter:  "=invalid",
+				LabelFilter:       labels.Everything(),
+			},
+			ctx:     t.Context,
+			wantErr: "invalid",
+		},
+		{
+			title: "WaitForCacheSync error propagates",
+			cfg: &Config{
+				LabelFilter: labels.Everything(),
+			},
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return ctx
+			},
+			wantErr: "failed to sync",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			t.Parallel()
+			_, err := NewIngressSource(tt.ctx(), fake.NewClientset(), tt.cfg)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestIngressSource_Errors(t *testing.T) {
+	t.Parallel()
+
+	t.Run("annotations.Filter error propagates", func(t *testing.T) {
+		t.Parallel()
+		sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
+		require.NoError(t, err)
+		// Inject an invalid annotationFilter post-construction to bypass constructor validation.
+		sc.(*ingressSource).annotationFilter = "=invalid"
+		_, err = sc.Endpoints(t.Context())
+		require.Error(t, err)
+	})
+
+	t.Run("endpointsFromTemplate ExecFQDN error propagates", func(t *testing.T) {
+		t.Parallel()
+		// {{index . 0}} parses fine but fails at runtime for *networkv1.Ingress.
+		// An ingress with no rule hosts yields empty ingEndpoints, so CombineWithEndpoints
+		// calls endpointsFromTemplate which calls ExecFQDN.
+		ing := &networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"},
+		}
+		fakeClient := fake.NewClientset(ing)
+		sc, err := NewIngressSource(t.Context(), fakeClient, &Config{
+			TemplateEngine: templatetest.MustEngine(t, "{{index . 0}}", "", "", false),
+			LabelFilter:    labels.Everything(),
+		})
+		require.NoError(t, err)
+		_, err = sc.Endpoints(t.Context())
+		require.Error(t, err)
+	})
+}
+
+func TestIngressSource_AddEventHandler(t *testing.T) {
+	t.Parallel()
+	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	sc.AddEventHandler(t.Context(), func() {})
+}

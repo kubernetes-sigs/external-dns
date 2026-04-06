@@ -1,0 +1,5846 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="external-dns maintainers">
+      
+      
+      
+        <link rel="prev" href="../plural/">
+      
+      
+        <link rel="next" href="../scaleway/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>RFC2136 provider - external-dns</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rfc2136-provider" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="external-dns" class="md-header__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            external-dns
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              RFC2136 provider
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../charts/external-dns/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Chart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../faq/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../akamai-edgedns/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../annotations/annotations/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Annotations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../sources/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Sources
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../registry/registry/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Registries
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced/fqdn-templating/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Advanced Topics
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../CONTRIBUTING/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="external-dns" class="md-nav__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    external-dns
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../charts/external-dns/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chart
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Chart
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../charts/external-dns/CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../20190708-external-dns-incubator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Out of Incubator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../code-of-conduct/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code of Conduct
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../LICENSE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../version-update-playbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Version Update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../akamai-edgedns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Akamai Edge DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../alibabacloud/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alibaba Cloud
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anexia-engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anexia
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-load-balancer-controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS Load Balancer Controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-localstack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS and LocalStack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-public-private-route53/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS Route53 with same domain for public and private zones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-sd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS Cloud Map API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure-private-dns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Private DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Civo DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudflare/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloudflare DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contour HTTPProxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coredns-etcd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CoreDNS with etcd backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coredns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CoreDNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using CRD Source for DNS Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dnsimple/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DNSimple
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exoscale/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exoscale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../externalname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ExternalName Services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gandi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gandi
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gke-nginx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GKE with nginx-ingress-controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gke/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GKE with default controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../godaddy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GoDaddy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hostport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Headless Services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ionoscloud/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IONOS Cloud
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kops-dns-controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kOps dns-controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kube-ingress-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kube-ingress-aws-controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../linode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../myra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Myra ExternalDNS Webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ns1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NS1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oracle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Oracle Cloud Infrastructure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ovh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OVHcloud
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pdns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PowerDNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pihole/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pi-hole
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plural/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plural
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFC2136 provider
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFC2136 provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-bind9-on-kubernetes-with-kind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying BIND9 on Kubernetes with Kind
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying BIND9 on Kubernetes with Kind">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-create-the-kind-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the Kind cluster
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-deploy-bind9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deploy BIND9
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-deploy-externaldns-with-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Deploy ExternalDNS with Helm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-create-test-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Create test DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-verify-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Verify DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-with-bind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using with BIND
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using with BIND">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bind-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BIND Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#axfr-and-the-sync-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AXFR and the sync policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-external-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using external-dns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom TTL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-reverse-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate reverse DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-with-external-dns-installed-on-local-machine-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test with external-dns installed on local machine (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rfc2136-provider-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RFC2136 provider configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#microsoft-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft DNS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Microsoft DNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secure-updates-using-rfc3645-gss-tsig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secure Updates Using RFC3645 (GSS-TSIG)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secure Updates Using RFC3645 (GSS-TSIG)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dns-side-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS-side configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DNS-side configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kerberos-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kerberos Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-dns-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        external-dns configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#insecure-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Insecure Updates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Insecure Updates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dns-side-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS-side configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-dns-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        external-dns configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-over-tls-rfcs-7858-and-9103" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS Over TLS (RFCs 7858 and 9103)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-rfc2136-provider-with-multiple-hosts-and-load-balancing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring RFC2136 Provider with Multiple Hosts and Load Balancing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring RFC2136 Provider with Multiple Hosts and Load Balancing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enhancements-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enhancements Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secret-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benefits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scaleway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scaleway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running ExternalDNS with limited privileges
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TransIP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Annotations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../annotations/annotations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../sources/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sources
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/crd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRD Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/f5-transportserver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    F5 Networks TransportServer Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/f5-virtualserver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    F5 Networks VirtualServer Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/gateway-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gateway API Route Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gateway sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/gloo-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gloo Proxy Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/ingress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ingress source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Gateway / Virtual Service Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/kong/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kong TCPIngress Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/mx-record/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MX record with CRD source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/nodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Nodes as Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/ns-record/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NS record with CRD source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/openshift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenShift Route Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/pod/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pod Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/traefik-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Traefik Proxy Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/txt-record/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating TXT record with CRD source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/unstructured/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unstructured Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registries
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Registries
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/txt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TXT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/dynamodb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DynamoDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/fqdn-templating/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FQDN Templating
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/import-records/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Import Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../initial-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Initial Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/001-leader-election/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Leader Election
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../monitoring/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8_6" id="__nav_8_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Monitoring
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../monitoring/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Available Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/multi-target/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MultiTarget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/nat64/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NAT64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/operational-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/ptr-records/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PTR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/rate-limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate Limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/ttl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TTL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_13" id="__nav_8_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002 internal ipv6 handling rollback
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003 dnsendpoint graduation to beta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/004-gateway-api-annotation-placement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004 gateway api annotation placement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/design-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/domain-filter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Domain Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/configuration-precedence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Precedence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/split-horizon/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Split Horizon DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../contributing/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes Contributions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deprecation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deprecation Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/bug-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bug Report Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/chart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm Chart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/dev-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🧩 Source Wrappers/Middleware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/sources-and-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sources and Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-bind9-on-kubernetes-with-kind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying BIND9 on Kubernetes with Kind
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying BIND9 on Kubernetes with Kind">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-create-the-kind-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the Kind cluster
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-deploy-bind9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deploy BIND9
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-deploy-externaldns-with-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Deploy ExternalDNS with Helm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-create-test-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Create test DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-verify-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Verify DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-with-bind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using with BIND
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using with BIND">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bind-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BIND Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#axfr-and-the-sync-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AXFR and the sync policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-external-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using external-dns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom TTL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-reverse-dns-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate reverse DNS records
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-with-external-dns-installed-on-local-machine-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test with external-dns installed on local machine (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rfc2136-provider-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RFC2136 provider configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#microsoft-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft DNS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Microsoft DNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secure-updates-using-rfc3645-gss-tsig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secure Updates Using RFC3645 (GSS-TSIG)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secure Updates Using RFC3645 (GSS-TSIG)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dns-side-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS-side configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DNS-side configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kerberos-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kerberos Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-dns-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        external-dns configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#insecure-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Insecure Updates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Insecure Updates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dns-side-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS-side configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-dns-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        external-dns configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-over-tls-rfcs-7858-and-9103" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DNS Over TLS (RFCs 7858 and 9103)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-rfc2136-provider-with-multiple-hosts-and-load-balancing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring RFC2136 Provider with Multiple Hosts and Load Balancing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring RFC2136 Provider with Multiple Hosts and Load Balancing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enhancements-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enhancements Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secret-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benefits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="rfc2136-provider">RFC2136 provider<a class="headerlink" href="#rfc2136-provider" title="Permanent link">&para;</a></h1>
+<p>This tutorial describes how to use the RFC2136 with either BIND or Windows DNS.</p>
+<h2 id="deploying-bind9-on-kubernetes-with-kind">Deploying BIND9 on Kubernetes with Kind<a class="headerlink" href="#deploying-bind9-on-kubernetes-with-kind" title="Permanent link">&para;</a></h2>
+<p>This section walks through deploying BIND9 and ExternalDNS inside a local Kubernetes cluster using <a href="https://kind.sigs.k8s.io/">Kind</a>. It provides a self-contained lab environment for testing the RFC2136 provider, including forward and reverse (PTR) DNS zones with TSIG authentication.</p>
+<h3 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h3>
+<p>After completing this lab, you will have a local Kubernetes cluster running BIND9 and ExternalDNS with:</p>
+<ul>
+<li>A forward zone (<code>example.local</code>) for A records</li>
+<li>A reverse zone (<code>49.168.192.in-addr.arpa</code>) for PTR records</li>
+<li>TSIG-authenticated dynamic DNS updates</li>
+<li>ExternalDNS automatically creating and managing DNS records</li>
+</ul>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>BIND9 runs inside the cluster for demonstration purposes.</li>
+<li>For production deployments, use an external BIND server with proper security hardening.</li>
+<li>The zones and TSIG key are preconfigured — adapt them to your environment.</li>
+</ul>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<p>Before you start, ensure you have:</p>
+<ul>
+<li><a href="https://kind.sigs.k8s.io/">Kind</a> installed</li>
+<li><a href="https://kubernetes.io/docs/tasks/tools/"><code>kubectl</code></a> and <a href="https://helm.sh/"><code>helm</code></a></li>
+<li><a href="https://linux.die.net/man/1/dig"><code>dig</code></a> for DNS queries (optional, for verification)</li>
+</ul>
+<h3 id="1-create-the-kind-cluster">1. Create the Kind cluster<a class="headerlink" href="#1-create-the-kind-cluster" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="o">=</span>docs/snippets/tutorials/rfc2136/kind.yaml
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Creating<span class="w"> </span>cluster<span class="w"> </span><span class="s2">&quot;rfc2136-bind9&quot;</span><span class="w"> </span>...
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w"> </span>✓<span class="w"> </span>Ensuring<span class="w"> </span>node<span class="w"> </span>image<span class="w"> </span><span class="o">(</span>kindest/node:v1.35.1<span class="o">)</span><span class="w"> </span>🖼
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w"> </span>✓<span class="w"> </span>Preparing<span class="w"> </span>nodes<span class="w"> </span>📦<span class="w"> </span>📦
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w"> </span>✓<span class="w"> </span>Writing<span class="w"> </span>configuration<span class="w"> </span>📜
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w"> </span>✓<span class="w"> </span>Starting<span class="w"> </span>control-plane<span class="w"> </span>🕹️
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w"> </span>✓<span class="w"> </span>Installing<span class="w"> </span>CNI<span class="w"> </span>🔌
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w"> </span>✓<span class="w"> </span>Installing<span class="w"> </span>StorageClass<span class="w"> </span>💾
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w"> </span>✓<span class="w"> </span>Joining<span class="w"> </span>worker<span class="w"> </span>nodes<span class="w"> </span>🚜
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>Set<span class="w"> </span>kubectl<span class="w"> </span>context<span class="w"> </span>to<span class="w"> </span><span class="s2">&quot;kind-rfc2136-bind9&quot;</span>
+</code></pre></div>
+<p>The Kind configuration exposes port <code>30053</code> on the host as <code>5354</code>, allowing DNS queries from your machine against BIND9 running inside the cluster.</p>
+<h3 id="2-deploy-bind9">2. Deploy BIND9<a class="headerlink" href="#2-deploy-bind9" title="Permanent link">&para;</a></h3>
+<p>The BIND9 manifest deploys a ConfigMap with <code>named.conf</code>, forward and reverse zone files, a Deployment, and Services (ClusterIP + NodePort).</p>
+<p>The configuration includes:</p>
+<ul>
+<li><strong>Forward zone</strong> (<code>example.local</code>): accepts dynamic updates authenticated with the <code>externaldns-key</code> TSIG key</li>
+<li><strong>Reverse zone</strong> (<code>49.168.192.in-addr.arpa</code>): accepts dynamic updates and zone transfers with the same TSIG key</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>docs/snippets/tutorials/rfc2136/bind9.yaml
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/bind9<span class="w"> </span>-n<span class="w"> </span>bind9
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>❯❯<span class="w"> </span>deployment<span class="w"> </span><span class="s2">&quot;bind9&quot;</span><span class="w"> </span>successfully<span class="w"> </span>rolled<span class="w"> </span>out
+</code></pre></div>
+<p>Verify BIND9 is running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>bind9
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>❯❯<span class="w"> </span>NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>❯❯<span class="w"> </span>bind9-xxxxxxxxx-xxxxx<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>30s
+</code></pre></div>
+<p>Check BIND9 logs for errors:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>bind9<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>bind9<span class="w"> </span>--tail<span class="o">=</span><span class="m">20</span>
+</code></pre></div>
+<h3 id="3-deploy-externaldns-with-helm">3. Deploy ExternalDNS with Helm<a class="headerlink" href="#3-deploy-externaldns-with-helm" title="Permanent link">&para;</a></h3>
+<p>Add the ExternalDNS Helm repository:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>--force-update<span class="w"> </span>external-dns<span class="w"> </span>https://kubernetes-sigs.github.io/external-dns/
+</code></pre></div>
+<p>Install ExternalDNS with the RFC2136 provider configuration:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>external-dns<span class="w"> </span>external-dns/external-dns<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-f<span class="w"> </span>docs/snippets/tutorials/rfc2136/values-extdns-rfc2136.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-n<span class="w"> </span>default
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>❯❯<span class="w"> </span>Release<span class="w"> </span><span class="s2">&quot;external-dns&quot;</span><span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist.<span class="w"> </span>Installing<span class="w"> </span>it<span class="w"> </span>now.
+</code></pre></div>
+<p>Validate pod status and view logs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>external-dns
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/external-dns<span class="w"> </span>--tail<span class="o">=</span><span class="m">50</span>
+</code></pre></div>
+<p>Or run ExternalDNS from source on the host (requires the NodePort to be accessible):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>go<span class="w"> </span>run<span class="w"> </span>main.go<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>--provider<span class="o">=</span>rfc2136<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>--rfc2136-host<span class="o">=</span><span class="m">127</span>.0.0.1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>--rfc2136-port<span class="o">=</span><span class="m">5354</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span>--rfc2136-zone<span class="o">=</span>example.local<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span>--rfc2136-zone<span class="o">=</span><span class="m">49</span>.168.192.in-addr.arpa<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span>--rfc2136-tsig-keyname<span class="o">=</span>externaldns-key<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span>--rfc2136-tsig-secret<span class="o">=</span>96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8<span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span>--rfc2136-tsig-secret-alg<span class="o">=</span>hmac-sha256<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span>--rfc2136-tsig-axfr<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span>--create-ptr<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span>--source<span class="o">=</span>crd<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span>--source<span class="o">=</span>service<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">    </span>--domain-filter<span class="o">=</span>example.local<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span>--domain-filter<span class="o">=</span><span class="m">49</span>.168.192.in-addr.arpa<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">    </span>--managed-record-types<span class="o">=</span>A<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">    </span>--managed-record-types<span class="o">=</span>AAAA<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span>--managed-record-types<span class="o">=</span>CNAME<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span>--managed-record-types<span class="o">=</span>PTR<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span>--policy<span class="o">=</span>sync<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span>--log-level<span class="o">=</span>debug
+</code></pre></div>
+<h3 id="4-create-test-dns-records">4. Create test DNS records<a class="headerlink" href="#4-create-test-dns-records" title="Permanent link">&para;</a></h3>
+<p>Apply the test fixtures which include DNSEndpoint CRDs and a LoadBalancer Service:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>docs/snippets/tutorials/rfc2136/fixtures.yaml
+</code></pre></div>
+<p>If using Service sources, patch the LoadBalancer to simulate an external IP assignment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>svc<span class="w"> </span>nginx-rfc2136<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;:{&quot;loadBalancer&quot;:{&quot;ingress&quot;:[{&quot;ip&quot;:&quot;192.168.49.50&quot;}]}}}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--subresource<span class="o">=</span>status
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>❯❯<span class="w"> </span>service/nginx-rfc2136<span class="w"> </span>patched
+</code></pre></div>
+<p>Wait for ExternalDNS to sync (check the logs for update activity):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/external-dns<span class="w"> </span>--tail<span class="o">=</span><span class="m">30</span><span class="w"> </span>-f
+</code></pre></div>
+<h3 id="5-verify-dns-records">5. Verify DNS records<a class="headerlink" href="#5-verify-dns-records" title="Permanent link">&para;</a></h3>
+<p>Query the forward zone for A records:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span>app.example.local<span class="w"> </span>A<span class="w"> </span>+short
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>❯❯<span class="w"> </span><span class="m">192</span>.168.49.10
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span>api.example.local<span class="w"> </span>A<span class="w"> </span>+short
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>❯❯<span class="w"> </span><span class="m">192</span>.168.49.20
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span>svc.example.local<span class="w"> </span>A<span class="w"> </span>+short
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>❯❯<span class="w"> </span><span class="m">192</span>.168.49.50
+</code></pre></div>
+<p>Query the reverse zone for PTR records:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span>-x<span class="w"> </span><span class="m">192</span>.168.49.10<span class="w"> </span>+short
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>❯❯<span class="w"> </span>app.example.local.
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span>-x<span class="w"> </span><span class="m">192</span>.168.49.20<span class="w"> </span>+short
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>❯❯<span class="w"> </span>api.example.local.
+</code></pre></div>
+<p>List all records in the reverse zone via AXFR (requires the TSIG key since zone transfers are restricted):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>dig<span class="w"> </span>@127.0.0.1<span class="w"> </span>-p<span class="w"> </span><span class="m">5354</span><span class="w"> </span>+tcp<span class="w"> </span><span class="m">49</span>.168.192.in-addr.arpa.<span class="w"> </span>AXFR<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>-y<span class="w"> </span>hmac-sha256:externaldns-key:96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8<span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>+noall<span class="w"> </span>+answer
+</code></pre></div>
+<p>Alternatively, query from inside the cluster using a debug pod:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>dnsutils<span class="w"> </span>--image<span class="o">=</span>infoblox/dnstools<span class="w"> </span>--restart<span class="o">=</span>Never
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>dig<span class="w"> </span>+short<span class="w"> </span>@bind9.bind9.svc.cluster.local<span class="w"> </span>app.example.local
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>❯❯<span class="w"> </span><span class="m">192</span>.168.49.10
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>dig<span class="w"> </span>+short<span class="w"> </span>@bind9.bind9.svc.cluster.local<span class="w"> </span>-x<span class="w"> </span><span class="m">192</span>.168.49.10
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>❯❯<span class="w"> </span>app.example.local.
+</code></pre></div>
+<h3 id="6-cleanup">6. Cleanup<a class="headerlink" href="#6-cleanup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kind<span class="w"> </span>delete<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>rfc2136-bind9
+</code></pre></div>
+<h2 id="using-with-bind">Using with BIND<a class="headerlink" href="#using-with-bind" title="Permanent link">&para;</a></h2>
+<p>To use external-dns with BIND: generate/procure a key, configure DNS and add a<br />
+deployment of external-dns.</p>
+<h3 id="server-credentials">Server credentials<a class="headerlink" href="#server-credentials" title="Permanent link">&para;</a></h3>
+<ul>
+<li>RFC2136 was developed for and tested with <a href="https://www.isc.org/downloads/bind/">BIND</a> DNS server.<br />
+This documentation assumes that you already have a configured and working server. If you don&rsquo;t,<br />
+please check BIND documents or tutorials.</li>
+<li>If your DNS is provided for you, ask for a TSIG key authorized to update and<br />
+transfer the zone you wish to update. The key will look something like below.<br />
+Skip the next steps wrt BIND setup.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>key &quot;externaldns-key&quot; {
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a> algorithm hmac-sha256;
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a> secret &quot;96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8=&quot;;
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>};
+</code></pre></div>
+<ul>
+<li>If you are your own DNS administrator create a TSIG key. Use<br />
+<code>tsig-keygen -a hmac-sha256 externaldns</code> or on older distributions<br />
+<code>dnssec-keygen -a HMAC-SHA256 -b 256 -n HOST externaldns</code>. You will end up with<br />
+a key printed to standard out like above (or in the case of dnssec-keygen in a<br />
+file called <code>Kexternaldns......key</code>).</li>
+</ul>
+<h3 id="bind-configuration">BIND Configuration<a class="headerlink" href="#bind-configuration" title="Permanent link">&para;</a></h3>
+<p>If you do not administer your own DNS, skip to RFC provider configuration</p>
+<ul>
+<li>
+<p>Edit your named.conf file (or appropriate included file) and add/change the<br />
+following.</p>
+<ul>
+<li>Make sure You are listening on the right interfaces. At least whatever<br />
+interface external-dns will be communicating over and the interface that<br />
+faces the internet.</li>
+<li>Add the key that you generated/was given to you above. Copy paste the four<br />
+lines that you got (not the same as the example key) into your file.</li>
+<li>Make sure zone transfer is enabled for the key, this enables listing all<br />
+records</li>
+<li>Create a zone for kubernetes. If you already have a zone, skip to the next<br />
+step. (I put the zone in it&rsquo;s own subdirectory because named,<br />
+which shouldn&rsquo;t be running as root, needs to create a journal file and the<br />
+default zone directory isn&rsquo;t writeable by named).</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>zone &quot;k8s.example.org&quot; {
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    type master;
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    file &quot;/etc/bind/pri/k8s/k8s.zone&quot;;
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>};
+</code></pre></div>
+<ul>
+<li>Add your key to both transfer and update. For instance with our previous<br />
+zone.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>zone &quot;k8s.example.org&quot; {
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    type master;
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    file &quot;/etc/bind/pri/k8s/k8s.zone&quot;;
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    allow-transfer {
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>        key &quot;externaldns-key&quot;;
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    };
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>    update-policy {
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>        grant externaldns-key zonesub ANY;
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    };
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>};
+</code></pre></div>
+<ul>
+<li>Create a zone file (k8s.zone):</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>$TTL 60 ; 1 minute
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>k8s.example.org         IN SOA  k8s.example.org. root.k8s.example.org. (
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>                                16         ; serial
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>                                60         ; refresh (1 minute)
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>                                60         ; retry (1 minute)
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>                                60         ; expire (1 minute)
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>                                60         ; minimum (1 minute)
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>                                )
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>                        NS      ns.k8s.example.org.
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>ns                      A       123.456.789.012
+</code></pre></div>
+<ul>
+<li>Reload (or restart) named</li>
+</ul>
+</li>
+</ul>
+<h3 id="axfr-and-the-sync-policy">AXFR and the sync policy<a class="headerlink" href="#axfr-and-the-sync-policy" title="Permanent link">&para;</a></h3>
+<p>When using the <code>sync</code> policy, ExternalDNS requires AXFR (zone transfer) to be<br />
+explicitly enabled via the <code>--rfc2136-tsig-axfr</code> flag. This is necessary for<br />
+ExternalDNS to list all existing DNS records and determine which ones should be<br />
+lifecycled.</p>
+<p>Without <code>--rfc2136-tsig-axfr</code>, ExternalDNS cannot list records and will act as<br />
+if the policy was set to <code>upsert-only</code>. No warning will be provided.</p>
+<h3 id="using-external-dns">Using external-dns<a class="headerlink" href="#using-external-dns" title="Permanent link">&para;</a></h3>
+<p>To use external-dns add an ingress or a LoadBalancer service with a host that<br />
+is part of the domain-filter. For example both of the following would produce<br />
+A records.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>apiVersion: v1
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>kind: Service
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>metadata:
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>  name: nginx
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  annotations:
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>    external-dns.alpha.kubernetes.io/hostname: svc.example.org
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>spec:
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>  type: LoadBalancer
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  ports:
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>  - port: 80
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>    targetPort: 80
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>  selector:
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>    app: nginx
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>---
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>apiVersion: networking.k8s.io/v1
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>kind: Ingress
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>metadata:
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>    name: my-ingress
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>spec:
+<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>    rules:
+<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>    - host: ingress.example.org
+<a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>      http:
+<a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>          paths:
+<a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>          - path: /
+<a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>            backend:
+<a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>                serviceName: my-service
+<a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>                servicePort: 8000
+</code></pre></div>
+<h3 id="custom-ttl">Custom TTL<a class="headerlink" href="#custom-ttl" title="Permanent link">&para;</a></h3>
+<p>The default DNS record TTL (Time-To-Live) is 0 seconds. You can customize this value by setting the annotation <code>external-dns.alpha.kubernetes.io/ttl</code>. e.g., modify the service manifest YAML file above:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">    </span><span class="nt">external-dns.alpha.kubernetes.io/hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx.external-dns-test.my-org.com</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">    </span><span class="nt">external-dns.alpha.kubernetes.io/ttl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</code></pre></div>
+<p>This will set the DNS record&rsquo;s TTL to 60 seconds.</p>
+<p>A default TTL for all records can be set using the the flag with a time in seconds, minutes or hours, such as <code>--rfc2136-min-ttl=60s</code></p>
+<p>There are other annotation that can affect the generation of DNS records, but these are beyond the scope of this<br />
+tutorial and are covered in the main documentation.</p>
+<h3 id="generate-reverse-dns-records">Generate reverse DNS records<a class="headerlink" href="#generate-reverse-dns-records" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Note:</strong> The <code>--rfc2136-create-ptr</code> flag is removed. Use the generic <code>--create-ptr</code> flag instead.</p>
+</blockquote>
+<p>ExternalDNS can automatically create PTR records for your A/AAAA records. This is a generic feature<br />
+that works with any provider, not just RFC2136. For RFC2136 you also need to add the reverse zone to<br />
+<code>--rfc2136-zone</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>--create-ptr<span class="w"> </span>--domain-filter<span class="o">=</span><span class="m">157</span>.168.192.in-addr.arpa<span class="w"> </span>--rfc2136-zone<span class="o">=</span><span class="m">157</span>.168.192.in-addr.arpa
+</code></pre></div>
+<p>See <a href="../../advanced/ptr-records/">Automatic PTR (Reverse DNS) Records</a> for full documentation<br />
+including annotation overrides and behaviour details.</p>
+<h3 id="test-with-external-dns-installed-on-local-machine-optional">Test with external-dns installed on local machine (optional)<a class="headerlink" href="#test-with-external-dns-installed-on-local-machine-optional" title="Permanent link">&para;</a></h3>
+<p>You may install external-dns and test on a local machine by running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>external-dns<span class="w"> </span>--txt-owner-id<span class="w"> </span>k8s<span class="w"> </span>--provider<span class="w"> </span>rfc2136<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span>--rfc2136-host<span class="o">=</span><span class="m">192</span>.168.0.1<span class="w"> </span>--rfc2136-port<span class="o">=</span><span class="m">53</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span>--rfc2136-zone<span class="o">=</span>k8s.example.org<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>--rfc2136-tsig-secret<span class="o">=</span>96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8<span class="o">=</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span>--rfc2136-tsig-secret-alg<span class="o">=</span>hmac-sha256<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span>--rfc2136-tsig-keyname<span class="o">=</span>externaldns-key<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">  </span>--rfc2136-tsig-axfr<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">  </span>--source<span class="w"> </span>ingress<span class="w"> </span>--once<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">  </span>--domain-filter<span class="o">=</span>k8s.example.org<span class="w"> </span>--dry-run
+</code></pre></div>
+<ul>
+<li>host should be the IP of your master DNS server.</li>
+<li>tsig-secret should be changed to match your secret.</li>
+<li>tsig-keyname needs to match the keyname you used (if you changed it).</li>
+<li>domain-filter can be used as shown to filter the domains you wish to update.</li>
+</ul>
+<h3 id="rfc2136-provider-configuration">RFC2136 provider configuration<a class="headerlink" href="#rfc2136-provider-configuration" title="Permanent link">&para;</a></h3>
+<p>In order to use external-dns with your cluster you need to add a deployment<br />
+with access to your ingress and service resources. The following are two<br />
+example manifests with and without RBAC respectively.</p>
+<ul>
+<li>With RBAC:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>apiVersion: v1
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>kind: Namespace
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>metadata:
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>  name: external-dns
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>  labels:
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    name: external-dns
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>---
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>apiVersion: rbac.authorization.k8s.io/v1
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>kind: ClusterRole
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>metadata:
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>  name: external-dns
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>  namespace: external-dns
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>rules:
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>- apiGroups:
+<a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>  - &quot;&quot;
+<a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>  resources:
+<a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>  - services
+<a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>  - pods
+<a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>  - nodes
+<a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>  verbs:
+<a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>  - get
+<a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>  - watch
+<a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>  - list
+<a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>- apiGroups:
+<a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>  - discovery.k8s.io
+<a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>  resources:
+<a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>  - endpointslices
+<a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a>  verbs:
+<a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a>  - get
+<a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a>  - watch
+<a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a>  - list
+<a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a>- apiGroups:
+<a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a>  - extensions
+<a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a>  - networking.k8s.io
+<a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a>  resources:
+<a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a>  - ingresses
+<a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a>  verbs:
+<a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a>  - get
+<a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a>  - list
+<a id="__codelineno-24-40" name="__codelineno-24-40" href="#__codelineno-24-40"></a>  - watch
+<a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a>---
+<a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a>apiVersion: v1
+<a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a>kind: ServiceAccount
+<a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a>metadata:
+<a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a>  name: external-dns
+<a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a>  namespace: external-dns
+<a id="__codelineno-24-47" name="__codelineno-24-47" href="#__codelineno-24-47"></a>---
+<a id="__codelineno-24-48" name="__codelineno-24-48" href="#__codelineno-24-48"></a>apiVersion: rbac.authorization.k8s.io/v1
+<a id="__codelineno-24-49" name="__codelineno-24-49" href="#__codelineno-24-49"></a>kind: ClusterRoleBinding
+<a id="__codelineno-24-50" name="__codelineno-24-50" href="#__codelineno-24-50"></a>metadata:
+<a id="__codelineno-24-51" name="__codelineno-24-51" href="#__codelineno-24-51"></a>  name: external-dns-viewer
+<a id="__codelineno-24-52" name="__codelineno-24-52" href="#__codelineno-24-52"></a>  namespace: external-dns
+<a id="__codelineno-24-53" name="__codelineno-24-53" href="#__codelineno-24-53"></a>roleRef:
+<a id="__codelineno-24-54" name="__codelineno-24-54" href="#__codelineno-24-54"></a>  apiGroup: rbac.authorization.k8s.io
+<a id="__codelineno-24-55" name="__codelineno-24-55" href="#__codelineno-24-55"></a>  kind: ClusterRole
+<a id="__codelineno-24-56" name="__codelineno-24-56" href="#__codelineno-24-56"></a>  name: external-dns
+<a id="__codelineno-24-57" name="__codelineno-24-57" href="#__codelineno-24-57"></a>subjects:
+<a id="__codelineno-24-58" name="__codelineno-24-58" href="#__codelineno-24-58"></a>- kind: ServiceAccount
+<a id="__codelineno-24-59" name="__codelineno-24-59" href="#__codelineno-24-59"></a>  name: external-dns
+<a id="__codelineno-24-60" name="__codelineno-24-60" href="#__codelineno-24-60"></a>  namespace: external-dns
+<a id="__codelineno-24-61" name="__codelineno-24-61" href="#__codelineno-24-61"></a>---
+<a id="__codelineno-24-62" name="__codelineno-24-62" href="#__codelineno-24-62"></a>apiVersion: apps/v1
+<a id="__codelineno-24-63" name="__codelineno-24-63" href="#__codelineno-24-63"></a>kind: Deployment
+<a id="__codelineno-24-64" name="__codelineno-24-64" href="#__codelineno-24-64"></a>metadata:
+<a id="__codelineno-24-65" name="__codelineno-24-65" href="#__codelineno-24-65"></a>  name: external-dns
+<a id="__codelineno-24-66" name="__codelineno-24-66" href="#__codelineno-24-66"></a>  namespace: external-dns
+<a id="__codelineno-24-67" name="__codelineno-24-67" href="#__codelineno-24-67"></a>spec:
+<a id="__codelineno-24-68" name="__codelineno-24-68" href="#__codelineno-24-68"></a>  selector:
+<a id="__codelineno-24-69" name="__codelineno-24-69" href="#__codelineno-24-69"></a>    matchLabels:
+<a id="__codelineno-24-70" name="__codelineno-24-70" href="#__codelineno-24-70"></a>      app: external-dns
+<a id="__codelineno-24-71" name="__codelineno-24-71" href="#__codelineno-24-71"></a>  template:
+<a id="__codelineno-24-72" name="__codelineno-24-72" href="#__codelineno-24-72"></a>    metadata:
+<a id="__codelineno-24-73" name="__codelineno-24-73" href="#__codelineno-24-73"></a>      labels:
+<a id="__codelineno-24-74" name="__codelineno-24-74" href="#__codelineno-24-74"></a>        app: external-dns
+<a id="__codelineno-24-75" name="__codelineno-24-75" href="#__codelineno-24-75"></a>    spec:
+<a id="__codelineno-24-76" name="__codelineno-24-76" href="#__codelineno-24-76"></a>      serviceAccountName: external-dns
+<a id="__codelineno-24-77" name="__codelineno-24-77" href="#__codelineno-24-77"></a>      containers:
+<a id="__codelineno-24-78" name="__codelineno-24-78" href="#__codelineno-24-78"></a>      - name: external-dns
+<a id="__codelineno-24-79" name="__codelineno-24-79" href="#__codelineno-24-79"></a>        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+<a id="__codelineno-24-80" name="__codelineno-24-80" href="#__codelineno-24-80"></a>        args:
+<a id="__codelineno-24-81" name="__codelineno-24-81" href="#__codelineno-24-81"></a>        - --registry=txt
+<a id="__codelineno-24-82" name="__codelineno-24-82" href="#__codelineno-24-82"></a>        - --txt-prefix=external-dns-
+<a id="__codelineno-24-83" name="__codelineno-24-83" href="#__codelineno-24-83"></a>        - --txt-owner-id=k8s
+<a id="__codelineno-24-84" name="__codelineno-24-84" href="#__codelineno-24-84"></a>        - --provider=rfc2136
+<a id="__codelineno-24-85" name="__codelineno-24-85" href="#__codelineno-24-85"></a>        - --rfc2136-host=192.168.0.1
+<a id="__codelineno-24-86" name="__codelineno-24-86" href="#__codelineno-24-86"></a>        - --rfc2136-port=53
+<a id="__codelineno-24-87" name="__codelineno-24-87" href="#__codelineno-24-87"></a>        - --rfc2136-zone=k8s.example.org
+<a id="__codelineno-24-88" name="__codelineno-24-88" href="#__codelineno-24-88"></a>        - --rfc2136-zone=k8s.your-zone.org
+<a id="__codelineno-24-89" name="__codelineno-24-89" href="#__codelineno-24-89"></a>        - --rfc2136-tsig-secret=96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8=
+<a id="__codelineno-24-90" name="__codelineno-24-90" href="#__codelineno-24-90"></a>        - --rfc2136-tsig-secret-alg=hmac-sha256
+<a id="__codelineno-24-91" name="__codelineno-24-91" href="#__codelineno-24-91"></a>        - --rfc2136-tsig-keyname=externaldns-key
+<a id="__codelineno-24-92" name="__codelineno-24-92" href="#__codelineno-24-92"></a>        - --rfc2136-tsig-axfr
+<a id="__codelineno-24-93" name="__codelineno-24-93" href="#__codelineno-24-93"></a>        - --source=ingress
+<a id="__codelineno-24-94" name="__codelineno-24-94" href="#__codelineno-24-94"></a>        - --domain-filter=k8s.example.org
+</code></pre></div>
+<ul>
+<li>Without RBAC:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>apiVersion: v1
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>kind: Namespace
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>metadata:
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  name: external-dns
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>  labels:
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>    name: external-dns
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>---
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>apiVersion: apps/v1
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>kind: Deployment
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>metadata:
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>  name: external-dns
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>  namespace: external-dns
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>spec:
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>  selector:
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>    matchLabels:
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>      app: external-dns
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>  template:
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>    metadata:
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>      labels:
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>        app: external-dns
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>    spec:
+<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>      containers:
+<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>      - name: external-dns
+<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a>        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a>        args:
+<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a>        - --registry=txt
+<a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a>        - --txt-prefix=external-dns-
+<a id="__codelineno-25-28" name="__codelineno-25-28" href="#__codelineno-25-28"></a>        - --txt-owner-id=k8s
+<a id="__codelineno-25-29" name="__codelineno-25-29" href="#__codelineno-25-29"></a>        - --provider=rfc2136
+<a id="__codelineno-25-30" name="__codelineno-25-30" href="#__codelineno-25-30"></a>        - --rfc2136-host=192.168.0.1
+<a id="__codelineno-25-31" name="__codelineno-25-31" href="#__codelineno-25-31"></a>        - --rfc2136-port=53
+<a id="__codelineno-25-32" name="__codelineno-25-32" href="#__codelineno-25-32"></a>        - --rfc2136-zone=k8s.example.org
+<a id="__codelineno-25-33" name="__codelineno-25-33" href="#__codelineno-25-33"></a>        - --rfc2136-zone=k8s.your-zone.org
+<a id="__codelineno-25-34" name="__codelineno-25-34" href="#__codelineno-25-34"></a>        - --rfc2136-tsig-secret=96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8=
+<a id="__codelineno-25-35" name="__codelineno-25-35" href="#__codelineno-25-35"></a>        - --rfc2136-tsig-secret-alg=hmac-sha256
+<a id="__codelineno-25-36" name="__codelineno-25-36" href="#__codelineno-25-36"></a>        - --rfc2136-tsig-keyname=externaldns-key
+<a id="__codelineno-25-37" name="__codelineno-25-37" href="#__codelineno-25-37"></a>        - --rfc2136-tsig-axfr
+<a id="__codelineno-25-38" name="__codelineno-25-38" href="#__codelineno-25-38"></a>        - --source=ingress
+<a id="__codelineno-25-39" name="__codelineno-25-39" href="#__codelineno-25-39"></a>        - --domain-filter=k8s.example.org
+</code></pre></div>
+<h2 id="microsoft-dns">Microsoft DNS<a class="headerlink" href="#microsoft-dns" title="Permanent link">&para;</a></h2>
+<p>While <code>external-dns</code> was not developed or tested against Microsoft DNS, it can be configured to work against it. YMMV.</p>
+<h3 id="secure-updates-using-rfc3645-gss-tsig">Secure Updates Using RFC3645 (GSS-TSIG)<a class="headerlink" href="#secure-updates-using-rfc3645-gss-tsig" title="Permanent link">&para;</a></h3>
+<h4 id="dns-side-configuration">DNS-side configuration<a class="headerlink" href="#dns-side-configuration" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Create a DNS zone</li>
+<li>Enable <strong>secure</strong> dynamic updates for the zone</li>
+<li>Enable Zone Transfers to all servers and/or other domains</li>
+<li>Create a user with permissions to create/update/delete records in that zone</li>
+</ol>
+<p>If you see any error messages which indicate that <code>external-dns</code> was somehow not able to fetch<br />
+existing DNS records from your DNS server, this could mean that you forgot about step 3.</p>
+<h5 id="kerberos-configuration">Kerberos Configuration<a class="headerlink" href="#kerberos-configuration" title="Permanent link">&para;</a></h5>
+<p>DNS with secure updates relies upon a valid Kerberos configuration running within the <code>external-dns</code> container.<br />
+At this time, you will need to create a ConfigMap for the <code>external-dns</code> container to use and mount it in your deployment.<br />
+Below is an example of a working Kerberos configuration inside a ConfigMap definition.  This may be different depending on many factors in your environment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="nt">creationTimestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">krb5.conf</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="nt">data</span><span class="p">:</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">  </span><span class="nt">krb5.conf</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="w">    </span><span class="no">[logging]</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="w">    </span><span class="no">default = FILE:/var/log/krb5libs.log</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="w">    </span><span class="no">kdc = FILE:/var/log/krb5kdc.log</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="w">    </span><span class="no">admin_server = FILE:/var/log/kadmind.log</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="w">    </span><span class="no">[libdefaults]</span>
+<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="w">    </span><span class="no">dns_lookup_realm = false</span>
+<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="w">    </span><span class="no">ticket_lifetime = 24h</span>
+<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="w">    </span><span class="no">renew_lifetime = 7d</span>
+<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="w">    </span><span class="no">forwardable = true</span>
+<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a><span class="w">    </span><span class="no">rdns = false</span>
+<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a><span class="w">    </span><span class="no">pkinit_anchors = /etc/pki/tls/certs/ca-bundle.crt</span>
+<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="w">    </span><span class="no">default_ccache_name = KEYRING:persistent:%{uid}</span>
+<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>
+<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="w">    </span><span class="no">default_realm = YOUR-REALM.COM</span>
+<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>
+<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a><span class="w">    </span><span class="no">[realms]</span>
+<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a><span class="w">    </span><span class="no">YOUR-REALM.COM = {</span>
+<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="w">      </span><span class="no">kdc = dc1.yourdomain.com</span>
+<a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a><span class="w">      </span><span class="no">admin_server = dc1.yourdomain.com</span>
+<a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a><span class="w">    </span><span class="no">}</span>
+<a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a>
+<a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a><span class="w">    </span><span class="no">[domain_realm]</span>
+<a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="w">    </span><span class="no">yourdomain.com = YOUR-REALM.COM</span>
+<a id="__codelineno-26-32" name="__codelineno-26-32" href="#__codelineno-26-32"></a><span class="w">    </span><span class="no">.yourdomain.com = YOUR-REALM.COM</span>
+</code></pre></div>
+<p>In most cases, the realm name will probably be the same as the domain name, so you can simply replace <code>YOUR-REALM.COM</code> with something like <code>YOURDOMAIN.COM</code>.</p>
+<p>Once the ConfigMap is created, the container <code>external-dns</code> container needs to be told to mount that ConfigMap as a volume at the default Kerberos configuration location.  The pod spec should include a similar configuration to the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nn">...</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">    </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/krb5.conf</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kerberos-config-volume</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">krb5.conf</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="nn">...</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">configMap</span><span class="p">:</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="w">      </span><span class="nt">defaultMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">420</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">krb5.conf</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kerberos-config-volume</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a><span class="nn">...</span>
+</code></pre></div>
+<h5 id="external-dns-configuration"><code>external-dns</code> configuration<a class="headerlink" href="#external-dns-configuration" title="Permanent link">&para;</a></h5>
+<p>You&rsquo;ll want to configure <code>external-dns</code> similarly to the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>...
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>        - --provider=rfc2136
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>        - --rfc2136-gss-tsig
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>        - --rfc2136-host=dns-host.yourdomain.com
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>        - --rfc2136-port=53
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>        - --rfc2136-zone=your-zone.com
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>        - --rfc2136-zone=your-secondary-zone.com
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>        - --rfc2136-kerberos-username=your-domain-account
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>        - --rfc2136-kerberos-password=your-domain-password
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>        - --rfc2136-kerberos-realm=your-domain.com
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>        - --rfc2136-tsig-axfr # needed to enable zone transfers, which is required for deletion of records.
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>...
+</code></pre></div>
+<p>As noted above, the <code>--rfc2136-kerberos-realm</code> flag is completely optional and won&rsquo;t be necessary in many cases.<br />
+Most likely, you will only need it if you see errors similar to this: <code>KRB Error: (68) KDC_ERR_WRONG_REALM Reserved for future use</code>.</p>
+<p>The flag <code>--rfc2136-host</code> can be set to the host&rsquo;s domain name or IP address.<br />
+However, it also determines the name of the Kerberos principal which is used during authentication.<br />
+This means that Active Directory might only work if this is set to a specific domain name, possibly leading to errors like this:<br />
+<code>KDC_ERR_S_PRINCIPAL_UNKNOWN Server not found in Kerberos database</code>.<br />
+To fix this, try setting <code>--rfc2136-host</code> to the &ldquo;actual&rdquo; hostname of your DNS server.</p>
+<h3 id="insecure-updates">Insecure Updates<a class="headerlink" href="#insecure-updates" title="Permanent link">&para;</a></h3>
+<h4 id="dns-side-configuration_1">DNS-side configuration<a class="headerlink" href="#dns-side-configuration_1" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Create a DNS zone</li>
+<li>Enable insecure dynamic updates for the zone</li>
+<li>Enable Zone Transfers to all servers and/or other domains</li>
+</ol>
+<h4 id="external-dns-configuration_1"><code>external-dns</code> configuration<a class="headerlink" href="#external-dns-configuration_1" title="Permanent link">&para;</a></h4>
+<p>You&rsquo;ll want to configure <code>external-dns</code> similarly to the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>...
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>        - --provider=rfc2136
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>        - --rfc2136-host=192.168.0.1
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>        - --rfc2136-port=53
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>        - --rfc2136-zone=k8s.example.org
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>        - --rfc2136-zone=k8s.your-zone.org
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>        - --rfc2136-insecure
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>        - --rfc2136-tsig-axfr # needed to enable zone transfers, which is required for deletion of records.
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>...
+</code></pre></div>
+<h2 id="dns-over-tls-rfcs-7858-and-9103">DNS Over TLS (RFCs 7858 and 9103)<a class="headerlink" href="#dns-over-tls-rfcs-7858-and-9103" title="Permanent link">&para;</a></h2>
+<p>If your DNS server does zone transfers over TLS, you can instruct <code>external-dns</code> to connect over TLS with the following flags:</p>
+<ul>
+<li><code>--rfc2136-use-tls</code> Will enable TLS for both zone transfers and for updates.</li>
+<li><code>--tls-ca=&lt;cert-file&gt;</code> Is the path to a file containing certificate(s) that can be used to verify the DNS server</li>
+<li><code>--tls-client-cert=&lt;client-cert-file&gt;</code> and</li>
+<li><code>--tls-client-cert-key=&lt;client-key-file&gt;</code> Set the client certificate and key for mutual verification</li>
+<li><code>--rfc2136-skip-tls-verify</code> Disables verification of the certificate supplied by the DNS server.</li>
+</ul>
+<p>It is currently not supported to do only zone transfers over TLS, but not the updates. They are enabled and disabled together.</p>
+<h2 id="configuring-rfc2136-provider-with-multiple-hosts-and-load-balancing">Configuring RFC2136 Provider with Multiple Hosts and Load Balancing<a class="headerlink" href="#configuring-rfc2136-provider-with-multiple-hosts-and-load-balancing" title="Permanent link">&para;</a></h2>
+<p>This section describes how to configure the RFC2136 provider in ExternalDNS to support multiple DNS servers and load balancing options.</p>
+<h3 id="enhancements-overview">Enhancements Overview<a class="headerlink" href="#enhancements-overview" title="Permanent link">&para;</a></h3>
+<p>The RFC2136 provider now supports multiple DNS hosts and introduces load balancing options to distribute DNS update requests evenly across available DNS servers. This helps prevent a single server from becoming a bottleneck in environments with multiple DNS servers.</p>
+<h3 id="configuration-steps">Configuration Steps<a class="headerlink" href="#configuration-steps" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>Allow Multiple Hosts for <code>--rfc2136-host</code></strong><br />
+    - Modify the <code>--rfc2136-host</code> command-line option to accept multiple hosts.<br />
+    - Example: <code>--rfc2136-host="dns-host-1.yourdomain.com" --rfc2136-host="dns-host-2.yourdomain.com"</code></p>
+</li>
+<li>
+<p><strong>Introduce Load Balancing Options</strong><br />
+    - Add a new command-line option <code>--rfc2136-load-balancing-strategy</code> to specify the load balancing strategy.<br />
+    - Supported options:<br />
+        - <code>round-robin</code>: Distributes DNS updates evenly across all specified hosts in a round-robin manner.<br />
+        - <code>random</code>: Randomly selects a host for each DNS update.<br />
+        - <code>disabled</code> (default): Uses the first host in the list as the primary, only moving to the next host if a failure occurs.</p>
+</li>
+</ol>
+<h3 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>external-dns<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span>--provider<span class="o">=</span>rfc2136<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span>--rfc2136-host<span class="o">=</span><span class="s2">&quot;dns-host-1.yourdomain.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span>--rfc2136-host<span class="o">=</span><span class="s2">&quot;dns-host-2.yourdomain.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">  </span>--rfc2136-host<span class="o">=</span><span class="s2">&quot;dns-host-3.yourdomain.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">  </span>--rfc2136-load-balancing-strategy<span class="o">=</span><span class="s2">&quot;round-robin&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">  </span>--rfc2136-port<span class="o">=</span><span class="m">53</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w">  </span>--rfc2136-zone<span class="o">=</span>example.com<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">  </span>--rfc2136-tsig-secret-alg<span class="o">=</span>hmac-sha256<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">  </span>--rfc2136-tsig-keyname<span class="o">=</span>example-key<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w">  </span>--rfc2136-tsig-secret<span class="o">=</span>example-secret<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w">  </span>--rfc2136-insecure
+</code></pre></div>
+<h3 id="helm">Helm<a class="headerlink" href="#helm" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nt">extraArgs</span><span class="p">:</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--rfc2136-host=&quot;dns-host-1.yourdomain.com&quot;</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--rfc2136-port=53</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--rfc2136-zone=example.com</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--rfc2136-tsig-secret-alg=hmac-sha256</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--rfc2136-tsig-axfr</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;EXTERNAL_DNS_RFC2136_TSIG_SECRET&quot;</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="w">    </span><span class="nt">valueFrom</span><span class="p">:</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="w">      </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rfc2136-keys</span>
+<a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a><span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rfc2136-tsig-secret</span>
+<a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;EXTERNAL_DNS_RFC2136_TSIG_KEYNAME&quot;</span>
+<a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a><span class="w">    </span><span class="nt">valueFrom</span><span class="p">:</span>
+<a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a><span class="w">      </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rfc2136-keys</span>
+<a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a><span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rfc2136-tsig-keyname</span>
+</code></pre></div>
+<h4 id="secret-creation">Secret creation<a class="headerlink" href="#secret-creation" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>rfc2136-keys<span class="w"> </span>--from-literal<span class="o">=</span>rfc2136-tsig-secret<span class="o">=</span><span class="s1">&#39;xxx&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span>rfc2136-tsig-keyname<span class="o">=</span><span class="s1">&#39;k8s-external-dns-key&#39;</span><span class="w"> </span>-n<span class="w"> </span>external-dns
+</code></pre></div>
+<h3 id="benefits">Benefits<a class="headerlink" href="#benefits" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Distributes the load of DNS updates across multiple data centers, preventing any single DC from becoming a bottleneck.</li>
+<li>Provides flexibility to choose different load balancing strategies based on the environment and requirements.</li>
+<li>Improves the resilience and reliability of DNS updates by introducing a retry mechanism with a list of hosts.</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 6, 2026 12:51:30 UTC">April 6, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <!--
+  Copyright (c) 2016-2024 Martin Donath <martin.donath@squidfunk.com>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+-->
+
+<!-- Copyright and theme information -->
+<div class="md-copyright">
+  
+  
+    Made with
+    <a
+      href="https://squidfunk.github.io/mkdocs-material/"
+      target="_blank" rel="noopener"
+    >
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate", "navigation.top", "navigation.tracking", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "tags"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

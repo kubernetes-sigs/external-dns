@@ -1,0 +1,2020 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package source
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	istionetworking "istio.io/api/networking/v1beta1"
+	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
+	v1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+)
+
+// This is a compile-time validation that gatewaySource is a Source.
+var _ Source = &gatewaySource{}
+
+type GatewaySuite struct {
+	suite.Suite
+	source     Source
+	lbServices []*v1.Service
+	ingresses  []*networkv1.Ingress
+}
+
+func (suite *GatewaySuite) SetupTest() {
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+	var err error
+
+	suite.lbServices = []*v1.Service{
+		(fakeIngressGatewayService{
+			ips:       []string{"8.8.8.8"},
+			hostnames: []string{"v1"},
+			namespace: "istio-system",
+			name:      "istio-gateway1",
+		}).Service(),
+		(fakeIngressGatewayService{
+			ips:       []string{"1.1.1.1"},
+			hostnames: []string{"v42"},
+			namespace: "istio-other",
+			name:      "istio-gateway2",
+		}).Service(),
+	}
+
+	for _, service := range suite.lbServices {
+		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+		suite.NoError(err, "should succeed")
+	}
+
+	suite.ingresses = []*networkv1.Ingress{
+		(fakeIngress{
+			ips:       []string{"2.2.2.2"},
+			hostnames: []string{"v2"},
+			namespace: "istio-system",
+			name:      "istio-ingress",
+		}).Ingress(),
+		(fakeIngress{
+			ips:       []string{"3.3.3.3"},
+			hostnames: []string{"v62"},
+			namespace: "istio-system",
+			name:      "istio-ingress2",
+		}).Ingress(),
+	}
+
+	for _, ingress := range suite.ingresses {
+		_, err = fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+		suite.NoError(err, "should succeed")
+	}
+
+	suite.source, err = NewIstioGatewaySource(
+		context.TODO(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+		},
+	)
+	suite.NoError(err, "should initialize gateway source")
+	suite.NoError(err, "should succeed")
+}
+
+func (suite *GatewaySuite) TestResourceLabelIsSet() {
+	endpoints, _ := suite.source.Endpoints(context.Background())
+	for _, ep := range endpoints {
+		suite.Equal("gateway/default/foo-gateway-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+	}
+}
+
+func TestGateway(t *testing.T) {
+	t.Parallel()
+
+	suite.Run(t, new(GatewaySuite))
+	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
+	t.Run("Endpoints", testGatewayEndpoints)
+}
+
+func testEndpointsFromGatewayConfig(t *testing.T) {
+	t.Parallel()
+
+	for _, ti := range []struct {
+		title      string
+		lbServices []fakeIngressGatewayService
+		ingresses  []fakeIngress
+		config     fakeGatewayConfig
+		expected   []*endpoint.Endpoint
+	}{
+		{
+			title: "one rule.host one lb.hostname",
+			lbServices: []fakeIngressGatewayService{
+				{
+					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "one namespaced rule.host one lb.hostname",
+			lbServices: []fakeIngressGatewayService{
+				{
+					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"my-namespace/foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one lb.IP",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one ingress.IP",
+			ingresses: []fakeIngress{
+				{
+					name:      "ingress1",
+					namespace: "default",
+					ips:       []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					IstioGatewayIngressSource: "ingress1",
+				},
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two lb.IP and two lb.Hostname",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8", "127.0.0.1"},
+					hostnames: []string{"elb.com", "alb.com"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two ingress.IP and two ingress.Hostname",
+			ingresses: []fakeIngress{
+				{
+					name:      "ingress1",
+					namespace: "default",
+					ips:       []string{"8.8.8.8", "127.0.0.1"},
+					hostnames: []string{"elb.com", "alb.com"},
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					IstioGatewayIngressSource: "ingress1",
+				},
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+				},
+			},
+		},
+		{
+			title: "no rule.host",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "one empty rule.host",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{""},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "one empty rule.host with gateway ingress annotation",
+			ingresses: []fakeIngress{
+				{
+					name:      "ingress1",
+					namespace: "default",
+					ips:       []string{"8.8.8.8", "127.0.0.1"},
+					hostnames: []string{"elb.com", "alb.com"},
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					IstioGatewayIngressSource: "ingress1",
+				},
+				dnsnames: [][]string{
+					{""},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:      "no targets",
+			lbServices: []fakeIngressGatewayService{{}},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{""},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "one gateway, two ingressgateway loadbalancer hostnames",
+			lbServices: []fakeIngressGatewayService{
+				{
+					hostnames: []string{"lb.com"},
+					namespace: "istio-other",
+					name:      "gateway1",
+				},
+				{
+					hostnames: []string{"lb2.com"},
+					namespace: "istio-other",
+					name:      "gateway2",
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com", "lb2.com"},
+				},
+			},
+		},
+		{
+			title: "one gateway, ingress in separate namespace",
+			ingresses: []fakeIngress{
+				{
+					hostnames: []string{"lb.com"},
+					namespace: "istio-other2",
+					name:      "ingress1",
+				},
+				{
+					hostnames: []string{"lb2.com"},
+					namespace: "istio-other",
+					name:      "ingress2",
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					IstioGatewayIngressSource: "istio-other2/ingress1",
+				},
+				dnsnames: [][]string{
+					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one lb.externalIP",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two lb.IP, two lb.Hostname and two lb.externalIP",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+		},
+		{
+			title: "provider-specific annotation is converted to endpoint property",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
+	} {
+
+		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
+			gatewayCfg := ti.config.Config()
+			source, err := newTestGatewaySource(t, ti.lbServices, ti.ingresses)
+			require.NoError(t, err)
+			hostnames := source.hostNamesFromGateway(gatewayCfg)
+			endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg)
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
+		})
+	}
+}
+
+func testGatewayEndpoints(t *testing.T) {
+	t.Parallel()
+
+	for _, ti := range []struct {
+		title                    string
+		targetNamespace          string
+		annotationFilter         string
+		labelFilter              labels.Selector
+		lbServices               []fakeIngressGatewayService
+		ingresses                []fakeIngress
+		configItems              []fakeGatewayConfig
+		expected                 []*endpoint.Endpoint
+		expectError              bool
+		fqdnTemplate             string
+		combineFQDNAndAnnotation bool
+		ignoreHostnameAnnotation bool
+	}{
+		{
+			title:           "no gateway",
+			targetNamespace: "",
+		},
+		{
+			title:           "two simple gateways, one ingressgateway loadbalancer service",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					dnsnames:  [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					dnsnames:  [][]string{{"new.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "two simple gateways on different namespaces, one ingressgateway loadbalancer service",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					dnsnames:  [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					dnsnames:  [][]string{{"new.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "two simple gateways on different namespaces and a target namespace, one ingressgateway loadbalancer service",
+			targetNamespace: "testing1",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"lb.com"},
+					namespace: "testing1",
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "one simple gateways on different namespace and a target namespace, one ingress service",
+			targetNamespace: "testing1",
+			ingresses: []fakeIngress{
+				{
+					name:      "ingress1",
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"lb.com"},
+					namespace: "testing2",
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  [][]string{{"example.org"}},
+					annotations: map[string]string{
+						IstioGatewayIngressSource: "testing2/ingress1",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:            "valid matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/gateway.class in (alb, nginx)",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						"kubernetes.io/gateway.class": "nginx",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/gateway.class in (alb, nginx)",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						"kubernetes.io/gateway.class": "tectonic",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:            "valid matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/gateway.class=nginx",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						"kubernetes.io/gateway.class": "nginx",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/gateway.class=nginx",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						"kubernetes.io/gateway.class": "alb",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:       "valid matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "istio-gateway"}),
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:     "fake1",
+					labels:   map[string]string{"app": "istio-gateway"},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:       "valid non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "istio-gateway"}),
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:     "fake1",
+					labels:   map[string]string{"app": "other"},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "our controller type is dns-controller",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.ControllerKey: annotations.ControllerValue,
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:           "different controller types are ignored",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.ControllerKey: "some-other-tool",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "template for gateway if host is missing",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"elb.com"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.ControllerKey: annotations.ControllerValue,
+					},
+					dnsnames: [][]string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com"},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "another controller annotation skipped even with template",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.ControllerKey: "other-controller",
+					},
+					dnsnames: [][]string{},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "multiple FQDN template hostnames",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:        "fake1",
+					namespace:   "",
+					annotations: map[string]string{},
+					dnsnames:    [][]string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake1.ext-dna.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+		},
+		{
+			title:           "multiple FQDN template hostnames",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:        "fake1",
+					namespace:   "",
+					annotations: map[string]string{},
+					dnsnames:    [][]string{},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake1.ext-dna.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dns.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dna.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+			fqdnTemplate:             "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+			combineFQDNAndAnnotation: true,
+		},
+		{
+			title:           "gateway rules with annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example2.org"}},
+				},
+				{
+					name:      "fake3",
+					namespace: "",
+					annotations: map[string]string{
+						IstioGatewayIngressSource: "not-real/ingress1",
+						annotations.TargetKey:     "1.2.3.4",
+					},
+					dnsnames: [][]string{{"example3.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example3.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "gateway rules with hostname annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"1.2.3.4"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "gateway rules with hostname annotation having multiple hostnames",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"1.2.3.4"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "another-dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "gateway rules with hostname and target annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title:           "gateway rules with hostname, target and ingress annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{},
+				},
+			},
+			ingresses: []fakeIngress{
+				{
+					name: "ingress1",
+					ips:  []string{},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						IstioGatewayIngressSource: "ingress1",
+						annotations.HostnameKey:   "dns-through-hostname.com",
+						annotations.TargetKey:     "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title:           "gateway rules with annotation and custom TTL",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "6",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "1",
+					},
+					dnsnames: [][]string{{"example2.org"}},
+				},
+				{
+					name:      "fake3",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+						annotations.TtlKey:    "10s",
+					},
+					dnsnames: [][]string{{"example3.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordTTL:  endpoint.TTL(6),
+				},
+				{
+					DNSName:    "example2.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordTTL:  endpoint.TTL(1),
+				},
+				{
+					DNSName:    "example3.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordTTL:  endpoint.TTL(10),
+				},
+			},
+		},
+		{
+			title:           "template for gateway with annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+					},
+					dnsnames: [][]string{},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "gateway-target.com",
+					},
+					dnsnames: [][]string{},
+				},
+				{
+					name:      "fake3",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "1.2.3.4",
+					},
+					dnsnames: [][]string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake2.ext-dns.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake3.ext-dns.test.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "Ingress with empty annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.TargetKey: "",
+					},
+					dnsnames: [][]string{},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "Gateway with empty ingress annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			ingresses: []fakeIngress{
+				{
+					name:      "ingress1",
+					ips:       []string{},
+					hostnames: []string{},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						IstioGatewayIngressSource: "",
+					},
+					dnsnames: [][]string{},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "ignore hostname annotations",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "ignore.me",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "ignore.me.too",
+					},
+					dnsnames: [][]string{{"new.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+		},
+		{
+			title:           "gateways with wildcard host",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"1.2.3.4"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					dnsnames:  [][]string{{"*"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					dnsnames:  [][]string{{"some-namespace/*"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "gateways with wildcard host and hostname annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"1.2.3.4"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "fake1.dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"*"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						annotations.HostnameKey: "fake2.dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"some-namespace/*"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.dns-through-hostname.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName:    "fake2.dns-through-hostname.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
+		{
+			title:           "gateways with ingress annotation; ingress not found",
+			targetNamespace: "",
+			ingresses: []fakeIngress{
+				{
+					name: "ingress1",
+					ips:  []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						IstioGatewayIngressSource: "ingress2",
+					},
+					dnsnames: [][]string{{"new.org"}},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+			expectError: true,
+		},
+	} {
+
+		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fake.NewClientset()
+			targetNamespace := ti.targetNamespace
+
+			for _, lb := range ti.lbServices {
+				service := lb.Service()
+				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			for _, ing := range ti.ingresses {
+				ingress := ing.Ingress()
+				if ingress.Namespace != targetNamespace {
+					targetNamespace = v1.NamespaceAll
+				}
+				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			fakeIstioClient := istiofake.NewSimpleClientset()
+			for _, config := range ti.configItems {
+				gatewayCfg := config.Config()
+				_, err := fakeIstioClient.NetworkingV1().Gateways(gatewayCfg.Namespace).Create(t.Context(), gatewayCfg, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			gatewaySource, err := NewIstioGatewaySource(
+				t.Context(),
+				fakeKubernetesClient,
+				fakeIstioClient,
+				&Config{
+					Namespace:                targetNamespace,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					AnnotationFilter:         ti.annotationFilter,
+					LabelFilter:              ti.labelFilter,
+				},
+			)
+			require.NoError(t, err)
+
+			res, err := gatewaySource.Endpoints(t.Context())
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			testutils.ValidateEndpoints(t, res, ti.expected)
+		})
+	}
+}
+
+func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
+	tests := []struct {
+		name      string
+		selectors map[string]string
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			name: "gw single selector match with single service selector",
+			selectors: map[string]string{
+				"version": "v1",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector match all service selectors",
+			selectors: map[string]string{
+				"app":     "demo",
+				"env":     "prod",
+				"team":    "devops",
+				"version": "v1",
+				"release": "stable",
+				"track":   "daily",
+				"tier":    "backend",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector has subset of service selectors",
+			selectors: map[string]string{
+				"version": "v1",
+				"release": "stable",
+				"tier":    "backend",
+				"app":     "demo",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeKubeClient := fake.NewClientset()
+			fakeIstioClient := istiofake.NewSimpleClientset()
+
+			svc := &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-service",
+					Namespace: "default",
+					UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
+				},
+				Spec: v1.ServiceSpec{
+					Selector: map[string]string{
+						"app":     "demo",
+						"env":     "prod",
+						"team":    "devops",
+						"version": "v1",
+						"release": "stable",
+						"track":   "daily",
+						"tier":    "backend",
+					},
+					ExternalIPs: []string{"10.10.10.255"},
+				},
+			}
+			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			gw := &networkingv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-gateway",
+					Namespace: "default",
+				},
+				Spec: istionetworking.Gateway{
+					Servers: []*istionetworking.Server{
+						{
+							Hosts: []string{"example.org"},
+						},
+					},
+					Selector: tt.selectors,
+				},
+			}
+
+			_, err = fakeIstioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewIstioGatewaySource(
+				t.Context(),
+				fakeKubeClient,
+				fakeIstioClient,
+				&Config{},
+			)
+			require.NoError(t, err)
+			require.NotNil(t, src)
+
+			res, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			testutils.ValidateEndpoints(t, res, tt.expected)
+		})
+	}
+}
+
+func TestTransformerInIstioGatewaySource(t *testing.T) {
+	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *gatewaySource {
+		t.Helper()
+		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &Config{})
+		require.NoError(t, err)
+		gs, ok := src.(*gatewaySource)
+		require.True(t, ok)
+		return gs
+	}
+
+	t.Run("service strips managed fields and status conditions", func(t *testing.T) {
+		svc := &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "fake-service",
+				Namespace: "default",
+				Labels: map[string]string{
+					"label1": "value1",
+					"label2": "value2",
+					"label3": "value3",
+				},
+				Annotations: map[string]string{
+					"user-annotation": "value",
+					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+					"external-dns.alpha.kubernetes.io/random":   "value",
+					"other/annotation":                          "value",
+					v1.LastAppliedConfigAnnotation:              `{"apiVersion":"v1"}`,
+				},
+				UID: "someuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Selector:    map[string]string{"selector": "one"},
+				ExternalIPs: []string{"1.2.3.4"},
+				Type:        v1.ServiceTypeLoadBalancer,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{{IP: "5.6.7.8"}},
+				},
+				Conditions: []metav1.Condition{
+					{Type: "Available", Status: metav1.ConditionTrue, Reason: "Ready"},
+				},
+			},
+		}
+		kClient := fake.NewClientset(svc)
+		gs := newSource(t, kClient, istiofake.NewSimpleClientset())
+
+		retrieved, err := gs.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, svc.Name, retrieved.Name)
+		assert.Equal(t, svc.Labels, retrieved.Labels)
+		assert.Equal(t, svc.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+		// Status.LoadBalancer preserved — used for endpoint generation
+		assert.Equal(t, svc.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+		// Status.Conditions stripped
+		assert.Empty(t, retrieved.Status.Conditions)
+	})
+
+	t.Run("ingress strips managed fields", func(t *testing.T) {
+		ingress := &networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-ingress",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":              "value",
+					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
+				},
+				UID: "ingressuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+			Status: networkv1.IngressStatus{
+				LoadBalancer: networkv1.IngressLoadBalancerStatus{
+					Ingress: []networkv1.IngressLoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		}
+		kClient := fake.NewClientset(ingress)
+		gs := newSource(t, kClient, istiofake.NewSimpleClientset())
+
+		retrieved, err := gs.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, ingress.Name, retrieved.Name)
+		assert.Equal(t, ingress.Labels, retrieved.Labels)
+		assert.Equal(t, ingress.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+		// Status.LoadBalancer preserved — used for endpoint generation
+		assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
+	})
+
+	t.Run("gateway strips managed fields", func(t *testing.T) {
+		gw := &networkingv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-gateway",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":              "value",
+					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+				},
+				UID: "gatewayuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+				},
+			},
+		}
+		istioClient := istiofake.NewSimpleClientset()
+		_, err := istioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+		gs := newSource(t, fake.NewClientset(), istioClient)
+
+		retrieved, err := gs.gatewayInformer.Lister().Gateways(gw.Namespace).Get(gw.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, gw.Name, retrieved.Name)
+		assert.Equal(t, gw.Labels, retrieved.Labels)
+		assert.Equal(t, gw.UID, retrieved.UID)
+		assert.Empty(t, retrieved.ManagedFields)
+		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+		assert.Contains(t, retrieved.Annotations, "user-annotation")
+	})
+}
+
+func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
+	fakeKubeClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	gw := &networkingv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "argocd",
+			Namespace: "argocd",
+		},
+		Spec: istionetworking.Gateway{
+			Servers: []*istionetworking.Server{
+				{
+					Hosts: []string{"example.org"},
+					Tls: &istionetworking.ServerTLSSettings{
+						HttpsRedirect: true,
+					},
+				},
+				{
+					Hosts: []string{"example.org"},
+					Tls: &istionetworking.ServerTLSSettings{
+						ServerCertificate: IstioGatewayIngressSource,
+						Mode:              istionetworking.ServerTLSSettings_SIMPLE,
+					},
+				},
+			},
+			Selector: map[string]string{
+				"istio": "ingressgateway",
+			},
+		},
+	}
+
+	services := []*v1.Service{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgateway",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.223.3",
+				ClusterIPs:            []string{"10.118.223.3"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "http2",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(8080),
+						NodePort:   30127,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: new(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgatewayudp",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.220.130",
+				ClusterIPs:            []string{"10.118.220.130"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        new(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "upd-dns",
+						Port:       53,
+						Protocol:   v1.ProtocolUDP,
+						TargetPort: intstr.FromInt32(5353),
+						NodePort:   30873,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: new(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.NotNil(t, services)
+
+	for _, svc := range services {
+		_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	_, err := fakeIstioClient.NetworkingV1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubeClient,
+		fakeIstioClient,
+		&Config{},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, src)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
+	})
+}
+
+// gateway specific helper functions
+func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	for _, lb := range loadBalancerList {
+		service := lb.Service()
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, ing := range ingressList {
+		ingress := ing.Ingress()
+		_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	gwsrc, ok := src.(*gatewaySource)
+	if !ok {
+		return nil, errors.New("underlying source type was not gateway")
+	}
+
+	return gwsrc, nil
+}
+
+type fakeIngressGatewayService struct {
+	ips         []string
+	hostnames   []string
+	namespace   string
+	name        string
+	selector    map[string]string
+	externalIPs []string
+}
+
+func (ig fakeIngressGatewayService) Service() *v1.Service {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ig.namespace,
+			Name:      ig.name,
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{},
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Selector:    ig.selector,
+			ExternalIPs: ig.externalIPs,
+		},
+	}
+
+	for _, ip := range ig.ips {
+		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+			IP: ip,
+		})
+	}
+	for _, hostname := range ig.hostnames {
+		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+			Hostname: hostname,
+		})
+	}
+
+	return svc
+}
+
+type fakeGatewayConfig struct {
+	namespace   string
+	name        string
+	annotations map[string]string
+	labels      map[string]string
+	dnsnames    [][]string
+	selector    map[string]string
+}
+
+func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
+	ns := c.namespace
+	if ns == "" {
+		ns = "default"
+	}
+	gw := &networkingv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        c.name,
+			Namespace:   ns,
+			Annotations: c.annotations,
+			Labels:      c.labels,
+		},
+		Spec: istionetworking.Gateway{
+			Servers:  nil,
+			Selector: c.selector,
+		},
+	}
+
+	var servers []*istionetworking.Server
+	for _, dnsnames := range c.dnsnames {
+		servers = append(servers, &istionetworking.Server{
+			Hosts: dnsnames,
+		})
+	}
+
+	gw.Spec.Servers = servers
+
+	return gw
+}
