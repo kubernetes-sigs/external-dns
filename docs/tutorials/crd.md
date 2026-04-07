@@ -87,8 +87,8 @@ spec:
     recordTTL: 180
     recordType: SRV
     targets:
-    - 1 50 5060 sip1-n1.test.example.com
-    - 1 50 5060 sip1-n2.test.example.com
+    - 1 50 5060 sip1-n1.test.example.com.
+    - 1 50 5060 sip1-n2.test.example.com.
 ```
 
 ### DNSEndpoint with an NAPTR record

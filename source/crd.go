@@ -126,7 +126,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				hasDot := strings.HasSuffix(target, ".")
 
 				switch ep.RecordType {
-				case endpoint.RecordTypeNAPTR:
+				case endpoint.RecordTypeNAPTR, endpoint.RecordTypeSRV:
 					illegalTarget = !hasDot
 				default:
 					illegalTarget = hasDot
@@ -134,7 +134,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 				if illegalTarget {
 					fixed := target + "."
-					if ep.RecordType != endpoint.RecordTypeNAPTR {
+					if ep.RecordType != endpoint.RecordTypeNAPTR && ep.RecordType != endpoint.RecordTypeSRV {
 						fixed = strings.TrimSuffix(target, ".")
 					}
 					log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — use %q not %q.",

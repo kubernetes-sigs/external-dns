@@ -313,12 +313,28 @@ func testCRDSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "_svc._tcp.example.org",
-					Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org.", "0 0 80 def.example.org."},
 					RecordType: endpoint.RecordTypeSRV,
 					RecordTTL:  180,
 				},
 			},
 			expectEndpoints: true,
+		},
+		{
+			title:           "SRV record missing trailing dot",
+			namespaceFilter: "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "_svc._tcp.example.org",
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+					RecordType: endpoint.RecordTypeSRV,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: false,
 		},
 		{
 			title:           "Create NAPTR record",
