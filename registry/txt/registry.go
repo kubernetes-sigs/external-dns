@@ -231,6 +231,33 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			RecordType:    recordType,
 			SetIdentifier: record.SetIdentifier,
 		}
+		existingLabels, exists := labelMap[key]
+		if exists {
+			existingOwner, existingOwnerOK := existingLabels[endpoint.OwnerLabelKey]
+			newOwner, newOwnerOK := labels[endpoint.OwnerLabelKey]
+
+			// If owner label missing, don't block — store safely
+			if !existingOwnerOK || !newOwnerOK {
+				log.Warnf("Missing owner label for TXT record %s, allowing overwrite", key.DNSName)
+				labelMap[key] = labels
+				continue
+			}
+
+			// Conflict detected → skip overwrite
+			if existingOwner != newOwner {
+				log.Warnf("Conflicting TXT record owners for %s: '%s' vs '%s'",
+					key.DNSName,
+					existingOwner,
+					newOwner,
+				)
+				continue
+			}
+
+			// Same owner → no need to overwrite
+			continue
+		}
+
+		// First time seeing this key → store it
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
 		im.existingTXTs.add(record)
