@@ -236,10 +236,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			existingOwner, existingOwnerOK := existingLabels[endpoint.OwnerLabelKey]
 			newOwner, newOwnerOK := labels[endpoint.OwnerLabelKey]
 
-			// If owner label missing, don't block — store safely
+			// If owner label is missing, skip to avoid unsafe overwrite and preserve determinism
 			if !existingOwnerOK || !newOwnerOK {
-				log.Warnf("Missing owner label for TXT record %s, allowing overwrite", key.DNSName)
-				labelMap[key] = labels
+				log.Warnf("Missing owner label for TXT record %s, skipping record", key.DNSName)
 				continue
 			}
 
