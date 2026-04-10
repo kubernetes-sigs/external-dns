@@ -880,6 +880,7 @@ const (
 	externalAccountKey               = "external_account"
 	externalAccountAuthorizedUserKey = "external_account_authorized_user"
 	impersonatedServiceAccount       = "impersonated_service_account"
+	gdchServiceAccountKey            = "gdch_service_account"
 )
 
 // credentialsFile is the unmarshalled representation of a credentials file.
@@ -942,7 +943,7 @@ func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config
 
 func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsParams) (oauth2.TokenSource, error) {
 	switch f.Type {
-	case serviceAccountKey:
+	case serviceAccountKey, gdchServiceAccountKey:
 		cfg := f.jwtConfig(params.Scopes, params.Subject)
 		return cfg.TokenSource(ctx), nil
 	case userCredentialsKey:
@@ -1031,6 +1032,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 func ComputeTokenSource(account string, scope ...string) oauth2.TokenSource {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return oauth2.ReuseTokenSource(nil, computeSource{account: account, scopes: scope})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -1041,6 +1043,11 @@ func ComputeTokenSource(account string, scope ...string) oauth2.TokenSource {
 	return computeTokenSource(account, 0, scope...)
 =======
 	// refresh 3 minutes and 45 seconds early. The shortest MDS cache is currently 4 minutes, so any
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	// refresh 3 minutes and 45 seconds early. The shortest MDS cache is currently 4 minutes, so any
+=======
+	// Refresh 3 minutes and 45 seconds early. The shortest MDS cache is currently 4 minutes, so any
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	// refreshes earlier are a waste of compute.
 	earlyExpirySecs := 225 * time.Second
 	return computeTokenSource(account, earlyExpirySecs, scope...)
@@ -1075,27 +1082,23 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	var res struct {
-		AccessToken  string `json:"access_token"`
-		ExpiresInSec int    `json:"expires_in"`
-		TokenType    string `json:"token_type"`
-	}
+	var res oauth2.Token
 	err = json.NewDecoder(strings.NewReader(tokenJSON)).Decode(&res)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %v", err)
 	}
-	if res.ExpiresInSec == 0 || res.AccessToken == "" {
+	if res.ExpiresIn == 0 || res.AccessToken == "" {
 		return nil, fmt.Errorf("oauth2/google: incomplete token received from metadata")
 	}
 	tok := &oauth2.Token{
 		AccessToken: res.AccessToken,
 		TokenType:   res.TokenType,
-		Expiry:      time.Now().Add(time.Duration(res.ExpiresInSec) * time.Second),
+		Expiry:      time.Now().Add(time.Duration(res.ExpiresIn) * time.Second),
 	}
 	// NOTE(cbro): add hidden metadata about where the token is from.
 	// This is needed for detection by client libraries to know that credentials come from the metadata server.
 	// This may be removed in a future version of this library.
-	return tok.WithExtra(map[string]interface{}{
+	return tok.WithExtra(map[string]any{
 		"oauth2.google.tokenSource":    "compute-metadata",
 		"oauth2.google.serviceAccount": acct,
 	}), nil

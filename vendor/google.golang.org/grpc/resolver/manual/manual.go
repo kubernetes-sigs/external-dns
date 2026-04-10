@@ -141,7 +141,7 @@ type Resolver struct {
 	// Fields actually belong to the resolver.
 	// Guards access to below fields.
 	mu sync.Mutex
-	CC resolver.ClientConn
+	cc resolver.ClientConn
 	// Storing the most recent state update makes this resolver resilient to
 	// restarts, which is possible with channel idleness.
 	lastSeenState *resolver.State
@@ -157,12 +157,12 @@ func (r *Resolver) InitialState(s resolver.State) {
 func (r *Resolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	// Call BuildCallback after locking to avoid a race when UpdateState
-	// or ReportError is called before Build returns.
+	// Call BuildCallback after locking to avoid a race when UpdateState or CC
+	// is called before Build returns.
 	r.BuildCallback(target, cc, opts)
-	r.CC = cc
+	r.cc = cc
 	if r.lastSeenState != nil {
-		err := r.CC.UpdateState(*r.lastSeenState)
+		err := r.cc.UpdateState(*r.lastSeenState)
 		go r.UpdateStateCallback(err)
 	}
 	return r, nil
@@ -183,26 +183,34 @@ func (r *Resolver) Close() {
 	r.CloseCallback()
 }
 
-// UpdateState calls CC.UpdateState.
+// UpdateState calls UpdateState(s) on the channel.  If the resolver has not
+// been Built before, this instead sets the initial state of the resolver, like
+// InitialState.
 func (r *Resolver) UpdateState(s resolver.State) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var err error
-	if r.CC == nil {
-		panic("cannot update state as grpc.Dial with resolver has not been called")
-	}
-	err = r.CC.UpdateState(s)
 	r.lastSeenState = &s
+	if r.cc == nil {
+		return
+	}
+	err := r.cc.UpdateState(s)
 	r.UpdateStateCallback(err)
 }
 
-// ReportError calls CC.ReportError.
-func (r *Resolver) ReportError(err error) {
+// CC returns r's ClientConn when r was last Built.  Panics if the resolver has
+// not been Built before.
+func (r *Resolver) CC() resolver.ClientConn {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.CC == nil {
-		panic("cannot report error as grpc.Dial with resolver has not been called")
+	if r.cc == nil {
+		panic("Manual resolver instance has not yet been built.")
 	}
+<<<<<<< HEAD
 	r.CC.ReportError(err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	r.CC.ReportError(err)
+=======
+	return r.cc
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 }

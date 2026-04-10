@@ -1513,7 +1513,7 @@ func (ht *serverHandlerTransport) Drain(debugData string) {
 // NewServerHandlerTransport returns a ServerTransport handling gRPC from
 // inside an http.Handler, or writes an HTTP error to w and returns an error.
 // It requires that the http Server supports HTTP/2.
-func NewServerHandlerTransport(w http.ResponseWriter, r *http.Request, stats []stats.Handler, bufferPool mem.BufferPool) (ServerTransport, error) {
+func NewServerHandlerTransport(w http.ResponseWriter, r *http.Request, stats stats.Handler, bufferPool mem.BufferPool) (ServerTransport, error) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		msg := fmt.Sprintf("invalid gRPC request method %q", r.Method)
@@ -1633,7 +1633,7 @@ type serverHandlerTransport struct {
 	// TODO make sure this is consistent across handler_server and http2_server
 	contentSubtype string
 
-	stats  []stats.Handler
+	stats  stats.Handler
 	logger *grpclog.PrefixLogger
 
 	bufferPool mem.BufferPool
@@ -1688,7 +1688,7 @@ func (ht *serverHandlerTransport) do(fn func()) error {
 	}
 }
 
-func (ht *serverHandlerTransport) WriteStatus(s *Stream, st *status.Status) error {
+func (ht *serverHandlerTransport) writeStatus(s *ServerStream, st *status.Status) error {
 	ht.writeStatusMu.Lock()
 	defer ht.writeStatusMu.Unlock()
 
@@ -1737,14 +1737,14 @@ func (ht *serverHandlerTransport) WriteStatus(s *Stream, st *status.Status) erro
 		}
 	})
 
-	if err == nil { // transport has not been closed
+	if err == nil && ht.stats != nil { // transport has not been closed
 		// Note: The trailer fields are compressed with hpack after this call returns.
 		// No WireLength field is set here.
-		for _, sh := range ht.stats {
-			sh.HandleRPC(s.Context(), &stats.OutTrailer{
-				Trailer: s.trailer.Copy(),
-			})
-		}
+		s.hdrMu.Lock()
+		ht.stats.HandleRPC(s.Context(), &stats.OutTrailer{
+			Trailer: s.trailer.Copy(),
+		})
+		s.hdrMu.Unlock()
 	}
 	ht.Close(errors.New("finished writing status"))
 	return err
@@ -1752,14 +1752,14 @@ func (ht *serverHandlerTransport) WriteStatus(s *Stream, st *status.Status) erro
 
 // writePendingHeaders sets common and custom headers on the first
 // write call (Write, WriteHeader, or WriteStatus)
-func (ht *serverHandlerTransport) writePendingHeaders(s *Stream) {
+func (ht *serverHandlerTransport) writePendingHeaders(s *ServerStream) {
 	ht.writeCommonHeaders(s)
 	ht.writeCustomHeaders(s)
 }
 
 // writeCommonHeaders sets common headers on the first write
 // call (Write, WriteHeader, or WriteStatus).
-func (ht *serverHandlerTransport) writeCommonHeaders(s *Stream) {
+func (ht *serverHandlerTransport) writeCommonHeaders(s *ServerStream) {
 	h := ht.rw.Header()
 	h["Date"] = nil // suppress Date to make tests happy; TODO: restore
 	h.Set("Content-Type", ht.contentType)
@@ -1780,7 +1780,7 @@ func (ht *serverHandlerTransport) writeCommonHeaders(s *Stream) {
 
 // writeCustomHeaders sets custom headers set on the stream via SetHeader
 // on the first write call (Write, WriteHeader, or WriteStatus)
-func (ht *serverHandlerTransport) writeCustomHeaders(s *Stream) {
+func (ht *serverHandlerTransport) writeCustomHeaders(s *ServerStream) {
 	h := ht.rw.Header()
 
 	s.hdrMu.Lock()
@@ -1796,7 +1796,7 @@ func (ht *serverHandlerTransport) writeCustomHeaders(s *Stream) {
 	s.hdrMu.Unlock()
 }
 
-func (ht *serverHandlerTransport) Write(s *Stream, hdr []byte, data mem.BufferSlice, _ *Options) error {
+func (ht *serverHandlerTransport) write(s *ServerStream, hdr []byte, data mem.BufferSlice, _ *WriteOptions) error {
 	// Always take a reference because otherwise there is no guarantee the data will
 	// be available after this function returns. This is what callers to Write
 	// expect.
@@ -1820,7 +1820,7 @@ func (ht *serverHandlerTransport) Write(s *Stream, hdr []byte, data mem.BufferSl
 	return nil
 }
 
-func (ht *serverHandlerTransport) WriteHeader(s *Stream, md metadata.MD) error {
+func (ht *serverHandlerTransport) writeHeader(s *ServerStream, md metadata.MD) error {
 	if err := s.SetHeader(md); err != nil {
 		return err
 	}
@@ -1835,20 +1835,24 @@ func (ht *serverHandlerTransport) WriteHeader(s *Stream, md metadata.MD) error {
 		ht.rw.(http.Flusher).Flush()
 	})
 
-	if err == nil {
-		for _, sh := range ht.stats {
-			// Note: The header fields are compressed with hpack after this call returns.
-			// No WireLength field is set here.
-			sh.HandleRPC(s.Context(), &stats.OutHeader{
-				Header:      md.Copy(),
-				Compression: s.sendCompress,
-			})
-		}
+	if err == nil && ht.stats != nil {
+		// Note: The header fields are compressed with hpack after this call returns.
+		// No WireLength field is set here.
+		ht.stats.HandleRPC(s.Context(), &stats.OutHeader{
+			Header:      md.Copy(),
+			Compression: s.sendCompress,
+		})
 	}
 	return err
 }
 
-func (ht *serverHandlerTransport) HandleStreams(ctx context.Context, startStream func(*Stream)) {
+func (ht *serverHandlerTransport) adjustWindow(*ServerStream, uint32) {
+}
+
+func (ht *serverHandlerTransport) updateWindow(*ServerStream, uint32) {
+}
+
+func (ht *serverHandlerTransport) HandleStreams(ctx context.Context, startStream func(*ServerStream)) {
 	// With this transport type there will be exactly 1 stream: this HTTP request.
 	var cancel context.CancelFunc
 	if ht.timeoutSet {
@@ -1871,21 +1875,23 @@ func (ht *serverHandlerTransport) HandleStreams(ctx context.Context, startStream
 
 	ctx = metadata.NewIncomingContext(ctx, ht.headerMD)
 	req := ht.req
-	s := &Stream{
-		id:               0, // irrelevant
-		ctx:              ctx,
-		requestRead:      func(int) {},
+	s := &ServerStream{
+		Stream: Stream{
+			id:             0, // irrelevant
+			ctx:            ctx,
+			method:         req.URL.Path,
+			recvCompress:   req.Header.Get("grpc-encoding"),
+			contentSubtype: ht.contentSubtype,
+		},
 		cancel:           cancel,
-		buf:              newRecvBuffer(),
 		st:               ht,
-		method:           req.URL.Path,
-		recvCompress:     req.Header.Get("grpc-encoding"),
-		contentSubtype:   ht.contentSubtype,
 		headerWireLength: 0, // won't have access to header wire length until golang/go#18997.
 	}
-	s.trReader = &transportReader{
-		reader:        &recvBufferReader{ctx: s.ctx, ctxDone: s.ctx.Done(), recv: s.buf},
-		windowHandler: func(int) {},
+	s.Stream.buf.init()
+	s.readRequester = s
+	s.trReader = transportReader{
+		reader:        recvBufferReader{ctx: s.ctx, ctxDone: s.ctx.Done(), recv: &s.buf},
+		windowHandler: s,
 	}
 
 	// readerDone is closed when the Body.Read-ing goroutine exits.
@@ -1934,9 +1940,7 @@ func (ht *serverHandlerTransport) runStream() {
 	}
 }
 
-func (ht *serverHandlerTransport) IncrMsgSent() {}
-
-func (ht *serverHandlerTransport) IncrMsgRecv() {}
+func (ht *serverHandlerTransport) incrMsgRecv() {}
 
 func (ht *serverHandlerTransport) Drain(string) {
 	panic("Drain() is not implemented")
@@ -1974,5 +1978,5 @@ func mapRecvMsgError(err error) error {
 	if strings.Contains(err.Error(), "body closed by handler") {
 		return status.Error(codes.Canceled, err.Error())
 	}
-	return connectionErrorf(true, err, err.Error())
+	return connectionErrorf(true, err, "%s", err.Error())
 }

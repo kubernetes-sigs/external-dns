@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 //lint:file-ignore SA1019 older versions of staticcheck (those compatible with Golang 1.17) falsely flag x509.IsEncryptedPEMBlock and x509.DecryptPEMBlock.
@@ -10,6 +10,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/textproto"
 	"os"
@@ -17,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/youmark/pkcs8"
 )
 
 // String returns a pointer to the provided string
@@ -222,6 +225,7 @@ func PrivateKeyFromBytes(pemData []byte, password *string) (key *rsa.PrivateKey,
 // PrivateKeyFromBytesWithPassword is a helper function that will produce a RSA private
 // key from bytes and a password.
 func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.PrivateKey, e error) {
+<<<<<<< HEAD
 	if pemBlock, _ := pem.Decode(pemData); pemBlock != nil {
 		decrypted := pemBlock.Bytes
 		if x509.IsEncryptedPEMBlock(pemBlock) {
@@ -241,9 +245,48 @@ func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.Private
 		key, e = parsePKCSPrivateKey(decrypted)
 
 	} else {
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	if pemBlock, _ := pem.Decode(pemData); pemBlock != nil {
+		decrypted := pemBlock.Bytes
+		if x509.IsEncryptedPEMBlock(pemBlock) {
+			if password == nil {
+				e = fmt.Errorf("private key password is required for encrypted private keys")
+				return
+			}
+			if decrypted, e = x509.DecryptPEMBlock(pemBlock, password); e != nil {
+				return
+			}
+		}
+
+		key, e = parsePKCSPrivateKey(decrypted)
+
+	} else {
+=======
+	pemBlock, _ := pem.Decode(pemData)
+	if pemBlock == nil {
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 		e = fmt.Errorf("PEM data was not found in buffer")
 		return
 	}
+
+	decrypted := pemBlock.Bytes
+	// Support for encrypted PKCS8 format, this format can not be handled by x509.IsEncryptedPEMBlock func
+	if key, e = pkcs8.ParsePKCS8PrivateKeyRSA(pemBlock.Bytes, password); key != nil {
+		return
+	}
+	// if pemBlock.Type == "ENCRYPTED PRIVATE KEY" {
+	// 	return pkcs8.ParsePKCS8PrivateKeyRSA(pemData, password)
+	// }
+	if x509.IsEncryptedPEMBlock(pemBlock) {
+		if password == nil {
+			return nil, errors.New("private key password is required for encrypted private keys")
+		}
+
+		if decrypted, e = x509.DecryptPEMBlock(pemBlock, password); e != nil {
+			return
+		}
+	}
+	key, e = parsePKCSPrivateKey(decrypted)
 	return
 }
 

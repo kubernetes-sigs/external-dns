@@ -21073,6 +21073,7 @@ const version = "publicsuffix.org's public_suffix_list.dat, git revision 3c213aa
 import _ "embed"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const version = "publicsuffix.org's public_suffix_list.dat, git revision 63cbc63d470d7b52c35266aa96c4c98c96ec499c (2023-08-03T10:01:25Z)"
 >>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 ||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
@@ -21080,6 +21081,11 @@ const version = "publicsuffix.org's public_suffix_list.dat, git revision 63cbc63
 =======
 const version = "publicsuffix.org's public_suffix_list.dat, git revision 2c960dac3d39ba521eb5db9da192968f5be0aded (2025-03-18T07:22:13Z)"
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+const version = "publicsuffix.org's public_suffix_list.dat, git revision 2c960dac3d39ba521eb5db9da192968f5be0aded (2025-03-18T07:22:13Z)"
+=======
+const version = "publicsuffix.org's public_suffix_list.dat, git revision d6c92f1bbb7433e5db7b8405c25d4035fb8ff376 (2026-02-06T07:36:33Z)"
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 
 const (
 	nodesBits           = 40
@@ -21101,7 +21107,7 @@ const (
 )
 
 // numTLD is the number of top level domains.
-const numTLD = 1454
+const numTLD = 1450
 
 // text is the combined text of all labels.
 //
@@ -21138,6 +21144,7 @@ var nodes uint40String
 //go:embed data/children
 var children uint32String
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 // max children 669 (capacity 1023)
@@ -31767,7 +31774,15 @@ var children = [...]uint32{
 // max children 870 (capacity 1023)
 // max text offset 31785 (capacity 65535)
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+// max children 870 (capacity 1023)
+// max text offset 31785 (capacity 65535)
+=======
+// max children 935 (capacity 1023)
+// max text offset 32332 (capacity 65535)
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 // max text length 31 (capacity 63)
+<<<<<<< HEAD
 <<<<<<< HEAD
 // max hi 9322 (capacity 16383)
 // max lo 9317 (capacity 16383)
@@ -31867,3 +31882,10 @@ var children uint32String
 // max hi 10100 (capacity 16383)
 // max lo 10095 (capacity 16383)
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+// max hi 10100 (capacity 16383)
+// max lo 10095 (capacity 16383)
+=======
+// max hi 10533 (capacity 16383)
+// max lo 10528 (capacity 16383)
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)

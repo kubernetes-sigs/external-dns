@@ -165,7 +165,7 @@ const (
 const (
 	Major      = 1
 	Minor      = 36
-	Patch      = 5
+	Patch      = 11
 	PreRelease = ""
 )
 

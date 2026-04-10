@@ -1,11 +1,11 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // DNS API
 //
 // API for the DNS service. Use this API to manage DNS zones, records, and other DNS resources.
-// For more information, see Overview of the DNS Service (https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
+// For more information, see Overview of the DNS Service (https://docs.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
 //
 
 package dns
@@ -39,13 +39,13 @@ type SteeringPolicyAnswer struct {
 	Name *string `mandatory:"true" json:"name"`
 
 	// The type of DNS record, such as A or CNAME. Only A, AAAA, and CNAME are supported. For more
-	// information, see Supported DNS Resource Record Types (https://docs.cloud.oracle.com/iaas/Content/DNS/Reference/supporteddnsresource.htm).
+	// information, see Supported DNS Resource Record Types (https://docs.oracle.com/iaas/Content/DNS/Reference/supporteddnsresource.htm).
 	Rtype *string `mandatory:"true" json:"rtype"`
 
 	// The record's data, as whitespace-delimited tokens in
 	// type-specific presentation format. All RDATA is normalized and the
 	// returned presentation of your RDATA may differ from its initial input.
-	// For more information about RDATA, see Supported DNS Resource Record Types (https://docs.cloud.oracle.com/iaas/Content/DNS/Reference/supporteddnsresource.htm).
+	// For more information about RDATA, see Supported DNS Resource Record Types (https://docs.oracle.com/iaas/Content/DNS/Reference/supporteddnsresource.htm).
 	Rdata *string `mandatory:"true" json:"rdata"`
 
 	// The freeform name of a group of one or more records in which this record is included,
@@ -93,7 +93,7 @@ func (m SteeringPolicyAnswer) ValidateEnumValue() (bool, error) {
 	errMessage := []string{}
 
 	if len(errMessage) > 0 {
-		return true, fmt.Errorf(strings.Join(errMessage, "\n"))
+		return true, fmt.Errorf("%s", strings.Join(errMessage, "\n"))
 	}
 	return false, nil
 }

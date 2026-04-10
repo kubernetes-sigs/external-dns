@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package common
@@ -27,6 +27,10 @@ const (
 	InstancePrincipalDelegationToken AuthenticationType = "instance_principle_delegation_token"
 	// ResourcePrincipalDelegationToken is used for resource principal delegation token auth type
 	ResourcePrincipalDelegationToken AuthenticationType = "resource_principle_delegation_token"
+	// OAuth2DelegationToken is used for oauth delegation token auth type
+	OAuthDelegationToken AuthenticationType = "oauth_delegation_token"
+	// WorkloadIdentityFederation is used for token exchange grant auth type
+	WorkloadIdentityFederation AuthenticationType = "workload_identity_federation"
 	// UnknownAuthenticationType is used for none meaningful auth type
 	UnknownAuthenticationType AuthenticationType = "unknown_auth_type"
 )

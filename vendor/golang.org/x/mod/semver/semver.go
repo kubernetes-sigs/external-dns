@@ -26,7 +26,16 @@ package semver
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "sort"
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+import "sort"
+=======
+import (
+	"slices"
+	"strings"
+)
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 
 // parsed returns the parsed form of a semantic version string.
 type parsed struct {
@@ -46,8 +55,8 @@ func IsValid(v string) bool {
 
 // Canonical returns the canonical formatting of the semantic version v.
 // It fills in any missing .MINOR or .PATCH and discards build metadata.
-// Two semantic versions compare equal only if their canonical formattings
-// are identical strings.
+// Two semantic versions compare equal only if their canonical formatting
+// is an identical string.
 // The canonical invalid semantic version is the empty string.
 func Canonical(v string) string {
 	p, ok := parse(v)
@@ -565,19 +574,22 @@ func Max(v, w string) string {
 // ByVersion implements [sort.Interface] for sorting semantic version strings.
 type ByVersion []string
 
-func (vs ByVersion) Len() int      { return len(vs) }
-func (vs ByVersion) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
-func (vs ByVersion) Less(i, j int) bool {
-	cmp := Compare(vs[i], vs[j])
-	if cmp != 0 {
-		return cmp < 0
-	}
-	return vs[i] < vs[j]
+func (vs ByVersion) Len() int           { return len(vs) }
+func (vs ByVersion) Swap(i, j int)      { vs[i], vs[j] = vs[j], vs[i] }
+func (vs ByVersion) Less(i, j int) bool { return compareVersion(vs[i], vs[j]) < 0 }
+
+// Sort sorts a list of semantic version strings using [Compare] and falls back
+// to use [strings.Compare] if both versions are considered equal.
+func Sort(list []string) {
+	slices.SortFunc(list, compareVersion)
 }
 
-// Sort sorts a list of semantic version strings using [ByVersion].
-func Sort(list []string) {
-	sort.Sort(ByVersion(list))
+func compareVersion(a, b string) int {
+	cmp := Compare(a, b)
+	if cmp != 0 {
+		return cmp
+	}
+	return strings.Compare(a, b)
 }
 
 func parse(v string) (p parsed, ok bool) {

@@ -1,10 +1,11 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package common
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,6 +30,16 @@ const (
 	DefaultCircuitBreakerServiceName string = ""
 	// DefaultCircuitBreakerHistoryCount is the default count of failed response history in circuit breaker
 	DefaultCircuitBreakerHistoryCount int = 5
+	// MinAuthClientCircuitBreakerResetTimeout is the min value of openStateWindow, which is the wait time before setting the breaker to halfOpen state from open state
+	MinAuthClientCircuitBreakerResetTimeout = 30
+	// MaxAuthClientCircuitBreakerResetTimeout is the max value of openStateWindow, which is the wait time before setting the breaker to halfOpen state from open state
+	MaxAuthClientCircuitBreakerResetTimeout = 49
+	// AuthClientCircuitBreakerName is the default circuit breaker name for the DefaultAuthClientCircuitBreakerSetting
+	AuthClientCircuitBreakerName = "FederationClientCircuitBreaker"
+	// AuthClientCircuitBreakerDefaultFailureThreshold is the default requests failure rate for the DefaultAuthClientCircuitBreakerSetting
+	AuthClientCircuitBreakerDefaultFailureThreshold float64 = 0.65
+	// AuthClientCircuitBreakerDefaultMinimumRequests is the default value of minimumRequests in closed status
+	AuthClientCircuitBreakerDefaultMinimumRequests uint32 = 3
 )
 
 // CircuitBreakerSetting wraps all exposed configurable params of circuit breaker
@@ -52,7 +63,7 @@ type CircuitBreakerSetting struct {
 	successStatCodeMap map[int]bool
 	// successStatErrCodeMap is the error(s) of StatusCode and ErrorCode returned from service, which should be considered
 	// as the success or failure accounted by circuit breaker
-	// the default value is {409, "IncorrectState"}
+	// the default value is {409, "IncorrectState"}, {409, "LockConflict"}
 	successStatErrCodeMap map[StatErrCode]bool
 	// serviceName is the name of the service which can be set using withServiceName option for NewCircuitBreaker.
 	// the default value is empty string
@@ -155,6 +166,7 @@ func NewGoCircuitBreaker(st gobreaker.Settings) *gobreaker.CircuitBreaker {
 func DefaultCircuitBreakerSetting() *CircuitBreakerSetting {
 	successStatErrCodeMap := map[StatErrCode]bool{
 		{409, "IncorrectState"}: false,
+		{409, "LockConflict"}:   false,
 	}
 	successStatCodeMap := map[int]bool{
 		429: false,
@@ -179,6 +191,7 @@ func DefaultCircuitBreakerSetting() *CircuitBreakerSetting {
 func DefaultCircuitBreakerSettingWithServiceName(servicename string) *CircuitBreakerSetting {
 	successStatErrCodeMap := map[StatErrCode]bool{
 		{409, "IncorrectState"}: false,
+		{409, "LockConflict"}:   false,
 	}
 	successStatCodeMap := map[int]bool{
 		429: false,
@@ -213,7 +226,7 @@ func NewCircuitBreakerSettingWithOptions(opts ...CircuitBreakerOption) *CircuitB
 	for _, opt := range opts {
 		opt(cbst)
 	}
-	if defaultLogger.LogLevel() == verboseLogging {
+	if defaultLogger != nil && defaultLogger.LogLevel() == verboseLogging {
 		Debugf("Circuit Breaker setting: %s\n", cbst.String())
 	}
 
@@ -383,3 +396,17 @@ func ConfigCircuitBreakerFromGlobalVar(baseClient *BaseClient) {
 		baseClient.Configuration.CircuitBreaker = NewCircuitBreaker(GlobalCircuitBreakerSetting)
 	}
 }
+
+// DefaultAuthClientCircuitBreakerSetting returns the default circuit breaker setting for the Auth Client
+func DefaultAuthClientCircuitBreakerSetting() *CircuitBreakerSetting {
+	return NewCircuitBreakerSettingWithOptions(
+		WithOpenStateWindow(time.Duration(rand.Intn(MaxAuthClientCircuitBreakerResetTimeout+1-MinAuthClientCircuitBreakerResetTimeout)+MinAuthClientCircuitBreakerResetTimeout)*time.Second),
+		WithName(AuthClientCircuitBreakerName),
+		WithFailureRateThreshold(AuthClientCircuitBreakerDefaultFailureThreshold),
+		WithMinimumRequests(AuthClientCircuitBreakerDefaultMinimumRequests),
+	)
+}
+
+// GlobalAuthClientCircuitBreakerSetting is global level circuit breaker setting for the Auth Client
+// than client level circuit breaker
+var GlobalAuthClientCircuitBreakerSetting *CircuitBreakerSetting = nil

@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package common
@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -53,8 +54,17 @@ var getRegionInfoFromInstanceMetadataService = getRegionInfoFromInstanceMetadata
 // OciRealmSpecificServiceEndpointTemplateEnabled is the flag to enable the realm specific service endpoint template. This one has higher priority than the environment variable.
 var OciRealmSpecificServiceEndpointTemplateEnabled *bool = nil
 
+// reNonWord precomiles the regex once at the package scope
+var reNonWord = regexp.MustCompile(`[^\w]`)
+
 // OciSdkEnabledServicesMap is a list of services that are enabled, default is an empty list which means all services are enabled
 var OciSdkEnabledServicesMap map[string]bool
+
+// OciSdkEnabledServicesOnce is a sync.Once variable to ensure the OciSdkEnabledServicesMap is initialized only once
+var OciSdkEnabledServicesOnce sync.Once
+
+// OciSdkEnabledServicesMu is a mutex to protect access to the OciSdkEnabledServicesMap
+var OciSdkEnabledServicesMu sync.RWMutex
 
 // OciDeveloperToolConfigurationFilePathEnvVar is the environment variable name for the OCI Developer Tool Config File Path
 const OciDeveloperToolConfigurationFilePathEnvVar = "OCI_DEVELOPER_TOOL_CONFIGURATION_FILE_PATH"
@@ -79,7 +89,7 @@ func (region Region) Endpoint(service string) string {
 	if strings.Contains(string(region), ".") {
 		return fmt.Sprintf("%s.%s", service, region)
 	}
-	return fmt.Sprintf("%s.%s.%s", service, region, region.secondLevelDomain())
+	return fmt.Sprintf("%s.%s.%s", service, region, region.SecondLevelDomain())
 }
 
 // EndpointForTemplate returns a endpoint for a service based on template, only unknown region name can fall back to "oc1", but not short code region name.
@@ -105,7 +115,7 @@ func (region Region) EndpointForTemplate(service string, serviceEndpointTemplate
 	endpoint = strings.Replace(endpoint, "{region}", string(region), 1)
 
 	// replace second level domain
-	endpoint = strings.Replace(endpoint, "{secondLevelDomain}", region.secondLevelDomain(), 1)
+	endpoint = strings.Replace(endpoint, "{secondLevelDomain}", region.SecondLevelDomain(), 1)
 
 	return endpoint
 }
@@ -148,7 +158,7 @@ func (region Region) EndpointForTemplateDottedRegion(service string, serviceEndp
 	return "", fmt.Errorf("EndpointForTemplateDottedRegion function requires endpointServiceName or serviceEndpointTemplate, no endpointServiceName or serviceEndpointTemplate provided")
 }
 
-func (region Region) secondLevelDomain() string {
+func (region Region) SecondLevelDomain() string {
 	if realmID, ok := regionRealm[region]; ok {
 		if secondLevelDomain, ok := realm[realmID]; ok {
 			return secondLevelDomain
@@ -585,13 +595,19 @@ func getOciSdkEnabledServicesMap() map[string]bool {
 
 // AddServiceToEnabledServicesMap adds the service to the enabledServiceMap
 // The service name will auto transit to lower case and remove all the non-word characters.
+// Concurrency (goroutine-safe). The map is initialized with sync.Once, and writes are protected by a RWMutex.
 func AddServiceToEnabledServicesMap(serviceName string) {
-	if OciSdkEnabledServicesMap == nil {
-		OciSdkEnabledServicesMap = make(map[string]bool)
-	}
-	re, _ := regexp.Compile(`[^\w]`)
+	OciSdkEnabledServicesOnce.Do(func() {
+		OciSdkEnabledServicesMap = getOciSdkEnabledServicesMap()
+		if OciSdkEnabledServicesMap == nil {
+			OciSdkEnabledServicesMap = make(map[string]bool)
+		}
+	})
 	serviceName = strings.ToLower(serviceName)
-	serviceName = re.ReplaceAllString(serviceName, "")
+	serviceName = reNonWord.ReplaceAllString(serviceName, "")
+
+	OciSdkEnabledServicesMu.Lock()
+	defer OciSdkEnabledServicesMu.Unlock()
 	OciSdkEnabledServicesMap[serviceName] = true
 }
 
@@ -599,18 +615,28 @@ func AddServiceToEnabledServicesMap(serviceName string) {
 // It will first check if the map is initialized, if not, it will initialize the map.
 // If the map is empty, it means all the services are enabled.
 // If the map is not empty, it means only the services in the map and value is true are enabled.
+// Concurrency (goroutine-safe). Initialization uses sync.Once and reads are protected by a RWMutex.
 func CheckForEnabledServices(serviceName string) bool {
-	if OciSdkEnabledServicesMap == nil {
+	OciSdkEnabledServicesOnce.Do(func() {
 		OciSdkEnabledServicesMap = getOciSdkEnabledServicesMap()
-	}
+		if OciSdkEnabledServicesMap == nil {
+			OciSdkEnabledServicesMap = make(map[string]bool)
+		}
+	})
 	serviceName = strings.ToLower(serviceName)
+	serviceName = reNonWord.ReplaceAllString(serviceName, "")
+
+	OciSdkEnabledServicesMu.RLock()
+	defer OciSdkEnabledServicesMu.RUnlock()
+
 	if len(OciSdkEnabledServicesMap) == 0 {
 		return true
 	}
-	if _, ok := OciSdkEnabledServicesMap[serviceName]; !ok {
+	allowed, ok := OciSdkEnabledServicesMap[serviceName]
+	if !ok {
 		return false
 	}
-	return OciSdkEnabledServicesMap[serviceName]
+	return allowed
 }
 
 // CheckAllowOnlyDeveloperToolConfigurationRegions checks if only developer tool configuration regions are allowed

@@ -24,6 +24,11 @@ import (
 	"context"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+	"errors"
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	"fmt"
 	"net"
 <<<<<<< HEAD
@@ -934,6 +939,7 @@ type ResolveNowOption = ResolveNowOptions
 
 	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/experimental/stats"
 	"google.golang.org/grpc/internal"
 	"google.golang.org/grpc/serviceconfig"
 )
@@ -1079,10 +1085,13 @@ type BuildOptions struct {
 	// Authority is the effective authority of the clientconn for which the
 	// resolver is built.
 	Authority string
+	// MetricsRecorder is the metrics recorder to do recording.
+	MetricsRecorder stats.MetricsRecorder
 }
 
 // An Endpoint is one network endpoint, or server, which may have multiple
 // addresses with which it can be accessed.
+// TODO(i/8773) : make resolver.Endpoint and resolver.Address immutable
 type Endpoint struct {
 	// Addresses contains a list of addresses used to access this endpoint.
 	Addresses []Address
@@ -1142,8 +1151,8 @@ type ClientConn interface {
 	// UpdateState can be omitted.
 	UpdateState(State) error
 	// ReportError notifies the ClientConn that the Resolver encountered an
-	// error.  The ClientConn will notify the load balancer and begin calling
-	// ResolveNow on the Resolver with exponential backoff.
+	// error. The ClientConn then forwards this error to the load balancing
+	// policy.
 	ReportError(error)
 	// NewAddress is called by resolver to notify ClientConn a new list
 	// of resolved addresses.
@@ -1248,5 +1257,27 @@ type AuthorityOverrider interface {
 	// OverrideAuthority returns the authority to use for a ClientConn with the
 	// given target. The implementation must generate it without blocking,
 	// typically in line, and must keep it unchanged.
+	//
+	// The returned string must be a valid ":authority" header value, i.e. be
+	// encoded according to
+	// [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3.2) as
+	// necessary.
 	OverrideAuthority(Target) string
+}
+
+// ValidateEndpoints validates endpoints from a petiole policy's perspective.
+// Petiole policies should call this before calling into their children. See
+// [gRPC A61](https://github.com/grpc/proposal/blob/master/A61-IPv4-IPv6-dualstack-backends.md)
+// for details.
+func ValidateEndpoints(endpoints []Endpoint) error {
+	if len(endpoints) == 0 {
+		return errors.New("endpoints list is empty")
+	}
+
+	for _, endpoint := range endpoints {
+		for range endpoint.Addresses {
+			return nil
+		}
+	}
+	return errors.New("endpoints list contains no addresses")
 }

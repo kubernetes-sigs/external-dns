@@ -1996,7 +1996,9 @@ func Recvmsg(fd int, p, oob []byte, flags int) (n, oobn int, recvflags int, from
 		iov[0].SetLen(len(p))
 	}
 	var rsa RawSockaddrAny
-	n, oobn, recvflags, err = recvmsgRaw(fd, iov[:], oob, flags, &rsa)
+	if n, oobn, recvflags, err = recvmsgRaw(fd, iov[:], oob, flags, &rsa); err != nil {
+		return
+	}
 	// source address is only specified if the socket is unconnected
 	if rsa.Addr.Family != AF_UNSPEC {
 		from, err = anyToSockaddr(fd, &rsa)
@@ -2018,8 +2020,10 @@ func RecvmsgBuffers(fd int, buffers [][]byte, oob []byte, flags int) (n, oobn in
 		}
 	}
 	var rsa RawSockaddrAny
-	n, oobn, recvflags, err = recvmsgRaw(fd, iov, oob, flags, &rsa)
-	if err == nil && rsa.Addr.Family != AF_UNSPEC {
+	if n, oobn, recvflags, err = recvmsgRaw(fd, iov, oob, flags, &rsa); err != nil {
+		return
+	}
+	if rsa.Addr.Family != AF_UNSPEC {
 		from, err = anyToSockaddr(fd, &rsa)
 	}
 	return

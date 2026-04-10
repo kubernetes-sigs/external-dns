@@ -347,3 +347,11 @@ func IsRestrictedControlPlaneCode(s *Status) bool {
 	}
 	return false
 }
+
+// RawStatusProto returns the internal protobuf message for use by gRPC itself.
+func RawStatusProto(s *Status) *spb.Status {
+	if s == nil {
+		return nil
+	}
+	return s.s
+}

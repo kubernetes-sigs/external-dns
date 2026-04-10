@@ -13,16 +13,12 @@ for general contribution guidelines.
 <<<<<<< HEAD
 <<<<<<< HEAD
 
-- [aranjans](https://github.com/aranjans), Google LLC
 - [arjan-bal](https://github.com/arjan-bal), Google LLC
 - [arvindbr8](https://github.com/arvindbr8), Google LLC
 - [atollena](https://github.com/atollena), Datadog, Inc.
 - [dfawley](https://github.com/dfawley), Google LLC
 - [easwars](https://github.com/easwars), Google LLC
-- [erm-g](https://github.com/erm-g), Google LLC
 - [gtcooke94](https://github.com/gtcooke94), Google LLC
-- [purnesh42h](https://github.com/purnesh42h), Google LLC
-- [zasweq](https://github.com/zasweq), Google LLC
 
 ## Emeritus Maintainers (in alphabetical order)
 <<<<<<< HEAD
@@ -97,8 +93,10 @@ for general contribution guidelines.
 - [yongni](https://github.com/yongni), Google LLC
 =======
 - [adelez](https://github.com/adelez)
+- [aranjans](https://github.com/aranjans)
 - [canguler](https://github.com/canguler)
 - [cesarghali](https://github.com/cesarghali)
+- [erm-g](https://github.com/erm-g)
 - [iamqizhao](https://github.com/iamqizhao)
 - [jeanbza](https://github.com/jeanbza)
 - [jtattermusch](https://github.com/jtattermusch)
@@ -107,6 +105,12 @@ for general contribution guidelines.
 - [matt-kwong](https://github.com/matt-kwong)
 - [menghanl](https://github.com/menghanl)
 - [nicolasnoble](https://github.com/nicolasnoble)
+- [purnesh42h](https://github.com/purnesh42h)
 - [srini100](https://github.com/srini100)
 - [yongni](https://github.com/yongni)
+<<<<<<< HEAD
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+- [zasweq](https://github.com/zasweq)
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)

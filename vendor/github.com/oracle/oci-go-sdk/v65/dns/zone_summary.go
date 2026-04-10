@@ -1,11 +1,11 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // DNS API
 //
 // API for the DNS service. Use this API to manage DNS zones, records, and other DNS resources.
-// For more information, see Overview of the DNS Service (https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
+// For more information, see Overview of the DNS Service (https://docs.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
 //
 
 package dns
@@ -33,16 +33,40 @@ type ZoneSummary struct {
 	Scope ScopeEnum `mandatory:"true" json:"scope"`
 
 	// Free-form tags for this resource. Each tag is a simple key-value pair with no predefined name, type, or namespace.
-	// For more information, see Resource Tags (https://docs.cloud.oracle.com/Content/General/Concepts/resourcetags.htm).
+	// For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	//
 	// **Example:** `{"Department": "Finance"}`
 	FreeformTags map[string]string `mandatory:"true" json:"freeformTags"`
 
 	// Defined tags for this resource. Each key is predefined and scoped to a namespace.
-	// For more information, see Resource Tags (https://docs.cloud.oracle.com/Content/General/Concepts/resourcetags.htm).
+	// For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	//
 	// **Example:** `{"Operations": {"CostCenter": "42"}}`
 	DefinedTags map[string]map[string]interface{} `mandatory:"true" json:"definedTags"`
+
+	// The resolution mode of a zone defines behavior related to how query responses can be handled.
+	ResolutionMode ZoneResolutionModeEnum `mandatory:"true" json:"resolutionMode"`
+
+	// The state of DNSSEC on the zone.
+	// For DNSSEC to function, every parent zone in the DNS tree up to the top-level domain (or an independent
+	// trust anchor) must also have DNSSEC correctly set up.
+	// After enabling DNSSEC, you must add a DS record to the zone's parent zone containing the
+	// `KskDnssecKeyVersion` data. You can find the DS data in the `dsData` attribute of the `KskDnssecKeyVersion`.
+	// Then, use the `PromoteZoneDnssecKeyVersion` operation to promote the `KskDnssecKeyVersion`.
+	// New `KskDnssecKeyVersion`s are generated annually, a week before the existing `KskDnssecKeyVersion`'s expiration.
+	// To rollover a `KskDnssecKeyVersion`, you must replace the parent zone's DS record containing the old
+	// `KskDnssecKeyVersion` data with the data from the new `KskDnssecKeyVersion`.
+	// To remove the old DS record without causing service disruption, wait until the old DS record's TTL has
+	// expired, and the new DS record has propagated. After the DS replacement has been completed, then the
+	// `PromoteZoneDnssecKeyVersion` operation must be called.
+	// Metrics are emitted in the `oci_dns` namespace daily for each `KskDnssecKeyVersion` indicating how many
+	// days are left until expiration.
+	// We recommend that you set up alarms and notifications for KskDnssecKeyVersion expiration so that the
+	// necessary parent zone updates can be made and the `PromoteZoneDnssecKeyVersion` operation can be called.
+	// Enabling DNSSEC results in additional records in DNS responses which increases their size and can
+	// cause higher response latency.
+	// For more information, see DNSSEC (https://docs.oracle.com/iaas/Content/DNS/Concepts/dnssec.htm).
+	DnssecState ZoneDnssecStateEnum `mandatory:"true" json:"dnssecState"`
 
 	// The canonical absolute URL of the resource.
 	Self *string `mandatory:"true" json:"self"`
@@ -73,6 +97,8 @@ type ZoneSummary struct {
 	// be null for zones in the global DNS, which are publicly resolvable and
 	// not part of a private view.
 	ViewId *string `mandatory:"false" json:"viewId"`
+
+	DnssecConfig *DnssecConfig `mandatory:"false" json:"dnssecConfig"`
 }
 
 func (m ZoneSummary) String() string {
@@ -90,12 +116,18 @@ func (m ZoneSummary) ValidateEnumValue() (bool, error) {
 	if _, ok := GetMappingScopeEnum(string(m.Scope)); !ok && m.Scope != "" {
 		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for Scope: %s. Supported values are: %s.", m.Scope, strings.Join(GetScopeEnumStringValues(), ",")))
 	}
+	if _, ok := GetMappingZoneResolutionModeEnum(string(m.ResolutionMode)); !ok && m.ResolutionMode != "" {
+		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for ResolutionMode: %s. Supported values are: %s.", m.ResolutionMode, strings.Join(GetZoneResolutionModeEnumStringValues(), ",")))
+	}
+	if _, ok := GetMappingZoneDnssecStateEnum(string(m.DnssecState)); !ok && m.DnssecState != "" {
+		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for DnssecState: %s. Supported values are: %s.", m.DnssecState, strings.Join(GetZoneDnssecStateEnumStringValues(), ",")))
+	}
 	if _, ok := GetMappingZoneSummaryLifecycleStateEnum(string(m.LifecycleState)); !ok && m.LifecycleState != "" {
 		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for LifecycleState: %s. Supported values are: %s.", m.LifecycleState, strings.Join(GetZoneSummaryLifecycleStateEnumStringValues(), ",")))
 	}
 
 	if len(errMessage) > 0 {
-		return true, fmt.Errorf(strings.Join(errMessage, "\n"))
+		return true, fmt.Errorf("%s", strings.Join(errMessage, "\n"))
 	}
 	return false, nil
 }

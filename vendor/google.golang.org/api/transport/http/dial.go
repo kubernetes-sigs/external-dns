@@ -870,7 +870,6 @@ func clonedTransport(rt http.RoundTripper) *http.Transport {
 	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/httptransport"
 	"cloud.google.com/go/auth/oauth2adapt"
-	"go.opencensus.io/plugin/ochttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/net/http2"
 	"golang.org/x/oauth2"
@@ -878,7 +877,6 @@ func clonedTransport(rt http.RoundTripper) *http.Transport {
 	"google.golang.org/api/internal"
 	"google.golang.org/api/internal/cert"
 	"google.golang.org/api/option"
-	"google.golang.org/api/transport/http/internal/propagation"
 )
 
 // NewClient returns an HTTP client for use communicating with a Google cloud
@@ -958,6 +956,11 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 	if ds.RequestReason != "" {
 		headers.Set("X-goog-request-reason", ds.RequestReason)
 	}
+	if ds.UserAgent != "" {
+		headers.Set("User-Agent", ds.UserAgent)
+	}
+	credsJSON, _ := ds.GetAuthCredentialsJSON()
+	credsFile, _ := ds.GetAuthCredentialsFile()
 	client, err := httptransport.NewClient(&httptransport.Options{
 		DisableTelemetry:      ds.TelemetryDisabled,
 		DisableAuthentication: ds.NoAuth,
@@ -970,9 +973,9 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 		DetectOpts: &credentials.DetectOptions{
 			Scopes:          ds.Scopes,
 			Audience:        aud,
-			CredentialsFile: ds.CredentialsFile,
-			CredentialsJSON: ds.CredentialsJSON,
-			Client:          oauth2.NewClient(ctx, nil),
+			CredentialsFile: credsFile,
+			CredentialsJSON: credsJSON,
+			Logger:          ds.Logger,
 		},
 		InternalOptions: &httptransport.InternalOptions{
 			EnableJWTWithScope:      ds.EnableJwtWithScope,
@@ -981,7 +984,10 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 			DefaultMTLSEndpoint:     ds.DefaultMTLSEndpoint,
 			DefaultScopes:           ds.DefaultScopes,
 			SkipValidation:          skipValidation,
+			TelemetryAttributes:     ds.TelemetryAttributes,
 		},
+		UniverseDomain: ds.UniverseDomain,
+		Logger:         ds.Logger,
 	})
 	if err != nil {
 		return nil, err
@@ -1016,10 +1022,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		requestReason: settings.RequestReason,
 	}
 	var trans http.RoundTripper = paramTransport
-	// Give OpenTelemetry precedence over OpenCensus in case user configuration
-	// causes both to write the same header (`X-Cloud-Trace-Context`).
 	trans = addOpenTelemetryTransport(trans, settings)
-	trans = addOCTransport(trans, settings)
 	switch {
 	case settings.NoAuth:
 		// Do nothing.
@@ -1033,17 +1036,6 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		creds, err := internal.Creds(ctx, settings)
 		if err != nil {
 			return nil, err
-		}
-		if settings.TokenSource == nil {
-			// We only validate non-tokensource creds, as TokenSource-based credentials
-			// don't propagate universe.
-			credsUniverseDomain, err := internal.GetUniverseDomain(creds)
-			if err != nil {
-				return nil, err
-			}
-			if settings.GetUniverseDomain() != credsUniverseDomain {
-				return nil, internal.ErrUniverseNotMatch(settings.GetUniverseDomain(), credsUniverseDomain)
-			}
 		}
 		paramTransport.quotaProject = internal.GetQuotaProject(creds, settings.QuotaProject)
 		ts := creds.TokenSource
@@ -1171,6 +1163,7 @@ func addOpenTelemetryTransport(trans http.RoundTripper, settings *internal.DialS
 	return otelhttp.NewTransport(trans)
 }
 
+<<<<<<< HEAD
 func addOCTransport(trans http.RoundTripper, settings *internal.DialSettings) http.RoundTripper {
 	if settings.TelemetryDisabled {
 		return trans
@@ -1182,6 +1175,19 @@ func addOCTransport(trans http.RoundTripper, settings *internal.DialSettings) ht
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+func addOCTransport(trans http.RoundTripper, settings *internal.DialSettings) http.RoundTripper {
+	if settings.TelemetryDisabled {
+		return trans
+	}
+	return &ochttp.Transport{
+		Base:        trans,
+		Propagation: &propagation.HTTPFormat{},
+	}
+}
+
+=======
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 // clonedTransport returns the given RoundTripper as a cloned *http.Transport.
 // It returns nil if the RoundTripper can't be cloned or coerced to
 // *http.Transport.

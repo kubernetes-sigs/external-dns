@@ -1,4 +1,5 @@
 // Copyright 2015 Tim Heckman. All rights reserved.
+// Copyright 2018-2024 The Gofrs. All rights reserved.
 // Use of this source code is governed by the BSD 3-Clause
 // license that can be found in the LICENSE file.
 
@@ -118,14 +119,15 @@ func (f *Flock) setFh() error {
 	// open a new os.File instance
 	// create it if it doesn't exist, and open the file read-only.
 	flags := os.O_CREATE
-	if runtime.GOOS == "aix" {
+	if runtime.GOOS == "aix" || runtime.GOOS == "solaris" || runtime.GOOS == "illumos" {
 		// AIX cannot preform write-lock (ie exclusive) on a
 		// read-only file.
 		flags |= os.O_RDWR
 	} else {
 		flags |= os.O_RDONLY
 	}
-	fh, err := os.OpenFile(f.path, flags, os.FileMode(0600))
+
+	fh, err := os.OpenFile(f.path, flags, os.FileMode(0o600))
 	if err != nil {
 		return err
 	}
@@ -135,7 +137,7 @@ func (f *Flock) setFh() error {
 	return nil
 }
 
-// ensure the file handle is closed if no lock is held
+// ensure the file handle is closed if no lock is held.
 func (f *Flock) ensureFhState() {
 	if !f.l && !f.r && f.fh != nil {
 		f.fh.Close()

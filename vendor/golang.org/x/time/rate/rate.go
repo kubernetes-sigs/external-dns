@@ -1541,7 +1541,7 @@ func (lim *Limiter) Burst() int {
 // TokensAt returns the number of tokens available at time t.
 func (lim *Limiter) TokensAt(t time.Time) float64 {
 	lim.mu.Lock()
-	_, tokens := lim.advance(t) // does not mutate lim
+	tokens := lim.advance(t) // does not mutate lim
 	lim.mu.Unlock()
 	return tokens
 }
@@ -1642,7 +1642,7 @@ func (r *Reservation) CancelAt(t time.Time) {
 		return
 	}
 	// advance time to now
-	t, tokens := r.lim.advance(t)
+	tokens := r.lim.advance(t)
 	// calculate new number of tokens
 	tokens += restoreTokens
 	if burst := float64(r.lim.burst); tokens > burst {
@@ -1651,7 +1651,7 @@ func (r *Reservation) CancelAt(t time.Time) {
 	// update state
 	r.lim.last = t
 	r.lim.tokens = tokens
-	if r.timeToAct == r.lim.lastEvent {
+	if r.timeToAct.Equal(r.lim.lastEvent) {
 		prevEvent := r.timeToAct.Add(r.limit.durationFromTokens(float64(-r.tokens)))
 		if !prevEvent.Before(t) {
 			r.lim.lastEvent = prevEvent
@@ -1763,7 +1763,7 @@ func (lim *Limiter) SetLimitAt(t time.Time, newLimit Limit) {
 	lim.mu.Lock()
 	defer lim.mu.Unlock()
 
-	t, tokens := lim.advance(t)
+	tokens := lim.advance(t)
 
 	lim.last = t
 	lim.tokens = tokens
@@ -1780,7 +1780,7 @@ func (lim *Limiter) SetBurstAt(t time.Time, newBurst int) {
 	lim.mu.Lock()
 	defer lim.mu.Unlock()
 
-	t, tokens := lim.advance(t)
+	tokens := lim.advance(t)
 
 	lim.last = t
 	lim.tokens = tokens
@@ -1803,7 +1803,7 @@ func (lim *Limiter) reserveN(t time.Time, n int, maxFutureReserve time.Duration)
 		}
 	}
 
-	t, tokens := lim.advance(t)
+	tokens := lim.advance(t)
 
 	// Calculate the remaining number of tokens resulting from the request.
 	tokens -= float64(n)
@@ -1836,10 +1836,11 @@ func (lim *Limiter) reserveN(t time.Time, n int, maxFutureReserve time.Duration)
 	return r
 }
 
-// advance calculates and returns an updated state for lim resulting from the passage of time.
+// advance calculates and returns an updated number of tokens for lim
+// resulting from the passage of time.
 // lim is not changed.
 // advance requires that lim.mu is held.
-func (lim *Limiter) advance(t time.Time) (newT time.Time, newTokens float64) {
+func (lim *Limiter) advance(t time.Time) (newTokens float64) {
 	last := lim.last
 	if t.Before(last) {
 		last = t
@@ -1852,7 +1853,7 @@ func (lim *Limiter) advance(t time.Time) (newT time.Time, newTokens float64) {
 	if burst := float64(lim.burst); tokens > burst {
 		tokens = burst
 	}
-	return t, tokens
+	return tokens
 }
 
 // durationFromTokens is a unit conversion function from the number of tokens to the duration
@@ -1861,8 +1862,15 @@ func (limit Limit) durationFromTokens(tokens float64) time.Duration {
 	if limit <= 0 {
 		return InfDuration
 	}
-	seconds := tokens / float64(limit)
-	return time.Duration(float64(time.Second) * seconds)
+
+	duration := (tokens / float64(limit)) * float64(time.Second)
+
+	// Cap the duration to the maximum representable int64 value, to avoid overflow.
+	if duration > float64(math.MaxInt64) {
+		return InfDuration
+	}
+
+	return time.Duration(duration)
 }
 
 // tokensFromDuration is a unit conversion function from a time duration to the number of tokens

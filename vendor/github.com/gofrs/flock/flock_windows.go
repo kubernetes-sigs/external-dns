@@ -1,4 +1,5 @@
 // Copyright 2015 Tim Heckman. All rights reserved.
+// Copyright 2018-2024 The Gofrs. All rights reserved.
 // Use of this source code is governed by the BSD 3-Clause
 // license that can be found in the LICENSE file.
 
@@ -9,7 +10,7 @@ import (
 )
 
 // ErrorLockViolation is the error code returned from the Windows syscall when a
-// lock would block and you ask to fail immediately.
+// lock would block, and you ask to fail immediately.
 const ErrorLockViolation syscall.Errno = 0x21 // 33
 
 // Lock is a blocking call to try and take an exclusive file lock. It will wait
@@ -49,7 +50,8 @@ func (f *Flock) lock(locked *bool, flag uint32) error {
 		defer f.ensureFhState()
 	}
 
-	if _, errNo := lockFileEx(syscall.Handle(f.fh.Fd()), flag, 0, 1, 0, &syscall.Overlapped{}); errNo > 0 {
+	_, errNo := lockFileEx(syscall.Handle(f.fh.Fd()), flag, 0, 1, 0, &syscall.Overlapped{})
+	if errNo > 0 {
 		return errNo
 	}
 
@@ -74,7 +76,8 @@ func (f *Flock) Unlock() error {
 	}
 
 	// mark the file as unlocked
-	if _, errNo := unlockFileEx(syscall.Handle(f.fh.Fd()), 0, 1, 0, &syscall.Overlapped{}); errNo > 0 {
+	_, errNo := unlockFileEx(syscall.Handle(f.fh.Fd()), 0, 1, 0, &syscall.Overlapped{})
+	if errNo > 0 {
 		return errNo
 	}
 

@@ -2197,5 +2197,10 @@ const (
 	SYS_GETXATTRAT                   = 4464
 	SYS_LISTXATTRAT                  = 4465
 	SYS_REMOVEXATTRAT                = 4466
+<<<<<<< HEAD
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+	SYS_OPEN_TREE_ATTR               = 4467
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 )

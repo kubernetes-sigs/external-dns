@@ -1,11 +1,11 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // DNS API
 //
 // API for the DNS service. Use this API to manage DNS zones, records, and other DNS resources.
-// For more information, see Overview of the DNS Service (https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
+// For more information, see Overview of the DNS Service (https://docs.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm).
 //
 
 package dns
@@ -38,7 +38,7 @@ type UpdateSteeringPolicyDetails struct {
 	//
 	// **Note:** To use the Health Check monitoring feature in a steering policy, a monitor
 	// must be created using the Health Checks service first. For more information on how to
-	// create a monitor, please see Managing Health Checks (https://docs.cloud.oracle.com/iaas/Content/HealthChecks/Tasks/managinghealthchecks.htm).
+	// create a monitor, please see Managing Health Checks (https://docs.oracle.com/iaas/Content/HealthChecks/Tasks/managinghealthchecks.htm).
 	HealthCheckMonitorId *string `mandatory:"false" json:"healthCheckMonitorId"`
 
 	// A set of predefined rules based on the desired purpose of the steering policy. Each
@@ -56,7 +56,7 @@ type UpdateSteeringPolicyDetails struct {
 	// answers contingent upon `answer.isDisabled != true`, except for `CUSTOM`. A defined
 	// `HEALTH` rule must follow the `FILTER` rule if the policy references a `healthCheckMonitorId`.
 	// The last rule of a template must must be a `LIMIT` rule. For more information about templates
-	// and code examples, see Traffic Management API Guide (https://docs.cloud.oracle.com/iaas/Content/TrafficManagement/Concepts/trafficmanagementapi.htm).
+	// and code examples, see Traffic Management API Guide (https://docs.oracle.com/iaas/Content/TrafficManagement/Concepts/trafficmanagementapi.htm).
 	// **Template Types**
 	// * `FAILOVER` - Uses health check information on your endpoints to determine which DNS answers
 	// to serve. If an endpoint fails a health check, the answer for that endpoint will be removed
@@ -65,7 +65,7 @@ type UpdateSteeringPolicyDetails struct {
 	// * `LOAD_BALANCE` - Distributes web traffic to specified endpoints based on defined weights.
 	//
 	// * `ROUTE_BY_GEO` - Answers DNS queries based on the query's geographic location. For a list of geographic
-	// locations to route by, see Traffic Management Geographic Locations (https://docs.cloud.oracle.com/iaas/Content/TrafficManagement/Reference/trafficmanagementgeo.htm).
+	// locations to route by, see Traffic Management Geographic Locations (https://docs.oracle.com/iaas/Content/TrafficManagement/Reference/trafficmanagementgeo.htm).
 	//
 	// * `ROUTE_BY_ASN` - Answers DNS queries based on the query's originating ASN.
 	//
@@ -75,13 +75,13 @@ type UpdateSteeringPolicyDetails struct {
 	Template UpdateSteeringPolicyDetailsTemplateEnum `mandatory:"false" json:"template,omitempty"`
 
 	// Free-form tags for this resource. Each tag is a simple key-value pair with no predefined name, type, or namespace.
-	// For more information, see Resource Tags (https://docs.cloud.oracle.com/Content/General/Concepts/resourcetags.htm).
+	// For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	//
 	// **Example:** `{"Department": "Finance"}`
 	FreeformTags map[string]string `mandatory:"false" json:"freeformTags"`
 
 	// Defined tags for this resource. Each key is predefined and scoped to a namespace.
-	// For more information, see Resource Tags (https://docs.cloud.oracle.com/Content/General/Concepts/resourcetags.htm).
+	// For more information, see Resource Tags (https://docs.oracle.com/iaas/Content/General/Concepts/resourcetags.htm).
 	//
 	// **Example:** `{"Operations": {"CostCenter": "42"}}`
 	DefinedTags map[string]map[string]interface{} `mandatory:"false" json:"definedTags"`
@@ -112,7 +112,7 @@ func (m UpdateSteeringPolicyDetails) ValidateEnumValue() (bool, error) {
 		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for Template: %s. Supported values are: %s.", m.Template, strings.Join(GetUpdateSteeringPolicyDetailsTemplateEnumStringValues(), ",")))
 	}
 	if len(errMessage) > 0 {
-		return true, fmt.Errorf(strings.Join(errMessage, "\n"))
+		return true, fmt.Errorf("%s", strings.Join(errMessage, "\n"))
 	}
 	return false, nil
 }

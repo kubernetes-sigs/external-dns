@@ -382,6 +382,8 @@ package attributes
 
 import (
 	"fmt"
+	"iter"
+	"maps"
 	"strings"
 )
 
@@ -392,38 +394,53 @@ import (
 // any) bool', it will be called by (*Attributes).Equal to determine whether
 // two values with the same key should be considered equal.
 type Attributes struct {
-	m map[any]any
+	parent     *Attributes
+	key, value any
 }
 
 // New returns a new Attributes containing the key/value pair.
 func New(key, value any) *Attributes {
-	return &Attributes{m: map[any]any{key: value}}
+	return &Attributes{
+		key:   key,
+		value: value,
+	}
 }
 
 // WithValue returns a new Attributes containing the previous keys and values
 // and the new key/value pair.  If the same key appears multiple times, the
-// last value overwrites all previous values for that key.  To remove an
-// existing key, use a nil value.  value should not be modified later.
+// last value overwrites all previous values for that key.  value should not be
+// modified later.
+//
+// Note that Attributes do not support deletion. Avoid using untyped nil values.
+// Since the Value method returns an untyped nil when a key is absent, it is
+// impossible to distinguish between a missing key and a key explicitly set to
+// an untyped nil. If you need to represent a value being unset, consider
+// storing a specific sentinel type or a wrapper struct with a boolean field
+// indicating presence.
 func (a *Attributes) WithValue(key, value any) *Attributes {
-	if a == nil {
-		return New(key, value)
+	return &Attributes{
+		parent: a,
+		key:    key,
+		value:  value,
 	}
-	n := &Attributes{m: make(map[any]any, len(a.m)+1)}
-	for k, v := range a.m {
-		n.m[k] = v
-	}
-	n.m[key] = value
-	return n
 }
 
 // Value returns the value associated with these attributes for key, or nil if
 // no value is associated with key.  The returned value should not be modified.
 func (a *Attributes) Value(key any) any {
-	if a == nil {
-		return nil
+	for cur := a; cur != nil; cur = cur.parent {
+		if cur.key == key {
+			return cur.value
+		}
 	}
+<<<<<<< HEAD
 	return a.m[key]
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	return a.m[key]
+=======
+	return nil
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 }
 
 // Equal returns whether a and o are equivalent.  If 'Equal(o any) bool' is
@@ -439,11 +456,15 @@ func (a *Attributes) Equal(o *Attributes) bool {
 	if a == nil || o == nil {
 		return false
 	}
-	if len(a.m) != len(o.m) {
-		return false
+	if a == o {
+		return true
 	}
-	for k, v := range a.m {
-		ov, ok := o.m[k]
+	m := maps.Collect(o.all())
+	lenA := 0
+
+	for k, v := range a.all() {
+		lenA++
+		ov, ok := m[k]
 		if !ok {
 			// o missing element of a
 			return false
@@ -457,7 +478,7 @@ func (a *Attributes) Equal(o *Attributes) bool {
 			return false
 		}
 	}
-	return true
+	return lenA == len(m)
 }
 
 // String prints the attribute map. If any key or values throughout the map
@@ -466,11 +487,11 @@ func (a *Attributes) String() string {
 	var sb strings.Builder
 	sb.WriteString("{")
 	first := true
-	for k, v := range a.m {
+	for k, v := range a.all() {
 		if !first {
 			sb.WriteString(", ")
 		}
-		sb.WriteString(fmt.Sprintf("%q: %q ", str(k), str(v)))
+		fmt.Fprintf(&sb, "%q: %q ", str(k), str(v))
 		first = false
 	}
 	sb.WriteString("}")
@@ -494,4 +515,22 @@ func str(x any) (s string) {
 // method is meant only for debugging purposes.
 func (a *Attributes) MarshalJSON() ([]byte, error) {
 	return []byte(a.String()), nil
+}
+
+// all returns an iterator that yields all key-value pairs in the Attributes
+// chain. If a key appears multiple times, only the most recently added value
+// is yielded.
+func (a *Attributes) all() iter.Seq2[any, any] {
+	return func(yield func(any, any) bool) {
+		seen := map[any]bool{}
+		for cur := a; cur != nil; cur = cur.parent {
+			if seen[cur.key] {
+				continue
+			}
+			if !yield(cur.key, cur.value) {
+				return
+			}
+			seen[cur.key] = true
+		}
+	}
 }

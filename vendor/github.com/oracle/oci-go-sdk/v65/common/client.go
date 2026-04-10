@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 // Package common provides supporting functions and structs used by service packages
@@ -19,6 +19,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -122,6 +123,21 @@ const (
 
 	//defaultRefreshIntervalForCustomCerts is the default refresh interval in minutes
 	defaultRefreshIntervalForCustomCerts = 30
+
+	// CustomClientTimeoutEnvVar allows the user to set the timeout in seconds to be used by each service client.
+	CustomClientTimeoutEnvVar = "OCI_CUSTOM_CLIENT_TIMEOUT"
+
+	// Environment variable to check whether dual stack endpoints should be enabled
+	ociDualStackEndpointEnabledEnvVar = "OCI_DUAL_STACK_ENDPOINT_ENABLED"
+
+	// String representing a single "phrase" of an endpoint template option
+	endpointTemplateOptionPhrase = "((\\w|\\.|\\-)+)"
+
+	// Checks for template for endpoint options
+	patternForEndpointTemplateOptions = "\\{" + endpointTemplateOptionPhrase + "\\?((" + endpointTemplateOptionPhrase + ":" + endpointTemplateOptionPhrase + ")" +
+		"|(" + endpointTemplateOptionPhrase + ":\\s*)|(\\s*:" + endpointTemplateOptionPhrase + "))}"
+
+	dualStackOption = "{dualStack"
 )
 
 // OciGlobalRefreshIntervalForCustomCerts is the global policy for overriding the refresh interval in minutes.
@@ -140,11 +156,24 @@ type HTTPRequestDispatcher interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// CustomClientConfiguration contains configurations set at client level, currently it only includes RetryPolicy
+// CustomClientConfiguration contains configurations set at client level
 type CustomClientConfiguration struct {
-	RetryPolicy                                 *RetryPolicy
-	CircuitBreaker                              *OciCircuitBreaker
+
+	// Retry policy used on calls made by the client
+	RetryPolicy *RetryPolicy
+
+	// The Circuit Breaker used to regulate calls made by the client
+	CircuitBreaker *OciCircuitBreaker
+
+	// Allows user to decide if they want to use realm specific endpoints
 	RealmSpecificServiceEndpointTemplateEnabled *bool
+
+	// Allows user to decide if they want to use dual stack endpoints
+	EnableDualStackEndpoints *bool
+
+	// Set on creation of the client, based on the below flag from the service spec
+	// x-obmcs-endpoint-template-options: dualStack: true/false
+	ServiceUsesDualStackByDefault *bool
 }
 
 // BaseClient struct implements all basic operations to call oci web services.
@@ -168,6 +197,10 @@ type BaseClient struct {
 	BasePath string
 
 	Configuration CustomClientConfiguration
+
+	//Whether the OCI_INCLUDE_REQUEST_TELEMETRY_DATA environment variable was true at the time of client creation,
+	//indicating that x-oci-service-name and x-oci-operation-id headers should be sent.
+	ociIncludeRequestTelemetryDataEnabled bool
 }
 
 // SetCustomClientConfiguration sets client with retry and other custom configurations
@@ -190,6 +223,56 @@ func (client *BaseClient) Endpoint() string {
 	return host
 }
 
+func UpdateEndpointTemplateForOptions(client *BaseClient) {
+	templateRegex := regexp.MustCompile(patternForEndpointTemplateOptions)
+	templates := templateRegex.FindAllString(client.Host, -1)
+	for _, option := range templates {
+		optionParam := ""
+		optionEnabledParam := option[strings.Index(option, "?")+1 : strings.Index(option, ":")]
+		optionDisabledParam := option[strings.Index(option, ":")+1 : strings.Index(option, "}")]
+
+		// Option case: Dual Stack Endpoints
+		if strings.Contains(option, dualStackOption) {
+			dualStackEnvVarValue := os.Getenv(ociDualStackEndpointEnabledEnvVar)
+			if client.IsServiceDualStackEnabledByDefault() {
+				if !client.IsDualStackEndpointEnabled() || (dualStackEnvVarValue != "" && strings.ToLower(dualStackEnvVarValue) == "false") {
+					optionParam = optionDisabledParam
+				} else {
+					optionParam = optionEnabledParam
+				}
+			} else {
+				if client.IsDualStackEndpointEnabled() || (dualStackEnvVarValue != "" && strings.ToLower(dualStackEnvVarValue) == "true") {
+					optionParam = optionEnabledParam
+				} else {
+					optionParam = optionDisabledParam
+				}
+			}
+		}
+		client.Host = strings.Replace(client.Host, option, optionParam, -1)
+	}
+}
+
+// UseDualStackEndpointsByDefault sets whether dual stack endpoints are used by default
+func (client *BaseClient) UseDualStackEndpointsByDefault(useByDefault bool) {
+	client.Configuration.EnableDualStackEndpoints = &useByDefault
+	client.Configuration.ServiceUsesDualStackByDefault = &useByDefault
+}
+
+// EnableDualStackEndpoints sets whether dual stack endpoints should be used for this client
+func (client *BaseClient) EnableDualStackEndpoints(EnableDualStack bool) {
+	client.Configuration.EnableDualStackEndpoints = &EnableDualStack
+}
+
+// IsDualStackEndpointEnabled is used to check if Dual Stack Endpoints are Enabled
+func (client *BaseClient) IsDualStackEndpointEnabled() bool {
+	return client.Configuration.EnableDualStackEndpoints != nil && *client.Configuration.EnableDualStackEndpoints
+}
+
+// IsServiceDualStackEnabledByDefault is used to check if Dual Stack Endpoints enabled by default for the service of the client
+func (client *BaseClient) IsServiceDualStackEnabledByDefault() bool {
+	return client.Configuration.ServiceUsesDualStackByDefault != nil && *client.Configuration.ServiceUsesDualStackByDefault
+}
+
 func defaultUserAgent() string {
 	userAgent := fmt.Sprintf(defaultUserAgentTemplate, defaultSDKMarker, Version(), runtime.GOOS, runtime.GOARCH, runtime.Version())
 	appendUA := os.Getenv(appendUserAgentEnv)
@@ -209,11 +292,14 @@ func getNextSeed() int64 {
 func newBaseClient(signer HTTPRequestSigner, dispatcher HTTPRequestDispatcher) BaseClient {
 	rand.Seed(getNextSeed())
 
+	includeTelemetry := strings.EqualFold(os.Getenv("OCI_INCLUDE_REQUEST_TELEMETRY_DATA"), "true")
+
 	baseClient := BaseClient{
-		UserAgent:   defaultUserAgent(),
-		Interceptor: nil,
-		Signer:      signer,
-		HTTPClient:  dispatcher,
+		UserAgent:                             defaultUserAgent(),
+		Interceptor:                           nil,
+		Signer:                                signer,
+		HTTPClient:                            dispatcher,
+		ociIncludeRequestTelemetryDataEnabled: includeTelemetry,
 	}
 
 	// check the default retry environment variable setting
@@ -229,6 +315,8 @@ func newBaseClient(signer HTTPRequestSigner, dispatcher HTTPRequestDispatcher) B
 		baseClient.Configuration.RetryPolicy = GlobalRetry
 	}
 
+	baseClient.UseDualStackEndpointsByDefault(false)
+
 	return baseClient
 }
 
@@ -242,8 +330,21 @@ func defaultHTTPDispatcher() http.Client {
 		RefreshRate:       time.Duration(refreshInterval) * time.Minute,
 		TLSConfigProvider: GetTLSConfigTemplateForTransport(),
 	}
+
+	// Set client timeout to default or value set in environment variable
+	clientTimeout := defaultTimeout
+	if customTimeout := os.Getenv(CustomClientTimeoutEnvVar); customTimeout != "" {
+		if timeInSeconds, err := strconv.Atoi(customTimeout); err != nil || timeInSeconds < 0 {
+			Logf("WARNING: %s set but could not be converted to a postive integer", CustomClientTimeoutEnvVar)
+		} else {
+			Debugf("Using custom client timeout of %s seconds", customTimeout)
+			clientTimeout = time.Duration(timeInSeconds) * time.Second
+		}
+	}
+
+	// Create the underlying HTTP client
 	httpClient = http.Client{
-		Timeout:   defaultTimeout,
+		Timeout:   clientTimeout,
 		Transport: tp,
 	}
 	return httpClient
@@ -431,7 +532,7 @@ func (client *BaseClient) prepareRequest(request *http.Request) (err error) {
 	request.URL.Host = clientURL.Host
 	request.URL.Scheme = clientURL.Scheme
 	currentPath := request.URL.Path
-	if !strings.Contains(currentPath, fmt.Sprintf("/%s", client.BasePath)) {
+	if !strings.HasPrefix(currentPath, fmt.Sprintf("/%s", client.BasePath)) {
 		request.URL.Path = path.Clean(fmt.Sprintf("/%s/%s", client.BasePath, currentPath))
 		err := setRawPath(request.URL)
 		if err != nil {
@@ -606,23 +707,78 @@ type OCIOperation func(context.Context, OCIRequest, *OCIReadSeekCloser, map[stri
 
 // ClientCallDetails a set of settings used by the a single Call operation of the http Client
 type ClientCallDetails struct {
-	Signer HTTPRequestSigner
+	Signer        HTTPRequestSigner
+	ServiceName   string
+	OperationName string
 }
 
 // Call executes the http request with the given context
 func (client BaseClient) Call(ctx context.Context, request *http.Request) (response *http.Response, err error) {
+	details := ClientCallDetails{Signer: client.Signer}
 	if client.IsRefreshableAuthType() {
-		return client.RefreshableTokenWrappedCallWithDetails(ctx, request, ClientCallDetails{Signer: client.Signer})
+		return client.RefreshableTokenWrappedCallWithDetails(ctx, request, details)
 	}
-	return client.CallWithDetails(ctx, request, ClientCallDetails{Signer: client.Signer})
+	return client.CallWithDetails(ctx, request, details)
 }
 
-// RefreshableTokenWrappedCallWithDetails wraps the CallWithDetails with retry on 401 for Refreshable Toekn (Instance Principal, Resource Principal etc.)
-// This is to intimitate the race condition on refresh
+// CallWithServiceAndOperationName executes the http request with the given context and known service and operation name
+func (client BaseClient) CallWithServiceAndOperationName(ctx context.Context, request *http.Request, serviceName string, operationName string) (response *http.Response, err error) {
+	details := ClientCallDetails{Signer: client.Signer, ServiceName: serviceName, OperationName: operationName}
+	if client.IsRefreshableAuthType() {
+		return client.RefreshableTokenWrappedCallWithDetails(ctx, request, details)
+	}
+	return client.CallWithDetails(ctx, request, details)
+}
+
+// RefreshableTokenWrappedCallWithDetails wraps the CallWithDetails with retry on 401 for Refreshable Token (Instance Principal, Resource Principal, etc.)
+// This retry reduces transient 401s that can occur due to concurrent token refresh
 func (client BaseClient) RefreshableTokenWrappedCallWithDetails(ctx context.Context, request *http.Request, details ClientCallDetails) (response *http.Response, err error) {
-	for i := 0; i < maxAttemptsForRefreshableRetry; i++ {
+	var (
+		rsc         *OCIReadSeekCloser
+		isSeekable  bool
+		curPos      int64
+		initialSize int64
+	)
+
+	// Prepare request body for potential retries
+	if request != nil && request.Body != nil && request.Body != http.NoBody {
+		rsc = NewOCIReadSeekCloser(request.Body)
+		request.Body = rsc
+
+		if rsc.Seekable() {
+			isSeekable = true
+
+			// Capture current position and total size so we can restore Content-Length on retries
+			curPos, _ = rsc.Seek(0, io.SeekCurrent)
+			if end, seekErr := rsc.Seek(0, io.SeekEnd); seekErr == nil {
+				initialSize = end
+				_, _ = rsc.Seek(curPos, io.SeekStart)
+			}
+		}
+	}
+
+	for attempt := 0; attempt < maxAttemptsForRefreshableRetry; attempt++ {
+		// On retries, rewind request body and restore content length/header if seekable
+		if attempt > 0 && request != nil && request.Body != nil && request.Body != http.NoBody {
+			if !isSeekable {
+				return response, NonSeekableRequestRetryFailure{err}
+			}
+
+			rsc = NewOCIReadSeekCloser(rsc.rc)
+			_, _ = rsc.Seek(curPos, io.SeekStart)
+			request.Body = rsc
+
+			if initialSize > 0 {
+				request.ContentLength = initialSize - curPos
+				if request.Header == nil {
+					request.Header = make(http.Header)
+				}
+				request.Header.Set(requestHeaderContentLength, strconv.FormatInt(request.ContentLength, 10))
+			}
+		}
+
 		response, err = client.CallWithDetails(ctx, request, ClientCallDetails{Signer: client.Signer})
-		if response != nil && response.StatusCode != 401 {
+		if response != nil && response.StatusCode != http.StatusUnauthorized {
 			return response, err
 		}
 		time.Sleep(1 * time.Second)
@@ -635,6 +791,16 @@ func (client BaseClient) RefreshableTokenWrappedCallWithDetails(ctx context.Cont
 func (client BaseClient) CallWithDetails(ctx context.Context, request *http.Request, details ClientCallDetails) (response *http.Response, err error) {
 	Debugln("Attempting to call downstream service")
 	request = request.WithContext(ctx)
+
+	if client.ociIncludeRequestTelemetryDataEnabled {
+		if details.ServiceName != "" {
+			request.Header.Set("x-oci-service-name", details.ServiceName)
+		}
+		if details.ServiceName != "" {
+			request.Header.Set("x-oci-operation-id", details.OperationName)
+		}
+	}
+
 	err = client.prepareRequest(request)
 	if err != nil {
 		return

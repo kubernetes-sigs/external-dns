@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
@@ -16,7 +16,7 @@ import (
 //
 // # See also
 //
-// Click https://docs.cloud.oracle.com/en-us/iaas/tools/go-sdk-examples/latest/dns/CreateZoneFromZoneFile.go.html to see an example of how to use CreateZoneFromZoneFileRequest.
+// Click https://docs.oracle.com/en-us/iaas/tools/go-sdk-examples/latest/dns/CreateZoneFromZoneFile.go.html to see an example of how to use CreateZoneFromZoneFileRequest.
 type CreateZoneFromZoneFileRequest struct {
 
 	// The OCID of the compartment the resource belongs to.
@@ -29,6 +29,14 @@ type CreateZoneFromZoneFileRequest struct {
 	// to contact Oracle about a particular request, please provide
 	// the request ID.
 	OpcRequestId *string `mandatory:"false" contributesTo:"header" name:"opc-request-id"`
+
+	// A token that uniquely identifies a request so it can be retried in case
+	// of a timeout or server error without risk of executing that same action
+	// again. Retry tokens expire after 24 hours, but can be invalidated before
+	// then due to conflicting operations (for example, if a resource has been
+	// deleted and purged from the system, then a retry of the original creation
+	// request may be rejected).
+	OpcRetryToken *string `mandatory:"false" contributesTo:"header" name:"opc-retry-token"`
 
 	// Specifies to operate only on resources that have a matching DNS scope.
 	Scope CreateZoneFromZoneFileScopeEnum `mandatory:"false" contributesTo:"query" name:"scope" omitEmpty:"true"`
@@ -78,7 +86,7 @@ func (request CreateZoneFromZoneFileRequest) ValidateEnumValue() (bool, error) {
 		errMessage = append(errMessage, fmt.Sprintf("unsupported enum value for Scope: %s. Supported values are: %s.", request.Scope, strings.Join(GetCreateZoneFromZoneFileScopeEnumStringValues(), ",")))
 	}
 	if len(errMessage) > 0 {
-		return true, fmt.Errorf(strings.Join(errMessage, "\n"))
+		return true, fmt.Errorf("%s", strings.Join(errMessage, "\n"))
 	}
 	return false, nil
 }

@@ -1,4 +1,98 @@
-# Changelog
+# Changes
+
+## [2.21.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.21.0) (2026-04-01)
+
+### Features
+
+* hook transport telemetry into gax.Invoke and record (#496) ([d531001](https://github.com/googleapis/google-cloud-go/commit/d5310019d6c635956b61558627b13c2c2419044e))
+* update IsFeatureEnabled to not require EXPERIMENTAL (#497) ([a2a329e](https://github.com/googleapis/google-cloud-go/commit/a2a329e31d8ef8348a1ef7bea1c7072f8abcc145))
+
+## [2.20.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.20.0) (2026-03-25)
+
+### Features
+
+* add TelemetryErrorInfo and ExtractTelemetryErrorInfo (#487) ([defdded](https://github.com/googleapis/google-cloud-go/commit/defdded3eac5d97e32243ef79216f1865f3250fb))
+* hook metric recording into gax.Invoke (#494) ([1f3e9ae](https://github.com/googleapis/google-cloud-go/commit/1f3e9aefd21a1a18a6e4da1e03ea84a0b46f2d49))
+
+## [2.19.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.19.0) (2026-03-17)
+
+### Features
+
+* add ClientMetrics initialization core (#473) ([f53618c](https://github.com/googleapis/google-cloud-go/commit/f53618c2a9f19d5e5945395001fdc9b317e71faf))
+* add TransportTelemetryData for dynamic transport attributes (#481) ([8a7caf0](https://github.com/googleapis/google-cloud-go/commit/8a7caf0014c9ee9bcf448f16a2e1ae77407a78b8))
+* add WithClientMetrics CallOption (#479) ([76f0284](https://github.com/googleapis/google-cloud-go/commit/76f0284ef42fb92484531483975b7ccff9c54016))
+* pass logger to downstream via context (#474) ([434fa67](https://github.com/googleapis/google-cloud-go/commit/434fa6768b9ee50ed1050a2b5aa11dbe7dbd33a6))
+* update WithLogger to WithLoggerContext. (#478) ([1cb70ba](https://github.com/googleapis/google-cloud-go/commit/1cb70baf5fda8cbff587206f94b1b08e078bd175))
+
+### Bug Fixes
+
+* lazy initialization and getters for ClientMetrics (#485) ([fb6c5f4](https://github.com/googleapis/google-cloud-go/commit/fb6c5f4d56fc3177a2d0d2b8f9e8df6e4be95505))
+
+## [2.18.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.18.0) (2026-03-09)
+
+### Features
+
+* add callctx telemetry helpers (#472) ([fa319ff](https://github.com/googleapis/google-cloud-go/commit/fa319ffc309366ab21e41f5d7480f450eedd2be9))
+* move gax-go to use 1.25 as the lower bound of support (#469) ([01594ca](https://github.com/googleapis/google-cloud-go/commit/01594ca54717eebe7229a5168ef41be61191a720))
+
+## [2.17.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.17.0) (2026-02-03)
+
+### Features
+
+* update Invoke to add retry count to context (#462) ([ea7096d](https://github.com/googleapis/google-cloud-go/commit/ea7096d50d665064dbfeffd7d93fa13d810ad4e4))
+
+## [2.16.0](https://github.com/googleapis/google-cloud-go/releases/tag/v2.16.0) (2025-12-17)
+
+### Features
+
+* add IsFeatureEnabled (#454) ([2700b8a](https://github.com/googleapis/google-cloud-go/commit/2700b8ab3062c6c6c5a26d0fc6ba1fc064a8fc04))
+
+## [2.15.0](https://github.com/googleapis/gax-go/compare/v2.14.2...v2.15.0) (2025-07-09)
+
+
+### Features
+
+* **apierror:** improve gRPC status code mapping for HTTP errors ([#431](https://github.com/googleapis/gax-go/issues/431)) ([c207f2a](https://github.com/googleapis/gax-go/commit/c207f2a19ab91d3baee458b57d4aa992519025c7))
+
+## [2.14.2](https://github.com/googleapis/gax-go/compare/v2.14.1...v2.14.2) (2025-05-12)
+
+
+### Documentation
+
+* **v2:** Fix Backoff doc to accurately explain Multiplier ([#423](https://github.com/googleapis/gax-go/issues/423)) ([16d1791](https://github.com/googleapis/gax-go/commit/16d17917121ea9f5d84ba52b5c7c7f2ec0f9e784)), refs [#422](https://github.com/googleapis/gax-go/issues/422)
+
+## [2.14.1](https://github.com/googleapis/gax-go/compare/v2.14.0...v2.14.1) (2024-12-19)
+
+
+### Bug Fixes
+
+* update golang.org/x/net to v0.33.0 ([#391](https://github.com/googleapis/gax-go/issues/391)) ([547a5b4](https://github.com/googleapis/gax-go/commit/547a5b43aa6f376f71242da9f18e65fbdfb342f6))
+
+
+### Documentation
+
+* fix godoc to refer to the proper envvar ([#387](https://github.com/googleapis/gax-go/issues/387)) ([dc6baf7](https://github.com/googleapis/gax-go/commit/dc6baf75c1a737233739630b5af6c9759f08abcd))
+
+## [2.14.0](https://github.com/googleapis/gax-go/compare/v2.13.0...v2.14.0) (2024-11-13)
+
+
+### Features
+
+* **internallog:** add a logging support package ([#380](https://github.com/googleapis/gax-go/issues/380)) ([c877470](https://github.com/googleapis/gax-go/commit/c87747098135631a3de5865ed03aaf2c79fd9319))
+
+## [2.13.0](https://github.com/googleapis/gax-go/compare/v2.12.5...v2.13.0) (2024-07-22)
+
+
+### Features
+
+* **iterator:** add package to help work with new iter.Seq types ([#358](https://github.com/googleapis/gax-go/issues/358)) ([6bccdaa](https://github.com/googleapis/gax-go/commit/6bccdaac011fe6fd147e4eb533a8e6520b7d4acc))
+
+## [2.12.5](https://github.com/googleapis/gax-go/compare/v2.12.4...v2.12.5) (2024-06-18)
+
+
+### Bug Fixes
+
+* **v2/apierror:** fix (*APIError).Error() for unwrapped Status ([#351](https://github.com/googleapis/gax-go/issues/351)) ([22c16e7](https://github.com/googleapis/gax-go/commit/22c16e7bff5402bdc4c25063771cdd01c650b500)), refs [#350](https://github.com/googleapis/gax-go/issues/350)
 
 <<<<<<< HEAD
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

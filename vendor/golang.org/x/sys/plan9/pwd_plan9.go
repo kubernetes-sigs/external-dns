@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 //go:build !go1.5
@@ -19,20 +20,23 @@
 //go:build !go1.5
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+//go:build !go1.5
+
+=======
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 package plan9
 
+import "syscall"
+
 func fixwd() {
+	syscall.Fixwd()
 }
 
 func Getwd() (wd string, err error) {
-	fd, err := open(".", O_RDONLY)
-	if err != nil {
-		return "", err
-	}
-	defer Close(fd)
-	return Fd2path(fd)
+	return syscall.Getwd()
 }
 
 func Chdir(path string) error {
-	return chdir(path)
+	return syscall.Chdir(path)
 }

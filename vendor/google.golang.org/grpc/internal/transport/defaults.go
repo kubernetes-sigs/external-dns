@@ -46,6 +46,7 @@ const (
 	defaultWriteQuota              = 64 * 1024
 	defaultClientMaxHeaderListSize = uint32(16 << 20)
 	defaultServerMaxHeaderListSize = uint32(16 << 20)
+	upcomingDefaultHeaderListSize  = uint32(8 << 10)
 )
 <<<<<<< HEAD
 <<<<<<< HEAD

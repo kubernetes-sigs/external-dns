@@ -1033,11 +1033,12 @@ func typeHeader(contentType string) textproto.MIMEHeader {
 //
 // After PrepareUpload has been called, media should no longer be used: the
 // media content should be accessed via one of the return values.
-func PrepareUpload(media io.Reader, chunkSize int) (r io.Reader, mb *MediaBuffer, singleChunk bool) {
+func PrepareUpload(media io.Reader, chunkSize int, enableAutoChecksum bool) (r io.Reader, mb *MediaBuffer, singleChunk bool) {
 	if chunkSize == 0 { // do not chunk
 		return media, nil, true
 	}
 	mb = NewMediaBuffer(media, chunkSize)
+	mb.enableAutoChecksum = enableAutoChecksum
 	_, _, _, err := mb.Chunk()
 	// If err is io.EOF, we can upload this in a single request. Otherwise, err is
 	// either nil or a non-EOF error. If it is the latter, then the next call to
@@ -1050,13 +1051,14 @@ func PrepareUpload(media io.Reader, chunkSize int) (r io.Reader, mb *MediaBuffer
 // code only.
 type MediaInfo struct {
 	// At most one of Media and MediaBuffer will be set.
-	media              io.Reader
-	buffer             *MediaBuffer
-	singleChunk        bool
-	mType              string
-	size               int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
-	progressUpdater    googleapi.ProgressUpdater
-	chunkRetryDeadline time.Duration
+	media                io.Reader
+	buffer               *MediaBuffer
+	singleChunk          bool
+	mType                string
+	size                 int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater      googleapi.ProgressUpdater
+	chunkRetryDeadline   time.Duration
+	chunkTransferTimeout time.Duration
 }
 
 // NewInfoFromMedia should be invoked from the Media method of a call. It returns a
@@ -1072,7 +1074,8 @@ func NewInfoFromMedia(r io.Reader, options []googleapi.MediaOption) *MediaInfo {
 		}
 	}
 	mi.chunkRetryDeadline = opts.ChunkRetryDeadline
-	mi.media, mi.buffer, mi.singleChunk = PrepareUpload(r, opts.ChunkSize)
+	mi.chunkTransferTimeout = opts.ChunkTransferTimeout
+	mi.media, mi.buffer, mi.singleChunk = PrepareUpload(r, opts.ChunkSize, opts.EnableAutoChecksum)
 	return mi
 }
 
@@ -1110,9 +1113,28 @@ func (mi *MediaInfo) UploadType() string {
 	return "resumable"
 }
 
+// ChecksumEnabled returns if auto checksum is enabled in buffer.
+func (mi *MediaInfo) ChecksumEnabled() bool {
+	return mi.buffer != nil && mi.buffer.enableAutoChecksum
+}
+
+// GetAutoChecksum returns the computed auto checksum from buffer (if enabled).
+// Make sure whole data is written and read from the buffer before calling this
+// function to get correct checksum of the data.
+func (mi *MediaInfo) GetAutoChecksum() string {
+	if mi.buffer != nil &&
+		mi.buffer.enableAutoChecksum {
+		return encodeUint32(mi.buffer.fullObjectChecksum)
+	}
+	return ""
+}
+
 // UploadRequest sets up an HTTP request for media upload. It adds headers
 // as necessary, and returns a replacement for the body and a function for http.Request.GetBody.
 func (mi *MediaInfo) UploadRequest(reqHeaders http.Header, body io.Reader) (newBody io.Reader, getBody func() (io.ReadCloser, error), cleanup func()) {
+	if body == nil {
+		body = new(bytes.Buffer)
+	}
 	cleanup = func() {}
 	if mi == nil {
 		return body, nil, cleanup
@@ -1210,11 +1232,18 @@ func (mi *MediaInfo) ResumableUpload(locURI string) *ResumableUpload {
 			}
 		},
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 		ChunkRetryDeadline: mi.chunkRetryDeadline,
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+		ChunkRetryDeadline: mi.chunkRetryDeadline,
+=======
+		ChunkRetryDeadline:   mi.chunkRetryDeadline,
+		ChunkTransferTimeout: mi.chunkTransferTimeout,
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	}
 }
 

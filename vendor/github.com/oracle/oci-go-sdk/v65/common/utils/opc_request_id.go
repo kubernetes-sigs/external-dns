@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// GenerateOpcRequestID - Reference: https://confluence.oci.oraclecorp.com/display/DEX/Request+IDs
+// GenerateOpcRequestID -
 // Maximum segment length:	32 characters
 // Allowed segment contents: regular expression pattern /^[a-zA-Z0-9]{0,32}$/
 func GenerateOpcRequestID() string {

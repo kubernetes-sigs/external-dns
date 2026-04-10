@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package auth
@@ -108,6 +108,33 @@ func (pp DefaultRptPathProvider) Path() (*string, error) {
 // ResourceID returns the resource associated with the resource principal
 func (pp DefaultRptPathProvider) ResourceID() (*string, error) {
 	rpID := requireEnv(ResourceID)
+	if rpID == nil {
+		instanceID, err := getInstanceIDFromMetadata()
+		if err != nil {
+			return nil, err
+		}
+		return &instanceID, nil
+	}
+	return rpID, nil
+}
+
+type RptPathProviderForLeafResource struct {
+	path       string
+	resourceID string
+}
+
+func (pp RptPathProviderForLeafResource) Path() (*string, error) {
+	path := requireEnv(ResourcePrincipalRptPathForLeaf)
+	if path == nil {
+		rpPath := imdsPathTemplate
+		return &rpPath, nil
+	}
+	return path, nil
+}
+
+// ResourceID returns the resource associated with the resource principal
+func (pp RptPathProviderForLeafResource) ResourceID() (*string, error) {
+	rpID := requireEnv(ResourcePrincipalResourceIdForLeaf)
 	if rpID == nil {
 		instanceID, err := getInstanceIDFromMetadata()
 		if err != nil {

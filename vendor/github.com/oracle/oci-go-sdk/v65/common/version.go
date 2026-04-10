@@ -41,9 +41,17 @@ const (
 	patch = "0"
 =======
 	major = "65"
+<<<<<<< HEAD
 	minor = "65"
 	patch = "2"
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/oracle/oci-go-sdk/v65/common/version.go
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	minor = "65"
+	patch = "2"
+=======
+	minor = "111"
+	patch = "0"
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	tag   = ""
 )
 

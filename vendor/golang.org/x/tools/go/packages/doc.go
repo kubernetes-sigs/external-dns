@@ -77,8 +77,14 @@ according to the conventions of the underlying build system.
 
 See the Example function for typical usage.
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+See also [golang.org/x/tools/go/packages/internal/linecount]
+for an example application.
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 
 <<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

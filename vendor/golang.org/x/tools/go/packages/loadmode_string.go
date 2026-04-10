@@ -50,10 +50,16 @@ var modes = [...]struct {
 	{NeedSyntax, "NeedSyntax"},
 	{NeedTypesInfo, "NeedTypesInfo"},
 	{NeedTypesSizes, "NeedTypesSizes"},
+	{NeedForTest, "NeedForTest"},
 	{NeedModule, "NeedModule"},
 	{NeedEmbedFiles, "NeedEmbedFiles"},
 	{NeedEmbedPatterns, "NeedEmbedPatterns"},
+<<<<<<< HEAD
 >>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+	{NeedTarget, "NeedTarget"},
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 }
 
 <<<<<<< HEAD

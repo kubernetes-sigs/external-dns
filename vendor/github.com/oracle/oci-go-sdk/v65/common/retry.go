@@ -1,4 +1,4 @@
-// Copyright (c) 2016, 2018, 2024, Oracle and/or its affiliates.  All rights reserved.
+// Copyright (c) 2016, 2018, 2026, Oracle and/or its affiliates.  All rights reserved.
 // This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package common
@@ -74,6 +74,7 @@ const (
 var (
 	defaultRetryStatusCodeMap = map[StatErrCode]bool{
 		{409, "IncorrectState"}:  true,
+		{409, "LockConflict"}:    true,
 		{429, "TooManyRequests"}: true,
 
 		{501, "MethodNotImplemented"}: false,
@@ -369,7 +370,7 @@ func DefaultShouldRetryOperation(r OCIOperationResponse) bool {
 }
 
 // DefaultRetryPolicy is a helper method that assembles and returns a return policy that is defined to be a default one
-// The default retry policy will retry on (409, IncorrectState), (429, TooManyRequests) and any 5XX errors except (501, MethodNotImplemented)
+// The default retry policy will retry on (409, IncorrectState), (409, LockConflict), (429, TooManyRequests) and any 5XX errors except (501, MethodNotImplemented)
 // The default retry behavior is using exponential backoff with jitter, the maximum wait time is 30s plus 1s jitter
 // The maximum cumulative backoff after all 8 attempts have been made is about 1.5 minutes.
 // It will also retry on errors affected by eventual consistency.
@@ -382,7 +383,7 @@ func DefaultRetryPolicy() RetryPolicy {
 }
 
 // DefaultRetryPolicyWithoutEventualConsistency is a helper method that assembles and returns a return policy that is defined to be a default one
-// The default retry policy will retry on (409, IncorrectState), (429, TooManyRequests) and any 5XX errors except (501, MethodNotImplemented)
+// The default retry policy will retry on (409, IncorrectState), (409, LockConflict), (429, TooManyRequests) and any 5XX errors except (501, MethodNotImplemented)
 // It will not retry on errors affected by eventual consistency.
 // The default retry behavior is using exponential backoff with jitter, the maximum wait time is 30s plus 1s jitter
 func DefaultRetryPolicyWithoutEventualConsistency() RetryPolicy {

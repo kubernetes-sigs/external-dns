@@ -89,6 +89,7 @@ var (
 
 	// C2PResolverTestOnlyTrafficDirectorURI is the TD URI for testing.
 	C2PResolverTestOnlyTrafficDirectorURI = os.Getenv("GRPC_TEST_ONLY_GOOGLE_C2P_RESOLVER_TRAFFIC_DIRECTOR_URI")
+<<<<<<< HEAD
 	// XDSCustomLBPolicy indicates whether Custom LB Policies are enabled, which
 	// can be disabled by setting the environment variable
 	// "GRPC_EXPERIMENTAL_XDS_CUSTOM_LB_CONFIG" to "false".
@@ -99,4 +100,33 @@ var (
 	// C2PResolverTestOnlyTrafficDirectorURI is the TD URI for testing.
 	C2PResolverTestOnlyTrafficDirectorURI = os.Getenv("GRPC_TEST_ONLY_GOOGLE_C2P_RESOLVER_TRAFFIC_DIRECTOR_URI")
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+=======
+
+	// XDSDualstackEndpointsEnabled is true if gRPC should read the
+	// "additional addresses" in the xDS endpoint resource.
+	XDSDualstackEndpointsEnabled = boolFromEnv("GRPC_EXPERIMENTAL_XDS_DUALSTACK_ENDPOINTS", true)
+
+	// XDSSystemRootCertsEnabled is true when xDS enabled gRPC clients can use
+	// the system's default root certificates for TLS certificate validation.
+	// For more details, see:
+	// https://github.com/grpc/proposal/blob/master/A82-xds-system-root-certs.md.
+	XDSSystemRootCertsEnabled = boolFromEnv("GRPC_EXPERIMENTAL_XDS_SYSTEM_ROOT_CERTS", false)
+
+	// XDSSPIFFEEnabled controls if SPIFFE Bundle Maps can be used as roots of
+	// trust.  For more details, see:
+	// https://github.com/grpc/proposal/blob/master/A87-mtls-spiffe-support.md
+	XDSSPIFFEEnabled = boolFromEnv("GRPC_EXPERIMENTAL_XDS_MTLS_SPIFFE", false)
+
+	// XDSHTTPConnectEnabled is true if gRPC should parse custom Metadata
+	// configuring use of an HTTP CONNECT proxy via xDS from cluster resources.
+	// For more details, see:
+	// https://github.com/grpc/proposal/blob/master/A86-xds-http-connect.md
+	XDSHTTPConnectEnabled = boolFromEnv("GRPC_EXPERIMENTAL_XDS_HTTP_CONNECT", false)
+
+	// XDSBootstrapCallCredsEnabled controls if call credentials can be used in
+	// xDS bootstrap configuration via the `call_creds` field. For more details,
+	// see: https://github.com/grpc/proposal/blob/master/A97-xds-jwt-call-creds.md
+	XDSBootstrapCallCredsEnabled = boolFromEnv("GRPC_EXPERIMENTAL_XDS_BOOTSTRAP_CALL_CREDS", false)
+>>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 )
