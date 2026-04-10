@@ -324,7 +324,7 @@ func TestTransformerWithOptions_WithFakeClient(t *testing.T) {
 	require.NoError(t, err)
 
 	factory.Start(ctx.Done())
-	err = WaitForCacheSync(ctx, factory)
+	err = WaitForCacheSync(ctx, factory, 0)
 	require.NoError(t, err)
 
 	got, err := serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)

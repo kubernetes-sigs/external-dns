@@ -47,6 +47,7 @@ type Config struct {
 	APIServerURL                                  string
 	KubeConfig                                    string
 	RequestTimeout                                time.Duration
+	CacheSyncTimeout                              time.Duration
 	KubeAPIRequestTimeout                         time.Duration
 	KubeAPIQPS                                    int
 	KubeAPIBurst                                  int
@@ -356,6 +357,7 @@ var defaultConfig = &Config{
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     RegistryTXT,
 	RequestTimeout:               time.Second * 30,
+	CacheSyncTimeout:             time.Second * 60,
 	KubeAPIRequestTimeout:        time.Second * 30,
 	KubeAPIQPS:                   int(rest.DefaultQPS),
 	KubeAPIBurst:                 rest.DefaultBurst,
@@ -744,6 +746,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
 	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
+	b.DurationVar("kube-api-cache-sync-timeout", "Timeout for waiting for Kubernetes informer caches to sync during startup. Values <= 0 use the default (60s). Increase only after ruling out RBAC, network, or API server issues.", defaultConfig.CacheSyncTimeout, &cfg.CacheSyncTimeout)
 	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
 	b.IntVar("kube-api-burst", "Maximum burst for throttle to the Kubernetes API server from this client.", defaultConfig.KubeAPIBurst, &cfg.KubeAPIBurst)
 }
