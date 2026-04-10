@@ -9,6 +9,7 @@
 | `--[no-]version` | Show application version. |
 | `--server=""` | The Kubernetes API server to connect to (default: auto-detect) |
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
+| `--kube-api-cache-sync-timeout=1m0s` | Timeout for waiting for Kubernetes informer caches to sync during startup. Values <= 0 use the default (60s). Increase only after ruling out RBAC, network, or API server issues. |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
 | `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |

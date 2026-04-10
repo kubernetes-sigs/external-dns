@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	log "github.com/sirupsen/logrus"
@@ -83,6 +84,7 @@ func NewAmbassadorHostSource(
 	namespace string,
 	annotationFilter string,
 	labelSelector labels.Selector,
+	timeout time.Duration,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
@@ -100,7 +102,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

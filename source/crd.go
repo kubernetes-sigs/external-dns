@@ -21,12 +21,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,7 +65,7 @@ type crdSource struct {
 }
 
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
-func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
+func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion, kind string, timeout time.Duration) (*rest.RESTClient, *runtime.Scheme, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -101,6 +103,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+	config.Timeout = timeout
 
 	crdClient, err := rest.UnversionedRESTClientFor(config)
 	if err != nil {
@@ -115,7 +118,8 @@ func NewCRDSource(
 	namespace, kind, annotationFilter string,
 	labelSelector labels.Selector,
 	scheme *runtime.Scheme,
-	startInformer bool) (Source, error) {
+	startInformer bool,
+	cacheSyncTimeout time.Duration) (Source, error) {
 	sourceCrd := crdSource{
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
@@ -139,6 +143,16 @@ func NewCRDSource(
 			&apiv1alpha1.DNSEndpoint{},
 			0)
 		go sourceCrd.informer.Run(wait.NeverStop)
+
+		// Wait for the informer cache to sync before returning.
+		if cacheSyncTimeout <= 0 {
+			cacheSyncTimeout = time.Duration(informers.DefaultCacheSyncTimeout) * time.Second
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), cacheSyncTimeout)
+		defer cancel()
+		if !cache.WaitForCacheSync(ctx.Done(), sourceCrd.informer.HasSynced) {
+			return nil, fmt.Errorf("CRD informer cache sync timed out after %s", cacheSyncTimeout)
+		}
 	}
 	return &sourceCrd, nil
 }

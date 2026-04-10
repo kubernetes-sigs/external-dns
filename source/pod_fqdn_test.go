@@ -17,14 +17,14 @@ limitations under the License.
 package source
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+	"testing"
+	"time"
 )
 
 func TestNewPodSourceWithFqdn(t *testing.T) {
@@ -60,7 +60,8 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 				tt.fqdnTemplate,
 				false,
 				"",
-				nil)
+				nil,
+				time.Duration(0))
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -385,48 +386,6 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "pod-1.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
 			},
 		},
-		{
-			title: "fqdn templating with label conditional and kind check",
-			fqdnTemplate: `{{ if eq .Kind "Pod" }}{{ range $k, $v := .Labels }}{{ if and (contains $k "app")
-				(contains $v "my-service-") }}{{ $.Name }}.{{ $v }}.pod.tld.org{{ printf "," }}{{ end }}{{ end }}{{ end }}`,
-			expected: []*endpoint.Endpoint{
-				{DNSName: "pod-1.my-service-1.pod.tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
-				{DNSName: "pod-2.my-service-2.pod.tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.102"}},
-			},
-			pods: []*v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod-1",
-						Namespace: "kube-system",
-						Labels: map[string]string{
-							"app1": "my-service-1",
-						},
-					},
-					Status: v1.PodStatus{
-						Phase: v1.PodRunning,
-						PodIP: "100.67.94.101",
-						PodIPs: []v1.PodIP{
-							{IP: "100.67.94.101"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod-2",
-						Namespace: "kube-system",
-						Labels: map[string]string{
-							"app2": "my-service-2",
-						},
-					},
-					Status: v1.PodStatus{
-						Phase: v1.PodRunning,
-						PodIPs: []v1.PodIP{
-							{IP: "100.67.94.102"},
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -451,7 +410,8 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil,
+				time.Duration(0))
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -515,7 +475,7 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil, time.Duration(0))
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())

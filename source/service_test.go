@@ -100,6 +100,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		false,
 		false,
+		time.Duration(0),
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -184,6 +185,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				false,
 				false,
+				time.Duration(0),
 			)
 
 			if ti.expectError {
@@ -1169,6 +1171,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				false,
 				false,
 				false,
+				time.Duration(0),
 			)
 
 			require.NoError(t, err)
@@ -1386,6 +1389,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				false,
 				false,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -1692,6 +1696,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				false,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -2520,6 +2525,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				false,
 				tc.exposeInternalIPv6,
 				tc.ignoreUnscheduledNodes,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -3429,6 +3435,7 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				tc.exposeInternalIPv6,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -3566,6 +3573,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		false,
 		false,
 		true,
+		time.Duration(0),
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -3933,6 +3941,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		false,
 		false,
 		true,
+		time.Duration(0),
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -4392,6 +4401,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				false,
 				false,
 				true,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -4603,6 +4613,7 @@ func TestExternalServices(t *testing.T) {
 				false,
 				false,
 				true,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 
@@ -4666,6 +4677,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		false,
 		true,
+		time.Duration(0),
 	)
 	require.NoError(b, err)
 
@@ -4766,6 +4778,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				false,
 				false,
 				false,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
@@ -4798,6 +4811,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		false,
 		false,
 		false,
+		time.Duration(0),
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
@@ -4978,6 +4992,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		false,
 		false,
 		true,
+		time.Duration(0),
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5066,6 +5081,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		false,
 		false,
 		false,
+		time.Duration(0),
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)

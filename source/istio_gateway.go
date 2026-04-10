@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -80,6 +81,7 @@ func NewIstioGatewaySource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	timeout time.Duration,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -113,10 +115,10 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory, timeout); err != nil {
 		return nil, err
 	}
 
@@ -168,7 +170,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
 
-		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
+		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +185,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				if err != nil {
 					return nil, err
 				}
-				return sc.endpointsFromGateway(hostnames, gateway)
+				return sc.endpointsFromGateway(ctx, hostnames, gateway)
 			},
 		)
 		if err != nil {
@@ -240,7 +242,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -255,11 +257,11 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) 
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	targets, err := sc.targetsFromGateway(gateway)
+	targets, err := sc.targetsFromGateway(ctx, gateway)
 	if err != nil {
 		return nil, err
 	}

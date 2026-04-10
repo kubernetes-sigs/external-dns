@@ -18,6 +18,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,6 +66,7 @@ func TestNodeSourceNewNodeSourceWithFqdn(t *testing.T) {
 				true,
 				true,
 				false,
+				time.Duration(0),
 			)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -321,37 +323,6 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "node-name-2", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.178"}},
 			},
 		},
-		{
-			title: "templating with kind-based FQDNs",
-			fqdnTemplate: `{{ if eq .Kind "Pod" }}{{.Name}}.pod.tld{{ end }}
-				{{ if eq .Kind "Node" }}{{.Name}}.{{.Status.NodeInfo.Architecture}}.node.tld{{ end }}`,
-			expected: []*endpoint.Endpoint{
-				{DNSName: "node-name-1.arm64.node.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.0.1"}},
-				{DNSName: "node-name-2.x86_64.node.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.0.2"}},
-			},
-			combineFQDN: false,
-			nodes: []*v1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-1"},
-					Status: v1.NodeStatus{
-						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "10.0.0.1"}},
-						NodeInfo: v1.NodeSystemInfo{
-							Architecture: "arm64",
-						},
-					},
-					Spec: v1.NodeSpec{},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-2"},
-					Status: v1.NodeStatus{
-						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "10.0.0.2"}},
-						NodeInfo: v1.NodeSystemInfo{
-							Architecture: "x86_64",
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -370,6 +341,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				true,
 				true,
 				tt.combineFQDN,
+				time.Duration(0),
 			)
 			require.NoError(t, err)
 

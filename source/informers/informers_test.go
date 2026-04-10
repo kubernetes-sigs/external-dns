@@ -45,37 +45,27 @@ func TestWaitForCacheSync(t *testing.T) {
 	tests := []struct {
 		name        string
 		syncResults map[reflect.Type]bool
-		expectError bool
-		errorMsg    string
+		wantErr     bool
 	}{
 		{
 			name:        "all caches synced",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): true},
+			wantErr:     false,
 		},
 		{
 			name:        "some caches not synced",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
-		},
-		{
-			name:        "context timeout",
-			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			wantErr:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := WaitForCacheSync(ctx, factory)
-
-			if tt.expectError {
+			err := WaitForCacheSync(ctx, factory, 0)
+			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Errorf(t, err, tt.errorMsg)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -87,37 +77,27 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 	tests := []struct {
 		name        string
 		syncResults map[schema.GroupVersionResource]bool
-		expectError bool
-		errorMsg    string
+		wantErr     bool
 	}{
 		{
 			name:        "all caches synced",
 			syncResults: map[schema.GroupVersionResource]bool{{}: true},
+			wantErr:     false,
 		},
 		{
 			name:        "some caches not synced",
 			syncResults: map[schema.GroupVersionResource]bool{{}: false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
-		},
-		{
-			name:        "context timeout",
-			syncResults: map[schema.GroupVersionResource]bool{{}: false},
-			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			wantErr:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
-			err := WaitForDynamicCacheSync(ctx, factory)
-
-			if tt.expectError {
+			err := WaitForDynamicCacheSync(ctx, factory, 0)
+			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Errorf(t, err, tt.errorMsg)
 			} else {
 				assert.NoError(t, err)
 			}

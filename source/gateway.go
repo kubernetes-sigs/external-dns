@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -195,19 +196,19 @@ func newGatewayRouteSource(
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
-	informerFactory.Start(ctx.Done())
-	kubeInformerFactory.Start(ctx.Done())
+	informerFactory.Start(wait.NeverStop)
+	kubeInformerFactory.Start(wait.NeverStop)
 	if rtInformerFactory != informerFactory {
-		rtInformerFactory.Start(ctx.Done())
+		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := informers.WaitForCacheSync(ctx, rtInformerFactory, config.CacheSyncTimeout); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, config.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory, config.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
 
