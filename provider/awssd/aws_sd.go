@@ -310,7 +310,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 		}
 
 		for _, ch := range changeList {
-			_, srvName := p.parseHostname(ch.DNSName)
+			_, srvName := p.parseHostname(ch.DNSName, namespaces)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -350,7 +350,7 @@ func (p *AWSSDProvider) submitDeletes(ctx context.Context, namespaces []*sdtypes
 
 		for _, ch := range changeList {
 			hostname := ch.DNSName
-			_, srvName := p.parseHostname(hostname)
+			_, srvName := p.parseHostname(hostname, namespaces)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -605,7 +605,7 @@ func (p *AWSSDProvider) changesByNamespaceID(namespaces []*sdtypes.NamespaceSumm
 	for _, c := range changes {
 		// trim the trailing dot from hostname if any
 		hostname := strings.TrimSuffix(c.DNSName, ".")
-		nsName, _ := p.parseHostname(hostname)
+		nsName, _ := p.parseHostname(hostname, namespaces)
 
 		matchingNamespaces := matchingNamespaces(nsName, namespaces)
 		if len(matchingNamespaces) == 0 {
@@ -640,8 +640,26 @@ func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary)
 	return matchingNamespaces
 }
 
-// parseHostname parse hostname to namespace (domain) and service
-func (p *AWSSDProvider) parseHostname(hostname string) (string, string) {
+// parseHostname parses hostname into namespace (domain) and service name.
+// When known namespaces are provided, it uses longest-suffix matching to
+// correctly handle service names that contain dots (e.g. "foo.bar.dev.local"
+// with namespace "dev.local" yields service "foo.bar"). Falls back to the
+// original first-dot split when no namespace suffix matches.
+func (p *AWSSDProvider) parseHostname(hostname string, namespaces []*sdtypes.NamespaceSummary) (string, string) {
+	var bestNS, bestSrv string
+	for _, ns := range namespaces {
+		suffix := "." + aws.ToString(ns.Name)
+		if strings.HasSuffix(hostname, suffix) {
+			candidate := strings.TrimSuffix(hostname, suffix)
+			if bestNS == "" || len(aws.ToString(ns.Name)) > len(bestNS) {
+				bestNS = aws.ToString(ns.Name)
+				bestSrv = candidate
+			}
+		}
+	}
+	if bestNS != "" {
+		return bestNS, bestSrv
+	}
 	parts := strings.Split(hostname, ".")
 	return strings.Join(parts[1:], "."), parts[0]
 }
