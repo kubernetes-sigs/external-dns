@@ -1093,13 +1093,12 @@ func TestAWSSDProvider_awsTags(t *testing.T) {
 	}
 }
 
-func TestAWSSDProvider_parseHostname(t *testing.T) {
+func TestAWSSDProvider_parseNamespace(t *testing.T) {
 	tests := []struct {
 		name       string
 		hostname   string
 		namespaces []*sdtypes.NamespaceSummary
 		wantNS     string
-		wantSrv    string
 	}{
 		{
 			name:     "simple service name",
@@ -1107,8 +1106,7 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 			namespaces: []*sdtypes.NamespaceSummary{
 				{Name: aws.String("dev.local")},
 			},
-			wantNS:  "dev.local",
-			wantSrv: "foo",
+			wantNS: "dev.local",
 		},
 		{
 			name:     "dotted service name",
@@ -1116,8 +1114,7 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 			namespaces: []*sdtypes.NamespaceSummary{
 				{Name: aws.String("dev.local")},
 			},
-			wantNS:  "dev.local",
-			wantSrv: "foo.bar",
+			wantNS: "dev.local",
 		},
 		{
 			name:     "SRV-style hostname",
@@ -1125,8 +1122,7 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 			namespaces: []*sdtypes.NamespaceSummary{
 				{Name: aws.String("mynet.internal")},
 			},
-			wantNS:  "mynet.internal",
-			wantSrv: "_tcp.backend",
+			wantNS: "mynet.internal",
 		},
 		{
 			name:     "longest namespace match wins",
@@ -1135,8 +1131,7 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 				{Name: aws.String("b.c")},
 				{Name: aws.String("a.b.c")},
 			},
-			wantNS:  "a.b.c",
-			wantSrv: "foo",
+			wantNS: "a.b.c",
 		},
 		{
 			name:     "no matching namespace falls back to first-dot split",
@@ -1144,22 +1139,41 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 			namespaces: []*sdtypes.NamespaceSummary{
 				{Name: aws.String("dev.local")},
 			},
-			wantNS:  "unknown.tld",
-			wantSrv: "foo",
+			wantNS: "unknown.tld",
 		},
 		{
 			name:       "empty namespaces falls back to first-dot split",
 			hostname:   "foo.bar.baz",
 			namespaces: []*sdtypes.NamespaceSummary{},
 			wantNS:     "bar.baz",
-			wantSrv:    "foo",
 		},
 		{
 			name:       "nil namespaces falls back to first-dot split",
 			hostname:   "foo.bar.baz",
 			namespaces: nil,
 			wantNS:     "bar.baz",
-			wantSrv:    "foo",
+		},
+		{
+			name:     "trailing dot falls back to first-dot split",
+			hostname: "foo.bar.dev.local.",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "bar.dev.local.",
+		},
+		{
+			name:     "hostname is namespace only, no service prefix",
+			hostname: "dev.local",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "local",
+		},
+		{
+			name:       "single label hostname, no dots",
+			hostname:   "foo",
+			namespaces: nil,
+			wantNS:     "",
 		},
 	}
 
@@ -1167,9 +1181,8 @@ func TestAWSSDProvider_parseHostname(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotNS, gotSrv := provider.parseHostname(tc.hostname, tc.namespaces)
+			gotNS := provider.parseNamespace(tc.hostname, tc.namespaces)
 			assert.Equal(t, tc.wantNS, gotNS)
-			assert.Equal(t, tc.wantSrv, gotSrv)
 		})
 	}
 }

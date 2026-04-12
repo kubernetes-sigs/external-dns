@@ -303,14 +303,18 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.End
 func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
 	changesByNamespaceID := p.changesByNamespaceID(namespaces, changes)
 
+	nsIDToName := namespaceIDToName(namespaces)
+
 	for nsID, changeList := range changesByNamespaceID {
 		services, err := p.ListServicesByNamespaceID(ctx, aws.String(nsID))
 		if err != nil {
 			return err
 		}
 
+		nsName := nsIDToName[nsID]
 		for _, ch := range changeList {
-			_, srvName := p.parseHostname(ch.DNSName, namespaces)
+			hostname := strings.TrimSuffix(ch.DNSName, ".")
+			srvName := strings.TrimSuffix(hostname, "."+nsName)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -342,15 +346,18 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 func (p *AWSSDProvider) submitDeletes(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
 	changesByNamespaceID := p.changesByNamespaceID(namespaces, changes)
 
+	nsIDToName := namespaceIDToName(namespaces)
+
 	for nsID, changeList := range changesByNamespaceID {
 		services, err := p.ListServicesByNamespaceID(ctx, aws.String(nsID))
 		if err != nil {
 			return err
 		}
 
+		nsName := nsIDToName[nsID]
 		for _, ch := range changeList {
-			hostname := ch.DNSName
-			_, srvName := p.parseHostname(hostname, namespaces)
+			hostname := strings.TrimSuffix(ch.DNSName, ".")
+			srvName := strings.TrimSuffix(hostname, "."+nsName)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -605,7 +612,7 @@ func (p *AWSSDProvider) changesByNamespaceID(namespaces []*sdtypes.NamespaceSumm
 	for _, c := range changes {
 		// trim the trailing dot from hostname if any
 		hostname := strings.TrimSuffix(c.DNSName, ".")
-		nsName, _ := p.parseHostname(hostname, namespaces)
+		nsName := p.parseNamespace(hostname, namespaces)
 
 		matchingNamespaces := matchingNamespaces(nsName, namespaces)
 		if len(matchingNamespaces) == 0 {
@@ -640,28 +647,31 @@ func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary)
 	return matchingNamespaces
 }
 
-// parseHostname parses hostname into namespace (domain) and service name.
-// When known namespaces are provided, it uses longest-suffix matching to
-// correctly handle service names that contain dots (e.g. "foo.bar.dev.local"
-// with namespace "dev.local" yields service "foo.bar"). Falls back to the
-// original first-dot split when no namespace suffix matches.
-func (p *AWSSDProvider) parseHostname(hostname string, namespaces []*sdtypes.NamespaceSummary) (string, string) {
-	var bestNS, bestSrv string
+// parseNamespace returns the Cloud Map namespace name that matches the given
+// hostname using longest-suffix matching. Falls back to the original first-dot
+// split when no namespace suffix matches.
+func (p *AWSSDProvider) parseNamespace(hostname string, namespaces []*sdtypes.NamespaceSummary) string {
+	var bestNS string
 	for _, ns := range namespaces {
-		suffix := "." + aws.ToString(ns.Name)
-		if strings.HasSuffix(hostname, suffix) {
-			candidate := strings.TrimSuffix(hostname, suffix)
-			if bestNS == "" || len(aws.ToString(ns.Name)) > len(bestNS) {
-				bestNS = aws.ToString(ns.Name)
-				bestSrv = candidate
-			}
+		nsName := aws.ToString(ns.Name)
+		if len(nsName) > len(bestNS) && strings.HasSuffix(hostname, "."+nsName) {
+			bestNS = nsName
 		}
 	}
 	if bestNS != "" {
-		return bestNS, bestSrv
+		return bestNS
 	}
 	parts := strings.Split(hostname, ".")
-	return strings.Join(parts[1:], "."), parts[0]
+	return strings.Join(parts[1:], ".")
+}
+
+// namespaceIDToName builds a map from namespace ID to namespace name.
+func namespaceIDToName(namespaces []*sdtypes.NamespaceSummary) map[string]string {
+	m := make(map[string]string, len(namespaces))
+	for _, ns := range namespaces {
+		m[aws.ToString(ns.Id)] = aws.ToString(ns.Name)
+	}
+	return m
 }
 
 // determine service routing policy based on endpoint type
