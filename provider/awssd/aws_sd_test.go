@@ -1093,7 +1093,7 @@ func TestAWSSDProvider_awsTags(t *testing.T) {
 	}
 }
 
-func TestAWSSDProvider_parseNamespace(t *testing.T) {
+func Test_parseNamespace(t *testing.T) {
 	tests := []struct {
 		name       string
 		hostname   string
@@ -1177,11 +1177,9 @@ func TestAWSSDProvider_parseNamespace(t *testing.T) {
 		},
 	}
 
-	provider := &AWSSDProvider{}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotNS := provider.parseNamespace(tc.hostname, tc.namespaces)
+			gotNS := parseNamespace(tc.hostname, tc.namespaces)
 			assert.Equal(t, tc.wantNS, gotNS)
 		})
 	}
