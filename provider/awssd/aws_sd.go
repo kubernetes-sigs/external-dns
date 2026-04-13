@@ -686,6 +686,7 @@ func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary)
 // hostname using longest-suffix matching. Falls back to the original first-dot
 // split when no namespace suffix matches.
 func parseNamespace(hostname string, namespaces []*sdtypes.NamespaceSummary) string {
+	hostname = strings.TrimSuffix(hostname, ".")
 	var bestNS string
 	for _, ns := range namespaces {
 		nsName := aws.ToString(ns.Name)

@@ -1154,12 +1154,12 @@ func Test_parseNamespace(t *testing.T) {
 			wantNS:     "bar.baz",
 		},
 		{
-			name:     "trailing dot falls back to first-dot split",
+			name:     "trailing dot is stripped before matching",
 			hostname: "foo.bar.dev.local.",
 			namespaces: []*sdtypes.NamespaceSummary{
 				{Name: aws.String("dev.local")},
 			},
-			wantNS: "bar.dev.local.",
+			wantNS: "dev.local",
 		},
 		{
 			name:     "hostname is namespace only, no service prefix",
