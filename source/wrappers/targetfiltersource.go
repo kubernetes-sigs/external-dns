@@ -52,13 +52,6 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	result := make([]*endpoint.Endpoint, 0, len(endpoints))
 
 	for _, ep := range endpoints {
-		// Target network filter is only relevant for A/AAAA records containing IPv4/IPv6 address
-		// therefore we can add other endpoints directly and skip filtering
-		if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeAAAA {
-			result = append(result, ep)
-			continue
-		}
-
 		filteredTargets := make([]string, 0, len(ep.Targets))
 
 		for _, t := range ep.Targets {
