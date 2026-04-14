@@ -40,7 +40,7 @@ func NewMockTargetNetFilter(targets []string) endpoint.TargetFilterInterface {
 	return &mockTargetNetFilter{targets: targetMap}
 }
 
-func (m *mockTargetNetFilter) Match(target string, ep *endpoint.Endpoint) bool {
+func (m *mockTargetNetFilter) Match(target string, _ *endpoint.Endpoint) bool {
 	return m.targets[target]
 }
 
