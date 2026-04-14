@@ -55,10 +55,12 @@ var (
 
 var defaultTTL int64 = 3600
 var domainIDs = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
+var apexRecordID = uuid.New().String()
 var groups = map[string][]egoscale.DNSDomainRecord{
 	domainIDs[0]: {
 		{ID: new(uuid.New().String()), Name: new("v1"), Type: new("TXT"), Content: new("test"), TTL: &defaultTTL},
 		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("CNAME"), Content: new("test"), TTL: &defaultTTL},
+		{ID: &apexRecordID, Name: new(""), Type: new("A"), Content: new("1.2.3.4"), TTL: &defaultTTL},
 	},
 	domainIDs[1]: {
 		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("A"), Content: new("test"), TTL: &defaultTTL},
@@ -120,15 +122,78 @@ func TestExoscaleGetRecords(t *testing.T) {
 
 	recs, err := provider.Records(t.Context())
 	if err == nil {
-		assert.Len(t, recs, 3)
+		assert.Len(t, recs, 4)
 		assert.True(t, contains(recs, "v1.foo.com"))
 		assert.True(t, contains(recs, "v2.bar.com"))
 		assert.True(t, contains(recs, "v2.foo.com"))
+		assert.True(t, contains(recs, "foo.com"))  // apex record
+		assert.False(t, contains(recs, ".foo.com")) // old broken form must not appear
 		assert.False(t, contains(recs, "v3.bar.com"))
 		assert.False(t, contains(recs, "v1.foobar.com"))
 	} else {
 		assert.Error(t, err)
 	}
+}
+
+func TestExoscaleApplyChanges_ApexRecord(t *testing.T) {
+	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", "", false)
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{DNSName: "foo.com", RecordType: "A", Targets: []string{"5.6.7.8"}},
+		},
+		Delete: []*endpoint.Endpoint{
+			{DNSName: "foo.com", RecordType: "A", Targets: []string{"1.2.3.4"}},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "foo.com", RecordType: "A", Targets: []string{"5.6.7.8"}},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{DNSName: "foo.com", RecordType: "A", Targets: []string{"1.2.3.4"}},
+		},
+	}
+	createExoscale = make([]createRecordExoscale, 0)
+	deleteExoscale = make([]deleteRecordExoscale, 0)
+	updateExoscale = make([]updateRecordExoscale, 0)
+
+	err := provider.ApplyChanges(t.Context(), changes)
+	assert.NoError(t, err)
+
+	// create: apex record should be sent with empty name
+	assert.Len(t, createExoscale, 1)
+	assert.Equal(t, domainIDs[0], createExoscale[0].domainID)
+	assert.Equal(t, "", *createExoscale[0].record.Name)
+
+	// delete: apex record should be matched and deleted
+	assert.Len(t, deleteExoscale, 1)
+	assert.Equal(t, apexRecordID, deleteExoscale[0].recordID)
+
+	// update: apex record should be matched and updated
+	assert.Len(t, updateExoscale, 1)
+	assert.Equal(t, domainIDs[0], updateExoscale[0].domainID)
+}
+
+func TestEndpointZoneID_ApexRecord(t *testing.T) {
+	zones := map[string]string{
+		"zone-1": "example.com",
+		"zone-2": "other.com",
+	}
+	f := &zoneFilter{}
+
+	// subdomain: existing behavior
+	zoneID, name := f.EndpointZoneID(&endpoint.Endpoint{DNSName: "sub.example.com"}, zones)
+	assert.Equal(t, "zone-1", zoneID)
+	assert.Equal(t, "sub", name)
+
+	// apex: DNS name exactly equals zone name
+	zoneID, name = f.EndpointZoneID(&endpoint.Endpoint{DNSName: "example.com"}, zones)
+	assert.Equal(t, "zone-1", zoneID)
+	assert.Equal(t, "", name)
+
+	// no match
+	zoneID, name = f.EndpointZoneID(&endpoint.Endpoint{DNSName: "notexist.com"}, zones)
+	assert.Equal(t, "", zoneID)
+	assert.Equal(t, "", name)
 }
 
 func TestExoscaleApplyChanges(t *testing.T) {
@@ -186,6 +251,7 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	}
 	createExoscale = make([]createRecordExoscale, 0)
 	deleteExoscale = make([]deleteRecordExoscale, 0)
+	updateExoscale = make([]updateRecordExoscale, 0)
 
 	provider.ApplyChanges(t.Context(), plan)
 

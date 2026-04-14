@@ -253,7 +253,11 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				continue
 			}
 
-			e := endpoint.NewEndpointWithTTL((*record.Name)+"."+(*domain.UnicodeName), *record.Type, endpoint.TTL(*record.TTL), *record.Content)
+			fqdn := *domain.UnicodeName
+			if *record.Name != "" {
+				fqdn = (*record.Name) + "." + (*domain.UnicodeName)
+			}
+			e := endpoint.NewEndpointWithTTL(fqdn, *record.Type, endpoint.TTL(*record.TTL), *record.Content)
 			endpoints = append(endpoints, e)
 		}
 	}
@@ -313,6 +317,11 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[strin
 			matchZoneName = zoneName
 			matchZoneID = zoneID
 			name = strings.TrimSuffix(endpoint.DNSName, "."+zoneName)
+		} else if endpoint.DNSName == zoneName && len(zoneName) > len(matchZoneName) {
+			// apex record: the DNS name is exactly the zone name, record name is empty
+			matchZoneName = zoneName
+			matchZoneID = zoneID
+			name = ""
 		}
 	}
 	return matchZoneID, name
