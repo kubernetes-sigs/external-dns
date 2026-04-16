@@ -32,7 +32,7 @@ require (
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/digitalocean/godo v1.142.0
-	github.com/dnsimple/dnsimple-go v1.7.0
+	github.com/dnsimple/dnsimple-go/v8 v8.3.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.7.0
@@ -56,7 +56,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1146
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1136
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1145
@@ -65,7 +65,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.21
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.39.0
-	golang.org/x/oauth2 v0.29.0
+	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.13.0
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
@@ -132,7 +132,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -176,7 +176,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/schollz/progressbar/v3 v3.8.6 // indirect
-	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
