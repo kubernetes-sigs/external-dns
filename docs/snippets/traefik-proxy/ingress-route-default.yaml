@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/target: traefik.example.com
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`application.example.com`)
+      kind: Rule
+      services:
+        - name: service
+          namespace: namespace
+          port: port

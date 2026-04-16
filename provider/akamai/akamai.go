@@ -18,6 +18,7 @@ package akamai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -26,6 +27,8 @@ import (
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -39,7 +42,7 @@ const (
 	maxInt     = int(maxUint >> 1)
 )
 
-// edgeDNSClient is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
+// AkamaiDNSService is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
 type AkamaiDNSService interface {
 	ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error)
 	GetRecordsets(zone string, queryArgs dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error)
@@ -50,7 +53,7 @@ type AkamaiDNSService interface {
 }
 
 type AkamaiConfig struct {
-	DomainFilter          endpoint.DomainFilter
+	DomainFilter          *endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ServiceConsumerDomain string
 	ClientToken           string
@@ -67,7 +70,7 @@ type AkamaiConfig struct {
 type AkamaiProvider struct {
 	provider.BaseProvider
 	// Edgedns zones to filter on
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// Contract Ids to filter on
 	zoneIDFilter provider.ZoneIDFilter
 	// Edgegrid library configuration
@@ -86,8 +89,24 @@ type akamaiZone struct {
 	Zone       string `json:"zone"`
 }
 
-// NewAkamaiProvider initializes a new Akamai DNS based Provider.
-func NewAkamaiProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provider.Provider, error) {
+// New creates an Akamai provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		AkamaiConfig{
+			DomainFilter:          domainFilter,
+			ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+			ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
+			ClientToken:           cfg.AkamaiClientToken,
+			ClientSecret:          cfg.AkamaiClientSecret,
+			AccessToken:           cfg.AkamaiAccessToken,
+			EdgercPath:            cfg.AkamaiEdgercPath,
+			EdgercSection:         cfg.AkamaiEdgercSection,
+			DryRun:                cfg.DryRun,
+		}, nil)
+}
+
+// newAkamaiProvider initializes a new Akamai DNS based Provider.
+func newProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provider.Provider, error) {
 	var edgeGridConfig edgegrid.Config
 
 	// environment overrides edgerc file but config needs to be complete
@@ -207,7 +226,8 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
+	var endpoints []*endpoint.Endpoint
 	zones, err := p.fetchZones() // returns a filtered set of zones
 	if err != nil {
 		log.Warnf("Failed to identify target zones! Error: %s", err.Error())
@@ -232,7 +252,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 				log.Debugf("Skipping endpoint. Record name %s doesn't match containing zone %s.", recordset.Name, zone)
 				continue
 			}
-			var temp interface{} = int64(recordset.TTL)
+			var temp any = int64(recordset.TTL)
 			ttl := endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
@@ -253,7 +273,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p AkamaiProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {
@@ -350,7 +370,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 }
 
 func ttlAsInt(src endpoint.TTL) int {
-	var temp interface{} = int64(src)
+	var temp any = int64(src)
 	temp64 := temp.(int64)
 	var ttl = defaultTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
@@ -418,7 +438,8 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		recName := strings.TrimSuffix(endpoint.DNSName, ".")
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
-			if _, ok := err.(*dns.RecordError); !ok {
+			recordError := &dns.RecordError{}
+			if errors.As(err, &recordError) {
 				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
 			}
 			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)

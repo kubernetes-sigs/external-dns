@@ -25,52 +25,25 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/route53"
-	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/provider/akamai"
-	"sigs.k8s.io/external-dns/provider/alibabacloud"
-	"sigs.k8s.io/external-dns/provider/aws"
-	"sigs.k8s.io/external-dns/provider/awssd"
-	"sigs.k8s.io/external-dns/provider/azure"
-	"sigs.k8s.io/external-dns/provider/civo"
-	"sigs.k8s.io/external-dns/provider/cloudflare"
-	"sigs.k8s.io/external-dns/provider/coredns"
-	"sigs.k8s.io/external-dns/provider/digitalocean"
-	"sigs.k8s.io/external-dns/provider/dnsimple"
-	"sigs.k8s.io/external-dns/provider/exoscale"
-	"sigs.k8s.io/external-dns/provider/gandi"
-	"sigs.k8s.io/external-dns/provider/godaddy"
-	"sigs.k8s.io/external-dns/provider/google"
-	"sigs.k8s.io/external-dns/provider/ibmcloud"
-	"sigs.k8s.io/external-dns/provider/inmemory"
-	"sigs.k8s.io/external-dns/provider/linode"
-	"sigs.k8s.io/external-dns/provider/ns1"
-	"sigs.k8s.io/external-dns/provider/oci"
-	"sigs.k8s.io/external-dns/provider/ovh"
-	"sigs.k8s.io/external-dns/provider/pdns"
-	"sigs.k8s.io/external-dns/provider/pihole"
-	"sigs.k8s.io/external-dns/provider/plural"
-	"sigs.k8s.io/external-dns/provider/rfc2136"
-	"sigs.k8s.io/external-dns/provider/scaleway"
-	"sigs.k8s.io/external-dns/provider/tencentcloud"
-	"sigs.k8s.io/external-dns/provider/transip"
-	"sigs.k8s.io/external-dns/provider/ultradns"
-	"sigs.k8s.io/external-dns/provider/webhook"
+	providerfactory "sigs.k8s.io/external-dns/provider/factory"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
-	"sigs.k8s.io/external-dns/registry"
+	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 func Execute() {
@@ -81,6 +54,12 @@ func Execute() {
 	log.Infof("config: %s", cfg)
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
+	}
+
+	// Set annotation prefix (required since init() was removed)
+	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
+	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
+		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)
@@ -96,6 +75,10 @@ func Execute() {
 		klog.SetLogger(logr.Discard())
 	}
 
+	// controller-runtime prints a stack trace warning if its logger is never initialized.
+	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
+	crlog.SetLogger(logr.Discard())
+
 	log.Info(externaldns.Banner())
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -103,253 +86,35 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	// Create a source.Config from the flags passed by the user.
-	sourceCfg := source.NewSourceConfig(cfg)
-
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		// If update events are enabled, disable timeout.
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}, cfg.Sources, sourceCfg)
+	sCfg, err := source.NewSourceConfig(cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
+	}
+	endpointsSource, err := wrappers.Build(ctx, sCfg)
+	if err != nil {
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 
-	// Combine multiple sources into a single, deduplicated source.
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
-	endpointsSource = source.NewNAT64Source(endpointsSource, cfg.NAT64Networks)
-	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
-
-	domainFilter := createDomainFilter(cfg)
-	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
-
-	var p provider.Provider
-	switch cfg.Provider {
-	case "akamai":
-		p, err = akamai.NewAkamaiProvider(
-			akamai.AkamaiConfig{
-				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
-				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
-				ClientToken:           cfg.AkamaiClientToken,
-				ClientSecret:          cfg.AkamaiClientSecret,
-				AccessToken:           cfg.AkamaiAccessToken,
-				EdgercPath:            cfg.AkamaiEdgercPath,
-				EdgercSection:         cfg.AkamaiEdgercSection,
-				DryRun:                cfg.DryRun,
-			}, nil)
-	case "alibabacloud":
-		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
-	case "aws":
-		configs := aws.CreateV2Configs(cfg)
-		clients := make(map[string]aws.Route53API, len(configs))
-		for profile, config := range configs {
-			clients[profile] = route53.NewFromConfig(config)
-		}
-
-		p, err = aws.NewAWSProvider(
-			aws.AWSConfig{
-				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
-				ZoneTypeFilter:        zoneTypeFilter,
-				ZoneTagFilter:         zoneTagFilter,
-				ZoneMatchParent:       cfg.AWSZoneMatchParent,
-				BatchChangeSize:       cfg.AWSBatchChangeSize,
-				BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
-				BatchChangeSizeValues: cfg.AWSBatchChangeSizeValues,
-				BatchChangeInterval:   cfg.AWSBatchChangeInterval,
-				EvaluateTargetHealth:  cfg.AWSEvaluateTargetHealth,
-				PreferCNAME:           cfg.AWSPreferCNAME,
-				DryRun:                cfg.DryRun,
-				ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
-			},
-			clients,
-		)
-	case "aws-sd":
-		// Check that only compatible Registry is used with AWS-SD
-		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
-			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
-			cfg.Registry = "aws-sd"
-		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(aws.CreateDefaultV2Config(cfg)))
-	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
-	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
-	case "ultradns":
-		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
-	case "civo":
-		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
-	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(
-			domainFilter,
-			zoneIDFilter,
-			cfg.CloudflareProxied,
-			cfg.DryRun,
-			cfg.CloudflareDNSRecordsPerPage,
-			cfg.CloudflareRegionKey,
-			cloudflare.CustomHostnamesConfig{
-				Enabled:              cfg.CloudflareCustomHostnames,
-				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
-				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
-			})
-	case "google":
-		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
-	case "digitalocean":
-		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
-	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
-	case "linode":
-		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
-	case "dnsimple":
-		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "coredns", "skydns":
-		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
-	case "exoscale":
-		p, err = exoscale.NewExoscaleProvider(
-			cfg.ExoscaleAPIEnvironment,
-			cfg.ExoscaleAPIZone,
-			cfg.ExoscaleAPIKey,
-			cfg.ExoscaleAPISecret,
-			cfg.DryRun,
-			exoscale.ExoscaleWithDomain(domainFilter),
-			exoscale.ExoscaleWithLogging(),
-		)
-	case "inmemory":
-		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
-	case "pdns":
-		p, err = pdns.NewPDNSProvider(
-			ctx,
-			pdns.PDNSConfig{
-				DomainFilter: domainFilter,
-				DryRun:       cfg.DryRun,
-				Server:       cfg.PDNSServer,
-				ServerID:     cfg.PDNSServerID,
-				APIKey:       cfg.PDNSAPIKey,
-				TLSConfig: pdns.TLSConfig{
-					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
-					CAFilePath:            cfg.TLSCA,
-					ClientCertFilePath:    cfg.TLSClientCert,
-					ClientCertKeyFilePath: cfg.TLSClientCertKey,
-				},
-			},
-		)
-	case "oci":
-		var config *oci.OCIConfig
-		// if the instance-principals flag was set, and a compartment OCID was provided, then ignore the
-		// OCI config file, and provide a config that uses instance principal authentication.
-		if cfg.OCIAuthInstancePrincipal {
-			if len(cfg.OCICompartmentOCID) == 0 {
-				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-			} else {
-				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
-				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
-			}
-		} else {
-			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
-		}
-		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		if err == nil {
-			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-		}
-	case "rfc2136":
-		tlsConfig := rfc2136.TLSConfig{
-			UseTLS:                cfg.RFC2136UseTLS,
-			SkipTLSVerify:         cfg.RFC2136SkipTLSVerify,
-			CAFilePath:            cfg.TLSCA,
-			ClientCertFilePath:    cfg.TLSClientCert,
-			ClientCertKeyFilePath: cfg.TLSClientCertKey,
-		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
-	case "ns1":
-		p, err = ns1.NewNS1Provider(
-			ns1.NS1Config{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				NS1Endpoint:   cfg.NS1Endpoint,
-				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
-				DryRun:        cfg.DryRun,
-				MinTTLSeconds: cfg.NS1MinTTLSeconds,
-			},
-		)
-	case "transip":
-		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
-	case "scaleway":
-		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
-	case "godaddy":
-		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
-	case "gandi":
-		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
-	case "pihole":
-		p, err = pihole.NewPiholeProvider(
-			pihole.PiholeConfig{
-				Server:                cfg.PiholeServer,
-				Password:              cfg.PiholePassword,
-				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
-				DomainFilter:          domainFilter,
-				DryRun:                cfg.DryRun,
-				APIVersion:            cfg.PiholeApiVersion,
-			},
-		)
-	case "ibmcloud":
-		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
-	case "plural":
-		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-	case "tencentcloud":
-		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
-	case "webhook":
-		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
-	default:
-		log.Fatalf("unknown dns provider: %s", cfg.Provider)
-	}
+	prvdr, err := providerfactory.Select(ctx, cfg, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if cfg.WebhookServer {
-		webhookapi.StartHTTPApi(p, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
 		os.Exit(0)
 	}
 
-	if cfg.ProviderCacheTime > 0 {
-		p = provider.NewCachedProvider(
-			p,
-			cfg.ProviderCacheTime,
-		)
-	}
-
-	reg, err := selectRegistry(cfg, p)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	policy, exists := plan.Policies[cfg.Policy]
-	if !exists {
-		log.Fatalf("unknown policy: %s", cfg.Policy)
-	}
-
-	ctrl := Controller{
-		Source:               endpointsSource,
-		Registry:             reg,
-		Policy:               policy,
-		Interval:             cfg.Interval,
-		DomainFilter:         domainFilter,
-		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
-		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
-		MinEventSyncInterval: cfg.MinEventSyncInterval,
 	}
 
 	if cfg.Once {
@@ -372,6 +137,53 @@ func Execute() {
 	ctrl.Run(ctx)
 }
 
+func buildController(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	sCfg *source.Config,
+	src source.Source,
+	p provider.Provider,
+	filter *endpoint.DomainFilter,
+) (*Controller, error) {
+	policy, ok := plan.Policies[cfg.Policy]
+	if !ok {
+		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
+	}
+	reg, err := registryfactory.Select(cfg, p)
+	if err != nil {
+		return nil, err
+	}
+	eventsCfg := events.NewConfig(
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun))
+	var eventEmitter events.EventEmitter
+	if eventsCfg.IsEnabled() {
+		kubeClient, err := sCfg.ClientGenerator().KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
+		if err != nil {
+			return nil, err
+		}
+		eventCtrl.Run(ctx)
+		eventEmitter = eventCtrl
+	}
+
+	return &Controller{
+		Source:               src,
+		Registry:             reg,
+		Policy:               policy,
+		Interval:             cfg.Interval,
+		DomainFilter:         filter,
+		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
+		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
+		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
+		EventEmitter:         eventEmitter,
+	}, nil
+}
+
 // This function configures the logger format and level based on the provided configuration.
 func configureLogger(cfg *externaldns.Config) {
 	if cfg.LogFormat == "json" {
@@ -382,44 +194,6 @@ func configureLogger(cfg *externaldns.Config) {
 		log.Fatalf("failed to parse log level: %v", err)
 	}
 	log.SetLevel(ll)
-}
-
-// selectRegistry selects the appropriate registry implementation based on the configuration in cfg.
-// It initializes and returns a registry along with any error encountered during setup.
-// Supported registry types include: dynamodb, noop, txt, and aws-sd.
-func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	var r registry.Registry
-	var err error
-	switch cfg.Registry {
-	case "dynamodb":
-		var dynamodbOpts []func(*dynamodb.Options)
-		if cfg.AWSDynamoDBRegion != "" {
-			dynamodbOpts = []func(*dynamodb.Options){
-				func(opts *dynamodb.Options) {
-					opts.Region = cfg.AWSDynamoDBRegion
-				},
-			}
-		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
-	case "noop":
-		r, err = registry.NewNoopRegistry(p)
-	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTNewFormatOnly)
-	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
-	default:
-		log.Fatalf("unknown registry: %s", cfg.Registry)
-	}
-	return r, err
-}
-
-// RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) endpoint.DomainFilter {
-	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
-		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
-	} else {
-		return endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	}
 }
 
 // handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
@@ -442,8 +216,8 @@ func serveMetrics(address string) {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	log.Debugf("serving 'healthz' on 'localhost:%s/healthz'", address)
-	log.Debugf("serving 'metrics' on 'localhost:%s/metrics'", address)
+	log.Debugf("serving 'healthz' on '%s/healthz'", address)
+	log.Debugf("serving 'metrics' on '%s/metrics'", address)
 	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
 	http.Handle("/metrics", promhttp.Handler())

@@ -36,7 +36,8 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 4. Enter the name of the application and modify permissions and settings as desired. Once complete, click **Create Key**. The new API key appears in the list.
 
 > [!NOTE]
-> Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
+> Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account.
+> For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
 
 ## Deploy ExternalDNS
 
@@ -93,7 +94,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -120,7 +121,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -160,7 +164,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.

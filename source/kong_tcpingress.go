@@ -18,10 +18,9 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"sort"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,12 +30,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var kongGroupdVersionResource = schema.GroupVersionResource{
@@ -46,59 +48,65 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 }
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
+//
+// +externaldns:source:name=kong-tcpingress
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Kong TCPIngress resources
+// +externaldns:source:resources=TCPIngress.configuration.konghq.com
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
-	kongTCPIngressInformer   informers.GenericInformer
+	kongTCPIngressInformer   kubeinformers.GenericInformer
 	kubeClient               kubernetes.Interface
 	namespace                string
 	unstructuredConverter    *unstructuredConverter
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
-func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
-	var err error
-
+func NewKongTCPIngressSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
+	cfg *Config,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
 	// Add default resource event handlers to properly initialize informer.
-	kongTCPIngressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	informers.MustAddEventHandler(kongTCPIngressInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
 	uc, err := newKongUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &kongTCPIngressSource{
-		annotationFilter:         annotationFilter,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		annotationFilter:         cfg.AnnotationFilter,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:        dynamicKubeClient,
 		kongTCPIngressInformer:   kongTCPIngressInformer,
 		kubeClient:               kubeClient,
-		namespace:                namespace,
+		namespace:                cfg.Namespace,
 		unstructuredConverter:    uc,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TCPIngresses in the source's namespace(s).
-func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	tis, err := sc.kongTCPIngressInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -119,14 +127,14 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		tcpIngresses = append(tcpIngresses, tcpIngress)
 	}
 
-	tcpIngresses, err = sc.filterByAnnotations(tcpIngresses)
+	tcpIngresses, err = annotations.Filter(tcpIngresses, sc.annotationFilter)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter TCPIngresses")
+		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
 	}
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)
 		if len(targets) == 0 {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
@@ -140,12 +148,8 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		fullname := fmt.Sprintf("%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-		ingressEndpoints, err := sc.endpointsFromTCPIngress(tcpIngress, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
+		ingressEndpoints := sc.endpointsFromTCPIngress(tcpIngress, targets)
+		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
 
@@ -153,78 +157,43 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
-func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return tcpIngresses, nil
-	}
-
-	filteredList := []*TCPIngress{}
-
-	for _, tcpIngress := range tcpIngresses {
-		// convert the TCPIngress's annotations to an equivalent label selector
-		annotations := labels.Set(tcpIngress.Annotations)
-
-		// include TCPIngress if its annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, tcpIngress)
-		}
-	}
-
-	return filteredList, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
-func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(tcpIngress.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(tcpIngress.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
 	if tcpIngress.Spec.Rules != nil {
 		for _, rule := range tcpIngress.Spec.Rules {
 			if rule.Host != "" {
-				endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+				endpoints = append(endpoints, endpoint.EndpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 			}
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
-func (sc *kongTCPIngressSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TCPIngress")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.kongTCPIngressInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
@@ -248,15 +217,15 @@ func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 // If that is dealt with at some point the below can be removed and replaced with an actual import
 type TCPIngress struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   tcpIngressSpec   `json:"spec,omitempty"`
-	Status tcpIngressStatus `json:"status,omitempty"`
+	Spec   tcpIngressSpec   `json:"spec"`
+	Status tcpIngressStatus `json:"status"`
 }
 
 type TCPIngressList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []TCPIngress `json:"items"`
 }
 
@@ -271,7 +240,7 @@ type tcpIngressTLS struct {
 }
 
 type tcpIngressStatus struct {
-	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer,omitempty"`
+	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer"`
 }
 
 type tcpIngressRule struct {

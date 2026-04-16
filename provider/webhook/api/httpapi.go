@@ -85,7 +85,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
-	pve := []*endpoint.Endpoint{}
+	var pve []*endpoint.Endpoint
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -104,9 +104,12 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 }
 
-func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
+	err := json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 // StartHTTPApi starts a HTTP server given any provider.

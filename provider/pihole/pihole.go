@@ -19,6 +19,12 @@ package pihole
 import (
 	"context"
 	"errors"
+	"slices"
+
+	"github.com/google/go-cmp/cmp"
+	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -29,10 +35,15 @@ import (
 // in the environment.
 var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
 
+const (
+	warningMsg = "Pi-hole v5 API support is deprecated. Set --pihole-api-version=\"6\" to use the Pi-hole v6 API. The v5 API will be removed in a future release."
+)
+
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
 	provider.BaseProvider
-	api piholeAPI
+	api        piholeAPI
+	apiVersion string
 }
 
 // PiholeConfig is used for configuring a PiholeProvider.
@@ -44,7 +55,7 @@ type PiholeConfig struct {
 	// Disable verification of TLS certificates.
 	TLSInsecureSkipVerify bool
 	// A filter to apply when looking up and applying records.
-	DomainFilter endpoint.DomainFilter
+	DomainFilter *endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
 	// PiHole API version =<5 or >=6, default is 5
@@ -57,20 +68,35 @@ type piholeEntryKey struct {
 	RecordType string
 }
 
-// NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
-func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
+// New creates a Pi-hole provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		PiholeConfig{
+			Server:                cfg.PiholeServer,
+			Password:              cfg.PiholePassword,
+			TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+			DomainFilter:          domainFilter,
+			DryRun:                cfg.DryRun,
+			APIVersion:            cfg.PiholeApiVersion,
+		},
+	)
+}
+
+// newProvider initializes a new Pi-hole Local DNS based Provider.
+func newProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	var api piholeAPI
 	var err error
 	switch cfg.APIVersion {
 	case "6":
 		api, err = newPiholeClientV6(cfg)
 	default:
+		log.Warn(warningMsg)
 		api, err = newPiholeClient(cfg)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &PiholeProvider{api: api}, nil
+	return &PiholeProvider{api: api, apiVersion: cfg.APIVersion}, nil
 }
 
 // Records implements Provider, populating a slice of endpoints from
@@ -105,6 +131,19 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
 	for _, ep := range changes.UpdateNew {
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+
+		// If the API version is 6, we need to handle multiple targets for the same DNS name.
+		if p.apiVersion == "6" {
+			if existing, ok := updateNew[key]; ok {
+				existing.Targets = append(existing.Targets, ep.Targets...)
+
+				// Deduplicate targets
+				slices.Sort(existing.Targets)
+				existing.Targets = slices.Compact(existing.Targets)
+
+				ep = existing
+			}
+		}
 		updateNew[key] = ep
 	}
 
@@ -112,14 +151,23 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// Check if this existing entry has an exact match for an updated entry and skip it if so.
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 		if newRecord := updateNew[key]; newRecord != nil {
-			// PiHole only has a single target; no need to compare other fields.
-			if newRecord.Targets[0] == ep.Targets[0] {
-				delete(updateNew, key)
-				continue
+			// If the API version is 6, we need to handle multiple targets for the same DNS name.
+			if p.apiVersion == "6" {
+				if cmp.Diff(ep.Targets, newRecord.Targets) == "" {
+					delete(updateNew, key)
+					continue
+				}
+			} else {
+				// For API version <= 5, we only check the first target.
+				if newRecord.Targets[0] == ep.Targets[0] {
+					delete(updateNew, key)
+					continue
+				}
 			}
-		}
-		if err := p.api.deleteRecord(ctx, ep); err != nil {
-			return err
+
+			if err := p.api.deleteRecord(ctx, ep); err != nil {
+				return err
+			}
 		}
 	}
 

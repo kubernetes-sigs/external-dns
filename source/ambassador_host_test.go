@@ -17,9 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"fmt"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const defaultAmbassadorNamespace = "ambassador"
@@ -177,8 +180,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:   hostAnnotation,
-						targetAnnotationKey: "3.3.3.3",
+						ambHostAnnotation:     hostAnnotation,
+						annotations.TargetKey: "3.3.3.3",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -211,8 +214,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation: hostAnnotation,
-						ttlAnnotationKey:  "180",
+						ambHostAnnotation:  hostAnnotation,
+						annotations.TtlKey: "180",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -246,8 +249,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:    hostAnnotation,
-						CloudflareProxiedKey: "true",
+						ambHostAnnotation:                hostAnnotation,
+						annotations.CloudflareProxiedKey: "true",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -613,7 +616,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -622,27 +625,32 @@ func TestAmbassadorHostSource(t *testing.T) {
 			ambassador.AddToScheme(ambassadorScheme)
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
 
-			namespace := "default"
+			namespace := v1.NamespaceDefault
 
 			// Create Ambassador service
-			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(context.Background(), &ti.service, metav1.CreateOptions{})
+			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &ti.service, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
 			// Create host resource
 			host, err := createAmbassadorHost(&ti.host)
 			assert.NoError(t, err)
 
-			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(context.Background(), host, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(t.Context(), host, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace, ti.annotationFilter, ti.labelSelector)
+			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        namespace,
+					AnnotationFilter: ti.annotationFilter,
+					LabelFilter:      ti.labelSelector,
+				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
 			// Validate returned endpoints against expected endpoints.
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -663,7 +671,7 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 		svc    string
 		errstr string
 	}{
-		{"svc", "default", "svc", ""},
+		{"svc", v1.NamespaceDefault, "svc", ""},
 		{"ns/svc", "ns", "svc", ""},
 		{"svc.ns", "ns", "svc", ""},
 		{"svc.ns.foo.bar", "ns.foo.bar", "svc", ""},

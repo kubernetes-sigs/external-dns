@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 )
 
+// TODO: refactor common DNS label functions into a shared package.
 // toLowerCaseASCII returns a lower-case version of in. See RFC 6125 6.4.1. We use
 // an explicitly ASCII function to avoid any sharp corners resulting from
 // performing Unicode operations on DNS labels.

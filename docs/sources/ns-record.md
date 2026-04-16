@@ -1,6 +1,6 @@
 # NS record with CRD source
 
-You can create NS records with the help of [CRD source](../contributing/crd-source.md)
+You can create NS records with the help of [CRD source](../sources/crd.md)
 and `DNSEndpoint` CRD.
 
 In order to start managing NS records you need to set the `--managed-record-types=NS` flag.

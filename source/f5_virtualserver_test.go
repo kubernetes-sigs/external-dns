@@ -17,9 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -37,7 +40,6 @@ const defaultF5VirtualServerNamespace = "virtualserver"
 
 func TestF5VirtualServerEndpoints(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
 		name             string
 		annotationFilter string
@@ -56,14 +58,14 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						targetAnnotationKey: "192.168.1.150",
+						annotations.TargetKey: "192.168.1.150",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.200",
 					Status:    "OK",
 				},
@@ -96,7 +98,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.200",
 					Status:    "OK",
 				},
@@ -128,7 +130,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				Spec: f5.VirtualServerSpec{
 					Host: "www.example.com",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -160,7 +162,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				Spec: f5.VirtualServerSpec{
 					Host: "www.example.com",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "",
 				},
 			},
@@ -185,7 +187,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -221,7 +223,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -246,7 +248,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -264,7 +266,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name: "F5 VirtualServer with error status",
+			name: "F5 VirtualServer with error status but valid IP",
 			virtualServer: f5.VirtualServer{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
@@ -281,13 +283,23 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.VirtualServerStatus{
-					VSAddress: "",
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
 					Status:    "ERROR",
 					Error:     "Some error status message",
 				},
 			},
-			expected: nil,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  600,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
 		},
 		{
 			name: "F5 VirtualServer with missing IP address and OK status",
@@ -307,18 +319,296 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:      "www.example.com",
 					IPAMLabel: "test",
 				},
-				Status: f5.VirtualServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "None",
 					Status:    "OK",
 				},
 			},
 			expected: nil,
 		},
+		{
+			name: "F5 VirtualServer with hostAliases",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases and target annotation",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						annotations.TargetKey: "192.168.1.150",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases and TTL annotation",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "300",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with empty hostAliases",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases containing empty strings",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer does not support provider-specific annotations",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeKubernetesClient := fakeKube.NewClientset()
 			scheme := runtime.NewScheme()
 			scheme.AddKnownTypes(f5VirtualServerGVR.GroupVersion(), &f5.VirtualServer{}, &f5.VirtualServerList{})
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
@@ -330,22 +620,26 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			assert.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
 
 			// Create VirtualServer resources
-			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(context.Background(), &virtualServer, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5VirtualServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5VirtualServerNamespace, tc.annotationFilter)
+			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        defaultF5VirtualServerNamespace,
+					AnnotationFilter: tc.annotationFilter,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			assert.Equal(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }

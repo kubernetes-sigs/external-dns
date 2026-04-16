@@ -37,11 +37,11 @@ EOF
 install() {
   if [[ -x $(which helm) ]]; then
       echo "installing https://github.com/losisin/helm-values-schema-json.git plugin"
-      helm plugin install https://github.com/losisin/helm-values-schema-json.git | true
+      helm plugin install https://github.com/losisin/helm-values-schema-json.git --verify=false | true
       helm plugin update schema
       helm plugin list | grep "schema"
 
-      helm plugin install https://github.com/helm-unittest/helm-unittest.git | true
+      helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false | true
       helm plugin update unittest
       helm plugin list | grep "unittest"
 
@@ -67,8 +67,8 @@ update_schema() {
 
 diff_schema() {
   cd charts/external-dns
-  helm schema  \
-    -output diff-schema.schema.json
+  helm schema \
+    --output diff-schema.schema.json
   trap 'rm -rf -- "diff-schema.schema.json"' EXIT
   CURRENT_SCHEMA=$(cat values.schema.json)
   GENERATED_SCHEMA=$(cat diff-schema.schema.json)
@@ -116,7 +116,7 @@ function main() {
       helm_unittest
       ;;
     --helm-template)
-      helm_unittest
+      helm_template
       ;;
     -d|--diff)
       diff_schema

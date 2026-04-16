@@ -33,6 +33,8 @@ import (
 	"github.com/bodgit/tsig/gss"
 	"github.com/miekg/dns"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -59,7 +61,6 @@ type rfc2136Provider struct {
 	minTTL          time.Duration
 	batchChangeSize int
 	tlsConfig       TLSConfig
-	createPTR       bool
 
 	// options specific to rfc3645 gss-tsig support
 	gssTsig      bool
@@ -68,7 +69,7 @@ type rfc2136Provider struct {
 	krb5Realm    string
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	dryRun       bool
 	actions      rfc2136Actions
 
@@ -81,9 +82,6 @@ type rfc2136Provider struct {
 
 	// Random number generator for random load balancing
 	randGen *rand.Rand
-
-	// Store TSIG credentials for each nameserver
-	credentials map[string]*gss.Client
 
 	// Last error encountered
 	lastErr error
@@ -112,8 +110,20 @@ type rfc2136Actions interface {
 	IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error)
 }
 
-// NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+// New creates an RFC2136 provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                cfg.RFC2136UseTLS,
+		SkipTLSVerify:         cfg.RFC2136SkipTLSVerify,
+		CAFilePath:            cfg.TLSCA,
+		ClientCertFilePath:    cfg.TLSClientCert,
+		ClientCertKeyFilePath: cfg.TLSClientCertKey,
+	}
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+}
+
+// newProvider is a factory function for OpenStack rfc2136 providers
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -140,7 +150,6 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		zoneNames:             zoneNames,
 		insecure:              insecure,
 		gssTsig:               gssTsig,
-		createPTR:             createPTR,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
 		krb5Realm:             strings.ToUpper(krb5Realm),
@@ -152,7 +161,6 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		tlsConfig:             tlsConfig,
 		loadBalancingStrategy: loadBalancingStrategy,
 		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-		credentials:           make(map[string]*gss.Client),
 		counter:               0,
 		lastErr:               nil,
 	}
@@ -173,30 +181,22 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 }
 
 // KeyData will return TKEY name and TSIG handle to use for followon actions with a secure connection
-func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gss.Client, err error) {
-	// Check if we already have credentials for this nameserver
-	if existingHandle, ok := r.credentials[nameserver]; ok {
-		return nameserver, existingHandle, nil
+func (r *rfc2136Provider) KeyData(nameserver string) (string, *gss.Client, error) {
+	handle, err := gss.NewClient(new(dns.Client))
+	if err != nil {
+		return "", handle, err
 	}
 
-	handle, err = gss.NewClient(new(dns.Client))
+	keyName, _, err := handle.NegotiateContextWithCredentials(nameserver, r.krb5Realm, r.krb5Username, r.krb5Password)
 	if err != nil {
 		return keyName, handle, err
 	}
-
-	keyName, _, err = handle.NegotiateContextWithCredentials(nameserver, r.krb5Realm, r.krb5Username, r.krb5Password)
-	if err != nil {
-		return keyName, handle, err
-	}
-
-	// Store the credentials for this nameserver
-	r.credentials[nameserver] = handle
 
 	return keyName, handle, nil
 }
 
 // Records returns the list of records.
-func (r *rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (r *rfc2136Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
@@ -259,7 +259,7 @@ OuterLoop:
 	return eps, nil
 }
 
-func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error) {
+func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
 	if !r.insecure && !r.gssTsig {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
@@ -318,48 +318,21 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 			}
 			// If records were fetched successfully, break out of the loop
 			if len(records) > 0 {
-				return records, nil
+				break
 			}
 		}
 
 		if lastErr != nil {
 			r.lastErr = lastErr
-			return nil, lastErr
+			return nil, provider.NewSoftError(lastErr)
 		}
 	}
 
 	return records, nil
 }
 
-func (r *rfc2136Provider) AddReverseRecord(ip string, hostname string) error {
-	changes := r.GenerateReverseRecord(ip, hostname)
-	return r.ApplyChanges(context.Background(), &plan.Changes{Create: changes})
-}
-
-func (r *rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
-	changes := r.GenerateReverseRecord(ip, hostname)
-	return r.ApplyChanges(context.Background(), &plan.Changes{Delete: changes})
-}
-
-func (r *rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
-	// Generate PTR notation record starting from the IP address
-	var records []*endpoint.Endpoint
-
-	log.Debugf("Reverse zone is: %s %s", ip, dns.Fqdn(ip))
-	reverseAddress, _ := dns.ReverseAddr(ip)
-
-	// PTR
-	records = append(records, &endpoint.Endpoint{
-		DNSName:    reverseAddress[:len(reverseAddress)-1],
-		RecordType: "PTR",
-		Targets:    endpoint.Targets{hostname},
-	})
-
-	return records
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
-func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	var errs []error
@@ -380,14 +353,9 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
 			r.AddRecord(m[zone], ep)
-
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
-			}
 		}
 
 		// only send if there are records available
@@ -419,14 +387,11 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
-			r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(changes.UpdateOld[i].Targets[0], ep.DNSName)
-				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
-			}
+			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
+			j := (c * r.batchChangeSize) + i
+			r.UpdateRecord(m[zone], changes.UpdateOld[j], ep)
 		}
 
 		// only send if there are records available
@@ -457,13 +422,9 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
 			r.RemoveRecord(m[zone], ep)
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
-			}
 		}
 
 		// only send if there are records available
@@ -479,7 +440,7 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("RFC2136 had errors in one or more of its batches: %v", errs)
+		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
 	}
 
 	return nil
@@ -508,7 +469,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 
 		rr, err := dns.NewRR(newRR)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %v", err)
+			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
 		m.Insert([]dns.RR{rr})
@@ -525,7 +486,7 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 
 		rr, err := dns.NewRR(newRR)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %v", err)
+			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
 		m.Remove([]dns.RR{rr})
@@ -638,18 +599,14 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 
 	r.lastErr = lastErr
-	return lastErr
+	return provider.NewSoftError(lastErr)
 }
 
 func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	var chunks [][]*endpoint.Endpoint
 
 	for i := 0; i < len(slice); i += chunkSize {
-		end := i + chunkSize
-
-		if end > len(slice) {
-			end = len(slice)
-		}
+		end := min(i+chunkSize, len(slice))
 
 		chunks = append(chunks, slice[i:end])
 	}

@@ -22,7 +22,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/external-dns/internal/testutils"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type MockMetric struct {
@@ -60,8 +61,10 @@ func TestMustRegister(t *testing.T) {
 				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge_3"}),
 				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_3"}),
 				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec_3"}, []string{"label"}),
+				NewGaugedVectorOpts(prometheus.GaugeOpts{Name: "test_gauge_v_3"}, []string{"label"}),
+				NewSummaryVecWithOpts(prometheus.SummaryOpts{Name: "test_summary_v_3"}, []string{"label"}),
 			},
-			expected: 3,
+			expected: 5,
 		},
 		{
 			name: "unsupported metric",
@@ -69,6 +72,14 @@ func TestMustRegister(t *testing.T) {
 				&MockMetric{FQDN: "unsupported_metric"},
 			},
 			expected: 0,
+		},
+		{
+			name: "skip if metric exists",
+			metrics: []IMetric{
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+			},
+			expected: 1,
 		},
 	}
 
@@ -84,13 +95,13 @@ func TestMustRegister(t *testing.T) {
 }
 
 func TestUnsupportedMetricWarning(t *testing.T) {
-	buf := testutils.LogsToBuffer(log.WarnLevel, t)
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	registry := NewMetricsRegister()
 	mockUnsupported := &MockMetric{FQDN: "unsupported_metric"}
 	registry.MustRegister(mockUnsupported)
 	assert.NotContains(t, registry.mName, "unsupported_metric")
 
-	assert.Contains(t, buf.String(), "Unsupported metric type: *metrics.MockMetric")
+	logtest.TestHelperLogContains("Unsupported metric type: *metrics.MockMetric", hook, t)
 }
 
 func TestNewMetricsRegister(t *testing.T) {

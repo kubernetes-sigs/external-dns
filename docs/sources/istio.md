@@ -3,11 +3,13 @@
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-**Note:** Using the Istio Gateway source requires Istio >=1.0.0.
+**Note:** Using the Istio Gateway source requires Istio >=1.22. Earlier versions do not serve the `networking.istio.io/v1` API used by this source.
 
-* Manifest (for clusters without RBAC enabled)
-* Manifest (for clusters with RBAC enabled)
-* Update existing ExternalDNS Deployment
+**Note:** Any Istio release >=1.22 that is within the [Istio support window](https://istio.io/latest/docs/releases/supported-releases/) is supported. Both `v1beta1` and `v1` stored versions are supported as the API server converts transparently.
+
+- Manifest (for clusters without RBAC enabled)
+- Manifest (for clusters with RBAC enabled)
+- Update existing ExternalDNS Deployment
 
 ## Manifest (for clusters without RBAC enabled)
 
@@ -29,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -57,7 +59,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -100,7 +105,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -116,9 +121,9 @@ spec:
 
 ## Update existing ExternalDNS Deployment
 
-* For clusters with running `external-dns`, you can just update the deployment.
-* With access to the `kube-system` namespace, update the existing `external-dns` deployment.
-  * Add a parameter to the arguments of the container to create dns entries with `--source=istio-gateway`.
+- For clusters with running `external-dns`, you can just update the deployment.
+- With access to the `kube-system` namespace, update the existing `external-dns` deployment.
+  - Add a parameter to the arguments of the container to create dns entries with `--source=istio-gateway`.
 
 Execute the following command or update the argument.
 
@@ -145,13 +150,13 @@ The following are relevant snippets from that tutorial.
 With automatic sidecar injection:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/httpbin/httpbin.yaml
 ```
 
 Otherwise:
 
 ```bash
-kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml)
+kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/httpbin/httpbin.yaml)
 ```
 
 ### Using a Gateway as a source
@@ -160,7 +165,7 @@ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/ist
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -182,7 +187,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: httpbin
@@ -211,7 +216,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -233,7 +238,7 @@ EOF
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: httpbin
@@ -295,7 +300,7 @@ To support setups where an Ingress resource is used provision an external LB you
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -317,13 +322,13 @@ EOF
 
 ## Debug ExternalDNS
 
-* Look for the deployment pod to see the status
+- Look for the deployment pod to see the status
 
 ```console$ kubectl get pods | grep external-dns
 external-dns-6b84999479-4knv9     1/1     Running   0   3h29m
 ```
 
-* Watch for the logs as follows
+- Watch for the logs as follows
 
 ```console
 kubectl logs -f external-dns-6b84999479-4knv9
@@ -333,7 +338,7 @@ At this point, you can `create` or `update` any `Istio Gateway` object with `hos
 
 > **ATTENTION**: Make sure to specify those whose account is related to the DNS record.
 
-* Successful executions will print the following
+- Successful executions will print the following
 
 ```console
 time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com A"
@@ -342,7 +347,7 @@ time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.com. wer
 time="2020-01-17T06:09:08Z" level=info msg="All records are already up to date, there are no changes for the matching hosted zones"
 ```
 
-* If there's any problem around `clusterrole`, you would see the errors showing wrong permissions:
+- If there's any problem around `clusterrole`, you would see the errors showing wrong permissions:
 
 ```console
 source \"gateways\" in API group \"networking.istio.io\" at the cluster scope"

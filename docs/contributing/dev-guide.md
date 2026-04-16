@@ -1,3 +1,12 @@
+---
+tags:
+  - contributing
+  - build
+  - testing
+  - integration-tests
+  - helm
+---
+
 # Developer Reference
 
 The `external-dns` is the work of thousands of contributors, and is maintained by a small team within [kubernetes-sigs](https://github.com/kubernetes-sigs). This document covers basic needs to work with `external-dns` codebase. It contains instructions to build, run, and test `external-dns`.
@@ -7,7 +16,7 @@ The `external-dns` is the work of thousands of contributors, and is maintained b
 Building and/or testing `external-dns` requires additional tooling.
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.24+](https://golang.org/dl/)
+- [Go 1.25+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [ko](https://ko.build/)
@@ -16,9 +25,34 @@ Building and/or testing `external-dns` requires additional tooling.
 - [spectral](https://github.com/stoplightio/spectral)
 - [python](https://www.python.org/downloads/)
 
+### Go Tools
+
+Additional Go-based tools are managed in `go.tool.mod` and used for code generation:
+
+| Tool                                                                  | Purpose                                            |
+|-----------------------------------------------------------------------|----------------------------------------------------|
+| [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods       |
+| [yq](https://github.com/mikefarah/yq)                                 | YAML processing (splitting, filtering CRD outputs) |
+| [yamlfmt](https://github.com/google/yamlfmt)                          | YAML formatting                                    |
+
+List all installed Go tools:
+
+```sh
+make go-tools
+```
+
+Update Go tools to their latest versions:
+
+```sh
+make update-tools-deps
+```
+
+> **Note:** Updates are done manually because Dependabot does not yet support `go.tool.mod`
+> ([dependabot-core#12050](https://github.com/dependabot/dependabot-core/issues/12050)).
+
 ## First Steps
 
-***Configure Development Environment**
+***Configure Development Environment***
 
 You must have a working [Go environment](https://go.dev/doc/install), compile the build, and set up testing.
 
@@ -47,6 +81,150 @@ make generate-metrics-documentation
 
 We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.
 In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
+
+### Log Unit Testing
+
+Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [build-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
+
+This practice enables:
+
+- Early detection of logging issues
+- Verification of Important Information
+- Ensuring Correct Severity Levels
+- Improving Observability and Monitoring
+- Driving Better Logging Practices
+
+To illustrate how to unit test log output within functions, consider the following example:
+
+```go
+import (
+	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+)
+
+func TestMe(t *testing.T) {
+  hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+  ... function under tests ...
+  testutils.TestHelperLogContains("example warning message", hook, t)
+  // provide negative assertion
+  testutils.TestHelperLogNotContains("this message should not be shown", hook, t)
+}
+```
+
+## CRD Generation
+
+The `DNSEndpoint` CRD manifest is generated from Go types using `controller-gen` and must be regenerated whenever the types in `endpoint/` or `apis/` change.
+
+```sh
+make crd
+```
+
+This runs [`scripts/generate-crd.sh`](../../scripts/generate-crd.sh) which:
+
+1. Generates `DeepCopy` methods for types in `endpoint/` and `apis/`
+2. Generates the CRD manifest into `config/crd/standard/`
+3. Copies the CRD (with filtered annotations) into `charts/external-dns/crds/`
+
+The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `go.tool.mod` at generation time and is updated automatically.
+
+### Integration Tests
+
+Integration tests live in `tests/integration/` and verify behavior that spans multiple sources or wrappers together, using a fake Kubernetes client — no real cluster is required.
+
+#### Where integration tests sit
+
+```mermaid
+flowchart TD
+    E2E["E2E Tests<br>Real cluster + real DNS provider<br>Slow · requires cloud credentials"]
+    IT["Integration Tests  ←  tests/integration/<br>Fake Kubernetes API · no cluster needed<br>Tests source + wrapper combinations · fast<br>Declarative YAML scenarios"]
+    UT["Unit Tests<br>One source or wrapper in isolation<br>Mocked or minimal Kubernetes client"]
+
+    E2E --> IT --> UT
+
+    style IT fill:#bbf7d0,stroke:#15803d,stroke-width:2px
+```
+
+#### What runs during a test
+
+```mermaid
+flowchart LR
+    subgraph yaml["tests/integration/scenarios/tests.yaml"]
+        RES["resources<br>Service · Ingress · Pod"]
+        CFG["config<br>sources · filters · wrappers"]
+        EXP["expected<br>endpoints"]
+    end
+
+    subgraph toolkit["toolkit  —  fake Kubernetes"]
+        PARSE["ParseResources()"]
+        FAKE["fake.Clientset"]
+        WRAP["CreateWrappedSource()"]
+    end
+
+    subgraph pipeline["ExternalDNS pipeline under test"]
+        SRC["Source(s)<br>service · ingress · ..."]
+        WRP["Wrapper(s)<br>dedup · targetFilter · NAT64"]
+        OUT["Endpoints"]
+    end
+
+    ASSERT["ValidateEndpoints()<br>DNSName · Targets<br>RecordType · TTL"]
+
+    RES --> PARSE --> FAKE --> WRAP
+    CFG --> WRAP
+    WRAP --> SRC --> WRP --> OUT --> ASSERT
+    EXP --> ASSERT
+```
+
+**When to add an integration test:**
+
+- You are adding or changing a **source** (e.g. `service`, `ingress`) and want to verify it produces the correct endpoints end-to-end.
+- You are changing a **wrapper** (e.g. deduplication, target filtering, default targets, NAT64) and want to verify it behaves correctly when real Kubernetes resources are involved.
+- You are changing a **post-processor** and want to confirm it applies correctly to endpoints produced by one or more sources.
+- You are verifying **multiple sources** together (e.g. `service` and `ingress` both pointing to the same hostname) and their combined output.
+- You are fixing a **cross-cutting bug** that only manifests when sources, wrappers, and post-processors interact.
+- A unit test would require mocking too many internals — an integration test can express the scenario more clearly as a real Kubernetes resource.
+
+**How to add a scenario:**
+
+Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares Kubernetes resources (Service, Ingress, etc.), the ExternalDNS source configuration, and the expected endpoints:
+
+```yaml
+- name: my-new-scenario
+  description: >
+    Brief explanation of what behavior this scenario validates.
+  config:
+    sources: ["service"]
+  resources:
+    - resource:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: my-svc
+          namespace: default
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: my.example.com
+        spec:
+          type: LoadBalancer
+        status:
+          loadBalancer:
+            ingress:
+              - ip: 1.2.3.4
+  expected:
+    - dnsName: my.example.com
+      targets: ["1.2.3.4"]
+      recordType: A
+```
+
+**How to run:**
+
+```shell
+go test ./tests/integration/...
+```
+
+## Complete test on local env
+
+It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
+See the [related tutorials](../tutorials/coredns-etcd.md) for full instructions.
 
 ### Continuous Integration
 
@@ -124,7 +302,7 @@ When building local images with ko you can't specify the registry used to create
 ❯❯ export KO_DOCKER_REPO=ko.local
 ❯❯ export VERSION=v1
 ❯❯ docker context use rancher-desktop ## (optional) this command is only required when using rancher-desktop
-❯❯ ls -al /var/run/docker.sock ## (optional) validate tha docker runtime is configured correctly and symlink exist
+❯❯ ls -al /var/run/docker.sock ## (optional) validate that docker runtime is configured correctly and symlink exists
 
 ❯❯ ko build --tags ${VERSION}
 ❯❯ docker images
@@ -245,7 +423,7 @@ This helm chart comes with a JSON schema generated from values with [helm schema
 ❯❯ scripts/helm-tools.sh --docs
 ```
 
-6. Run helm unittets.
+6. Run helm unittests.
 
 ```sh
 ❯❯ make helm-test
@@ -274,3 +452,20 @@ Install required dependencies. In order to not to break system packages, we are 
 $$ ...
 $$ Serving on http://127.0.0.1:8000/
 ```
+
+### How to add an example snippet
+
+Let's say we are improving tutorial location in `docs/tutorials/aws.md`.
+
+1. Add a snippet to `docs/snippets/aws/<snippet-name>.<snippet-extension>`
+2. Add snippet to a markdown file `docs/tutorials/aws.md`
+
+[[% raw %]]
+
+````md
+  ```extension
+    [[% include 'snippets/aws/<snippet-name>.<snippet-extension>' %]]
+  ```
+````
+
+[[% endraw %]]

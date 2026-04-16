@@ -111,6 +111,9 @@ spec:
             {{- if .Values.namespaced }}
             - --namespace={{ .Release.Namespace }}
             {{- end }}
+            {{- if .Values.gatewayNamespace }}
+            - --gateway-namespace={{ .Values.gatewayNamespace }}
+            {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
@@ -119,6 +122,12 @@ spec:
             {{- end }}
             {{- if .Values.labelFilter }}
             - --label-filter={{ .Values.labelFilter }}
+            {{- end }}
+            {{- if .Values.annotationFilter }}
+            - --annotation-filter={{ .Values.annotationFilter }}
+            {{- end }}
+            {{- if .Values.annotationPrefix }}
+            - --annotation-prefix={{ .Values.annotationPrefix }}
             {{- end }}
             {{- range .Values.managedRecordTypes }}
             - --managed-record-types={{ . }}
@@ -285,7 +294,7 @@ spec:
           {{- if not (hasKey . "labelSelector") }}
           labelSelector:
             matchLabels:
-              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+              {{- include "external-dns.selectorLabels" $ | nindent 14 }}
           {{- end }}
         {{- end }}
       {{- end }}

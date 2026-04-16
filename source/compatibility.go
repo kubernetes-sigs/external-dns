@@ -55,8 +55,8 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[mateAnnotationKey]
-	if !exists {
+	hostname, ok := svc.Annotations[mateAnnotationKey]
+	if !ok {
 		return nil
 	}
 
@@ -84,14 +84,14 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	// Get the desired hostname of the service from the annotation.
-	hostnameAnnotation, exists := svc.Annotations[moleculeAnnotationKey]
-	if !exists {
+	hostnameAnnotation, ok := svc.Annotations[moleculeAnnotationKey]
+	if !ok {
 		return nil
 	}
 
-	hostnameList := strings.Split(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
+	hostnameList := strings.SplitSeq(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
 
-	for _, hostname := range hostnameList {
+	for hostname := range hostnameList {
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -157,9 +157,9 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 				continue
 			}
 			for _, address := range node.Status.Addresses {
-				recordType := suitableType(address.Address)
+				recordType := endpoint.SuitableType(address.Address)
 				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-				if isExternal && (address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
+				if isExternal && (address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
 					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, address.Address))
 				}
 				if isInternal && address.Type == v1.NodeInternalIP {

@@ -108,6 +108,7 @@ $ az role assignment create --role "Private DNS Zone Contributor" --assignee <ap
 ## Throttling
 
 When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
+Also, one can leverage the built-in retry policies of the Azure SDK. The flag --azure-maxretries-count can be specified in the manifest yaml to configure behavior. The default value of Azure SDK retry is 3.
 
 ## Deploy ExternalDNS
 
@@ -117,7 +118,7 @@ This is per default done through the file `~/.kube/config`.
 For general background information on this see [kubernetes-docs](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/).
 Azure-CLI features functionality for automatically maintaining this file for AKS-Clusters. See [Azure-Docs](https://docs.microsoft.com/de-de/cli/azure/aks?view=azure-cli-latest#az-aks-get-credentials).
 
-Follow the steps for [azure-dns provider](./azure.md#creating-configuration-file) to create a configuration file.
+Follow the steps for [azure-dns provider](./azure.md#configuration-file) to create a configuration file.
 
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
@@ -143,7 +144,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -151,6 +152,7 @@ spec:
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
         - --azure-subscription-id=<use the id of your subscription>
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
@@ -175,7 +177,10 @@ metadata:
   name: externaldns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -215,7 +220,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -223,6 +228,7 @@ spec:
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
         - --azure-subscription-id=<use the id of your subscription>
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
@@ -251,7 +257,10 @@ metadata:
   name: externaldns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -287,7 +296,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -295,6 +304,7 @@ spec:
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
         - --azure-subscription-id=<use the id of your subscription>
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes

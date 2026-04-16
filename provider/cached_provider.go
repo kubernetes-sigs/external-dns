@@ -31,7 +31,6 @@ import (
 var (
 	cachedRecordsCallsTotal = metrics.NewCounterVecWithOpts(
 		prometheus.CounterOpts{
-			Namespace: "external_dns",
 			Subsystem: "provider",
 			Name:      "cache_records_calls",
 			Help:      "Number of calls to the provider cache Records list.",
@@ -42,7 +41,6 @@ var (
 	)
 	cachedApplyChangesCallsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Namespace: "external_dns",
 			Subsystem: "provider",
 			Name:      "cache_apply_changes_calls",
 			Help:      "Number of calls to the provider cache ApplyChanges.",

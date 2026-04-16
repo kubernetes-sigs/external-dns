@@ -18,12 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,41 +31,45 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var (
-	ingressrouteGVR = schema.GroupVersionResource{
+	ingressRouteGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressroutes",
 	}
-	ingressrouteTCPGVR = schema.GroupVersionResource{
+	ingressRouteTCPGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressroutetcps",
 	}
-	ingressrouteUDPGVR = schema.GroupVersionResource{
+	ingressRouteUDPGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
 	}
-	oldIngressrouteGVR = schema.GroupVersionResource{
+	oldIngressRouteGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressroutes",
 	}
-	oldIngressrouteTCPGVR = schema.GroupVersionResource{
+	oldIngressRouteTCPGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressroutetcps",
 	}
-	oldIngressrouteUDPGVR = schema.GroupVersionResource{
+	oldIngressRouteUDPGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
@@ -78,85 +81,74 @@ var (
 	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
 )
 
+// +externaldns:source:name=traefik-proxy
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources
+// +externaldns:source:resources=IngressRoute.traefik.io,IngressRouteTCP.traefik.io,IngressRouteUDP.traefik.io
+// +externaldns:source:filters=annotation
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=true
 type traefikSource struct {
-	annotationFilter           string
-	ignoreHostnameAnnotation   bool
 	dynamicKubeClient          dynamic.Interface
-	ingressRouteInformer       informers.GenericInformer
-	ingressRouteTcpInformer    informers.GenericInformer
-	ingressRouteUdpInformer    informers.GenericInformer
-	oldIngressRouteInformer    informers.GenericInformer
-	oldIngressRouteTcpInformer informers.GenericInformer
-	oldIngressRouteUdpInformer informers.GenericInformer
 	kubeClient                 kubernetes.Interface
+	annotationFilter           string
 	namespace                  string
+	ignoreHostnameAnnotation   bool
+	ingressRouteInformer       kubeinformers.GenericInformer
+	ingressRouteTcpInformer    kubeinformers.GenericInformer
+	ingressRouteUdpInformer    kubeinformers.GenericInformer
+	oldIngressRouteInformer    kubeinformers.GenericInformer
+	oldIngressRouteTcpInformer kubeinformers.GenericInformer
+	oldIngressRouteUdpInformer kubeinformers.GenericInformer
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, disableLegacy bool, disableNew bool) (Source, error) {
+func NewTraefikSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface,
+	kubeClient kubernetes.Interface,
+	cfg *Config,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer informers.GenericInformer
-	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer informers.GenericInformer
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer kubeinformers.GenericInformer
+	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer kubeinformers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
-	if !disableNew {
-		ingressRouteInformer = informerFactory.ForResource(ingressrouteGVR)
-		ingressRouteTcpInformer = informerFactory.ForResource(ingressrouteTCPGVR)
-		ingressRouteUdpInformer = informerFactory.ForResource(ingressrouteUDPGVR)
-		ingressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
-		ingressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
-		ingressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
+	if !cfg.TraefikDisableNew {
+		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
+		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
+		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
+		informers.MustAddEventHandler(ingressRouteInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(ingressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(ingressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
 	}
-	if !disableLegacy {
-		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
-		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
-		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
-		oldIngressRouteInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
-		oldIngressRouteTcpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
-		oldIngressRouteUdpInformer.Informer().AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			},
-		)
+	if cfg.TraefikEnableLegacy {
+		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
+		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
+		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
+		informers.MustAddEventHandler(oldIngressRouteInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(oldIngressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
+		informers.MustAddEventHandler(oldIngressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
 	}
 
-	informerFactory.Start((ctx.Done()))
+	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
 	uc, err := newTraefikUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &traefikSource{
-		annotationFilter:           annotationFilter,
-		ignoreHostnameAnnotation:   ignoreHostnameAnnotation,
+		annotationFilter:           cfg.AnnotationFilter,
+		ignoreHostnameAnnotation:   cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:          dynamicKubeClient,
 		ingressRouteInformer:       ingressRouteInformer,
 		ingressRouteTcpInformer:    ingressRouteTcpInformer,
@@ -165,12 +157,12 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 		oldIngressRouteTcpInformer: oldIngressRouteTcpInformer,
 		oldIngressRouteUdpInformer: oldIngressRouteUdpInformer,
 		kubeClient:                 kubeClient,
-		namespace:                  namespace,
+		namespace:                  cfg.Namespace,
 		unstructuredConverter:      uc,
 	}, nil
 }
 
-func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	if ts.ingressRouteInformer != nil {
@@ -216,63 +208,23 @@ func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, oldIngressRouteUdpEndpoints...)
 	}
 
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs, err := ts.ingressRouteInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var ingressRoutes []*IngressRoute
-	for _, ingressRouteObj := range irs {
-		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRoute object to unstructured")
-		}
-
-		ingressRoute := &IngressRoute{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
-		if err != nil {
-			return nil, err
-		}
-		ingressRoutes = append(ingressRoutes, ingressRoute)
-	}
-
-	ingressRoutes, err = ts.filterIngressRouteByAnnotation(ingressRoutes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
-	}
-
-	for _, ingressRoute := range ingressRoutes {
-		var targets endpoint.Targets
-
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRoute.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRoute.Namespace, ingressRoute.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRoute(ingressRoute, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
+	return extractEndpoints(
+		ts.ingressRouteInformer.Lister(),
+		ts.namespace,
+		func(u *unstructured.Unstructured) (*IngressRoute, error) {
+			typed := &IngressRoute{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.annotationFilter,
+		func(r *IngressRoute, targets endpoint.Targets) []*endpoint.Endpoint {
+			return ts.endpointsFromIngressRoute(r, targets)
+		},
+	)
 }
 
 // ingressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
@@ -299,24 +251,20 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
-	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
+	ingressRouteTCPs, err = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteTCP")
+		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
 	}
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
 		var targets endpoint.Targets
 
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
+		targets = append(targets, annotations.TargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
 
 		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
 
-		ingressEndpoints, err := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
+		ingressEndpoints := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
+		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.TraefikProxy, ingressRouteTCP) {
 			continue
 		}
 
@@ -329,421 +277,171 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs, err := ts.ingressRouteUdpInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var ingressRouteUDPs []*IngressRouteUDP
-	for _, ingressRouteUDPObj := range irs {
-		unstructuredHost, ok := ingressRouteUDPObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRouteUDP object to unstructured")
-		}
-
-		ingressRoute := &IngressRouteUDP{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
-		if err != nil {
-			return nil, err
-		}
-		ingressRouteUDPs = append(ingressRouteUDPs, ingressRoute)
-	}
-
-	ingressRouteUDPs, err = ts.filterIngressRouteUdpByAnnotations(ingressRouteUDPs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteUDP")
-	}
-
-	for _, ingressRouteUDP := range ingressRouteUDPs {
-		var targets endpoint.Targets
-
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteUDP.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRouteUDP.Namespace, ingressRouteUDP.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRouteUDP(ingressRouteUDP, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from IngressRouteUDP: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
+	return extractEndpoints(
+		ts.ingressRouteUdpInformer.Lister(),
+		ts.namespace,
+		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
+			typed := &IngressRouteUDP{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.annotationFilter,
+		ts.endpointsFromIngressRouteUDP,
+	)
 }
 
 // oldIngressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs, err := ts.oldIngressRouteInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var ingressRoutes []*IngressRoute
-	for _, ingressRouteObj := range irs {
-		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRoute object to unstructured")
-		}
-
-		ingressRoute := &IngressRoute{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
-		if err != nil {
-			return nil, err
-		}
-		ingressRoutes = append(ingressRoutes, ingressRoute)
-	}
-
-	ingressRoutes, err = ts.filterIngressRouteByAnnotation(ingressRoutes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
-	}
-
-	for _, ingressRoute := range ingressRoutes {
-		var targets endpoint.Targets
-
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRoute.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRoute.Namespace, ingressRoute.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRoute(ingressRoute, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
+	return extractEndpoints(
+		ts.oldIngressRouteInformer.Lister(),
+		ts.namespace,
+		func(u *unstructured.Unstructured) (*IngressRoute, error) {
+			typed := &IngressRoute{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.annotationFilter,
+		func(r *IngressRoute, targets endpoint.Targets) []*endpoint.Endpoint {
+			return ts.endpointsFromIngressRoute(r, targets)
+		},
+	)
 }
 
 // oldIngressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs, err := ts.oldIngressRouteTcpInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var ingressRouteTCPs []*IngressRouteTCP
-	for _, ingressRouteTCPObj := range irs {
-		unstructuredHost, ok := ingressRouteTCPObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRouteTCP object to unstructured")
-		}
-
-		ingressRouteTCP := &IngressRouteTCP{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRouteTCP, nil)
-		if err != nil {
-			return nil, err
-		}
-		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
-	}
-
-	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteTCP")
-	}
-
-	for _, ingressRouteTCP := range ingressRouteTCPs {
-		var targets endpoint.Targets
-
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
+	return extractEndpoints(
+		ts.oldIngressRouteTcpInformer.Lister(),
+		ts.namespace,
+		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
+			typed := &IngressRouteTCP{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.annotationFilter,
+		ts.endpointsFromIngressRouteTCP,
+	)
 }
 
 // oldIngressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs, err := ts.oldIngressRouteUdpInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var ingressRouteUDPs []*IngressRouteUDP
-	for _, ingressRouteUDPObj := range irs {
-		unstructuredHost, ok := ingressRouteUDPObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRouteUDP object to unstructured")
-		}
-
-		ingressRoute := &IngressRouteUDP{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
-		if err != nil {
-			return nil, err
-		}
-		ingressRouteUDPs = append(ingressRouteUDPs, ingressRoute)
-	}
-
-	ingressRouteUDPs, err = ts.filterIngressRouteUdpByAnnotations(ingressRouteUDPs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteUDP")
-	}
-
-	for _, ingressRouteUDP := range ingressRouteUDPs {
-		var targets endpoint.Targets
-
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteUDP.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRouteUDP.Namespace, ingressRouteUDP.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRouteUDP(ingressRouteUDP, targets)
-		if err != nil {
-			return nil, err
-		}
-		if len(ingressEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from Host %s", fullname)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from IngressRouteUDP: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
-}
-
-// filterIngressRouteByAnnotation filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterIngressRouteByAnnotation(ingressRoutes []*IngressRoute) ([]*IngressRoute, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ingressRoutes, nil
-	}
-
-	filteredList := []*IngressRoute{}
-
-	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
-		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, ingressRoute)
-		}
-	}
-
-	return filteredList, nil
-}
-
-// filterIngressRouteTcpByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
-func (ts *traefikSource) filterIngressRouteTcpByAnnotations(ingressRoutes []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ingressRoutes, nil
-	}
-
-	filteredList := []*IngressRouteTCP{}
-
-	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
-		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, ingressRoute)
-		}
-	}
-
-	return filteredList, nil
-}
-
-// filterIngressRouteUdpByAnnotations filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterIngressRouteUdpByAnnotations(ingressRoutes []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ingressRoutes, nil
-	}
-
-	filteredList := []*IngressRouteUDP{}
-
-	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
-		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, ingressRoute)
-		}
-	}
-
-	return filteredList, nil
+	return extractEndpoints(
+		ts.oldIngressRouteUdpInformer.Lister(),
+		ts.namespace,
+		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
+			typed := &IngressRouteUDP{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.annotationFilter,
+		ts.endpointsFromIngressRouteUDP,
+	)
 }
 
 // endpointsFromIngressRoute extracts the endpoints from a IngressRoute object
-func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
 	for _, route := range ingressRoute.Spec.Routes {
-		match := route.Match
-
-		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+		for _, hostEntry := range traefikHostExtractor.FindAllString(route.Match, -1) {
 			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
-				host = strings.TrimPrefix(host, "`")
-				host = strings.TrimSuffix(host, "`")
+				host = strings.Trim(host, "`")
 
 				// Checking for host = * is required, as Host(`*`) can be set
 				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 				}
 			}
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
-func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressroutetcp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
 	for _, route := range ingressRoute.Spec.Routes {
-		match := route.Match
-
-		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+		for _, hostEntry := range traefikHostExtractor.FindAllString(route.Match, -1) {
 			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
-				host = strings.TrimPrefix(host, "`")
-				host = strings.TrimSuffix(host, "`")
-
+				host = strings.Trim(host, "`")
 				// Checking for host = * is required, as HostSNI(`*`) can be set
 				// in the case of TLS passthrough
 				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 				}
 			}
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
-func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressrouteudp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
-func (ts *traefikSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
 	if ts.ingressRouteInformer != nil {
-		ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteInformer != nil {
-		ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteInformer.Informer(), eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteTCP")
 	if ts.ingressRouteTcpInformer != nil {
-		ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteTcpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteTcpInformer != nil {
-		ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteTcpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteUDP")
 	if ts.ingressRouteUdpInformer != nil {
-		ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.ingressRouteUdpInformer.Informer(), eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteUdpInformer != nil {
-		ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(ts.oldIngressRouteUdpInformer.Informer(), eventHandlerFunc(handler))
 	}
 }
 
@@ -754,12 +452,12 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	// Add the core types we need
-	uc.scheme.AddKnownTypes(ingressrouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	uc.scheme.AddKnownTypes(ingressrouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	uc.scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	uc.scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	uc.scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
 	if err := scheme.AddToScheme(uc.scheme); err != nil {
 		return nil, err
 	}
@@ -1100,4 +798,90 @@ func (in *IngressRouteUDPList) DeepCopyObject() runtime.Object {
 		return c
 	}
 	return nil
+}
+
+// GetAnnotations returns the annotations of the IngressRoute.
+func (in *IngressRoute) GetAnnotations() map[string]string {
+	return in.Annotations
+}
+
+// GetAnnotations returns the annotations of the IngressRouteTCP.
+func (in *IngressRouteTCP) GetAnnotations() map[string]string {
+	return in.Annotations
+}
+
+// GetAnnotations returns the annotations of the IngressRouteUDP.
+func (in *IngressRouteUDP) GetAnnotations() map[string]string {
+	return in.Annotations
+}
+
+// extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
+// It performs the following steps:
+// 1. Lists all objects in the specified namespace using the provided informer.
+// 2. Converts the unstructured objects to the desired type using the convertFunc.
+// 3. Filters the converted objects based on the annotation filter.
+// 4. Generates endpoints for each filtered object using the generateEndpoints function.
+// Returns a list of generated endpoints or an error if any step fails.
+func extractEndpoints[T annotations.AnnotatedObject](
+	informer cache.GenericLister,
+	namespace string,
+	convertFunc func(*unstructured.Unstructured) (T, error),
+	annotationFilter string,
+	generateEndpoints func(T, endpoint.Targets) []*endpoint.Endpoint,
+) ([]*endpoint.Endpoint, error) {
+	var endpoints []*endpoint.Endpoint
+
+	objs, err := informer.ByNamespace(namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	var typedObjs []T
+	for _, obj := range objs {
+		unstructuredObj, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			return nil, errors.New("failed to cast to unstructured.Unstructured")
+		}
+
+		typed, err := convertFunc(unstructuredObj)
+		if err != nil {
+			return nil, err
+		}
+		typedObjs = append(typedObjs, typed)
+	}
+
+	typedObjs, err = annotations.Filter(typedObjs, annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range typedObjs {
+		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())
+
+		name := getObjectFullName(item)
+		ingressEndpoints := generateEndpoints(item, targets)
+
+		if len(ingressEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from Host %s", name)
+			continue
+		}
+
+		log.Debugf("Endpoints generated from %s: %v", name, ingressEndpoints)
+		endpoints = append(endpoints, ingressEndpoints...)
+	}
+
+	return endpoints, nil
+}
+
+func getObjectFullName(obj any) string {
+	switch o := obj.(type) {
+	case *IngressRouteUDP:
+		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
+	case *IngressRoute:
+		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
+	case *IngressRouteTCP:
+		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
+	default:
+		return ""
+	}
 }

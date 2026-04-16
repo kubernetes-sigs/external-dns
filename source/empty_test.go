@@ -17,14 +17,13 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"testing"
 )
 
 func TestEmptySourceReturnsEmpty(t *testing.T) {
 	e := NewEmptySource()
 
-	endpoints, err := e.Endpoints(context.Background())
+	endpoints, err := e.Endpoints(t.Context())
 	if err != nil {
 		t.Errorf("Expected no error but got %s", err.Error())
 	}

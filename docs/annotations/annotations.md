@@ -9,7 +9,6 @@ The following table documents which sources support which annotations:
 | Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |
 | Connector    |            |          |                   |         |         |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| CloudFoundry |            |          |                   |         |         |                     |
 | CRD          |            |          |                   |         |         |                     |
 | F5           |            |          |                   | Yes     | Yes     |                     |
 | Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
@@ -27,7 +26,7 @@ The following table documents which sources support which annotations:
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
-[^4]: The annotation must be on the `Gateway`.
+[^4]: For Gateway API sources, annotation placement differs by type. See [Gateway API Annotation Placement](#gateway-api-annotation-placement) for details.
 [^5]: The annotation must be on the listener's `VirtualService`.
 
 ## external-dns.alpha.kubernetes.io/access
@@ -47,7 +46,12 @@ If this annotation exists and has a value other than `dns-controller` then the s
 
 ## external-dns.alpha.kubernetes.io/endpoints-type
 
-Specifies which set of addresses to use for a headless `Service`.
+Specifies which set of addresses to use for a [`headless Service`](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services).
+
+Supported values:
+
+- `NodeExternalIP`. Required `--service-type-filter=ClusterIP` and `--service-type-filter=Node` or no `--service-type-filter` flag specified.
+- `HostIP`.
 
 If the value is `NodeExternalIP`, use each relevant `Pod`'s `Node`'s address of type `ExternalIP`
 plus each IPv6 address of type `InternalIP`.
@@ -59,12 +63,80 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 
 ## external-dns.alpha.kubernetes.io/hostname
 
-Specifies the domain for the resource's DNS records.
+Specifies additional domains for the resource's DNS records.
 
 Multiple hostnames can be specified through a comma-separated list, e.g.
 `svc.mydomain1.com,svc.mydomain2.com`.
 
 For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
+
+Notes:
+
+- This annotation can override or add extra hostnames alongside any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).
+- The [`ingress-hostname-source`](#external-dnsalphakubernetesioingress-hostname-source) annotation may be used to specify where to get the domain for an `Ingress` resource.
+- Hostnames must match the domain filter set in ExternalDNS (e.g., --domain-filter=example.com).
+- This is an alpha annotation — subject to change; newer versions may support alternatives or deprecate it.
+- This annotation is helpful for:
+  - Services or other resources without native hostname fields.
+  - Explicit overrides or multi-host situations.
+  - Avoiding reliance on auto-detection or heuristics.
+
+### Use Cases for `external-dns.alpha.kubernetes.io/hostname` annotation
+
+#### Explicit Hostname Mapping for Services
+
+You have a Service (e.g. of type LoadBalancer or ClusterIP) and want to expose it under a custom DNS name:
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: app.example.com
+spec:
+  type: LoadBalancer
+  ...
+```
+
+> ExternalDNS will create a A or CNAME record for app.example.com pointing to the external IP or hostname of the service.
+
+#### Multi-Hostname Records
+
+You can assign multiple hostnames by separating them with commas:
+
+```yml
+annotations:
+  external-dns.alpha.kubernetes.io/hostname: api.example.com,api.internal.example.com
+```
+
+> ExternalDNS will create two DNS records for the same service.
+
+#### Static DNS Assignment Without Ingress Rules
+
+When using Ingress, you usually declare hostnames in the spec.rules[].host. But with this annotation, you can manage DNS independently:
+
+```yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: www.example.com
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+> Useful when DNS management is decoupled from routing logic.
 
 ## external-dns.alpha.kubernetes.io/ingress-hostname-source
 
@@ -76,13 +148,156 @@ If the value is `annotation-only`, use only the domains from the `Ingress` annot
 
 If the annotation is not present, use the domains from both the spec and annotations.
 
+## external-dns.alpha.kubernetes.io/ingress
+
+This annotation allows ExternalDNS to work with Istio & GlooEdge Gateways that don't have a public IP.
+
+It can be used to address a specific architectural pattern, when a Kubernetes Ingress directs all public traffic to an Istio or GlooEdge Gateway:
+
+- **The Challenge**: By default, ExternalDNS sources the public IP address for a DNS record from a Service of type LoadBalancer.
+However, in some setups, the Gateway's Service is of type ClusterIP, with all public traffic routed to it via a separate Kubernetes Ingress object. This setup leaves the Gateway without a public IP that ExternalDNS can discover.
+
+- **The Solution**: The annotation on the Istio/GlooEdge Gateway tells ExternalDNS to ignore the Gateway's Service IP. Instead, it directs ExternalDNS to a specified Ingress resource to find the target LoadBalancer IP address.
+
+### Use Cases for `external-dns.alpha.kubernetes.io/ingress` annotation
+
+#### Getting target from Ingress backed Gloo Gateway
+
+```yml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/ingress: gateway-proxy
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  options: {}
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  ingressClassName: alb
+  rules:
+  - host: cool-service.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: gateway-proxy
+            port:
+              name: http
+        path: /
+        pathType: Prefix
+status:
+  loadBalancer:
+    ingress:
+    - hostname: k8s-alb-c4aa37c880-740590208.us-east-1.elb.amazonaws.com
+---
+# This object is generated by GlooEdge Control Plane from Gateway and VirtualService.
+# We have no direct control on this resource
+apiVersion: gloo.solo.io/v1
+kind: Proxy
+metadata:
+  labels:
+    created_by: gloo-gateway
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  listeners:
+  - bindAddress: '::'
+    bindPort: 8080
+    httpListener:
+      virtualHosts:
+      - domains:
+        - cool-service.example.com
+        metadataStatic:
+          sources:
+          - observedGeneration: "6652"
+            resourceKind: '*v1.VirtualService'
+            resourceRef:
+              name: cool-service
+              namespace: gloo-system
+        name: cool-service
+        routes:
+        - matchers:
+          - prefix: /
+          metadataStatic:
+            sources:
+            - observedGeneration: "6652"
+              resourceKind: '*v1.VirtualService'
+              resourceRef:
+                name: cool-service
+                namespace: gloo-system
+            upgrades:
+            - websocket: {}
+    metadataStatic:
+      sources:
+      - observedGeneration: "6111"
+        resourceKind: '*v1.Gateway'
+        resourceRef:
+          name: gateway-proxy
+          namespace: gloo-system
+    name: listener-::-8080
+    useProxyProto: false
+```
+
 ## external-dns.alpha.kubernetes.io/internal-hostname
 
 Specifies the domain for the resource's DNS records that are for use from internal networks.
 
 For `Services` of type `LoadBalancer`, uses the `Service`'s `ClusterIP`.
 
-For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
+For `Pods`, uses the `Pod`'s `Status.PodIP`.
+
+### Use Cases for `external-dns.alpha.kubernetes.io/internal-hostname` annotation
+
+#### Internal DNS Name for a LoadBalancer Service
+
+Use this annotation when you want an internal DNS name that resolves to the Service `ClusterIP`, for
+in-cluster workloads or private network clients.
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    external-dns.alpha.kubernetes.io/internal-hostname: my-service.internal.example.com
+spec:
+  type: LoadBalancer
+  ...
+```
+
+> ExternalDNS will create an internal DNS record for `my-service.internal.example.com` targeting the Service `ClusterIP`.
+
+#### Internal DNS Name for a Pod
+
+Use this annotation on a Pod when you want an internal DNS name that resolves to that Pod's `Status.PodIP`.
+
+```yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+  annotations:
+    external-dns.alpha.kubernetes.io/internal-hostname: my-pod.internal.example.com
+spec:
+  ...
+```
+
+> ExternalDNS will create an internal DNS record for `my-pod.internal.example.com` targeting the Pod `Status.PodIP`.
 
 ## external-dns.alpha.kubernetes.io/target
 
@@ -97,7 +312,33 @@ are published as CNAME records.
 Specifies the TTL (time to live) for the resource's DNS records.
 
 The value may be specified as either a duration or an integer number of seconds.
-It must be between 1 and 2,147,483,647 seconds.
+It must be between `1` and `2,147,483,647` seconds.
+
+> Note; setting the value to `0` means, that TTL is not configured and thus use default.
+
+## external-dns.alpha.kubernetes.io/gateway-hostname-source
+
+Specifies where to get the domain for a `Route` resource. This annotation should be present on the actual `Route` resource, not the `Gateway` resource itself.
+
+If the value is `defined-hosts-only`, use only the domains from the `Route` spec.
+
+If the value is `annotation-only`, use only the domains from the `Route` annotations.
+
+If the annotation is not present, use the domains from both the spec and annotations.
+
+## external-dns.alpha.kubernetes.io/record-type
+
+Controls whether ExternalDNS creates additional record types for a resource's A/AAAA endpoints.
+
+Supported values:
+
+- `"ptr"` — create PTR records for this resource (opt in).
+- `""` (empty) — do not create additional records (opt out when `--create-ptr` is enabled).
+
+This annotation overrides the `--create-ptr` CLI flag per the
+standard [configuration precedence](../advanced/configuration-precedence.md).
+
+See [Automatic PTR (Reverse DNS) Records](../advanced/ptr-records.md) for full documentation.
 
 ## Provider-specific annotations
 
@@ -106,18 +347,27 @@ Some providers define their own annotations. Cloud-specific annotations have key
 | Cloud      | Annotation prefix                              |
 |------------|------------------------------------------------|
 | AWS        | `external-dns.alpha.kubernetes.io/aws-`        |
+| Azure      | `external-dns.alpha.kubernetes.io/azure-`      |
 | CloudFlare | `external-dns.alpha.kubernetes.io/cloudflare-` |
-| IBM Cloud  | `external-dns.alpha.kubernetes.io/ibmcloud-`   |
 | Scaleway   | `external-dns.alpha.kubernetes.io/scw-`        |
 
-Additional annotations that are currently implemented only by AWS are:
+Additional annotations implemented by specific providers:
 
 ### external-dns.alpha.kubernetes.io/alias
 
 If the value of this annotation is `true`, specifies that CNAME records generated by the
 resource should instead be alias records.
 
-This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
+This annotation is only supported on A, AAAA, and CNAME record types. Endpoints with other
+record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
+
+**Supported providers:**
+
+- **AWS**: This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
+- **PowerDNS**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
+  This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
+  on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all
+  CNAME records to ALIAS globally.
 
 ### external-dns.alpha.kubernetes.io/set-identifier
 
@@ -125,3 +375,58 @@ Specifies the set identifier for DNS records generated by the resource.
 
 A set identifier differentiates among multiple DNS record sets that have the same combination of domain and type.
 Which record set or sets are returned to queries is then determined by the configured routing policy.
+
+Required for AWS Route53 routing policies (weighted, latency, failover, geolocation, geoproximity, multi-value).
+See the [AWS tutorial — Routing policies](../tutorials/aws.md#routing-policies) for the full list of annotations
+and examples.
+
+Notes:
+
+- The annotation is provider-agnostic in design but is primarily used with AWS Route53 routing policies.
+- The value is arbitrary but must be **unique per record set** for the same domain and type combination.
+- For Gateway API sources, this annotation must be placed on **Route resources** (e.g., `HTTPRoute`), not on
+  the `Gateway` resource itself. See [Gateway API Annotation Placement](#gateway-api-annotation-placement).
+
+### Gateway API with HTTPRoute
+
+When using Gateway API, place `set-identifier` on the Route resource, not the Gateway:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  annotations:
+    # target goes on the Gateway
+    external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    # set-identifier and routing policy go on the Route
+    external-dns.alpha.kubernetes.io/set-identifier: backend-v1
+    external-dns.alpha.kubernetes.io/aws-weight: "100"
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - app.example.com
+```
+
+> Placing `set-identifier` on the Gateway instead of the Route is a common mistake — the Gateway source only reads the `target` annotation.
+
+## Gateway API Annotation Placement
+
+When using Gateway API sources (`gateway-httproute`, `gateway-grpcroute`, `gateway-tlsroute`, etc.), annotations
+are read from different resources: **Gateway resource** reads only `target` annotation, while **Route resources**
+(HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`, and
+provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
+
+**ListenerSet resources** also support the `target` annotation. When a Route references a ListenerSet
+as its parent, the ListenerSet's target annotation takes precedence over the parent Gateway's target annotation.
+ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
+
+For more details and comprehensive examples, see the
+[Gateway API documentation](../sources/gateway-api.md#annotations).

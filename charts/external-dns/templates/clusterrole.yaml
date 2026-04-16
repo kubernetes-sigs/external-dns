@@ -18,10 +18,15 @@ rules:
 {{- end }}
 {{- if or (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
   - apiGroups: [""]
-    resources: ["services","endpoints"]
+    resources: ["services"]
     verbs: ["get","watch","list"]
 {{- end }}
-{{- if or (has "ingress" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+{{- if has "service" .Values.sources }}
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if or (has "ingress" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) (has "gloo-proxy" .Values.sources) }}
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get","watch","list"]
@@ -55,13 +60,17 @@ rules:
     resources: ["dnsendpoints/status"]
     verbs: ["*"]
 {{- end }}
-{{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) }}
+{{- if include "external-dns.hasGatewaySources" . }}
+{{- if or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace)) }}
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
+{{- end }}
+{{- if not .Values.namespaced }}
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}
 {{- if has "gateway-httproute" .Values.sources }}
   - apiGroups: ["gateway.networking.k8s.io"]
@@ -90,7 +99,7 @@ rules:
 {{- end }}
 {{- if has "gloo-proxy" .Values.sources }}
   - apiGroups: ["gloo.solo.io","gateway.solo.io"]
-    resources: ["proxies","virtualservices"]
+    resources: ["proxies","virtualservices","gateways"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "kong-tcpingress" .Values.sources }}
@@ -123,5 +132,40 @@ rules:
 {{- end }}
 {{- with .Values.rbac.additionalPermissions }}
   {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
+{{- /*
+     If namespaced=true and gatewayNamespace is NOT set, we need to list namespaces
+     cluster-wide to discover Gateways across the cluster. In that case, create a
+     ClusterRole to grant access to namespaces. If gatewayNamespace IS set, we are
+     fully namespaced for both scopes and can skip cluster-wide RBAC.
+  */ -}}
+{{- if not .Values.gatewayNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "external-dns.fullname" . }}-namespaces
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if .Values.gatewayNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "external-dns.fullname" . }}-gateway
+  namespace: {{ .Values.gatewayNamespace }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}
 {{- end }}

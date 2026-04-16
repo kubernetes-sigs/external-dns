@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"sort"
@@ -34,6 +35,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -68,7 +71,7 @@ type Route53APIStub struct {
 // being called.
 //
 //	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
-func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Call {
+func (r *Route53APIStub) MockMethod(method string, args ...any) *mock.Call {
 	return r.m.On(method, args...)
 }
 
@@ -89,7 +92,7 @@ func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *rout
 
 	output := &route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	require.NotNil(r.t, input.MaxItems)
-	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
+	assert.Equal(r.t, route53PageSize, *input.MaxItems)
 	if len(r.recordSets) == 0 {
 		output.ResourceRecordSets = []route53types.ResourceRecordSet{}
 	} else if _, ok := r.recordSets[*input.HostedZoneId]; !ok {
@@ -161,7 +164,7 @@ func specialCharactersEscape(s string) string {
 	return result.String()
 }
 
-func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
+func (r *Route53APIStub) ListTagsForResources(_ context.Context, input *route53.ListTagsForResourcesInput, _ ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
 		var sets []route53types.ResourceTagSet
 		for _, el := range input.ResourceIds {
@@ -183,7 +186,7 @@ func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route5
 	return &route53.ListTagsForResourcesOutput{}, nil
 }
 
-func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
+func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *route53.ChangeResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
 	if r.m.isMocked("ChangeResourceRecordSets", input) {
 		return r.m.ChangeResourceRecordSets(input)
 	}
@@ -242,7 +245,7 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 	return output, nil // TODO: We should ideally return status etc, but we don't' use that yet.
 }
 
-func (r *Route53APIStub) ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
+func (r *Route53APIStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
 	output := &route53.ListHostedZonesOutput{}
 	for _, zone := range r.zones {
 		output.HostedZones = append(output.HostedZones, *zone)
@@ -250,7 +253,7 @@ func (r *Route53APIStub) ListHostedZones(ctx context.Context, input *route53.Lis
 	return output, nil
 }
 
-func (r *Route53APIStub) CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(options *route53.Options)) (*route53.CreateHostedZoneOutput, error) {
+func (r *Route53APIStub) CreateHostedZone(_ context.Context, input *route53.CreateHostedZoneInput, _ ...func(options *route53.Options)) (*route53.CreateHostedZoneOutput, error) {
 	name := *input.Name
 	id := "/hostedzone/" + name
 	if _, ok := r.zones[id]; ok {
@@ -268,7 +271,7 @@ type dynamicMock struct {
 	mock.Mock
 }
 
-func (m *dynamicMock) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+func (m *dynamicMock) ListResourceRecordSets(_ context.Context, input *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
 	args := m.Called(input)
 	if args.Get(0) != nil {
 		return args.Get(0).(*route53.ListResourceRecordSetsOutput), args.Error(1)
@@ -284,7 +287,7 @@ func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceReco
 	return nil, args.Error(1)
 }
 
-func (m *dynamicMock) isMocked(method string, arguments ...interface{}) bool {
+func (m *dynamicMock) isMocked(method string, arguments ...any) bool {
 	for _, call := range m.ExpectedCalls {
 		if call.Method == method && call.Repeatability > -1 {
 			_, diffCount := call.Arguments.Diff(arguments)
@@ -316,12 +319,8 @@ func TestAWSZones(t *testing.T) {
 	}
 
 	allZones := map[string]*route53types.HostedZone{}
-	for k, v := range publicZones {
-		allZones[k] = v
-	}
-	for k, v := range privateZones {
-		allZones[k] = v
-	}
+	maps.Copy(allZones, publicZones)
+	maps.Copy(allZones, privateZones)
 
 	noZones := map[string]*route53types.HostedZone{}
 
@@ -341,8 +340,8 @@ func TestAWSZones(t *testing.T) {
 		{"tag filter single zone match", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
-			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
-			zones, err := provider.Zones(context.Background())
+			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, false, nil)
+			zones, err := provider.Zones(t.Context())
 			require.NoError(t, err)
 			validateAWSZones(t, zones, ti.expectedZones)
 		})
@@ -355,7 +354,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 		clients:       map[string]Route53API{defaultAWSProfile: client},
 		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
 		dryRun:        false,
-		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
+		zonesCache:    blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute),
 	}
 	createAWSZone(t, provider, &route53types.HostedZone{
 		Id:     aws.String("/hostedzone/zone-1.ext-dns-test-ok.example.com."),
@@ -367,18 +366,18 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 		Name:   aws.String("zone-2.ext-dns-test-error-on-list-tags.example.com."),
 		Config: &route53types.HostedZoneConfig{PrivateZone: false},
 	})
-	_, err := provider.Zones(context.Background())
+	_, err := provider.Zones(t.Context())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to list tags for zones")
 }
 
 func TestAWSRecordsFilter(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.DomainFilter{}, provider.ZoneIDFilter{}, provider.ZoneTypeFilter{}, false, false, nil)
+	provider, _ := newAWSProvider(t, &endpoint.DomainFilter{}, provider.ZoneIDFilter{}, provider.ZoneTypeFilter{}, false, false, false, nil)
 	domainFilter := provider.GetDomainFilter()
 	require.NotNil(t, domainFilter)
-	require.IsType(t, endpoint.DomainFilter{}, domainFilter)
+	require.IsType(t, &endpoint.DomainFilter{}, domainFilter)
 	count := 0
-	filters := domainFilter.(endpoint.DomainFilter).Filters
+	filters := domainFilter.(*endpoint.DomainFilter).Filters
 	for _, tld := range []string{
 		"zone-4.ext-dns-test-3.teapot.zalan.do",
 		".zone-4.ext-dns-test-3.teapot.zalan.do",
@@ -396,7 +395,7 @@ func TestAWSRecordsFilter(t *testing.T) {
 }
 
 func TestAWSRecords(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []route53types.ResourceRecordSet{
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
 		{
 			Name:            aws.String("list-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeA,
@@ -584,6 +583,42 @@ func TestAWSRecords(t *testing.T) {
 			},
 		},
 		{
+			Name:            aws.String("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				AWSRegion: aws.String("us-west-2"),
+				Bias:      aws.Int32(10),
+			},
+		},
+		{
+			Name:            aws.String("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				LocalZoneGroup: aws.String("usw2-pdx1-az1"),
+				Bias:           aws.Int32(10),
+			},
+		},
+		{
+			Name:            aws.String("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				Coordinates: &route53types.Coordinates{
+					Latitude:  aws.String("90"),
+					Longitude: aws.String("90"),
+				},
+				Bias: aws.Int32(0),
+			},
+		},
+		{
 			Name:            aws.String("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeCname,
 			TTL:             aws.Int64(defaultTTL),
@@ -607,9 +642,15 @@ func TestAWSRecords(t *testing.T) {
 			TTL:             aws.Int64(defaultTTL),
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.example.com")}, {Value: aws.String("20 mailhost2.example.com")}},
 		},
+		{
+			Name:            aws.String("naptr.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeNaptr,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`)}, {Value: aws.String(`10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`)}},
+		},
 	})
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
@@ -636,14 +677,18 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
 		endpoint.NewEndpointWithTTL("geolocation-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-pdx1-az1").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "90,90").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(defaultTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(defaultTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
+		endpoint.NewEndpointWithTTL("naptr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, endpoint.TTL(defaultTTL), `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`, `10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`),
 	})
 }
 
 func TestAWSRecordsSoftError(t *testing.T) {
-	pvd, subClient := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []route53types.ResourceRecordSet{
+	pvd, subClient := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
 		{
 			Name:            aws.String("list-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeA,
@@ -653,13 +698,13 @@ func TestAWSRecordsSoftError(t *testing.T) {
 	})
 
 	subClient.MockMethod("ListResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
-	_, err := pvd.Records(context.Background())
+	_, err := pvd.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestAWSAdjustEndpoints(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
 	records := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
@@ -670,10 +715,11 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-geoproximity-no-bias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2"),
 	}
 
 	records, err := provider.AdjustEndpoints(records)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
@@ -687,6 +733,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-geoproximity-no-bias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
 	})
 }
 
@@ -696,9 +743,9 @@ func TestAWSApplyChanges(t *testing.T) {
 		setup      func(p *AWSProvider) context.Context
 		listRRSets int
 	}{
-		{"no cache", func(p *AWSProvider) context.Context { return context.Background() }, 0},
+		{"no cache", func(_ *AWSProvider) context.Context { return t.Context() }, 0},
 		{"cached", func(p *AWSProvider) context.Context {
-			ctx := context.Background()
+			ctx := t.Context()
 			records, err := p.Records(ctx)
 			require.NoError(t, err)
 			return context.WithValue(ctx, provider.RecordsContextKey, records)
@@ -706,7 +753,7 @@ func TestAWSApplyChanges(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []route53types.ResourceRecordSet{
+		provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, []route53types.ResourceRecordSet{
 			{
 				Name:            aws.String("update-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
@@ -846,6 +893,27 @@ func TestAWSApplyChanges(t *testing.T) {
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("2606:4700:4700::1111")}, {Value: aws.String("2606:4700:4700::1001")}},
 			},
 			{
+				Name:            aws.String("delete-test-geoproximity.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-delete"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					AWSRegion: aws.String("us-west-2"),
+					Bias:      aws.Int32(10),
+				},
+			},
+			{
+				Name:            aws.String("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-update"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					LocalZoneGroup: aws.String("usw2-lax1-az2"),
+				},
+			},
+			{
 				Name:            aws.String("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
 				TTL:             aws.Int64(defaultTTL),
@@ -903,6 +971,20 @@ func TestAWSApplyChanges(t *testing.T) {
 				SetIdentifier:   aws.String("no-change"),
 				Weight:          aws.Int64(10),
 			},
+			{
+				Name: aws.String("delete-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type: route53types.RRTypeNaptr,
+				TTL:  aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{
+					{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)},
+				},
+			},
+			{
+				Name:            aws.String("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)}},
+			},
 		})
 
 		createRecords := []*endpoint.Endpoint{
@@ -915,6 +997,14 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("create-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8", "8.8.4.4"),
 			endpoint.NewEndpoint("create-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
 			endpoint.NewEndpoint("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost1.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("create-test-naptr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
+			endpoint.NewEndpoint("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").
+				WithSetIdentifier("geoproximity-region").
+				WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").
+				WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+			endpoint.NewEndpoint("create-test-geoproximity-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").
+				WithSetIdentifier("geoproximity-coordinates").
+				WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "60,60"),
 		}
 
 		currentRecords := []*endpoint.Endpoint{
@@ -930,12 +1020,16 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "bar.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8", "8.8.4.4"),
 			endpoint.NewEndpoint("update-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
+			endpoint.NewEndpoint("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").
+				WithSetIdentifier("geoproximity-update").
+				WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-lax1-az2"),
 			endpoint.NewEndpoint("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("weighted-to-simple").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("before").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost2.bar.elb.amazonaws.com"),
+			endpoint.NewEndpoint("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
 			endpoint.NewEndpoint("escape-%!s(<nil>)-codes.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 		}
 		updatedRecords := []*endpoint.Endpoint{
@@ -951,12 +1045,16 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "baz.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4", "4.3.2.1"),
 			endpoint.NewEndpoint("update-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1001", "2606:4700:4700::1111"),
+			endpoint.NewEndpoint("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").
+				WithSetIdentifier("geoproximity-update").
+				WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-phx2-az1"),
 			endpoint.NewEndpoint("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("simple-to-weighted").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithProviderSpecific(providerSpecificRegion, "us-east-1"),
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("after").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "20"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "20 mailhost3.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `20 "U" "SIP+DTU" "" _sip._udp.sip2.example.com.`),
 		}
 
 		deleteRecords := []*endpoint.Endpoint{
@@ -969,7 +1067,9 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "qux.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("delete-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4", "4.3.2.1"),
 			endpoint.NewEndpoint("delete-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
+			endpoint.NewEndpoint("delete-test-geoproximity.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("geoproximity-delete").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 			endpoint.NewEndpoint("delete-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "30 mailhost1.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("delete-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
 		}
 
 		changes := &plan.Changes{
@@ -981,7 +1081,7 @@ func TestAWSApplyChanges(t *testing.T) {
 
 		ctx := tt.setup(provider)
 
-		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
+		provider.zonesCache = blueprint.NewZoneCache[map[string]*profiledZone](0 * time.Minute)
 		counter := NewRoute53APICounter(provider.clients[defaultAWSProfile])
 		provider.clients[defaultAWSProfile] = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
@@ -1118,6 +1218,46 @@ func TestAWSApplyChanges(t *testing.T) {
 				TTL:             aws.Int64(defaultTTL),
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
 			},
+			{
+				Name:            aws.String("create-test-naptr.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)}},
+			},
+			{
+				Name:            aws.String("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+				SetIdentifier:   aws.String("geoproximity-region"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					AWSRegion: aws.String("us-west-2"),
+					Bias:      aws.Int32(10),
+				},
+			},
+			{
+				Name:            aws.String("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-update"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					LocalZoneGroup: aws.String("usw2-phx2-az1"),
+				},
+			},
+			{
+				Name:            aws.String("create-test-geoproximity-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+				SetIdentifier:   aws.String("geoproximity-coordinates"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					Coordinates: &route53types.Coordinates{
+						Latitude:  aws.String("60"),
+						Longitude: aws.String("60"),
+					},
+				},
+			},
 		})
 		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
 			{
@@ -1181,6 +1321,12 @@ func TestAWSApplyChanges(t *testing.T) {
 				Type:            route53types.RRTypeMx,
 				TTL:             aws.Int64(defaultTTL),
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("20 mailhost3.foo.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`20 "U" "SIP+DTU" "" _sip._udp.sip2.example.com.`)}},
 			},
 		})
 	}
@@ -1268,7 +1414,7 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		},
 	}
 
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, true, originalRecords)
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, true, originalRecords)
 
 	createRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
@@ -1314,7 +1460,7 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, provider.ApplyChanges(ctx, changes))
 
@@ -1455,12 +1601,12 @@ func TestAWSChangesByZones(t *testing.T) {
 }
 
 func TestAWSsubmitChanges(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 	const subnets = 16
 	const hosts = defaultBatchChangeSize / subnets
 
 	endpoints := make([]*endpoint.Endpoint, 0)
-	for i := 0; i < subnets; i++ {
+	for i := range subnets {
 		for j := 1; j < (hosts + 1); j++ {
 			hostname := fmt.Sprintf("subnet%dhost%d.zone-1.ext-dns-test-2.teapot.zalan.do", i, j)
 			ip := fmt.Sprintf("1.1.%d.%d", i, j)
@@ -1469,7 +1615,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, _ := provider.zones(ctx)
 	records, _ := provider.Records(ctx)
 	cs := make(Route53Changes, 0, len(endpoints))
@@ -1484,10 +1630,10 @@ func TestAWSsubmitChanges(t *testing.T) {
 }
 
 func TestAWSsubmitChangesError(t *testing.T) {
-	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 	clientStub.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
@@ -1498,9 +1644,9 @@ func TestAWSsubmitChangesError(t *testing.T) {
 }
 
 func TestAWSsubmitChangesRetryOnError(t *testing.T) {
-	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
@@ -1582,7 +1728,7 @@ func TestAWSBatchChangeSet(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, 1, len(batchCs))
+	require.Len(t, batchCs, 1)
 
 	// sorting cs not needed as it should be returned as is
 	validateAWSChangeRecords(t, batchCs[0], cs)
@@ -1620,7 +1766,7 @@ func TestAWSBatchChangeSetExceeding(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 
 	// sorting cs needed to match batchCs
 	for i, batch := range batchCs {
@@ -1658,7 +1804,7 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, 0, len(batchCs))
+	require.Empty(t, batchCs)
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
@@ -1717,7 +1863,7 @@ func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
@@ -1776,7 +1922,7 @@ func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
@@ -1835,7 +1981,7 @@ func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
@@ -1894,7 +2040,7 @@ func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
@@ -1902,7 +2048,7 @@ func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoin
 
 	normalized, err := provider.AdjustEndpoints(endpoints)
 	assert.NoError(t, err)
-	assert.True(t, testutils.SameEndpoints(normalized, expected), "actual and normalized endpoints don't match. %+v:%+v", endpoints, normalized)
+	assert.True(t, testutils.SameEndpoints(normalized, expected), "normalized and expected endpoints don't match. %+v:%+v", normalized, expected)
 }
 
 func validateAWSZones(t *testing.T, zones map[string]*route53types.HostedZone, expected map[string]*route53types.HostedZone) {
@@ -1933,7 +2079,7 @@ func validateAWSChangeRecord(t *testing.T, record *Route53Change, expected *Rout
 }
 
 func TestAWSCreateRecordsWithCNAME(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
 	records := []*endpoint.Endpoint{
 		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: endpoint.Targets{"foo.example.org"}, RecordType: endpoint.RecordTypeCNAME},
@@ -1941,7 +2087,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 
 	adjusted, err := provider.AdjustEndpoints(records)
 	require.NoError(t, err)
-	require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+	require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: adjusted,
 	}))
 
@@ -1967,7 +2113,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		"false": false,
 		"":      false,
 	} {
-		provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+		provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 		records := []*endpoint.Endpoint{
 			{
 				DNSName:    "create-test.zone-1.ext-dns-test-2.teapot.zalan.do",
@@ -2002,7 +2148,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		}
 		adjusted, err := provider.AdjustEndpoints(records)
 		require.NoError(t, err)
-		require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+		require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 			Create: adjusted,
 		}))
 
@@ -2086,7 +2232,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	}
 
 	zone := canonicalHostedZone("foo.example.org")
-	assert.Equal(t, "", zone, "no canonical zone should be returned for a non-aws hostname")
+	assert.Empty(t, zone, "no canonical zone should be returned for a non-aws hostname")
 }
 
 func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
@@ -2098,7 +2244,7 @@ func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
 }
 
 func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for suffix := range canonicalHostedZones {
 			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
 		}
@@ -2106,7 +2252,7 @@ func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
 }
 
 func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for range canonicalHostedZones {
 			_ = canonicalHostedZone("extremely.long.zone-2.ext.dns.test.zone.non.canonical.example.com")
 		}
@@ -2160,7 +2306,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.Hoste
 		HostedZoneConfig: zone.Config,
 	}
 
-	if _, err := provider.clients[defaultAWSProfile].CreateHostedZone(context.Background(), params); err != nil {
+	if _, err := provider.clients[defaultAWSProfile].CreateHostedZone(t.Context(), params); err != nil {
 		var hzExists *route53types.HostedZoneAlreadyExists
 		require.ErrorAs(t, err, &hzExists)
 	}
@@ -2173,7 +2319,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 		provider.dryRun = dryRun
 	}()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err)
 
@@ -2199,7 +2345,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types.ResourceRecordSet {
-	resp, err := client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+	resp, err := client.ListResourceRecordSets(t.Context(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 		MaxItems:     aws.Int32(route53PageSize),
 	})
@@ -2208,11 +2354,11 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types
 	return resp.ResourceRecordSets
 }
 
-func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
-	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
+func newAWSProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, preferCNAME, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, preferCNAME, dryRun, records)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, preferCNAME, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
@@ -2226,8 +2372,9 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		zoneIDFilter:          zoneIDFilter,
 		zoneTypeFilter:        zoneTypeFilter,
 		zoneTagFilter:         zoneTagFilter,
+		preferCNAME:           preferCNAME,
 		dryRun:                false,
-		zonesCache:            &zonesListCache{duration: 1 * time.Minute},
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
@@ -2313,7 +2460,7 @@ func containsRecordWithDNSName(records []*endpoint.Endpoint, dnsName string) boo
 }
 
 func TestRequiresDeleteCreate(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
 	oldRecordType := endpoint.NewEndpointWithTTL("recordType", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "8.8.8.8")
 	newRecordType := endpoint.NewEndpointWithTTL("recordType", endpoint.RecordTypeCNAME, endpoint.TTL(defaultTTL), "bar").WithProviderSpecific(providerSpecificAlias, "false")
@@ -2367,6 +2514,869 @@ func TestConvertOctalToAscii(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := convertOctalToAscii(tt.input)
 			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestGeoProximityWithAWSRegion(t *testing.T) {
+	tests := []struct {
+		name           string
+		region         string
+		hasRegion      bool
+		expectedSet    bool
+		expectedRegion string
+	}{
+		{
+			name:           "valid AWS region",
+			region:         "us-west-2",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "us-west-2",
+		},
+		{
+			name:           "another valid AWS region",
+			region:         "eu-central-1",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "eu-central-1",
+		},
+		{
+			name:           "empty region string",
+			region:         "",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "",
+		},
+		{
+			name:           "no region property set",
+			region:         "",
+			hasRegion:      false,
+			expectedSet:    false,
+			expectedRegion: "",
+		},
+		{
+			name:           "region with special characters",
+			region:         "us-gov-west-1",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "us-gov-west-1",
+		},
+		{
+			name:           "region with numbers",
+			region:         "ap-southeast-3",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "ap-southeast-3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasRegion {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion, tt.region)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withAWSRegion()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.AWSRegion)
+				assert.Equal(t, tt.expectedRegion, *result.location.AWSRegion)
+			} else {
+				assert.Nil(t, result.location.AWSRegion)
+			}
+
+			// Verify the method returns the same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
+
+func TestGeoProximityWithLocalZoneGroup(t *testing.T) {
+	tests := []struct {
+		name                   string
+		localZoneGroup         string
+		hasLocalZoneGroup      bool
+		expectedSet            bool
+		expectedLocalZoneGroup string
+	}{
+		{
+			name:                   "valid local zone group",
+			localZoneGroup:         "usw2-lax1-az1",
+			hasLocalZoneGroup:      true,
+			expectedSet:            true,
+			expectedLocalZoneGroup: "usw2-lax1-az1",
+		},
+		{
+			name:                   "empty local zone group",
+			localZoneGroup:         "",
+			hasLocalZoneGroup:      true,
+			expectedSet:            true,
+			expectedLocalZoneGroup: "",
+		},
+		{
+			name:                   "no local zone group property",
+			localZoneGroup:         "",
+			hasLocalZoneGroup:      false,
+			expectedSet:            false,
+			expectedLocalZoneGroup: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasLocalZoneGroup {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup, tt.localZoneGroup)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withLocalZoneGroup()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.LocalZoneGroup)
+				assert.Equal(t, tt.expectedLocalZoneGroup, *result.location.LocalZoneGroup)
+			} else {
+				assert.Nil(t, result.location.LocalZoneGroup)
+			}
+
+			// Verify method returns same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
+
+func TestGeoProximityWithCoordinates(t *testing.T) {
+	tests := []struct {
+		name             string
+		coordinates      string
+		expectedSet      bool
+		expectedLat      string
+		expectedLong     string
+		shouldHaveCoords bool
+	}{
+		{
+			name:             "valid coordinates",
+			coordinates:      "45.0,90.0",
+			expectedSet:      true,
+			expectedLat:      "45.0",
+			expectedLong:     "90.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "edge case min coordinates",
+			coordinates:      "-90.0,-180.0",
+			expectedSet:      true,
+			expectedLat:      "-90.0",
+			expectedLong:     "-180.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "edge case max coordinates",
+			coordinates:      "90.0,180.0",
+			expectedSet:      true,
+			expectedLat:      "90.0",
+			expectedLong:     "180.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "invalid latitude too high",
+			coordinates:      "91.0,90.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid longitude too low",
+			coordinates:      "45.0,-181.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - single value",
+			coordinates:      "45.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - three values",
+			coordinates:      "45.0,90.0,10.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - non-numeric",
+			coordinates:      "abc,def",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "no coordinates property",
+			coordinates:      "",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{}
+			if tt.coordinates != "" {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates, tt.coordinates)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withCoordinates()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.shouldHaveCoords {
+				assert.NotNil(t, result.location.Coordinates)
+				assert.Equal(t, tt.expectedLat, *result.location.Coordinates.Latitude)
+				assert.Equal(t, tt.expectedLong, *result.location.Coordinates.Longitude)
+			} else {
+				assert.Nil(t, result.location.Coordinates)
+			}
+		})
+	}
+}
+
+func TestGeoProximityWithBias(t *testing.T) {
+	tests := []struct {
+		name         string
+		bias         string
+		hasBias      bool
+		expectedSet  bool
+		expectedBias int32
+	}{
+		{
+			name:         "valid positive bias",
+			bias:         "10",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 10,
+		},
+		{
+			name:         "valid negative bias",
+			bias:         "-5",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: -5,
+		},
+		{
+			name:         "zero bias",
+			bias:         "0",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0,
+		},
+		{
+			name:         "large positive bias",
+			bias:         "99",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 99,
+		},
+		{
+			name:         "large negative bias",
+			bias:         "-99",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: -99,
+		},
+		{
+			name:         "invalid bias - non-numeric",
+			bias:         "abc",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "invalid bias - float",
+			bias:         "10.5",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "empty bias string",
+			bias:         "",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "no bias property",
+			bias:         "",
+			hasBias:      false,
+			expectedSet:  false,
+			expectedBias: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasBias {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationBias, tt.bias)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withBias()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.Bias)
+				assert.Equal(t, tt.expectedBias, *result.location.Bias)
+			} else {
+				assert.Nil(t, result.location.Bias)
+			}
+
+			// Verify method returns same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
+
+func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), true, false, false, nil)
+
+	oldEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
+		nil,
+	}
+	newEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
+		endpoint.NewEndpointWithTTL("record2.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "2.2.2.2"),
+		endpoint.NewEndpointWithTTL("record3.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "3.3.3.3"),
+	}
+
+	changes := provider.createUpdateChanges(newEndpoints, oldEndpoints)
+
+	// record2 should be created, record1 should be upserted
+	var creates, upserts, deletes int
+	for _, c := range changes {
+		switch c.Action {
+		case route53types.ChangeActionCreate:
+			creates++
+		case route53types.ChangeActionUpsert:
+			upserts++
+		case route53types.ChangeActionDelete:
+			deletes++
+		}
+	}
+
+	require.Equal(t, 0, creates, "should create the extra new endpoint")
+	require.Equal(t, 1, upserts, "should upsert the matching endpoint")
+	require.Equal(t, 0, deletes, "should not delete anything")
+}
+
+func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
+	tests := []struct {
+		name         string
+		preferCNAME  bool
+		ep           *endpoint.Endpoint
+		expected     *endpoint.Endpoint
+		expectedAaaa *endpoint.Endpoint
+	}{
+		// --- A / AAAA ---
+		{
+			name: "A record without provider specific should not change and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias=true should set default ttl, add evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias!=true value should remove alias and evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:          "test.foo.bar.",
+				RecordType:       endpoint.RecordTypeA,
+				Targets:          endpoint.Targets{"1.1.1.1"},
+				RecordTTL:        600,
+				ProviderSpecific: endpoint.ProviderSpecific{},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias=true and invalid evaluateTargetHealth should normalize it to false and set default ttl",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "AAAA record with alias=true should behave like A record",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:db8::1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:db8::1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+
+		// --- CNAME ---
+		{
+			name: "CNAME record with alias=false should keep alias=false, remove evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with invalid alias value should normalize to alias=false and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with alias=true should set default ttl, add evaluateTargetHealth and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME record with alias=true and evaluateTargetHealth=true should keep evaluateTargetHealth and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME record with alias=true and invalid evaluateTargetHealth should normalize it to false and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME without alias to ELB target should enable alias and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+		},
+		{
+			name:        "CNAME with preferCNAME=true should set alias=false and not create AAAA even for ELB target",
+			preferCNAME: true,
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com."},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+
+		// --- MX / other records ---
+		{
+			name: "MX record without provider specific should not change and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+			},
+			expectedAaaa: nil,
+		},
+		// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed. This will be fixed in another PR.
+		{
+			name: "MX record with alias=true should remove alias and set default ttl, add evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			p, _ := newAWSProvider(
+				t,
+				endpoint.NewDomainFilter([]string{"foo.bar."}),
+				provider.NewZoneIDFilter([]string{}),
+				provider.NewZoneTypeFilter(""),
+				false,
+				tt.preferCNAME,
+				false,
+				nil,
+			)
+
+			aaaa := p.adjustEndpointAndNewAaaaIfNeeded(tt.ep)
+
+			assert.True(t, testutils.SameEndpoint(tt.ep, tt.expected),
+				"actual and expected endpoints don't match. %+v:%+v", tt.ep, tt.expected)
+
+			assert.True(t, testutils.SameEndpoint(aaaa, tt.expectedAaaa),
+				"actual and expected AAAA endpoints don't match. %+v:%+v", aaaa, tt.expectedAaaa)
 		})
 	}
 }

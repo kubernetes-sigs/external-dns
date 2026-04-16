@@ -18,11 +18,13 @@ package source
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
-	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +33,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -90,11 +95,10 @@ func (suite *HTTPProxySuite) SetupTest() {
 	suite.source, err = NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			Namespace:      "default",
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
 
@@ -135,71 +139,6 @@ func TestHTTPProxy(t *testing.T) {
 	suite.Run(t, new(HTTPProxySuite))
 	t.Run("endpointsFromHTTPProxy", testEndpointsFromHTTPProxy)
 	t.Run("Endpoints", testHTTPProxyEndpoints)
-}
-
-func TestNewContourHTTPProxySource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "contour.heptio.com/ingress.class=contour",
-		},
-	} {
-		ti := ti
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			fakeDynamicClient, _ := newDynamicKubernetesClient()
-
-			_, err := NewContourHTTPProxySource(
-				context.TODO(),
-				fakeDynamicClient,
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				false,
-			)
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func testEndpointsFromHTTPProxy(t *testing.T) {
@@ -281,18 +220,38 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "provider-specific annotation is converted to endpoint property",
+			httpProxy: fakeHTTPProxy{
+				host: "foo.bar",
+				annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				loadBalancer: fakeLoadBalancerService{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			if source, err := newTestHTTPProxySource(); err != nil {
-				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy()); err != nil {
-				require.NoError(t, err)
-			} else {
-				validateEndpoints(t, endpoints, ti.expected)
-			}
+			source, err := newTestHTTPProxySource(t)
+			require.NoError(t, err)
+
+			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -552,7 +511,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					host: "example.org",
 				},
@@ -576,7 +535,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					host: "example.org",
 				},
@@ -595,7 +554,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					host: "",
 				},
@@ -625,7 +584,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
+						annotations.ControllerKey: "other-controller",
 					},
 					host: "",
 				},
@@ -678,7 +637,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -724,7 +683,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -732,7 +691,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example2.org",
 				},
@@ -740,7 +699,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					host: "example3.org",
 				},
@@ -774,7 +733,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					host: "example.org",
 				},
@@ -803,7 +762,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
 					host: "example.org",
 				},
@@ -837,8 +796,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "httpproxy-target.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -867,8 +826,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "6",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "6",
 					},
 					host: "example.org",
 				},
@@ -876,8 +835,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "1",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "1",
 					},
 					host: "example2.org",
 				},
@@ -885,8 +844,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "10s",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "10s",
 					},
 					host: "example3.org",
 				},
@@ -924,7 +883,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -932,7 +891,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -940,7 +899,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					host: "",
 				},
@@ -976,7 +935,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "",
+						annotations.TargetKey: "",
 					},
 					host: "",
 				},
@@ -996,7 +955,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me",
+						annotations.HostnameKey: "ignore.me",
 					},
 					host: "example.org",
 				},
@@ -1004,7 +963,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me.too",
+						annotations.HostnameKey: "ignore.me.too",
 					},
 					host: "new.org",
 				},
@@ -1034,7 +993,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			ignoreHostnameAnnotation: true,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1048,45 +1007,44 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
-				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
+				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(t.Context(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			httpProxySource, err := NewContourHTTPProxySource(
-				context.TODO(),
+				t.Context(),
 				fakeDynamicClient,
-				ti.targetNamespace,
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				ti.combineFQDNAndAnnotation,
-				ti.ignoreHostnameAnnotation,
+				&Config{
+					Namespace:                ti.targetNamespace,
+					AnnotationFilter:         ti.annotationFilter,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
+					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+				},
 			)
 			require.NoError(t, err)
 
-			res, err := httpProxySource.Endpoints(context.Background())
+			res, err := httpProxySource.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }
 
 // httpproxy specific helper functions
-func newTestHTTPProxySource() (*httpProxySource, error) {
+func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
-		context.TODO(),
+		t.Context(),
 		fakeDynamicClient,
-		"default",
-		"",
-		"{{.Name}}",
-		false,
-		false,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
+		},
 	)
 	if err != nil {
 		return nil, err

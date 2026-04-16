@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -41,7 +42,7 @@ type EgoscaleClientI interface {
 // ExoscaleProvider initialized as dns provider with no records
 type ExoscaleProvider struct {
 	provider.BaseProvider
-	domain         endpoint.DomainFilter
+	domain         *endpoint.DomainFilter
 	client         EgoscaleClientI
 	apiEnv         string
 	apiZone        string
@@ -53,8 +54,21 @@ type ExoscaleProvider struct {
 // ExoscaleOption for Provider options
 type ExoscaleOption func(*ExoscaleProvider)
 
-// NewExoscaleProvider returns ExoscaleProvider DNS provider interface implementation
-func NewExoscaleProvider(env, zone, key, secret string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
+// New creates an Exoscale provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		cfg.ExoscaleAPIEnvironment,
+		cfg.ExoscaleAPIZone,
+		cfg.ExoscaleAPIKey,
+		cfg.ExoscaleAPISecret,
+		cfg.DryRun,
+		ExoscaleWithDomain(domainFilter),
+		ExoscaleWithLogging(),
+	)
+}
+
+// newProvider returns ExoscaleProvider DNS provider interface implementation
+func newProvider(env, zone, key, secret string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
 	client, err := egoscale.NewClient(
 		key,
 		secret,
@@ -70,7 +84,7 @@ func NewExoscaleProvider(env, zone, key, secret string, dryRun bool, opts ...Exo
 func NewExoscaleProviderWithClient(client EgoscaleClientI, env, zone string, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
 	ep := &ExoscaleProvider{
 		filter:         &zoneFilter{},
-		OnApplyChanges: func(changes *plan.Changes) {},
+		OnApplyChanges: func(_ *plan.Changes) {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         client,
 		apiEnv:         env,
@@ -235,10 +249,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 
 		for _, record := range records {
-			switch *record.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
+			if *record.Type != endpoint.RecordTypeA && *record.Type != endpoint.RecordTypeCNAME && *record.Type != endpoint.RecordTypeTXT {
 				continue
 			}
 
@@ -252,7 +263,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 // ExoscaleWithDomain modifies the domain on which dns zones are filtered
-func ExoscaleWithDomain(domainFilter endpoint.DomainFilter) ExoscaleOption {
+func ExoscaleWithDomain(domainFilter *endpoint.DomainFilter) ExoscaleOption {
 	return func(p *ExoscaleProvider) {
 		p.domain = domainFilter
 	}
@@ -295,9 +306,8 @@ func (f *zoneFilter) Zones(zones map[string]string) map[string]string {
 
 // EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
 // returns empty string if no matches are found
-func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string, name string) {
-	var matchZoneID string
-	var matchZoneName string
+func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (string, string) {
+	var matchZoneID, matchZoneName, name string
 	for zoneID, zoneName := range zones {
 		if strings.HasSuffix(endpoint.DNSName, "."+zoneName) && len(zoneName) > len(matchZoneName) {
 			matchZoneName = zoneName

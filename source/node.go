@@ -19,92 +19,99 @@ package source
 import (
 	"context"
 	"fmt"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
-const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
-
+// nodeSource is an implementation of Source for Kubernetes Node objects.
+//
+// +externaldns:source:name=node
+// +externaldns:source:category=Kubernetes Core
+// +externaldns:source:description=Creates DNS entries based on Kubernetes Node resources
+// +externaldns:source:resources=Node
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
+// +externaldns:source:events=true
 type nodeSource struct {
-	client               kubernetes.Interface
-	annotationFilter     string
-	fqdnTemplate         *template.Template
+	client           kubernetes.Interface
+	annotationFilter string
+	templateEngine   template.Engine
+
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
 	excludeUnschedulable bool
-	exposeInternalIPV6   bool
+	exposeInternalIPv6   bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6 bool, excludeUnschedulable bool) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
-	if err != nil {
-		return nil, err
-	}
-
+func NewNodeSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	cfg *Config) (Source, error) {
 	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
+	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+
 	// Add default resource event handler to properly initialize informer.
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("node added")
-			},
-		},
-	)
+	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
 	return &nodeSource{
 		client:               kubeClient,
-		annotationFilter:     annotationFilter,
-		fqdnTemplate:         tmpl,
+		annotationFilter:     cfg.AnnotationFilter,
+		templateEngine:       cfg.TemplateEngine,
 		nodeInformer:         nodeInformer,
-		labelSelector:        labelSelector,
-		excludeUnschedulable: excludeUnschedulable,
-		exposeInternalIPV6:   exposeInternalIPv6,
+		labelSelector:        cfg.LabelFilter,
+		excludeUnschedulable: cfg.ExcludeUnschedulable,
+		exposeInternalIPv6:   cfg.ExposeInternalIPv6,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(ns.labelSelector)
 	if err != nil {
 		return nil, err
 	}
 
-	nodes, err = ns.filterByAnnotations(nodes)
+	nodes, err = annotations.Filter(nodes, ns.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints := map[endpoint.EndpointKey]*endpoint.Endpoint{}
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := node.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping node %s because controller value does not match, found: %s, required: %s",
-				node.Name, controller, controllerAnnotationValue)
+		if annotations.IsControllerMismatch(node, types.Node) {
 			continue
 		}
 
@@ -115,65 +122,83 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
-		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
-
-		// create new endpoint with the information we already have
-		ep := &endpoint.Endpoint{
-			RecordTTL: ttl,
-		}
-
-		if ns.fqdnTemplate != nil {
-			hostnames, err := execTemplate(ns.fqdnTemplate, node)
+		// Only generate node name endpoints when there's no template or when combining
+		var nodeEndpoints []*endpoint.Endpoint
+		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
+			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
 			}
-			hostname := ""
-			if len(hostnames) > 0 {
-				hostname = hostnames[0]
-			}
-			ep.DNSName = hostname
-			log.Debugf("applied template for %s, converting to %s", node.Name, ep.DNSName)
-		} else {
-			ep.DNSName = node.Name
-			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs := getTargetsFromTargetAnnotation(node.Annotations)
-		if len(addrs) == 0 {
-			addrs, err = ns.nodeAddresses(node)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
-			}
+		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
+			nodeEndpoints,
+			func() ([]*endpoint.Endpoint, error) { return ns.endpointsFromNodeTemplate(node) },
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		ep.Labels = endpoint.NewLabels()
+		if len(nodeEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from node %s", node.Name)
+			continue
+		}
+
+		endpoint.AttachRefObject(nodeEndpoints, events.NewObjectReference(node, types.Node))
+
+		endpoints = append(endpoints, nodeEndpoints...)
+	}
+
+	return MergeEndpoints(endpoints), nil
+}
+
+func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
+	informers.MustAddEventHandler(ns.nodeInformer.Informer(), eventHandlerFunc(handler))
+}
+
+// endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
+func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endpoint, error) {
+	names, err := ns.templateEngine.ExecFQDN(node)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, name := range names {
+		log.Debugf("applied template for %s, converting to %s", node.Name, name)
+	}
+
+	return ns.endpointsForDNSNames(node, names)
+}
+
+// endpointsForDNSNames creates endpoints for the given DNS names using the node's addresses.
+func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]*endpoint.Endpoint, error) {
+	ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
+
+	addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
+	if len(addrs) == 0 {
+		var err error
+		addrs, err = ns.nodeAddresses(node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+		}
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for _, dns := range dnsNames {
+		log.Debugf("adding endpoint with %d targets", len(addrs))
+
 		for _, addr := range addrs {
+			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
-			key := endpoint.EndpointKey{
-				DNSName:    ep.DNSName,
-				RecordType: suitableType(addr),
-			}
-			if _, ok := endpoints[key]; !ok {
-				epCopy := *ep
-				epCopy.RecordType = key.RecordType
-				endpoints[key] = &epCopy
-			}
-			endpoints[key].Targets = append(endpoints[key].Targets, addr)
+			endpoints = append(endpoints, ep)
 		}
 	}
 
-	endpointsSlice := []*endpoint.Endpoint{}
-	for _, ep := range endpoints {
-		endpointsSlice = append(endpointsSlice, ep)
-	}
-
-	return endpointsSlice, nil
+	return MergeEndpoints(endpoints), nil
 }
 
-func (ns *nodeSource) AddEventHandler(ctx context.Context, handler func()) {
-}
-
-// nodeAddress returns node's externalIP and if that's not found, node's internalIP
+// nodeAddress returns the node's externalIP and if that's not found, the node's internalIP
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
 func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	addresses := map[v1.NodeAddressType][]string{
@@ -185,15 +210,14 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	for _, addr := range node.Status.Addresses {
 		// IPv6 InternalIP addresses have special handling.
 		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
-		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
+		if addr.Type == v1.NodeInternalIP && endpoint.SuitableType(addr.Address) == endpoint.RecordTypeAAAA {
 			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
 		}
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		if ns.exposeInternalIPV6 {
-			log.Warn(warningMsg)
+		if ns.exposeInternalIPv6 {
 			return append(addresses[v1.NodeExternalIP], internalIpv6Addresses...), nil
 		}
 		return addresses[v1.NodeExternalIP], nil
@@ -204,35 +228,4 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	}
 
 	return nil, fmt.Errorf("could not find node address for %s", node.Name)
-}
-
-// filterByAnnotations filters a list of nodes by a given annotation selector.
-func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ns.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return nodes, nil
-	}
-
-	filteredList := []*v1.Node{}
-
-	for _, node := range nodes {
-		// convert the node's annotations to an equivalent label selector
-		annotations := labels.Set(node.Annotations)
-
-		// include node if its annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, node)
-		}
-	}
-
-	return filteredList, nil
 }

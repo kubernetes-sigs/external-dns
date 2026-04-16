@@ -18,13 +18,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Avoid creating cluster-scoped RBAC for Gateway API sources when running namespaced with `gatewayNamespace` set. Namespace listing permissions are now only added when `gatewayNamespace` is unset. ([#5843](https://github.com/kubernetes-sigs/external-dns/pull/5843)) _@TobyTheHutt_
+
+## [v1.20.0]
+
+### Added
+
+- Add option to set `annotationPrefix` ([#5889](https://github.com/kubernetes-sigs/external-dns/pull/5889)) _@lexfrei_
+
 ### Changed
 
-- Allow extraArgs to also be a map enabling overrides of individual values ([#5293](https://github.com/kubernetes-sigs/external-dns/pull/5293)) _@frittentheke
+- Grant `networking.k8s.io/ingresses` and `gateway.solo.io/gateways` permissions when using `gloo-proxy` source. ([#5909](https://github.com/kubernetes-sigs/external-dns/pull/5909)) _@cucxabong_
+- Update _ExternalDNS_ OCI image version to [v0.20.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.20.0). ([#6005](https://github.com/kubernetes-sigs/external-dns/pull/6005)) _@vflaux_
 
 ### Fixed
 
-- Fixed wrong type definitions for webhook probes. ([#5297](https://github.com/kubernetes-sigs/external-dns/pull/5297)) _@semnell_
+- Fixed the missing schema for `.provider.webhook.serviceMonitor` configs ([#5932](https://github.com/kubernetes-sigs/external-dns/pull/5932)) _@chrisbsmith_
+- Fixed incorrect indentation of selector labels under `spec.template.spec.topologySpreadConstraints` when `topologySpreadConstraints` is set. ([#6054](https://github.com/kubernetes-sigs/external-dns/pull/6054)) _@andylim0221_
+
+## [v1.19.0] - 2025-09-08
+
+### Added
+
+- Add option to configure `annotationFilter` via dedicated chart value. ([#5737](https://github.com/kubernetes-sigs/external-dns/pull/5737)) _@dshatokhin_
+
+### Changed
+
+- Grant `discovery.k8s.io/endpointslices` permission only when using `service` source. ([#5746](https://github.com/kubernetes-sigs/external-dns/pull/5746)) _@vflaux_
+- Update _ExternalDNS_ OCI image version to [v0.19.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.19.0). ([#5819](https://github.com/kubernetes-sigs/external-dns/pull/5819)) _@stevehipwell_
+
+## [v1.18.0] - 2025-07-14
+
+### Changed
+
+- Update RBAC for `Service` source to support `EndpointSlices`. ([#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493)) _@vflaux_
+- Update _ExternalDNS_ OCI image version to [v0.18.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.18.0). ([#5633](https://github.com/kubernetes-sigs/external-dns/pull/5633)) _@elafarge_
+
+### Fixed
+
+- Fixed the lack of schema support for `create-only` dns policy in helm values ([#5627](https://github.com/kubernetes-sigs/external-dns/pull/5627)) _@coltonhughes_
+- Fixed the type of `.extraContainers` from `object` to `list` (array). ([#5564](https://github.com/kubernetes-sigs/external-dns/pull/5564)) _@svengreb_
+
+## [v1.17.0] - 2025-06-04
+
+### Changed
+
+- Allow extraArgs to also be a map enabling overrides of individual values. ([#5293](https://github.com/kubernetes-sigs/external-dns/pull/5293)) _@frittentheke_
+- Update CRD. ([#5287](https://github.com/kubernetes-sigs/external-dns/pull/5287)) _@mloiseleur_
+- Update CRD. ([#5446](https://github.com/kubernetes-sigs/external-dns/pull/5446)) _@mloiseleur_
+- Update _ExternalDNS_ OCI image version to [v0.17.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.17.0). ([#5479](https://github.com/kubernetes-sigs/external-dns/pull/5479)) _@stevehipwell_
+
+### Fixed
+
+- Fix wrong type definitions for webhook probes. ([#5297](https://github.com/kubernetes-sigs/external-dns/pull/5297)) _@semnell_
+- Update schema with latest plugin release. ([#5510](https://github.com/kubernetes-sigs/external-dns/pull/5510)) _@mloiseleur
 
 ## [v1.16.1] - 2025-04-10
 
@@ -34,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
+- Correctly handle `txtPrefix` and `txtSuffix` arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values. ([#5228](https://github.com/kubernetes-sigs/external-dns/pull/5228)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values. ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
 
@@ -261,6 +310,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0
+[v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0
+[v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
+[v1.17.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.17.0
 [v1.16.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.1
 [v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0
 [v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2

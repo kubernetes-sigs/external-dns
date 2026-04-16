@@ -33,6 +33,21 @@ If you would like to further restrict the API permissions to a specific zone (or
 Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit.
 The AWS Provider [docs](./aws.md#throttling) has some recommendations that can be followed here too, but in particular, consider passing `--cloudflare-dns-records-per-page` with a high value (maximum is 5,000).
 
+## Batch API
+
+The Cloudflare provider submits DNS record changes using Cloudflare's [Batch DNS Records API](https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/batch/).
+All creates, updates, and deletes for a zone are grouped into transactional chunks and sent in a single API call per chunk,
+significantly reducing the total number of requests made.
+
+The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
+In that case, ExternalDNS automatically retries each record change in the chunk individually.
+Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+
+| Flag | Default | Description |
+| :--- | :------ | :---------- |
+| `--batch-change-size` | `200` | Maximum number of DNS operations (creates + updates + deletes) per batch chunk. |
+| `--batch-change-interval` | `1s` | Pause between consecutive batch chunks. |
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
@@ -120,7 +135,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -128,7 +143,9 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
+            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
          env:
             - name: CF_API_KEY
               valueFrom:
@@ -156,7 +173,10 @@ metadata:
   name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services","endpoints","pods"]
+    resources: ["services","pods"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get","watch","list"]
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
@@ -196,7 +216,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -204,7 +224,9 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
+            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
           env:
             - name: CF_API_KEY
               valueFrom:
@@ -266,7 +288,7 @@ By setting the TTL annotation on the service, you have to pass a valid TTL, whic
 This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
 For Cloudflare proxied entries, set the TTL annotation to 1 (automatic), or do not set it.
 
-ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
+ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
@@ -301,16 +323,38 @@ kubectl delete -f externaldns.yaml
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
 
-## Setting cloudflare-region-key to configure regional services
+## Setting cloudflare regional services
 
-Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
+With Cloudflare regional services you can restrict which data centers can decrypt and serve HTTPS traffic.
+
+Configuration of Cloudflare Regional Services is enabled by the `--cloudflare-regional-services` flag.
+A default region can be defined using the `--cloudflare-region-key` flag.
+
+Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can specify the region for that record.
+
+An empty string will result in no regional hostname configured.
+
+**Accepted values for region key include:**
+
+- `eu`: European Union data centers only
+- `us`: United States data centers only
+- `ap`: Asia-Pacific data centers only
+- `fedramp`: US public sector (FedRAMP) data centers
+- `in`: India data centers only
+- `ca`: Canada data centers only
+- `jp`: Japan data centers only
+- `kr`: South Korea data centers only
+- `br`: Brazil data centers only
+- `za`: South Africa data centers only
+- `ae`: United Arab Emirates data centers only
+
+For the most up-to-date list and details, see the [Cloudflare Regional Services documentation](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
+
 Currently, requires SuperAdmin or Admin role.
-
-If not set the value will default to `global`.
 
 ## Setting cloudflare-custom-hostname
 
-Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the --cloudflare-custom-hostnames flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
+Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
 
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
 
@@ -318,11 +362,25 @@ See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-
 
 This feature is disabled by default and supports the `--cloudflare-custom-hostnames-min-tls-version` and `--cloudflare-custom-hostnames-certificate-authority` flags.
 
+`--cloudflare-custom-hostnames-certificate-authority` defaults to `none`, which explicitly means no Certificate Authority (CA) is set when using the Cloudflare API. Specifying a custom CA is only possible for enterprise accounts.
+
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
 
-Due to a limitation within the cloudflare-go v0 API, the custom hostname page size is fixed at 50.
+## Setting Cloudflare DNS Record Tags
+
+Cloudflare allows you to add descriptive tags to DNS records. This can be useful for organizing your records.
+For example one can apply tags by environment (`production`, `staging`) or by the team that owns them (`frontend-team`, `backend-team`). ExternalDNS can manage these tags for you.
+
+To assign tags to a DNS record, add the `external-dns.alpha.kubernetes.io/cloudflare-tags` annotation to your Kubernetes resource (like a Service or Ingress). The value should be a comma-separated list of your desired tags.
+
+```yaml
+metadata:
+  annotations:
+    # Assigns three tags to the DNS record created from this resource
+    external-dns.alpha.kubernetes.io/cloudflare-tags: "owner:frontend-team, env:dev, component:api"
+```
 
 ## Using CRD source to manage DNS records in Cloudflare
 

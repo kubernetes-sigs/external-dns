@@ -42,6 +42,7 @@ cscope.*
 
 # coverage output
 cover.out
+coverage.html
 *.coverprofile
 external-dns
 

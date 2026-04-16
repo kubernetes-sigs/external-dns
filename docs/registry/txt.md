@@ -3,7 +3,56 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
+> Note:
+>
+> - If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using `--txt-prefix` that you specify the record type substitution and that it ends in a period (**.**).
+>   The record should be created under the same domain as the apex record being managed, i.e. `--txt-prefix=someprefix-%{record_type}.`
+> - `--txt-prefix` and `--txt-suffix` contribute to the 63-byte maximum record length. To avoid errors, use them only if absolutely required and keep them as short as possible.
+
 ## Record Format Options
+
+### For version `v0.18+`
+
+The TXT registry supports single format for storing DNS record metadata:
+
+- Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
+
+The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour.
+
+If configured `--txt-prefix="%{record_type}-abc-."` for apex domain `ex.com` the expected result is
+
+|         Name         |  TYPE   |
+| :------------------: | :-----: |
+| `cname-abc-.ex.com.` |  `TXT`  |
+|      `ex.com.`       | `CNAME` |
+
+For the domain `www.ex.com` the expected result is
+
+|           Name           |  TYPE   |
+| :----------------------: | :-----: |
+| `cname-abc-.www.ex.com.` |  `TXT`  |
+|      `www.ex.com.`       | `CNAME` |
+
+If configured `--txt-suffix="-.%{record_type}"` for apex domain `ex.com`, the expected result would be `ex-.a.com`, which fails to create a TXT record because it does not exist within the managed zone.
+
+For the domain `www.ex.com` the expected result is
+
+|         Name         |  TYPE   |
+| :------------------: | :-----: |
+| `www-.cname.ex.com.` |  `TXT`  |
+|    `www.ex.com.`     | `CNAME` |
+
+### Manually Cleanup Legacy TXT Records
+
+> While deleting registry TXT records won't cause downtime, a well-thought-out migration and cleanup plan is crucial.
+
+Occasionally, it may be necessary to remove outdated TXT records from your registry.
+
+An example script for AWS can be found in [scripts/aws-cleanup-legacy-txt-records.py](../../scripts/aws-cleanup-legacy-txt-records.py) with instructions on how to run it.
+The script performs targeted deletion of TXT records that include `ResourceRecords` matching the `heritage=external-dns,external-dns/owner=default` or similar pattern.
+In the event of unintended deletion of all TXT records managed by `external-dns`, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be aware, this operation's duration is directly proportional to the DNS estate size."
+
+### For version `v0.16.0 & v0.16.1`
 
 The TXT registry supports two formats for storing DNS record metadata:
 
@@ -31,13 +80,13 @@ The `--txt-new-format-only` flag should be used in addition to your existing ext
 
 ### Migration to New Format Only
 
+> Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
+
 When transitioning from dual-format to new-format-only records:
 
 - Ensure all your `external-dns` instances support the new format
 - Enable the `--txt-new-format-only` flag on your external-dns instances
-Manually clean up any existing legacy format TXT records from your DNS provider
-
-Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
+  Manually clean up any existing legacy format TXT records from your DNS provider
 
 ## Prefixes and Suffixes
 
@@ -56,7 +105,7 @@ the `--txt-suffix` flag. The two flags are mutually exclusive.
 
 ## Wildcard Replacement
 
-The `--txt-wildcard-replacement` flag specifies a string to use to replace the "*" in
+The `--txt-wildcard-replacement` flag specifies a string to use to replace the "\*" in
 registry TXT records for wildcard domains. Without using this, registry TXT records for
 wildcard domains will have invalid domain syntax and be rejected by most providers.
 
@@ -75,19 +124,19 @@ Note that the key used for encryption should be a secure key and properly manage
 Python
 
 ```python
-python -c 'import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+python -c 'import os,base64; print(base64.standard_b64encode(os.urandom(32)).decode())'
 ```
 
 Bash
 
 ```shell
-dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d -- '\n' | tr -- '+/' '-_'; echo
+dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64; echo
 ```
 
 OpenSSL
 
 ```shell
-openssl rand -base64 32 | tr -- '+/' '-_'
+openssl rand -base64 32
 ```
 
 PowerShell
@@ -95,7 +144,7 @@ PowerShell
 ```powershell
 # Add System.Web assembly to session, just in case
 Add-Type -AssemblyName System.Web
-[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Web.Security.Membership]::GeneratePassword(32,4))).Replace("+","-").Replace("/","_")
+[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Web.Security.Membership]::GeneratePassword(32,4)))
 ```
 
 Terraform
@@ -103,7 +152,6 @@ Terraform
 ```hcl
 resource "random_password" "txt_key" {
   length           = 32
-  override_special = "-_"
 }
 ```
 
@@ -115,37 +163,39 @@ In some cases you might need to edit registry TXT records. The following example
 package main
 
 import (
- "fmt"
- "sigs.k8s.io/external-dns/endpoint"
+	b64 "encoding/base64"
+	"fmt"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func main() {
- keys := []string{
-  "ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=", // safe base64 url encoded 44 bytes and 32 when decoded
-  "01234567890123456789012345678901",             // plain txt 32 bytes
-  "passphrasewhichneedstobe32bytes!",             // plain txt 32 bytes
- }
+	keys := []string{
+		"ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=", // safe base64 url encoded 44 bytes and 32 when decoded
+		"01234567890123456789012345678901",             // plain txt 32 bytes
+		"passphrasewhichneedstobe32bytes!",             // plain txt 32 bytes
+	}
 
- for _, k := range keys {
-  key := []byte(k)
-  if len(key) != 32 {
-   // if key is not a plain txt let's decode
-   var err error
-   if key, err = b64.StdEncoding.DecodeString(string(key)); err != nil || len(key) != 32 {
-    fmt.Errorf("the AES Encryption key must have a length of 32 byte")
-   }
-  }
-  encrypted, _ := endpoint.EncryptText(
-   "heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
-   key,
-   nil,
-  )
-  decrypted, _, err := endpoint.DecryptText(encrypted, key)
-  if err != nil {
-   fmt.Println("Error decrypting:", err, "for key:", k)
-  }
-  fmt.Println(decrypted)
- }
+	for _, k := range keys {
+		key := []byte(k)
+		if len(key) != 32 {
+			// if key is not a plain txt let's decode
+			var err error
+			if key, err = b64.StdEncoding.DecodeString(string(key)); err != nil || len(key) != 32 {
+				fmt.Errorf("the AES Encryption key must have a length of 32 byte")
+			}
+		}
+		encrypted, _ := endpoint.EncryptText(
+			"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
+			key,
+			nil,
+		)
+		decrypted, _, err := endpoint.DecryptText(encrypted, key)
+		if err != nil {
+			fmt.Println("Error decrypting:", err, "for key:", k)
+		}
+		fmt.Println(decrypted)
+	}
 }
 ```
 
@@ -155,3 +205,123 @@ The TXT registry can optionally cache DNS records read from the provider. This c
 rate limits imposed by the provider.
 
 Caching is enabled by specifying a cache duration with the `--txt-cache-interval` flag.
+
+## OwnerID migration
+
+> Automating DNS migrations with third-party tools can be risky. DNS is often business-critical, and without deep understanding of the environment, 3rd party automation tools can do more harm than good.
+
+The owner ID of the TXT records managed by external-dns instance can be updated.
+
+When `--migrate-from-txt-owner` is set, it will enable the migration checks
+in the run loop using `--txt-owner-id=new-owner-id` and the value you defined for this flag.
+
+If you want to test the outputs of a migration beforehand, you can use the `--dry-run` flag
+along with `--migrate-from-txt-owner`.
+
+Example, if you had a standard deployment like so:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        imagePullPolicy: Always
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=old-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+You can update your deployment to migrate like so :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        imagePullPolicy: Always
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=new-owner"
+        - "--migrate-from-txt-owner=old-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
+`--migrate-from-txt-owner` flag to `default` to migrate the associated records.
+
+### OwnerID migration: multi-cluster considerations
+
+> Warning: The `--migrate-from-txt-owner` flag combined with `policy=sync` can be unsafe in shared hosted zones when multiple clusters previously used the same TXT owner value (for example `default`).
+
+In a shared hosted zone, if one cluster runs ExternalDNS with `policy=sync` and `--migrate-from-txt-owner=default`, it may attempt to delete DNS records that belong to other clusters which still use `owner=default`.
+To avoid this, do not share the same TXT owner value across clusters in any zone where `policy=sync` or migration flags will be used.
+
+#### Per-cluster owner IDs
+
+For multi-cluster setups sharing a hosted zone:
+
+- Assign a **unique** `--txt-owner-id` to each cluster (for example `cluster1`, `cluster2`) and document this convention clearly in your platform configuration.
+- Avoid using a common owner such as `default` across clusters in a shared zone if any cluster will run with `policy=sync` or use `--migrate-from-txt-owner`.
+
+#### Example migration sequence for shared zones
+
+When migrating from a shared owner (such as `default`) in a shared hosted zone:
+
+1. While still using `policy=upsert-only` (or equivalent), roll out cluster-specific `--txt-owner-id` values and ensure *new* records are created with the cluster’s own owner ID.
+2. Avoid `--migrate-from-txt-owner=<old-owner>` unless you can guarantee that only a single cluster has records with `<old-owner>` in that hosted zone, or perform the migration in an isolated zone where only that cluster writes records.
+
+### When to avoid owner migration
+
+The following pattern is **not recommended** and may cause record deletion for other clusters:
+
+- Multiple clusters share a Route53 hosted zone and all existing records use `owner=default`.
+- Only one cluster is upgraded to use `policy=sync`, `--txt-owner-id=<cluster-name>`, and `--migrate-from-txt-owner=default`, while other clusters still use `owner=default`.
+
+In this situation, the upgraded cluster can treat other clusters’ records as orphans and schedule them for deletion during synchronization. Prefer per-cluster zones, manual TXT record adjustment, or fully coordinated migration of all clusters if the migration flag must be used.

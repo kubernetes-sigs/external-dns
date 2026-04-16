@@ -1,6 +1,8 @@
 # external-dns
 
-![Version: 1.16.1](https://img.shields.io/badge/Version-1.16.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.16.1](https://img.shields.io/badge/AppVersion-0.16.1-informational?style=flat-square)
+<!-- markdownlint-disable MD060 -->
+
+![Version: 1.20.0](https://img.shields.io/badge/Version-1.20.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.20.0](https://img.shields.io/badge/AppVersion-0.20.0-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -27,7 +29,7 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.16.1
+helm upgrade --install external-dns external-dns/external-dns --version 1.20.0
 ```
 
 ## Providers
@@ -51,26 +53,26 @@ For set up for a specific provider using the Helm chart, see the following links
 * [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
 * [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
 * [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
-* [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
 * [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
 * [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
 * [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
 
-## Namespaced Scoped Installation
+## Namespace Scoped Installation
 
-external-dns supports running on a namespaced only scope, too.
-If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
+`external-dns` supports running on a namespace-only scope, too.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
 
-### Limited Supported
+Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
 
-Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
+### Namespace-only limitations
+
+Not all sources are supported in namespace-only scope, since some sources depend on cluster-wide resources.
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
-Sources like `istio-virtualservice` only work, if all resources like `Gateway` and `VirtualService` are present in the same
-namespaces as `external-dns`.
-
+Sources like `istio-virtualservice` only work if all resources like `Gateway` and `VirtualService` are present in the same
+namespace as `external-dns`.
 The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
-If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`).
+If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
 ### Support Matrix
 
@@ -94,6 +96,8 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels. |
+| annotationFilter | string | `nil` | Filter resources queried for endpoints by annotation selector. |
+| annotationPrefix | string | `nil` | Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances). |
 | automountServiceAccountToken | bool | `true` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`. |
 | commonLabels | object | `{}` | Labels to add to all chart resources. |
 | deploymentAnnotations | object | `{}` | Annotations to add to the `Deployment`. |
@@ -105,10 +109,11 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | object | `{}` | Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times. |
-| extraContainers | object | `{}` | Extra containers to add to the `Deployment`. |
+| extraContainers | list | `[]` | Extra containers to add to the `Deployment`. |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
+| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
@@ -116,7 +121,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
 | interval | string | `"1m"` | Interval for DNS updates. |
-| labelFilter | string | `nil` | Filter resources queried for endpoints by label selector |
+| labelFilter | string | `nil` | Filter resources queried for endpoints by label selector. |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | logFormat | string | `"text"` | Log format. |
 | logLevel | string | `"info"` | Log level. |
@@ -127,7 +132,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
 | podLabels | object | `{}` | Labels to add to the `Pod`. |
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
-| policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`. |
+| policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
 | provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
@@ -180,7 +185,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | tolerations | list | `[]` | Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
 | topologySpreadConstraints | list | `[]` | Topology spread constraints for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided one will be created from the pod selector labels. |
 | triggerLoopOnEvent | bool | `false` | If `true`, triggers run loop on create/update/delete events in addition of regular interval. |
-| txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`. |
+| txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
 

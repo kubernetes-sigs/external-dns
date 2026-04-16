@@ -14,17 +14,16 @@ jobs:
   build:
     permissions:
       contents: read  #  to fetch code (actions/checkout)
-      checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
 
     name: Build
     runs-on: ubuntu-latest
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
       id: go

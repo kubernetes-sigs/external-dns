@@ -26,12 +26,13 @@ import (
 // TargetFilterInterface defines the interface to select matching targets for a specific provider or runtime
 type TargetFilterInterface interface {
 	Match(target string) bool
+	IsEnabled() bool
 }
 
 // TargetNetFilter holds a lists of valid target names
 type TargetNetFilter struct {
-	// FilterNets define what targets to match
-	FilterNets []*net.IPNet
+	// filterNets define what targets to match
+	filterNets []*net.IPNet
 	// excludeNets define what targets not to match
 	excludeNets []*net.IPNet
 }
@@ -42,11 +43,9 @@ func prepareTargetFilters(filters []string) []*net.IPNet {
 
 	for _, filter := range filters {
 		filter = strings.TrimSpace(filter)
-
 		_, filterNet, err := net.ParseCIDR(filter)
 		if err != nil {
 			log.Errorf("Invalid target net filter: %s", filter)
-
 			continue
 		}
 
@@ -57,12 +56,17 @@ func prepareTargetFilters(filters []string) []*net.IPNet {
 
 // NewTargetNetFilterWithExclusions returns a new TargetNetFilter, given a list of matches and exclusions
 func NewTargetNetFilterWithExclusions(targetFilterNets []string, excludeNets []string) TargetNetFilter {
-	return TargetNetFilter{FilterNets: prepareTargetFilters(targetFilterNets), excludeNets: prepareTargetFilters(excludeNets)}
+	return TargetNetFilter{filterNets: prepareTargetFilters(targetFilterNets), excludeNets: prepareTargetFilters(excludeNets)}
 }
 
 // Match checks whether a target can be found in the TargetNetFilter.
 func (tf TargetNetFilter) Match(target string) bool {
-	return matchTargetNetFilter(tf.FilterNets, target, true) && !matchTargetNetFilter(tf.excludeNets, target, false)
+	return matchTargetNetFilter(tf.filterNets, target, true) && !matchTargetNetFilter(tf.excludeNets, target, false)
+}
+
+// IsEnabled returns true if any filters or exclusions are set.
+func (tf TargetNetFilter) IsEnabled() bool {
+	return len(tf.filterNets) > 0 || len(tf.excludeNets) > 0
 }
 
 // matchTargetNetFilter determines if any `filters` match `target`.
@@ -73,9 +77,9 @@ func matchTargetNetFilter(filters []*net.IPNet, target string, emptyval bool) bo
 		return emptyval
 	}
 
-	for _, filter := range filters {
-		ip := net.ParseIP(target)
+	ip := net.ParseIP(target)
 
+	for _, filter := range filters {
 		if filter.Contains(ip) {
 			return true
 		}

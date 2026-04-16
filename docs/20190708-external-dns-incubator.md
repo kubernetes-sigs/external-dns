@@ -2,16 +2,15 @@
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Move ExternalDNS out of Kubernetes incubator]((#move-externaldns-out-of-kubernetes-incubator))
-  - [Summary](#summary)
-  - [Motivation](#motivation)
-    - [Goals](#goals)
-  - [Proposal](#proposal)
-  - [Details](#details)
-    - [Graduation Criteria](#graduation-criteria)
-      - [Maintainers](#maintainers)
-    - [Release process, artifacts](#release-process-artifacts)
-    - [Risks and Mitigations](#risks-and-mitigations)
+- [Summary](#summary)
+- [Motivation](#motivation)
+  - [Goals](#goals)
+- [Proposal](#proposal)
+- [Details](#details)
+  - [Graduation Criteria](#graduation-criteria)
+    - [Maintainers](#maintainers)
+  - [Release process, artifacts](#release-process-artifacts)
+  - [Risks and Mitigations](#risks-and-mitigations)
 
 <!-- /TOC -->
 
@@ -19,7 +18,7 @@
 
 [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) is a project that synchronizes Kubernetes' Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
 
-The projects was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
+The project was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
 
 ## Motivation
 
@@ -37,7 +36,8 @@ ExternalDNS' goal from the beginning was to provide an officially supported solu
 
 After two years of development, the project is still in the kubernetes-sigs.
 
-The incubation has been officially discontinued and to quote @thockin "Incubator projects should either become real projects in Kubernetes, shut themselves down, or move elsewhere" (see original thread [here](https://groups.google.com/forum/#!topic/kubernetes-sig-network/fvpDC_nxtEM)).
+The incubation has been officially discontinued and to quote @thockin "Incubator projects should either become real projects in Kubernetes,
+shut themselves down, or move elsewhere" (see original thread [google group](https://groups.google.com/forum/#!topic/kubernetes-sig-network/fvpDC_nxtEM)).
 
 This KEP proposes to move ExternalDNS to the main Kubernetes organization or kubernetes-sigs. The "Proposal" section details the reasons behind it.
 
@@ -63,7 +63,7 @@ Given that the kubernetes-sigs organization will eventually be shut down, the po
 
 - Move the project elsewhere
 
-We believe that those alternatives would result in a worse outcome for the community compared to moving the project to the any of the other official Kubernetes organizations.
+We believe that those alternatives would result in a worse outcome for the community compared to moving the project to any of the other official Kubernetes organizations.
 In fact, shutting down ExternalDNS can cause:
 
 - The community to rebuild the same solution as already happened multiple times before the project was launched. Currently ExternalDNS is easy to be found, referenced in many articles/tutorials and for that reason not exposed to that risk.
@@ -90,7 +90,7 @@ We have evidence that many companies are using ExternalDNS in production, but it
 
 The project was quoted by a number of tutorials on the web, including the [official tutorials from AWS](https://aws.amazon.com/blogs/opensource/unified-service-discovery-ecs-kubernetes/).
 
-ExternalDNS can't be consider to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
+ExternalDNS can't be considered to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
 
 Those are identified in the project roadmap, which is roughly made of the following items:
 
@@ -133,7 +133,7 @@ The release pipeline for the project is currently fully owned by Zalando. It run
 
 The docker registry service is provided as best effort with no sort of SLA and the maintainers team openly suggests the users to build and maintain their own docker image based on the provided Dockerfiles.
 
-Providing a vanity URL for the docker images was consider a non goal till now, but the community seems to be wanting official images from a GCR domain, similarly to what is available for other parts of official Kubernetes projects.
+Providing a vanity URL for the docker images was considered a non goal till now, but the community seems to be wanting official images from a GCR domain, similarly to what is available for other parts of official Kubernetes projects.
 
 ExternalDNS does not follow a specific release cycle. Releases are made often when there are major contributions (i.e. new providers) or important bug fixes. That said, the default branch is considered stable and can be used as well to build images.
 
@@ -150,9 +150,11 @@ The following are risks that were identified:
 We think that the following actions will constitute appropriate mitigations:
 
 - Decoupling the providers via an API will allow us to resolve the problem of the providers. Being the project already more than 2 years old and given that there are 18 providers implemented, we possess enough information to define an API that we can be stable in a short timeframe.
+
   - Once this is stable, the problem of testing the providers can be deferred to be a provider's responsibility. This will also reduce the scope of External DNS core code, which means that there will be no need for a further increase of the maintaining team.
 
 - We added integration testing for the main cloud providers to the roadmap for the 1.0 release to make sure that we cover the mostly used ones.
+
   - We believe that this item should be tackled independently from the decoupling of providers as it would be capable of generating value independently from the result of the decoupling efforts.
 
 - With the move to the Kubernetes incubation, we hope that we will be able to access the testing resources of the Kubernetes project.

@@ -19,248 +19,24 @@ package controller
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"net"
-	"net/http"
+	"errors"
 	"os"
-	"os/signal"
-	"reflect"
-	"regexp"
-	"syscall"
+	"os/exec"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/provider"
+	provider "sigs.k8s.io/external-dns/provider/factory"
+	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
-func TestSelectRegistry(t *testing.T) {
-	tests := []struct {
-		name     string
-		cfg      *externaldns.Config
-		provider provider.Provider
-		wantErr  bool
-		wantType string
-	}{
-		{
-			name: "DynamoDB registry",
-			cfg: &externaldns.Config{
-				Registry:               "dynamodb",
-				AWSDynamoDBRegion:      "us-west-2",
-				AWSDynamoDBTable:       "test-table",
-				TXTOwnerID:             "owner-id",
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-				TXTCacheInterval:       60,
-			},
-			provider: &MockProvider{},
-			wantErr:  false,
-			wantType: "DynamoDBRegistry",
-		},
-		{
-			name: "Noop registry",
-			cfg: &externaldns.Config{
-				Registry: "noop",
-			},
-			provider: &MockProvider{},
-			wantErr:  false,
-			wantType: "NoopRegistry",
-		},
-		{
-			name: "TXT registry",
-			cfg: &externaldns.Config{
-				Registry:               "txt",
-				TXTPrefix:              "prefix",
-				TXTOwnerID:             "owner-id",
-				TXTCacheInterval:       60,
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-				TXTNewFormatOnly:       true,
-			},
-			provider: &MockProvider{},
-			wantErr:  false,
-			wantType: "TXTRegistry",
-		},
-		{
-			name: "AWS-SD registry",
-			cfg: &externaldns.Config{
-				Registry:   "aws-sd",
-				TXTOwnerID: "owner-id",
-			},
-			provider: &MockProvider{},
-			wantErr:  false,
-			wantType: "AWSSDRegistry",
-		},
-		{
-			name: "Unknown registry",
-			cfg: &externaldns.Config{
-				Registry: "unknown",
-			},
-			provider: &MockProvider{},
-			wantErr:  true,
-			wantType: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				defer func() { log.StandardLogger().ExitFunc = nil }()
-				b := new(bytes.Buffer)
-				log.StandardLogger().ExitFunc = func(int) {}
-				log.StandardLogger().SetOutput(b)
-
-				_, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.Contains(t, b.String(), "unknown registry: unknown")
-			} else {
-				reg, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.Contains(t, reflect.TypeOf(reg).String(), tt.wantType)
-			}
-		})
-	}
-}
-
-func TestCreateDomainFilter(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cfg                  *externaldns.Config
-		expectedDomainFilter endpoint.DomainFilter
-		isConfigured         bool
-	}{
-		{
-			name: "RegexDomainFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`example\.com`),
-				RegexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
-			isConfigured:         true,
-		},
-		{
-			name: "RegexDomainWithoutExclusionFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusions",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{"example.com"},
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusionsOnly",
-			cfg: &externaldns.Config{
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "EmptyDomainFilter",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{},
-				ExcludeDomains: []string{},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
-			isConfigured:         false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filter := createDomainFilter(tt.cfg)
-			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
-			assert.Equal(t, tt.expectedDomainFilter, filter)
-		})
-	}
-}
-
-func TestHandleSigterm(t *testing.T) {
-	cancelCalled := make(chan bool, 1)
-	cancel := func() {
-		cancelCalled <- true
-	}
-
-	var logOutput bytes.Buffer
-	log.SetOutput(&logOutput)
-	defer log.SetOutput(os.Stderr)
-
-	go handleSigterm(cancel)
-
-	// Simulate sending a SIGTERM signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
-	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	assert.NoError(t, err)
-
-	// Wait for the cancel function to be called
-	select {
-	case <-cancelCalled:
-		assert.Contains(t, logOutput.String(), "Received SIGTERM. Terminating...")
-	case sig := <-sigChan:
-		assert.Equal(t, syscall.SIGTERM, sig)
-	case <-time.After(1 * time.Second):
-		t.Fatal("cancel function was not called")
-	}
-}
-
-func getRandomPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-func TestServeMetrics(t *testing.T) {
-	t.Parallel()
-
-	port, err := getRandomPort()
-	require.NoError(t, err)
-	addresse := fmt.Sprintf("localhost:%d", port)
-
-	go serveMetrics(fmt.Sprintf(":%d", port))
-
-	// Wait for the TCP socket to be ready
-	require.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", addresse)
-		if err != nil {
-			return false
-		}
-		_ = conn.Close()
-		return true
-	}, 1*time.Second, 5*time.Millisecond, "server not ready with port open in time")
-
-	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", addresse))
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	resp, err = http.Get(fmt.Sprintf("http://%s/metrics", addresse))
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-}
-
+// Logger
 func TestConfigureLogger(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -302,18 +78,33 @@ func TestConfigureLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.wantErr {
-				defer func() { log.StandardLogger().ExitFunc = nil }()
-
+				// Capture and suppress fatal exit; restore logger after test
+				logger := log.StandardLogger()
+				prevOut := logger.Out
+				prevExit := logger.ExitFunc
 				b := new(bytes.Buffer)
 				var captureLogFatal bool
-				log.StandardLogger().ExitFunc = func(int) { captureLogFatal = true }
-				log.StandardLogger().SetOutput(b)
+				logger.ExitFunc = func(int) { captureLogFatal = true }
+				logger.SetOutput(b)
+				t.Cleanup(func() {
+					logger.SetOutput(prevOut)
+					logger.ExitFunc = prevExit
+				})
 
 				configureLogger(tt.cfg)
 
 				assert.True(t, captureLogFatal)
 				assert.Contains(t, b.String(), tt.wantErrMsg)
 			} else {
+				// Save and restore logger state to avoid leaking between tests
+				logger := log.StandardLogger()
+				prevFormatter := logger.Formatter
+				prevLevel := log.GetLevel()
+				t.Cleanup(func() {
+					log.SetLevel(prevLevel)
+					logger.SetFormatter(prevFormatter)
+				})
+
 				configureLogger(tt.cfg)
 				assert.Equal(t, tt.wantLevel, log.GetLevel())
 
@@ -327,21 +118,204 @@ func TestConfigureLogger(t *testing.T) {
 	}
 }
 
-// mocks
-type MockProvider struct{}
-
-func (m *MockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return nil, nil
+// Helper used by runExecuteSubprocess.
+func TestHelperProcess(_ *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		return
+	}
+	// Parse args after the "--" sentinel.
+	idx := -1
+	for i, a := range os.Args {
+		if a == "--" {
+			idx = i
+			break
+		}
+	}
+	var args []string
+	if idx >= 0 {
+		args = os.Args[idx+1:]
+	}
+	os.Args = append([]string{"external-dns"}, args...)
+	Execute()
 }
 
-func (p *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	return nil
+// runExecuteSubprocess runs Execute in a separate process and returns exit code.
+func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
+	t.Helper()
+	// make sure the subprocess does not run forever
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	// TODO: investigate why -test.run=TestHelperProcess
+	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
+	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
+	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return -1, ctx.Err()
+	}
+	if err == nil {
+		return 0, nil
+	}
+	ee := &exec.ExitError{}
+	if errors.As(err, &ee) {
+		return ee.ExitCode(), nil
+	}
+	return -1, err
 }
 
-func (m *MockProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return nil, nil
+func TestExecuteOnceDryRunExitsZero(t *testing.T) {
+	// Use :0 for an ephemeral metrics port.
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "fake",
+		"--provider", "inmemory",
+		"--once",
+		"--dry-run",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 0, code)
 }
 
-func (m *MockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return nil
+func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "fake",
+		"--provider", "unknown",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+func TestExecuteValidationErrorNoSources(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--provider", "inmemory",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+func TestExecuteFlagParsingErrorInvalidLogFormat(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--log-format", "invalid",
+		// Provide minimal required flags to keep errors focused on parsing
+		"--source", "fake",
+		"--provider", "inmemory",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// Config validation failure triggers log.Fatalf.
+func TestExecuteConfigValidationErrorExitsNonZero(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "fake",
+		// Choose a provider with validation that fails without required flags
+		"--provider", "azure",
+		// No --azure-config-file provided
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// buildSource failure triggers log.Fatal.
+func TestExecuteBuildSourceErrorExitsNonZero(t *testing.T) {
+	// Use a valid source name (ingress) and an invalid kubeconfig path to
+	// force client creation failure inside buildSource.
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "ingress",
+		"--kubeconfig", "this/path/does/not/exist",
+		"--provider", "inmemory",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// RunOnce error exits non-zero.
+func TestExecuteRunOnceErrorExitsNonZero(t *testing.T) {
+	// Connector source dials a TCP server; use a closed port to fail.
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "connector",
+		"--connector-source-server", "127.0.0.1:1",
+		"--provider", "inmemory",
+		"--once",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// Run loop error exits non-zero.
+func TestExecuteRunLoopErrorExitsNonZero(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "connector",
+		"--connector-source-server", "127.0.0.1:1",
+		"--provider", "inmemory",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// buildController registry-creation failure triggers log.Fatal.
+func TestExecuteBuildControllerErrorExitsNonZero(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "fake",
+		"--provider", "inmemory",
+		"--registry", "dynamodb",
+		// Force NewDynamoDBRegistry to fail validation by using empty owner id
+		"--txt-owner-id", "",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+// Controller run loop stops on context cancel.
+func TestControllerRunCancelContextStopsLoop(t *testing.T) {
+	// Minimal controller using fake source and inmemory provider.
+	cfg := &externaldns.Config{
+		Sources:    []string{"fake"},
+		Provider:   "inmemory",
+		LogLevel:   "error",
+		LogFormat:  "text",
+		Policy:     "sync",
+		Registry:   "txt",
+		TXTOwnerID: "test-owner",
+	}
+	sCfg, err := source.NewSourceConfig(cfg)
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	src, err := wrappers.Build(ctx, sCfg)
+	require.NoError(t, err)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
+	p, err := provider.Select(ctx, cfg, domainFilter)
+	require.NoError(t, err)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	go func() {
+		ctrl.Run(ctx)
+		close(done)
+	}()
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("controller did not stop after context cancellation")
+	}
 }

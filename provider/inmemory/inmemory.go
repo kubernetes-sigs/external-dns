@@ -19,10 +19,13 @@ package inmemory
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -53,13 +56,19 @@ type InMemoryProvider struct {
 	OnRecords      func()
 }
 
+// New creates an InMemory provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(InMemoryInitZones(cfg.InMemoryZones), InMemoryWithDomain(domainFilter), InMemoryWithLogging()), nil
+}
+
 // InMemoryOption allows to extend in-memory provider
+// TODO: review this pattern, and consider inline with other providers
 type InMemoryOption func(*InMemoryProvider)
 
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+		p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -77,7 +86,7 @@ func InMemoryWithLogging() InMemoryOption {
 }
 
 // InMemoryWithDomain modifies the domain on which dns zones are filtered
-func InMemoryWithDomain(domainFilter endpoint.DomainFilter) InMemoryOption {
+func InMemoryWithDomain(domainFilter *endpoint.DomainFilter) InMemoryOption {
 	return func(p *InMemoryProvider) {
 		p.domain = domainFilter
 	}
@@ -96,9 +105,14 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
+	return newProvider(opts...)
+}
+
+// newProvider returns InMemoryProvider DNS provider interface implementation
+func newProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
-		OnApplyChanges: func(ctx context.Context, changes *plan.Changes) {},
+		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},
 		OnRecords:      func() {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
@@ -122,17 +136,13 @@ func (im *InMemoryProvider) Zones() map[string]string {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for zoneID := range im.Zones() {
-		records, err := im.client.Records(zoneID)
-		if err != nil {
-			return nil, err
-		}
-
+		records, _ := im.client.Records(zoneID)
 		endpoints = append(endpoints, copyEndpoints(records)...)
 	}
 
@@ -204,9 +214,7 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	for _, ep := range endpoints {
 		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
-		for k, v := range ep.Labels {
-			newEp.Labels[k] = v
-		}
+		maps.Copy(newEp.Labels, ep.Labels)
 		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)
 		records = append(records, newEp)
 	}
@@ -230,7 +238,7 @@ func (f *filter) Zones(zones map[string]string) map[string]string {
 
 // EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
 // returns empty string if no match found
-func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string) {
+func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) string {
 	var matchZoneID, matchZoneName string
 	for zoneID, zoneName := range zones {
 		if strings.HasSuffix(endpoint.DNSName, zoneName) && len(zoneName) > len(matchZoneName) {
@@ -280,7 +288,7 @@ func (c *inMemoryClient) CreateZone(zone string) error {
 	return nil
 }
 
-func (c *inMemoryClient) ApplyChanges(ctx context.Context, zoneID string, changes *plan.Changes) error {
+func (c *inMemoryClient) ApplyChanges(_ context.Context, zoneID string, changes *plan.Changes) error {
 	if err := c.validateChangeBatch(zoneID, changes); err != nil {
 		return err
 	}
@@ -312,7 +320,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 	}
 	mesh := sets.New[endpoint.EndpointKey]()
 	for _, newEndpoint := range changes.Create {
-		if _, exists := curZone[newEndpoint.Key()]; exists {
+		if _, ok := curZone[newEndpoint.Key()]; ok {
 			return ErrRecordAlreadyExists
 		}
 		if err := c.updateMesh(mesh, newEndpoint); err != nil {
@@ -320,7 +328,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 		}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		if _, exists := curZone[updateEndpoint.Key()]; !exists {
+		if _, ok := curZone[updateEndpoint.Key()]; !ok {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, updateEndpoint); err != nil {
@@ -328,12 +336,12 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 		}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec, exists := curZone[updateOldEndpoint.Key()]; !exists || rec.Targets[0] != updateOldEndpoint.Targets[0] {
+		if rec, ok := curZone[updateOldEndpoint.Key()]; !ok || rec.Targets[0] != updateOldEndpoint.Targets[0] {
 			return ErrRecordNotFound
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
-		if rec, exists := curZone[deleteEndpoint.Key()]; !exists || rec.Targets[0] != deleteEndpoint.Targets[0] {
+		if rec, ok := curZone[deleteEndpoint.Key()]; !ok || rec.Targets[0] != deleteEndpoint.Targets[0] {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, deleteEndpoint); err != nil {

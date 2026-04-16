@@ -22,11 +22,16 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// Validate that FakeSource is a source
+var _ Source = &fakeSource{}
+
 func generateTestEndpoints() []*endpoint.Endpoint {
-	sc, _ := NewFakeSource("")
+	sc, _ := NewFakeSource(&Config{})
 
 	endpoints, _ := sc.Endpoints(context.Background())
 
@@ -69,5 +74,12 @@ func TestFakeEndpointsResolveToIPAddresses(t *testing.T) {
 	}
 }
 
-// Validate that FakeSource is a source
-var _ Source = &fakeSource{}
+func TestFakeSource_GenerateEndpoint_RefObject(t *testing.T) {
+	sc, _ := NewFakeSource(&Config{})
+	fs := sc.(*fakeSource)
+
+	ep := fs.generateEndpoint()
+	require.NotNil(t, ep, "endpoint should not be nil")
+	require.NotNil(t, ep.RefObject())
+	require.Equal(t, "Pod", ep.RefObject().Kind)
+}

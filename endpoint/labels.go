@@ -90,8 +90,8 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 func NewLabelsFromString(labelText string, aesKey []byte) (Labels, error) {
 	if len(aesKey) != 0 {
 		decryptedText, encryptionNonce, err := DecryptText(strings.Trim(labelText, "\""), aesKey)
-		// in case if we have decryption error, just try process original text
-		// decryption errors should be ignored here, because we can already have plain-text labels in registry
+		// in case if we have a decryption error, try process original text
+		// decryption errors should be ignored here, because we can already have plain-text labels in the registry
 		if err == nil {
 			labels, err := NewLabelsFromStringPlain(decryptedText)
 			if err == nil {
@@ -133,16 +133,14 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 		return l.SerializePlain(withQuotes)
 	}
 
-	var encryptionNonce []byte
-	if extractedNonce, nonceExists := l[txtEncryptionNonce]; nonceExists {
-		encryptionNonce = []byte(extractedNonce)
-	} else {
+	encryptionNonce, ok := l[txtEncryptionNonce]
+	if !ok {
 		var err error
 		encryptionNonce, err = GenerateNonce()
 		if err != nil {
-			log.Fatalf("Failed to generate cryptographic nonce %#v.", err)
+			log.Fatalf("Failed to generate cryptographic nonce: %v", err)
 		}
-		l[txtEncryptionNonce] = string(encryptionNonce)
+		l[txtEncryptionNonce] = encryptionNonce
 	}
 
 	text := l.SerializePlain(false)
@@ -150,8 +148,9 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	var err error
 	text, err = EncryptText(text, aesKey, encryptionNonce)
 	if err != nil {
+		// TODO: review if we could return error instead of crashing the external-dns
 		// if encryption failed, the external-dns will crash
-		log.Fatalf("Failed to encrypt the text %#v using the encryption key %#v. Got error %#v.", text, aesKey, err)
+		log.Fatalf("Failed to encrypt the text: %v", err)
 	}
 
 	if withQuotes {

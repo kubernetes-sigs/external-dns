@@ -28,12 +28,22 @@ type zoneIDFilterTest struct {
 	expected     bool
 }
 
+type zoneIdFilterTestIsConfigured struct {
+	zoneIDFilter []string
+	expected     bool
+}
+
 func TestZoneIDFilterMatch(t *testing.T) {
 	zone := "/hostedzone/ZTST1"
 
 	for _, tt := range []zoneIDFilterTest{
 		{
 			[]string{},
+			zone,
+			true,
+		},
+		{
+			[]string{""},
 			zone,
 			true,
 		},
@@ -75,5 +85,33 @@ func TestZoneIDFilterMatch(t *testing.T) {
 	} {
 		zoneIDFilter := NewZoneIDFilter(tt.zoneIDFilter)
 		assert.Equal(t, tt.expected, zoneIDFilter.Match(tt.zone))
+	}
+}
+
+func TestZoneIDFilterIsConfigured(t *testing.T) {
+	for _, tt := range []zoneIdFilterTestIsConfigured{
+		{
+			[]string{""},
+			false,
+		},
+		{
+			[]string{},
+			false,
+		},
+		{
+			[]string{"/hostedzone/ZTST2"},
+			true,
+		},
+		{
+			[]string{"/hostedzone/ZTST2", "hostedzone/ZTST2"},
+			true,
+		},
+		{
+			[]string{"/ZSTS2"},
+			true,
+		},
+	} {
+		zoneIDFilter := NewZoneIDFilter(tt.zoneIDFilter)
+		assert.Equal(t, tt.expected, zoneIDFilter.IsConfigured())
 	}
 }

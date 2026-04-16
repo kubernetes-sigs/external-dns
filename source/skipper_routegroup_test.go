@@ -17,17 +17,21 @@ limitations under the License.
 package source
 
 import (
-	"context"
+	"errors"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/internal/testutils"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
-		Metadata: itemMetadata{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ns,
 			Name:        name,
 			Annotations: annotations,
@@ -103,7 +107,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					hostnameAnnotationKey: "my.example",
+					annotations.HostnameKey: "my.example",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -132,7 +136,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					hostnameAnnotationKey: "my.example",
+					annotations.HostnameKey: "my.example",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -156,7 +160,7 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				"namespace1",
 				"rg1",
 				map[string]string{
-					ttlAnnotationKey: "2189",
+					annotations.TtlKey: "2189",
 				},
 				[]string{"rg1.k8s.example"},
 				[]routeGroupLoadBalancer{
@@ -274,11 +278,38 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "Routegroup with provider-specific annotation creates endpoint with provider-specific property",
+			source: &routeGroupSource{},
+			rg: createTestRouteGroup(
+				"namespace1",
+				"rg1",
+				map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				[]string{"rg1.k8s.example"},
+				[]routeGroupLoadBalancer{
+					{
+						Hostname: "lb.example.org",
+					},
+				},
+			),
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.source.endpointsFromRouteGroup(tt.rg)
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }
@@ -297,11 +328,12 @@ func (f *fakeRouteGroupClient) getRouteGroupList(string) (*routeGroupList, error
 
 func TestRouteGroupsEndpoints(t *testing.T) {
 	for _, tt := range []struct {
-		name         string
-		source       *routeGroupSource
-		fqdnTemplate string
-		want         []*endpoint.Endpoint
-		wantErr      bool
+		name        string
+		source      *routeGroupSource
+		templates   string
+		combineFQDN bool
+		want        []*endpoint.Endpoint
+		wantErr     bool
 	}{
 		{
 			name: "Empty routegroup should return empty endpoints",
@@ -343,10 +375,10 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name:         "Single routegroup with combineFQDNAnnotation with fqdn template should return endpoints from fqdnTemplate and routegroup",
-			fqdnTemplate: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
+			name:        "Single routegroup with combineFQDNAnnotation with fqdn template should return endpoints from fqdnTemplate and routegroup",
+			templates:   "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
+			combineFQDN: true,
 			source: &routeGroupSource{
-				combineFQDNAnnotation: true,
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
 						Items: []*routeGroup{
@@ -379,8 +411,8 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name:         "Single routegroup without, with fqdn template should return endpoints from fqdnTemplate",
-			fqdnTemplate: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
+			name:      "Single routegroup without, with fqdn template should return endpoints from fqdnTemplate",
+			templates: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
 			source: &routeGroupSource{
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
@@ -409,8 +441,8 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name:         "Single routegroup without combineFQDNAnnotation with fqdn template should return endpoints not from fqdnTemplate",
-			fqdnTemplate: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
+			name:      "Single routegroup without combineFQDNAnnotation with fqdn template should return endpoints not from fqdnTemplate",
+			templates: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
 			source: &routeGroupSource{
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
@@ -448,7 +480,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg1",
 								map[string]string{
-									ttlAnnotationKey: "2189",
+									annotations.TtlKey: "2189",
 								},
 								[]string{"rg1.k8s.example"},
 								[]routeGroupLoadBalancer{
@@ -735,7 +767,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg1",
 								map[string]string{
-									controllerAnnotationKey: controllerAnnotationValue,
+									annotations.ControllerKey: annotations.ControllerValue,
 								},
 								[]string{"rg1.k8s.example"},
 								[]routeGroupLoadBalancer{
@@ -748,7 +780,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								"namespace1",
 								"rg2",
 								map[string]string{
-									controllerAnnotationKey: "dns",
+									annotations.ControllerKey: "dns",
 								},
 								[]string{"rg2.k8s.example"},
 								[]routeGroupLoadBalancer{
@@ -787,15 +819,15 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.fqdnTemplate != "" {
-				tmpl, err := parseTemplate(tt.fqdnTemplate)
-				if err != nil {
-					t.Fatalf("Failed to parse template: %v", err)
+			if tt.templates != "" {
+				if tt.combineFQDN {
+					tt.source.templateEngine = templatetest.MustEngine(t, tt.templates, "", "", true)
+				} else {
+					tt.source.templateEngine = templatetest.MustEngine(t, tt.templates, "", "", false)
 				}
-				tt.source.fqdnTemplate = tmpl
 			}
 
-			got, err := tt.source.Endpoints(context.Background())
+			got, err := tt.source.Endpoints(t.Context())
 			if err != nil && !tt.wantErr {
 				t.Errorf("Got error, but does not want to get an error: %v", err)
 			}
@@ -803,7 +835,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 				t.Fatal("Got no error, but we want to get an error")
 			}
 
-			validateEndpoints(t, got, tt.want)
+			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
 }
@@ -829,60 +861,10 @@ func TestResourceLabelIsSet(t *testing.T) {
 		},
 	}
 
-	got, _ := source.Endpoints(context.Background())
+	got, _ := source.Endpoints(t.Context())
 	for _, ep := range got {
 		if _, ok := ep.Labels[endpoint.ResourceLabelKey]; !ok {
 			t.Errorf("Failed to set resource label on ep %v", ep)
 		}
-	}
-}
-
-func TestParseTemplate(t *testing.T) {
-	for _, tt := range []struct {
-		name                     string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			name:         "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			name:        "valid empty template",
-			expectError: false,
-		},
-		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			name:                     "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			name:             "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseTemplate(tt.fqdnTemplate)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
 	}
 }

@@ -1,0 +1,381 @@
+/*
+Copyright 2025 The Kubernetes Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package source
+
+import (
+	"testing"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/types"
+)
+
+func TestParseIngress(t *testing.T) {
+	tests := []struct {
+		name      string
+		ingress   string
+		wantNS    string
+		wantName  string
+		wantError bool
+	}{
+		{
+			name:      "valid namespace and name",
+			ingress:   "default/test-ingress",
+			wantNS:    "default",
+			wantName:  "test-ingress",
+			wantError: false,
+		},
+		{
+			name:      "only name provided",
+			ingress:   "test-ingress",
+			wantNS:    "",
+			wantName:  "test-ingress",
+			wantError: false,
+		},
+		{
+			name:      "invalid format",
+			ingress:   "default/test/ingress",
+			wantNS:    "",
+			wantName:  "",
+			wantError: true,
+		},
+		{
+			name:      "empty string",
+			ingress:   "",
+			wantNS:    "",
+			wantName:  "",
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotNS, gotName, err := ParseIngress(tt.ingress)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantNS, gotNS)
+			assert.Equal(t, tt.wantName, gotName)
+		})
+	}
+}
+
+func TestMergeEndpoints(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []*endpoint.Endpoint
+		expected []*endpoint.Endpoint
+	}{
+		{
+			name:     "nil input returns nil",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "empty input returns empty",
+			input:    []*endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "single endpoint unchanged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			name: "different keys not merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+			},
+		},
+		{
+			name: "same DNSName different RecordType not merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
+			},
+		},
+		{
+			name: "same key merged with sorted targets",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
+			},
+		},
+		{
+			name: "multiple endpoints same key merged",
+			input: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "2.2.2.2", "3.3.3.3"}},
+			},
+		},
+		{
+			name: "mixed merge and no merge",
+			input: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "3.3.3.3"}},
+				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
+			},
+		},
+		{
+			name: "duplicate targets deduplicated",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "1.2.3.4", "5.6.7.8"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			name: "duplicate targets across merged endpoints deduplicated",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			name: "CNAME endpoints not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+			},
+		},
+		{
+			name: "CNAME with no targets is skipped",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			name: "identical CNAME endpoints deduplicated",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			},
+		},
+		{
+			name: "same key with different TTL not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
+			},
+		},
+		{
+			name: "same DNSName and RecordType with different SetIdentifier not merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+			},
+		},
+		{
+			name: "same DNSName, RecordType and SetIdentifier targets are merged",
+			input: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input)
+			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_RefObjects(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() []*endpoint.Endpoint
+		expected func(*testing.T, []*endpoint.Endpoint)
+	}{
+		{
+			name:  "empty input",
+			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Empty(t, ep)
+			},
+		},
+		{
+			name: "single endpoint",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints merged and only single refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Equal(t, types.Service, ep[0].RefObject().Source)
+				assert.Equal(t, "foo", ep[0].RefObject().Name)
+				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+				assert.NotEqual(t, "345", string(ep[0].RefObject().UID))
+			},
+		},
+		{
+			name: "two endpoints not merged and two refObject preserved",
+			input: func() []*endpoint.Endpoint {
+				return []*endpoint.Endpoint{
+					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					}, types.Service),
+					testutils.NewEndpointWithRef("b.example.com", "1.1.1.2", &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+					}, types.Service),
+				}
+			},
+			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
+				assert.Len(t, ep, 2)
+				assert.NotEqual(t, ep[0], ep[1])
+				for _, el := range ep {
+					assert.Equal(t, types.Service, el.RefObject().Source)
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input())
+			tt.expected(t, result)
+		})
+	}
+}
+
+func TestMergeEndpointsLogging(t *testing.T) {
+	t.Run("warns on CNAME conflict", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
+		})
+
+		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
+		logtest.TestHelperLogContains("example.com CNAME a.elb.com", hook, t)
+		logtest.TestHelperLogContains("example.com CNAME b.elb.com", hook, t)
+	})
+
+	t.Run("no warning for identical CNAMEs", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
+		})
+
+		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+	})
+
+	t.Run("no warning for same DNSName with different SetIdentifier", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
+		})
+
+		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+	})
+
+	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+		MergeEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
+		})
+
+		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContains("example.com", hook, t)
+	})
+}

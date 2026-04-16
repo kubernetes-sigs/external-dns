@@ -17,7 +17,6 @@ limitations under the License.
 package plural
 
 import (
-	"context"
 	"testing"
 
 	"sigs.k8s.io/external-dns/plan"
@@ -26,6 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -128,7 +128,7 @@ func TestPluralRecords(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			provider := newPluralProvider(test.records)
 
-			actual, err := provider.Records(context.Background())
+			actual, err := provider.Records(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -174,18 +174,18 @@ func TestPluralApplyChangesCreate(t *testing.T) {
 			provider := newPluralProvider(nil)
 
 			// no records
-			actual, err := provider.Records(context.Background())
+			actual, err := provider.Records(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, len(actual), 0, "expected no entries")
+			assert.Empty(t, actual, "expected no entries")
 
-			err = provider.ApplyChanges(context.Background(), &plan.Changes{Create: test.expectedEndpoints})
+			err = provider.ApplyChanges(t.Context(), &plan.Changes{Create: test.expectedEndpoints})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			actual, err = provider.Records(context.Background())
+			actual, err = provider.Records(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -358,12 +358,12 @@ func TestPluralApplyChangesDelete(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			provider := newPluralProvider(test.records)
 
-			err := provider.ApplyChanges(context.Background(), &plan.Changes{Delete: test.deleteEndpoints})
+			err := provider.ApplyChanges(t.Context(), &plan.Changes{Delete: test.deleteEndpoints})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			actual, err := provider.Records(context.Background())
+			actual, err := provider.Records(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}

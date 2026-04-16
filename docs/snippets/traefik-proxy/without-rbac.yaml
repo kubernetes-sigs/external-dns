@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - name: external-dns
+        # update this to the desired external-dns version
+        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        args:
+        - --source=traefik-proxy
+        - --provider=aws
+        - --registry=txt
+        - --txt-owner-id=my-identifier

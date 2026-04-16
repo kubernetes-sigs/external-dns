@@ -58,8 +58,11 @@ The following fields are used:
 * `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
-* `activeDirectoryAuthorityHost` - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables).
+* `activeDirectoryAuthorityHost` - this contains the URI to override the default Azure Active Directory authority endpoint.
+  This is useful for Azure Stack Cloud deployments or custom environments.
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
+* `ResourceManagerAudience` - this specifies the audience for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to authenticate with the correct Resource Manager endpoint.
+* `ResourceManagerEndpoint` - this specifies the endpoint URL for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to point to the correct Resource Manager instance.
 
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
 
@@ -493,6 +496,7 @@ NOTE: make sure the pod is restarted whenever you make a configuration change.
 ## Throttling
 
 When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
+Also, one can leverage the built-in retry policies of the Azure SDK with a tunable maxRetries value. Environment variable AZURE_SDK_MAX_RETRIES can be specified in the manifest yaml to configure behavior. The defualt value of Azure SDK retry is 3.
 
 ## Ingress used with ExternalDNS
 
@@ -506,6 +510,60 @@ Ensure that your nginx-ingress deployment has the following arg: added to it:
 ```
 
 For more details see here: [nginx-ingress external-dns](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead)
+
+## DNS Record Metadata (Tags)
+
+External-DNS supports setting Azure resource metadata (tags) on DNS records using annotations on Kubernetes resources.
+
+### Usage with Ingress
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/azure-tags: "cost-center=12345,owner=backend-team"
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+### Usage with Gateway API (HTTPRoute)
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    external-dns.alpha.kubernetes.io/azure-tags: "environment=production,app=myapp"
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - "api.example.com"
+  rules:
+    - backendRefs:
+        - name: my-service
+          port: 8080
+```
+
+**Note:** Metadata annotations must be placed directly on each route resource (HTTPRoute, TLSRoute, GRPCRoute, etc.). Gateway annotations are not automatically inherited by routes.
+
+### Annotation Format
+
+Metadata annotations must follow the format:
+`external-dns.alpha.kubernetes.io/azure-tags: "key1=value1,key2=value2"`
 
 ## Deploy ExternalDNS
 
@@ -533,13 +591,14 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
         - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
@@ -564,7 +623,10 @@ metadata:
   name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services","endpoints","pods", "nodes"]
+    resources: ["services","pods", "nodes"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get","watch","list"]
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
@@ -601,7 +663,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
@@ -609,6 +671,7 @@ spec:
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
             - --txt-prefix=externaldns-
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
@@ -637,7 +700,10 @@ metadata:
   name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services","endpoints","pods"]
+    resources: ["services","pods"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get","watch","list"]
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
@@ -673,13 +739,14 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes

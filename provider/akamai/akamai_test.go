@@ -17,24 +17,23 @@ limitations under the License.
 package akamai
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
 
 type edgednsStubData struct {
-	objType       string // zone, record, recordsets
-	output        []interface{}
-	updateRecords []interface{}
-	createRecords []interface{}
+	objType string // zone, record, recordsets
+	output  []any
 }
 
 type edgednsStub struct {
@@ -47,7 +46,7 @@ func newStub() *edgednsStub {
 	}
 }
 
-func createAkamaiStubProvider(stub *edgednsStub, domfilter endpoint.DomainFilter, idfilter provider.ZoneIDFilter) (*AkamaiProvider, error) {
+func createAkamaiStubProvider(stub *edgednsStub, domfilter *endpoint.DomainFilter, idfilter provider.ZoneIDFilter) (*AkamaiProvider, error) {
 	akamaiConfig := AkamaiConfig{
 		DomainFilter:          domfilter,
 		ZoneIDFilter:          idfilter,
@@ -57,7 +56,7 @@ func createAkamaiStubProvider(stub *edgednsStub, domfilter endpoint.DomainFilter
 		AccessToken:           "test_access_token",
 	}
 
-	prov, err := NewAkamaiProvider(akamaiConfig, stub)
+	prov, err := newProvider(akamaiConfig, stub)
 	aprov := prov.(*AkamaiProvider)
 	return aprov, err
 }
@@ -71,7 +70,7 @@ func (r *edgednsStub) createStubDataEntry(objtype string) {
 	return
 }
 
-func (r *edgednsStub) setOutput(objtype string, output []interface{}) {
+func (r *edgednsStub) setOutput(objtype string, output []any) {
 	log.Debugf("Setting output to %v", output)
 	r.createStubDataEntry(objtype)
 	stubdata := r.stubData[objtype]
@@ -81,27 +80,7 @@ func (r *edgednsStub) setOutput(objtype string, output []interface{}) {
 	return
 }
 
-func (r *edgednsStub) setUpdateRecords(objtype string, records []interface{}) {
-	log.Debugf("Setting updaterecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.updateRecords = records
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) setCreateRecords(objtype string, records []interface{}) {
-	log.Debugf("Setting createrecords to %v", records)
-	r.createStubDataEntry(objtype)
-	stubdata := r.stubData[objtype]
-	stubdata.createRecords = records
-	r.stubData[objtype] = stubdata
-
-	return
-}
-
-func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
+func (r *edgednsStub) ListZones(_ dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error) {
 	log.Debugf("Entering ListZones")
 	// Ignore Metadata`
 	resp := &dns.ZoneListResponse{}
@@ -116,7 +95,7 @@ func (r *edgednsStub) ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListR
 	return resp, nil
 }
 
-func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
+func (r *edgednsStub) GetRecordsets(_ string, _ dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error) {
 	log.Debugf("Entering GetRecordsets")
 	// Ignore Metadata`
 	resp := &dns.RecordSetResponse{}
@@ -130,37 +109,38 @@ func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArg
 	return resp, nil
 }
 
-func (r *edgednsStub) CreateRecordsets(recordsets *dns.Recordsets, zone string, reclock bool) error {
+func (r *edgednsStub) CreateRecordsets(_ *dns.Recordsets, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error) {
+func (r *edgednsStub) GetRecord(_ string, _ string, _ string) (*dns.RecordBody, error) {
 	resp := &dns.RecordBody{}
 
 	return resp, nil
 }
 
-func (r *edgednsStub) DeleteRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) DeleteRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 
-func (r *edgednsStub) UpdateRecord(record *dns.RecordBody, zone string, recLock bool) error {
+func (r *edgednsStub) UpdateRecord(_ *dns.RecordBody, _ string, _ bool) error {
 	return nil
 }
 
 // Test FetchZones
 func TestFetchZonesZoneIDFilter(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.NewZoneIDFilter([]string{"Test"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com", "test2.testzone.com"})
+	assert.NoError(t, err)
+	stub.setOutput("zone", []any{"test1.testzone.com", "test2.testzone.com"})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
-		assert.Equal(t, "{\"zones\":[{\"contractId\":\"contract\",\"zone\":\"test1.testzone.com\"},{\"contractId\":\"contract\",\"zone\":\"test2.testzone.com\"}]}", string(y))
+		assert.JSONEq(t, "{\"zones\":[{\"contractId\":\"contract\",\"zone\":\"test1.testzone.com\"},{\"contractId\":\"contract\",\"zone\":\"test2.testzone.com\"}]}", string(y))
 	}
 }
 
@@ -169,25 +149,26 @@ func TestFetchZonesEmpty(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"Nonexistent"})
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
-	stub.setOutput("zone", []interface{}{})
+	require.NoError(t, err)
+	stub.setOutput("zone", []any{})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
-		assert.Equal(t, "{\"zones\":[]}", string(y))
+		assert.JSONEq(t, "{\"zones\":[]}", string(y))
 	}
 }
 
 // TestAkamaiRecords tests record endpoint
 func TestAkamaiRecords(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
-	recordsets := make([]interface{}, 0)
+	require.NoError(t, err)
+	stub.setOutput("zone", []any{"test1.testzone.com"})
+	recordsets := make([]any, 0)
 	recordsets = append(recordsets, dns.Recordset{
 		Name:  "www.example.com",
 		Type:  endpoint.RecordTypeA,
@@ -209,7 +190,7 @@ func TestAkamaiRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -217,15 +198,15 @@ func TestAkamaiRecords(t *testing.T) {
 
 func TestAkamaiRecordsEmpty(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
-	recordsets := make([]interface{}, 0)
+	require.NoError(t, err)
+	stub.setOutput("zone", []any{"test1.testzone.com"})
+	recordsets := make([]any, 0)
 	stub.setOutput("recordset", recordsets)
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	assert.Nil(t, x)
 }
 
@@ -234,9 +215,9 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"www.exclude.me"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
-	stub.setOutput("zone", []interface{}{"www.exclude.me"})
-	recordsets := make([]interface{}, 0)
+	assert.NoError(t, err)
+	stub.setOutput("zone", []any{"www.exclude.me"})
+	recordsets := make([]any, 0)
 	recordsets = append(recordsets, dns.Recordset{
 		Name:  "www.example.com",
 		Type:  endpoint.RecordTypeA,
@@ -251,7 +232,7 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "192.168.0.1", "192.168.0.2"))
 
-	x, _ := c.Records(context.Background())
+	x, _ := c.Records(t.Context())
 	if assert.NotNil(t, x) {
 		assert.Equal(t, endpoints, x)
 	}
@@ -261,10 +242,10 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 // (p AkamaiProvider) createRecordsets(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) error
 func TestCreateRecords(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -272,33 +253,34 @@ func TestCreateRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.createRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateRecordsDomainFilter(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
-	endpoints := make([]*endpoint.Endpoint, 0)
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
-	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
+	exclude := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+	}
 
 	err = c.createRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // TestDeleteRecords validate delete
 func TestDeleteRecords(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -306,7 +288,7 @@ func TestDeleteRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.deleteRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestDeleteRecordsDomainFilter(t *testing.T) {
@@ -314,25 +296,26 @@ func TestDeleteRecordsDomainFilter(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
-	endpoints := make([]*endpoint.Endpoint, 0)
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
-	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
+	exclude := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+	}
 
 	err = c.deleteRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // Test record update func
 func TestUpdateRecords(t *testing.T) {
 	stub := newStub()
-	domfilter := endpoint.DomainFilter{}
+	domfilter := &endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -340,7 +323,7 @@ func TestUpdateRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.updateNewRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestUpdateRecordsDomainFilter(t *testing.T) {
@@ -348,16 +331,17 @@ func TestUpdateRecordsDomainFilter(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
-	endpoints := make([]*endpoint.Endpoint, 0)
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
-	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
-	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
+	exclude := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"),
+	}
 
 	err = c.updateNewRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAkamaiApplyChanges(t *testing.T) {
@@ -365,9 +349,9 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
-	stub.setOutput("zone", []interface{}{"example.com"})
+	stub.setOutput("zone", []any{"example.com"})
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{
 		{DNSName: "www.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300},
@@ -381,6 +365,6 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
-	apply := c.ApplyChanges(context.Background(), changes)
-	assert.Nil(t, apply)
+	apply := c.ApplyChanges(t.Context(), changes)
+	assert.NoError(t, apply)
 }

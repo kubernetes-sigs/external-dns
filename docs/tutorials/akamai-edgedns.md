@@ -15,19 +15,19 @@ The Akamai Edge DNS provider requires valid Akamai Edgegrid API authentication c
 
 Either directly by key or indirectly via a file can set credentials for the provider. The Akamai credential keys and mappings to the Akamai provider utilizing different presentation methods are:
 
-| Edgegrid Auth Key | External-DNS Cmd Line Key | Environment/ConfigMap Key | Description |
-| ----------------- | ------------------------- | ------------------------- | ----------- |
-| host | akamai-serviceconsumerdomain | EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN | Akamai Edgegrid API server |
-| access_token | akamai-access-token | EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN | Akamai Edgegrid API access token |
-| client_token | akamai-client-token  | EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN |Akamai Edgegrid API client token |
-| client-secret | akamai-client-secret | EXTERNAL_DNS_AKAMAI_CLIENT_SECRET |Akamai Edgegrid API client secret |
+| Edgegrid Auth Key | External-DNS Cmd Line Key    | Environment/ConfigMap Key                 | Description                       |
+|-------------------|------------------------------|-------------------------------------------|-----------------------------------|
+| host              | akamai-serviceconsumerdomain | EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN | Akamai Edgegrid API server        |
+| access_token      | akamai-access-token          | EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN          | Akamai Edgegrid API access token  |
+| client_token      | akamai-client-token          | EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN          | Akamai Edgegrid API client token  |
+| client-secret     | akamai-client-secret         | EXTERNAL_DNS_AKAMAI_CLIENT_SECRET         | Akamai Edgegrid API client secret |
 
 In addition to specifying auth credentials individually, an Akamai Edgegrid .edgerc file convention can set credentials.
 
-| External-DNS Cmd Line | Environment/ConfigMap | Description |
-| --------------------- | --------------------- | ----------- |
-| akamai-edgerc-path | EXTERNAL_DNS_AKAMAI_EDGERC_PATH | Accessible path to Edgegrid credentials file, e.g /home/test/.edgerc |
-| akamai-edgerc-section | EXTERNAL_DNS_AKAMAI_EDGERC_SECTION | Section in Edgegrid credentials file containing credentials |
+| External-DNS Cmd Line | Environment/ConfigMap              | Description                                                          |
+|-----------------------|------------------------------------|----------------------------------------------------------------------|
+| akamai-edgerc-path    | EXTERNAL_DNS_AKAMAI_EDGERC_PATH    | Accessible path to Edgegrid credentials file, e.g /home/test/.edgerc |
+| akamai-edgerc-section | EXTERNAL_DNS_AKAMAI_EDGERC_SECTION | Section in Edgegrid credentials file containing credentials          |
 
 [Akamai API Authentication](https://developer.akamai.com/getting-started/edgegrid) provides an overview and further information about authorization credentials for API base applications and tools.
 
@@ -104,7 +104,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service  # or ingress or both
         - --provider=akamai
@@ -150,7 +150,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -190,7 +193,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service  # or ingress or both
         - --provider=akamai

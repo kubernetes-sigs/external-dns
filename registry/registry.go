@@ -23,14 +23,16 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// Registry is an interface which should enables ownership concept in external-dns
-// Records() returns ALL records registered with DNS provider
-// each entry includes owner information
-// ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
+// Registry tracks ownership of DNS records managed by external-dns.
 type Registry interface {
+	// Records returns all DNS records known to the registry, including ownership metadata.
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
+	// ApplyChanges propagates the given changes to the DNS provider and updates ownership records accordingly.
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	// AdjustEndpoints normalises endpoints before they are processed by the planner.
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
+	// GetDomainFilter returns the domain filter configured for the underlying provider.
 	GetDomainFilter() endpoint.DomainFilterInterface
+	// OwnerID returns the owner identifier used to claim DNS records.
 	OwnerID() string
 }
