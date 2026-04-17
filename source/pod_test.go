@@ -737,6 +737,83 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"pending pod with empty PodIP and internal-hostname annotation should not create CNAME",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pending-pod",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "foo.example.com",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+					},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodPending,
+						PodIP: "",
+					},
+				},
+			},
+		},
+		{
+			"pending pod with empty PodIP and pod-source-domain should not create CNAME",
+			"",
+			"",
+			false,
+			"example.org",
+			[]*endpoint.Endpoint{},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pending-pod",
+						Namespace: "kube-system",
+					},
+					Spec: corev1.PodSpec{HostNetwork: false},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodPending,
+						PodIP: "",
+					},
+				},
+			},
+		},
+		{
+			"pending pod with empty PodIP and kops-dns-controller annotation should not create CNAME",
+			"",
+			"kops-dns-controller",
+			false,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pending-pod",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "foo.example.com",
+						},
+					},
+					Spec: corev1.PodSpec{HostNetwork: false},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodPending,
+						PodIP: "",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
