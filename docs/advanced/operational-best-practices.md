@@ -291,6 +291,79 @@ The following metrics are the first place to look when diagnosing operational pr
 | `external_dns_source_errors_total`                 | Sustained increase (Kubernetes API errors from informers)           |
 | `external_dns_registry_errors_total`               | Any increase (TXT / DynamoDB registry failures)                     |
 | `external_dns_controller_verified_records`         | Unexpected drop (records no longer owned by this instance)          |
+| `external_dns_controller_deletions_skipped_by_policy{owned="true"}` | > 0 under `--policy=upsert-only` / `--policy=create-only`: policy held back a DNS deletion for an owned record (source object likely removed). See the "Alerting on a Reset-on-idle gauge" note below for PromQL. Alert on `owned="unknown"` instead when running without `--txt-owner-id`. |
+
+The `owned="true"` series is the high-signal one: it fires only when the
+safety net actually caught a would-be deletion of a record this instance
+manages. The `owned="false"` series counts skipped deletions for records
+whose TXT owner label does not match this instance (orphans or records
+managed by a different external-dns) — usually steady-state noise. In
+deployments without ownership tracking the single `owned="unknown"`
+series is used instead (see the note below).
+
+The metric is only published when at least one deletion is skipped in
+the current reconcile; it is reset when a reconcile skips none so idle
+deployments do not create empty time series.
+
+!!! note "Ownership-disabled deployments"
+
+    When running without `--txt-owner-id` (e.g. with the `noop` registry)
+    there is no concept of ownership, so the metric emits a single
+    `owned="unknown"` series covering every skipped deletion and the
+    `owned="true"` / `owned="false"` series are not published. Alerting
+    rules on fleets that mix owner-id and ownership-disabled deployments
+    must account for the three possible label values.
+
+!!! warning "Alerting on a Reset-on-idle gauge"
+
+    Because the metric series is fully removed on every reconcile that
+    skips no deletions, PromQL expressions that require a continuous
+    sample (e.g. `avg_over_time(...[5m])`) will see gaps. Prefer
+    `max_over_time(external_dns_controller_deletions_skipped_by_policy{owned="true"}[Nm]) > 0`
+    with `N` comfortably larger than the reconcile interval so the
+    evaluation window always spans at least one emitted sample.
+
+!!! info "Debug-log volume on large clusters"
+
+    Enabling debug logging causes one structured log line per skipped
+    record per reconcile (`skipping deletion of record due to policy`).
+    Under `--policy=create-only`, a companion `skipping update of record
+    due to policy` line is emitted for every record update that the
+    policy drops; both logs carry the same `record`, `type`, `targets`,
+    `owned`, and `policy` fields, so a single parser rule works for
+    either. There is no metric for skipped updates, so debug logging
+    is currently the only observability for that case. On clusters with
+    thousands of held-back records either log can saturate
+    log-aggregation pipelines; prefer the metric for steady-state
+    observability of deletions and turn on debug logging only while
+    diagnosing.
+
+!!! info "`no_op_runs_total` while policy skips changes"
+
+    `external_dns_controller_no_op_runs_total` counts reconcile loops
+    that produced no provider-side changes. Under
+    `--policy=upsert-only` / `--policy=create-only` it also increments
+    on reconciles where the policy held changes back, because nothing
+    was applied to the DNS provider — so a rise in this counter under
+    those policies does not imply the source is in sync.
+
+    Disambiguation:
+
+    * For held-back **deletions** (upsert-only and create-only), alert
+      on `external_dns_controller_deletions_skipped_by_policy{owned="true"} > 0`
+      — wrap the expression in `max_over_time(...[Nm])` as described in
+      the *Alerting on a Reset-on-idle gauge* warning above, otherwise
+      the reconcile-interval gap will produce false-negative evaluations.
+    * For held-back **updates** (create-only only, with no dedicated
+      metric by design), watch for the `held back by policy` substring
+      in the controller's reconcile-end info log, or enable debug
+      logging to see the per-record `skipping update of record due to
+      policy` entries.
+
+    A reconcile under create-only can produce the update-only case
+    alone (source drifted, no records added or removed), which the
+    metric will NOT surface — relying on the metric as the sole
+    disambiguator leaves that case invisible.
 
 See [Available Metrics](../monitoring/metrics.md) for the full list.
 

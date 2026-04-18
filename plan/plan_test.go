@@ -861,6 +861,450 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSuppressedDeleteWithUpsertOnly() {
+	// bar192A is removed from desired; upsert-only must move its deletion
+	// into SuppressedDelete. OwnerID is unset, so the ownership filter is
+	// not exercised here.
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname}
+
+	p := &Plan{
+		Policies:       []Policy{&UpsertOnlyPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	// upsert-only: Delete is empty, SuppressedDelete has the removed record
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{})
+	validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{suite.bar192A})
+	suite.Equal(1, changes.SuppressedDeleteTotal)
+}
+
+func (suite *PlanTestSuite) TestSuppressedDeleteFilteredByOwnerID() {
+	// Two current records: one owned by "pwner", one owned by "other"
+	ownedRecord := &endpoint.Endpoint{
+		DNSName:    "owned",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.OwnerLabelKey:    "pwner",
+			endpoint.ResourceLabelKey: "ingress/default/owned",
+		},
+	}
+	unownedRecord := &endpoint.Endpoint{
+		DNSName:    "unowned",
+		Targets:    endpoint.Targets{"2.2.2.2"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.OwnerLabelKey:    "other",
+			endpoint.ResourceLabelKey: "ingress/default/unowned",
+		},
+	}
+
+	current := []*endpoint.Endpoint{ownedRecord, unownedRecord}
+	desired := []*endpoint.Endpoint{} // both removed from desired
+
+	p := &Plan{
+		Policies:       []Policy{&UpsertOnlyPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	// upsert-only strips all deletes, but ownership filter should also
+	// remove the unowned record from SuppressedDelete. The pre-filter total
+	// is preserved so the caller can report unowned suppressions too.
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{})
+	validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{ownedRecord})
+	suite.Equal(2, changes.SuppressedDeleteTotal)
+}
+
+func (suite *PlanTestSuite) TestSuppressedDeleteWithNoPolicy() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname}
+
+	p := &Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{suite.bar192A})
+	validateEntries(suite.T(), changes.SuppressedDelete, nil)
+	suite.Equal(0, changes.SuppressedDeleteTotal)
+}
+
+func (suite *PlanTestSuite) TestSuppressedDeleteWithSyncPolicy() {
+	// Sync policy should not suppress any deletions
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{suite.bar192A})
+	validateEntries(suite.T(), changes.SuppressedDelete, nil)
+}
+
+// TestSuppressedDeleteDeduplicated mirrors the existing deduplication
+// behaviour on changes.Delete: pathological providers can return the same
+// record more than once, and both the per-reconcile totals and the metric
+// must not double-count.
+func (suite *PlanTestSuite) TestSuppressedDeleteDeduplicated() {
+	dup := &endpoint.Endpoint{
+		DNSName:    "dup",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.OwnerLabelKey: "pwner",
+		},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&UpsertOnlyPolicy{}},
+		Current:        []*endpoint.Endpoint{dup, dup},
+		Desired:        []*endpoint.Endpoint{},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	suite.Equal(1, changes.SuppressedDeleteTotal,
+		"duplicates in Current must not inflate SuppressedDeleteTotal")
+	validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{dup})
+}
+
+// TestSuppressedDeletePartitionMatchesHelper guards against drift between
+// the inline ownership partition (see Plan.ownsEndpoint) and the shared
+// endpoint.FilterEndpointsByOwnerID helper: both must retain exactly the
+// same records when given identical input.
+func (suite *PlanTestSuite) TestSuppressedDeletePartitionMatchesHelper() {
+	ownedA := &endpoint.Endpoint{
+		DNSName: "owned-a", RecordType: "A", Targets: endpoint.Targets{"1.1.1.1"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	ownedB := &endpoint.Endpoint{
+		DNSName: "owned-b", RecordType: "A", Targets: endpoint.Targets{"1.1.1.2"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	foreign := &endpoint.Endpoint{
+		DNSName: "foreign", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	noLabels := &endpoint.Endpoint{
+		DNSName: "no-labels", RecordType: "A", Targets: endpoint.Targets{"3.3.3.3"},
+	}
+	nilLabels := &endpoint.Endpoint{
+		DNSName: "nil-labels", RecordType: "A", Targets: endpoint.Targets{"3.3.3.4"}, Labels: nil,
+	}
+	emptyOwner := &endpoint.Endpoint{
+		DNSName: "empty-owner", RecordType: "A", Targets: endpoint.Targets{"4.4.4.4"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: ""},
+	}
+
+	current := []*endpoint.Endpoint{ownedA, ownedB, foreign, noLabels, nilLabels, emptyOwner}
+
+	p := &Plan{
+		Policies:       []Policy{&UpsertOnlyPolicy{}},
+		Current:        current,
+		Desired:        []*endpoint.Endpoint{},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.SuppressedDelete,
+		endpoint.FilterEndpointsByOwnerID("pwner", current))
+	suite.Equal(len(current), changes.SuppressedDeleteTotal)
+}
+
+func (suite *PlanTestSuite) TestSuppressedDeleteWithCreateOnly() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname}
+
+	p := &Plan{
+		Policies:       []Policy{&CreateOnlyPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{})
+	validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{suite.bar192A})
+}
+
+// TestSuppressedDeleteWithCreateOnlyAndOwnerID mirrors
+// TestSuppressedDeleteFilteredByOwnerID for the CreateOnlyPolicy path so
+// a regression in CreateOnly-specific handling (it also strips Updates)
+// is caught at the plan level, not only in the controller test.
+func (suite *PlanTestSuite) TestSuppressedDeleteWithCreateOnlyAndOwnerID() {
+	ownedRecord := &endpoint.Endpoint{
+		DNSName:    "owned",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.OwnerLabelKey:    "pwner",
+			endpoint.ResourceLabelKey: "ingress/default/owned",
+		},
+	}
+	unownedRecord := &endpoint.Endpoint{
+		DNSName:    "unowned",
+		Targets:    endpoint.Targets{"2.2.2.2"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.OwnerLabelKey:    "other",
+			endpoint.ResourceLabelKey: "ingress/default/unowned",
+		},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&CreateOnlyPolicy{}},
+		Current:        []*endpoint.Endpoint{ownedRecord, unownedRecord},
+		Desired:        []*endpoint.Endpoint{},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Delete, []*endpoint.Endpoint{})
+	validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{ownedRecord})
+	suite.Equal(2, changes.SuppressedDeleteTotal)
+}
+
+// TestPlan_OwnsEndpoint covers the ownership predicate at the primitive
+// level — all other suppression tests exercise it transitively, but the
+// empty-OwnerID short-circuit and the nil/missing Labels paths deserve
+// direct coverage because they gate the whole owned=true/false metric.
+func TestPlan_OwnsEndpoint(t *testing.T) {
+	owner := "pwner"
+	for _, tc := range []struct {
+		name    string
+		ownerID string
+		ep      *endpoint.Endpoint
+		want    bool
+	}{
+		{"empty-ownerID treats every record as owned", "", &endpoint.Endpoint{DNSName: "a"}, true},
+		{"matching owner label", owner, &endpoint.Endpoint{Labels: endpoint.Labels{endpoint.OwnerLabelKey: owner}}, true},
+		{"mismatched owner label", owner, &endpoint.Endpoint{Labels: endpoint.Labels{endpoint.OwnerLabelKey: "other"}}, false},
+		{"missing owner label", owner, &endpoint.Endpoint{Labels: endpoint.Labels{}}, false},
+		{"nil labels map", owner, &endpoint.Endpoint{Labels: nil}, false},
+		{"empty owner label value", owner, &endpoint.Endpoint{Labels: endpoint.Labels{endpoint.OwnerLabelKey: ""}}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &Plan{OwnerID: tc.ownerID}
+			if got := p.ownsEndpoint(tc.ep); got != tc.want {
+				t.Errorf("ownsEndpoint(ownerID=%q, labels=%v) = %v, want %v", tc.ownerID, tc.ep.Labels, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestSuppressedDeleteDebugLogFields pins the structured-log schema for
+// the "skipping deletion of record due to policy" entry. If downstream
+// log pipelines parse those fields, an accidental rename in plan.go
+// would silently break them, so the keys are explicitly asserted here.
+func (suite *PlanTestSuite) TestSuppressedDeleteDebugLogFields() {
+	// Restore the standard-logger level at test teardown: the shared
+	// logtest helper elevates it globally and doesn't roll back, so
+	// subsequent tests in this binary would inherit Debug otherwise.
+	prevLevel := log.GetLevel()
+	suite.T().Cleanup(func() { log.SetLevel(prevLevel) })
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, suite.T())
+
+	ownedRec := &endpoint.Endpoint{
+		DNSName: "owned", RecordType: "A", Targets: endpoint.Targets{"1.1.1.1"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	foreignRec := &endpoint.Endpoint{
+		DNSName: "foreign", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	p := &Plan{
+		Policies:       []Policy{&UpsertOnlyPolicy{}},
+		Current:        []*endpoint.Endpoint{ownedRec, foreignRec},
+		Desired:        []*endpoint.Endpoint{},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	_ = p.Calculate()
+
+	const wantMsg = "skipping deletion of record due to policy"
+	var entries []log.Fields
+	for _, e := range hook.AllEntries() {
+		if e.Message == wantMsg {
+			entries = append(entries, e.Data)
+		}
+	}
+	suite.Require().Lenf(entries, 2, "expected one %q entry per suppressed record", wantMsg)
+	for _, fields := range entries {
+		for _, name := range []string{"record", "type", "targets", "owned", "policy"} {
+			suite.Containsf(fields, name, "expected log field %q to be emitted", name)
+		}
+		suite.Equal("upsert-only", fields["policy"])
+	}
+}
+
+// TestSuppressedUpdateDebugLogFields pins the structured-log schema for
+// the "skipping update of record due to policy" entry emitted when
+// CreateOnly drops an Update. The log fires from Plan.Calculate (not from
+// Policy.Apply) so the `owned` field can distinguish this instance's
+// records from foreign ones in a shared zone — symmetry with the
+// suppressed-deletion log is the point.
+func (suite *PlanTestSuite) TestSuppressedUpdateDebugLogFields() {
+	prevLevel := log.GetLevel()
+	suite.T().Cleanup(func() { log.SetLevel(prevLevel) })
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, suite.T())
+
+	// Mixed-owner setup: updating one owned and one foreign record to
+	// exercise both `owned=true` and `owned=false` in the same reconcile.
+	ownedOld := &endpoint.Endpoint{
+		DNSName: "owned", RecordType: "A", Targets: endpoint.Targets{"1.1.1.1"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	foreignOld := &endpoint.Endpoint{
+		DNSName: "foreign", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	ownedNew := &endpoint.Endpoint{
+		DNSName: "owned", RecordType: "A", Targets: endpoint.Targets{"1.1.1.9"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	foreignNew := &endpoint.Endpoint{
+		DNSName: "foreign", RecordType: "A", Targets: endpoint.Targets{"2.2.2.9"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	p := &Plan{
+		Policies:       []Policy{&CreateOnlyPolicy{}},
+		Current:        []*endpoint.Endpoint{ownedOld, foreignOld},
+		Desired:        []*endpoint.Endpoint{ownedNew, foreignNew},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	calculated := p.Calculate()
+
+	const wantMsg = "skipping update of record due to policy"
+	byRecord := map[string]log.Fields{}
+	for _, e := range hook.AllEntries() {
+		if e.Message != wantMsg {
+			continue
+		}
+		rec, _ := e.Data["record"].(string)
+		byRecord[rec] = e.Data
+	}
+	suite.Require().Lenf(byRecord, 2, "expected one %q entry per suppressed update", wantMsg)
+	for _, name := range []string{"record", "type", "targets", "owned", "policy"} {
+		suite.Containsf(byRecord["owned"], name, "missing field %q on owned entry", name)
+		suite.Containsf(byRecord["foreign"], name, "missing field %q on foreign entry", name)
+	}
+	suite.Equal(true, byRecord["owned"]["owned"], "owned record must log owned=true")
+	suite.Equal(false, byRecord["foreign"]["owned"], "foreign record must log owned=false")
+	suite.Equal("create-only", byRecord["owned"]["policy"])
+	suite.Equal("1.1.1.1", byRecord["owned"]["targets"],
+		"targets must serialize as a joined string, not []string")
+	// The field is declared as "consumed in-place" in plan.go; verify the
+	// returned Changes does not leak transient policy state even after the
+	// debug log path runs.
+	suite.Nil(calculated.Changes.SuppressedUpdateOld,
+		"SuppressedUpdateOld must be cleared on the Changes returned by Calculate")
+	// The count must survive so the controller's no-op log can reflect
+	// suppressed updates (see controller.suppressedSummary). It counts
+	// only THIS instance's suppressed updates — the foreign-owned entry
+	// is excluded because the ownership filter would have dropped its
+	// update regardless of policy, so blaming policy in the no-op log
+	// would falsely flag a shared-zone foreign drift as a local
+	// suppression.
+	suite.Equal(1, calculated.Changes.SuppressedUpdateTotal,
+		"SuppressedUpdateTotal must count only owned suppressions, not foreign-owned ones")
+}
+
+// TestSuppressedUpdateOldClearedAtInfoLevel pins the contract regardless of
+// log level: the transient field must be nil on the returned Changes even
+// when debug logging is off (the log loop is skipped but the clear still
+// runs). A regression that moved the clear inside the debug-gated branch
+// would silently leak state to downstream consumers in production where
+// debug is rarely enabled.
+func (suite *PlanTestSuite) TestSuppressedUpdateOldClearedAtInfoLevel() {
+	prevLevel := log.GetLevel()
+	suite.T().Cleanup(func() { log.SetLevel(prevLevel) })
+	log.SetLevel(log.InfoLevel)
+
+	rec := &endpoint.Endpoint{
+		DNSName: "rec", RecordType: "A", Targets: endpoint.Targets{"1.1.1.1"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	recNew := &endpoint.Endpoint{
+		DNSName: "rec", RecordType: "A", Targets: endpoint.Targets{"1.1.1.9"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	p := &Plan{
+		Policies:       []Policy{&CreateOnlyPolicy{}},
+		Current:        []*endpoint.Endpoint{rec},
+		Desired:        []*endpoint.Endpoint{recNew},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	suite.Nil(changes.SuppressedUpdateOld,
+		"field must be cleared even when the debug log path is skipped")
+	suite.Equal(1, changes.SuppressedUpdateTotal,
+		"count must be populated even when the debug log path is skipped")
+}
+
+// TestSuppressedDeleteMixedOwnerDuplicates guards against the
+// deduplicate-then-partition bug: endpoint.RemoveDuplicates keys only on
+// (DNS name, type, set identifier) and ignores labels, so two records with
+// the same DNS key but different owner labels must not allow the foreign
+// twin to evict the owned record. The fix partitions by ownership first
+// and dedups within each bucket. Tested in both input orderings because
+// planTable map iteration is non-deterministic.
+func (suite *PlanTestSuite) TestSuppressedDeleteMixedOwnerDuplicates() {
+	owned := &endpoint.Endpoint{
+		DNSName: "same", RecordType: "A", Targets: endpoint.Targets{"1.1.1.1"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+	foreign := &endpoint.Endpoint{
+		DNSName: "same", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"},
+		Labels: map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+
+	for _, tc := range []struct {
+		name    string
+		current []*endpoint.Endpoint
+	}{
+		{"foreign-first", []*endpoint.Endpoint{foreign, owned}},
+		{"owned-first", []*endpoint.Endpoint{owned, foreign}},
+	} {
+		suite.Run(tc.name, func() {
+			p := &Plan{
+				Policies:       []Policy{&UpsertOnlyPolicy{}},
+				Current:        tc.current,
+				Desired:        []*endpoint.Endpoint{},
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+				OwnerID:        "pwner",
+			}
+
+			changes := p.Calculate().Changes
+			validateEntries(suite.T(), changes.SuppressedDelete, []*endpoint.Endpoint{owned})
+			suite.Equal(2, changes.SuppressedDeleteTotal,
+				"owned and foreign must both be counted in total")
+		})
+	}
+}
+
 func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() {
 	current := []*endpoint.Endpoint{suite.multiple1}
 	desired := []*endpoint.Endpoint{suite.multiple2, suite.multiple3}

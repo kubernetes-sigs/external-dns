@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -117,6 +118,23 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	plan = plan.Calculate()
 
+	// Keep the metric silent when no policy skips deletions (the common
+	// "sync" case). When skips happen, publish owned=true/owned=false
+	// if ownership is configured, or a single owned=unknown series when the
+	// registry does not track ownership (e.g. the noop registry) — in that
+	// mode the owned-vs-foreign distinction is not meaningful and routing
+	// every skip into owned=true would contradict the label across
+	// the rest of the codebase (see endpoint.IsOwnedBy).
+	if plan.Changes.SuppressedDeleteTotal == 0 {
+		deletionsSkippedByPolicy.Reset()
+	} else if c.Registry.OwnerID() == "" {
+		deletionsSkippedByPolicy.SetWithLabels(float64(plan.Changes.SuppressedDeleteTotal), "unknown")
+	} else {
+		ownedSuppressed := len(plan.Changes.SuppressedDelete)
+		deletionsSkippedByPolicy.SetWithLabels(float64(ownedSuppressed), "true")
+		deletionsSkippedByPolicy.SetWithLabels(float64(plan.Changes.SuppressedDeleteTotal-ownedSuppressed), "false")
+	}
+
 	if plan.Changes.HasChanges() {
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
@@ -128,12 +146,48 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
-		log.Info("All records are already up to date")
+		// Distinguish a true no-op from a reconcile that would have made
+		// changes but was held back by policy — "All records are already
+		// up to date" is misleading in the latter case and would mask a
+		// drifting source under --policy=create-only where only updates
+		// are suppressed (no SuppressedDelete signal is emitted then).
+		if suppressedMsg := suppressedSummary(plan.Changes); suppressedMsg != "" {
+			log.Infof("No DNS changes applied; %s held back by policy", suppressedMsg)
+		} else {
+			log.Info("All records are already up to date")
+		}
 	}
 
 	lastSyncTimestamp.Gauge.SetToCurrentTime()
 
 	return nil
+}
+
+// suppressedSummary renders a human-readable summary of how many of THIS
+// instance's records were held back by policy in this reconcile, or ""
+// when none were. Used by the no-op log branch to stay accurate under
+// both upsert-only (where deletions are the signal) and create-only
+// (where updates can be the only thing held back, with no metric to
+// cross-reference). Foreign-owned suppressions are intentionally
+// excluded — ownership filtering would have dropped those changes
+// regardless of policy, so blaming the policy for them would be a
+// false positive in shared-zone deployments.
+func suppressedSummary(c *plan.Changes) string {
+	var parts []string
+	if n := len(c.SuppressedDelete); n > 0 {
+		parts = append(parts, pluralize(n, "deletion"))
+	}
+	if n := c.SuppressedUpdateTotal; n > 0 {
+		parts = append(parts, pluralize(n, "update"))
+	}
+	return strings.Join(parts, " and ")
+}
+
+func pluralize(n int, noun string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, noun)
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 func earliest(r time.Time, times ...time.Time) time.Time {
