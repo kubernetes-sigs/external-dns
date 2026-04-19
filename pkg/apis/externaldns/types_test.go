@@ -623,6 +623,20 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.Equal(t, "default", cfg.OCPRouterName)
 }
 
+func TestParseFlagsServiceNamespace(t *testing.T) {
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--service-namespace=team-a",
+		"--service-namespace=team-b",
+	}
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+
+	assert.ElementsMatch(t, []string{"team-a", "team-b"}, cfg.ServiceNamespaces)
+}
+
 // When EXTERNAL_DNS_CLI=cobra is set, cobra path should parse the subset of
 // flags it currently binds, yielding parity with kingpin for those fields.
 func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
