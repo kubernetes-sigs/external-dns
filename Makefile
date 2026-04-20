@@ -55,7 +55,12 @@ licensecheck:
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint
+lint: licensecheck go-lint validate-json-yaml
+
+#? validate-json-yaml: Validate JSON and YAML files
+.PHONY: validate-json-yaml
+validate-json-yaml:
+	bash scripts/validate-json-yaml.sh
 
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
