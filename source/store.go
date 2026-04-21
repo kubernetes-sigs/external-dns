@@ -442,6 +442,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildIngressSource(ctx, p, cfg)
 	case types.Pod:
 		return buildPodSource(ctx, p, cfg)
+	case types.Gateway:
+		return NewGatewaySource(ctx, p, cfg)
 	case types.GatewayHttpRoute:
 		return NewGatewayHTTPRouteSource(ctx, p, cfg)
 	case types.GatewayGrpcRoute:
