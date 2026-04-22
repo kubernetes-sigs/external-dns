@@ -492,6 +492,26 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
 			},
 		},
+		{
+			title:       "existing alias=false is not overridden by preferAlias",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "false"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "false"),
+			},
+		},
+		{
+			title:       "existing alias=true is preserved when preferAlias is enabled",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
