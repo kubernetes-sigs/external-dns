@@ -206,6 +206,8 @@ triggerLoopOnEvent: false
 namespaced: false
 
 # -- _Gateway API_ gateway namespace to watch.
+# When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC
+# (no ClusterRole/ClusterRoleBinding) for Gateway sources.
 gatewayNamespace:  # @schema type:[string, null]; default: null
 
 # -- _Kubernetes_ resources to monitor for DNS entries.

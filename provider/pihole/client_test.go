@@ -17,7 +17,6 @@ limitations under the License.
 package pihole
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -124,7 +123,7 @@ func ValidateRecords(t *testing.T, records []*endpoint.Endpoint, expected [][]st
 // Helper function to test record retrieval for a specific type
 func CheckRecordRetrieval(t *testing.T, cl *piholeClient, recordType string, expected [][]string, expectedCount int) {
 	t.Helper()
-	records, err := cl.listRecords(context.Background(), recordType)
+	records, err := cl.listRecords(t.Context(), recordType)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,17 +270,17 @@ func TestErrorScenarios(t *testing.T) {
 	clExpired.(*piholeClient).token = "expired"
 	clExpired.(*piholeClient).cfg.Password = "notcorrect"
 
-	_, err = clExpired.listRecords(context.Background(), "notarealrecordtype")
+	_, err = clExpired.listRecords(t.Context(), "notarealrecordtype")
 	if err == nil {
 		t.Fatal("Should return error, type is unknown ! ")
 	}
-	_, err = clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	_, err = clExpired.listRecords(t.Context(), endpoint.RecordTypeCNAME)
 	if err == nil {
 		t.Fatal("Should return error on failed auth ! ")
 	}
 	clExpired.(*piholeClient).token = "correct"
 	clExpired.(*piholeClient).cfg.Password = "correct"
-	cnamerecs, err := clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	cnamerecs, err := clExpired.listRecords(t.Context(), endpoint.RecordTypeCNAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +341,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -352,7 +351,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:1"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -362,7 +361,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"test.cname.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -373,7 +372,7 @@ func TestCreateRecord(t *testing.T) {
 		RecordType: endpoint.RecordTypeA,
 	}
 	cl.(*piholeClient).token = "correct"
-	if err := cl.createRecord(context.Background(), ep); err == nil {
+	if err := cl.createRecord(t.Context(), ep); err == nil {
 		t.Fatal(err)
 	}
 
@@ -383,7 +382,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal("Should not return error on non filtered domain")
 	}
 
@@ -393,7 +392,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: "not a type",
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal("Should not return error on unsupported type")
 	}
 
@@ -413,7 +412,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := clDr.createRecord(context.Background(), ep); err != nil {
+	if err := clDr.createRecord(t.Context(), ep); err != nil {
 		t.Fatal("Should not return error on dry run")
 	}
 
@@ -470,7 +469,7 @@ func TestDeleteRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -480,7 +479,7 @@ func TestDeleteRecord(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:1"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -490,7 +489,7 @@ func TestDeleteRecord(t *testing.T) {
 		Targets:    []string{"test.cname.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 }

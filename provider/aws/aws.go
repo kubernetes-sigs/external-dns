@@ -32,11 +32,12 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/provider/blueprint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 const (
@@ -48,13 +49,11 @@ const (
 	// when fewer items are returned, and still paginate accordingly.
 	// As we are using the standard AWS client, this should already be compliant.
 	// Hence, if AWS ever decides to raise this limit, we will automatically reduce the pressure on rate limits
-	route53PageSize int32 = 300
-	// providerSpecificAlias specifies whether a CNAME endpoint maps to an AWS ALIAS record.
-	providerSpecificAlias            = "alias"
-	providerSpecificTargetHostedZone = "aws/target-hosted-zone"
+	route53PageSize                  int32 = 300
+	providerSpecificTargetHostedZone       = "aws/target-hosted-zone"
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
-	// has a `providerSpecificAlias` value of `true`.
+	// has a `endpoint.ProviderSpecificAlias` value of `true`.
 	providerSpecificEvaluateTargetHealth               = "aws/evaluate-target-health"
 	providerSpecificWeight                             = "aws/weight"
 	providerSpecificRegion                             = "aws/region"
@@ -327,27 +326,53 @@ type AWSConfig struct {
 	ZoneCacheDuration     time.Duration
 }
 
-// NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
+// New creates an AWS Route53 provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	configs := CreateV2Configs(cfg)
+	clients := make(map[string]Route53API, len(configs))
+	for profile, config := range configs {
+		clients[profile] = route53.NewFromConfig(config)
+	}
+	return newProvider(
+		AWSConfig{
+			DomainFilter:          domainFilter,
+			ZoneIDFilter:          provider.NewZoneIDFilter(cfg.ZoneIDFilter),
+			ZoneTypeFilter:        provider.NewZoneTypeFilter(cfg.AWSZoneType),
+			ZoneTagFilter:         provider.NewZoneTagFilter(cfg.AWSZoneTagFilter),
+			ZoneMatchParent:       cfg.AWSZoneMatchParent,
+			BatchChangeSize:       cfg.AWSBatchChangeSize,
+			BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
+			BatchChangeSizeValues: cfg.AWSBatchChangeSizeValues,
+			BatchChangeInterval:   cfg.AWSBatchChangeInterval,
+			EvaluateTargetHealth:  cfg.AWSEvaluateTargetHealth,
+			PreferCNAME:           cfg.AWSPreferCNAME,
+			DryRun:                cfg.DryRun,
+			ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
+		},
+		clients,
+	), nil
+}
+
+// newProvider initializes a new AWS Route53 based Provider.
+func newProvider(cfg AWSConfig, clients map[string]Route53API) *AWSProvider {
 	pr := &AWSProvider{
 		clients:               clients,
-		domainFilter:          awsConfig.DomainFilter,
-		zoneIDFilter:          awsConfig.ZoneIDFilter,
-		zoneTypeFilter:        awsConfig.ZoneTypeFilter,
-		zoneTagFilter:         awsConfig.ZoneTagFilter,
-		zoneMatchParent:       awsConfig.ZoneMatchParent,
-		batchChangeSize:       awsConfig.BatchChangeSize,
-		batchChangeSizeBytes:  awsConfig.BatchChangeSizeBytes,
-		batchChangeSizeValues: awsConfig.BatchChangeSizeValues,
-		batchChangeInterval:   awsConfig.BatchChangeInterval,
-		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
-		preferCNAME:           awsConfig.PreferCNAME,
-		dryRun:                awsConfig.DryRun,
-		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](awsConfig.ZoneCacheDuration),
+		domainFilter:          cfg.DomainFilter,
+		zoneIDFilter:          cfg.ZoneIDFilter,
+		zoneTypeFilter:        cfg.ZoneTypeFilter,
+		zoneTagFilter:         cfg.ZoneTagFilter,
+		zoneMatchParent:       cfg.ZoneMatchParent,
+		batchChangeSize:       cfg.BatchChangeSize,
+		batchChangeSizeBytes:  cfg.BatchChangeSizeBytes,
+		batchChangeSizeValues: cfg.BatchChangeSizeValues,
+		batchChangeInterval:   cfg.BatchChangeInterval,
+		evaluateTargetHealth:  cfg.EvaluateTargetHealth,
+		preferCNAME:           cfg.PreferCNAME,
+		dryRun:                cfg.DryRun,
+		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](cfg.ZoneCacheDuration),
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
-
-	return pr, nil
+	return pr
 }
 
 // Zones returns the list of hosted zones.
@@ -515,7 +540,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 
 					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
 					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
+						ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, "false")
 					}
 					newEndpoints = append(newEndpoints, ep)
 				}
@@ -528,7 +553,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithProviderSpecific(providerSpecificAlias, "true")
+						WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 					newEndpoints = append(newEndpoints, ep)
 				}
 
@@ -603,8 +628,8 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, newE *endpoin
 
 	// an ALIAS record change to/from an A
 	if old.RecordType == endpoint.RecordTypeA {
-		oldAlias, _ := old.GetProviderSpecificProperty(providerSpecificAlias)
-		newAlias, _ := newE.GetProviderSpecificProperty(providerSpecificAlias)
+		oldAlias, _ := old.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+		newAlias, _ := newE.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		if oldAlias != newAlias {
 			return true
 		}
@@ -858,7 +883,7 @@ func (p *AWSProvider) adjustAandAAAARecord(ep *endpoint.Endpoint) {
 	if ep.GetAliasProperty() == endpoint.AliasTrue {
 		p.adjustAliasRecord(ep)
 	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 	adjustGeoProximityLocationEndpoint(ep)
@@ -868,8 +893,8 @@ func (p *AWSProvider) adjustCNAMERecordAndNewAaaaIfNeeded(ep *endpoint.Endpoint)
 	// ensure alias property is set
 	if ep.GetAliasProperty() == endpoint.AliasNone {
 		isAlias := useAlias(ep, p.preferCNAME)
-		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, isAlias)
-		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(isAlias))
+		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, endpoint.ProviderSpecificAlias, isAlias)
+		ep.SetProviderSpecificProperty(endpoint.ProviderSpecificAlias, strconv.FormatBool(isAlias))
 	}
 
 	switch ep.GetAliasProperty() {
@@ -897,11 +922,11 @@ func (p *AWSProvider) adjustCNAMERecordAndNewAaaaIfNeeded(ep *endpoint.Endpoint)
 func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
 	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
 	// This will be fixed in another PR.
-	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+	if isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); isAlias {
 		p.adjustAliasRecord(ep)
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 	adjustGeoProximityLocationEndpoint(ep)
@@ -1364,7 +1389,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
-	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	if isAlias && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 
@@ -56,23 +57,19 @@ var defaultTTL int64 = 3600
 var domainIDs = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
 var groups = map[string][]egoscale.DNSDomainRecord{
 	domainIDs[0]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("CNAME"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v1"), Type: new("TXT"), Content: new("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("CNAME"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[1]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("A"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v3"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v2"), Type: new("A"), Content: new("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v3"), Type: new("ALIAS"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[2]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v1"), Type: new("TXT"), Content: new("test"), TTL: &defaultTTL},
 	},
 	domainIDs[3]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v4"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: new(uuid.New().String()), Name: new("v4"), Type: new("ALIAS"), Content: new("test"), TTL: &defaultTTL},
 	},
-}
-
-func strPtr(s string) *string {
-	return &s
 }
 
 type ExoscaleClientStub struct{}
@@ -84,8 +81,8 @@ func NewExoscaleClientStub() EgoscaleClientI {
 
 func (ep *ExoscaleClientStub) ListDNSDomains(_ context.Context, _ string) ([]egoscale.DNSDomain, error) {
 	domains := []egoscale.DNSDomain{
-		{ID: &domainIDs[0], UnicodeName: strPtr("foo.com")},
-		{ID: &domainIDs[1], UnicodeName: strPtr("bar.com")},
+		{ID: &domainIDs[0], UnicodeName: new("foo.com")},
+		{ID: &domainIDs[1], UnicodeName: new("bar.com")},
 	}
 	return domains, nil
 }
@@ -121,7 +118,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 func TestExoscaleGetRecords(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", "", false)
 
-	recs, err := provider.Records(context.Background())
+	recs, err := provider.Records(t.Context())
 	if err == nil {
 		assert.Len(t, recs, 3)
 		assert.True(t, contains(recs, "v1.foo.com"))
@@ -190,7 +187,7 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	createExoscale = make([]createRecordExoscale, 0)
 	deleteExoscale = make([]deleteRecordExoscale, 0)
 
-	provider.ApplyChanges(context.Background(), plan)
+	provider.ApplyChanges(t.Context(), plan)
 
 	assert.Len(t, createExoscale, 1)
 	assert.Equal(t, domainIDs[0], createExoscale[0].domainID)

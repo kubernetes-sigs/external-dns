@@ -14,8 +14,9 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/client-go/route/clientset/versioned/fake"
@@ -24,8 +25,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
@@ -210,7 +213,6 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			fqdnTemplate: "{{ $name := .Name }}{{ range $ingress := .Status.Ingress }}{{ range $ingress.Conditions }}{{ if and (eq .Type \"Admitted\") (eq .Status \"True\") }}{{ $ingress.Host }},{{ end }}{{ end }}{{ end }}",
 			expected: []*endpoint.Endpoint{
 				{DNSName: "cluster.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
-				{DNSName: "cluster.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
 				{DNSName: "apps.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"router-dmz.apps.dmz.example.com"}},
 			},
 			ocpRoute: []*routev1.Route{
@@ -331,27 +333,27 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
 			for _, ocp := range tt.ocpRoute {
-				_, err := kubeClient.RouteV1().Routes(ocp.Namespace).Create(context.Background(), ocp, metav1.CreateOptions{})
+				_, err := kubeClient.RouteV1().Routes(ocp.Namespace).Create(t.Context(), ocp, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			src, err := NewOcpRouteSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				!tt.combineFqdn,
-				false,
-				labels.Everything(),
-				"",
+				&Config{
+					Namespace:        "",
+					AnnotationFilter: "",
+					TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					LabelFilter:      labels.Everything(),
+					OCPRouterName:    "",
+				},
 			)
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

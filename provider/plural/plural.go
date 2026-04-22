@@ -23,6 +23,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -43,7 +45,12 @@ type RecordChange struct {
 	Record *DnsRecord
 }
 
-func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
+// New creates a Plural provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(cfg.PluralCluster, cfg.PluralProvider)
+}
+
+func newProvider(cluster, provider string) (*PluralProvider, error) {
 	token := os.Getenv("PLURAL_ACCESS_TOKEN")
 	if token == "" {
 		return nil, fmt.Errorf("no plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")

@@ -17,7 +17,6 @@ limitations under the License.
 package txt
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -61,7 +60,7 @@ func TestNewTXTRegistryEncryptionConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		actual, err := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, test.encEnabled, test.aesKeyRaw, "")
+		actual, err := newRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, test.encEnabled, test.aesKeyRaw, "")
 		if test.errorExpected {
 			require.Error(t, err)
 		} else {
@@ -107,7 +106,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 		for _, k := range withEncryptionKeys {
 			t.Run(fmt.Sprintf("key '%s' with decrypted result '%s'", k, test.decrypted), func(t *testing.T) {
 				key := []byte(k)
-				r, err := NewTXTRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key, "")
+				r, err := newRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key, "")
 				assert.NoError(t, err, "Error creating TXT registry")
 				txtRecords := r.generateTXTRecord(test.record)
 				assert.Len(t, txtRecords, len(test.record.Targets))
@@ -138,20 +137,20 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
 	key := []byte("ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=")
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, key, "")
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, key, "")
 
 	_ = r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
-			newEndpointWithOwnerAndOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwner("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner"),
-			newEndpointWithOwnerAndOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+			newTXTEndpointWithOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
 			newEndpointWithOwner("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2"),
 			newEndpointWithOwner("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
 			newEndpointWithOwner("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner"),
@@ -191,7 +190,7 @@ func TestApplyRecordsWithEncryption(t *testing.T) {
 }
 
 func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -202,13 +201,13 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 	}
 
 	for _, key := range withEncryptionKeys {
-		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), "")
+		r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), "")
 		_ = r.ApplyChanges(ctx, &plan.Changes{
 			Create: []*endpoint.Endpoint{
 				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
-				newEndpointWithOwnerAndOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+				newTXTEndpointWithOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 				newEndpointWithOwner("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner"),
-				newEndpointWithOwnerAndOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+				newTXTEndpointWithOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
 				newEndpointWithOwner("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2"),
 				newEndpointWithOwner("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
 				newEndpointWithOwner("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner"),
@@ -221,7 +220,7 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 }
 
 func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
 
@@ -232,7 +231,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 	}
 
 	for i, key := range withEncryptionKeys {
-		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), "")
+		r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), "")
 		keyId := fmt.Sprintf("key-id-%d", i)
 		changes := []*endpoint.Endpoint{
 			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "", keyId),
@@ -249,7 +248,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 				Create: changes,
 			})
 		} else {
-			_ = r.ApplyChanges(context.Background(), &plan.Changes{
+			_ = r.ApplyChanges(t.Context(), &plan.Changes{
 				UpdateNew: changes,
 			})
 		}

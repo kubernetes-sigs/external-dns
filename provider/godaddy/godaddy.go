@@ -27,6 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -136,8 +137,8 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (string, *gdRecords) {
 	return suitableZoneID, suitableZoneRecord
 }
 
-// NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(_ context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
+// newProvider initializes a new GoDaddy DNS based Provider.
+func newProvider(domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
 	if err != nil {
 		return nil, err
@@ -149,6 +150,11 @@ func NewGoDaddyProvider(_ context.Context, domainFilter *endpoint.DomainFilter, 
 		ttl:          maxOf(defaultTTL, ttl),
 		DryRun:       dryRun,
 	}, nil
+}
+
+// New creates a GoDaddy provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 }
 
 func (p *GDProvider) zones() ([]string, error) {

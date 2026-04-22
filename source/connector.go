@@ -41,6 +41,7 @@ const (
 // +externaldns:source:filters=
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=false
 type connectorSource struct {
 	remoteServer string
 }
@@ -71,7 +72,7 @@ func (cs *connectorSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 
 	log.Debugf("Received endpoints: %#v", endpoints)
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (cs *connectorSource) AddEventHandler(_ context.Context, _ func()) {}

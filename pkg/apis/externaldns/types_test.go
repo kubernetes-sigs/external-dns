@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/rest"
 )
 
 var (
@@ -36,6 +37,9 @@ var (
 		APIServerURL:                           "",
 		KubeConfig:                             "",
 		RequestTimeout:                         time.Second * 30,
+		KubeAPIRequestTimeout:                  time.Second * 30,
+		KubeAPIQPS:                             int(rest.DefaultQPS),
+		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
@@ -43,7 +47,7 @@ var (
 		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
 		FQDNTemplate:                           "",
 		Compatibility:                          "",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
 		GoogleBatchChangeSize:                  1000,
 		GoogleBatchChangeInterval:              time.Second,
@@ -76,6 +80,8 @@ var (
 		AzureResourceGroup:                     "",
 		AzureSubscriptionID:                    "",
 		AzureMaxRetriesCount:                   3,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
@@ -122,7 +128,6 @@ var (
 		CRDSourceKind:                                 "DNSEndpoint",
 		TransIPAccountName:                            "",
 		TransIPPrivateKeyFile:                         "",
-		DigitalOceanAPIPageSize:                       50,
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:                        50,
 		RFC2136Host:                                   []string{""},
@@ -139,6 +144,9 @@ var (
 		APIServerURL:                           "http://127.0.0.1:8080",
 		KubeConfig:                             "/some/path",
 		RequestTimeout:                         time.Second * 77,
+		KubeAPIRequestTimeout:                  time.Second * 77,
+		KubeAPIQPS:                             int(rest.DefaultQPS),
+		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
@@ -150,7 +158,7 @@ var (
 		IgnoreIngressRulesSpec:                 true,
 		FQDNTemplate:                           "{{.Name}}.service.example.com",
 		Compatibility:                          "mate",
-		Provider:                               "google",
+		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
 		GoogleBatchChangeSize:                  100,
 		GoogleBatchChangeInterval:              time.Second * 2,
@@ -185,6 +193,8 @@ var (
 		AzureResourceGroup:                     "arg",
 		AzureSubscriptionID:                    "arg",
 		AzureMaxRetriesCount:                   4,
+		BatchChangeSize:                        200,
+		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      true,
 		CloudflareCustomHostnames:              true,
 		CloudflareCustomHostnamesMinTLSVersion: "1.3",
@@ -239,7 +249,6 @@ var (
 		NS1IgnoreSSL:                                  true,
 		TransIPAccountName:                            "transip",
 		TransIPPrivateKeyFile:                         "/path/to/transip.key",
-		DigitalOceanAPIPageSize:                       100,
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
@@ -416,7 +425,6 @@ func TestParseFlags(t *testing.T) {
 				"--ns1-ignoressl",
 				"--transip-account=transip",
 				"--transip-keyfile=/path/to/transip.key",
-				"--digitalocean-api-page-size=100",
 				"--managed-record-types=A",
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
@@ -426,6 +434,7 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
+				"--batch-change-size=200",
 			},
 			envVars: map[string]string{},
 			expected: func(cfg *Config) {
@@ -541,12 +550,12 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_NS1_IGNORESSL":                                     "1",
 				"EXTERNAL_DNS_TRANSIP_ACCOUNT":                                   "transip",
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
-				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
 				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+				"EXTERNAL_DNS_BATCH_CHANGE_SIZE":                                 "200",
 			},
 			expected: func(cfg *Config) {
 				assert.Equal(t, overriddenConfig, cfg)
@@ -588,8 +597,6 @@ func TestConfigStringMasksSecureFields(t *testing.T) {
 
 // Default path should use kingpin and parse flags correctly
 func TestParseFlagsDefaultKingpin(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "")
-
 	args := []string{
 		"--provider=aws",
 		"--source=service",
@@ -606,11 +613,11 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
 
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
-	assert.Equal(t, 2*time.Second, cfg.RequestTimeout)
+	assert.Equal(t, 2*time.Second, cfg.KubeAPIRequestTimeout)
 	assert.Equal(t, "ns", cfg.Namespace)
 	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
 	assert.Equal(t, "default", cfg.OCPRouterName)
@@ -646,7 +653,7 @@ func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
 	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
 	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
 	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
+	assert.Equal(t, cfgK.KubeAPIRequestTimeout, cfgC.KubeAPIRequestTimeout)
 	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
 	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
 	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
@@ -664,7 +671,7 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 	assert.Equal(t, "json", cfg.LogFormat)
 }
@@ -677,7 +684,7 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	}
 	cfg := NewConfig()
 	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, "aws", cfg.Provider)
+	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 
@@ -760,10 +767,12 @@ func TestParseFlagsGateway(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,
 		"--gateway-label-filter=app=gateway",
+		"--gateway-listener-sets",
 		"--gateway-name=gw-1",
 		"--gateway-namespace=gw-ns",
 	)
 	assert.Equal(t, "app=gateway", cfg.GatewayLabelFilter)
+	assert.True(t, cfg.GatewayListenerSets)
 	assert.Equal(t, "gw-1", cfg.GatewayName)
 	assert.Equal(t, "gw-ns", cfg.GatewayNamespace)
 }
@@ -858,7 +867,6 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-port=5353",
 		"--rfc2136-zone=example.org.",
 		"--rfc2136-zone=example.com.",
-		"--rfc2136-create-ptr",
 		"--rfc2136-insecure",
 		"--rfc2136-kerberos-realm=EXAMPLE.COM",
 		"--rfc2136-kerberos-username=svc-externaldns",
@@ -874,7 +882,6 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	)
 	assert.Equal(t, 5353, cfg.RFC2136Port)
 	assert.ElementsMatch(t, []string{"example.org.", "example.com."}, cfg.RFC2136Zone)
-	assert.True(t, cfg.RFC2136CreatePTR)
 	assert.True(t, cfg.RFC2136Insecure)
 	assert.Equal(t, "EXAMPLE.COM", cfg.RFC2136KerberosRealm)
 	assert.Equal(t, "svc-externaldns", cfg.RFC2136KerberosUsername)
@@ -961,6 +968,65 @@ func TestBinderParityMapAndRegexp(t *testing.T) {
 	assert.Equal(t, map[string]string{"foo": "bar"}, cfgK.AWSSDCreateTag)
 }
 
+func TestParseFlagsKubeAPIRequestTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		args           []string
+		wantTimeout    time.Duration
+		wantDeprecated time.Duration
+	}{
+		{
+			name:           "new flag sets KubeAPIRequestTimeout",
+			args:           []string{"--kube-api-request-timeout=60s"},
+			wantTimeout:    60 * time.Second,
+			wantDeprecated: 30 * time.Second,
+		},
+		{
+			name:           "deprecated flag is promoted",
+			args:           []string{"--request-timeout=45s"},
+			wantTimeout:    45 * time.Second,
+			wantDeprecated: 45 * time.Second,
+		},
+		{
+			name:           "new flag wins when both are set",
+			args:           []string{"--request-timeout=45s", "--kube-api-request-timeout=90s"},
+			wantTimeout:    45 * time.Second,
+			wantDeprecated: 45 * time.Second,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=aws", "--source=service"}, tc.args...)))
+			assert.Equal(t, tc.wantTimeout, cfg.KubeAPIRequestTimeout)
+			assert.Equal(t, tc.wantDeprecated, cfg.RequestTimeout)
+		})
+	}
+}
+
+func TestParseFlagsKubeAPIRateLimit(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{
+		"--provider=aws",
+		"--source=service",
+		"--kube-api-qps=10",
+		"--kube-api-burst=20",
+	}))
+
+	assert.Equal(t, 10, cfg.KubeAPIQPS)
+	assert.Equal(t, 20, cfg.KubeAPIBurst)
+}
+
+func TestParseFlagsKubeAPIRateLimitDefaults(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{
+		"--provider=aws",
+		"--source=service",
+	}))
+
+	assert.Equal(t, int(rest.DefaultQPS), cfg.KubeAPIQPS)
+	assert.Equal(t, rest.DefaultBurst, cfg.KubeAPIBurst)
+}
+
 // Kingpin validates enum values at parse time
 func TestBinderEnumValidationDifference(t *testing.T) {
 	// Kingpin should reject unknown enum values
@@ -970,4 +1036,12 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	bindFlags(flags.NewKingpinBinder(app), cfgK)
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
+}
+
+func TestIsPTRSupported(t *testing.T) {
+	cfg := &Config{ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
+	assert.False(t, cfg.IsPTRSupported())
+
+	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+	assert.True(t, cfg.IsPTRSupported())
 }

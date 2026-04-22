@@ -17,7 +17,7 @@ limitations under the License.
 package plan
 
 import (
-	"sort"
+	"slices"
 
 	log "github.com/sirupsen/logrus"
 
@@ -38,13 +38,7 @@ type PerResource struct{}
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
 func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint {
-	var minE *endpoint.Endpoint
-	for _, ep := range candidates {
-		if minE == nil || s.less(ep, minE) {
-			minE = ep
-		}
-	}
-	return minE
+	return slices.MinFunc(candidates, compareEndpoints)
 }
 
 // ResolveUpdate is invoked when dns name is already owned by "current" endpoint
@@ -52,11 +46,7 @@ func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.En
 // if it doesn't exist then pick min
 func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*endpoint.Endpoint) *endpoint.Endpoint {
 	currentResource := current.Labels[endpoint.ResourceLabelKey] // resource which has already acquired the DNS
-	// TODO: sort candidates only needed because we can still have two endpoints from same resource here. We sort for consistency
-	// TODO: remove once single endpoint can have multiple targets
-	sort.SliceStable(candidates, func(i, j int) bool {
-		return s.less(candidates[i], candidates[j])
-	})
+	slices.SortStableFunc(candidates, compareEndpoints)
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
 			return ep
@@ -78,48 +68,46 @@ func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[stri
 		return row.records
 	}
 
-	cname := false
-	other := false
+	cname, other := false, false
 	for _, c := range row.candidates {
 		if c.RecordType == endpoint.RecordTypeCNAME {
 			cname = true
 		} else {
 			other = true
 		}
-
 		if cname && other {
 			break
 		}
 	}
 
-	// conflict was found, remove candiates of non-preferred record types
-	if cname && other {
-		log.Infof("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
-		records := map[string]*domainEndpoints{}
-		for recordType, recs := range row.records {
-			// policy is to prefer the non-CNAME record types when a conflict is found
-			if recordType == endpoint.RecordTypeCNAME {
-				// discard candidates of conflicting records
-				// keep currect so they can be deleted
-				records[recordType] = &domainEndpoints{
-					current:    recs.current,
-					candidates: []*endpoint.Endpoint{},
-				}
-			} else {
-				records[recordType] = recs
-			}
-		}
-
-		return records
+	if !cname || !other {
+		return row.records
 	}
 
-	// no conflict, return all records types
-	return row.records
+	// conflict was found: prefer non-CNAME record types, discard CNAME candidates
+	// but keep current CNAME so it can be deleted
+	// TODO: emit metric
+	log.Warnf("Domain %s contains conflicting record type candidates; discarding CNAME record", key.dnsName)
+	records := make(map[string]*domainEndpoints, len(row.records))
+	for recordType, recs := range row.records {
+		if recordType == endpoint.RecordTypeCNAME {
+			records[recordType] = &domainEndpoints{current: recs.current, candidates: []*endpoint.Endpoint{}}
+			continue
+		}
+		records[recordType] = recs
+	}
+	return records
 }
 
-// less returns true if endpoint x is less than y
-func (s PerResource) less(x, y *endpoint.Endpoint) bool {
-	return x.Targets.IsLess(y.Targets)
+// compareEndpoints compares two endpoints by their targets for use in sort/min operations.
+func compareEndpoints(a, b *endpoint.Endpoint) int {
+	if a.Targets.IsLess(b.Targets) {
+		return -1
+	}
+	if b.Targets.IsLess(a.Targets) {
+		return 1
+	}
+	return 0
 }
 
 // TODO: with cross-resource/cross-cluster setup alternative variations of ConflictResolver can be used

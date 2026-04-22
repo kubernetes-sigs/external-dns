@@ -17,12 +17,12 @@ limitations under the License.
 package wrappers
 
 import (
-	"context"
 	"net/netip"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
@@ -80,11 +80,11 @@ func testNat64Source(t *testing.T) {
 			source, err := NewNAT64Source(mockSource, []string{"2001:DB8::/96"})
 			require.NoError(t, err)
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// Validate that the mock source was called.
 			mockSource.AssertExpectations(t)
@@ -261,7 +261,7 @@ func TestNat64SourceEndpoints_VariousCases(t *testing.T) {
 			src, err := NewNAT64Source(mockSource, []string{"2001:db8::/96"})
 			require.NoError(t, err)
 
-			eps, err := src.Endpoints(context.Background())
+			eps, err := src.Endpoints(t.Context())
 			tc.asserts(eps, err)
 
 			mockSource.AssertExpectations(t)

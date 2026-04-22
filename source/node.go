@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -31,9 +30,10 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // nodeSource is an implementation of Source for Kubernetes Node objects.
@@ -45,11 +45,12 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
+// +externaldns:source:events=true
 type nodeSource struct {
-	client                kubernetes.Interface
-	annotationFilter      string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
+	client           kubernetes.Interface
+	annotationFilter string
+	templateEngine   template.Engine
 
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
@@ -61,23 +62,20 @@ type nodeSource struct {
 func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	annotationFilter, fqdnTemplate string,
-	labelSelector labels.Selector,
-	exposeInternalIPv6,
-	excludeUnschedulable bool,
-	combineFQDNAnnotation bool) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
-	if err != nil {
-		return nil, err
-	}
-
+	cfg *Config) (Source, error) {
 	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
+	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+
 	// Add default resource event handler to properly initialize informer.
-	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -87,14 +85,13 @@ func NewNodeSource(
 	}
 
 	return &nodeSource{
-		client:                kubeClient,
-		annotationFilter:      annotationFilter,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFQDNAnnotation,
-		nodeInformer:          nodeInformer,
-		labelSelector:         labelSelector,
-		excludeUnschedulable:  excludeUnschedulable,
-		exposeInternalIPv6:    exposeInternalIPv6,
+		client:               kubeClient,
+		annotationFilter:     cfg.AnnotationFilter,
+		templateEngine:       cfg.TemplateEngine,
+		nodeInformer:         nodeInformer,
+		labelSelector:        cfg.LabelFilter,
+		excludeUnschedulable: cfg.ExcludeUnschedulable,
+		exposeInternalIPv6:   cfg.ExposeInternalIPv6,
 	}, nil
 }
 
@@ -127,17 +124,15 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
-		if ns.fqdnTemplate == nil || ns.combineFQDNAnnotation {
+		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		nodeEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
 			nodeEndpoints,
-			ns.fqdnTemplate,
-			ns.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) { return ns.endpointsFromNodeTemplate(node) },
 		)
 		if err != nil {
@@ -149,6 +144,8 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			continue
 		}
 
+		endpoint.AttachRefObject(nodeEndpoints, events.NewObjectReference(node, types.Node))
+
 		endpoints = append(endpoints, nodeEndpoints...)
 	}
 
@@ -156,12 +153,12 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 }
 
 func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
-	_, _ = ns.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ns.nodeInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
 func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endpoint, error) {
-	names, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
+	names, err := ns.templateEngine.ExecFQDN(node)
 	if err != nil {
 		return nil, err
 	}
@@ -191,14 +188,14 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		log.Debugf("adding endpoint with %d targets", len(addrs))
 
 		for _, addr := range addrs {
-			ep := endpoint.NewEndpointWithTTL(dns, suitableType(addr), ttl, addr)
+			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
 		}
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP
@@ -213,7 +210,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	for _, addr := range node.Status.Addresses {
 		// IPv6 InternalIP addresses have special handling.
 		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
-		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
+		if addr.Type == v1.NodeInternalIP && endpoint.SuitableType(addr.Address) == endpoint.RecordTypeAAAA {
 			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
 		}
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)

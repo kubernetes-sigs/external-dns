@@ -17,10 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/gob"
 	"net"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -131,7 +132,7 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			}
 			cs, _ := NewConnectorSource(addr)
 
-			endpoints, err := cs.Endpoints(context.Background())
+			endpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -139,7 +140,7 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against expected endpoints.
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

@@ -70,8 +70,13 @@ type CivoChangeDelete struct {
 	DomainRecord civogo.DNSRecord
 }
 
-// NewCivoProvider initializes a new Civo DNS based Provider.
-func NewCivoProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoProvider, error) {
+// New creates a Civo provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.DryRun)
+}
+
+// newProvider initializes a new Civo DNS based Provider.
+func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoProvider, error) {
 	token, ok := os.LookupEnv("CIVO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")

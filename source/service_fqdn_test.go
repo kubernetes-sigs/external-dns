@@ -24,9 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
@@ -216,8 +218,8 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.246"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
-							NodeName:  testutils.ToPtr("test-node"),
+							Hostname:  new("ip-10-1-164-158.internal"),
+							NodeName:  new("test-node"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-1",
@@ -226,8 +228,8 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						{
 							Addresses: []string{"100.66.2.247"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
-							NodeName:  testutils.ToPtr("test-node"),
+							Hostname:  new("ip-10-1-164-158.internal"),
+							NodeName:  new("test-node"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-2",
@@ -279,8 +281,8 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.246"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
-							NodeName:  testutils.ToPtr("test-node"),
+							Hostname:  new("ip-10-1-164-158.internal"),
+							NodeName:  new("test-node"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-1",
@@ -289,8 +291,8 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						{
 							Addresses: []string{"100.66.2.247"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
-							NodeName:  testutils.ToPtr("test-node"),
+							Hostname:  new("ip-10-1-164-158.internal"),
+							NodeName:  new("test-node"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-2",
@@ -319,7 +321,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						ClusterIP:   "192.51.100.22",
 						ExternalIPs: []string{"198.51.100.30"},
 						// https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-distribution
-						TrafficDistribution: testutils.ToPtr("PreferSameZone"),
+						TrafficDistribution: new("PreferSameZone"),
 					},
 					Status: v1.ServiceStatus{},
 				},
@@ -335,7 +337,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						Type:                v1.ServiceTypeClusterIP,
 						ClusterIP:           "192.51.100.5",
 						ExternalIPs:         []string{"198.51.100.32"},
-						TrafficDistribution: testutils.ToPtr("PreferSameZone"),
+						TrafficDistribution: new("PreferSameZone"),
 					},
 				},
 				{
@@ -350,7 +352,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						Type:                v1.ServiceTypeClusterIP,
 						ClusterIP:           "192.51.100.33",
 						ExternalIPs:         []string{"198.51.100.70"},
-						TrafficDistribution: testutils.ToPtr("PreferClose"),
+						TrafficDistribution: new("PreferClose"),
 					},
 				},
 			},
@@ -478,7 +480,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.241"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-1",
@@ -499,7 +501,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.244"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-152.internal"),
+							Hostname:  new("ip-10-1-164-152.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-2",
@@ -520,7 +522,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.246"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-3",
@@ -529,7 +531,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						{
 							Addresses: []string{"100.66.2.247"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-4",
@@ -609,7 +611,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.241"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-1",
@@ -630,7 +632,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.244"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-152.internal"),
+							Hostname:  new("ip-10-1-164-152.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-2",
@@ -651,7 +653,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					Endpoints: []discoveryv1.Endpoint{
 						{
 							Addresses: []string{"100.66.2.246"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-3",
@@ -660,7 +662,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						{
 							Addresses: []string{"100.66.2.247"},
-							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							Hostname:  new("ip-10-1-164-158.internal"),
 							TargetRef: &v1.ObjectReference{
 								Kind:      "Pod",
 								Name:      "pod-4",
@@ -873,31 +875,28 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				}
 			}
 
+			cfg := &Config{
+				TemplateEngine:                 templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+				PublishHostIP:                  tt.publishHostIp,
+				ServiceTypeFilter:              tt.serviceTypesFilter,
+				PublishInternal:                true,
+				AlwaysPublishNotReadyAddresses: true,
+				ExposeInternalIPv6:             true,
+				ExcludeUnschedulable:           true,
+				LabelFilter:                    labels.Everything(),
+			}
+
 			src, err := NewServiceSource(
 				t.Context(),
 				kubeClient,
-				"",
-				"",
-				tt.fqdnTemplate,
-				tt.combineFQDN,
-				"",
-				true,
-				tt.publishHostIp,
-				true,
-				tt.serviceTypesFilter,
-				false,
-				labels.Everything(),
-				false,
-				false,
-				true,
-				true,
+				cfg,
 			)
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {

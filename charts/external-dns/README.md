@@ -1,5 +1,7 @@
 # external-dns
 
+<!-- markdownlint-disable MD060 -->
+
 ![Version: 1.20.0](https://img.shields.io/badge/Version-1.20.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.20.0](https://img.shields.io/badge/AppVersion-0.20.0-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
@@ -51,26 +53,26 @@ For set up for a specific provider using the Helm chart, see the following links
 * [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
 * [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
 * [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
-* [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
 * [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
 * [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
 * [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
 
-## Namespaced Scoped Installation
+## Namespace Scoped Installation
 
-external-dns supports running on a namespaced only scope, too.
-If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
+`external-dns` supports running on a namespace-only scope, too.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
 
-### Limited Supported
+Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
 
-Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
+### Namespace-only limitations
+
+Not all sources are supported in namespace-only scope, since some sources depend on cluster-wide resources.
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
-Sources like `istio-virtualservice` only work, if all resources like `Gateway` and `VirtualService` are present in the same
-namespaces as `external-dns`.
-
+Sources like `istio-virtualservice` only work if all resources like `Gateway` and `VirtualService` are present in the same
+namespace as `external-dns`.
 The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
-If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`).
+If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
 ### Support Matrix
 
@@ -111,7 +113,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
-| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. |
+| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |

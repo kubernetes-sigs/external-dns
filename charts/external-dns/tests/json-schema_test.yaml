@@ -30,7 +30,8 @@ tests:
       enabled: "abrakadabra"
     asserts:
       - failedTemplate:
-          errorPattern: "got string, want null or boolean"
+          # Accept Helm/JSONSchema error message variations across versions
+          errorPattern: "(Invalid type\\. Expected: \\[[bB]oolean,null\\], given: string|at '/enabled': got string, want null or boolean)"
 
   - it: should fail if provider is null
     set:

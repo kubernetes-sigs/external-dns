@@ -14,7 +14,6 @@ limitations under the License.
 package gandi
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -154,37 +153,37 @@ func (m *mockGandiClient) ListDomains() ([]domain.ListResponse, error) {
 
 // Tests
 
-func TestNewGandiProvider(t *testing.T) {
-	_ = os.Setenv("GANDI_KEY", "myGandiKey")
-	provider, err := NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+func TestNewProvider(t *testing.T) {
+	t.Setenv("GANDI_KEY", "myGandiKey")
+	provider, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
-	_ = os.Setenv("GANDI_PAT", "myGandiPAT")
-	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	t.Setenv("GANDI_PAT", "myGandiPAT")
+	provider, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_KEY")
-	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	provider, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.True(t, provider.DryRun)
 
-	_ = os.Setenv("GANDI_SHARING_ID", "aSharingId")
-	provider, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), false)
+	t.Setenv("GANDI_SHARING_ID", "aSharingId")
+	provider, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), false)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 	assert.False(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_PAT")
-	_, err = NewGandiProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -222,7 +221,7 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	actualEndpoints, err := mockedProvider.Records(context.Background())
+	actualEndpoints, err := mockedProvider.Records(t.Context())
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -277,7 +276,7 @@ func TestGandiProvider_RecordsOnFilteredDomainsShouldYieldNoEndpoints(t *testing
 		domainFilter:  endpoint.NewDomainFilterWithExclusions([]string{}, []string{"example.com"}),
 	}
 
-	endpoints, _ := mockedProvider.Records(context.Background())
+	endpoints, _ := mockedProvider.Records(t.Context())
 	assert.Empty(t, endpoints)
 }
 
@@ -299,7 +298,7 @@ func TestGandiProvider_RecordsWithUnsupportedTypesAreNotReturned(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	endpoints, _ := mockedProvider.Records(context.Background())
+	endpoints, _ := mockedProvider.Records(t.Context())
 	assert.Empty(t, endpoints)
 }
 
@@ -341,7 +340,7 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 		},
 	}
 
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	err := mockedProvider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -404,7 +403,7 @@ func TestGandiProvider_ApplyChangesRespectsDryRun(t *testing.T) {
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
 
-	mockedProvider.ApplyChanges(context.Background(), changes)
+	mockedProvider.ApplyChanges(t.Context(), changes)
 
 	td.Cmp(t, mockedClient.Actions, []MockAction{
 		{
@@ -421,7 +420,7 @@ func TestGandiProvider_ApplyChangesWithEmptyResultDoesNothing(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	mockedProvider.ApplyChanges(context.Background(), changes)
+	mockedProvider.ApplyChanges(t.Context(), changes)
 
 	assert.Empty(t, mockedClient.Actions)
 }
@@ -443,7 +442,7 @@ func TestGandiProvider_ApplyChangesWithUnknownDomainDoesNoUpdate(t *testing.T) {
 		},
 	}
 
-	mockedProvider.ApplyChanges(context.Background(), changes)
+	mockedProvider.ApplyChanges(t.Context(), changes)
 
 	td.Cmp(t, mockedClient.Actions, []MockAction{
 		{
@@ -470,7 +469,7 @@ func TestGandiProvider_ApplyChangesConvertsApexDomain(t *testing.T) {
 		},
 	}
 
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	err := mockedProvider.ApplyChanges(t.Context(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -507,7 +506,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	_, err := mockedProvider.Records(context.Background())
+	_, err := mockedProvider.Records(t.Context())
 	if err == nil {
 		t.Error("should have failed")
 	}
@@ -521,7 +520,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	_, err = mockedProvider.Records(context.Background())
+	_, err = mockedProvider.Records(t.Context())
 	if err == nil {
 		t.Error("should have failed")
 	}
@@ -535,7 +534,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	err = mockedProvider.ApplyChanges(t.Context(), changes)
 	if err == nil {
 		t.Error("should have failed")
 	}
@@ -549,7 +548,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	err = mockedProvider.ApplyChanges(t.Context(), changes)
 	if err == nil {
 		t.Error("should have failed")
 	}
@@ -563,7 +562,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	err = mockedProvider.ApplyChanges(t.Context(), changes)
 	if err == nil {
 		t.Error("should have failed")
 	}
@@ -577,7 +576,7 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	err = mockedProvider.ApplyChanges(t.Context(), changes)
 	if err == nil {
 		t.Error("should have failed")
 	}

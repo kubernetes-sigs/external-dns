@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 
@@ -42,8 +41,8 @@ func Test_parseMxTarget(t *testing.T) {
 			name: "valid mx target",
 			args: "10 example.com",
 			want: dns.MxRecord{
-				Preference: to.Ptr(int32(10)),
-				Exchange:   to.Ptr("example.com"),
+				Preference: new(int32(10)),
+				Exchange:   new("example.com"),
 			},
 			wantErr: assert.NoError,
 		},
@@ -51,8 +50,8 @@ func Test_parseMxTarget(t *testing.T) {
 			name: "valid mx target with a subdomain",
 			args: "99 foo-bar.example.com",
 			want: dns.MxRecord{
-				Preference: to.Ptr(int32(99)),
-				Exchange:   to.Ptr("foo-bar.example.com"),
+				Preference: new(int32(99)),
+				Exchange:   new("foo-bar.example.com"),
 			},
 			wantErr: assert.NoError,
 		},

@@ -23,20 +23,23 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-type MockProvider struct{}
+type MockProvider struct {
+	RecordsErr      error
+	ApplyChangesErr error
+}
 
 func (m *MockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	return nil, nil
+	return nil, m.RecordsErr
 }
 
 func (m *MockProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error {
-	return nil
+	return m.ApplyChangesErr
 }
 
-func (m *MockProvider) AdjustEndpoints(_ []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return nil, nil
+func (m *MockProvider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return eps, nil
 }
 
 func (m *MockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return nil
+	return &endpoint.DomainFilter{}
 }

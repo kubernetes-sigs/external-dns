@@ -24,7 +24,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -134,24 +135,39 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:filters=
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=true
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
 	ingressInformer        netinformers.IngressInformer
 	proxyInformer          kubeinformers.GenericInformer
 	virtualServiceInformer kubeinformers.GenericInformer
 	gatewayInformer        kubeinformers.GenericInformer
-	glooNamespaces         []string
+	// TODO: glooNamespaces is the list of namespaces to scan for Gloo Proxies. All namespace access is still required
+	glooNamespaces []string
 }
 
 // NewGlooSource creates a new glooSource with the given config
-func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
-	glooNamespaces []string) (Source, error) {
+func NewGlooSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface,
+	kubeClient kubernetes.Interface,
+	cfg *Config) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
-	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*v1.Service](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
+	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 
 	dynamicInformerFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicKubeClient, 0)
 
@@ -159,9 +175,14 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 	virtualServiceInformer := dynamicInformerFactory.ForResource(virtualServiceGVR)
 	gatewayInformer := dynamicInformerFactory.ForResource(gatewayGVR)
 
-	_, _ = proxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
-	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	unstructuredTransformer := informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	)
+	for _, inf := range []kubeinformers.GenericInformer{proxyInformer, virtualServiceInformer, gatewayInformer} {
+		informers.MustSetTransform(inf.Informer(), unstructuredTransformer)
+		informers.MustAddEventHandler(inf.Informer(), informers.DefaultEventHandler())
+	}
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
@@ -178,7 +199,7 @@ func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kub
 		proxyInformer,
 		virtualServiceInformer,
 		gatewayInformer,
-		glooNamespaces,
+		cfg.GlooNamespaces,
 	}, nil
 }
 
@@ -236,7 +257,7 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
@@ -253,7 +274,7 @@ func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.
 			ttl := annotations.TTLFromAnnotations(ants, resource)
 			providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ants)
 			for _, domain := range virtualHost.Domains {
-				endpoints = append(endpoints, EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
+				endpoints = append(endpoints, endpoint.EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}
 		}
 	}
@@ -309,7 +330,7 @@ func (gs *glooSource) proxyTargets(name string, namespace string) (endpoint.Targ
 
 	var targets endpoint.Targets
 	switch svc.Spec.Type {
-	case corev1.ServiceTypeLoadBalancer:
+	case v1.ServiceTypeLoadBalancer:
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)

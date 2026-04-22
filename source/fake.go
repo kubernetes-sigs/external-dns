@@ -45,6 +45,7 @@ import (
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
+// +externaldns:source:provider-specific=false
 type fakeSource struct {
 	dnsName string
 }
@@ -54,13 +55,12 @@ const (
 )
 
 // NewFakeSource creates a new fakeSource with the given config.
-func NewFakeSource(fqdnTemplate string) (Source, error) {
-	if fqdnTemplate == "" {
-		fqdnTemplate = defaultFQDNTemplate
-	}
-
+// TODO: support cfg.TemplateEngine by rendering the FQDN template against a synthetic
+// Kubernetes object (e.g. metav1.PartialObjectMetadata) so that --fqdn-template
+// is honored when --source=fake is used for dry-runs.
+func NewFakeSource(_ *Config) (Source, error) {
 	return &fakeSource{
-		dnsName: fqdnTemplate,
+		dnsName: defaultFQDNTemplate,
 	}, nil
 }
 
@@ -75,7 +75,7 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		endpoints[i] = sc.generateEndpoint()
 	}
 
-	return endpoints, nil
+	return MergeEndpoints(endpoints), nil
 }
 
 func (sc *fakeSource) generateEndpoint() *endpoint.Endpoint {

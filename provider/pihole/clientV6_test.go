@@ -17,7 +17,6 @@ limitations under the License.
 package pihole
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,62 +29,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
-
-func TestIsValidIPv4(t *testing.T) {
-	tests := []struct {
-		ip       string
-		expected bool
-	}{
-		{"192.168.1.1", true},
-		{"255.255.255.255", true},
-		{"0.0.0.0", true},
-		{"", false},
-		{"256.256.256.256", false},
-		{"192.168.0.1/22", false},
-		{"192.168.1", false},
-		{"abc.def.ghi.jkl", false},
-		{"::ffff:192.168.20.3", false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.ip, func(t *testing.T) {
-			if got := isValidIPv4(test.ip); got != test.expected {
-				t.Errorf("isValidIPv4(%s) = %v; want %v", test.ip, got, test.expected)
-			}
-		})
-	}
-}
-
-func TestIsValidIPv6(t *testing.T) {
-	tests := []struct {
-		ip       string
-		expected bool
-	}{
-		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
-		{"2001:db8:85a3::8a2e:370:7334", true},
-		// IPv6 dual, the format is y:y:y:y:y:y:x.x.x.x.
-		{"::ffff:192.168.20.3", true},
-		{"::1", true},
-		{"::", true},
-		{"2001:db8::", true},
-		{"", false},
-		{":", false},
-		{"::ffff:", false},
-		{"192.168.20.3", false},
-		{"2001:db8:85a3:0:0:8a2e:370:7334:1234", false},
-		{"2001:db8:85a3::8a2e:370g:7334", false},
-		{"2001:db8:85a3::8a2e:370:7334::", false},
-		{"2001:db8:85a3::8a2e:370:7334::1", false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.ip, func(t *testing.T) {
-			if got := isValidIPv6(test.ip); got != test.expected {
-				t.Errorf("isValidIPv6(%s) = %v; want %v", test.ip, got, test.expected)
-			}
-		})
-	}
-}
 
 func newTestServerV6(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	t.Helper()
@@ -280,7 +223,7 @@ func TestListRecordsV6(t *testing.T) {
 		},
 	}
 	// Test retrieve A records unfiltered
-	arecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeA)
+	arecs, err := cl.listRecords(t.Context(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +265,7 @@ func TestListRecordsV6(t *testing.T) {
 	}
 
 	// Test retrieve AAAA records unfiltered
-	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
+	arecs, err = cl.listRecords(t.Context(), endpoint.RecordTypeAAAA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +305,7 @@ func TestListRecordsV6(t *testing.T) {
 	}
 
 	// Test retrieve CNAME records unfiltered
-	cnamerecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	cnamerecs, err := cl.listRecords(t.Context(), endpoint.RecordTypeCNAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +329,7 @@ func TestListRecordsV6(t *testing.T) {
 	// and cnameRecords have their own element
 
 	// unsupported type
-	_, err = cl.listRecords(context.Background(), endpoint.RecordTypeNAPTR)
+	_, err = cl.listRecords(t.Context(), endpoint.RecordTypeNAPTR)
 	if err == nil || err.Error() != fmt.Sprintf("unsupported record type: %s", endpoint.RecordTypeNAPTR) {
 		t.Fatal("Expected error for using unsupported record type")
 	}
@@ -405,7 +348,7 @@ func TestErrorsV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = clErrURL.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	_, err = clErrURL.listRecords(t.Context(), endpoint.RecordTypeCNAME)
 	if err == nil {
 		t.Fatal("Expected error for using invalid URL")
 	}
@@ -430,7 +373,7 @@ func TestErrorsV6(t *testing.T) {
 	}
 	clErr, _ := newPiholeClientV6(cfgErr)
 
-	resp, err := clErr.listRecords(context.Background(), endpoint.RecordTypeA)
+	resp, err := clErr.listRecords(t.Context(), endpoint.RecordTypeA)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -486,14 +429,14 @@ func TestErrorsV6(t *testing.T) {
 	}
 	clErr, _ = newPiholeClientV6(cfgErr)
 
-	resp, err = clErr.listRecords(context.Background(), endpoint.RecordTypeA)
+	resp, err = clErr.listRecords(t.Context(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(resp) != 0 {
 		t.Fatal("Expected no records returned, got:", len(resp))
 	}
-	resp, err = clErr.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	resp, err = clErr.listRecords(t.Context(), endpoint.RecordTypeCNAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -559,7 +502,7 @@ func TestTokenValidity(t *testing.T) {
 	}
 	clOK, err := newPiholeClientV6(cfgOK)
 	clOK.(*piholeClientV6).token = "valid"
-	validity, err := clOK.(*piholeClientV6).checkTokenValidity(context.Background())
+	validity, err := clOK.(*piholeClientV6).checkTokenValidity(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -589,7 +532,7 @@ func TestTokenValidity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	validity, err = cl.(*piholeClientV6).checkTokenValidity(context.Background())
+	validity, err = cl.(*piholeClientV6).checkTokenValidity(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -607,7 +550,7 @@ func TestTokenValidity(t *testing.T) {
 		t.Fatal("Should be invalid : nil context")
 	}
 
-	validity, err = cl.(*piholeClientV6).checkTokenValidity(context.Background())
+	validity, err = cl.(*piholeClientV6).checkTokenValidity(t.Context())
 	if err == nil {
 		t.Fatal("Should be invalid : failed to unmarshal error")
 	}
@@ -702,7 +645,7 @@ func TestDo(t *testing.T) {
 	cl, err := newPiholeClientV6(cfg)
 	cl.(*piholeClientV6).token = "valid"
 
-	rq, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/ok", nil)
+	rq, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/ok", nil)
 	resp, err := cl.(*piholeClientV6).do(rq)
 	if err != nil {
 		t.Fatal(err)
@@ -711,7 +654,7 @@ func TestDo(t *testing.T) {
 		t.Fatal("Should have a response")
 	}
 	// Test not handled error code
-	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/418", nil)
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/418", nil)
 	resp, err = cl.(*piholeClientV6).do(rq)
 	if resp != nil {
 		t.Fatal(err)
@@ -723,7 +666,7 @@ func TestDo(t *testing.T) {
 		t.Fatal("Expected error for unexpected status code, got:", err)
 	}
 	// Test error on non JSON response
-	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/nojson", nil)
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/nojson", nil)
 	resp, err = cl.(*piholeClientV6).do(rq)
 	if resp != nil {
 		t.Fatal(err)
@@ -735,7 +678,7 @@ func TestDo(t *testing.T) {
 		t.Fatal("Expected error for unmarshal", err)
 	}
 	// Test Unauthorized retry failed
-	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/401", nil)
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/401", nil)
 	resp, err = cl.(*piholeClientV6).do(rq)
 	if resp != nil {
 		t.Fatal(err)
@@ -795,7 +738,7 @@ func TestDoRetryOne(t *testing.T) {
 	clRetryOK, err := newPiholeClientV6(cfgRetryOK)
 	clRetryOK.(*piholeClientV6).token = "valid"
 	// Test Unauthorized refresh OK
-	rq, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, srvRetry.URL+"/api/auth/401", nil)
+	rq, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srvRetry.URL+"/api/auth/401", nil)
 	resp, err := clRetryOK.(*piholeClientV6).do(rq)
 	if err != nil {
 		t.Fatal("Should succeed", err)
@@ -917,7 +860,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -927,7 +870,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.2", "192.168.1.3"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -937,7 +880,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:1"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -947,7 +890,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:2", "fc00::1:192:168:1:3"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -957,7 +900,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"target1.domain.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -968,7 +911,7 @@ func TestCreateRecordV6(t *testing.T) {
 		RecordTTL:  endpoint.TTL(500),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != nil {
+	if err := cl.createRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -978,7 +921,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"target3.domain.com", "target4.domain.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.createRecord(context.Background(), ep); err == nil {
+	if err := cl.createRecord(t.Context(), ep); err == nil {
 		t.Fatal(err)
 	}
 
@@ -988,7 +931,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err == nil {
+	if err := cl.createRecord(t.Context(), ep); err == nil {
 		t.Fatal(err)
 	}
 
@@ -998,7 +941,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	err = cl.createRecord(context.Background(), ep)
+	err = cl.createRecord(t.Context(), ep)
 	if err != nil {
 		t.Fatal("Should not return error on non filtered domain")
 	}
@@ -1009,7 +952,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: "not a type",
 	}
-	err = cl.createRecord(context.Background(), ep)
+	err = cl.createRecord(t.Context(), ep)
 	if err != nil {
 		t.Fatal("Should not return error on unsupported type")
 	}
@@ -1031,7 +974,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	err = clDr.createRecord(context.Background(), ep)
+	err = clDr.createRecord(t.Context(), ep)
 	if err != nil {
 		t.Fatal("Should not return error on dry run")
 	}
@@ -1041,7 +984,7 @@ func TestCreateRecordV6(t *testing.T) {
 		Targets:    []string{},
 		RecordType: endpoint.RecordTypeA,
 	}
-	err = clDr.createRecord(context.Background(), ep)
+	err = clDr.createRecord(t.Context(), ep)
 	if err != nil {
 		t.Fatal("Should not return error on missing targets")
 	}
@@ -1079,7 +1022,7 @@ func TestDeleteRecordV6(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1089,7 +1032,7 @@ func TestDeleteRecordV6(t *testing.T) {
 		Targets:    []string{"fc00::1:192:168:1:1"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1099,7 +1042,7 @@ func TestDeleteRecordV6(t *testing.T) {
 		Targets:    []string{"target1.domain.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1110,7 +1053,7 @@ func TestDeleteRecordV6(t *testing.T) {
 		RecordTTL:  endpoint.TTL(500),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
-	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
 		t.Fatal(err)
 	}
 }

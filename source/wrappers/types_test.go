@@ -22,9 +22,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source"
 )
 
-func TestBuildSourceWithWrappers(t *testing.T) {
+func TestWrapSources(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -55,6 +59,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 				assert.True(t, cfg.isSourceWrapperInstrumented("dedup"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("nat64"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("target-filter"))
+				assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
 			},
 		},
 		{
@@ -74,7 +79,7 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := WrapSources(nil, tt.cfg)
+			_, err := wrapSources(nil, tt.cfg)
 			require.NoError(t, err)
 			tt.asserts(t, tt.cfg)
 		})
@@ -83,10 +88,56 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 
 func TestWrapSources_NAT64Error(t *testing.T) {
 	cfg := NewConfig(WithNAT64Networks([]string{"badnet"}))
-	src, err := WrapSources(nil, cfg)
+	src, err := wrapSources(nil, cfg)
 	assert.Nil(t, src)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create NAT64 source wrapper")
+}
+
+func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	cfg := NewConfig() // createPTR defaults to false
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	require.NoError(t, err)
+	assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
+
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
+}
+
+func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	cfg := NewConfig(WithPTRSupported(true), WithCreatePTR(true))
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	require.NoError(t, err)
+	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
+
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, result, 2)
+	assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
+	assert.Equal(t, endpoint.RecordTypePTR, result[1].RecordType)
+	assert.Equal(t, "4.3.2.1.in-addr.arpa", result[1].DNSName)
+}
+
+func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	cfg := NewConfig(WithPTRSupported(true)) // createPTR defaults to false
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	require.NoError(t, err)
+	assert.True(t, cfg.isSourceWrapperInstrumented("ptr"))
+
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, result, 1, "no PTR should be generated when createPTR is false and no annotation overrides")
 }
 
 func TestWithDefaultTargets(t *testing.T) {

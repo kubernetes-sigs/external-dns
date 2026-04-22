@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -121,8 +121,8 @@ func (client *mockRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, 
 
 func createMockZone(zone string, id string) *dns.Zone {
 	return &dns.Zone{
-		ID:   to.Ptr(id),
-		Name: to.Ptr(zone),
+		ID:   new(id),
+		Name: new(zone),
 	}
 }
 
@@ -130,11 +130,11 @@ func aRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProper
 	aRecords := make([]*dns.ARecord, len(values))
 	for i, value := range values {
 		aRecords[i] = &dns.ARecord{
-			IPv4Address: to.Ptr(value),
+			IPv4Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:      to.Ptr(ttl),
+		TTL:      new(ttl),
 		ARecords: aRecords,
 	}
 }
@@ -143,20 +143,20 @@ func aaaaRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPro
 	aaaaRecords := make([]*dns.AaaaRecord, len(values))
 	for i, value := range values {
 		aaaaRecords[i] = &dns.AaaaRecord{
-			IPv6Address: to.Ptr(value),
+			IPv6Address: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:         to.Ptr(ttl),
+		TTL:         new(ttl),
 		AaaaRecords: aaaaRecords,
 	}
 }
 
 func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		CnameRecord: &dns.CnameRecord{
-			Cname: to.Ptr(values[0]),
+			Cname: new(values[0]),
 		},
 	}
 }
@@ -168,7 +168,7 @@ func mxRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 		mxRecords[i] = &mxRecord
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		MxRecords: mxRecords,
 	}
 }
@@ -177,21 +177,21 @@ func nsRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPrope
 	nsRecords := make([]*dns.NsRecord, len(values))
 	for i, value := range values {
 		nsRecords[i] = &dns.NsRecord{
-			Nsdname: to.Ptr(value),
+			Nsdname: new(value),
 		}
 	}
 	return &dns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		NsRecords: nsRecords,
 	}
 }
 
 func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		TxtRecords: []*dns.TxtRecord{
 			{
-				Value: []*string{to.Ptr(values[0])},
+				Value: []*string{new(values[0])},
 			},
 		},
 	}
@@ -199,7 +199,7 @@ func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 
 func othersRecordSetPropertiesGetter(_ []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 	}
 }
 
@@ -231,17 +231,17 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = othersRecordSetPropertiesGetter
 	}
 	return &dns.RecordSet{
-		Name:       to.Ptr(name),
-		Type:       to.Ptr("Microsoft.Network/dnszones/" + recordType),
+		Name:       new(name),
+		Type:       new("Microsoft.Network/dnszones/" + recordType),
 		Properties: getterFunc(values, ttl),
 	}
 }
 
 // newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zones []*dns.Zone, recordSets []*dns.RecordSet, maxRetriesCount int) (*AzureProvider, error) {
+func newMockedAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zones []*dns.Zone, recordSets []*dns.RecordSet, maxRetriesCount int) *AzureProvider {
 	zonesClient := newMockZonesClient(zones)
 	recordSetsClient := newMockRecordSetsClient(recordSets)
-	return newAzureProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost, &zonesClient, &recordSetsClient, maxRetriesCount), nil
+	return newAzureProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost, &zonesClient, &recordSetsClient, maxRetriesCount)
 }
 
 func newAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesClient ZonesClient, recordsClient RecordSetsClient, maxRetriesCount int) *AzureProvider {
@@ -265,7 +265,7 @@ func validateAzureEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expect
 }
 
 func TestAzureRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
+	provider := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
 		[]*dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -283,11 +283,8 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com"),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -310,7 +307,7 @@ func TestAzureRecord(t *testing.T) {
 }
 
 func TestAzureMultiRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
+	provider := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), endpoint.NewDomainFilter([]string{}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
 		[]*dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -328,11 +325,8 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -387,6 +381,7 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 	})
 }
 
@@ -440,6 +435,9 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").
+			WithProviderSpecific("azure/metadata-foo", "bar").
+			WithProviderSpecific("azure/metadata-baz", "qux"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
@@ -477,13 +475,13 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestAzureNameFilter(t *testing.T) {
-	provider, err := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"nginx.example.com"}), endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
+	provider := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"nginx.example.com"}), endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, "k8s", "", "",
 		[]*dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -501,11 +499,8 @@ func TestAzureNameFilter(t *testing.T) {
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeNS, "ns1.example.com.", 3600),
 		}, 3)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -609,7 +604,103 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAzureAdjustEndpoints(t *testing.T) {
+	zonesClient := newMockZonesClient([]*dns.Zone{
+		createMockZone("example.com", "/dnszones/example.com"),
+	})
+	recordSetsClient := newMockRecordSetsClient([]*dns.RecordSet{})
+	azureProvider := newAzureProvider(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{}),
+		provider.NewZoneIDFilter([]string{}),
+		false,
+		"k8s",
+		"",
+		"",
+		&zonesClient,
+		&recordSetsClient,
+		0,
+	)
+
+	tests := []struct {
+		name     string
+		endpoint *endpoint.Endpoint
+		expected endpoint.ProviderSpecific
+	}{
+		{
+			name: "Azure tags annotation is parsed",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific("azure/tags", "cost-center=12345,owner=backend-team"),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-cost-center", Value: "12345"},
+				{Name: "azure/metadata-owner", Value: "backend-team"},
+			},
+		},
+		{
+			name: "Azure tags annotation with spaces is parsed correctly",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific("azure/tags", "environment=production, app=myapp "),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-environment", Value: "production"},
+				{Name: "azure/metadata-app", Value: "myapp"},
+			},
+		},
+		{
+			name: "Azure tags annotation with empty tags is handled",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+				WithProviderSpecific("azure/tags", "key=value,,other=test"),
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-key", Value: "value"},
+				{Name: "azure/metadata-other", Value: "test"},
+			},
+		},
+		{
+			name:     "Endpoint without Azure tags is unchanged",
+			endpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			expected: endpoint.ProviderSpecific{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoints := []*endpoint.Endpoint{tt.endpoint}
+			adjusted, err := azureProvider.AdjustEndpoints(endpoints)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(adjusted) != 1 {
+				t.Fatalf("expected 1 endpoint, got %d", len(adjusted))
+			}
+
+			// Check that the azure-tags property was removed
+			if _, ok := adjusted[0].GetProviderSpecificProperty("azure/tags"); ok {
+				t.Error("azure-tags property should have been removed after parsing")
+			}
+
+			// Check that the expected metadata properties are present
+			for _, exp := range tt.expected {
+				val, ok := adjusted[0].GetProviderSpecificProperty(exp.Name)
+				if !ok {
+					t.Errorf("expected property %s not found", exp.Name)
+				} else if val != exp.Value {
+					t.Errorf("property %s: expected %q, got %q", exp.Name, exp.Value, val)
+				}
+			}
+
+			// Verify metadata keys tracking property is set when there are metadata properties
+			if len(tt.expected) > 0 {
+				keysVal, ok := adjusted[0].GetProviderSpecificProperty("azure/metadata-keys")
+				if !ok {
+					t.Error("azure/metadata-keys property should be set when metadata exists")
+				} else if keysVal == "" {
+					t.Error("azure/metadata-keys property should not be empty")
+				}
+			}
+		})
 	}
 }

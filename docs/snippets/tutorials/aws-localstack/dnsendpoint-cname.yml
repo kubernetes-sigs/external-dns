@@ -1,0 +1,16 @@
+# ref: docs/snippets/tutorials/aws-localstack/dnsendpoint-cname.yml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: cname-example
+  namespace: default
+  annotations:
+    dns.why/type: aws-localstack-tutorial
+spec:
+  endpoints:
+    - dnsName: www.example.com
+      recordTTL: 600
+      recordType: CNAME
+      targets:
+        - example.com
