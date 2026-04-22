@@ -288,8 +288,8 @@ func newProvider(
 
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
-		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
-			tokenBytes, err := os.ReadFile(trimed)
+		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
+			tokenBytes, err := os.ReadFile(trimmed)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
 			}
