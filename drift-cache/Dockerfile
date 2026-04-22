@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.24 as builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25 as builder
 WORKDIR /sigs.k8s.io/external-dns
 COPY . .
 RUN git config --global --add safe.directory /sigs.k8s.io/external-dns
