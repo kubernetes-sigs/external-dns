@@ -693,7 +693,7 @@ helm upgrade --install external-dns external-dns/external-dns --values values.ya
 
 ## Arguments
 
-This list is not the full list, but a few arguments that were chosen.
+This is not a complete list, but a few selected items.
 
 ### aws-zone-type
 
