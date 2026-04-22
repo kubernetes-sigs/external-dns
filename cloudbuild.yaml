@@ -9,6 +9,7 @@ steps:
     entrypoint: make
     env:
       - VERSION=$_GIT_TAG
+      - GIT_REVISION=$_PULL_BASE_SHA
       - PULL_BASE_REF=$_PULL_BASE_REF
     args:
       - release.staging
@@ -16,4 +17,5 @@ substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
   _GIT_TAG: "12345"
+  _PULL_BASE_SHA: ""
   _PULL_BASE_REF: 'master'

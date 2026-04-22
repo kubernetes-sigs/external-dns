@@ -509,6 +509,10 @@ func (r *toggleRegistry) ApplyChanges(_ context.Context, _ *plan.Changes) error 
 	return nil
 }
 
+func (r *toggleRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return endpoints, nil
+}
+
 func TestToggleRegistry(t *testing.T) {
 	source := getTestSource()
 	cfg := getTestConfig()
@@ -604,4 +608,31 @@ func TestRunOnce_EmitChangeEvent(t *testing.T) {
 			}))
 		})
 	}
+}
+
+func TestRun_HardError(t *testing.T) {
+	cfg := getTestConfig()
+	r, err := registryfactory.Select(getTestConfig(), getTestProvider())
+	require.NoError(t, err)
+
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return([]*endpoint.Endpoint(nil), errors.New("simulated hard error"))
+
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		Interval:           5 * time.Second,
+	}
+
+	// Set nextRunAt to the past to trigger ShouldRunOnce immediately on the first tick
+	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+	err = ctrl.Run(t.Context())
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to do run once")
+	assert.ErrorContains(t, err, "simulated hard error")
+
+	source.AssertExpectations(t)
 }

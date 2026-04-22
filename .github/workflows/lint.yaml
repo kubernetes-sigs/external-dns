@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions: {}
+
 jobs:
   lint:
     name: Markdown and Go
@@ -37,18 +39,23 @@ jobs:
           exit 1
         fi
 
+    - name: Read golangci-lint version
+      id: lint-version
+      run: |
+        version=$(sed -n 's/^GOLANG_CI_LINTER_VERSION=//p' scripts/install-tools.sh)
+        echo "version=${version}" >> $GITHUB_OUTPUT
+        echo "golangci-lint version: ${version}"
+
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
       uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
       with:
         verify: true
         args: --timeout=30m
-        version: v2.11.4
+        version: ${{ steps.lint-version.outputs.version }}
 
-    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-    # https://github.com/pre-commit/action
-    - name: Verify with pre-commit
-      uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+    - name: Run file hygiene checks
+      run: ./scripts/file-hygiene.sh
 
   check-go-version:
     name: Go version consistency

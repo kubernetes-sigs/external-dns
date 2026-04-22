@@ -10,6 +10,8 @@ on:
   - cron: '35 13 * * 5'
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   analyze:
     name: Analyze

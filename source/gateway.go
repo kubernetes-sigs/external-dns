@@ -32,11 +32,9 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
-	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -138,7 +136,7 @@ type gatewayRouteSource struct {
 	gwName      string
 	gwNamespace string
 	gwLabels    labels.Selector
-	gwInformer  informers_v1beta1.GatewayInformer
+	gwInformer  informers_v1.GatewayInformer
 	lsInformer  informers_v1.ListenerSetInformer
 
 	rtKind        string
@@ -178,8 +176,8 @@ func newGatewayRouteSource(
 	}
 
 	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := gwInformerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                          // Register with factory before starting.
+	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+	gwInformer.Informer()                                     // Register with factory before starting.
 
 	var lsInformer informers_v1.ListenerSetInformer
 	lsInformerFactory := gwInformerFactory
@@ -340,7 +338,7 @@ type objectRef struct {
 }
 
 type listenerObject struct {
-	gateway        *v1beta1.Gateway
+	gateway        *v1.Gateway
 	gatewayRef     types.NamespacedName
 	listenerSet    *v1.ListenerSet
 	ownerNamespace string
@@ -365,7 +363,7 @@ type resolvedParent struct {
 	listeners []listenerSection
 }
 
-func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
+func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
 	// Create Namespace lookup table.
 	nss := make(map[string]*corev1.Namespace, len(namespaces))
 	for _, ns := range namespaces {
@@ -639,7 +637,7 @@ func newObjectRef(group, kind, namespace, name string) objectRef {
 	}
 }
 
-func newGatewayListenerObject(gw *v1beta1.Gateway) *listenerObject {
+func newGatewayListenerObject(gw *v1.Gateway) *listenerObject {
 	return &listenerObject{
 		gateway:        gw,
 		gatewayRef:     namespacedName(gw.Namespace, gw.Name),
@@ -725,7 +723,7 @@ func listenerSetSections(ls *v1.ListenerSet, objectAttached bool, objectReason s
 	return bySection
 }
 
-func gatewayAllowsListenerSet(gw *v1beta1.Gateway, ls *v1.ListenerSet, namespaces map[string]*corev1.Namespace) bool {
+func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map[string]*corev1.Namespace) bool {
 	from := v1.NamespacesFromNone
 	if gw.Spec.AllowedListeners != nil && gw.Spec.AllowedListeners.Namespaces != nil && gw.Spec.AllowedListeners.Namespaces.From != nil {
 		from = *gw.Spec.AllowedListeners.Namespaces.From

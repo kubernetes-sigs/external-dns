@@ -27,7 +27,7 @@ Building and/or testing `external-dns` requires additional tooling.
 
 ### Go Tools
 
-Additional Go-based tools are managed in [`go.tool.mod`](../../go.tool.mod) and used for code generation:
+Additional Go-based tools are managed in `go.tool.mod` and used for code generation:
 
 | Tool                                                                  | Purpose                                            |
 |-----------------------------------------------------------------------|----------------------------------------------------|
@@ -224,7 +224,7 @@ go test ./tests/integration/...
 ## Complete test on local env
 
 It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
-See the [related tutorials](../tutorials/coredns-etc.md) for full instructions.
+See the [related tutorials](../tutorials/coredns-etcd.md) for full instructions.
 
 ### Continuous Integration
 

@@ -22,19 +22,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
+	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 )
 
 // NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given config.
 func NewGatewayTLSRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(ctx, clients, config, "TLSRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
-		return &gatewayTLSRouteInformer{factory.Gateway().V1alpha2().TLSRoutes()}
+		return &gatewayTLSRouteInformer{factory.Gateway().V1().TLSRoutes()}
 	})
 }
 
-type gatewayTLSRoute struct{ route v1alpha2.TLSRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+type gatewayTLSRoute struct{ route v1.TLSRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
 func (rt *gatewayTLSRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
@@ -44,7 +43,7 @@ func (rt *gatewayTLSRoute) Protocol() v1.ProtocolType        { return v1.TLSProt
 func (rt *gatewayTLSRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
 
 type gatewayTLSRouteInformer struct {
-	informers_v1a2.TLSRouteInformer
+	informers_v1.TLSRouteInformer
 }
 
 func (inf gatewayTLSRouteInformer) List(namespace string, selector labels.Selector) ([]gatewayRoute, error) {
@@ -58,7 +57,7 @@ func (inf gatewayTLSRouteInformer) List(namespace string, selector labels.Select
 		// We make a shallow copy since we're only interested in setting the TypeMeta.
 		clone := *rt
 		clone.TypeMeta = metav1.TypeMeta{
-			APIVersion: v1alpha2.GroupVersion.String(),
+			APIVersion: v1.GroupVersion.String(),
 			Kind:       "TLSRoute",
 		}
 		routes[i] = &gatewayTLSRoute{clone}
