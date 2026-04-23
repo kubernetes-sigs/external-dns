@@ -374,7 +374,7 @@ func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 	for _, e := range endpoints {
 		// OCI DNS does not support the set-identifier attribute, so we remove it to avoid plan failure
 		if e.SetIdentifier != "" {
-			log.Warnf("Adjusting endpont: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
+			log.Warnf("Adjusting endpoint: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
 			e.SetIdentifier = ""
 		}
 		adjustedEndpoints = append(adjustedEndpoints, e)

@@ -35,7 +35,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be change if you have mulitple sources
+Could be change if you have multiple sources
 
 ```yaml
 apiVersion: v1

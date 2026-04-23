@@ -322,7 +322,7 @@ func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 
 // hasAliasAnnotation checks if the endpoint has the alias annotation set to true
 func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
-	value, exists := ep.GetProviderSpecificProperty("alias")
+	value, exists := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	return exists && value == "true"
 }
 

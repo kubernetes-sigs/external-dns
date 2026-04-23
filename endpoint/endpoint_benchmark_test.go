@@ -25,7 +25,7 @@ import (
 
 var (
 	providerSpecificKeys = []string{
-		"alias",
+		ProviderSpecificAlias,
 		"provider/target-hosted-zone",
 		"provider/evaluate-target-health",
 		"provider/weight",

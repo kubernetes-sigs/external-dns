@@ -530,7 +530,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwner("alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
 			newEndpointWithOwner("cname-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, ""),
@@ -583,7 +583,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			},
 			ProviderSpecific: []endpoint.ProviderSpecificProperty{
 				{
-					Name:  "alias",
+					Name:  endpoint.ProviderSpecificAlias,
 					Value: "true",
 				},
 			},
@@ -1090,7 +1090,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
@@ -1108,8 +1108,8 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("cname-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
 			newTXTEndpointWithOwnedRecord("cname-example", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
-			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithProviderSpecific("alias", "true"),
-			newTXTEndpointWithOwnedRecord("cname-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+			newTXTEndpointWithOwnedRecord("cname-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),

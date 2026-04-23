@@ -14,7 +14,7 @@ Experimental channels as summarized below:
 | HTTPRoute          | v1                                  | v1.0.0                               | v1.0.0                          |
 | GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
 | ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
-| TLSRoute           | v1alpha2                            | v1.5.0                               | v1.0.0                          |
+| TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
 | TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 | UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 

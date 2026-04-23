@@ -498,7 +498,7 @@ args:
   - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com"
 ```
 
-This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
+This is a complex template that iterates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
 
 ### Using `hasKey` for Safe Label and Annotation Access
 
