@@ -28,6 +28,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/mapper"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -113,10 +115,18 @@ func (im *existingTXTs) reset() {
 	im.entries = make(map[recordKey]struct{})
 }
 
-// NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
+// New creates a TXTRegistry from the given configuration.
+func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
+		cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
+		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
+		cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
+}
+
+// newRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
 // generate new format TXT records, otherwise it generates both old and new formats for
 // backwards compatibility.
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
+func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,
@@ -158,10 +168,12 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	}, nil
 }
 
+// GetDomainFilter returns the domain filter from the underlying provider.
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return im.provider.GetDomainFilter()
 }
 
+// OwnerID returns the owner identifier used to label records managed by this registry.
 func (im *TXTRegistry) OwnerID() string {
 	return im.ownerID
 }
@@ -212,9 +224,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			endpoints = append(endpoints, record)
 			continue
 		}
-		if err != nil {
-			return nil, err
-		}
 
 		endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)
 		key := endpoint.EndpointKey{
@@ -244,7 +253,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
+		if isAlias, found := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
 			key.RecordType = endpoint.RecordTypeCNAME
 		}
 
@@ -300,7 +309,7 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
-	if isAlias, found := r.GetBoolProviderSpecificProperty("alias"); found && isAlias && recordType == endpoint.RecordTypeA {
+	if isAlias, found := r.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); found && isAlias && recordType == endpoint.RecordTypeA {
 		recordType = endpoint.RecordTypeCNAME
 	}
 

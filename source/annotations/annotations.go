@@ -37,6 +37,9 @@ var (
 	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
 
+	// AzureTagsKey The annotation used for Azure DNS record tags
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
 	SCWPrefix        = AnnotationKeyPrefix + "scw-"
@@ -46,6 +49,7 @@ var (
 	TtlKey           = AnnotationKeyPrefix + "ttl"
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey         = AnnotationKeyPrefix + "alias"
+	RecordTypeKey    = AnnotationKeyPrefix + "record-type"
 	TargetKey        = AnnotationKeyPrefix + "target"
 	// ControllerKey The annotation used for figuring out which controller is responsible
 	ControllerKey = AnnotationKeyPrefix + "controller"
@@ -81,6 +85,9 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
 
+	// Azure annotations
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix = AnnotationKeyPrefix + "coredns-"
@@ -92,6 +99,7 @@ func SetAnnotationPrefix(prefix string) {
 	TtlKey = AnnotationKeyPrefix + "ttl"
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey = AnnotationKeyPrefix + "alias"
+	RecordTypeKey = AnnotationKeyPrefix + "record-type"
 	TargetKey = AnnotationKeyPrefix + "target"
 	ControllerKey = AnnotationKeyPrefix + "controller"
 	HostnameKey = AnnotationKeyPrefix + "hostname"

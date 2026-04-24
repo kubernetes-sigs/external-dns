@@ -59,10 +59,14 @@ type Provider interface {
 
 type BaseProvider struct{}
 
+// AdjustEndpoints returns the endpoints unchanged. Providers that need to
+// canonicalize or transform candidate endpoints should override this method.
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// GetDomainFilter returns an empty domain filter. Providers that support
+// domain filtering should override this method.
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
 }

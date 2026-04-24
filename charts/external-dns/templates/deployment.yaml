@@ -138,13 +138,13 @@ spec:
             {{- if not (kindIs "invalid" $value) }}
             {{- if kindIs "slice" $value }}
             {{- range $value }}
-            - --{{ $key }}={{ tpl (. | toString) $ }}
+            - {{ print "--" $key "=" (tpl (. | toString) $) | quote }}
             {{- end }}
             {{- else }}
-            - --{{ $key }}={{ tpl ($value | toString) $ }}
+            - {{ print "--" $key "=" (tpl ($value | toString) $) | quote }}
             {{- end }}
             {{- else }}
-            - --{{ $key }}
+            - {{ print "--" $key | quote }}
             {{- end }}
             {{- end }}
             {{- end }}

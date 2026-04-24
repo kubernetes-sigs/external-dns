@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -92,6 +93,27 @@ func newTestProviderFunc(t *testing.T) *testProviderFunc {
 	}
 }
 
+func TestNewCachedProvider(t *testing.T) {
+	inner := newTestProviderFunc(t)
+	delay := 5 * time.Minute
+	cp := NewCachedProvider(inner, delay)
+	assert.Equal(t, inner, cp.Provider)
+	assert.Equal(t, delay, cp.RefreshDelay)
+	assert.Nil(t, cp.cache)
+	assert.True(t, cp.lastRead.IsZero())
+}
+
+func TestCachedProviderRecordsError(t *testing.T) {
+	testProvider := newTestProviderFunc(t)
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
+		return nil, assert.AnError
+	}
+	cp := NewCachedProvider(testProvider, 0)
+	_, err := cp.Records(t.Context())
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, cp.cache)
+}
+
 func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 	testProvider := newTestProviderFunc(t)
 	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -100,7 +122,7 @@ func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 	provider := CachedProvider{
 		Provider: testProvider,
 	}
-	endpoints, err := provider.Records(context.Background())
+	endpoints, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Len(t, endpoints, 1)
@@ -117,12 +139,12 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 		RefreshDelay: 30 * time.Second,
 		Provider:     testProvider,
 	}
-	_, err := provider.Records(context.Background())
+	_, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	t.Run("With consecutive calls within the caching time frame", func(t *testing.T) {
 		testProvider.records = recordsNotCalled(t)
-		endpoints, err := provider.Records(context.Background())
+		endpoints, err := provider.Records(t.Context())
 		assert.NoError(t, err)
 		require.NotNil(t, endpoints)
 		require.Len(t, endpoints, 1)
@@ -135,7 +157,7 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 			return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 		}
 		provider.lastRead = time.Now().Add(-20 * time.Minute)
-		endpoints, err := provider.Records(context.Background())
+		endpoints, err := provider.Records(t.Context())
 		assert.NoError(t, err)
 		require.NotNil(t, endpoints)
 		require.Len(t, endpoints, 1)
@@ -153,7 +175,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 		RefreshDelay: 30 * time.Second,
 		Provider:     testProvider,
 	}
-	_, err := provider.Records(context.Background())
+	_, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	t.Run("When empty changes are applied", func(t *testing.T) {
@@ -161,14 +183,14 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
 			return nil
 		}
-		err := provider.ApplyChanges(context.Background(), &plan.Changes{})
+		err := provider.ApplyChanges(t.Context(), &plan.Changes{})
 		assert.NoError(t, err)
 		t.Run("Next call to Records is cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
 			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 				return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 			}
-			endpoints, err := provider.Records(context.Background())
+			endpoints, err := provider.Records(t.Context())
 
 			assert.NoError(t, err)
 			require.NotNil(t, endpoints)
@@ -183,7 +205,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
 			return nil
 		}
-		err := provider.ApplyChanges(context.Background(), &plan.Changes{
+		err := provider.ApplyChanges(t.Context(), &plan.Changes{
 			Create: []*endpoint.Endpoint{
 				{DNSName: "hello.world"},
 			},
@@ -194,7 +216,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 				return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
 			}
-			endpoints, err := provider.Records(context.Background())
+			endpoints, err := provider.Records(t.Context())
 
 			assert.NoError(t, err)
 			require.NotNil(t, endpoints)

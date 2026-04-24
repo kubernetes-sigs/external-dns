@@ -82,8 +82,14 @@ or the `--publish-internal-services` flag was specified, uses the `spec.ClusterI
 
 ### NodePort
 
-If `spec.ExternalTrafficPolicy` is `Local`, iterates over each Node that both matches the Service's `spec.selector`
-and has a `status.phase` of `Running`. Otherwise iterates over all Nodes, of any phase.
+If `spec.ExternalTrafficPolicy` is `Local`, selects Nodes that have at least one pod matching the Service's
+`spec.selector` with a pod `status.phase` of `Running`. Nodes are selected from the highest-priority tier available:
+
+1. Nodes with at least one ready, non-terminating pod (preferred).
+2. Nodes with at least one ready pod that is terminating (fallback during rolling updates).
+3. Nodes with at least one running but not-ready pod (last resort).
+
+Otherwise iterates over all Nodes, of any phase.
 
 Iterates over each relevant Node's `status.addresses`:
 

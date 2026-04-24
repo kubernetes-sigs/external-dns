@@ -277,6 +277,30 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 	return chs, nil
 }
 
+// processCustomHostnameChanges applies custom hostname side-effects for each
+// change in the set and returns true if any operation failed.
+func (p *CloudFlareProvider) processCustomHostnameChanges(
+	ctx context.Context,
+	zoneID string,
+	changes []*cloudFlareChange,
+	chs customHostnamesMap,
+) bool {
+	failed := false
+	for _, change := range changes {
+		logFields := log.Fields{
+			"record": change.ResourceRecord.Name,
+			"type":   change.ResourceRecord.Type,
+			"ttl":    change.ResourceRecord.TTL,
+			"action": change.Action.String(),
+			"zone":   zoneID,
+		}
+		if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
+			failed = true
+		}
+	}
+	return failed
+}
+
 // listAllCustomHostnames extracts all custom hostnames from the iterator
 func listAllCustomHostnames(iter autoPager[custom_hostnames.CustomHostnameListResponse]) ([]customHostname, error) {
 	var customHostnames []customHostname

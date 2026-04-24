@@ -138,6 +138,7 @@ tests:
         extraArgC:
           - valueC-1
           - valueC-2
+        extraArgD: "valueD: D"
 
     asserts:
       - equal:
@@ -155,6 +156,7 @@ tests:
             - --extraArgB=valueB
             - --extraArgC=valueC-1
             - --extraArgC=valueC-2
+            - "--extraArgD=valueD: D"
 
 
   - it: should throw error when txtPrefix and txtSuffix are set

@@ -6,7 +6,7 @@ Make sure to use **>=0.12.3** version of ExternalDNS for this tutorial.
 
 ## Creating Plural Credentials
 
-A secret containing the a Plural access token is needed for this provider. You can get a token for your user [here](https://app.plural.sh/profile/tokens).
+A secret containing the a Plural access token is needed for this provider. You can get a token for your [user here](https://app.plural.sh/profile/tokens).
 
 To create the secret you can run `kubectl create secret generic plural-env --from-literal=PLURAL_ACCESS_TOKEN=<replace-with-your-access-token>`.
 
@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -134,7 +134,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.

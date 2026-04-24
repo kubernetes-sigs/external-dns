@@ -24,7 +24,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
@@ -35,7 +35,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be change if you have mulitple sources
+Could be change if you have multiple sources
 
 ```yaml
 apiVersion: v1
@@ -96,7 +96,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)

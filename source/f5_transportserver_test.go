@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -326,6 +325,41 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			name: "F5 TransportServer does not support provider-specific annotations",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5TransportServerNamespace,
+					Annotations: map[string]string{
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-transportserver/transportserver/test-vs",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -342,19 +376,23 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			assert.NoError(t, transportServer.UnmarshalJSON(transportServerJSON))
 
 			// Create TransportServer resources
-			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(context.Background(), &transportServer, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &transportServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5TransportServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5TransportServerNamespace, tc.annotationFilter)
+			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        defaultF5TransportServerNamespace,
+					AnnotationFilter: tc.annotationFilter,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
 			assert.Equal(t, tc.expected, endpoints)

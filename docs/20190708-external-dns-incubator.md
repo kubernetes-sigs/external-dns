@@ -36,7 +36,8 @@ ExternalDNS' goal from the beginning was to provide an officially supported solu
 
 After two years of development, the project is still in the kubernetes-sigs.
 
-The incubation has been officially discontinued and to quote @thockin "Incubator projects should either become real projects in Kubernetes, shut themselves down, or move elsewhere" (see original thread [here](https://groups.google.com/forum/#!topic/kubernetes-sig-network/fvpDC_nxtEM)).
+The incubation has been officially discontinued and to quote @thockin "Incubator projects should either become real projects in Kubernetes,
+shut themselves down, or move elsewhere" (see original thread [google group](https://groups.google.com/forum/#!topic/kubernetes-sig-network/fvpDC_nxtEM)).
 
 This KEP proposes to move ExternalDNS to the main Kubernetes organization or kubernetes-sigs. The "Proposal" section details the reasons behind it.
 

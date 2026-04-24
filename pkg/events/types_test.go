@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
@@ -28,6 +29,21 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
+	// Verify that NewObjectReference does NOT mutate the original object
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+	}
+	podCopy := pod.DeepCopy()
+
+	_ = NewObjectReference(pod, "test")
+
+	assert.Equal(t, podCopy, pod)
+}
 
 func TestSanitize(t *testing.T) {
 	tests := []struct {
@@ -329,7 +345,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "endpoint for cluster-scoped resource (Node) should handle empty namespace",
+			name: "endpoint for cluster-scoped resource (Node)",
 			ep: &mockEndpointInfo{
 				dnsName:    "node1.example.com",
 				recordType: "A",
@@ -348,6 +364,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			asserts: func(t *testing.T, ev Event) {
 				require.Equal(t, ActionCreate, ev.action)
 				require.Empty(t, ev.ref.Namespace)
+
 				k8sEvent := ev.event()
 				require.NotNil(t, k8sEvent)
 				require.Equal(t, "default", k8sEvent.Namespace)
@@ -494,6 +511,23 @@ func (c *customObject) DeepCopyObject() runtime.Object {
 		TypeMeta:   c.TypeMeta,
 		ObjectMeta: *c.ObjectMeta.DeepCopy(),
 	}
+}
+
+func TestEvent_Accessors(t *testing.T) {
+	ref := &ObjectReference{Kind: "Pod", Namespace: "default", Name: "nginx"}
+	ev := NewEvent(ref, "msg", ActionDelete, RecordDeleted)
+
+	assert.Equal(t, ActionDelete, ev.Action())
+	assert.Equal(t, RecordDeleted, ev.Reason())
+	assert.Equal(t, EventTypeNormal, ev.EventType())
+}
+
+func TestWithDryRun(t *testing.T) {
+	cfg := NewConfig(WithDryRun(true))
+	assert.True(t, cfg.dryRun)
+
+	cfg = NewConfig(WithDryRun(false))
+	assert.False(t, cfg.dryRun)
 }
 
 func TestNewObjectReference_ReflectionFallback(t *testing.T) {

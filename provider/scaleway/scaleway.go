@@ -54,8 +54,13 @@ type ScalewayChange struct {
 	Record []domain.Record
 }
 
-// NewScalewayProvider initializes a new Scaleway DNS provider
-func NewScalewayProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayProvider, error) {
+// New creates a Scaleway provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.DryRun)
+}
+
+// newProvider initializes a new Scaleway DNS provider
+func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayProvider, error) {
 	var err error
 	defaultPageSize := uint64(1000)
 	if envPageSize, ok := os.LookupEnv("SCW_DEFAULT_PAGE_SIZE"); ok {
@@ -104,7 +109,7 @@ func NewScalewayProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*Sca
 	}, nil
 }
 
-// AdjustEndpoints is used to normalize the endoints
+// AdjustEndpoints is used to normalize the endpoints
 func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {

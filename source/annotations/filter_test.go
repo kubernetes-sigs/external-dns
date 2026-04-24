@@ -19,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 

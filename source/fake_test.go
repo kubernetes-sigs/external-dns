@@ -31,7 +31,7 @@ import (
 var _ Source = &fakeSource{}
 
 func generateTestEndpoints() []*endpoint.Endpoint {
-	sc, _ := NewFakeSource("")
+	sc, _ := NewFakeSource(&Config{})
 
 	endpoints, _ := sc.Endpoints(context.Background())
 
@@ -75,7 +75,7 @@ func TestFakeEndpointsResolveToIPAddresses(t *testing.T) {
 }
 
 func TestFakeSource_GenerateEndpoint_RefObject(t *testing.T) {
-	sc, _ := NewFakeSource("example.com")
+	sc, _ := NewFakeSource(&Config{})
 	fs := sc.(*fakeSource)
 
 	ep := fs.generateEndpoint()

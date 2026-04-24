@@ -17,12 +17,16 @@ limitations under the License.
 package provider
 
 import (
+	"errors"
 	"io"
 	"os"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestMain(m *testing.M) {
@@ -44,6 +48,39 @@ func TestEnsureTrailingDot(t *testing.T) {
 			t.Errorf("expected %s, got %s", tc.expected, output)
 		}
 	}
+}
+
+func TestNewSoftError(t *testing.T) {
+	cause := errors.New("something failed")
+	err := NewSoftError(cause)
+	require.ErrorIs(t, err, SoftError)
+	require.ErrorIs(t, err, cause)
+}
+
+func TestNewSoftErrorf(t *testing.T) {
+	err := NewSoftErrorf("failed with code %d", 42)
+	require.ErrorIs(t, err, SoftError)
+	assert.Contains(t, err.Error(), "failed with code 42")
+}
+
+func TestBaseProvider_AdjustEndpoints(t *testing.T) {
+	b := BaseProvider{}
+	eps := []*endpoint.Endpoint{{DNSName: "example.com"}}
+	got, err := b.AdjustEndpoints(eps)
+	assert.NoError(t, err)
+	assert.Equal(t, eps, got)
+}
+
+func TestBaseProvider_GetDomainFilter(t *testing.T) {
+	b := BaseProvider{}
+	f := b.GetDomainFilter()
+	assert.NotNil(t, f)
+	assert.True(t, f.Match("example.com"))
+}
+
+func TestContextKeyString(t *testing.T) {
+	k := &contextKey{name: "records"}
+	assert.Equal(t, "provider context value records", k.String())
 }
 
 func TestDifference(t *testing.T) {

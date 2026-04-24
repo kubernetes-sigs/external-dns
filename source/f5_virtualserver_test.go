@@ -17,9 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -568,6 +569,41 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "F5 VirtualServer does not support provider-specific annotations",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -584,22 +620,26 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			assert.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
 
 			// Create VirtualServer resources
-			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(context.Background(), &virtualServer, metav1.CreateOptions{})
+			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewF5VirtualServerSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultF5VirtualServerNamespace, tc.annotationFilter)
+			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+				&Config{
+					Namespace:        defaultF5VirtualServerNamespace,
+					AnnotationFilter: tc.annotationFilter,
+				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).List(context.Background(), metav1.ListOptions{})
+				count, _ = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).List(t.Context(), metav1.ListOptions{})
 			}
 
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }

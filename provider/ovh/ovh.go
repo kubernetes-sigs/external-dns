@@ -67,8 +67,8 @@ type OVHProvider struct {
 	DryRun bool
 
 	// EnableCNAMERelativeTarget controls if CNAME target should be sent with relative format.
-	// Previous implementations of the OVHProvider always added a final dot as for absolut format.
-	// Default value is false, all CNAME are transformed into absolut format.
+	// Previous implementations of the OVHProvider always added a final dot as for absolute format.
+	// Default value is false, all CNAME are transformed into absolute format.
 	// Setting this to true will allow relative format to be sent to DNS zone.
 	EnableCNAMERelativeTarget bool
 
@@ -123,8 +123,13 @@ type ovhChange struct {
 	Action int
 }
 
-// NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(
+// New creates an OVH provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+}
+
+// newProvider initializes a new OVH DNS based Provider.
+func newProvider(
 	domainFilter *endpoint.DomainFilter,
 	endpoint string,
 	apiRateLimit int,

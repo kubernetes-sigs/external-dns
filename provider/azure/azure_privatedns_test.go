@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -123,8 +123,8 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(_ context.Context, _ s
 
 func createMockPrivateZone(zone string, id string) *privatedns.PrivateZone {
 	return &privatedns.PrivateZone{
-		ID:   to.Ptr(id),
-		Name: to.Ptr(zone),
+		ID:   new(id),
+		Name: new(zone),
 	}
 }
 
@@ -132,11 +132,11 @@ func privateARecordSetPropertiesGetter(values []string, ttl int64) *privatedns.R
 	aRecords := make([]*privatedns.ARecord, len(values))
 	for i, value := range values {
 		aRecords[i] = &privatedns.ARecord{
-			IPv4Address: to.Ptr(value),
+			IPv4Address: new(value),
 		}
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:      to.Ptr(ttl),
+		TTL:      new(ttl),
 		ARecords: aRecords,
 	}
 }
@@ -145,20 +145,20 @@ func privateAAAARecordSetPropertiesGetter(values []string, ttl int64) *privatedn
 	aaaaRecords := make([]*privatedns.AaaaRecord, len(values))
 	for i, value := range values {
 		aaaaRecords[i] = &privatedns.AaaaRecord{
-			IPv6Address: to.Ptr(value),
+			IPv6Address: new(value),
 		}
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:         to.Ptr(ttl),
+		TTL:         new(ttl),
 		AaaaRecords: aaaaRecords,
 	}
 }
 
 func privateCNameRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		CnameRecord: &privatedns.CnameRecord{
-			Cname: to.Ptr(values[0]),
+			Cname: new(values[0]),
 		},
 	}
 }
@@ -170,14 +170,14 @@ func privateMXRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.
 		mxRecords[i] = &mxRecord
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		MxRecords: mxRecords,
 	}
 }
 
 func privateTxtRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		TxtRecords: []*privatedns.TxtRecord{
 			{
 				Value: []*string{&values[0]},
@@ -188,7 +188,7 @@ func privateTxtRecordSetPropertiesGetter(values []string, ttl int64) *privatedns
 
 func privateOthersRecordSetPropertiesGetter(_ []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 	}
 }
 
@@ -218,8 +218,8 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 		getterFunc = privateOthersRecordSetPropertiesGetter
 	}
 	return &privatedns.RecordSet{
-		Name:       to.Ptr(name),
-		Type:       to.Ptr("Microsoft.Network/privateDnsZones/" + recordType),
+		Name:       new(name),
+		Type:       new("Microsoft.Network/privateDnsZones/" + recordType),
 		Properties: getterFunc(values, ttl),
 	}
 }
@@ -263,7 +263,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 			createPrivateMockRecordSetWithNameAndTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
 		}, 3)
 
-	actual, err := provider.Records(context.Background())
+	actual, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +299,7 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 			createPrivateMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		}, 3)
 
-	actual, err := provider.Records(context.Background())
+	actual, err := provider.Records(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -449,7 +449,7 @@ func TestAzurePrivateDNSNameFilter(t *testing.T) {
 			createPrivateMockRecordSetWithNameAndTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		}, 3)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	actual, err := provider.Records(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -544,7 +544,7 @@ func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, 
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := provider.ApplyChanges(t.Context(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

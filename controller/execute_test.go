@@ -20,20 +20,20 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
-	"reflect"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 // Logger
@@ -71,30 +71,15 @@ func TestConfigureLogger(t *testing.T) {
 			},
 			wantLevel:  log.InfoLevel,
 			wantErr:    true,
-			wantErrMsg: "failed to parse log level",
+			wantErrMsg: "not a valid logrus Level: \"invalid\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.wantErr {
-				// Capture and suppress fatal exit; restore logger after test
-				logger := log.StandardLogger()
-				prevOut := logger.Out
-				prevExit := logger.ExitFunc
-				b := new(bytes.Buffer)
-				var captureLogFatal bool
-				logger.ExitFunc = func(int) { captureLogFatal = true }
-				logger.SetOutput(b)
-				t.Cleanup(func() {
-					logger.SetOutput(prevOut)
-					logger.ExitFunc = prevExit
-				})
-
-				configureLogger(tt.cfg)
-
-				assert.True(t, captureLogFatal)
-				assert.Contains(t, b.String(), tt.wantErrMsg)
+				err := configureLogger(tt.cfg)
+				require.Error(t, err)
 			} else {
 				// Save and restore logger state to avoid leaking between tests
 				logger := log.StandardLogger()
@@ -105,7 +90,9 @@ func TestConfigureLogger(t *testing.T) {
 					logger.SetFormatter(prevFormatter)
 				})
 
-				configureLogger(tt.cfg)
+				err := configureLogger(tt.cfg)
+				require.NoError(t, err)
+
 				assert.Equal(t, tt.wantLevel, log.GetLevel())
 
 				if tt.wantJSON {
@@ -114,162 +101,6 @@ func TestConfigureLogger(t *testing.T) {
 					assert.IsType(t, &log.TextFormatter{}, log.StandardLogger().Formatter)
 				}
 			}
-		})
-	}
-}
-
-// Provider
-func TestBuildProvider(t *testing.T) {
-	tests := []struct {
-		name          string
-		cfg           *externaldns.Config
-		expectedType  string
-		expectedError string
-	}{
-		{
-			name: "aws provider",
-			cfg: &externaldns.Config{
-				Provider: "aws",
-			},
-			expectedType: "*aws.AWSProvider",
-		},
-		{
-			name: "rfc2136 provider",
-			cfg: &externaldns.Config{
-				Provider:             "rfc2136",
-				RFC2136TSIGSecretAlg: "hmac-sha256",
-			},
-			expectedType: "*rfc2136.rfc2136Provider",
-		},
-		{
-			name: "gandi provider",
-			cfg: &externaldns.Config{
-				Provider: "gandi",
-			},
-			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
-		},
-		{
-			name: "inmemory provider",
-			cfg: &externaldns.Config{
-				Provider: "inmemory",
-			},
-			expectedType: "*inmemory.InMemoryProvider",
-		},
-		{
-			name: "inmemory cached provider",
-			cfg: &externaldns.Config{
-				Provider:          "inmemory",
-				ProviderCacheTime: 10 * time.Millisecond,
-			},
-			expectedType: "*provider.CachedProvider",
-		},
-		{
-			name: "oci provider instance principal without compartment OCID",
-			cfg: &externaldns.Config{
-				Provider:                 "oci",
-				OCIAuthInstancePrincipal: true,
-				OCICompartmentOCID:       "",
-			},
-			expectedError: "instance principal authentication requested, but no compartment OCID provided",
-		},
-		{
-			name: "oci provider without config file",
-			cfg: &externaldns.Config{
-				Provider:      "oci",
-				OCIConfigFile: "",
-			},
-			expectedError: "reading OCI config file",
-		},
-		{
-			name: "coredns provider",
-			cfg: &externaldns.Config{
-				Provider: "coredns",
-			},
-			expectedType: "coredns.coreDNSProvider",
-		},
-		{
-			name: "pihole provider",
-			cfg: &externaldns.Config{
-				Provider:         "pihole",
-				PiholeApiVersion: "6",
-				PiholeServer:     "http://localhost:8080",
-			},
-			expectedType: "*pihole.PiholeProvider",
-		},
-		{
-			name: "dnsimple provider",
-			cfg: &externaldns.Config{
-				Provider: "dnsimple",
-			},
-			expectedError: "no dnsimple oauth token provided",
-		},
-		{
-			name: "unknown provider",
-			cfg: &externaldns.Config{
-				Provider: "unknown",
-			},
-			expectedError: "unknown dns provider: unknown",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
-
-			p, err := buildProvider(t.Context(), tt.cfg, domainFilter)
-
-			if tt.expectedError != "" {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, tt.expectedError)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, p)
-				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
-			}
-		})
-	}
-}
-
-func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name    string
-		cfg     *externaldns.Config
-		asserts func(*testing.T, *externaldns.Config)
-	}{
-		{
-			name: "configuration with target filter wrapper",
-			cfg: &externaldns.Config{
-				APIServerURL:    svr.URL,
-				Sources:         []string{"fake"},
-				TargetNetFilter: []string{"10.0.0.0/8"},
-			},
-		},
-		{
-			name: "configuration with nat64 networks",
-			cfg: &externaldns.Config{
-				APIServerURL:  svr.URL,
-				Sources:       []string{"fake"},
-				NAT64Networks: []string{"2001:db8::/96"},
-			},
-		},
-		{
-			name: "default configuration",
-			cfg: &externaldns.Config{
-				APIServerURL: svr.URL,
-				Sources:      []string{"fake"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
-			require.NoError(t, err)
 		})
 	}
 }
@@ -299,7 +130,7 @@ func TestHelperProcess(_ *testing.T) {
 func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	t.Helper()
 	// make sure the subprocess does not run forever
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	// TODO: investigate why -test.run=TestHelperProcess
@@ -446,10 +277,11 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	sCfg := source.NewSourceConfig(cfg)
-	ctx, cancel := context.WithCancel(context.Background())
+	sCfg, err := source.NewSourceConfig(cfg)
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	src, err := buildSource(ctx, sCfg)
+	src, err := wrappers.Build(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
@@ -457,7 +289,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
-	p, err := buildProvider(ctx, cfg, domainFilter)
+	p, err := provider.Select(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
 	require.NoError(t, err)

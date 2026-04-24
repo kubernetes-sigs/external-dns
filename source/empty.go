@@ -31,6 +31,7 @@ import (
 // +externaldns:source:filters=
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=false
 type emptySource struct{}
 
 func (e *emptySource) AddEventHandler(_ context.Context, _ func()) {

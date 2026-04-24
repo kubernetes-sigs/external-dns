@@ -55,6 +55,7 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
@@ -68,13 +69,12 @@ func NewF5TransportServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
+	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
-	_, _ = transportServerInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -92,8 +92,8 @@ func NewF5TransportServerSource(
 		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
+		namespace:               cfg.Namespace,
+		annotationFilter:        cfg.AnnotationFilter,
 		unstructuredConverter:   uc,
 	}, nil
 }
@@ -134,7 +134,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TransportServer")
 
-	_, _ = ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ts.transportServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
@@ -160,7 +160,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 			targets = append(targets, transportServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
 	return endpoints
