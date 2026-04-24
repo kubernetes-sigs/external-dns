@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "external-dns.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "external-dns.namespace" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
@@ -109,7 +109,7 @@ spec:
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}
-            - --namespace={{ default .Release.Namespace .Values.sourceNamespace }}
+            - --namespace={{ default (include "external-dns.namespace" .) .Values.sourceNamespace }}
             {{- end }}
             {{- if .Values.gatewayNamespace }}
             - --gateway-namespace={{ .Values.gatewayNamespace }}
