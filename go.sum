@@ -840,8 +840,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021/go.mod h1:prYjPmNq4d1NPVmpShWobRqXY3q7Vp+80DqgxxUrUIA=
-github.com/projectcontour/contour v1.33.3 h1:C/pNpx8+fbgnfg1Qi5iykk8mREGdLZb0qWxp2aPCaDk=
-github.com/projectcontour/contour v1.33.3/go.mod h1:t9+vcvRkJhnzvbJ78GkOSomvoqzHlFQKMZbllUdnwh4=
+github.com/projectcontour/contour v1.33.4 h1:bzgX9GEEnQjOWfu0+mEnw/3bO7Ng0BT3qUcnEVqDD1w=
+github.com/projectcontour/contour v1.33.4/go.mod h1:t9+vcvRkJhnzvbJ78GkOSomvoqzHlFQKMZbllUdnwh4=
 github.com/prometheus/client_golang v0.0.0-20180209125602-c332b6f63c06/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829/go.mod h1:p2iRAGwDERtqlqzRXnrOVns+ignqQo//hLXqYxZYVNs=
