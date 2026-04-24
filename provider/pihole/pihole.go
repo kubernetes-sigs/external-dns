@@ -170,8 +170,8 @@ func (p *PiholeProvider) buildUpdateMap(updateNew []*endpoint.Endpoint) map[piho
 func (p *PiholeProvider) applyUpdateOld(ctx context.Context, updateOld []*endpoint.Endpoint, updateNew map[piholeEntryKey]*endpoint.Endpoint) error {
 	for _, ep := range updateOld {
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
-		newRecord, ok := updateNew[key]
-		if !ok {
+		newRecord := updateNew[key]
+		if newRecord == nil {
 			continue
 		}
 		if p.updateIsNoOp(ep, newRecord) {
