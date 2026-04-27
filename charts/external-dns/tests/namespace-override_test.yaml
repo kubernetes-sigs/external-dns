@@ -14,10 +14,13 @@ tests:
       - service.yaml
       - serviceaccount.yaml
       - secret.yaml
+      - servicemonitor.yaml
     set:
       secretConfiguration:
         enabled: true
         mountPath: "/etc/kubernetes/"
+      serviceMonitor:
+        enabled: true
     asserts:
       - equal:
           path: metadata.namespace
@@ -29,11 +32,14 @@ tests:
       - service.yaml
       - serviceaccount.yaml
       - secret.yaml
+      - servicemonitor.yaml
     set:
       namespaceOverride: chart-ns
       secretConfiguration:
         enabled: true
         mountPath: "/etc/kubernetes/"
+      serviceMonitor:
+        enabled: true
     asserts:
       - equal:
           path: metadata.namespace

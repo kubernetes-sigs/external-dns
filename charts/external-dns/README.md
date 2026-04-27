@@ -128,6 +128,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | logLevel | string | `"info"` | Log level. |
 | managedRecordTypes | list | `[]` | Record types to manage (default: A, AAAA, CNAME) |
 | nameOverride | string | `nil` | Override the name of the chart. |
+| namespaceOverride | string | `nil` | Override the namespace that chart resources are rendered into. Defaults to the release namespace. Useful when installing the chart as a subchart that should live in its own namespace, separate from the umbrella release namespace. |
 | namespaced | bool | `false` | if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too). |
 | nodeSelector | object | `{}` | Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
