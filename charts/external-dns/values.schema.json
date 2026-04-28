@@ -748,6 +748,10 @@
           "default": 7979,
           "type": "integer",
           "minimum": 0
+        },
+        "enabled": {
+          "description": "If `true`, create a `Service` Kubernetes.",
+          "type": "boolean"
         }
       }
     },

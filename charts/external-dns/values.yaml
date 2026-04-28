@@ -55,6 +55,8 @@ service:
   #  - IPv6
   # -- Service IP family policy.
   ipFamilyPolicy:  # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null]
+  # -- If `true`, create a `Service` Kubernetes.
+  enabled: true
 
 rbac:  # @schema additionalProperties: true
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
