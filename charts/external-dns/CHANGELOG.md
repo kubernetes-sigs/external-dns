@@ -18,11 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+- Add value `.service.enabled` to enable the creation of the Kubernetes service.
+
 ## [v1.21.1]
 
 ### Added
 
-- Add value `.service.enabled` to enable the creation of the Kubernetes service.
 - Add value `.sourceNamespace` to watch a namespace which is different from the one that external-dns is installed into when `.namespaced` is true. ([#6297](https://github.com/kubernetes-sigs/external-dns/pull/6297)) _@jplitza_
 - Add option to enable Gateway API ListenerSet support. ([#6381](https://github.com/kubernetes-sigs/external-dns/pull/6381)) _@speer_
 - Add support for bool in extraArgs. ([#6179](https://github.com/kubernetes-sigs/external-dns/pull/6179)) _@farodin91_
@@ -326,7 +327,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+<<<<<<< HEAD
 [v1.21.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.1
+=======
+[v1.21.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.0
+>>>>>>> 0d116fa6 (chore(chart): release for v0.21.0 (#6354))
 [v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0
 [v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0
 [v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
