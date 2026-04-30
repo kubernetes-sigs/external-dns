@@ -124,4 +124,4 @@ This produces `3 × 9 = 27` endpoints in total, with each `A` and `AAAA` record 
 ## Limitations
 
 - Endpoints are regenerated with random names on every reconciliation; the fake source does not model resource updates or deletions.
-- No Kubernetes cluster is required, but `--emit-events` will fail to post events if no cluster API server is reachable.
+- No Kubernetes cluster is required, but `--emit-events` will fail to post events when kubernetes API server is unreachable.
