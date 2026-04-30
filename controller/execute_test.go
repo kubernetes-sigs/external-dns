@@ -71,30 +71,15 @@ func TestConfigureLogger(t *testing.T) {
 			},
 			wantLevel:  log.InfoLevel,
 			wantErr:    true,
-			wantErrMsg: "failed to parse log level",
+			wantErrMsg: "not a valid logrus Level: \"invalid\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.wantErr {
-				// Capture and suppress fatal exit; restore logger after test
-				logger := log.StandardLogger()
-				prevOut := logger.Out
-				prevExit := logger.ExitFunc
-				b := new(bytes.Buffer)
-				var captureLogFatal bool
-				logger.ExitFunc = func(int) { captureLogFatal = true }
-				logger.SetOutput(b)
-				t.Cleanup(func() {
-					logger.SetOutput(prevOut)
-					logger.ExitFunc = prevExit
-				})
-
-				configureLogger(tt.cfg)
-
-				assert.True(t, captureLogFatal)
-				assert.Contains(t, b.String(), tt.wantErrMsg)
+				err := configureLogger(tt.cfg)
+				require.Error(t, err)
 			} else {
 				// Save and restore logger state to avoid leaking between tests
 				logger := log.StandardLogger()
@@ -105,7 +90,9 @@ func TestConfigureLogger(t *testing.T) {
 					logger.SetFormatter(prevFormatter)
 				})
 
-				configureLogger(tt.cfg)
+				err := configureLogger(tt.cfg)
+				require.NoError(t, err)
+
 				assert.Equal(t, tt.wantLevel, log.GetLevel())
 
 				if tt.wantJSON {

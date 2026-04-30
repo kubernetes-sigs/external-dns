@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD060 -->
 
-![Version: 1.20.0](https://img.shields.io/badge/Version-1.20.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.20.0](https://img.shields.io/badge/AppVersion-0.20.0-informational?style=flat-square)
+![Version: 1.21.1](https://img.shields.io/badge/Version-1.21.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.21.0](https://img.shields.io/badge/AppVersion-0.21.0-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -29,7 +29,7 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.20.0
+helm upgrade --install external-dns external-dns/external-dns --version 1.21.1
 ```
 
 ## Providers
@@ -60,7 +60,7 @@ For set up for a specific provider using the Helm chart, see the following links
 ## Namespace Scoped Installation
 
 `external-dns` supports running on a namespace-only scope, too.
-If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`. By default, they are set up in the same namespace that `external-dns` itself is installed to. This can be changed via the `sourceNamespace` value.
 
 Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
 
@@ -105,6 +105,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |
 | dnsPolicy | string | `nil` | [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used. |
 | domainFilters | list | `[]` | Limit possible target zones by domain suffixes. |
+| enableGatewayListenerSets | bool | `false` | if `true`, the Gateway API ListenerSet flag will be enabled. |
 | enabled | bool | `nil` | No effect - reserved for use in sub-charting. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
@@ -127,6 +128,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | logLevel | string | `"info"` | Log level. |
 | managedRecordTypes | list | `[]` | Record types to manage (default: A, AAAA, CNAME) |
 | nameOverride | string | `nil` | Override the name of the chart. |
+| namespaceOverride | string | `nil` | Override the namespace that chart resources are rendered into. Defaults to the release namespace. Useful when installing the chart as a subchart that should live in its own namespace, separate from the umbrella release namespace. |
 | namespaced | bool | `false` | if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too). |
 | nodeSelector | object | `{}` | Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
@@ -180,6 +182,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | serviceMonitor.targetLabels | list | `[]` | Provide target labels for the `ServiceMonitor`. |
 | serviceMonitor.tlsConfig | object | `{}` | Configure the `ServiceMonitor` [TLS config](https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#tlsconfig). |
 | shareProcessNamespace | bool | `false` | If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled. |
+| sourceNamespace | string | `nil` | Source namespace to watch for Kubernetes resources other than Gateway API gateways. Used only when `namespaced=true`. Defaults to Release.Namespace |
 | sources | list | `["service","ingress"]` | _Kubernetes_ resources to monitor for DNS entries. |
 | terminationGracePeriodSeconds | int | `nil` | Termination grace period for the `Pod` in seconds. |
 | tolerations | list | `[]` | Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
@@ -188,6 +191,34 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
+
+## Usage
+
+### Configure `extraArgs`
+
+An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
+
+Example array:
+
+```yaml
+extraArgs:
+  - --zone-id-filter=/hostedzone/Z00001
+  - --zone-id-filter=/hostedzone/Z00002
+  - --zone-id-filter=/hostedzone/Z00003
+```
+
+Eample map: (supported values for map are strings, list of strings, and boolean)
+
+```yaml
+extraArgs:
+  extraArgA: valueA # results: "--extraArgA=valueA"
+  extraArgB: # rendered: "--extraArgB=valueB-1 --extraArgB=valueB-2"
+    - valueB-1
+    - valueB-2
+  extraArgC: true # results: "--extraArgC"
+  extraArgD: false # results: "--no-extraArgD"
+  extraArgE: # results: "--extraArgE"
+```
 
 ----------------------------------------------
 

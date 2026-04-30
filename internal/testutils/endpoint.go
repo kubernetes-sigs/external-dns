@@ -35,19 +35,25 @@ import (
 )
 
 // ValidateEndpoints asserts that endpoints and expected have the same length and equal fields.
+// All mismatches are collected and reported together.
 func ValidateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 	t.Helper()
 
 	if len(endpoints) != len(expected) {
-		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
+		t.Errorf("[%s] expected %d endpoints, got %d", t.Name(), len(expected), len(endpoints))
 	}
 
 	// Make sure endpoints are sorted - validateEndpoint() depends on it.
 	sortEndpoints(endpoints)
 	sortEndpoints(expected)
 
-	for i := range endpoints {
-		validateEndpoint(t, endpoints[i], expected[i])
+	var errs []string
+	for i := range min(len(endpoints), len(expected)) {
+		errs = append(errs, validateEndpoint(endpoints[i], expected[i])...)
+	}
+
+	if len(errs) > 0 {
+		t.Errorf("[%s] endpoint mismatches:\n%s", t.Name(), strings.Join(errs, "\n"))
 	}
 }
 
@@ -229,45 +235,42 @@ func sortEndpoints(endpoints []*endpoint.Endpoint) {
 	slices.SortFunc(endpoints, compareEndpoints)
 }
 
-// validateEndpoint asserts that two endpoints have equal fields.
-func validateEndpoint(t *testing.T, ep, expected *endpoint.Endpoint) {
-	t.Helper()
-
+// validateEndpoint compares two endpoints and returns a list of field mismatches.
+func validateEndpoint(ep, expected *endpoint.Endpoint) []string {
 	if ep == nil || expected == nil {
 		if ep != nil || expected != nil {
-			t.Errorf("one endpoint is nil: got %v, expected %v", ep, expected)
+			return []string{fmt.Sprintf("one endpoint is nil: got %v, expected %v", ep, expected)}
 		}
-		return
+		return nil
 	}
+
+	prefix := fmt.Sprintf("endpoint %q (%s)", expected.DNSName, expected.RecordType)
+	var errs []string
 
 	if ep.DNSName != expected.DNSName {
-		t.Errorf("DNSName expected %q, got %q", expected.DNSName, ep.DNSName)
+		errs = append(errs, fmt.Sprintf("%s: DNSName expected %q, got %q", prefix, expected.DNSName, ep.DNSName))
 	}
-
 	if !ep.Targets.Same(expected.Targets) {
-		t.Errorf("Targets expected %q, got %q", expected.Targets, ep.Targets)
+		errs = append(errs, fmt.Sprintf("%s: Targets expected %q, got %q", prefix, expected.Targets, ep.Targets))
 	}
-
 	if ep.RecordTTL != expected.RecordTTL {
-		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, ep.RecordTTL)
+		errs = append(errs, fmt.Sprintf("%s: RecordTTL expected %v, got %v", prefix, expected.RecordTTL, ep.RecordTTL))
 	}
-
 	if ep.RecordType != expected.RecordType {
-		t.Errorf("RecordType expected %q, got %q", expected.RecordType, ep.RecordType)
+		errs = append(errs, fmt.Sprintf("%s: RecordType expected %q, got %q", prefix, expected.RecordType, ep.RecordType))
 	}
-
 	if expected.Labels != nil && !reflect.DeepEqual(ep.Labels, expected.Labels) {
-		t.Errorf("Labels expected %s, got %s", expected.Labels, ep.Labels)
+		errs = append(errs, fmt.Sprintf("%s: Labels expected %s, got %s", prefix, expected.Labels, ep.Labels))
 	}
-
 	if (len(expected.ProviderSpecific) != 0 || len(ep.ProviderSpecific) != 0) &&
 		!reflect.DeepEqual(ep.ProviderSpecific, expected.ProviderSpecific) {
-		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, ep.ProviderSpecific)
+		errs = append(errs, fmt.Sprintf("%s: ProviderSpecific expected %s, got %s", prefix, expected.ProviderSpecific, ep.ProviderSpecific))
+	}
+	if ep.SetIdentifier != expected.SetIdentifier {
+		errs = append(errs, fmt.Sprintf("%s: SetIdentifier expected %q, got %q", prefix, expected.SetIdentifier, ep.SetIdentifier))
 	}
 
-	if ep.SetIdentifier != expected.SetIdentifier {
-		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, ep.SetIdentifier)
-	}
+	return errs
 }
 
 // cloneAndSort returns a sorted copy of endpoints; the original slice is not modified.

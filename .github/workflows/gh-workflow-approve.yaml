@@ -8,6 +8,8 @@ on:
     branches:
       - master
 
+permissions: {}
+
 jobs:
   approve:
     name: Approve ok-to-test

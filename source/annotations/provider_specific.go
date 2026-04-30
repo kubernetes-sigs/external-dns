@@ -25,7 +25,7 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 
 	if hasAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "alias",
+			Name:  endpoint.ProviderSpecificAlias,
 			Value: "true",
 		})
 	}
@@ -58,6 +58,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 		} else if attr, ok := strings.CutPrefix(k, CoreDNSPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("coredns/%s", attr),
+				Value: v,
+			})
+		} else if k == AzureTagsKey {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  "azure/tags",
 				Value: v,
 			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {

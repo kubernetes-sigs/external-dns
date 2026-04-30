@@ -70,6 +70,7 @@ type Config struct {
 	GatewayName                    string
 	GatewayNamespace               string
 	GatewayLabelFilter             string
+	GatewayListenerSets            bool
 	Compatibility                  string
 	Provider                       string
 	PodSourceDomain                string
@@ -144,6 +145,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		GatewayName:                    cfg.GatewayName,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
+		GatewayListenerSets:            cfg.GatewayListenerSets,
 		Compatibility:                  cfg.Compatibility,
 		PodSourceDomain:                cfg.PodSourceDomain,
 		PublishInternal:                cfg.PublishInternal,

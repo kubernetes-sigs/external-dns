@@ -347,6 +347,7 @@ Some providers define their own annotations. Cloud-specific annotations have key
 | Cloud      | Annotation prefix                              |
 |------------|------------------------------------------------|
 | AWS        | `external-dns.alpha.kubernetes.io/aws-`        |
+| Azure      | `external-dns.alpha.kubernetes.io/azure-`      |
 | CloudFlare | `external-dns.alpha.kubernetes.io/cloudflare-` |
 | Scaleway   | `external-dns.alpha.kubernetes.io/scw-`        |
 
@@ -422,6 +423,10 @@ When using Gateway API sources (`gateway-httproute`, `gateway-grpcroute`, `gatew
 are read from different resources: **Gateway resource** reads only `target` annotation, while **Route resources**
 (HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`, and
 provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
+
+**ListenerSet resources** also support the `target` annotation. When a Route references a ListenerSet
+as its parent, the ListenerSet's target annotation takes precedence over the parent Gateway's target annotation.
+ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
 
 For more details and comprehensive examples, see the
 [Gateway API documentation](../sources/gateway-api.md#annotations).

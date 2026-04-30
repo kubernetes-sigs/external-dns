@@ -28,8 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -58,7 +56,7 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create Namespace")
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: "default",
@@ -70,10 +68,10 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 		},
 		Status: gatewayStatus(ips...),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Gateway")
 
-	rt := &v1alpha2.TLSRoute{
+	rt := &v1.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "api",
 			Namespace: "default",
@@ -81,7 +79,7 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 				annotations.HostnameKey: "api-annotation.foobar.internal",
 			},
 		},
-		Spec: v1alpha2.TLSRouteSpec{
+		Spec: v1.TLSRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
 			CommonRouteSpec: v1.CommonRouteSpec{
 				ParentRefs: []v1.ParentReference{
@@ -89,11 +87,11 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 		},
-		Status: v1alpha2.TLSRouteStatus{
+		Status: v1.TLSRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
 	}
-	_, err = gwClient.GatewayV1alpha2().TLSRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().TLSRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create TLSRoute")
 
 	src, err := NewGatewayTLSRouteSource(ctx, clients, &Config{

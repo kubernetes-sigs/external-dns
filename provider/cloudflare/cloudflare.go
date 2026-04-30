@@ -28,12 +28,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/cloudflare-go/v6"
-	"github.com/cloudflare/cloudflare-go/v6/addressing"
-	"github.com/cloudflare/cloudflare-go/v6/custom_hostnames"
-	"github.com/cloudflare/cloudflare-go/v6/dns"
-	"github.com/cloudflare/cloudflare-go/v6/option"
-	"github.com/cloudflare/cloudflare-go/v6/zones"
+	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
+	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v5/zones"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -288,8 +288,8 @@ func newProvider(
 
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
-		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
-			tokenBytes, err := os.ReadFile(trimed)
+		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
+			tokenBytes, err := os.ReadFile(trimmed)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
 			}

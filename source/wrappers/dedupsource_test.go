@@ -301,23 +301,23 @@ func TestDedupEndpointsValidation(t *testing.T) {
 		{
 			name: "MX record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
 			name: "A record with alias=true is kept",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 		},
 		{
 			name: "SRV record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -429,7 +429,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 				DNSName:          "example.org",
 				RecordType:       endpoint.RecordTypeMX,
 				Targets:          endpoint.Targets{"10 mail.example.org"},
-				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
+				ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
 		},

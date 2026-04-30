@@ -23,6 +23,12 @@ nameOverride:  # @schema type:[string, null]; default: null
 # -- (string) Override the full name of the chart.
 fullnameOverride:  # @schema type:[string, null]; default: null
 
+# -- (string) Override the namespace that chart resources are rendered into.
+# Defaults to the release namespace. Useful when installing the chart as a
+# subchart that should live in its own namespace, separate from the umbrella
+# release namespace.
+namespaceOverride:  # @schema type:[string, null]; default: null
+
 # -- Labels to add to all chart resources.
 commonLabels: {}
 
@@ -205,10 +211,17 @@ triggerLoopOnEvent: false
 # -- if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).
 namespaced: false
 
+# -- if `true`, the Gateway API ListenerSet flag will be enabled.
+enableGatewayListenerSets: false
+
 # -- _Gateway API_ gateway namespace to watch.
 # When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC
 # (no ClusterRole/ClusterRoleBinding) for Gateway sources.
 gatewayNamespace:  # @schema type:[string, null]; default: null
+
+# -- Source namespace to watch for Kubernetes resources other than Gateway API gateways.
+# Used only when `namespaced=true`. Defaults to Release.Namespace
+sourceNamespace:  # @schema type:[string, null]; default: null
 
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:

@@ -65,6 +65,10 @@
       "description": "Limit possible target zones by domain suffixes.",
       "type": "array"
     },
+    "enableGatewayListenerSets": {
+      "description": "if `true`, the Gateway API ListenerSet flag will be enabled.",
+      "type": "boolean"
+    },
     "enabled": {
       "description": "No effect - reserved for use in sub-charting",
       "type": [
@@ -244,6 +248,13 @@
     },
     "nameOverride": {
       "description": "Override the name of the chart.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "namespaceOverride": {
+      "description": "Override the namespace that chart resources are rendered into. Defaults to the release namespace. Useful when installing the chart as a subchart that should live in its own namespace, separate from the umbrella release namespace.",
       "type": [
         "string",
         "null"
@@ -839,6 +850,13 @@
     "shareProcessNamespace": {
       "description": "If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.",
       "type": "boolean"
+    },
+    "sourceNamespace": {
+      "description": "Source namespace to watch for Kubernetes resources other than Gateway API gateways. Used only when `namespaced=true`. Defaults to Release.Namespace",
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "sources": {
       "description": "_Kubernetes_ resources to monitor for DNS entries.",
