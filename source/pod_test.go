@@ -85,6 +85,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -102,6 +103,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -134,6 +136,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -151,6 +154,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -183,6 +187,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::1",
 					},
 				},
@@ -200,6 +205,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::2",
 					},
 				},
@@ -232,6 +238,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::1",
 					},
 				},
@@ -249,6 +256,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::2",
 					},
 				},
@@ -282,6 +290,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -300,6 +309,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -357,6 +367,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -373,6 +384,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -406,6 +418,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -423,6 +436,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -455,6 +469,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -473,6 +488,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -515,6 +531,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -546,6 +563,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -560,6 +578,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.2",
 					},
 				},
@@ -590,6 +609,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -620,6 +640,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -655,6 +676,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -673,6 +695,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -701,6 +724,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -732,6 +756,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -760,6 +785,37 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						Phase: corev1.PodPending,
+						PodIP: "",
+					},
+				},
+			},
+		},
+		{
+			"internal-hostname with explicit targets uses targets when PodIP is empty",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.targets.example.org", Targets: endpoint.Targets{"203.0.113.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-with-targets",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: "internal.targets.example.org",
+							annotations.TargetKey:           "203.0.113.1",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+					},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "",
 					},
 				},
@@ -894,6 +950,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.1",
 					},
 				},
@@ -919,6 +976,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -946,6 +1004,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -962,6 +1021,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -978,6 +1038,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.3",
 					},
 				},
@@ -1009,6 +1070,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -1038,6 +1100,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -1335,6 +1398,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 				},
 				UID: "uid-1",
 			},
+			Status: v1.PodStatus{Phase: v1.PodRunning},
 		},
 		&v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1346,6 +1410,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 				},
 				UID: "uid-2",
 			},
+			Status: v1.PodStatus{Phase: v1.PodRunning},
 		},
 	}
 

@@ -173,6 +173,10 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 		log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
 		return
 	}
+	if pod.Status.Phase != v1.PodRunning {
+		log.Debugf("skipping pod %q. phase is %q", pod.Name, pod.Status.Phase)
+		return
+	}
 
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 
@@ -185,10 +189,6 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-		if len(targets) == 0 && pod.Status.PodIP == "" {
-			log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
-			return
-		}
 		for _, domain := range domainList {
 			if len(targets) == 0 {
 				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
@@ -214,12 +214,8 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 	if ps.compatibility == "kops-dns-controller" {
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			if pod.Status.PodIP == "" {
-				log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
-			} else {
-				for _, domain := range domainList {
-					addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
-				}
+			for _, domain := range domainList {
+				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
 			}
 		}
 
@@ -231,17 +227,15 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 }
 
 func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
-	if ps.podSourceDomain != "" {
-		domain := pod.Name + "." + ps.podSourceDomain
-		if len(targets) == 0 {
-			if pod.Status.PodIP == "" {
-				log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
-			} else {
-				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
-			}
-		}
-		addTargetsToEndpointMap(endpointMap, pod, targets, domain)
+	if ps.podSourceDomain == "" {
+		return
 	}
+	domain := pod.Name + "." + ps.podSourceDomain
+	if len(targets) == 0 {
+		addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+		return
+	}
+	addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 }
 
 func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domainList []string) {
