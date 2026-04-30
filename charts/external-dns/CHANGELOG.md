@@ -327,11 +327,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
-<<<<<<< HEAD
 [v1.21.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.1
-=======
-[v1.21.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.0
->>>>>>> 0d116fa6 (chore(chart): release for v0.21.0 (#6354))
 [v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0
 [v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0
 [v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
