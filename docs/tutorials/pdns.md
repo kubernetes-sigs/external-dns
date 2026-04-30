@@ -63,7 +63,7 @@ eg. ```--domain-filter=example.org``` will allow for zone `example.org` and any 
 
 eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.example.org`, ie. the subdomains of example.org but not the `example.org` zone itself.
 
-The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot pre-pend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
+The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot prepend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
 
 ### Regex Domain Filter (`--regex-domain-filter`)
 

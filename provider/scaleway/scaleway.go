@@ -109,7 +109,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayPro
 	}, nil
 }
 
-// AdjustEndpoints is used to normalize the endoints
+// AdjustEndpoints is used to normalize the endpoints
 func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {

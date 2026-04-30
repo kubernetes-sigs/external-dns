@@ -84,7 +84,7 @@ In the context of the `external-dns`, acceptance tests are tests of interactions
 
 ### Log Unit Testing
 
-Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [build-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
+Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [built-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
 
 This practice enables:
 

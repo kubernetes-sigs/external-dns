@@ -54,7 +54,7 @@ For set up for a specific provider using the Helm chart, see the following links
 ## Namespace Scoped Installation
 
 `external-dns` supports running on a namespace-only scope, too.
-If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`.
+If `namespaced=true` is defined, the Helm chart will setup `Roles` and `RoleBindings` instead of `ClusterRoles` and `ClusterRoleBindings`. By default, they are set up in the same namespace that `external-dns` itself is installed to. This can be changed via the `sourceNamespace` value.
 
 Note: When using Gateway API sources in namespaced mode, a cluster-scoped permission to list namespaces is required, unless you also set `gatewayNamespace`. If you set `gatewayNamespace`, all RBAC remains namespaced and no `ClusterRole`/`ClusterRoleBinding` is created.
 
@@ -89,6 +89,34 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 {{ template "chart.requirementsSection" . }}
 
 {{ template "chart.valuesSection" . }}
+
+## Usage
+
+### Configure `extraArgs`
+
+An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
+
+Example array:
+
+```yaml
+extraArgs:
+  - --zone-id-filter=/hostedzone/Z00001
+  - --zone-id-filter=/hostedzone/Z00002
+  - --zone-id-filter=/hostedzone/Z00003
+```
+
+Eample map: (supported values for map are strings, list of strings, and boolean)
+
+```yaml
+extraArgs:
+  extraArgA: valueA # results: "--extraArgA=valueA"
+  extraArgB: # rendered: "--extraArgB=valueB-1 --extraArgB=valueB-2"
+    - valueB-1
+    - valueB-2
+  extraArgC: true # results: "--extraArgC"
+  extraArgD: false # results: "--no-extraArgD"
+  extraArgE: # results: "--extraArgE"
+```
 
 ----------------------------------------------
 

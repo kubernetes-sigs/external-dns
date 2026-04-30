@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions: {}
+
 jobs:
   lint:
     name: Markdown and Go

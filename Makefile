@@ -203,7 +203,7 @@ helm-lint:
 	scripts/helm-tools.sh --docs
 
 .PHONY: go-dependency
-#? go-dependency: Dependency maintanance
+#? go-dependency: Dependency maintenance
 go-dependency:
 	go mod tidy
 
