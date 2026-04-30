@@ -4,7 +4,8 @@ The pod source creates DNS entries based on `Pod` resources.
 
 ## Pod phase
 
-Records derived from pod annotations (for example hostname, internal hostname, `--pod-source-domain`, and compatibility annotations) are only generated when the pod `status.phase` is `Running`. Pods that have not started or have terminated do not contribute annotation-based endpoints, including when they carry explicit target annotations.
+Records derived from pod annotations (for example hostname, internal hostname, `--pod-source-domain`, and compatibility annotations) are only generated when the pod `status.phase` is `Running`.
+Pods that have not started or have terminated do not contribute annotation-based endpoints, including when they carry explicit target annotations.
 
 FQDN template expansion (`--fqdn-template`) is combined separately and still evaluates templates using the pod object as seen in the informer cache.
 
