@@ -16,7 +16,7 @@ using documentation-reserved address ranges (RFC 5737 for IPv4, RFC 3849 for IPv
 
 The fake source is a **smoke-test tool**: it answers "does the provider connect and accept records?" quickly,
 without any cluster dependency. It is not a substitute for a contract test with known, stable data —
-use the [DNSEndpoint CRD source](dnsendpoint.md) when you need precise control over which record types
+use the [DNSEndpoint CRD source](crd.md) when you need precise control over which record types
 are created, how many, and with what values.
 
 **Dry-running a DNS provider**
