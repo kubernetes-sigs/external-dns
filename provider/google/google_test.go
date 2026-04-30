@@ -81,12 +81,39 @@ func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZ
 	return f(&dns.ManagedZonesListResponse{ManagedZones: zones})
 }
 
+type mockManagedZonesGetCall struct {
+	project     string
+	managedZone string
+	zonesErr    error
+}
+
+func (m *mockManagedZonesGetCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+	if m.zonesErr != nil {
+		return nil, m.zonesErr
+	}
+	// Try lookup by zone name first (GCP API accepts both name and numeric ID)
+	if zone, ok := testZones[m.project+"/"+m.managedZone]; ok {
+		return zone, nil
+	}
+	// Fall back to lookup by numeric ID string (GCP API also accepts numeric IDs)
+	for key, zone := range testZones {
+		if strings.HasPrefix(key, m.project+"/") && fmt.Sprintf("%v", zone.Id) == m.managedZone {
+			return zone, nil
+		}
+	}
+	return nil, &googleapi.Error{Code: http.StatusNotFound}
+}
+
 type mockManagedZonesClient struct {
 	zonesErr error
 }
 
 func (m *mockManagedZonesClient) Create(project string, managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
 	return &mockManagedZonesCreateCall{project: project, managedZone: managedZone}
+}
+
+func (m *mockManagedZonesClient) Get(project string, managedZone string) managedZonesGetCallInterface {
+	return &mockManagedZonesGetCall{project: project, managedZone: managedZone, zonesErr: m.zonesErr}
 }
 
 func (m *mockManagedZonesClient) List(project string) managedZonesListCallInterface {
