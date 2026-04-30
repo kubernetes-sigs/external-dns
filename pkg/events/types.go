@@ -199,10 +199,12 @@ func (e *Event) event() *eventsv1.Event {
 		Note:                message,
 		Type:                string(e.eType),
 	}
-	if e.ref.UID != "" {
+	if e.ref.Name != "" {
 		ref := e.ref.objectRef()
-		event.Related = ref
 		event.Regarding = *ref
+		if e.ref.UID != "" {
+			event.Related = ref
+		}
 	}
 	return event
 }

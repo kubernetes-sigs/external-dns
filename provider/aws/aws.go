@@ -49,13 +49,11 @@ const (
 	// when fewer items are returned, and still paginate accordingly.
 	// As we are using the standard AWS client, this should already be compliant.
 	// Hence, if AWS ever decides to raise this limit, we will automatically reduce the pressure on rate limits
-	route53PageSize int32 = 300
-	// providerSpecificAlias specifies whether a CNAME endpoint maps to an AWS ALIAS record.
-	providerSpecificAlias            = "alias"
-	providerSpecificTargetHostedZone = "aws/target-hosted-zone"
+	route53PageSize                  int32 = 300
+	providerSpecificTargetHostedZone       = "aws/target-hosted-zone"
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
-	// has a `providerSpecificAlias` value of `true`.
+	// has a `endpoint.ProviderSpecificAlias` value of `true`.
 	providerSpecificEvaluateTargetHealth               = "aws/evaluate-target-health"
 	providerSpecificWeight                             = "aws/weight"
 	providerSpecificRegion                             = "aws/region"
@@ -542,7 +540,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 
 					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
 					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
+						ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, "false")
 					}
 					newEndpoints = append(newEndpoints, ep)
 				}
@@ -555,7 +553,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithProviderSpecific(providerSpecificAlias, "true")
+						WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 					newEndpoints = append(newEndpoints, ep)
 				}
 
@@ -630,8 +628,8 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, newE *endpoin
 
 	// an ALIAS record change to/from an A
 	if old.RecordType == endpoint.RecordTypeA {
-		oldAlias, _ := old.GetProviderSpecificProperty(providerSpecificAlias)
-		newAlias, _ := newE.GetProviderSpecificProperty(providerSpecificAlias)
+		oldAlias, _ := old.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+		newAlias, _ := newE.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		if oldAlias != newAlias {
 			return true
 		}
@@ -862,7 +860,7 @@ func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *e
 	case endpoint.RecordTypeCNAME:
 		p.adjustCNAMERecord(ep)
 		adjustGeoProximityLocationEndpoint(ep)
-		if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+		if isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); isAlias {
 			aaaa = ep.DeepCopy()
 			aaaa.RecordType = endpoint.RecordTypeAAAA
 		}
@@ -890,30 +888,30 @@ func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
 }
 
 func (p *AWSProvider) adjustAandAAAARecord(ep *endpoint.Endpoint) {
-	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	if isAlias {
 		p.adjustAliasRecord(ep)
 	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 }
 
 func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
-	isAlias, exists := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	isAlias, exists := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 
 	// fallback to determining alias based on preferCNAME if not explicitly set
 	if !exists {
 		isAlias = useAlias(ep, p.preferCNAME)
-		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, isAlias)
-		ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(isAlias))
+		log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, endpoint.ProviderSpecificAlias, isAlias)
+		ep.SetProviderSpecificProperty(endpoint.ProviderSpecificAlias, strconv.FormatBool(isAlias))
 	}
 
 	// if not an alias, ensure alias properties are adjusted accordingly
 	if !isAlias {
 		if exists {
 			// normalize to string "false" when provider specific alias is set to false or other non-true value
-			ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
+			ep.SetProviderSpecificProperty(endpoint.ProviderSpecificAlias, "false")
 		}
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
@@ -928,11 +926,11 @@ func (p *AWSProvider) adjustCNAMERecord(ep *endpoint.Endpoint) {
 func (p *AWSProvider) adjustOtherRecord(ep *endpoint.Endpoint) {
 	// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed.
 	// This will be fixed in another PR.
-	if isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias); isAlias {
+	if isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); isAlias {
 		p.adjustAliasRecord(ep)
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	} else {
-		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 }
@@ -1394,7 +1392,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
-	isAlias, _ := ep.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	isAlias, _ := ep.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	if isAlias && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 

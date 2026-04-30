@@ -1083,7 +1083,7 @@ func testIngressEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets{"ingress-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name: "alias", Value: "true",
+						Name: endpoint.ProviderSpecificAlias, Value: "true",
 					}},
 				},
 			},
@@ -1606,6 +1606,62 @@ func TestIngressWithConfiguration(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "abc.example.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title: "multiple ingresses with same hostname, different CNAME targets and hostname annotation override",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "keycloak",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.HostnameKey: "keycloak.blah.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "keycloak.blah.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "blah-1922533626.us-west-2.elb.amazonaws.com"},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "keycloak-another",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.HostnameKey: "anotherkeycloak.blah.com",
+						},
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "keycloak.blah.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "blah-3488114.us-west-2.elb.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-1922533626.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak"),
+				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
+				endpoint.NewEndpoint("anotherkeycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
 			},
 		},
 		{

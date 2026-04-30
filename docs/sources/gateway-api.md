@@ -5,25 +5,24 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 ## Supported API Versions
 
-ExternalDNS currently supports a mixture of v1alpha2, v1beta1, v1 APIs.
+ExternalDNS uses Gateway API CRDs, which are distributed at different versions in Standard and/or
+Experimental channels as summarized below:
 
-Gateway API has two release channels: Standard and Experimental.
-The Experimental channel includes v1alpha2, v1beta2, and v1 APIs.
-The Standard channel only includes v1beta2 and v1 APIs, not v1alpha2.
+|      Resource      | API Version Used<br> by ExternalDNS | Mininmum Standard<br>Release Channel | Experimental<br>Release Channel |
+|--------------------|-------------------------------------|--------------------------------------|---------------------------------|
+| Gateway            | v1                                  | v1.0.0                               | v1.0.0                          |
+| HTTPRoute          | v1                                  | v1.0.0                               | v1.0.0                          |
+| GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
+| ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
+| TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
+| TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 
-TCPRoutes, TLSRoutes, and UDPRoutes only exist in v1alpha2 and continued support for
-these versions is NOT guaranteed. At some time in the future, Gateway API will graduate
-these Routes to v1. ExternalDNS will likely follow that upgrade and move to the v1 API,
-where they will be available in the Standard release channel. This will be a breaking
-change if your Experimental CRDs are not updated to include the new v1 API.
+Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
+v1 API.
 
-Gateways and HTTPRoutes are available in v1alpha2, v1beta1, and v1 APIs.
-However, some notable environments are behind in upgrading their CRDs to include the v1 API.
-For compatibility reasons Gateways and HTTPRoutes use the v1beta1 API.
-
-GRPCRoutes are available in v1alpha2 and v1 APIs, not v1beta2.
-Therefore, GRPCRoutes use the v1 API which is available in both release channels.
-Unfortunately, this means they will not be available in environments with old CRDs.
+GRPCRoutes were promoted to the Standard channel in Gateway API v1.1.0 and use the
+v1 API.
 
 ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
 They use the v1 API and allow attaching additional listeners to an existing Gateway.
@@ -32,6 +31,14 @@ ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addr
 The `external-dns.alpha.kubernetes.io/target` annotation is also supported on ListenerSet
 resources. When present, it takes precedence over the parent Gateway's target annotation.
 ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
+
+TLSRoutes were promoted to the Standard channel in Gateway API v1.5.0 but have been
+available in the Experimental channel as v1alpha2 since v1.0.0.
+ExternalDNS still uses the v1alpha2 API for compatibility with older CRDs but it
+has been deprecated and will be removed from future releases, at which point ExternalDNS will
+need to migrate to v1. (See [#6247](https://github.com/kubernetes-sigs/external-dns/issues/6247))
+
+TCPRoute and UDPRoute remain experimental and are only available as v1alpha2 in the Experimental channel.
 
 ## Hostnames
 
@@ -166,7 +173,7 @@ compatibility with complex DNS configurations and avoids record conflicts.
 **Example:**
 
 ```yaml
-apiVersion: gateway.networking.k8s.io/v1beta1
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   annotations:
@@ -235,7 +242,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute

@@ -84,7 +84,7 @@ Explicitly providing a list of selected zones instead of `*` you can scope the d
 Additional resources:
 
 - AWS IAM actions [documentation](https://www.awsiamactions.io/?o=route53%3A)
-- AWS IAM [fine grained controll](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
+- AWS IAM [fine grained control](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
 - [Actions and condition keys for Amazon Route 53](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonroute53.html)
 
 ## Create Role with AWS CLI
@@ -309,7 +309,7 @@ This is the preferred method as it implements [PoLP](https://csrc.nist.gov/gloss
 This method requires deploying with RBAC.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
 
 > [!NOTE]
-> Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenence mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).
+> Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenance mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).
 > IRSA is the officially supported method for EKS clusters, and so for non-EKS clusters on AWS, these other tools could be an option.
 
 #### Verify OIDC is supported
@@ -568,7 +568,7 @@ If using your own domain that was registered with a third-party domain registrar
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
-For clusters with RBAC enabled, be sure to choose the correct `namespace`.  For this tutorial, the enviornment variable `EXTERNALDNS_NS` will refer to the namespace.  You can set this to a value of your choice:
+For clusters with RBAC enabled, be sure to choose the correct `namespace`.  For this tutorial, the environment variable `EXTERNALDNS_NS` will refer to the namespace.  You can set this to a value of your choice:
 
 ```bash
 export EXTERNALDNS_NS="default" # externaldns, kube-addons, etc
@@ -622,7 +622,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.20.0
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
@@ -693,7 +693,7 @@ helm upgrade --install external-dns external-dns/external-dns --values values.ya
 
 ## Arguments
 
-This list is not the full list, but a few arguments that where chosen.
+This is not a complete list, but a few selected items.
 
 ### aws-zone-type
 
@@ -915,7 +915,7 @@ With the previous `deployment` and `service` objects deployed, we can add an `in
 
 > For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
 
-For this tutorial, we have two endpoints, the service with `LoadBalancer` type and an ingress.  For practical purposes, if an ingress is used, the service type can be changed to `ClusterIP` as two endpoints are unecessary in this scenario.
+For this tutorial, we have two endpoints, the service with `LoadBalancer` type and an ingress.  For practical purposes, if an ingress is used, the service type can be changed to `ClusterIP` as two endpoints are unnecessary in this scenario.
 
 > [!IMPORTANT]
 > This requires that an ingress controller has been installed in your Kubernetes cluster.
@@ -1257,7 +1257,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         command:
         - /bin/sh
         - -c

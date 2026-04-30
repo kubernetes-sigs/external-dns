@@ -250,7 +250,7 @@ var (
 	}
 
 	// Endpoint with alias annotation
-	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithProviderSpecific("alias", "true")
+	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 
 	// Endpoints for preferAlias test
 	endpointsPreferAlias = []*endpoint.Endpoint{
@@ -907,14 +907,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSHasAliasAnnotation() {
 	// Test endpoint with alias=false
 	epWithAliasFalse := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasFalse.ProviderSpecific = endpoint.ProviderSpecific{
-		{Name: "alias", Value: "false"},
+		{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 	}
 	suite.False(p.hasAliasAnnotation(epWithAliasFalse))
 
 	// Test endpoint with alias=true
 	epWithAliasTrue := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasTrue.ProviderSpecific = endpoint.ProviderSpecific{
-		{Name: "alias", Value: "true"},
+		{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 	}
 	suite.True(p.hasAliasAnnotation(epWithAliasTrue))
 

@@ -20,7 +20,7 @@ Before you start, ensure you have:
   - In this tutorial we are going to use [kind](https://kind.sigs.k8s.io/)
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and [`helm`](https://helm.sh/)
 - `external-dns` source code or [helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
-- `Localstack` how to [documenation](https://docs.localstack.cloud/)
+- `Localstack` how to [documentation](https://docs.localstack.cloud/)
 - Optional
   - `AWS` [cli](https://aws.amazon.com/cli/)
   - `Localstack` [cli](https://docs.localstack.cloud/aws/getting-started/installation/)

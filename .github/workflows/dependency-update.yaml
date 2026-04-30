@@ -8,14 +8,15 @@ on:
     # once a day
     - cron: '0 0 * * *'
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   update-versions-with-renovate:
     runs-on: ubuntu-latest
     if: github.repository == 'kubernetes-sigs/external-dns'
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

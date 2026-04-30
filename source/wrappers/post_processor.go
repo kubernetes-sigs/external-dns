@@ -102,7 +102,7 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		// Only set if not already explicitly configured at the source level
 		if pp.cfg.preferAlias && ep.RecordType == endpoint.RecordTypeCNAME {
 			if _, exists := ep.GetProviderSpecificProperty(annotations.AliasKey); !exists {
-				ep.WithProviderSpecific("alias", "true")
+				ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 			}
 		}
 	}

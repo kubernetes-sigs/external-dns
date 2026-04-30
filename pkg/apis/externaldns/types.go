@@ -179,6 +179,7 @@ type Config struct {
 	ExoscaleAPISecret                             string `secure:"yes"`
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
+	ExoscaleZoneCacheDuration                     time.Duration
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
@@ -294,6 +295,7 @@ var defaultConfig = &Config{
 	ExoscaleAPIKey:               "",
 	ExoscaleAPISecret:            "",
 	ExoscaleAPIZone:              "ch-gva-2",
+	ExoscaleZoneCacheDuration:    0 * time.Second,
 	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
 	TargetTemplate:               "",
@@ -665,6 +667,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("exoscale-apizone", "When using Exoscale provider, specify the API Zone (optional)", defaultConfig.ExoscaleAPIZone, &cfg.ExoscaleAPIZone)
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
+	b.DurationVar("exoscale-zones-cache-duration", "When using Exoscale provider, set the zones list cache TTL (0s to disable)", defaultConfig.ExoscaleZoneCacheDuration, &cfg.ExoscaleZoneCacheDuration)
 
 	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)

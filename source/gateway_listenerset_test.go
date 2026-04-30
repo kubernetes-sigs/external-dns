@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -108,7 +107,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 	require.NoError(t, err)
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
 		Spec: v1.GatewaySpec{
 			AllowedListeners: allowAllListenerSets(),
@@ -120,7 +119,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 		},
 		Status: gatewayStatus(ips...),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("*.example.com")
@@ -144,7 +143,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-route", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"app.example.com"},
@@ -158,7 +157,7 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 			RouteStatus: gwRouteStatus(lsParentRef("default", "my-listenerset")),
 		},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -188,7 +187,7 @@ func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.
 	require.NoError(t, err)
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
 		Spec: v1.GatewaySpec{
 			AllowedListeners: allowAllListenerSets(),
@@ -200,7 +199,7 @@ func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.
 		},
 		Status: gatewayStatus(ips...),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("*.example.com")
@@ -224,7 +223,7 @@ func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-route", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"sub.domain.example.com"},
@@ -238,7 +237,7 @@ func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.
 			RouteStatus: gwRouteStatus(lsParentRef("default", "my-listenerset")),
 		},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -267,12 +266,12 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("*.example.com")
@@ -292,7 +291,7 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Route with ListenerSet parentRef, but feature is disabled.
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -300,7 +299,7 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: false})
@@ -327,7 +326,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	for _, gw := range []*v1beta1.Gateway{
+	for _, gw := range []*v1.Gateway{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "labels-match",
@@ -347,7 +346,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
 			Status: gatewayStatus("10.0.0.2"),
 		},
 	} {
-		_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+		_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
@@ -381,7 +380,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"app.example.com"},
@@ -399,7 +398,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
 			),
 		},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
@@ -431,12 +430,12 @@ func TestGatewayHTTPRouteWithListenerSetRouteLabelFilter(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("*.example.com")
@@ -455,7 +454,7 @@ func TestGatewayHTTPRouteWithListenerSetRouteLabelFilter(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	for _, rt := range []*v1beta1.HTTPRoute{
+	for _, rt := range []*v1.HTTPRoute{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "labels-match",
@@ -481,7 +480,7 @@ func TestGatewayHTTPRouteWithListenerSetRouteLabelFilter(t *testing.T) {
 			Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 		},
 	} {
-		_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+		_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
@@ -514,12 +513,12 @@ func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -539,7 +538,7 @@ func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Route with ListenerSet parentRef, but NOT accepted (no Accepted condition).
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -557,7 +556,7 @@ func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {
 			},
 		},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -584,12 +583,12 @@ func TestGatewayHTTPRouteWithListenerSetNotAllowedByGateway(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -608,7 +607,7 @@ func TestGatewayHTTPRouteWithListenerSetNotAllowedByGateway(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -616,7 +615,7 @@ func TestGatewayHTTPRouteWithListenerSetNotAllowedByGateway(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -643,12 +642,12 @@ func TestGatewayHTTPRouteWithListenerSetStatusNotAccepted(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -666,7 +665,7 @@ func TestGatewayHTTPRouteWithListenerSetStatusNotAccepted(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -674,7 +673,7 @@ func TestGatewayHTTPRouteWithListenerSetStatusNotAccepted(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -701,12 +700,12 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusRequired(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -728,7 +727,7 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusRequired(t *testing.T) {
 	require.NoError(t, err)
 
 	rtRef := lsParentRef("default", "ls", withSectionName("app"))
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -736,7 +735,7 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusRequired(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(rtRef)},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -763,12 +762,12 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusNotAccepted(t *testing.T) 
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -794,7 +793,7 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusNotAccepted(t *testing.T) 
 	require.NoError(t, err)
 
 	rtRef := lsParentRef("default", "ls", withSectionName("app"))
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -802,7 +801,7 @@ func TestGatewayHTTPRouteWithListenerSetListenerStatusNotAccepted(t *testing.T) 
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(rtRef)},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -830,7 +829,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Gateway with target annotation override.
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
 			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "override.example.com"},
@@ -838,7 +837,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -857,7 +856,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -865,7 +864,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -896,12 +895,12 @@ func TestGatewayHTTPRouteWithListenerSetAllowedRoutesSame(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// ListenerSet in "default" namespace with AllowedRoutes: Same (default).
@@ -921,7 +920,7 @@ func TestGatewayHTTPRouteWithListenerSetAllowedRoutesSame(t *testing.T) {
 	require.NoError(t, err)
 
 	// Route in "other" namespace → should NOT match (Same means ListenerSet namespace).
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "other"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -929,7 +928,7 @@ func TestGatewayHTTPRouteWithListenerSetAllowedRoutesSame(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -956,12 +955,12 @@ func TestGatewayHTTPRouteWithListenerSetSectionName(t *testing.T) {
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname1 := v1.Hostname("app.example.com")
@@ -984,7 +983,7 @@ func TestGatewayHTTPRouteWithListenerSetSectionName(t *testing.T) {
 	require.NoError(t, err)
 
 	// Route targeting only the "api" section of the ListenerSet.
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"api.example.com"},
@@ -998,7 +997,7 @@ func TestGatewayHTTPRouteWithListenerSetSectionName(t *testing.T) {
 			RouteStatus: gwRouteStatus(lsParentRef("default", "ls", withSectionName("api"))),
 		},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -1030,12 +1029,12 @@ func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
 	}
 
 	// Gateway and ListenerSet in "infra" namespace.
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "shared-gw", Namespace: "infra"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -1055,7 +1054,7 @@ func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	// Route in "apps" namespace referencing the ListenerSet in "infra".
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "apps"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1063,7 +1062,7 @@ func TestGatewayHTTPRouteWithListenerSetCrossNamespaceRoute(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("infra", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
@@ -1101,7 +1100,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetSelectedByGateway(t *testi
 	}
 
 	selector := &metav1.LabelSelector{MatchLabels: map[string]string{"listener-set": "enabled"}}
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "shared-gw", Namespace: "infra"},
 		Spec: v1.GatewaySpec{
 			AllowedListeners: allowListenerSetsFromSelector(selector),
@@ -1109,7 +1108,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetSelectedByGateway(t *testi
 		},
 		Status: gatewayStatus("10.0.0.1"),
 	}
-	_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -1129,7 +1128,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetSelectedByGateway(t *testi
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "apps"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1137,7 +1136,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetSelectedByGateway(t *testi
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("edge", "edge-ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
@@ -1174,7 +1173,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetAllowedWhenGatewayNamespac
 	}
 
 	selector := &metav1.LabelSelector{MatchLabels: map[string]string{"listener-set": "enabled"}}
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "shared-gw", Namespace: "infra"},
 		Spec: v1.GatewaySpec{
 			AllowedListeners: allowListenerSetsFromSelector(selector),
@@ -1182,7 +1181,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetAllowedWhenGatewayNamespac
 		},
 		Status: gatewayStatus("10.0.0.1"),
 	}
-	_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	hostname := v1.Hostname("app.example.com")
@@ -1202,7 +1201,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetAllowedWhenGatewayNamespac
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "apps"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1210,7 +1209,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetAllowedWhenGatewayNamespac
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("edge", "edge-ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
@@ -1247,7 +1246,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetGatewayLabelFilter(t *test
 		require.NoError(t, err)
 	}
 
-	for _, gw := range []*v1beta1.Gateway{
+	for _, gw := range []*v1.Gateway{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "shared-gw-match",
@@ -1267,7 +1266,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetGatewayLabelFilter(t *test
 			Status: gatewayStatus("10.0.0.2"),
 		},
 	} {
-		_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+		_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
 
@@ -1302,7 +1301,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetGatewayLabelFilter(t *test
 		require.NoError(t, err)
 	}
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "apps"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"app.example.com"},
@@ -1320,7 +1319,7 @@ func TestGatewayHTTPRouteWithCrossNamespaceListenerSetGatewayLabelFilter(t *test
 			),
 		},
 	}
-	_, err := gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
@@ -1353,12 +1352,12 @@ func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Gateway without target annotation.
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
 		Spec:       v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status:     gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// ListenerSet with its own target annotation.
@@ -1381,7 +1380,7 @@ func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1389,7 +1388,7 @@ func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -1419,7 +1418,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	require.NoError(t, err)
 
 	// Gateway with its own target annotation.
-	gw := &v1beta1.Gateway{
+	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
 			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "gw.example.com"},
@@ -1427,7 +1426,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
 	}
-	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// ListenerSet with its own target annotation — should take precedence.
@@ -1450,7 +1449,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1458,7 +1457,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
@@ -1505,7 +1504,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	rt := &v1beta1.HTTPRoute{
+	rt := &v1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: "default"},
 		Spec: v1.HTTPRouteSpec{
 			Hostnames:       []v1.Hostname{"app.example.com"},
@@ -1513,7 +1512,7 @@ func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 		},
 		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
 	}
-	_, err = gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})

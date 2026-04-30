@@ -52,9 +52,9 @@ const (
 	// RecordTypeNAPTR is a RecordType enum value
 	RecordTypeNAPTR = "NAPTR"
 
-	// TODO: review source/annotations package to consolidate alias key definitions;
-	// currently duplicated here to avoid circular dependency.
-	providerSpecificAlias = "alias"
+	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
+	// provider-native alias record (e.g. AWS ALIAS).
+	ProviderSpecificAlias = "alias"
 
 	// ProviderSpecificRecordType is the provider-specific property name used to
 	// request a particular DNS record type (e.g. "ptr") on an endpoint.
@@ -535,7 +535,7 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
 	if !e.supportsAlias() {
-		if _, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias); ok {
+		if _, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias); ok {
 			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
 			return false
 		}
@@ -558,7 +558,7 @@ func (e *Endpoint) CheckEndpoint() bool {
 
 // isAlias returns true if the endpoint has the alias provider-specific property set to true.
 func (e *Endpoint) isAlias() bool {
-	val, ok := e.GetBoolProviderSpecificProperty(providerSpecificAlias)
+	val, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias)
 	return ok && val
 }
 

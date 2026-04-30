@@ -231,3 +231,109 @@ scenarios:
       - dnsName: example.local
         targets: ["1.2.3.4"]
         recordType: A
+
+  - name: cname-dedup-across-sources
+    description: Deduplicates identical CNAMEs when multiple sources produce the same hostname target
+    config:
+      sources: ["service", "ingress"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: test-service
+            namespace: default
+            annotations:
+              external-dns.alpha.kubernetes.io/hostname: example.local
+          spec:
+            selector:
+              app.kubernetes.io/name: MyApp
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: elb.example.com
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: test-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: elb.example.com
+    expected:
+      - dnsName: example.local
+        targets: ["elb.example.com"]
+        recordType: CNAME
+
+  - name: cname-conflict-across-sources
+    description: >
+      When a Service and an Ingress map the same hostname to different CNAME targets,
+      dedupSource keeps both (targets differ, so no dedup match).
+      Conflict resolution is left to the provider.
+    config:
+      sources: ["service", "ingress"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: test-service
+            namespace: default
+            annotations:
+              external-dns.alpha.kubernetes.io/hostname: example.local
+          spec:
+            selector:
+              app.kubernetes.io/name: MyApp
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: a.elb.example.com
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: test-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: b.elb.example.com
+    expected:
+      - dnsName: example.local
+        targets: ["a.elb.example.com"]
+        recordType: CNAME
+      - dnsName: example.local
+        targets: ["b.elb.example.com"]
+        recordType: CNAME

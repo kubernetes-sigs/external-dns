@@ -323,7 +323,7 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
 			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
+				if providerSpecificAnnotation.Name == endpoint.ProviderSpecificAlias {
 					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
 					return
 				}
@@ -351,7 +351,7 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
 			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
+				if providerSpecificAnnotation.Name == endpoint.ProviderSpecificAlias {
 					t.Error("provider specific annotation alias is not expected to be set")
 				}
 			}

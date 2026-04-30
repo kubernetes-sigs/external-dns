@@ -130,7 +130,9 @@ func TestEvent_NewEvents(t *testing.T) {
 				require.Contains(t, e.Name, "fake-pod.")
 				require.Equal(t, apiv1.NamespaceDefault, e.Namespace)
 				require.Nil(t, e.Related)
-				require.Equal(t, apiv1.ObjectReference{}, e.Regarding)
+				require.Equal(t, "Pod", e.Regarding.Kind)
+				require.Equal(t, "fake-pod", e.Regarding.Name)
+				require.Empty(t, e.Regarding.UID)
 			},
 		},
 		{

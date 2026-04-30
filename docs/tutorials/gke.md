@@ -1,6 +1,6 @@
 # GKE with default controller
 
-This tutorial describes how to setup ExternalDNS for usage within a [GKE](https://cloud.google.com/kubernetes-engine) ([Google Kuberentes Engine](https://cloud.google.com/kubernetes-engine)) cluster. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a [GKE](https://cloud.google.com/kubernetes-engine) ([Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)) cluster. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
 
 ## Single project test scenario using access scopes
 
@@ -43,7 +43,7 @@ gcloud container clusters create $GKE_CLUSTER_NAME \
 ```
 
 > [!WARNING]
-> Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contians the overly permissive project editor (`roles/editor`) role.
+> Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contains the overly permissive project editor (`roles/editor`) role.
 > So essentially, anything on the cluster could potentially grant escalated privileges.
 > Also, as mentioned earlier, the access scope `ndev.clouddns.readwrite` will allow anything running on the cluster to have read/write permissions on all Cloud DNS zones within the same project.
 
@@ -385,7 +385,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.20.0
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
