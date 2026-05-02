@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dnsimple/dnsimple-go/dnsimple"
+	"github.com/dnsimple/dnsimple-go/v8/dnsimple"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
