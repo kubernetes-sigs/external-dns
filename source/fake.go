@@ -45,6 +45,7 @@ import (
 // +externaldns:source:provider-specific=false
 type fakeSource struct {
 	dnsNames []string
+	rand     *rand.Rand
 }
 
 const (
@@ -79,7 +80,8 @@ func NewFakeSource(cfg *Config) (Source, error) {
 			dnsNames = hostnames
 		}
 	}
-	return &fakeSource{dnsNames: dnsNames}, nil
+	rand := rand.New(rand.NewSource(9673))
+	return &fakeSource{dnsNames: dnsNames, rand: rand}, nil
 }
 
 func (sc *fakeSource) AddEventHandler(_ context.Context, _ func()) {
@@ -108,28 +110,28 @@ func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endp
 
 	switch recordType {
 	case endpoint.RecordTypeA:
-		ep = endpoint.NewEndpoint(generateDNSName(4, dnsName), endpoint.RecordTypeA, generateTargets(len(sc.dnsNames), generateIPv4Address)...)
+		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeA, generateTargets(len(sc.dnsNames), sc.generateIPv4Address)...)
 	case endpoint.RecordTypeAAAA:
-		ep = endpoint.NewEndpoint(generateDNSName(4, dnsName), endpoint.RecordTypeAAAA, generateTargets(len(sc.dnsNames), generateIPv6Address)...)
+		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeAAAA, generateTargets(len(sc.dnsNames), sc.generateIPv6Address)...)
 	case endpoint.RecordTypeCNAME:
-		ep = endpoint.NewEndpoint(generateDNSName(4, dnsName), endpoint.RecordTypeCNAME, generateDNSName(4, dnsName))
+		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeCNAME, sc.generateDNSName(4, dnsName))
 	case endpoint.RecordTypeTXT:
-		ep = endpoint.NewEndpoint(generateDNSName(4, dnsName), endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=fake"`)
+		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=fake"`)
 	case endpoint.RecordTypeSRV:
 		// SRV target format: "priority weight port target." (target must end with a dot per RFC 2782)
-		name := generateDNSName(4, dnsName)
+		name := sc.generateDNSName(4, dnsName)
 		ep = endpoint.NewEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeSRV, fmt.Sprintf("10 20 5060 %s.", name))
 	case endpoint.RecordTypeNS:
-		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeNS, generateDNSName(3, dnsName))
+		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeNS, sc.generateDNSName(3, dnsName))
 	case endpoint.RecordTypePTR:
-		name := generateDNSName(4, dnsName)
+		name := sc.generateDNSName(4, dnsName)
 		var err error
-		ep, err = endpoint.NewPTREndpoint(generateIPv4Address(), endpoint.TTL(0), name)
+		ep, err = endpoint.NewPTREndpoint(sc.generateIPv4Address(), endpoint.TTL(0), name)
 		if err != nil {
 			return nil, err
 		}
 	case endpoint.RecordTypeMX:
-		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeMX, fmt.Sprintf("10 %s", generateDNSName(4, dnsName)))
+		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeMX, fmt.Sprintf("10 %s", sc.generateDNSName(4, dnsName)))
 	case endpoint.RecordTypeNAPTR:
 		// NAPTR target format: "order preference flags service regexp replacement"
 		ep = endpoint.NewEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeNAPTR, fmt.Sprintf(`100 10 "u" "E2U+sip" "!^.*$!sip:info@%s!" .`, dnsName))
@@ -148,19 +150,19 @@ func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endp
 	return ep, nil
 }
 
-func generateIPv4Address() string {
+func (sc *fakeSource) generateIPv4Address() string {
 	// 192.0.2.[1-254] is reserved by RFC 5737 for documentation and examples
 	return net.IPv4(
 		byte(192),
 		byte(0),
 		byte(2),
-		byte(rand.Intn(253)+1),
+		byte(sc.rand.Intn(253)+1),
 	).String()
 }
 
-func generateIPv6Address() string {
+func (sc *fakeSource) generateIPv6Address() string {
 	// 2001:db8::/32 is reserved by RFC 3849 for documentation and examples
-	return fmt.Sprintf("2001:db8::%x:%x", rand.Intn(0xffff)+1, rand.Intn(0xffff)+1)
+	return fmt.Sprintf("2001:db8::%x:%x", sc.rand.Intn(0xffff)+1, sc.rand.Intn(0xffff)+1)
 }
 
 // fakePodName returns a valid Kubernetes object name for the fake Pod associated
@@ -183,10 +185,10 @@ func generateTargets(n int, gen func() string) []string {
 	return targets
 }
 
-func generateDNSName(prefixLength int, dnsName string) string {
+func (sc *fakeSource) generateDNSName(prefixLength int, dnsName string) string {
 	prefix := make([]rune, prefixLength)
 	for i := range prefix {
-		prefix[i] = letterRunes[rand.Intn(len(letterRunes))]
+		prefix[i] = letterRunes[sc.rand.Intn(len(letterRunes))]
 	}
 	return fmt.Sprintf("%s.%s", string(prefix), dnsName)
 }
