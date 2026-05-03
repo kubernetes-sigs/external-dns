@@ -121,6 +121,14 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					continue // no format constraint on targets
 				case endpoint.RecordTypeCNAME:
 					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
+				case endpoint.RecordTypeSRV:
+					// SRV targets are "<prio> <weight> <port> <host>"; RFC 2782
+					// requires the host to be an absolute FQDN and
+					// Endpoint.ValidateSRVRecord enforces the trailing dot.
+					// Reject-on-trailing-dot (the default branch below) would
+					// loop users between this warning and ValidateSRVRecord's
+					// "does not end with a dot" error (#6357).
+					continue
 				}
 
 				hasDot := strings.HasSuffix(target, ".")
