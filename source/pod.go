@@ -233,9 +233,9 @@ func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.Endpoi
 	domain := pod.Name + "." + ps.podSourceDomain
 	if len(targets) == 0 {
 		addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
-		return
+	} else {
+		addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 	}
-	addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 }
 
 func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domainList []string) {
