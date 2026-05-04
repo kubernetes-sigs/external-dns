@@ -36,4 +36,3 @@ func ParseIngress(ingress string) (string, string, error) {
 
 	return namespace, name, err
 }
-

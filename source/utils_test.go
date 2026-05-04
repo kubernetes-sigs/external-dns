@@ -70,4 +70,3 @@ func TestParseIngress(t *testing.T) {
 		})
 	}
 }
-
