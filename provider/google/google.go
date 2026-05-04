@@ -183,12 +183,17 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone, error) {
 	zones := make(map[string]*dns.ManagedZone)
 
-	// When zone ID filters are configured, use Get for each ID instead of List to avoid
-	// requiring dns.managedZones.list — a project-level permission that exposes all zones
-	// in the project, enabling cross-environment enumeration in multi-tenant deployments.
+	// When zone ID filters are configured, attempt Get for each ID to avoid requiring
+	// dns.managedZones.list — a project-level permission that exposes all zone names in
+	// the project, enabling cross-environment enumeration in multi-tenant deployments.
+	//
+	// If Get returns 404 for a zone ID, it may be a suffix pattern (e.g. "my-zone" matching
+	// both "my-zone-public" and "my-zone-private" in split-horizon setups). In that case we
+	// fall back to List so the existing suffix-match + visibility-filter behavior is preserved.
 	if p.zoneIDFilter.IsConfigured() {
-		log.Debugf("Zone ID filters configured %v, using Get instead of List", p.zoneIDFilter.ZoneIDs)
+		log.Debugf("Zone ID filters configured %v, attempting Get instead of List", p.zoneIDFilter.ZoneIDs)
 
+		needsList := false
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
 			if zoneID == "" {
 				continue
@@ -196,6 +201,11 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 
 			zone, err := p.managedZonesClient.Get(p.project, zoneID).Do()
 			if err != nil {
+				if apiErr, ok := err.(*googleapi.Error); ok && apiErr.Code == 404 {
+					log.Debugf("Zone %s not found via Get (may be a suffix pattern), falling back to List", zoneID)
+					needsList = true
+					break
+				}
 				return nil, provider.NewSoftErrorf("failed to get zone %s: %w", zoneID, err)
 			}
 
@@ -207,13 +217,18 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 			}
 		}
 
-		if len(zones) == 0 {
-			log.Warnf("No zones in project %s matched zone ID filters %v and domain filters %v", p.project, p.zoneIDFilter.ZoneIDs, p.domainFilter)
+		if !needsList {
+			if len(zones) == 0 {
+				log.Warnf("No zones in project %s matched zone ID filters %v and domain filters %v", p.project, p.zoneIDFilter.ZoneIDs, p.domainFilter)
+			}
+			for _, zone := range zones {
+				log.Debugf("Considering zone: %s (domain: %s)", zone.Name, zone.DnsName)
+			}
+			return zones, nil
 		}
-		for _, zone := range zones {
-			log.Debugf("Considering zone: %s (domain: %s)", zone.Name, zone.DnsName)
-		}
-		return zones, nil
+
+		// Reset and fall through to List
+		zones = make(map[string]*dns.ManagedZone)
 	}
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
