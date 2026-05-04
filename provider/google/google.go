@@ -183,27 +183,32 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone, error) {
 	zones := make(map[string]*dns.ManagedZone)
 
-	// When exactly one zone ID is configured, use Get instead of List to avoid
-	// requiring dns.managedZones.list — a project-level permission that exposes
-	// all zones in the project, enabling cross-environment enumeration.
-	if len(p.zoneIDFilter.ZoneIDs) == 1 && p.zoneIDFilter.ZoneIDs[0] != "" {
-		zoneID := p.zoneIDFilter.ZoneIDs[0]
-		log.Debugf("Single zone ID configured (%s), using Get instead of List", zoneID)
+	// When zone ID filters are configured, use Get for each ID instead of List to avoid
+	// requiring dns.managedZones.list — a project-level permission that exposes all zones
+	// in the project, enabling cross-environment enumeration in multi-tenant deployments.
+	if p.zoneIDFilter.IsConfigured() {
+		log.Debugf("Zone ID filters configured %v, using Get instead of List", p.zoneIDFilter.ZoneIDs)
 
-		zone, err := p.managedZonesClient.Get(p.project, zoneID).Do()
-		if err != nil {
-			return nil, provider.NewSoftErrorf("failed to get zone %s: %w", zoneID, err)
-		}
+		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+			if zoneID == "" {
+				continue
+			}
 
-		if zone.PeeringConfig == nil && p.domainFilter.Match(zone.DnsName) && p.zoneTypeFilter.Match(zone.Visibility) {
-			zones[zone.Name] = zone
-			log.Debugf("Matched %s (zone: %s) (visibility: %s)", zone.DnsName, zone.Name, zone.Visibility)
-		} else {
-			log.Debugf("Filtered %s (zone: %s) (visibility: %s)", zone.DnsName, zone.Name, zone.Visibility)
+			zone, err := p.managedZonesClient.Get(p.project, zoneID).Do()
+			if err != nil {
+				return nil, provider.NewSoftErrorf("failed to get zone %s: %w", zoneID, err)
+			}
+
+			if zone.PeeringConfig == nil && p.domainFilter.Match(zone.DnsName) && p.zoneTypeFilter.Match(zone.Visibility) {
+				zones[zone.Name] = zone
+				log.Debugf("Matched %s (zone: %s) (visibility: %s)", zone.DnsName, zone.Name, zone.Visibility)
+			} else {
+				log.Debugf("Filtered %s (zone: %s) (visibility: %s)", zone.DnsName, zone.Name, zone.Visibility)
+			}
 		}
 
 		if len(zones) == 0 {
-			log.Warnf("Zone %s in project %s did not match domain filters: %v", zoneID, p.project, p.domainFilter)
+			log.Warnf("No zones in project %s matched zone ID filters %v and domain filters %v", p.project, p.zoneIDFilter.ZoneIDs, p.domainFilter)
 		}
 		for _, zone := range zones {
 			log.Debugf("Considering zone: %s (domain: %s)", zone.Name, zone.DnsName)
