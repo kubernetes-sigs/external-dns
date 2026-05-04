@@ -141,7 +141,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		endpoints = append(endpoints, podEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoint {

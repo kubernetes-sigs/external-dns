@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"net/netip"
+	"slices"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,4 +91,53 @@ func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
 	for _, ep := range eps {
 		ep.WithRefObject(ref)
 	}
+}
+
+// MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)
+// by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
+// This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.
+func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
+	if len(endpoints) == 0 {
+		return endpoints
+	}
+
+	endpointMap := make(map[EndpointKey]*Endpoint)
+	cnameTargets := make(map[string]string) // DNSName+SetIdentifier -> first target seen
+
+	for _, ep := range endpoints {
+		if ep.RecordType == RecordTypeCNAME && len(ep.Targets) == 0 {
+			log.Debugf("Skipping CNAME endpoint %q with no targets", ep.DNSName)
+			continue
+		}
+
+		key := EndpointKey{
+			DNSName:       ep.DNSName,
+			RecordType:    ep.RecordType,
+			SetIdentifier: ep.SetIdentifier,
+			RecordTTL:     ep.RecordTTL,
+		}
+		// CNAME records can only have one target per DNS spec, and they should not be merged.
+		if ep.RecordType == RecordTypeCNAME {
+			key.Target = ep.Targets[0]
+			cnameKey := ep.DNSName + "/" + ep.SetIdentifier
+			if existing, ok := cnameTargets[cnameKey]; ok && existing != ep.Targets[0] {
+				log.Warnf("Only one CNAME per name — %s CNAME %s and %s CNAME %s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.DNSName, existing, ep.DNSName, ep.Targets[0])
+			}
+			cnameTargets[cnameKey] = ep.Targets[0]
+		}
+		if existing, ok := endpointMap[key]; ok {
+			existing.Targets = append(existing.Targets, ep.Targets...)
+		} else {
+			endpointMap[key] = ep
+		}
+	}
+
+	result := make([]*Endpoint, 0, len(endpointMap))
+	for _, ep := range endpointMap {
+		slices.Sort(ep.Targets)
+		ep.Targets = slices.Compact(ep.Targets)
+		result = append(result, ep)
+	}
+
+	return result
 }
