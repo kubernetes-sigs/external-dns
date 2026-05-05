@@ -321,6 +321,22 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
+			title:           "SRV target with trailing dot (RFC 2782 absolute FQDN host) is valid (#6357)",
+			namespaceFilter: "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "_svc._tcp.example.org",
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org.", "10 20 443 def.example.org."},
+					RecordType: endpoint.RecordTypeSRV,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
 			title:           "Create NAPTR record",
 			namespaceFilter: "foo",
 			objectNamespace: "foo",
@@ -544,6 +560,18 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					DNSName:    "example.org",
 					Targets:    endpoint.Targets{},
 					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
+		{
+			title: "SRV target with trailing dot produces no warning (#6357)",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "_svc._tcp.example.org",
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org."},
+					RecordType: endpoint.RecordTypeSRV,
 					RecordTTL:  180,
 				},
 			},
