@@ -102,7 +102,7 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			}
 		}
 	}
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endpoint.Endpoint, error) {

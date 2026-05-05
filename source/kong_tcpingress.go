@@ -157,7 +157,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object

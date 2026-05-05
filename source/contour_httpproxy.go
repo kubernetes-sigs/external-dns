@@ -150,7 +150,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, hpEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {

@@ -180,7 +180,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.
