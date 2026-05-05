@@ -87,7 +87,7 @@ type mockManagedZonesGetCall struct {
 	zonesErr    error
 }
 
-func (m *mockManagedZonesGetCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+func (m *mockManagedZonesGetCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	if m.zonesErr != nil {
 		return nil, m.zonesErr
 	}

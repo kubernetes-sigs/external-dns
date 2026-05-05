@@ -18,6 +18,7 @@ package google
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -201,7 +202,8 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 
 			zone, err := p.managedZonesClient.Get(p.project, zoneID).Do()
 			if err != nil {
-				if apiErr, ok := err.(*googleapi.Error); ok && apiErr.Code == 404 {
+				var apiErr *googleapi.Error
+			if errors.As(err, &apiErr) && apiErr.Code == 404 {
 					log.Debugf("Zone %s not found via Get (may be a suffix pattern), falling back to List", zoneID)
 					needsList = true
 					break
