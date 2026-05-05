@@ -105,6 +105,7 @@ var (
 		PDNSServer:                                    "http://localhost:8081",
 		PDNSServerID:                                  "localhost",
 		PDNSAPIKey:                                    "",
+		PDNSView:									   "",
 		Policy:                                        "sync",
 		Registry:                                      "txt",
 		TXTOwnerID:                                    "default",
@@ -219,6 +220,7 @@ var (
 		PDNSServerID:                                  "localhost",
 		PDNSAPIKey:                                    "some-secret-key",
 		PDNSSkipTLSVerify:                             true,
+		PDNSView:									   "",
 		TLSCA:                                         "/path/to/ca.crt",
 		TLSClientCert:                                 "/path/to/cert.pem",
 		TLSClientCertKey:                              "/path/to/key.pem",
@@ -358,6 +360,7 @@ func TestParseFlags(t *testing.T) {
 				"--pdns-server-id=localhost",
 				"--pdns-api-key=some-secret-key",
 				"--pdns-skip-tls-verify",
+				"--pdns-view=internal"
 				"--oci-config-file=oci.yaml",
 				"--oci-zone-scope=PRIVATE",
 				"--oci-zones-cache-duration=30s",

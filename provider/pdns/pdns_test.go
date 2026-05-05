@@ -1322,6 +1322,203 @@ func TestNewPDNSProviderTestSuite(t *testing.T) {
 	suite.Run(t, new(NewPDNSProviderTestSuite))
 }
 
+// TestParseVariantZone verifies zone name parsing for PDNS view (variant) zones.
+func TestParseVariantZone(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantBase    string
+		wantView    string
+		wantVariant bool
+	}{
+		{
+			name:        "plain zone without trailing dot",
+			input:       "example.com",
+			wantBase:    "example.com.",
+			wantVariant: false,
+		},
+		{
+			name:        "plain zone with trailing dot",
+			input:       "example.com.",
+			wantBase:    "example.com.",
+			wantVariant: false,
+		},
+		{
+			name:        "variant zone internal view",
+			input:       "example.com..internal",
+			wantBase:    "example.com.",
+			wantView:    "internal",
+			wantVariant: true,
+		},
+		{
+			name:        "variant zone external view with trailing dot",
+			input:       "example.com..external.",
+			wantBase:    "example.com.",
+			wantView:    "external",
+			wantVariant: true,
+		},
+		{
+			name:        "variant zone with subdomain base",
+			input:       "sub.example.com..dmz",
+			wantBase:    "sub.example.com.",
+			wantView:    "dmz",
+			wantVariant: true,
+		},
+		{
+			// TrimSuffix removes one trailing dot: "example.com.." → "example.com."
+			// which no longer contains "..", so it is treated as a plain zone.
+			name:        "trailing double-dot collapses to plain zone after TrimSuffix",
+			input:       "example.com..",
+			wantBase:    "example.com.",
+			wantVariant: false,
+		},
+		{
+			name:        "double-dot but empty base part is not a variant",
+			input:       "..internal",
+			wantBase:    "..internal.",
+			wantVariant: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			base, view, isVariant := parseVariantZone(tt.input)
+			assert.Equal(t, tt.wantBase, base)
+			assert.Equal(t, tt.wantView, view)
+			assert.Equal(t, tt.wantVariant, isVariant)
+		})
+	}
+}
+
+// TestPDNSClientPartitionZonesWithView verifies view-aware zone partitioning.
+func TestPDNSClientPartitionZonesWithView(t *testing.T) {
+	newZone := func(name string) pgo.Zone {
+		return pgo.Zone{Id: name, Name: name, Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}}
+	}
+	zoneNames := func(zz []pgo.Zone) []string {
+		names := make([]string, len(zz))
+		for i, z := range zz {
+			names[i] = z.Name
+		}
+		return names
+	}
+
+	allZones := []pgo.Zone{
+		newZone("example.com."),
+		newZone("example.com..internal"),
+		newZone("example.com..external"),
+		newZone("mock.test."),
+		newZone("mock.test..internal"),
+	}
+
+	tests := []struct {
+		name             string
+		view             string
+		domainFilter     *endpoint.DomainFilter
+		wantFiltered     []string
+		wantResidualSize int
+	}{
+		{
+			name:             "no view, no domain filter: all zones pass",
+			view:             "",
+			domainFilter:     endpoint.NewDomainFilter([]string{}),
+			wantFiltered:     []string{"example.com.", "example.com..internal", "example.com..external", "mock.test.", "mock.test..internal"},
+			wantResidualSize: 0,
+		},
+		{
+			name:             "internal view only: only internal variant zones",
+			view:             "internal",
+			domainFilter:     endpoint.NewDomainFilter([]string{}),
+			wantFiltered:     []string{"example.com..internal", "mock.test..internal"},
+			wantResidualSize: 3,
+		},
+		{
+			name:             "internal view + domain filter example.com: intersection",
+			view:             "internal",
+			domainFilter:     endpoint.NewDomainFilter([]string{"example.com"}),
+			wantFiltered:     []string{"example.com..internal"},
+			wantResidualSize: 4,
+		},
+		{
+			name:             "external view: only external variant zones",
+			view:             "external",
+			domainFilter:     endpoint.NewDomainFilter([]string{}),
+			wantFiltered:     []string{"example.com..external"},
+			wantResidualSize: 4,
+		},
+		{
+			name:             "unknown view: no zones match",
+			view:             "unknown",
+			domainFilter:     endpoint.NewDomainFilter([]string{}),
+			wantFiltered:     []string{},
+			wantResidualSize: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &PDNSAPIClient{
+				view:         tt.view,
+				domainFilter: tt.domainFilter,
+			}
+			filtered, residual := client.PartitionZones(allZones)
+			assert.ElementsMatch(t, tt.wantFiltered, zoneNames(filtered))
+			assert.Len(t, residual, tt.wantResidualSize)
+		})
+	}
+}
+
+// PDNSAPIClientStubViewZones returns view-variant zone names from ListZones.
+// It is used to verify that records are NOT placed in view-named zones when no
+// view is configured (negative test), and that view-aware PartitionZones
+// correctly selects only the target view's zones (positive test).
+type PDNSAPIClientStubViewZones struct{}
+
+func (c *PDNSAPIClientStubViewZones) ListZones() ([]pgo.Zone, *http.Response, error) {
+	return []pgo.Zone{
+		{Id: "example.com.", Name: "example.com.", Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}},
+		{Id: "example.com..internal", Name: "example.com..internal", Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}},
+		{Id: "example.com..external", Name: "example.com..external", Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}},
+	}, nil, nil
+}
+
+func (c *PDNSAPIClientStubViewZones) ListZone(_ string) (pgo.Zone, *http.Response, error) {
+	return pgo.Zone{}, nil, nil
+}
+
+func (c *PDNSAPIClientStubViewZones) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
+	return &http.Response{}, nil
+}
+
+// TestPDNSConvertEndpointsToZonesViewNameMatching verifies the zone-name matching
+// behaviour when view-variant zones (e.g. "example.com..internal") are present.
+//
+// Without a *PDNSAPIClient as the provider client, the type assertion inside
+// ConvertEndpointsToZones is false, so zoneMatchName == zone.Name and a plain
+// DNS name like "example.com." will not match "example.com..internal".
+// This confirms that view-aware matching only kicks in when a *PDNSAPIClient
+// with a non-empty view field is used (covered by TestPDNSClientPartitionZonesWithView).
+func TestPDNSConvertEndpointsToZonesViewNameMatching(t *testing.T) {
+	p := &PDNSProvider{
+		client:       &PDNSAPIClientStubViewZones{},
+		domainFilter: endpoint.NewDomainFilter([]string{}),
+	}
+
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "1.2.3.4"),
+	}
+
+	// Without view: the plain zone "example.com." matches; the two variant zones
+	// ("example.com..internal", "example.com..external") do not because the double-dot
+	// name never matches "example.com." by simple string comparison.
+	zones, err := p.ConvertEndpointsToZones(eps, PdnsReplace)
+	assert.NoError(t, err)
+	assert.Len(t, zones, 1, "record should be placed in the plain zone only")
+	assert.Equal(t, "example.com.", zones[0].Name)
+	assert.Len(t, zones[0].Rrsets, 1)
+	assert.Equal(t, "example.com.", zones[0].Rrsets[0].Name)
+}
+
 // TestPDNSPartitionZonesRegexBehavior compares two regex forms for --domain-filter
 // and shows how the choice of regex affects zone partitioning correctness.
 func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {

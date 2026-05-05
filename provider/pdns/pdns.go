@@ -80,6 +80,7 @@ type PDNSConfig struct {
 	ServerID     string
 	APIKey       string
 	TLSConfig    TLSConfig
+	View string
 }
 
 // TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
@@ -135,6 +136,27 @@ func stringifyHTTPResponseBody(r *http.Response) string {
 	_, _ = buf.ReadFrom(r.Body)
 	return buf.String()
 }
+func parseVariantZone(zoneName string) (base string, view string, isVariant bool) {
+	// PDNS variant format: <base zone with trailing dot>.<variant>
+	// Example: "example.com..internal"
+
+	zn := strings.TrimSpace(zoneName)
+	zn = strings.TrimSuffix(zn, ".") // allow both with/without final dot
+
+	// Variant zones must contain exactly one ".."
+	if !strings.Contains(zn, "..") {
+		return provider.EnsureTrailingDot(zn), "", false
+	}
+
+	parts := strings.SplitN(zn, "..", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return provider.EnsureTrailingDot(zn), "", false
+	}
+
+	// parts[0] is the base without trailing dot
+	// parts[1] is the variant name
+	return provider.EnsureTrailingDot(parts[0]), parts[1], true
+}
 
 // PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
 // well as mock APIClients used in testing
@@ -146,10 +168,12 @@ type PDNSAPIProvider interface {
 
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
-	dryRun   bool
-	serverID string
-	authCtx  context.Context
-	client   *pgo.APIClient
+	dryRun       bool
+	serverID     string
+	authCtx      context.Context
+	client       *pgo.APIClient
+	domainFilter *endpoint.DomainFilter
+	view         string
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -170,6 +194,36 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	}
 
 	return zones, resp, provider.NewSoftErrorf("unable to list zones: %v", err)
+}
+
+// PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
+func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+	var filteredZones []pgo.Zone
+	var residualZones []pgo.Zone
+
+	viewWanted := c.view
+
+	for _, zone := range zones {
+		matchName := zone.Name
+
+		if viewWanted != "" {
+			baseName, zoneView, isVariant := parseVariantZone(zone.Name)
+			if !isVariant || zoneView != viewWanted {
+				residualZones = append(residualZones, zone)
+				continue
+			}
+			matchName = baseName
+		}
+
+		if c.domainFilter.IsConfigured() && !c.domainFilter.Match(matchName) {
+			residualZones = append(residualZones, zone)
+			continue
+		}
+
+		filteredZones = append(filteredZones, zone)
+	}
+
+	return filteredZones, residualZones
 }
 
 // partitionZones returns a slice of zones that adhere to the domain filter and a slice of ones that do not adhere to the filter.
@@ -243,6 +297,7 @@ func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.Do
 			Server:       cfg.PDNSServer,
 			ServerID:     cfg.PDNSServerID,
 			APIKey:       cfg.PDNSAPIKey,
+			View:         cfg.PDNSView,
 			TLSConfig: TLSConfig{
 				SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
 				CAFilePath:            cfg.TLSCA,
@@ -279,10 +334,12 @@ func newProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) 
 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
-			dryRun:   config.DryRun,
-			serverID: config.ServerID,
-			authCtx:  context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
-			client:   pgo.NewAPIClient(pdnsClientConfig),
+			dryRun:       config.DryRun,
+			serverID:     config.ServerID,
+			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			client:       pgo.NewAPIClient(pdnsClientConfig),
+			domainFilter: config.DomainFilter,
+			view:         config.View,
 		},
 		domainFilter: config.DomainFilter,
 	}
@@ -296,6 +353,10 @@ func (p *PDNSProvider) filteredZones() ([]pgo.Zone, []pgo.Zone, error) {
 	zones, _, err := p.client.ListZones()
 	if err != nil {
 		return nil, nil, err
+	}
+	if c, ok := p.client.(*PDNSAPIClient); ok {
+		filtered, residual := c.PartitionZones(zones)
+		return filtered, residual, nil
 	}
 	filtered, residual := partitionZones(zones, p.domainFilter)
 	return filtered, residual, nil
@@ -379,7 +440,14 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 		for i := 0; i < len(endpoints); {
 			ep := endpoints[i]
 			dnsname := provider.EnsureTrailingDot(ep.DNSName)
-			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
+			zoneMatchName := zone.Name
+			if c, ok := p.client.(*PDNSAPIClient); ok && c.view != "" {
+				baseName, _, isVariant := parseVariantZone(zone.Name)
+				if isVariant {
+					zoneMatchName = baseName
+				}
+			}
+			if dnsname == zoneMatchName || strings.HasSuffix(dnsname, "."+zoneMatchName) {
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
@@ -389,12 +457,8 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				// Check if we should use ALIAS instead of CNAME:
-				// 1. APEX records (dnsname == zone.Name) always use ALIAS
-				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
-				//    (can be set via --prefer-alias flag globally or per-resource annotation)
 				if ep.RecordType == endpoint.RecordTypeCNAME {
-					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
+					useAlias := dnsname == zoneMatchName || p.hasAliasAnnotation(ep)
 					if useAlias {
 						log.Debugf("Converting CNAME record %q to ALIAS", dnsname)
 						RecordType_ = "ALIAS"
@@ -441,7 +505,16 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 		for i := 0; i < len(endpoints); {
 			ep := endpoints[i]
 			dnsname := provider.EnsureTrailingDot(ep.DNSName)
-			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
+
+			zoneMatchName := zone.Name
+			if c, ok := p.client.(*PDNSAPIClient); ok && c.view != "" {
+				baseName, _, isVariant := parseVariantZone(zone.Name)
+				if isVariant {
+					zoneMatchName = baseName
+				}
+			}
+
+			if dnsname == zoneMatchName || strings.HasSuffix(dnsname, "."+zoneMatchName) {
 				// "pop" endpoint if it's matched to a residual zone... essentially a no-op
 				log.Debugf("Ignoring Endpoint because it was matched to a zone that was not specified within Domain Filter(s): %s", dnsname)
 				endpoints = append(endpoints[0:i], endpoints[i+1:]...)
