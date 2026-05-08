@@ -310,4 +310,26 @@ func TestProviderMultipleTargets(t *testing.T) {
 		}
 		requests.clear()
 	})
+	
+	t.Run("Update with unordered match - should skip delete", func(t *testing.T) {
+		// Update where old and new have the same targets (exact match)
+		updateOld := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.4", "192.168.1.3"}, RecordType: endpoint.RecordTypeA},
+		}
+		updateNew := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3", "192.168.1.4"}, RecordType: endpoint.RecordTypeA},
+		}
+		if err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Should not create or delete anything since targets are the same
+		if len(requests.createRequests) != 0 {
+			t.Fatalf("Expected no create requests for exact match, got %d", len(requests.createRequests))
+		}
+		if len(requests.deleteRequests) != 0 {
+			t.Fatalf("Expected no delete requests for exact match, got %d", len(requests.deleteRequests))
+		}
+		requests.clear()
+	})
 }
