@@ -109,8 +109,8 @@ func (h *dnsEndpointHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func isDNSEndpointPath(path string) bool {
-	return path == "/apis/"+apiv1alpha1.GroupVersion.String()+"/"+dnsEndpointResource ||
-		strings.HasSuffix(path, "/"+dnsEndpointResource)
+	return strings.HasPrefix(path, "/apis/"+apiv1alpha1.GroupVersion.String()) && 
+	       strings.HasSuffix(path, "/"+dnsEndpointResource)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
