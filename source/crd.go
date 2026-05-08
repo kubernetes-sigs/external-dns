@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -227,6 +228,10 @@ func buildCacheOptions(namespace string, labelFilter, annotationSelector labels.
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
 	}
+	// metav1.AddToGroupVersion registers ListOptions (and other meta types) under
+	// apiv1alpha1.GroupVersion so that runtime.NewParameterCodec can encode them
+	// as URL parameters when building watch requests for this group.
+	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
 
 	nsMap := map[string]crcache.Config{
 		namespace: {}, // "" == NamespaceAll

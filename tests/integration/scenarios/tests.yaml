@@ -337,3 +337,136 @@ scenarios:
       - dnsName: example.local
         targets: ["b.elb.example.com"]
         recordType: CNAME
+
+# CRD
+  - name: crd-a-record
+    description: >
+      A DNSEndpoint with an A record creates the correct DNS entry.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: my-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: www.example.com
+                targets:
+                  - 1.2.3.4
+                recordType: A
+                recordTTL: 300
+    expected:
+      - dnsName: www.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+        recordTTL: 300
+
+  - name: crd-cname-record
+    description: >
+      A DNSEndpoint with a CNAME record creates the correct DNS entry.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: my-cname
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: alias.example.com
+                targets:
+                  - target.example.com
+                recordType: CNAME
+                recordTTL: 180
+    expected:
+      - dnsName: alias.example.com
+        targets: ["target.example.com"]
+        recordType: CNAME
+        recordTTL: 180
+
+  - name: crd-multiple-endpoints
+    description: >
+      A DNSEndpoint with multiple spec.endpoints entries produces one DNS record
+      per entry. MergeEndpoints combines entries sharing the same dnsName and
+      recordType into a single multi-target record.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: multi-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: multi.example.com
+                targets:
+                  - 1.2.3.4
+                  - 5.6.7.8
+                recordType: A
+                recordTTL: 60
+              - dnsName: alias.example.com
+                targets:
+                  - multi.example.com
+                recordType: CNAME
+                recordTTL: 60
+    expected:
+      - dnsName: multi.example.com
+        targets: ["1.2.3.4", "5.6.7.8"]
+        recordType: A
+        recordTTL: 60
+      - dnsName: alias.example.com
+        targets: ["multi.example.com"]
+        recordType: CNAME
+        recordTTL: 60
+
+  - name: crd-and-service
+    description: >
+      When both the crd and service sources are active, endpoints from each
+      source are combined. The crd source contributes an A record for
+      api.example.com and the service source contributes an A record for
+      svc.example.com.
+    config:
+      sources: ["crd", "service"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: api-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: api.example.com
+                targets:
+                  - 10.0.0.1
+                recordType: A
+                recordTTL: 120
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: my-svc
+            namespace: default
+            annotations:
+              external-dns.alpha.kubernetes.io/hostname: svc.example.com
+          spec:
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 10.0.0.2
+    expected:
+      - dnsName: api.example.com
+        targets: ["10.0.0.1"]
+        recordType: A
+        recordTTL: 120
+      - dnsName: svc.example.com
+        targets: ["10.0.0.2"]
+        recordType: A
