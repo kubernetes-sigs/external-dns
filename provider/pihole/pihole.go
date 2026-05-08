@@ -21,8 +21,6 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/google/go-cmp/cmp"
-
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -131,7 +129,11 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// Check if this existing entry has an exact match for an updated entry and skip it if so.
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 		if newRecord := updateNew[key]; newRecord != nil {
-			if cmp.Diff(ep.Targets, newRecord.Targets) == "" {
+			oldTargets := slices.Clone(ep.Targets)
+			slices.Sort(oldTargets)
+			newTargets := slices.Clone(newRecord.Targets)
+			slices.Sort(newTargets)
+			if slices.Equal(oldTargets, newTargets) {
 				delete(updateNew, key)
 				continue
 			}

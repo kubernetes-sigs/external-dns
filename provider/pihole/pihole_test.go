@@ -310,7 +310,7 @@ func TestProviderMultipleTargets(t *testing.T) {
 		}
 		requests.clear()
 	})
-	
+
 	t.Run("Update with unordered match - should skip delete", func(t *testing.T) {
 		// Update where old and new have the same targets (exact match)
 		updateOld := []*endpoint.Endpoint{
