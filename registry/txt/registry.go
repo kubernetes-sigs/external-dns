@@ -25,9 +25,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -84,7 +84,7 @@ type recordKey struct {
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
-		entries: make(sets.Set[recordKey]),
+		entries: sets.New[recordKey](),
 	}
 }
 
@@ -109,7 +109,7 @@ func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
 func (im *existingTXTs) reset() {
 	// Reset the existing TXT records for the next reconciliation loop.
 	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
-	im.entries = make(sets.Set[recordKey])
+	im.entries = sets.New[recordKey]()
 }
 
 // New creates a TXTRegistry from the given configuration.

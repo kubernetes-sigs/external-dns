@@ -34,9 +34,9 @@ import (
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -353,14 +353,14 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoi
 	}
 
 	// Deduplicate hostnames
-	sortedHosts := set.New(hostnames...).SortedList()
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
 
 	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]set.Set[string])
+	targetsByType := make(map[string]sets.Set[string])
 	for _, target := range targets {
 		recordType := endpoint.SuitableType(target)
 		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = set.New(target)
+			targetsByType[recordType] = sets.New(target)
 		} else {
 			targetsByType[recordType].Insert(target)
 		}

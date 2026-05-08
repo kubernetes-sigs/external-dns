@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/provider/blueprint"
@@ -237,7 +238,7 @@ func (p *AzureProvider) SupportedRecordType(recordType string) bool {
 type azureChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azureChangeMap, azureChangeMap) {
-	ignored := map[string]bool{}
+	ignored := sets.New[string]()
 	deleted := azureChangeMap{}
 	updated := azureChangeMap{}
 	zoneNameIDMapper := provider.ZoneIDName{}
@@ -249,8 +250,8 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	mapChange := func(changeMap azureChangeMap, change *endpoint.Endpoint) {
 		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
 		if zone == "" {
-			if _, ok := ignored[change.DNSName]; !ok {
-				ignored[change.DNSName] = true
+			if !ignored.Has(change.DNSName) {
+				ignored.Insert(change.DNSName)
 				log.Infof("Ignoring changes to '%s' because a suitable Azure DNS zone was not found.", change.DNSName)
 			}
 			return
@@ -572,7 +573,7 @@ func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
 // and adds individual metadata properties to the endpoint.
 // Returns the list of unique metadata keys that were parsed.
 func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string {
-	keys := make(map[string]struct{})
+	keys := make(sets.Set[string], len(tagString))
 	for tag := range strings.SplitSeq(tagString, ",") {
 		tag = strings.TrimSpace(tag)
 		if tag == "" {
@@ -584,15 +585,11 @@ func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string 
 			value := strings.TrimSpace(parts[1])
 			if key != "" && value != "" {
 				ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, value)
-				keys[key] = struct{}{}
+				keys.Insert(key)
 			}
 		}
 	}
-	result := make([]string, 0, len(keys))
-	for k := range keys {
-		result = append(result, k)
-	}
-	return result
+	return keys.List()
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the Azure provider.

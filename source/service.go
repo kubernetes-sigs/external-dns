@@ -29,7 +29,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/sets"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -46,12 +46,12 @@ import (
 )
 
 var (
-	knownServiceTypes = map[v1.ServiceType]struct{}{
-		v1.ServiceTypeClusterIP:    {}, // Default service type exposes the service on a cluster-internal IP.
-		v1.ServiceTypeNodePort:     {}, // Exposes the service on each node's IP at a static port.
-		v1.ServiceTypeLoadBalancer: {}, // Exposes the service externally using a cloud provider's load balancer.
-		v1.ServiceTypeExternalName: {}, // Maps the service to an external DNS name.
-	}
+	knownServiceTypes = sets.New(
+		v1.ServiceTypeClusterIP,    // Default service type exposes the service on a cluster-internal IP.
+		v1.ServiceTypeNodePort,     // Exposes the service on each node's IP at a static port.
+		v1.ServiceTypeLoadBalancer, // Exposes the service externally using a cloud provider's load balancer.
+		v1.ServiceTypeExternalName, // Maps the service to an external DNS name.
+	)
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -786,7 +786,7 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 type serviceTypes struct {
 	enabled bool
-	types   map[v1.ServiceType]bool
+	types   sets.Set[v1.ServiceType]
 }
 
 // newServiceTypesFilter processes a slice of service type filter strings and returns a serviceTypes struct.
@@ -798,12 +798,12 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 			enabled: false,
 		}, nil
 	}
-	result := make(map[v1.ServiceType]bool)
+	result := sets.New[v1.ServiceType]()
 	for _, serviceType := range filter {
-		if _, ok := knownServiceTypes[v1.ServiceType(serviceType)]; !ok {
-			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, slices.Collect(maps.Keys(knownServiceTypes)))
+		if !knownServiceTypes.Has(v1.ServiceType(serviceType)) {
+			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, sets.Sorted(knownServiceTypes))
 		}
-		result[v1.ServiceType(serviceType)] = true
+		result.Insert(v1.ServiceType(serviceType))
 	}
 
 	return &serviceTypes{
@@ -813,7 +813,7 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 }
 
 func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
-	return !sc.enabled || sc.types[serviceType]
+	return !sc.enabled || sc.types.Has(serviceType)
 }
 
 // predicate returns a typed filter function suitable for use with

@@ -28,9 +28,9 @@ import (
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	sdtypes "github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"

@@ -28,9 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 // Engine holds the parsed Go templates used to derive DNS names and targets
@@ -205,7 +205,7 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
 	hosts := strings.Split(buf.String(), ",")
-	hostnames := make(set.Set[string], len(hosts))
+	hostnames := make(sets.Set[string], len(hosts))
 	for _, name := range hosts {
 		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
@@ -213,5 +213,5 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 			hostnames.Insert(name)
 		}
 	}
-	return hostnames.SortedList(), nil
+	return sets.Sorted(hostnames), nil
 }

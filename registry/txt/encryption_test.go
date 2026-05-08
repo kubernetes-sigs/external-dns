@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
@@ -258,14 +259,14 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 	records, _ := p.Records(ctx)
 	assert.Len(t, records, 14)
 
-	encryptionNonce := map[string]bool{}
+	encryptionNonce := sets.New[string]()
 
 	for _, r := range records {
 		if slices.Contains([]string{"A", "AAAA"}, r.RecordType) || (r.RecordType == "CNAME" && strings.HasPrefix(r.DNSName, "new-")) {
 			assert.Contains(t, r.Labels, "key-id")
 			assert.Equal(t, "key-id-2", r.Labels["key-id"])
 			// add encryption nonce to track the number of unique nonce
-			encryptionNonce[r.Labels["txt-encryption-nonce"]] = true
+			encryptionNonce.Insert(r.Labels["txt-encryption-nonce"])
 		} else if r.RecordType == endpoint.RecordTypeTXT {
 			if hasPrefixFromSlice(r.DNSName, []string{"cname-", "txt-new-", "a-", "aaaa-", "txt-"}) {
 				assert.NotContains(t, r.Labels, "key-id")
@@ -273,7 +274,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 				assert.Contains(t, r.Labels, "key-id", r.DNSName)
 				assert.Equal(t, "key-id-0", r.Labels["key-id"], r.DNSName)
 				// add encryption nonce to track the number of unique nonce
-				encryptionNonce[r.Labels["txt-encryption-nonce"]] = true
+				encryptionNonce.Insert(r.Labels["txt-encryption-nonce"])
 			}
 		}
 	}
