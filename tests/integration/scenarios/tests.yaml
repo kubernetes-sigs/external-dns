@@ -428,10 +428,11 @@ scenarios:
 
   - name: crd-srv-record
     description: >
-      A DNSEndpoint with SRV records is accepted by the CRD source. Per RFC 2782
-      the target host must be an absolute FQDN; the CRD source accepts both forms
-      (with and without trailing dot) without stripping or warning. Covers the fix
-      in
+      A DNSEndpoint with SRV targets missing the trailing dot is rejected by
+      ValidateSRVRecord (RFC 2782 requires absolute FQDNs) and produces no
+      endpoint. A DNSEndpoint with properly dotted targets is accepted by the
+      CRD source and produces an endpoint; the CRD source no longer strips or
+      warns on the trailing dot.
     config:
       sources: ["crd"]
     resources:
@@ -439,7 +440,7 @@ scenarios:
           apiVersion: externaldns.k8s.io/v1alpha1
           kind: DNSEndpoint
           metadata:
-            name: srv-plain
+            name: srv-invalid
             namespace: default
           spec:
             endpoints:
@@ -453,7 +454,7 @@ scenarios:
           apiVersion: externaldns.k8s.io/v1alpha1
           kind: DNSEndpoint
           metadata:
-            name: srv-trailing-dot
+            name: srv-valid
             namespace: default
           spec:
             endpoints:
@@ -464,10 +465,6 @@ scenarios:
                 recordType: SRV
                 recordTTL: 180
     expected:
-      - dnsName: _svc._tcp.example.com
-        targets: ["0 0 80 abc.example.com", "0 0 80 def.example.com"]
-        recordType: SRV
-        recordTTL: 180
       - dnsName: _secure._tcp.example.com
         targets: ["0 0 443 abc.example.com.", "10 20 443 def.example.com."]
         recordType: SRV
