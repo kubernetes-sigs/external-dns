@@ -426,6 +426,50 @@ scenarios:
         recordType: CNAME
         recordTTL: 60
 
+  - name: crd-srv-record
+    description: >
+      A DNSEndpoint with SRV targets missing the trailing dot is rejected by
+      ValidateSRVRecord (RFC 2782 requires absolute FQDNs) and produces no
+      endpoint. A DNSEndpoint with properly dotted targets is accepted by the
+      CRD source and produces an endpoint; the CRD source no longer strips or
+      warns on the trailing dot.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: srv-invalid
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: _svc._tcp.example.com
+                targets:
+                  - "0 0 80 abc.example.com"
+                  - "0 0 80 def.example.com"
+                recordType: SRV
+                recordTTL: 180
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: srv-valid
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: _secure._tcp.example.com
+                targets:
+                  - "0 0 443 abc.example.com."
+                  - "10 20 443 def.example.com."
+                recordType: SRV
+                recordTTL: 180
+    expected:
+      - dnsName: _secure._tcp.example.com
+        targets: ["0 0 443 abc.example.com.", "10 20 443 def.example.com."]
+        recordType: SRV
+        recordTTL: 180
+
   - name: crd-and-service
     description: >
       When both the crd and service sources are active, endpoints from each
