@@ -356,7 +356,11 @@ Currently, requires SuperAdmin or Admin role.
 
 Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
 
+Origin SNI overrides require a Cloudflare account entitlement — contact your Cloudflare account team to request access (see [Custom origin server](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/custom-origin/)). When enabled, the Origin SNI defaults to the origin hostname and can be overridden using the `<customHostname>=<customOriginSNI>` annotation format. A trailing `=` with no value (`<customHostname>=`) sets the Origin SNI to the request's Host header instead.
+
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
+
+Setting the annotation to `-` tells external-dns to skip custom hostname management for this record entirely — existing custom hostnames in Cloudflare are left untouched. This is useful when migrating CH ownership to another controller.
 
 See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/domain-support/) for more information on custom hostnames.
 
@@ -367,6 +371,24 @@ This feature is disabled by default and supports the `--cloudflare-custom-hostna
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
+
+### Known limitation: `-` sentinel and DNS record lifecycle
+
+The `-` sentinel prevents external-dns from **creating or updating** custom hostnames. However, when a DNS record is deleted (e.g., due to an HTTPRoute parentRef change that causes zero resolved targets), external-dns deletes all custom hostnames associated with that record as part of the DNS record cleanup -- regardless of the `-` annotation.
+
+This means that infrastructure changes affecting DNS record lifecycle (gateway transitions, parentRef changes) can trigger custom hostname deletion and re-creation even when the annotation is set to `-`. The custom hostname will be re-created by whatever controller manages it (e.g., an operator), but SSL re-provisioning (~1-3 minutes) causes a brief disruption.
+
+### Migrating custom hostname management to another controller
+
+To fully migrate custom hostname management away from external-dns (e.g., to a dedicated Kubernetes operator):
+
+1. **Set the annotation to `-`** on all relevant endpoints. This tells external-dns to stop creating and updating custom hostnames. The other controller can now manage them.
+
+2. **Verify the other controller is managing all custom hostnames correctly.** Both can coexist safely at this stage -- `-` prevents external-dns from interfering with creates/updates.
+
+3. **Disable custom hostnames in external-dns entirely** by removing the `--cloudflare-custom-hostnames` flag (or setting it to false) and redeploying. When disabled, external-dns does not perform any custom hostname operations -- no creates, no updates, and no deletes. DNS record lifecycle (A/CNAME records) continues normally without any custom hostname side effects.
+
+Step 3 is important: until custom hostnames are fully disabled in external-dns, DNS record changes (such as gateway transitions) can still trigger custom hostname deletion as a side effect. Disabling the feature cleanly breaks this tie.
 
 ## Setting Cloudflare DNS Record Tags
 
