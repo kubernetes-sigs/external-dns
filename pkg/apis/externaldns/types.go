@@ -216,7 +216,6 @@ type Config struct {
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
-	PiholeApiVersion                              string
 	PluralCluster                                 string
 	PluralProvider                                string
 	WebhookProviderURL                            string
@@ -341,7 +340,6 @@ var defaultConfig = &Config{
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSSkipTLSVerify:            false,
-	PiholeApiVersion:             "5",
 	PiholePassword:               "",
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
@@ -696,7 +694,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)", defaultConfig.PiholeServer, &cfg.PiholeServer)
 	b.StringVar("pihole-password", "When using the Pihole provider, the password to the server if it is protected", defaultConfig.PiholePassword, &cfg.PiholePassword)
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
-	b.StringVar("pihole-api-version", "When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6)", defaultConfig.PiholeApiVersion, &cfg.PiholeApiVersion)
 
 	// Flags related to the Plural provider
 	b.StringVar("plural-cluster", "When using the plural provider, specify the cluster name you're running with", defaultConfig.PluralCluster, &cfg.PluralCluster)

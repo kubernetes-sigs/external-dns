@@ -4,11 +4,11 @@ This tutorial describes how to setup ExternalDNS to sync records with Pi-hole's 
 Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A, AAAA or CNAME records.
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
-__NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
+__NOTE:__ Pi-hole version 6.0 or newer is required. The v5 API is no longer supported.
 
-__NOTE:__ Provider for Pi-hole version prior to 6.0 is now deprecated and will be removed in future release.
+## Prerequisites
 
-__NOTE:__ Since Pi-hole version 6, you should use the flag *--pihole-api-version=6*
+- A running Pi-hole instance (v6.0+). See the [Pi-hole one-step automated install](https://github.com/pi-hole/pi-hole/#one-step-automated-install) for setup instructions.
 
 ## Deploy ExternalDNS
 
@@ -105,8 +105,6 @@ spec:
         # the policy to upsert-only so they do not get deleted.
         - --policy=upsert-only
         - --provider=pihole
-        # Switch to pihole V6 API
-        - --pihole-api-version=6
         # Change this to the actual address of your Pi-hole web server
         - --pihole-server=http://pihole-web.pihole.svc.cluster.local
       securityContext:
@@ -118,7 +116,6 @@ spec:
 - `--pihole-server (env: EXTERNAL_DNS_PIHOLE_SERVER)` - The address of the Pi-hole web server
 - `--pihole-password (env: EXTERNAL_DNS_PIHOLE_PASSWORD)` - The password to the Pi-hole web server (if enabled)
 - `--pihole-tls-skip-verify (env: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY)` - Skip verification of any TLS certificates served by the Pi-hole web server.
-- `--pihole-api-version (env: EXTERNAL_DNS_PIHOLE_API_VERSION)` - Specify the pihole API version (default is 5. Eligible values are 5 or 6).
 
 ## Verify ExternalDNS Works
 
