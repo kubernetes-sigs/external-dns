@@ -97,12 +97,14 @@ func (ec *Controller) processNextWorkItem(ctx context.Context) bool {
 	}
 	defer ec.queue.Done(event)
 	_, err := ec.client.Events(event.Namespace).Create(ctx, event, ec.createOpts)
-	if err != nil && !apierrors.IsNotFound(err) {
-		if ec.queue.NumRequeues(event) < maxRetriesPerEvent {
-			log.Errorf("not able to create event, retrying for key/%s. %v", event.Name, err)
-			ec.queue.AddRateLimited(event)
-			return true
-		}
+	switch {
+	case apierrors.IsNotFound(err):
+		log.Warnf("dropping event %s/%s: namespace not found. %v", event.Namespace, event.Name, err)
+	case err != nil && ec.queue.NumRequeues(event) < maxRetriesPerEvent:
+		log.Errorf("not able to create event %s/%s, retrying. %v", event.Namespace, event.Name, err)
+		ec.queue.AddRateLimited(event)
+		return true
+	case err != nil:
 		log.Errorf("dropping event %s/%s after %d retries. %v", event.Namespace, event.Name, ec.queue.NumRequeues(event), err)
 	}
 	ec.queue.Forget(event)
@@ -110,16 +112,20 @@ func (ec *Controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (ec *Controller) Add(events ...Event) {
-	if ec.queue.Len() >= ec.maxQueuedEvents {
-		log.Warnf("event queue is full, dropping %d events", len(events))
-		return
-	}
+	dropped := 0
 	for _, e := range events {
+		if ec.queue.Len() >= ec.maxQueuedEvents {
+			dropped++
+			continue
+		}
 		event := e.event()
 		if event == nil {
 			continue
 		}
 		ec.emit(event)
+	}
+	if dropped > 0 {
+		log.Warnf("event queue is full, dropped %d events", dropped)
 	}
 }
 

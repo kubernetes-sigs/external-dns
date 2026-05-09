@@ -1570,11 +1570,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 
 func TestEndpoint_WithRefObject(t *testing.T) {
 	ep := &Endpoint{}
-	ref := &events.ObjectReference{
-		Kind:      "Service",
-		Namespace: "default",
-		Name:      "my-service",
-	}
+	ref := events.NewObjectReferenceFromParts("Service", "", "default", "my-service", "", "")
 	result := ep.WithRefObject(ref)
 
 	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")

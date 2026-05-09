@@ -228,7 +228,7 @@ func TestEndpointsForHostname(t *testing.T) {
 }
 
 func TestAttachRefObject(t *testing.T) {
-	ref := &events.ObjectReference{Kind: "Service", Namespace: "default", Name: "svc"}
+	ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc", "", "")
 	eps := []*Endpoint{
 		NewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
 		NewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
@@ -438,9 +438,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
 				assert.Len(t, ep, 1)
-				assert.Equal(t, "service", ep[0].RefObject().Source)
-				assert.Equal(t, "foo", ep[0].RefObject().Name)
-				assert.Equal(t, "123", string(ep[0].RefObject().UID))
+				assert.Equal(t, "service", ep[0].RefObject().Source())
+				assert.Equal(t, "foo", ep[0].RefObject().Name())
+				assert.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -459,10 +459,10 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
 				assert.Len(t, ep, 1)
-				assert.Equal(t, "service", ep[0].RefObject().Source)
-				assert.Equal(t, "foo", ep[0].RefObject().Name)
-				assert.Equal(t, "123", string(ep[0].RefObject().UID))
-				assert.NotEqual(t, "345", string(ep[0].RefObject().UID))
+				assert.Equal(t, "service", ep[0].RefObject().Source())
+				assert.Equal(t, "foo", ep[0].RefObject().Name())
+				assert.Equal(t, "123", string(ep[0].RefObject().UID()))
+				assert.NotEqual(t, "345", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -483,9 +483,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				assert.Len(t, ep, 2)
 				assert.NotEqual(t, ep[0], ep[1])
 				for _, el := range ep {
-					assert.Equal(t, "service", el.RefObject().Source)
-					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
-					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
+					assert.Equal(t, "service", el.RefObject().Source())
+					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name())
+					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID()))
 				}
 			},
 		},
