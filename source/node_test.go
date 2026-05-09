@@ -717,7 +717,7 @@ func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
 			Annotations: map[string]string{
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
-				"external-dns.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
+				"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
 			},
 		},
 		Spec: v1.NodeSpec{

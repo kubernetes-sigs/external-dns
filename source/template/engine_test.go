@@ -259,9 +259,9 @@ func TestExecFQDN(t *testing.T) {
 					Namespace: "default",
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "test.example.com, test.example.org",
-						"kubernetes.io/role/internal-elb":           "true",
-						"alb.ingress.kubernetes.io/scheme":          "internal",
-						"dns.company.com/zone":                      "company.org",
+						"kubernetes.io/role/internal-elb":     "true",
+						"alb.ingress.kubernetes.io/scheme":    "internal",
+						"dns.company.com/zone":                "company.org",
 					},
 					Labels: map[string]string{
 						"environment": "production",

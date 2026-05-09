@@ -60,7 +60,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -166,7 +166,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -236,7 +236,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -296,7 +296,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-sni",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"kubernetes.io/ingress.class":             "kong",
+						"kubernetes.io/ingress.class":       "kong",
 						"external-dns.kubernetes.io/target": "203.2.45.7",
 					},
 				},
@@ -356,8 +356,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
-						annotations.AWSPrefix + "weight":            "10",
+						"kubernetes.io/ingress.class":         "kong",
+						annotations.AWSPrefix + "weight":      "10",
 					},
 				},
 				Status: tcpIngressStatus{

@@ -4849,10 +4849,10 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 				"label3": "value3",
 			},
 			Annotations: map[string]string{
-				"user-annotation": "value",
+				"user-annotation":                     "value",
 				"external-dns.kubernetes.io/hostname": "test-hostname",
 				"external-dns.kubernetes.io/random":   "value",
-				"other/annotation":                          "value",
+				"other/annotation":                    "value",
 			},
 			UID: "someuid",
 		},

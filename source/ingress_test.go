@@ -1811,9 +1811,9 @@ func TestTransformerInIngressSource(t *testing.T) {
 			Namespace: "default",
 			Labels:    map[string]string{"label1": "value1"},
 			Annotations: map[string]string{
-				"user-annotation": "value",
+				"user-annotation":                     "value",
 				"external-dns.kubernetes.io/hostname": "ingress.example.com",
-				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"networking.k8s.io/v1"}`,
+				corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"networking.k8s.io/v1"}`,
 			},
 			UID: "someuid",
 			ManagedFields: []metav1.ManagedFieldsEntry{
