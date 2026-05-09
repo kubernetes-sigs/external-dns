@@ -48,9 +48,9 @@ func TestEventEmitter_Add_MultipleEvents(t *testing.T) {
 	event1 := events.NewEvent(nil, "test message 1", events.ActionCreate, events.RecordReady)
 	event2 := events.NewEvent(nil, "test message 2", events.ActionUpdate, events.RecordReady)
 
-	// Note: The implementation only processes events[0], so we test that behavior
 	emitter.Add(event1, event2)
 
+	emitter.AssertNumberOfCalls(t, "Add", 2)
 	emitter.AssertExpectations(t)
 }
 

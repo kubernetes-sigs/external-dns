@@ -172,9 +172,9 @@ func TestController_Add(t *testing.T) {
 		{
 			title:           "queue full drops events and logs warning",
 			maxQueuedEvents: 0, // 0 >= 0 is always true, so queue is immediately "full"
-			events:          []Event{NewEvent(&ObjectReference{Name: "test", Namespace: "default"}, "msg", ActionCreate, RecordReady)},
+			events:          []Event{NewEvent(&ObjectReference{name: "test", namespace: "default"}, "msg", ActionCreate, RecordReady)},
 			wantQueueLen:    0,
-			wantWarnLog:     "event queue is full, dropping 1 events",
+			wantWarnLog:     "event queue is full, dropped 1 events",
 		},
 		{
 			title:           "nil event is skipped",
