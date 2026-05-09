@@ -216,8 +216,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
-    external-dns.alpha.kubernetes.io/ttl: "120" #optional
+    external-dns.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/ttl: "120" #optional
 spec:
   selector:
     app: nginx

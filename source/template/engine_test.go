@@ -258,10 +258,10 @@ func TestExecFQDN(t *testing.T) {
 					Name:      "test",
 					Namespace: "default",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "test.example.com, test.example.org",
-						"kubernetes.io/role/internal-elb":           "true",
-						"alb.ingress.kubernetes.io/scheme":          "internal",
-						"dns.company.com/zone":                      "company.org",
+						"external-dns.kubernetes.io/hostname": "test.example.com, test.example.org",
+						"kubernetes.io/role/internal-elb":     "true",
+						"alb.ingress.kubernetes.io/scheme":    "internal",
+						"dns.company.com/zone":                "company.org",
 					},
 					Labels: map[string]string{
 						"environment": "production",
@@ -291,7 +291,7 @@ func TestExecFQDN(t *testing.T) {
 		},
 		{
 			name: "generate multiple hostnames with if condition",
-			tmpl: "{{ if contains (index .ObjectMeta.Annotations \"external-dns.alpha.kubernetes.io/hostname\") \"example.com\" }}{{ toLower .Labels.hostoverride }}{{end}}",
+			tmpl: "{{ if contains (index .ObjectMeta.Annotations \"external-dns.kubernetes.io/hostname\") \"example.com\" }}{{ toLower .Labels.hostoverride }}{{end}}",
 			obj: &testObject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
@@ -301,7 +301,7 @@ func TestExecFQDN(t *testing.T) {
 						"app":          "myapp",
 					},
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "test.example.com",
+						"external-dns.kubernetes.io/hostname": "test.example.com",
 					},
 				},
 			},

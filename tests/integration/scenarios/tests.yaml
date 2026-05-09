@@ -39,7 +39,7 @@ scenarios:
             labels:
               app: myapp
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: headless.example.com
+              external-dns.kubernetes.io/hostname: headless.example.com
           spec:
             type: ClusterIP
             clusterIP: None
@@ -73,7 +73,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: svc.example.com
+              external-dns.kubernetes.io/hostname: svc.example.com
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -108,7 +108,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -194,7 +194,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -244,7 +244,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -297,7 +297,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -499,7 +499,7 @@ scenarios:
             name: my-svc
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: svc.example.com
+              external-dns.kubernetes.io/hostname: svc.example.com
           spec:
             type: LoadBalancer
           status:

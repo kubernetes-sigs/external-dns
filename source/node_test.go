@@ -201,7 +201,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+				"external-dns.kubernetes.io/target": "203.2.45.7",
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
@@ -717,7 +717,7 @@ func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
 			Annotations: map[string]string{
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
-				"external-dns.alpha.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
+				"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
 			},
 		},
 		Spec: v1.NodeSpec{

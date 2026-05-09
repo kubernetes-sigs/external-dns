@@ -122,7 +122,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Name:      "my-ingress",
 						Namespace: "default",
 						Annotations: map[string]string{
-							"external-dns.alpha.kubernetes.io/target": "10.200.130.84",
+							"external-dns.kubernetes.io/target": "10.200.130.84",
 						},
 					},
 					Spec: networkv1.IngressSpec{

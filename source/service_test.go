@@ -3392,7 +3392,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					"istio": "ingressgateway",
 				},
 				Annotations: map[string]string{
-					"external-dns.alpha.kubernetes.io/hostname": "example.org",
+					"external-dns.kubernetes.io/hostname": "example.org",
 				},
 			},
 			Spec: v1.ServiceSpec{
@@ -3437,7 +3437,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 					"istio": "ingressgateway",
 				},
 				Annotations: map[string]string{
-					"external-dns.alpha.kubernetes.io/hostname": "example.org",
+					"external-dns.kubernetes.io/hostname": "example.org",
 				},
 			},
 			Spec: v1.ServiceSpec{
@@ -4849,10 +4849,10 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 				"label3": "value3",
 			},
 			Annotations: map[string]string{
-				"user-annotation": "value",
-				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-				"external-dns.alpha.kubernetes.io/random":   "value",
-				"other/annotation":                          "value",
+				"user-annotation":                     "value",
+				"external-dns.kubernetes.io/hostname": "test-hostname",
+				"external-dns.kubernetes.io/random":   "value",
+				"other/annotation":                    "value",
 			},
 			UID: "someuid",
 		},
@@ -4895,8 +4895,8 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	assert.Equal(t, pod.Labels, retrieved.Labels)
 	// Annotations filtered to external-dns prefix only
 	assert.Equal(t, map[string]string{
-		"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-		"external-dns.alpha.kubernetes.io/random":   "value",
+		"external-dns.kubernetes.io/hostname": "test-hostname",
+		"external-dns.kubernetes.io/random":   "value",
 	}, retrieved.Annotations)
 
 	// Spec — fully preserved

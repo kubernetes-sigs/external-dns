@@ -600,13 +600,13 @@ func TestRetainProviderProperties(t *testing.T) {
 				{Name: "aws/weight", Value: "10"},
 			},
 		},
-		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
+		// cloudflare uses annotation-style names (e.g. "external-dns.kubernetes.io/cloudflare-*")
 		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
 		{
 			name: "cloudflare retains all properties",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
 					{Name: ProviderSpecificAlias, Value: "false"},
 				},
@@ -615,21 +615,21 @@ func TestRetainProviderProperties(t *testing.T) {
 			expected: []ProviderSpecificProperty{
 				{Name: ProviderSpecificAlias, Value: "false"},
 				{Name: "aws/evaluate-target-health", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 		{
 			name: "cloudflare properties are sorted",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 	}

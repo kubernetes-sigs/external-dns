@@ -250,13 +250,13 @@ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
+Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.kubernetes.io/ttl` annotation:
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+kubectl annotate service nginx "external-dns.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
@@ -264,7 +264,7 @@ For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/internal-hostname=nginx.internal.example.org."
 ```
 
 If the service is not of type Loadbalancer you need the --publish-internal-services flag.

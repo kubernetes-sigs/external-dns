@@ -431,7 +431,7 @@ metadata:
   name: nginx
   annotations:
     # change nginx.example.com to match an appropriate value
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/hostname: nginx.example.com
 spec:
   type: LoadBalancer
   ports:

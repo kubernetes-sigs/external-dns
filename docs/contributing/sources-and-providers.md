@@ -92,7 +92,7 @@ informers.MustSetTransform(myInformer.Informer(), informers.TransformerWithOptio
     informers.TransformRemoveManagedFields(),     // always — can be megabytes per object
     informers.TransformRemoveLastAppliedConfig(), // always — full JSON snapshot stored as annotation
     informers.TransformRemoveStatusConditions(),  // when Status.Conditions is not used by the source
-    informers.TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"), // when only specific annotations are needed
+    informers.TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"), // when only specific annotations are needed
 ))
 ```
 
