@@ -28,7 +28,7 @@ func fakeService() *corev1.Service {
 			Annotations: map[string]string{
 				"description":                               "some annotation",
 				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"v1","kind":"Service"}`,
-				"external-dns.alpha.kubernetes.io/hostname": "example.com",
+				"external-dns.kubernetes.io/hostname": "example.com",
 			},
 			UID: "1234",
 			ManagedFields: []metav1.ManagedFieldsEntry{
@@ -80,7 +80,7 @@ func fakeNode() *corev1.Node {
 			Labels: map[string]string{"region": "us-east-1"},
 			Annotations: map[string]string{
 				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"v1","kind":"Node"}`,
-				"external-dns.alpha.kubernetes.io/hostname": "node.example.com",
+				"external-dns.kubernetes.io/hostname": "node.example.com",
 			},
 			UID: "9012",
 			ManagedFields: []metav1.ManagedFieldsEntry{
@@ -107,7 +107,7 @@ func fakePod() *corev1.Pod {
 			Labels:    map[string]string{"app": "demo"},
 			Annotations: map[string]string{
 				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"v1","kind":"Pod"}`,
-				"external-dns.alpha.kubernetes.io/hostname": "pod.example.com",
+				"external-dns.kubernetes.io/hostname": "pod.example.com",
 				"unrelated.io/annotation":                   "should-be-dropped",
 			},
 			UID: "5678",

@@ -2301,7 +2301,7 @@ func TestAWSSuitableZones(t *testing.T) {
 
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
-		CallerReference:  aws.String("external-dns.alpha.kubernetes.io/test-zone"),
+		CallerReference:  aws.String("external-dns.kubernetes.io/test-zone"),
 		Name:             zone.Name,
 		HostedZoneConfig: zone.Config,
 	}

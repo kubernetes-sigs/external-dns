@@ -1812,7 +1812,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 			Labels:    map[string]string{"label1": "value1"},
 			Annotations: map[string]string{
 				"user-annotation": "value",
-				"external-dns.alpha.kubernetes.io/hostname": "ingress.example.com",
+				"external-dns.kubernetes.io/hostname": "ingress.example.com",
 				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"networking.k8s.io/v1"}`,
 			},
 			UID: "someuid",
@@ -1850,7 +1850,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 	assert.Empty(t, retrieved.ManagedFields)
 	assert.NotContains(t, retrieved.Annotations, corev1.LastAppliedConfigAnnotation)
 	assert.Contains(t, retrieved.Annotations, "user-annotation")
-	assert.Contains(t, retrieved.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+	assert.Contains(t, retrieved.Annotations, "external-dns.kubernetes.io/hostname")
 	// Status.LoadBalancer preserved — used for endpoint generation
 	assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
 	// Spec preserved

@@ -560,7 +560,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 					Value: "true",
 				},
 			},
@@ -594,7 +594,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 					Value: "false",
 				},
 			},
@@ -628,7 +628,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 					Value: "asfasdfa",
 				},
 			},
@@ -693,7 +693,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 					Targets:    endpoint.Targets{targets[0]},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						endpoint.ProviderSpecificProperty{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "true",
 						},
 					},
@@ -1183,7 +1183,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1217,7 +1217,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1265,7 +1265,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1278,7 +1278,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1319,7 +1319,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1332,7 +1332,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1373,7 +1373,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 							Value: "false",
 						},
 					},
@@ -1657,7 +1657,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 					Value: "true",
 				},
 			},
@@ -1745,7 +1745,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 					Value: "true",
 				},
 			},
@@ -2247,7 +2247,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-create-custom.bar.com",
 						},
 					},
@@ -2265,7 +2265,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-delete-custom.bar.com",
 						},
 					},
@@ -2283,7 +2283,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-update-add-custom.bar.com",
 						},
 					},
@@ -2294,7 +2294,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-update-add-custom.bar.com",
 						},
 					},
@@ -2312,7 +2312,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-update-leave-custom.bar.com",
 						},
 					},
@@ -2323,7 +2323,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "bad-update-leave-custom.bar.com",
 						},
 					},
@@ -3073,7 +3073,7 @@ func TestSubmitChanges_ErrorPaths(t *testing.T) {
 					RecordType: "A",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
 							Value: "newerror-create.foo.fancybar.com",
 						},
 					},

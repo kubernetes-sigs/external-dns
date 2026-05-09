@@ -26,7 +26,7 @@ Create an IngressRoute file called 'ingress-route-default' with the following co
 [[% include 'traefik-proxy/ingress-route-default.yaml' %]]
 ```
 
-Note the annotation on the IngressRoute (`external-dns.alpha.kubernetes.io/target`); use the same hostname as the traefik DNS.
+Note the annotation on the IngressRoute (`external-dns.kubernetes.io/target`); use the same hostname as the traefik DNS.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS.
 

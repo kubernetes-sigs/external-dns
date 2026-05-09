@@ -705,14 +705,14 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
+`external-dns.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
 To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer).
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
 ### target-hosted-zone
 
-`external-dns.alpha.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
+`external-dns.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
 
 ### aws-zone-match-parent
 
@@ -728,8 +728,8 @@ If one uses the `nginx-ingress` Helm chart, this flag can be set with the `contr
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
-> If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma `,` separator.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
+> If you want to give multiple names to service, you can set it to external-dns.kubernetes.io/hostname with a comma `,` separator.
 
 For this verification phase, you can use default or another namespace for the nginx demo, for example:
 
@@ -746,7 +746,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/hostname: nginx.example.com
 spec:
   type: LoadBalancer
   ports:
@@ -984,7 +984,7 @@ curl server.example.com.
 
 ### Custom TTL
 
-The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.kubernetes.io/ttl`.
 e.g., modify the service manifest YAML file above:
 
 ```yaml
@@ -993,8 +993,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
     ...
 ```
@@ -1005,23 +1005,23 @@ This will set the DNS record's TTL to 60 seconds.
 
 Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
 
-- `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+- `external-dns.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
 
 For any given DNS name, only **one** of the following routing policies can be used:
 
-- Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
-- Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
-- Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+- Weighted records: `external-dns.kubernetes.io/aws-weight`
+- Latency-based routing: `external-dns.kubernetes.io/aws-region`
+- Failover:`external-dns.kubernetes.io/aws-failover`
 - Geolocation-based routing:
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+  - `external-dns.kubernetes.io/aws-geolocation-continent-code`
+  - `external-dns.kubernetes.io/aws-geolocation-country-code`
+  - `external-dns.kubernetes.io/aws-geolocation-subdivision-code`
 - Geoproximity routing:
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
-- Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
+  - `external-dns.kubernetes.io/aws-geoproximity-region`
+  - `external-dns.kubernetes.io/aws-geoproximity-local-zone-group`
+  - `external-dns.kubernetes.io/aws-geoproximity-coordinates`
+  - `external-dns.kubernetes.io/aws-geoproximity-bias`
+- Multi-value answer:`external-dns.kubernetes.io/aws-multi-value-answer`
 
 #### Weighted Routing
 
@@ -1033,9 +1033,9 @@ kind: Service
 metadata:
   name: my-service-v1
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: app-v1
-    external-dns.alpha.kubernetes.io/aws-weight: "80"
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/set-identifier: app-v1
+    external-dns.kubernetes.io/aws-weight: "80"
 spec:
   type: LoadBalancer
 ---
@@ -1044,9 +1044,9 @@ kind: Service
 metadata:
   name: my-service-v2
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: app-v2
-    external-dns.alpha.kubernetes.io/aws-weight: "20"
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/set-identifier: app-v2
+    external-dns.kubernetes.io/aws-weight: "20"
 spec:
   type: LoadBalancer
 ```
@@ -1063,16 +1063,16 @@ kind: Ingress
 metadata:
   name: my-ingress-primary
   annotations:
-    external-dns.alpha.kubernetes.io/set-identifier: my-app-primary
-    external-dns.alpha.kubernetes.io/aws-failover: PRIMARY
+    external-dns.kubernetes.io/set-identifier: my-app-primary
+    external-dns.kubernetes.io/aws-failover: PRIMARY
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: my-ingress-secondary
   annotations:
-    external-dns.alpha.kubernetes.io/set-identifier: my-app-secondary
-    external-dns.alpha.kubernetes.io/aws-failover: SECONDARY
+    external-dns.kubernetes.io/set-identifier: my-app-secondary
+    external-dns.kubernetes.io/aws-failover: SECONDARY
 ```
 
 > Route53 will serve the `PRIMARY` record when healthy, and automatically fall back to `SECONDARY` when the health check fails.
@@ -1087,9 +1087,9 @@ kind: Service
 metadata:
   name: my-service-us
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: api.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: api-us-east-1
-    external-dns.alpha.kubernetes.io/aws-region: us-east-1
+    external-dns.kubernetes.io/hostname: api.example.com
+    external-dns.kubernetes.io/set-identifier: api-us-east-1
+    external-dns.kubernetes.io/aws-region: us-east-1
 spec:
   type: LoadBalancer
 ---
@@ -1098,9 +1098,9 @@ kind: Service
 metadata:
   name: my-service-eu
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: api.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: api-eu-west-1
-    external-dns.alpha.kubernetes.io/aws-region: eu-west-1
+    external-dns.kubernetes.io/hostname: api.example.com
+    external-dns.kubernetes.io/set-identifier: api-eu-west-1
+    external-dns.kubernetes.io/aws-region: eu-west-1
 spec:
   type: LoadBalancer
 ```
@@ -1110,7 +1110,7 @@ spec:
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using
-`external-dns.alpha.kubernetes.io/aws-health-check-id: <health-check-id>` annotation.
+`external-dns.kubernetes.io/aws-health-check-id: <health-check-id>` annotation.
 
 Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
 

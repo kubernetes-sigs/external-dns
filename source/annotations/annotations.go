@@ -19,7 +19,7 @@ import (
 
 const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
-	DefaultAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
 
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32

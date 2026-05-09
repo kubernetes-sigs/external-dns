@@ -147,7 +147,7 @@ kind: Service
 metadata:
   name: echo
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: echo.example.com
+    external-dns.kubernetes.io/hostname: echo.example.com
 spec:
   selector:
     app: echo

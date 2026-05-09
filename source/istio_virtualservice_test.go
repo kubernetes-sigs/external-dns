@@ -2410,8 +2410,8 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 				},
 				Annotations: map[string]string{
 					"user-annotation": "value",
-					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-					"external-dns.alpha.kubernetes.io/random":   "value",
+					"external-dns.kubernetes.io/hostname": "test-hostname",
+					"external-dns.kubernetes.io/random":   "value",
 					"other/annotation":                          "value",
 					v1.LastAppliedConfigAnnotation:              `{"apiVersion":"v1"}`,
 				},

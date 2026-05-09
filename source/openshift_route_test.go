@@ -348,7 +348,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-ignore-annotation",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/controller": "foo",
+						"external-dns.kubernetes.io/controller": "foo",
 					},
 				},
 			},
@@ -361,7 +361,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-annotation-target",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 				},
 				Status: routev1.RouteStatus{
@@ -398,7 +398,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-external",
@@ -442,7 +442,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-without-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-internal",

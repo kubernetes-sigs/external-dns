@@ -523,7 +523,7 @@ kind: Ingress
 metadata:
   name: my-ingress
   annotations:
-    external-dns.alpha.kubernetes.io/azure-tags: "cost-center=12345,owner=backend-team"
+    external-dns.kubernetes.io/azure-tags: "cost-center=12345,owner=backend-team"
 spec:
   rules:
     - host: app.example.com
@@ -546,7 +546,7 @@ kind: HTTPRoute
 metadata:
   name: my-route
   annotations:
-    external-dns.alpha.kubernetes.io/azure-tags: "environment=production,app=myapp"
+    external-dns.kubernetes.io/azure-tags: "environment=production,app=myapp"
 spec:
   parentRefs:
     - name: my-gateway
@@ -563,7 +563,7 @@ spec:
 ### Annotation Format
 
 Metadata annotations must follow the format:
-`external-dns.alpha.kubernetes.io/azure-tags: "key1=value1,key2=value2"`
+`external-dns.kubernetes.io/azure-tags: "key1=value1,key2=value2"`
 
 ## Deploy ExternalDNS
 
@@ -866,7 +866,7 @@ kind: Service
 metadata:
   name: nginx-svc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: server.example.com
+    external-dns.kubernetes.io/hostname: server.example.com
 spec:
   ports:
     - port: 80
@@ -877,7 +877,7 @@ spec:
   type: LoadBalancer
 ```
 
-The annotation `external-dns.alpha.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
+The annotation `external-dns.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
 
 ## Verifying Azure DNS records
 
