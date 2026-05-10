@@ -59,9 +59,9 @@ type Config struct {
 	AnnotationPrefix                              string
 	LabelFilter                                   string
 	IngressClassNames                             []string
-	FQDNTemplate                                  string
-	TargetTemplate                                string
-	FQDNTargetTemplate                            string
+	FQDNTemplate                                  []string
+	TargetTemplate                                []string
+	FQDNTargetTemplate                            []string
 	CombineFQDNAndAnnotation                      bool
 	IgnoreHostnameAnnotation                      bool
 	IgnoreNonHostNetworkPods                      bool
@@ -296,9 +296,9 @@ var defaultConfig = &Config{
 	ExoscaleAPIZone:              "ch-gva-2",
 	ExoscaleZoneCacheDuration:    0 * time.Second,
 	ExposeInternalIPV6:           false,
-	FQDNTemplate:                 "",
-	TargetTemplate:               "",
-	FQDNTargetTemplate:           "",
+	FQDNTemplate:                 nil,
+	TargetTemplate:               nil,
+	FQDNTargetTemplate:           nil,
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -525,6 +525,31 @@ func (cfg *Config) IsPTRSupported() bool {
 	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
+// joinTemplates deduplicates, trims, sorts, and comma-joins a slice of template strings.
+func joinTemplates(templates []string) string {
+	seen := make(map[string]struct{}, len(templates))
+	for _, t := range templates {
+		if t = strings.TrimSpace(t); t != "" {
+			seen[t] = struct{}{}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return strings.Join(keys, ",")
+}
+
+// FQDNTemplates returns deduplicated, sorted, non-empty FQDN templates joined by comma.
+func (cfg *Config) FQDNTemplates() string { return joinTemplates(cfg.FQDNTemplate) }
+
+// TargetTemplates returns deduplicated, sorted, non-empty target templates joined by comma.
+func (cfg *Config) TargetTemplates() string { return joinTemplates(cfg.TargetTemplate) }
+
+// FQDNTargetTemplates returns deduplicated, sorted, non-empty FQDN-target templates joined by comma.
+func (cfg *Config) FQDNTargetTemplates() string { return joinTemplates(cfg.FQDNTargetTemplate) }
+
 func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
@@ -736,9 +761,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// FQDN Templating
 	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
-	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
-	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Accepts comma separated list for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
-	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Accepts comma separated list for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
+	b.StringsVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Specify multiple times for multiple templates.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
+	b.StringsVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Specify multiple times for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
+	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
 
 	// kube client config flags
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)

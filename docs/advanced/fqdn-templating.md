@@ -114,14 +114,22 @@ metadata:
 ```
 
 ```sh
+# Single template
 external-dns \
   --provider=aws \
   --source=service \
-  --fqdn-template="{{ .Name }}.example.com,{{ .Name }}.{{ .Namespace }}.example.tld"
+  --fqdn-template="{{ .Name }}.example.com"
+
+# Multiple templates — specify the flag more than once
+external-dns \
+  --provider=aws \
+  --source=service \
+  --fqdn-template="{{ .Name }}.example.com" \
+  --fqdn-template="{{ .Name }}.{{ .Namespace }}.example.tld"
 
 # This will result in DNS entries like
->route53> my-service.example.com
->route53> my-service.my-namespace.example.tld
+# route53> my-service.example.com
+# route53> my-service.my-namespace.example.tld
 ```
 
 ### With Namespace
@@ -177,10 +185,15 @@ ExternalDNS allows specifying multiple FQDN templates, which can be useful when 
 
 > Be cautious, as this will create multiple DNS records per resource, potentially increasing the number of API calls to your DNS provider.
 
+Specify `--fqdn-template` multiple times — one flag per template:
+
 ```yml
 args:
-  --fqdn-template={{.Name}}.example.com,{{.Name}}.svc.example.com
+  - --fqdn-template={{.Name}}.example.com
+  - --fqdn-template={{.Name}}.svc.example.com
 ```
+
+Duplicate templates and leading/trailing whitespace are ignored automatically.
 
 ### Conditional Templating combined with Annotations processing
 
@@ -416,7 +429,7 @@ This is helpful in scenarios such as:
 
 ## Tips
 
-- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.kubernetes.io/hostname` annotations.
+- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.kubernetes.io/hostname` annotations (unless `--combine-fqdn-annotation` is also set).
 - You must still ensure the resulting FQDN is valid and unique.
 - Since Go templates can be error-prone, test your template with simple examples before deploying. Mismatched field names or nil values (e.g., missing labels) will result in errors or skipped entries.
 
@@ -424,7 +437,15 @@ This is helpful in scenarios such as:
 
 ### Can I specify multiple global FQDN templates?
 
-Yes, you can. Pass in a comma separated list to --fqdn-template. Beware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
+Yes. Specify `--fqdn-template` more than once — one flag per template:
+
+```sh
+external-dns \
+  --fqdn-template="{{ .Name }}.example.com" \
+  --fqdn-template="{{ .Name }}.svc.example.com"
+```
+
+Beware: this will double (triple, etc.) the number of DNS entries based on how many services, ingresses, and so on you have, and will bring you faster towards the API request limit of your DNS provider. Duplicate templates are deduplicated automatically.
 
 ### Where to find template syntax
 

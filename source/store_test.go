@@ -375,14 +375,14 @@ func TestNewSourceConfig(t *testing.T) {
 		{
 			name: "fqdn template only",
 			cfg: &externaldns.Config{
-				FQDNTemplate: "{{.Name}}.example.com",
+				FQDNTemplate: []string{"{{.Name}}.example.com"},
 			},
 			wantConfigured: true,
 		},
 		{
 			name: "fqdn template with combine",
 			cfg: &externaldns.Config{
-				FQDNTemplate:             "{{.Name}}.example.com",
+				FQDNTemplate:             []string{"{{.Name}}.example.com"},
 				CombineFQDNAndAnnotation: true,
 			},
 			wantConfigured: true,
@@ -391,27 +391,34 @@ func TestNewSourceConfig(t *testing.T) {
 		{
 			name: "all three templates configured",
 			cfg: &externaldns.Config{
-				FQDNTemplate:             "{{.Name}}.example.com",
-				TargetTemplate:           "{{.Name}}.targets.example.com",
-				FQDNTargetTemplate:       "{{.Name}}.example.com:{{.Name}}.targets.example.com",
+				FQDNTemplate:             []string{"{{.Name}}.example.com"},
+				TargetTemplate:           []string{"{{.Name}}.targets.example.com"},
+				FQDNTargetTemplate:       []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
 				CombineFQDNAndAnnotation: true,
 			},
 			wantConfigured: true,
 			wantCombining:  true,
 		},
 		{
+			name: "multiple fqdn templates",
+			cfg: &externaldns.Config{
+				FQDNTemplate: []string{"{{.Name}}.a.example.com", "{{.Name}}.b.example.com"},
+			},
+			wantConfigured: true,
+		},
+		{
 			name:    "invalid fqdn template",
-			cfg:     &externaldns.Config{FQDNTemplate: "{{.Name"},
+			cfg:     &externaldns.Config{FQDNTemplate: []string{"{{.Name"}},
 			wantErr: true,
 		},
 		{
 			name:    "invalid target template",
-			cfg:     &externaldns.Config{TargetTemplate: "{{.Status.LoadBalancer.Ingress"},
+			cfg:     &externaldns.Config{TargetTemplate: []string{"{{.Status.LoadBalancer.Ingress"}},
 			wantErr: true,
 		},
 		{
 			name:    "invalid fqdn-target template",
-			cfg:     &externaldns.Config{FQDNTargetTemplate: "{{.Name}}.example.com:{{.Status"},
+			cfg:     &externaldns.Config{FQDNTargetTemplate: []string{"{{.Name}}.example.com:{{.Status"}},
 			wantErr: true,
 		},
 	}

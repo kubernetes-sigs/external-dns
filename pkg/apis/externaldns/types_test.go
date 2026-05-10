@@ -45,7 +45,7 @@ var (
 		Sources:                                []string{"service"},
 		Namespace:                              "",
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
-		FQDNTemplate:                           "",
+		FQDNTemplate:                           nil,
 		Compatibility:                          "",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
@@ -155,7 +155,7 @@ var (
 		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
 		IgnoreIngressRulesSpec:                 true,
-		FQDNTemplate:                           "{{.Name}}.service.example.com",
+		FQDNTemplate:                           []string{"{{.Name}}.service.example.com"},
 		Compatibility:                          "mate",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
@@ -1033,6 +1033,33 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	bindFlags(flags.NewKingpinBinder(app), cfgK)
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
+}
+
+func TestFQDNTemplates(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		input    []string
+		expected string
+	}{
+		{name: "nil", input: nil, expected: ""},
+		{name: "empty slice", input: []string{}, expected: ""},
+		{name: "empty strings filtered", input: []string{"", "  "}, expected: ""},
+		{name: "single template", input: []string{"{{.Name}}.example.com"}, expected: "{{.Name}}.example.com"},
+		{name: "multiple templates sorted", input: []string{"{{.Name}}.b.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.a.com,{{.Name}}.b.com"},
+		{name: "duplicates deduplicated", input: []string{"{{.Name}}.a.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.a.com"},
+		{name: "whitespace trimmed", input: []string{"  {{.Name}}.a.com  "}, expected: "{{.Name}}.a.com"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{FQDNTemplate: tc.input}
+			assert.Equal(t, tc.expected, cfg.FQDNTemplates())
+
+			cfg = &Config{TargetTemplate: tc.input}
+			assert.Equal(t, tc.expected, cfg.TargetTemplates())
+
+			cfg = &Config{FQDNTargetTemplate: tc.input}
+			assert.Equal(t, tc.expected, cfg.FQDNTargetTemplates())
+		})
+	}
 }
 
 func TestIsPTRSupported(t *testing.T) {
