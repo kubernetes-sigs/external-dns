@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -31,8 +32,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
@@ -44,6 +45,7 @@ var (
 		utilruntime.Must(corev1.AddToScheme(s))
 		utilruntime.Must(discoveryv1.AddToScheme(s))
 		utilruntime.Must(networkingv1.AddToScheme(s))
+		utilruntime.Must(apiv1alpha1.AddToScheme(s))
 		return s
 	}()
 	decoder = serializer.NewCodecFactory(scheme).UniversalDeserializer()
@@ -97,6 +99,8 @@ func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, err
 			parsed.Ingresses = append(parsed.Ingresses, res)
 		case *discoveryv1.EndpointSlice:
 			parsed.EndpointSlices = append(parsed.EndpointSlices, res)
+		case *apiv1alpha1.DNSEndpoint:
+			parsed.DNSEndpoints = append(parsed.DNSEndpoints, res)
 		default:
 			return nil, fmt.Errorf("unsupported resource type %T", obj)
 		}
@@ -194,10 +198,11 @@ func createServiceWithOptionalStatus(ctx context.Context, client *fake.Clientset
 	return nil
 }
 
-// LoadResources creates the resources in the fake client using the API.
+// LoadResources creates the Kubernetes resources in a fake clientset and collects
+// any DNSEndpoint CRD objects for use by the CRD source.
 // This must be called BEFORE creating sources so the informers can see the resources.
-func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, error) {
-	client := fake.NewClientset()
+func LoadResources(ctx context.Context, scenario Scenario) (*LoadedResources, error) {
+	k8sClient := fake.NewClientset()
 
 	// Parse resources from scenario
 	resources, err := ParseResources(scenario.Resources)
@@ -206,28 +211,31 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 	}
 
 	for _, ing := range resources.Ingresses {
-		if err := createIngressWithOptionalStatus(ctx, client, ing); err != nil {
+		if err := createIngressWithOptionalStatus(ctx, k8sClient, ing); err != nil {
 			return nil, err
 		}
 	}
 	for _, svc := range resources.Services {
-		if err := createServiceWithOptionalStatus(ctx, client, svc); err != nil {
+		if err := createServiceWithOptionalStatus(ctx, k8sClient, svc); err != nil {
 			return nil, err
 		}
 	}
 	for _, pod := range resources.Pods {
-		_, err := client.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+		_, err := k8sClient.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, eps := range resources.EndpointSlices {
-		_, err := client.DiscoveryV1().EndpointSlices(eps.Namespace).Create(ctx, eps, metav1.CreateOptions{})
+		_, err := k8sClient.DiscoveryV1().EndpointSlices(eps.Namespace).Create(ctx, eps, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
-	return client, nil
+	return &LoadedResources{
+		K8sClient:    k8sClient,
+		DNSEndpoints: resources.DNSEndpoints,
+	}, nil
 }
 
 // scenarioToConfig creates a source.Config for testing with the scenario config.
@@ -245,13 +253,23 @@ func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigO
 	}, opts...)
 }
 
-// CreateWrappedSource builds all named sources using a mock client and wraps
-// them with the same pipeline used by the controller.
+// CreateWrappedSource builds all named sources using the loaded resources and
+// wraps them with the same pipeline used by the controller.
+// If the "crd" source is requested, a minimal fake Kubernetes REST API server is
+// started (serving only DNSEndpoint resources) so the CRD source's
+// controller-runtime cache can initialize without a real cluster.
 func CreateWrappedSource(
 	ctx context.Context,
-	client *fake.Clientset,
+	loaded *LoadedResources,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	var gen = newMockClientGenerator(loaded.K8sClient)
+
+	if slices.Contains(scenarioCfg.Sources, "crd") {
+		restCfg := newFakeDNSEndpointServer(ctx, loaded.DNSEndpoints)
+		gen = newCRDClientGenerator(loaded.K8sClient, restCfg)
+	}
+
+	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(gen))
 	if err != nil {
 		return nil, err
 	}

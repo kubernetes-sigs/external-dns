@@ -5,7 +5,7 @@ kind: Service
 metadata:
   name: foo-app
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: foo-app.example.com
+    external-dns.kubernetes.io/hostname: foo-app.example.com
     dns.why/type: aws-localstack-tutorial
 spec:
   type: ClusterIP

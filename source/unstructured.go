@@ -182,7 +182,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
@@ -236,7 +236,7 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.

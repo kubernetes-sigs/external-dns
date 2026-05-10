@@ -128,7 +128,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 
 	endpoints := ts.endpointsFromTransportServers(transportServers)
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {

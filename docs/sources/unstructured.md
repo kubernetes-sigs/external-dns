@@ -129,7 +129,7 @@ metadata:
   name: api-dns
   namespace: production
   labels:
-    external-dns.alpha.kubernetes.io/dns-controller: "dns-controller"
+    external-dns.kubernetes.io/dns-controller: "dns-controller"
 data:
   hostname: api.example.com
   target: 10.0.0.100
@@ -141,7 +141,7 @@ external-dns \
   --unstructured-resource=configmaps.v1 \
   --fqdn-template='{{index .Object.data "hostname"}}' \
   --target-template='{{index .Object.data "target"}}' \
-  --label-filter='external-dns.alpha.kubernetes.io/controller=dns-controller'
+  --label-filter='external-dns.kubernetes.io/controller=dns-controller'
 
 # Result:
 # api.example.com -> 10.0.0.100 (A)
@@ -177,7 +177,7 @@ metadata:
   name: production-pool
   namespace: metallb-system
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: "lb.example.com"
+    external-dns.kubernetes.io/hostname: "lb.example.com"
 spec:
   addresses:
   - 192.168.10.11/32
@@ -187,7 +187,7 @@ spec:
 external-dns \
   --source=unstructured \
   --unstructured-resource=ipaddresspools.v1beta1.metallb.io \
-  --fqdn-template='{{index .Annotations "external-dns.alpha.kubernetes.io/hostname"}}' \
+  --fqdn-template='{{index .Annotations "external-dns.kubernetes.io/hostname"}}' \
   --target-template='{{$addr := index .Spec.addresses 0}}{{if contains $addr "/32"}}{{trimSuffix $addr "/32"}}{{else}}{{$addr}}{{end}}'
 
 # Result:
@@ -240,7 +240,7 @@ metadata:
   name: my-app-tls
   namespace: production
   annotations:
-    external-dns.alpha.kubernetes.io/target: "10.0.0.50"
+    external-dns.kubernetes.io/target: "10.0.0.50"
 spec:
   secretName: my-app-tls-secret
   dnsNames:
@@ -256,7 +256,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=certificates.v1.cert-manager.io \
   --fqdn-template='{{index .Spec.dnsNames 0}}' \
-  --target-template='{{index .Annotations "external-dns.alpha.kubernetes.io/target"}}'
+  --target-template='{{index .Annotations "external-dns.kubernetes.io/target"}}'
 
 # Result:
 # my-app.example.com -> 10.0.0.50 (A)

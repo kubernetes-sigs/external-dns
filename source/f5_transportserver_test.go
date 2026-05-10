@@ -240,7 +240,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5TransportServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.TransportServerSpec{
@@ -275,7 +275,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Name:      "test-ts",
 					Namespace: defaultF5TransportServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.TransportServerSpec{
@@ -311,7 +311,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Name:      "test-ts",
 					Namespace: defaultF5TransportServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.TransportServerSpec{

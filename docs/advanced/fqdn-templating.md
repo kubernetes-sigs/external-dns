@@ -416,7 +416,7 @@ This is helpful in scenarios such as:
 
 ## Tips
 
-- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.alpha.kubernetes.io/hostname` annotations.
+- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.kubernetes.io/hostname` annotations.
 - You must still ensure the resulting FQDN is valid and unique.
 - Since Go templates can be error-prone, test your template with simple examples before deploying. Mismatched field names or nil values (e.g., missing labels) will result in errors or skipped entries.
 
@@ -498,7 +498,7 @@ args:
   - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com"
 ```
 
-This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
+This is a complex template that iterates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
 
 ### Using `hasKey` for Safe Label and Annotation Access
 

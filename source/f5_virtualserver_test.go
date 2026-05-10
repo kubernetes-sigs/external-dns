@@ -241,7 +241,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -276,7 +276,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -312,7 +312,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -442,7 +442,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "300",
+						"external-dns.kubernetes.io/ttl": "300",
 					},
 				},
 				Spec: f5.VirtualServerSpec{

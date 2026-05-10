@@ -5,7 +5,7 @@ metadata:
     app: demo-app
   name: demo-app
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: externaldns-e2e.external.dns
+    external-dns.kubernetes.io/hostname: externaldns-e2e.external.dns
 spec:
   ports:
   - port: 80

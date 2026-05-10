@@ -95,7 +95,7 @@ func TestValidateFlags(t *testing.T) {
 	require.NoError(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	require.NoError(t, ValidateConfig(cfg))
 
 	t.Run("kube-api-qps and kube-api-burst", func(t *testing.T) {
@@ -197,7 +197,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "test-user",
@@ -209,7 +209,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "",
@@ -221,7 +221,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
 			RFC2136KerberosRealm:    "test-realm",
@@ -234,7 +234,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "test-user",
@@ -246,7 +246,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "",
@@ -258,7 +258,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
 			RFC2136KerberosRealm:    "",
@@ -271,7 +271,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "test-user",
@@ -294,7 +294,7 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         false,
 			RFC2136KerberosRealm:    "test-realm",
@@ -320,7 +320,7 @@ func TestValidateBadAkamaiConfig(t *testing.T) {
 			LogFormat:          "json",
 			Sources:            []string{"test-source"},
 			Provider:           "akamai",
-			AnnotationPrefix:   "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:   "external-dns.kubernetes.io/",
 			AkamaiClientToken:  "test-token",
 			AkamaiClientSecret: "test-secret",
 			AkamaiAccessToken:  "test-access-token",
@@ -331,7 +331,7 @@ func TestValidateBadAkamaiConfig(t *testing.T) {
 			LogFormat:                   "json",
 			Sources:                     []string{"test-source"},
 			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
 			AkamaiServiceConsumerDomain: "test-domain",
 			AkamaiClientSecret:          "test-secret",
 			AkamaiAccessToken:           "test-access-token",
@@ -342,7 +342,7 @@ func TestValidateBadAkamaiConfig(t *testing.T) {
 			LogFormat:                   "json",
 			Sources:                     []string{"test-source"},
 			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
 			AkamaiServiceConsumerDomain: "test-domain",
 			AkamaiClientToken:           "test-token",
 			AkamaiAccessToken:           "test-access-token",
@@ -353,7 +353,7 @@ func TestValidateBadAkamaiConfig(t *testing.T) {
 			LogFormat:                   "json",
 			Sources:                     []string{"test-source"},
 			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
 			AkamaiServiceConsumerDomain: "test-domain",
 			AkamaiClientToken:           "test-token",
 			AkamaiClientSecret:          "test-secret",
@@ -374,7 +374,7 @@ func TestValidateGoodAkamaiConfig(t *testing.T) {
 			LogFormat:                   "json",
 			Sources:                     []string{"test-source"},
 			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
 			AkamaiServiceConsumerDomain: "test-domain",
 			AkamaiClientToken:           "test-token",
 			AkamaiClientSecret:          "test-secret",
@@ -387,7 +387,7 @@ func TestValidateGoodAkamaiConfig(t *testing.T) {
 			LogFormat:        "json",
 			Sources:          []string{"test-source"},
 			Provider:         "akamai",
-			AnnotationPrefix: "external-dns.alpha.kubernetes.io/",
+			AnnotationPrefix: "external-dns.kubernetes.io/",
 			KubeAPIQPS:       int(rest.DefaultQPS),
 			KubeAPIBurst:     rest.DefaultBurst,
 		},
@@ -405,7 +405,7 @@ func TestValidateBadAzureConfig(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	// AzureConfigFile is empty
 
 	err := ValidateConfig(cfg)
@@ -419,7 +419,7 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	cfg.AzureConfigFile = "/path/to/azure.json"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst

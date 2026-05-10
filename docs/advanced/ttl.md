@@ -1,10 +1,10 @@
 # Configure DNS record TTL (Time-To-Live)
 
-> To customize DNS record TTL (Time-To-Live) in a DNS record`, you can use the `external-dns.alpha.kubernetes.io/ttl: <duration>` annotation or flag `--min-ttl=<duration>`. TTL is specified as an integer encoded as string representing seconds. Example; `1s`, `1m2s`, `1h2m11s`
+> To customize DNS record TTL (Time-To-Live) in a DNS record`, you can use the `external-dns.kubernetes.io/ttl: <duration>` annotation or flag `--min-ttl=<duration>`. TTL is specified as an integer encoded as string representing seconds. Example; `1s`, `1m2s`, `1h2m11s`
 
 Behaviour:
 
-- If the `external-dns.alpha.kubernetes.io/ttl` annotation is set, it overrides the default TTL(0) value.
+- If the `external-dns.kubernetes.io/ttl` annotation is set, it overrides the default TTL(0) value.
 - If the annotation is not set, the default TTL value is used, unless the `--min-ttl` flag is provided.
 - If the annotation is set to `0`, and the `--min-ttl=1s` flag is provided, the value from `--min-ttl` will be used instead.
 - Not all providers support the custom TTL value, and some may override it with their own default values.
@@ -16,8 +16,8 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.kubernetes.io/ttl: "60"
   ...
 ```
 
@@ -28,8 +28,8 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
-    external-dns.alpha.kubernetes.io/ttl: "1m"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.kubernetes.io/ttl: "1m"
   ...
 ```
 
@@ -39,7 +39,7 @@ TTL must be a positive value.
 
 ## TTL annotation support
 
-> Note: For TTL annotations to work, the `external-dns.alpha.kubernetes.io/hostname` annotation must be set on the resource and be supported by the provider as well as the source.
+> Note: For TTL annotations to work, the `external-dns.kubernetes.io/hostname` annotation must be set on the resource and be supported by the provider as well as the source.
 
 ### Providers
 
@@ -102,7 +102,7 @@ TTL must be a positive value.
 
 ## Notes
 
-When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
+When the `external-dns.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
 
 ### AWS Provider
 
@@ -139,11 +139,11 @@ The Linode Provider default TTL is used when the TTL is 0. The default is 24 hou
 
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
 
-## Use Cases for `external-dns.alpha.kubernetes.io/ttl` annotation and `--min-ttl` flag`
+## Use Cases for `external-dns.kubernetes.io/ttl` annotation and `--min-ttl` flag`
 
-The `external-dns.alpha.kubernetes.io/ttl` annotation allows you to set a custom **TTL (Time To Live)** for DNS records managed by `external-dns`.
+The `external-dns.kubernetes.io/ttl` annotation allows you to set a custom **TTL (Time To Live)** for DNS records managed by `external-dns`.
 
-Use the `external-dns.alpha.kubernetes.io/tt` annotation to fine-tune DNS caching behavior per record, balancing between update frequency and performance.
+Use the `external-dns.kubernetes.io/tt` annotation to fine-tune DNS caching behavior per record, balancing between update frequency and performance.
 
 This is useful in several real-world scenarios depending on how frequently DNS records are expected to change.
 
@@ -159,7 +159,7 @@ For services that must be highly available—like APIs, databases, or external l
 
 ```yaml
 annotations:
-  external-dns.alpha.kubernetes.io/ttl: "30s"
+  external-dns.kubernetes.io/ttl: "30s"
 ```
 
 ---
@@ -174,7 +174,7 @@ If your service’s IP or endpoint rarely changes (e.g., static websites, intern
 
 ```yml
 annotations:
-  external-dns.alpha.kubernetes.io/ttl: "24h"
+  external-dns.kubernetes.io/ttl: "24h"
 ```
 
 ---

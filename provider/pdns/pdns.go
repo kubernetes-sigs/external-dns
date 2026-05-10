@@ -391,7 +391,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 
 				// Check if we should use ALIAS instead of CNAME:
 				// 1. APEX records (dnsname == zone.Name) always use ALIAS
-				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				// 2. If annotation external-dns.kubernetes.io/alias=true is set
 				//    (can be set via --prefer-alias flag globally or per-resource annotation)
 				if ep.RecordType == endpoint.RecordTypeCNAME {
 					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)

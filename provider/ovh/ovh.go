@@ -67,8 +67,8 @@ type OVHProvider struct {
 	DryRun bool
 
 	// EnableCNAMERelativeTarget controls if CNAME target should be sent with relative format.
-	// Previous implementations of the OVHProvider always added a final dot as for absolut format.
-	// Default value is false, all CNAME are transformed into absolut format.
+	// Previous implementations of the OVHProvider always added a final dot as for absolute format.
+	// Default value is false, all CNAME are transformed into absolute format.
 	// Setting this to true will allow relative format to be sent to DNS zone.
 	EnableCNAMERelativeTarget bool
 

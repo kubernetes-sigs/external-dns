@@ -93,9 +93,8 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "pihole provider",
 			cfg: &externaldns.Config{
-				Provider:         externaldns.ProviderPihole,
-				PiholeApiVersion: "6",
-				PiholeServer:     "http://localhost:8080",
+				Provider:     externaldns.ProviderPihole,
+				PiholeServer: "http://localhost:8080",
 			},
 			expectedType: "*pihole.PiholeProvider",
 		},

@@ -119,7 +119,7 @@ func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
 	for _, key := range indexKeys {
 		pod, err := informers.GetByKey[*v1.Pod](ps.podInformer.Informer().GetIndexer(), key)
 		if err != nil {
@@ -141,7 +141,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		endpoints = append(endpoints, podEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoint {
