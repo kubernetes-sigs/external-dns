@@ -107,6 +107,7 @@ func NewIstioVirtualServiceSource(
 	informers.MustAddIndexers(virtualServiceInformer.Informer(), informers.IndexerWithOptions[*networkingv1.VirtualService](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.VirtualService]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -151,10 +152,6 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	for _, key := range indexKeys {
 		vService, err := informers.GetByKey[*networkingv1.VirtualService](indexer, key)
 		if err != nil || vService == nil {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
 			continue
 		}
 
