@@ -408,7 +408,9 @@ external-dns \
 
 Specifying `--fqdn-target-template` multiple times applies each template independently against the same object and merges all results. This lets you produce per-pod records from one template and a service-level aggregate record from another — in a single ExternalDNS pass.
 
-The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. It is most useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations). The same repeatable behaviour applies to `--fqdn-template` and `--target-template`.
+The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets.
+It is most useful when a resource contains arrays where each element produces its own record (e.g., EndpointSlice endpoints).
+The same repeatable behaviour applies to `--fqdn-template` and `--target-template`.
 
 ## RBAC
 
