@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Validates all JSON and YAML files in the repository.
-# Excludes Helm templates and mkdocs.yml which use non-standard syntax.
+# Excludes Helm templates which use non-standard syntax.
 #
 # Requirements (pre-installed on GitHub Actions ubuntu-latest):
 #   - python3 (for JSON validation via json.tool)
@@ -16,8 +16,9 @@ while IFS= read -r -d '' file; do
   if [[ "$file" =~ $EXCLUDE_PATTERN ]]; then
     continue
   fi
-  if ! yq '.' "$file" > /dev/null 2>&1; then
+  if ! err=$(yq '.' "$file" 2>&1); then
     echo "FAIL: $file"
+    echo "  $err"
     errors=$((errors + 1))
   fi
 done < <(find . \( -name '*.json' -o -name '*.yaml' -o -name '*.yml' \) -print0)
