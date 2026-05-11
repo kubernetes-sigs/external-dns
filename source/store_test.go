@@ -32,7 +32,10 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -436,6 +439,32 @@ func TestNewSourceConfig(t *testing.T) {
 			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
 		})
 	}
+}
+
+func TestNewSourceConfig_TemplateDebugLogging(t *testing.T) {
+	cfg := &externaldns.Config{
+		FQDNTemplate:       []string{"{{.Name}}.example.com"},
+		TargetTemplate:     []string{"{{.Name}}.targets.example.com"},
+		FQDNTargetTemplate: []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
+	}
+
+	t.Run("logs templates at debug level", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		_, err := NewSourceConfig(cfg)
+		require.NoError(t, err)
+		logtest.TestHelperLogContainsWithLogLevel("fqdn-templates: {{.Name}}.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("target-templates: {{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("fqdn-target-templates: {{.Name}}.example.com:{{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+	})
+
+	t.Run("does not log templates below debug level", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+		_, err := NewSourceConfig(cfg)
+		require.NoError(t, err)
+		logtest.TestHelperLogNotContains("fqdn-templates:", hook, t)
+		logtest.TestHelperLogNotContains("target-templates:", hook, t)
+		logtest.TestHelperLogNotContains("fqdn-target-templates:", hook, t)
+	})
 }
 
 func TestKubeAPIRateLimitPropagation(t *testing.T) {
