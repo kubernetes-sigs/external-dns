@@ -1045,7 +1045,7 @@ func TestFQDNTemplates(t *testing.T) {
 		{name: "empty slice", input: []string{}, expected: ""},
 		{name: "empty strings filtered", input: []string{"", "  "}, expected: ""},
 		{name: "single template", input: []string{"{{.Name}}.example.com"}, expected: "{{.Name}}.example.com"},
-		{name: "multiple templates sorted", input: []string{"{{.Name}}.b.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.a.com,{{.Name}}.b.com"},
+		{name: "multiple templates preserve order", input: []string{"{{.Name}}.b.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.b.com,{{.Name}}.a.com"},
 		{name: "duplicates deduplicated", input: []string{"{{.Name}}.a.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.a.com"},
 		{name: "whitespace trimmed", input: []string{"  {{.Name}}.a.com  "}, expected: "{{.Name}}.a.com"},
 	} {

@@ -525,20 +525,19 @@ func (cfg *Config) IsPTRSupported() bool {
 	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
-// joinTemplates deduplicates, trims, sorts, and comma-joins a slice of template strings.
+// joinTemplates deduplicates, trims, and comma-joins a slice of template strings.
 func joinTemplates(templates []string) string {
 	seen := make(map[string]struct{}, len(templates))
+	result := make([]string, 0, len(templates))
 	for _, t := range templates {
 		if t = strings.TrimSpace(t); t != "" {
-			seen[t] = struct{}{}
+			if _, dup := seen[t]; !dup {
+				seen[t] = struct{}{}
+				result = append(result, t)
+			}
 		}
 	}
-	keys := make([]string, 0, len(seen))
-	for k := range seen {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return strings.Join(keys, ",")
+	return strings.Join(result, ",")
 }
 
 // FQDNTemplates returns deduplicated, sorted, non-empty FQDN templates joined by comma.
