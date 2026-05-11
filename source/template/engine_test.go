@@ -599,18 +599,18 @@ func TestNewEngine_DebugLogging(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 		_, err := NewEngine(fqdn, target, fqdnTarget, false)
 		require.NoError(t, err)
-		logtest.TestHelperLogContainsWithLogLevel("fqdn-templates: {{.Name}}.example.com", log.DebugLevel, hook, t)
-		logtest.TestHelperLogContainsWithLogLevel("target-templates: {{.Name}}.targets.example.com", log.DebugLevel, hook, t)
-		logtest.TestHelperLogContainsWithLogLevel("fqdn-target-templates: {{.Name}}.example.com:{{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("--fqdn-template: {{.Name}}.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("--target-template: {{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("--fqdn-target-template: {{.Name}}.example.com:{{.Name}}.targets.example.com", log.DebugLevel, hook, t)
 	})
 
 	t.Run("does not log templates below debug level", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 		_, err := NewEngine(fqdn, target, fqdnTarget, false)
 		require.NoError(t, err)
-		logtest.TestHelperLogNotContains("fqdn-templates:", hook, t)
-		logtest.TestHelperLogNotContains("target-templates:", hook, t)
-		logtest.TestHelperLogNotContains("fqdn-target-templates:", hook, t)
+		logtest.TestHelperLogNotContains("--fqdn-template:", hook, t)
+		logtest.TestHelperLogNotContains("--target-template:", hook, t)
+		logtest.TestHelperLogNotContains("--fqdn-target-template:", hook, t)
 	})
 }
 

@@ -53,45 +53,34 @@ type Engine struct {
 	combine bool
 }
 
-// NewEngine parses the provided Go template slices into an Engine.
-// Each slice corresponds to one repeatable flag (--fqdn-template, --target-template,
-// --fqdn-target-template). Templates within a slice are validated individually for
-// syntax errors and then checked for cross-value conflicts (e.g. duplicate {{ define }}
-// block names) before being joined and parsed. An empty or nil slice leaves the
-// corresponding template unset; IsConfigured reflects whether the FQDN template was set.
 func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, combineFQDN bool) (Engine, error) {
-	if err := validateTemplates(fqdnTemplates, "--fqdn-template"); err != nil {
+	fqdnTmpl, err := validateAndParse(fqdnTemplates, "--fqdn-template")
+	if err != nil {
 		return Engine{}, err
 	}
-	if err := validateTemplates(targetTemplates, "--target-template"); err != nil {
+	targetTmpl, err := validateAndParse(targetTemplates, "--target-template")
+	if err != nil {
 		return Engine{}, err
 	}
-	if err := validateTemplates(fqdnTargetTemplates, "--fqdn-target-template"); err != nil {
+	fqdnTargetTmpl, err := validateAndParse(fqdnTargetTemplates, "--fqdn-target-template")
+	if err != nil {
 		return Engine{}, err
+	}
+	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
+}
+
+func validateAndParse(templates []string, flag string) (*template.Template, error) {
+	if err := validateTemplates(templates, flag); err != nil {
+		return nil, err
 	}
 	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debugf("--fqdn-templates: %s", strings.Join(fqdnTemplates, ","))
-		log.Debugf("--target-templates: %s", strings.Join(targetTemplates, ","))
-		log.Debugf("--fqdn-target-templates: %s", strings.Join(fqdnTargetTemplates, ","))
+		log.Debugf("%s: %s", flag, strings.Join(templates, ","))
 	}
-	fqdnTmpl, err := parseTemplate(strings.Join(fqdnTemplates, ","))
+	t, err := parseTemplate(strings.Join(templates, ","))
 	if err != nil {
-		return Engine{}, fmt.Errorf("parse --fqdn-template: %w", err)
+		return nil, fmt.Errorf("parse %s: %w", flag, err)
 	}
-	targetTmpl, err := parseTemplate(strings.Join(targetTemplates, ","))
-	if err != nil {
-		return Engine{}, fmt.Errorf("parse --target-template: %w", err)
-	}
-	fqdnTargetTmpl, err := parseTemplate(strings.Join(fqdnTargetTemplates, ","))
-	if err != nil {
-		return Engine{}, fmt.Errorf("parse --fqdn-target-template: %w", err)
-	}
-	return Engine{
-		fqdn:       fqdnTmpl,
-		target:     targetTmpl,
-		fqdnTarget: fqdnTargetTmpl,
-		combine:    combineFQDN,
-	}, nil
+	return t, nil
 }
 
 // IsConfigured reports whether the FQDN template is set and ready to use.
