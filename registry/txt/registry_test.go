@@ -1138,6 +1138,107 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership verifies that the
+// registry refuses to create a parent record whenever its ownership TXT cannot
+// be produced. Such a parent would be unreclaimable by future reconciles and
+// would leak in the zone.
+//
+// The subtests below exercise the only failure mode that exists today — the
+// projected TXT name exceeding the RFC 1035 63-char label limit — across the
+// record types and registry configurations whose differing TXT prefixes shift
+// the overflow threshold. Any future failure path in TXT generation should
+// hit the same guard.
+func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
+	tests := []struct {
+		name      string
+		txtPrefix string
+		newParent func(dnsName string) *endpoint.Endpoint
+		labelLen  int
+		txtPrefx  string // the prefix the mapper prepends, used to assert the TXT name is not in the change set
+	}{
+		{
+			name:      "CNAME",
+			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
+			labelLen:  60, // cname- (6) + 60 = 66 -> overflow
+			txtPrefx:  "cname-",
+		},
+		{
+			name:      "AAAA",
+			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeAAAA, "fe80::1") },
+			labelLen:  60, // aaaa- (5) + 60 = 65 -> overflow
+			txtPrefx:  "aaaa-",
+		},
+		{
+			name:      "A",
+			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "1.2.3.4") },
+			labelLen:  62, // a- (2) + 62 = 64 -> overflow
+			txtPrefx:  "a-",
+		},
+		{
+			name: "AliasA",
+			newParent: func(dn string) *endpoint.Endpoint {
+				return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "lb.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+			},
+			labelLen: 60, // alias-A is encoded as cname- (6) + 60 = 66 -> overflow
+			txtPrefx: "cname-",
+		},
+		{
+			name:      "WithTxtPrefix",
+			txtPrefix: "ext-",
+			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
+			labelLen:  56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
+			txtPrefx:  "ext-cname-",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+
+			r, err := newRegistry(p, tc.txtPrefix, "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+			require.NoError(t, err)
+
+			overflowLabel := strings.Repeat("a", tc.labelLen)
+			overflow := tc.newParent(overflowLabel + "." + testZone)
+			require.NotNil(t, overflow, "test setup: parent record at %d-char label must itself pass RFC 1035", tc.labelLen)
+			fits := tc.newParent("ok." + testZone)
+
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			var got *plan.Changes
+			p.OnApplyChanges = func(_ context.Context, ch *plan.Changes) {
+				got = ch
+			}
+			require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{
+				Create: []*endpoint.Endpoint{overflow, fits},
+			}))
+
+			require.NotNil(t, got)
+			overflowTXT := tc.txtPrefx + overflow.DNSName
+			for _, ep := range got.Create {
+				assert.NotEqual(t, overflow.DNSName, ep.DNSName, "parent without ownership TXT must be dropped")
+				assert.NotEqual(t, overflowTXT, ep.DNSName, "TXT companion for dropped parent must not be created")
+			}
+
+			fitsParent := false
+			fitsTXT := false
+			for _, ep := range got.Create {
+				if ep.DNSName == fits.DNSName && ep.RecordType == fits.RecordType {
+					fitsParent = true
+				}
+				if ep.DNSName == tc.txtPrefx+fits.DNSName && ep.RecordType == endpoint.RecordTypeTXT {
+					fitsTXT = true
+				}
+			}
+			assert.True(t, fitsParent, "fits-fine parent must still be created")
+			assert.True(t, fitsTXT, "fits-fine TXT companion must still be created")
+
+			logtest.TestHelperLogContains("cannot establish ownership TXT", hook, t)
+		})
+	}
+}
+
 func testTXTRegistryMissingRecords(t *testing.T) {
 	t.Run("No prefix", testTXTRegistryMissingRecordsNoPrefix)
 	t.Run("With Prefix", testTXTRegistryMissingRecordsWithPrefix)

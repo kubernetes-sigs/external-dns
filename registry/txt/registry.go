@@ -339,13 +339,28 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	for _, r := range filteredChanges.Create {
+	pendingCreate := filteredChanges.Create
+	filteredChanges.Create = make([]*endpoint.Endpoint, 0, len(pendingCreate))
+	for _, r := range pendingCreate {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		// Skip records whose ownership TXT cannot be established; creating
+		// them would leak an unreclaimable record into the zone.
+		txts := im.generateTXTRecord(r)
+		if len(txts) == 0 {
+			log.Warnf("Skipping create of %s %s: cannot establish ownership TXT (label exceeds RFC 1035 63-char limit)", r.RecordType, r.DNSName)
+			continue
+		}
+
+		filteredChanges.Create = append(filteredChanges.Create, r)
+		for _, txt := range txts {
+			if im.existingTXTs.isAbsent(txt) {
+				filteredChanges.Create = append(filteredChanges.Create, txt)
+			}
+		}
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
