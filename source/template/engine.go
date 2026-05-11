@@ -70,9 +70,9 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 		return Engine{}, err
 	}
 	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debugf("fqdn-templates: %s", strings.Join(fqdnTemplates, ","))
-		log.Debugf("target-templates: %s", strings.Join(targetTemplates, ","))
-		log.Debugf("fqdn-target-templates: %s", strings.Join(fqdnTargetTemplates, ","))
+		log.Debugf("--fqdn-templates: %s", strings.Join(fqdnTemplates, ","))
+		log.Debugf("--target-templates: %s", strings.Join(targetTemplates, ","))
+		log.Debugf("--fqdn-target-templates: %s", strings.Join(fqdnTargetTemplates, ","))
 	}
 	fqdnTmpl, err := parseTemplate(strings.Join(fqdnTemplates, ","))
 	if err != nil {
