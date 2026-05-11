@@ -525,30 +525,6 @@ func (cfg *Config) IsPTRSupported() bool {
 	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
-// joinTemplates deduplicates, trims, and comma-joins a slice of template strings.
-func joinTemplates(templates []string) string {
-	seen := make(map[string]struct{}, len(templates))
-	result := make([]string, 0, len(templates))
-	for _, t := range templates {
-		if t = strings.TrimSpace(t); t != "" {
-			if _, dup := seen[t]; !dup {
-				seen[t] = struct{}{}
-				result = append(result, t)
-			}
-		}
-	}
-	return strings.Join(result, ",")
-}
-
-// FQDNTemplates returns deduplicated, sorted, non-empty FQDN templates joined by comma.
-func (cfg *Config) FQDNTemplates() string { return joinTemplates(cfg.FQDNTemplate) }
-
-// TargetTemplates returns deduplicated, sorted, non-empty target templates joined by comma.
-func (cfg *Config) TargetTemplates() string { return joinTemplates(cfg.TargetTemplate) }
-
-// FQDNTargetTemplates returns deduplicated, sorted, non-empty FQDN-target templates joined by comma.
-func (cfg *Config) FQDNTargetTemplates() string { return joinTemplates(cfg.FQDNTargetTemplate) }
-
 func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)

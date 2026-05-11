@@ -1035,33 +1035,6 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestFQDNTemplates(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		input    []string
-		expected string
-	}{
-		{name: "nil", input: nil, expected: ""},
-		{name: "empty slice", input: []string{}, expected: ""},
-		{name: "empty strings filtered", input: []string{"", "  "}, expected: ""},
-		{name: "single template", input: []string{"{{.Name}}.example.com"}, expected: "{{.Name}}.example.com"},
-		{name: "multiple templates preserve order", input: []string{"{{.Name}}.b.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.b.com,{{.Name}}.a.com"},
-		{name: "duplicates deduplicated", input: []string{"{{.Name}}.a.com", "{{.Name}}.a.com"}, expected: "{{.Name}}.a.com"},
-		{name: "whitespace trimmed", input: []string{"  {{.Name}}.a.com  "}, expected: "{{.Name}}.a.com"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := &Config{FQDNTemplate: tc.input}
-			assert.Equal(t, tc.expected, cfg.FQDNTemplates())
-
-			cfg = &Config{TargetTemplate: tc.input}
-			assert.Equal(t, tc.expected, cfg.TargetTemplates())
-
-			cfg = &Config{FQDNTargetTemplate: tc.input}
-			assert.Equal(t, tc.expected, cfg.FQDNTargetTemplates())
-		})
-	}
-}
-
 func TestIsPTRSupported(t *testing.T) {
 	cfg := &Config{ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
 	assert.False(t, cfg.IsPTRSupported())

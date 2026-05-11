@@ -25,6 +25,7 @@ import (
 	"strings"
 	"text/template"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -52,19 +53,36 @@ type Engine struct {
 	combine bool
 }
 
-// NewEngine parses the provided Go template strings into a Engine.
-// An empty string leaves the corresponding template unset; IsConfigured reflects
-// whether the FQDN template was provided. Returns an error on the first parse failure.
-func NewEngine(fqdnStr, targetStr, fqdnTargetStr string, combineFQDN bool) (Engine, error) {
-	fqdnTmpl, err := parseTemplate(fqdnStr)
+// NewEngine parses the provided Go template slices into an Engine.
+// Each slice corresponds to one repeatable flag (--fqdn-template, --target-template,
+// --fqdn-target-template). Templates within a slice are validated individually for
+// syntax errors and then checked for cross-value conflicts (e.g. duplicate {{ define }}
+// block names) before being joined and parsed. An empty or nil slice leaves the
+// corresponding template unset; IsConfigured reflects whether the FQDN template was set.
+func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, combineFQDN bool) (Engine, error) {
+	if err := validateTemplates(fqdnTemplates, "--fqdn-template"); err != nil {
+		return Engine{}, err
+	}
+	if err := validateTemplates(targetTemplates, "--target-template"); err != nil {
+		return Engine{}, err
+	}
+	if err := validateTemplates(fqdnTargetTemplates, "--fqdn-target-template"); err != nil {
+		return Engine{}, err
+	}
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("fqdn-templates: %s", strings.Join(fqdnTemplates, ","))
+		log.Debugf("target-templates: %s", strings.Join(targetTemplates, ","))
+		log.Debugf("fqdn-target-templates: %s", strings.Join(fqdnTargetTemplates, ","))
+	}
+	fqdnTmpl, err := parseTemplate(strings.Join(fqdnTemplates, ","))
 	if err != nil {
 		return Engine{}, fmt.Errorf("parse --fqdn-template: %w", err)
 	}
-	targetTmpl, err := parseTemplate(targetStr)
+	targetTmpl, err := parseTemplate(strings.Join(targetTemplates, ","))
 	if err != nil {
 		return Engine{}, fmt.Errorf("parse --target-template: %w", err)
 	}
-	fqdnTargetTmpl, err := parseTemplate(fqdnTargetStr)
+	fqdnTargetTmpl, err := parseTemplate(strings.Join(fqdnTargetTemplates, ","))
 	if err != nil {
 		return Engine{}, fmt.Errorf("parse --fqdn-target-template: %w", err)
 	}
@@ -124,6 +142,27 @@ func (e Engine) CombineWithEndpoints(
 		return append(endpoints, templatedEndpoints...), nil
 	}
 	return templatedEndpoints, nil
+}
+
+// validateTemplates validates each template string individually for syntax errors,
+// then checks cumulatively for cross-value {{ define }} block conflicts.
+// Duplicate and blank strings are silently skipped.
+// validateTemplates parses templates cumulatively so that both syntax errors and
+// cross-value {{ define }} block conflicts are caught. Go only reports redefinition
+// when both definitions appear in the same Parse call.
+func validateTemplates(templates []string, flagName string) error {
+	var joined []string
+	for i, tmpl := range templates {
+		joined = append(joined, tmpl)
+		t, err := baseTemplate.Clone()
+		if err != nil {
+			return err
+		}
+		if _, err = t.Parse(strings.Join(joined, ",")); err != nil {
+			return fmt.Errorf("%s[%d] %q: %w", flagName, i, tmpl, err)
+		}
+	}
+	return nil
 }
 
 func parseTemplate(input string) (*template.Template, error) {

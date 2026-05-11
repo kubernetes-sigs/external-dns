@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -27,69 +28,70 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestNewEngine(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
-		fqdn        string
-		target      string
-		fqdnTarget  string
+		fqdn        []string
+		target      []string
+		fqdnTarget  []string
 		errContains string
 	}{
 		{
 			name:        "invalid fqdn template",
-			fqdn:        "{{.Name",
-			errContains: `parse --fqdn-template: "{{.Name"`,
+			fqdn:        []string{"{{.Name"},
+			errContains: `--fqdn-template[0] "{{.Name"`,
 		},
 		{
 			name: "empty fqdn template",
 		},
 		{
 			name: "valid fqdn template",
-			fqdn: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			fqdn: []string{"{{.Name}}-{{.Namespace}}.ext-dns.test.com"},
 		},
 		{
 			name: "valid fqdn template with multiple hosts",
-			fqdn: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
+			fqdn: []string{"{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com"},
 		},
 		{
 			name: "replace template function",
-			fqdn: "{{\"hello.world\" | replace \".\" \"-\"}}.ext-dns.test.com",
+			fqdn: []string{`{{"hello.world" | replace "." "-"}}.ext-dns.test.com`},
 		},
 		{
 			name: "isIPv4 template function with valid IPv4",
-			fqdn: "{{if isIPv4 \"192.168.1.1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			fqdn: []string{`{{if isIPv4 "192.168.1.1"}}valid{{else}}invalid{{end}}.ext-dns.test.com`},
 		},
 		{
 			name: "isIPv4 template function with invalid IPv4",
-			fqdn: "{{if isIPv4 \"not.an.ip.addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			fqdn: []string{`{{if isIPv4 "not.an.ip.addr"}}valid{{else}}invalid{{end}}.ext-dns.test.com`},
 		},
 		{
 			name: "isIPv6 template function with valid IPv6",
-			fqdn: "{{if isIPv6 \"2001:db8::1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			fqdn: []string{`{{if isIPv6 "2001:db8::1"}}valid{{else}}invalid{{end}}.ext-dns.test.com`},
 		},
 		{
 			name: "isIPv6 template function with invalid IPv6",
-			fqdn: "{{if isIPv6 \"not:ipv6:addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+			fqdn: []string{`{{if isIPv6 "not:ipv6:addr"}}valid{{else}}invalid{{end}}.ext-dns.test.com`},
 		},
 		{
 			name:        "invalid target template",
-			target:      "{{.Status.LoadBalancer.Ingress",
-			errContains: `parse --target-template: "{{.Status.LoadBalancer.Ingress"`,
+			target:      []string{"{{.Status.LoadBalancer.Ingress"},
+			errContains: `--target-template[0] "{{.Status.LoadBalancer.Ingress"`,
 		},
 		{
 			name:   "valid target template",
-			target: "{{.Name}}.targets.example.com",
+			target: []string{"{{.Name}}.targets.example.com"},
 		},
 		{
 			name:        "invalid fqdn-target template",
-			fqdnTarget:  "{{.Name}}.example.com:{{.Status",
-			errContains: `parse --fqdn-target-template: "{{.Name}}.example.com:{{.Status"`,
+			fqdnTarget:  []string{"{{.Name}}.example.com:{{.Status"},
+			errContains: `--fqdn-target-template[0] "{{.Name}}.example.com:{{.Status"`,
 		},
 		{
 			name:       "valid fqdn-target template",
-			fqdnTarget: "{{.Name}}.example.com:{{.Name}}.targets.example.com",
+			fqdnTarget: []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,23 +106,23 @@ func TestNewEngine(t *testing.T) {
 }
 
 func TestTemplateEngineIsConfigured(t *testing.T) {
-	empty, err := NewEngine("", "", "", false)
+	empty, err := NewEngine(nil, nil, nil, false)
 	require.NoError(t, err)
 	assert.False(t, empty.IsConfigured())
 
-	configured, err := NewEngine("{{ .Name }}.example.com", "", "", false)
+	configured, err := NewEngine([]string{"{{ .Name }}.example.com"}, nil, nil, false)
 	require.NoError(t, err)
 	assert.True(t, configured.IsConfigured())
 }
 
 func TestEngine_Combining(t *testing.T) {
 	t.Run("false when not set", func(t *testing.T) {
-		e, err := NewEngine("{{ .Name }}.example.com", "", "", false)
+		e, err := NewEngine([]string{"{{ .Name }}.example.com"}, nil, nil, false)
 		require.NoError(t, err)
 		assert.False(t, e.Combining())
 	})
 	t.Run("true when set", func(t *testing.T) {
-		e, err := NewEngine("{{ .Name }}.example.com", "", "", true)
+		e, err := NewEngine([]string{"{{ .Name }}.example.com"}, nil, nil, true)
 		require.NoError(t, err)
 		assert.True(t, e.Combining())
 	})
@@ -130,21 +132,21 @@ func TestEngine_ExecTarget(t *testing.T) {
 	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
 
 	t.Run("returns targets from template", func(t *testing.T) {
-		e, err := NewEngine("", "{{ .Name }}.target.example.com", "", false)
+		e, err := NewEngine(nil, []string{"{{ .Name }}.target.example.com"}, nil, false)
 		require.NoError(t, err)
 		got, err := e.ExecTarget(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"svc.target.example.com"}, got)
 	})
 	t.Run("returns empty when target template is unset", func(t *testing.T) {
-		e, err := NewEngine("", "", "", false)
+		e, err := NewEngine(nil, nil, nil, false)
 		require.NoError(t, err)
 		got, err := e.ExecTarget(obj)
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
 	t.Run("propagates execution error", func(t *testing.T) {
-		e, err := NewEngine("", "{{index . 0}}", "", false)
+		e, err := NewEngine(nil, []string{"{{index . 0}}"}, nil, false)
 		require.NoError(t, err)
 		_, err = e.ExecTarget(obj)
 		require.Error(t, err)
@@ -155,21 +157,21 @@ func TestEngine_ExecFQDNTarget(t *testing.T) {
 	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
 
 	t.Run("returns fqdn:target pairs from template", func(t *testing.T) {
-		e, err := NewEngine("", "", "{{ .Name }}.example.com:1.2.3.4", false)
+		e, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:1.2.3.4"}, false)
 		require.NoError(t, err)
 		got, err := e.ExecFQDNTarget(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"svc.example.com:1.2.3.4"}, got)
 	})
 	t.Run("returns empty when fqdn-target template is unset", func(t *testing.T) {
-		e, err := NewEngine("", "", "", false)
+		e, err := NewEngine(nil, nil, nil, false)
 		require.NoError(t, err)
 		got, err := e.ExecFQDNTarget(obj)
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
 	t.Run("propagates execution error", func(t *testing.T) {
-		e, err := NewEngine("", "", "{{index . 0}}", false)
+		e, err := NewEngine(nil, nil, []string{"{{index . 0}}"}, false)
 		require.NoError(t, err)
 		_, err = e.ExecFQDNTarget(obj)
 		require.Error(t, err)
@@ -405,7 +407,7 @@ func TestExecFQDN(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			engine, err := NewEngine(tt.tmpl, "", "", false)
+			engine, err := NewEngine([]string{tt.tmpl}, nil, nil, false)
 			require.NoError(t, err)
 
 			got, err := engine.ExecFQDN(tt.obj)
@@ -416,7 +418,7 @@ func TestExecFQDN(t *testing.T) {
 }
 
 func TestExecFQDNNilObject(t *testing.T) {
-	engine, err := NewEngine("{{ toLower .Labels.department }}.example.org", "", "", false)
+	engine, err := NewEngine([]string{"{{ toLower .Labels.department }}.example.org"}, nil, nil, false)
 	require.NoError(t, err)
 	_, err = engine.ExecFQDN(nil)
 	assert.Error(t, err)
@@ -424,7 +426,7 @@ func TestExecFQDNNilObject(t *testing.T) {
 
 func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 	// Test that Kind is populated when initially empty (simulates informer behavior)
-	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
+	engine, err := NewEngine([]string{"{{ .Kind }}.{{ .Name }}.example.com"}, nil, nil, false)
 	require.NoError(t, err)
 
 	// Create object with empty TypeMeta (Kind == "")
@@ -448,7 +450,7 @@ func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 
 func TestExecFQDNPreservesExistingKind(t *testing.T) {
 	// Test that existing Kind is not overwritten
-	engine, err := NewEngine("{{ .Kind }}.{{ .Name }}.example.com", "", "", false)
+	engine, err := NewEngine([]string{"{{ .Kind }}.{{ .Name }}.example.com"}, nil, nil, false)
 	require.NoError(t, err)
 
 	obj := &testObject{
@@ -471,7 +473,7 @@ func TestExecFQDNPreservesExistingKind(t *testing.T) {
 }
 
 func TestExecFQDNExecutionError(t *testing.T) {
-	engine, err := NewEngine("{{ call .Name }}", "", "", false)
+	engine, err := NewEngine([]string{"{{ call .Name }}"}, nil, nil, false)
 	require.NoError(t, err)
 
 	obj := &metav1.PartialObjectMetadata{
@@ -490,11 +492,11 @@ func TestExecFQDNExecutionError(t *testing.T) {
 }
 
 func TestCombineWithEndpoints(t *testing.T) {
-	configured, err := NewEngine("{{.Name}}", "", "", false)
+	configured, err := NewEngine([]string{"{{.Name}}"}, nil, nil, false)
 	require.NoError(t, err)
-	configuredCombine, err := NewEngine("{{.Name}}", "", "", true)
+	configuredCombine, err := NewEngine([]string{"{{.Name}}"}, nil, nil, true)
 	require.NoError(t, err)
-	unconfigured, err := NewEngine("", "", "", false)
+	unconfigured, err := NewEngine(nil, nil, nil, false)
 	require.NoError(t, err)
 
 	annotationEndpoints := []*endpoint.Endpoint{
@@ -584,6 +586,96 @@ func TestCombineWithEndpoints(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestNewEngine_DebugLogging(t *testing.T) {
+	fqdn := []string{"{{.Name}}.example.com"}
+	target := []string{"{{.Name}}.targets.example.com"}
+	fqdnTarget := []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"}
+
+	t.Run("logs templates at debug level", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		_, err := NewEngine(fqdn, target, fqdnTarget, false)
+		require.NoError(t, err)
+		logtest.TestHelperLogContainsWithLogLevel("fqdn-templates: {{.Name}}.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("target-templates: {{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+		logtest.TestHelperLogContainsWithLogLevel("fqdn-target-templates: {{.Name}}.example.com:{{.Name}}.targets.example.com", log.DebugLevel, hook, t)
+	})
+
+	t.Run("does not log templates below debug level", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+		_, err := NewEngine(fqdn, target, fqdnTarget, false)
+		require.NoError(t, err)
+		logtest.TestHelperLogNotContains("fqdn-templates:", hook, t)
+		logtest.TestHelperLogNotContains("target-templates:", hook, t)
+		logtest.TestHelperLogNotContains("fqdn-target-templates:", hook, t)
+	})
+}
+
+func TestValidateTemplates(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		templates   []string
+		flagName    string
+		errContains string
+	}{
+		{
+			name:      "nil slice is valid",
+			templates: nil,
+			flagName:  "--fqdn-template",
+		},
+		{
+			name:      "empty strings skipped",
+			templates: []string{"", "  "},
+			flagName:  "--fqdn-template",
+		},
+		{
+			name:      "valid single template",
+			templates: []string{"{{.Name}}.example.com"},
+			flagName:  "--fqdn-template",
+		},
+		{
+			name:      "valid multiple templates",
+			templates: []string{"{{.Name}}.a.com", "{{.Name}}.b.com"},
+			flagName:  "--fqdn-template",
+		},
+		{
+			name:        "syntax error in first template reported with index",
+			templates:   []string{"{{.Name"},
+			flagName:    "--fqdn-template",
+			errContains: `--fqdn-template[0] "{{.Name"`,
+		},
+		{
+			name:        "syntax error in second template reported with index",
+			templates:   []string{"{{.Name}}.a.com", "{{.Name"},
+			flagName:    "--fqdn-template",
+			errContains: `--fqdn-template[1] "{{.Name"`,
+		},
+		{
+			name: "duplicate define block conflict detected",
+			templates: []string{
+				`{{ define "foo" }}bar{{ end }}{{ template "foo" }}`,
+				`{{ define "foo" }}foobar{{ end }}{{ template "foo" }}`,
+			},
+			flagName:    "--fqdn-template",
+			errContains: `--fqdn-template[1]`,
+		},
+		{
+			name:      "duplicate template strings are silently skipped",
+			templates: []string{"{{.Name}}.a.com", "{{.Name}}.a.com"},
+			flagName:  "--fqdn-template",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateTemplates(tt.templates, tt.flagName)
+			if tt.errContains != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.errContains)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
