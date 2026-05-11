@@ -8,7 +8,7 @@ set -euo pipefail
 #   - python3 (for JSON validation via json.tool)
 #   - yq (for YAML validation, supports multi-document files)
 
-EXCLUDE_PATTERN='(charts/external-dns/templates|mkdocs\.yml)'
+EXCLUDE_PATTERN='(charts/external-dns/templates)'
 
 errors=0
 
