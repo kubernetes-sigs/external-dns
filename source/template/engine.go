@@ -53,6 +53,9 @@ type Engine struct {
 	combine bool
 }
 
+// NewEngine parses the provided Go template strings into a Engine.
+// An empty string leaves the corresponding template unset; IsConfigured reflects
+// whether the FQDN template was provided. Returns an error on the first parse failure.
 func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, combineFQDN bool) (Engine, error) {
 	fqdnTmpl, err := validateAndParse(fqdnTemplates, "--fqdn-template")
 	if err != nil {
