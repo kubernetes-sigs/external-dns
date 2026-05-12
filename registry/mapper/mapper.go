@@ -24,6 +24,9 @@ import (
 
 const (
 	recordTemplate = "%{record_type}"
+
+	// maxDNSLabelLen is the maximum length of a single DNS label per RFC 1035.
+	maxDNSLabelLen = 63
 )
 
 var (
@@ -80,11 +83,35 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 		if !strings.Contains(lowerDNSName, ".") {
 			return r, rType
 		}
+		// In the separate-label fallback form, the suffix-bearing portion
+		// consists of only the record-type token; the parent's first label
+		// sits in the next position. Avoid a stray leading dot in that case.
+		if r == "" {
+			return DNSName[1+dc], rType
+		}
 		return r + "." + DNSName[1+dc], rType
 	}
 	return "", ""
 }
 
+// ToTXTName projects a parent record name onto the TXT registry name.
+//
+// The default "inline" form prepends "<recordType>-" to the parent's first label:
+//
+//	foo.example.com (CNAME) -> cname-foo.example.com
+//
+// When the inline form would push any label past RFC 1035's 63-char limit, the
+// mapper falls back to the "separate-label" form, where the record-type token
+// occupies its own DNS label and the parent's first label is preserved unmodified:
+//
+//	<60-char-label>.example.com (CNAME) -> cname.<60-char-label>.example.com
+//
+// Both forms are recognised by ToEndpointName, so this is transparent to readers
+// and backward-compatible with existing TXT records.
+//
+// The fallback applies only when neither the prefix nor the suffix already
+// templates the record type — templated affixes are left untouched to preserve
+// the user's explicitly-configured layout.
 func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 	DNSName := strings.SplitN(dns, ".", 2)
 	recordType = strings.ToLower(recordType)
@@ -98,15 +125,33 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 		DNSName[0] = a.wildcardReplacement
 	}
 
-	if !a.recordTypeInAffix() {
-		DNSName[0] = recordT + DNSName[0]
+	rest := ""
+	if len(DNSName) >= 2 {
+		rest = "." + DNSName[1]
 	}
 
-	if len(DNSName) < 2 {
-		return prefix + DNSName[0] + suffix
+	if a.recordTypeInAffix() {
+		return prefix + DNSName[0] + suffix + rest
 	}
 
-	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+	inlineHead := prefix + recordT + DNSName[0] + suffix
+	if maxLabelLen(inlineHead) <= maxDNSLabelLen {
+		return inlineHead + rest
+	}
+
+	// Separate-label fallback: <prefix><recordType><suffix>.<firstLabel>.<rest>
+	return prefix + recordType + suffix + "." + DNSName[0] + rest
+}
+
+// maxLabelLen returns the length of the longest dot-separated label in s.
+func maxLabelLen(s string) int {
+	max := 0
+	for _, label := range strings.Split(s, ".") {
+		if len(label) > max {
+			max = len(label)
+		}
+	}
+	return max
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {
@@ -176,12 +221,32 @@ func (a AffixNameMapper) dropAffixExtractType(name string) (string, string) {
 }
 
 // extractRecordTypeDefaultPosition extracts record type from the default position
-// when not using '%{record_type}' in the prefix/suffix
+// when not using '%{record_type}' in the prefix/suffix.
+//
+// Recognises both the inline form "<recordType>-<rest>" and the separate-label
+// fallback form "<recordType>.<rest>" emitted by ToTXTName when the inline form
+// would overflow RFC 1035's per-label limit. The bare "<recordType>" case is
+// encountered in suffix mode after the suffix has been trimmed.
 func extractRecordTypeDefaultPosition(name string) (string, string) {
-	nameS := strings.Split(name, "-")
+	if dashIdx := strings.IndexByte(name, '-'); dashIdx > 0 {
+		head := name[:dashIdx]
+		for _, t := range supportedRecords {
+			if head == strings.ToLower(t) {
+				return name[dashIdx+1:], t
+			}
+		}
+	}
+	if dotIdx := strings.IndexByte(name, '.'); dotIdx > 0 {
+		head := name[:dotIdx]
+		for _, t := range supportedRecords {
+			if head == strings.ToLower(t) {
+				return name[dotIdx+1:], t
+			}
+		}
+	}
 	for _, t := range supportedRecords {
-		if nameS[0] == strings.ToLower(t) {
-			return strings.TrimPrefix(name, nameS[0]+"-"), t
+		if name == strings.ToLower(t) {
+			return "", t
 		}
 	}
 	return name, ""

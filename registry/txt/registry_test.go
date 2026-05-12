@@ -1138,6 +1138,95 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestTXTRegistryApplyChangesLongLabelTXTFallback verifies that when a parent
+// record's first label is long enough that the inline TXT name "<recordType>-<label>"
+// would exceed RFC 1035's 63-char-per-label limit, the registry still creates
+// both the parent and an ownership TXT — using the separate-label fallback form
+// "<recordType>.<label>" produced by the mapper. Without that fallback, the TXT
+// would be silently skipped and the parent would leak as an unreclaimable orphan.
+func TestTXTRegistryApplyChangesLongLabelTXTFallback(t *testing.T) {
+	tests := []struct {
+		name          string
+		txtPrefix     string
+		newParent     func(dnsName string) *endpoint.Endpoint
+		labelLen      int
+		wantTXTPrefix string // dot-separated fallback TXT name head
+	}{
+		{
+			name:          "CNAME",
+			newParent:     func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
+			labelLen:      60, // cname- (6) + 60 = 66 -> overflow
+			wantTXTPrefix: "cname.",
+		},
+		{
+			name:          "AAAA",
+			newParent:     func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeAAAA, "fe80::1") },
+			labelLen:      60, // aaaa- (5) + 60 = 65 -> overflow
+			wantTXTPrefix: "aaaa.",
+		},
+		{
+			name:          "A",
+			newParent:     func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "1.2.3.4") },
+			labelLen:      62, // a- (2) + 62 = 64 -> overflow
+			wantTXTPrefix: "a.",
+		},
+		{
+			name: "AliasA",
+			newParent: func(dn string) *endpoint.Endpoint {
+				return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "lb.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+			},
+			labelLen:      60, // alias-A encodes as cname- (6) + 60 = 66 -> overflow
+			wantTXTPrefix: "cname.",
+		},
+		{
+			name:          "WithTxtPrefix",
+			txtPrefix:     "ext-",
+			newParent:     func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
+			labelLen:      56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
+			wantTXTPrefix: "ext-cname.",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+
+			r, err := newRegistry(p, tc.txtPrefix, "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+			require.NoError(t, err)
+
+			parentLabel := strings.Repeat("a", tc.labelLen)
+			parent := tc.newParent(parentLabel + "." + testZone)
+			require.NotNil(t, parent, "test setup: parent at %d-char label must itself pass RFC 1035", tc.labelLen)
+
+			var got *plan.Changes
+			p.OnApplyChanges = func(_ context.Context, ch *plan.Changes) {
+				got = ch
+			}
+			require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{
+				Create: []*endpoint.Endpoint{parent},
+			}))
+			require.NotNil(t, got)
+
+			wantTXTName := tc.wantTXTPrefix + parent.DNSName
+			parentSeen, txtSeen := false, false
+			for _, ep := range got.Create {
+				if ep.DNSName == parent.DNSName && ep.RecordType == parent.RecordType {
+					parentSeen = true
+				}
+				if ep.DNSName == wantTXTName && ep.RecordType == endpoint.RecordTypeTXT {
+					txtSeen = true
+				}
+				for _, lbl := range strings.Split(ep.DNSName, ".") {
+					assert.LessOrEqual(t, len(lbl), 63, "label %q in %s exceeds RFC 1035 limit", lbl, ep.DNSName)
+				}
+			}
+			assert.True(t, parentSeen, "parent record must be created at long-label name")
+			assert.True(t, txtSeen, "ownership TXT must be created in fallback form %q", wantTXTName)
+		})
+	}
+}
+
 func testTXTRegistryMissingRecords(t *testing.T) {
 	t.Run("No prefix", testTXTRegistryMissingRecordsNoPrefix)
 	t.Run("With Prefix", testTXTRegistryMissingRecordsWithPrefix)
@@ -1240,6 +1329,15 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+			},
+			// Long-label records can now migrate to the new TXT format
+			// (in separate-label fallback form), so force-update fires here
+			// just like the other old-format entries above.
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
 			},
 		},
 	}

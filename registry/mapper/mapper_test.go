@@ -525,6 +525,82 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 	}
 }
 
+// TestAffixNameMapper_ToTXTName_LongLabelFallback verifies that when the
+// inline TXT name would exceed RFC 1035's 63-char label limit, the mapper
+// emits the separate-label fallback form, and that ToEndpointName round-trips
+// either form back to the original parent name.
+func TestAffixNameMapper_ToTXTName_LongLabelFallback(t *testing.T) {
+	tests := []struct {
+		name        string
+		mapper      AffixNameMapper
+		parentLabel int
+		recordType  string
+		wantTXTHead string
+	}{
+		{
+			name:        "no-affix CNAME at overflow threshold",
+			mapper:      NewAffixNameMapper("", "", ""),
+			parentLabel: 60,
+			recordType:  endpoint.RecordTypeCNAME,
+			wantTXTHead: "cname.",
+		},
+		{
+			name:        "no-affix AAAA at overflow threshold",
+			mapper:      NewAffixNameMapper("", "", ""),
+			parentLabel: 60,
+			recordType:  endpoint.RecordTypeAAAA,
+			wantTXTHead: "aaaa.",
+		},
+		{
+			name:        "no-affix A at overflow threshold",
+			mapper:      NewAffixNameMapper("", "", ""),
+			parentLabel: 62,
+			recordType:  endpoint.RecordTypeA,
+			wantTXTHead: "a.",
+		},
+		{
+			name:        "prefix overflow",
+			mapper:      NewAffixNameMapper("ext-", "", ""),
+			parentLabel: 56,
+			recordType:  endpoint.RecordTypeCNAME,
+			wantTXTHead: "ext-cname.",
+		},
+		{
+			name:        "suffix overflow",
+			mapper:      NewAffixNameMapper("", "-suf", ""),
+			parentLabel: 56,
+			recordType:  endpoint.RecordTypeCNAME,
+			wantTXTHead: "cname-suf.",
+		},
+		{
+			name:        "suffix with dot overflow",
+			mapper:      NewAffixNameMapper("", ".suf", ""),
+			parentLabel: 60,
+			recordType:  endpoint.RecordTypeCNAME,
+			wantTXTHead: "cname.suf.",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			label := strings.Repeat("a", tc.parentLabel)
+			parent := label + ".example.com"
+
+			txt := tc.mapper.ToTXTName(parent, tc.recordType)
+
+			assert.True(t, strings.HasPrefix(txt, tc.wantTXTHead),
+				"want fallback-form TXT (prefix %q), got %q", tc.wantTXTHead, txt)
+			for _, lbl := range strings.Split(txt, ".") {
+				assert.LessOrEqual(t, len(lbl), 63, "label %q exceeds RFC 1035 limit in TXT %q", lbl, txt)
+			}
+
+			gotParent, gotType := tc.mapper.ToEndpointName(txt)
+			assert.Equal(t, parent, gotParent, "round-trip parent name")
+			assert.Equal(t, tc.recordType, gotType, "round-trip record type")
+		})
+	}
+}
+
 func TestDropPrefix(t *testing.T) {
 	mapper := NewAffixNameMapper("foo-%{record_type}-", "", "")
 	expectedOutput := "test.example.com"
