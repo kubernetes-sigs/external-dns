@@ -228,6 +228,7 @@ func (a AffixNameMapper) dropAffixExtractType(name string) (string, string) {
 // would overflow RFC 1035's per-label limit. The bare "<recordType>" case is
 // encountered in suffix mode after the suffix has been trimmed.
 func extractRecordTypeDefaultPosition(name string) (string, string) {
+	// Inline form: "cname-foo.zone" -> ("foo.zone", "CNAME").
 	if dashIdx := strings.IndexByte(name, '-'); dashIdx > 0 {
 		head := name[:dashIdx]
 		for _, t := range supportedRecords {
@@ -236,6 +237,7 @@ func extractRecordTypeDefaultPosition(name string) (string, string) {
 			}
 		}
 	}
+	// Separate-label fallback form: "cname.foo.zone" -> ("foo.zone", "CNAME").
 	if dotIdx := strings.IndexByte(name, '.'); dotIdx > 0 {
 		head := name[:dotIdx]
 		for _, t := range supportedRecords {
@@ -244,6 +246,8 @@ func extractRecordTypeDefaultPosition(name string) (string, string) {
 			}
 		}
 	}
+	// Bare type token: suffix mode strips the suffix before calling, so
+	// "cname.suf" arrives here as "cname". Empty rest; caller reattaches.
 	for _, t := range supportedRecords {
 		if name == strings.ToLower(t) {
 			return "", t
