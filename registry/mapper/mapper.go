@@ -19,6 +19,8 @@ package mapper
 import (
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -73,20 +75,22 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 	// drop suffix
 	if a.isSuffix() {
 		dc := strings.Count(a.suffix, ".")
-		DNSName := strings.SplitN(lowerDNSName, ".", 2+dc)
-		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
-
-		r, rType := a.dropAffixExtractType(domainWithSuffix)
-		if !strings.Contains(lowerDNSName, ".") {
+		parts := strings.SplitN(lowerDNSName, ".", 2+dc)
+		if len(parts) <= dc {
+			log.Debugf("skipping TXT record %q: too few labels for suffix %q", dns, a.suffix)
+			return "", ""
+		}
+		r, rType := a.dropAffixExtractType(strings.Join(parts[:1+dc], "."))
+		if len(parts) <= 1+dc {
 			return r, rType
 		}
-		return r + "." + DNSName[1+dc], rType
+		return r + "." + parts[1+dc], rType
 	}
 	return "", ""
 }
 
 func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
-	DNSName := strings.SplitN(dns, ".", 2)
+	parts := strings.SplitN(dns, ".", 2)
 	recordType = strings.ToLower(recordType)
 	recordT := recordType + "-"
 
@@ -94,19 +98,19 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 	suffix := a.normalizeAffixTemplate(a.suffix, recordType)
 
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if a.wildcardReplacement != "" && DNSName[0] == "*" {
-		DNSName[0] = a.wildcardReplacement
+	if a.wildcardReplacement != "" && parts[0] == "*" {
+		parts[0] = a.wildcardReplacement
 	}
 
 	if !a.recordTypeInAffix() {
-		DNSName[0] = recordT + DNSName[0]
+		parts[0] = recordT + parts[0]
 	}
 
-	if len(DNSName) < 2 {
-		return prefix + DNSName[0] + suffix
+	if len(parts) < 2 {
+		return prefix + parts[0] + suffix
 	}
 
-	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+	return prefix + parts[0] + suffix + "." + parts[1]
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {

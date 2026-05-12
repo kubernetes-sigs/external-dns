@@ -108,6 +108,27 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeCNAME,
 		},
 		{
+			name:             "suffix with multiple dots and trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar.com",
+			wantEndpointName: "example.com",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and no trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar",
+			wantEndpointName: "example",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and too few labels does not panic",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo",
+			wantEndpointName: "",
+			wantRecordType:   "",
+		},
+		{
 			name:             "no affix with A record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "a-foo.example.com",
