@@ -365,7 +365,7 @@ func (gs *glooSource) targetsFromGatewayIngress(proxy *proxy) (endpoint.Targets,
 			}
 
 			if ingressStr, ok := unstructuredGateway.GetAnnotations()[annotations.Ingress]; ok && ingressStr != "" {
-				namespace, name, err := ParseIngress(ingressStr)
+				namespace, name, err := ParseNamespacedName(ingressStr)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", unstructuredGateway.GetNamespace(), unstructuredGateway.GetName(), err)
 				}

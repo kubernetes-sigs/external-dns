@@ -253,6 +253,59 @@ spec:
     useProxyProto: false
 ```
 
+## external-dns.kubernetes.io/gateway
+
+This annotation allows ExternalDNS to work with Istio Gateways and VirtualServices that don't have a public IP, in setups where a central [Gateway API](https://gateway-api.sigs.k8s.io/) `Gateway` provisions the load balancer that handles all public traffic.
+
+It addresses the same architectural pattern as the [`ingress`](#external-dnskubernetesioingress) annotation, but for environments where a Gateway API `Gateway` provisions the public load balancer rather than a Kubernetes Ingress:
+
+- **The Challenge**: By default, ExternalDNS sources the public IP address for a DNS record from a Service of type LoadBalancer. However, in some setups, a central Gateway API `Gateway` in a shared namespace provisions the public load balancer, and Istio Gateways or VirtualServices in separate namespaces handle routing for individual services. The Istio Gateway's own Service may be of type ClusterIP, leaving ExternalDNS with no public IP to discover.
+
+- **The Solution**: The `gateway` annotation on the Istio Gateway tells ExternalDNS to look up a specified Gateway API `Gateway` resource and use its `status.addresses` as the DNS record targets. The value is in the format `namespace/name` or `name` (defaulting to the annotated resource's namespace). When used with VirtualServices, the annotation is placed on the Istio Gateway that the VirtualService references.
+
+### Use Cases for `external-dns.kubernetes.io/gateway` annotation
+
+#### Getting target from a Gateway API Gateway
+
+```yml
+# The Gateway API Gateway that provisions the load balancer (in a shared namespace)
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: central-gateway
+  namespace: istio-ingress
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+  - name: https
+    port: 443
+    protocol: HTTPS
+status:
+  addresses:
+  - type: IPAddress
+    value: 34.120.1.2
+---
+# The Istio Gateway in the service's namespace
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: my-service-gateway
+  namespace: my-service-ns
+  annotations:
+    external-dns.kubernetes.io/hostname: my-service.example.com
+    external-dns.kubernetes.io/gateway: istio-ingress/central-gateway
+spec:
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - my-service.example.com
+```
+
+In this example, ExternalDNS creates a DNS A record for `my-service.example.com` pointing to `34.120.1.2`, sourced from the Gateway API `Gateway`'s `status.addresses`.
+
 ## external-dns.kubernetes.io/internal-hostname
 
 Specifies the domain for the resource's DNS records that are for use from internal networks.

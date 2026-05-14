@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseIngress(t *testing.T) {
+func TestParseNamespacedName(t *testing.T) {
 	tests := []struct {
 		name      string
 		ingress   string
@@ -59,7 +59,7 @@ func TestParseIngress(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotNS, gotName, err := ParseIngress(tt.ingress)
+			gotNS, gotName, err := ParseNamespacedName(tt.ingress)
 			if tt.wantError {
 				assert.Error(t, err)
 			} else {

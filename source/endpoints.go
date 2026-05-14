@@ -16,8 +16,10 @@ package source
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	gwinformers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -55,4 +57,35 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 		}
 	}
 	return endpoint.NewTargets(targets...), nil
+}
+
+// EndpointTargetsFromK8sGateway resolves endpoint targets from a Kubernetes
+// Gateway API Gateway object identified by a "namespace/name" or "name" reference.
+// defaultNamespace is used when the reference omits a namespace.
+func EndpointTargetsFromK8sGateway(gwInformer gwinformers_v1.GatewayInformer, ref string, defaultNamespace string) (endpoint.Targets, error) {
+	if gwInformer == nil {
+		return nil, fmt.Errorf("Gateway API client not configured but %q annotation is set", K8sGatewaySource)
+	}
+
+	namespace, name, err := ParseNamespacedName(ref)
+	if err != nil {
+		return nil, err
+	}
+	if namespace == "" {
+		namespace = defaultNamespace
+	}
+
+	gw, err := gwInformer.Lister().Gateways(namespace).Get(name)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	targets := make(endpoint.Targets, 0, len(gw.Status.Addresses))
+	for _, addr := range gw.Status.Addresses {
+		if addr.Value != "" {
+			targets = append(targets, addr.Value)
+		}
+	}
+	return targets, nil
 }

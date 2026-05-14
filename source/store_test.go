@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -45,6 +46,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator := new(testutils.MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
+	mockClientGenerator.On("GatewayClient").Return(gatewayfake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
 		map[schema.GroupVersionResource]string{
 			{
@@ -105,14 +107,14 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 		}), nil)
 
 	ss := []string{
-		types.Service, types.Ingress, types.IstioGateway, types.ContourHTTPProxy,
+		types.Service, types.Ingress, types.IstioGateway, types.IstioVirtualService, types.ContourHTTPProxy,
 		types.KongTCPIngress, types.F5VirtualServer, types.F5TransportServer, types.TraefikProxy, types.Fake,
 	}
 	sources, err := ByNames(context.TODO(), &Config{
 		sources: ss,
 	}, mockClientGenerator)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 9, "should generate all nine sources")
+	suite.Len(sources, 10, "should generate all ten sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
