@@ -50,6 +50,34 @@ import (
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
 
+// TestAnnotationPrefixPropagation verifies that IstioGatewayIngressSource() and
+// K8sGatewaySource() reflect changes made by SetAnnotationPrefix at runtime.
+// This is a regression test for a bug where these were package-level vars evaluated
+// at import time — before SetAnnotationPrefix was called — causing annotation lookups
+// to use the wrong prefix and silently produce no endpoints, leading to record deletion.
+func TestAnnotationPrefixPropagation(t *testing.T) {
+	t.Cleanup(func() { annotations.SetAnnotationPrefix(annotations.DefaultAnnotationPrefix) })
+
+	defaultIngress := IstioGatewayIngressSource()
+	defaultGateway := K8sGatewaySource()
+	assert.Equal(t, annotations.DefaultAnnotationPrefix+"ingress", defaultIngress)
+	assert.Equal(t, annotations.DefaultAnnotationPrefix+"gateway", defaultGateway)
+
+	// Simulate --annotation-prefix=custom.io/
+	annotations.SetAnnotationPrefix("custom.io/")
+	assert.Equal(t, "custom.io/ingress", IstioGatewayIngressSource(),
+		"IstioGatewayIngressSource() must reflect updated annotation prefix")
+	assert.Equal(t, "custom.io/gateway", K8sGatewaySource(),
+		"K8sGatewaySource() must reflect updated annotation prefix")
+
+	// Simulate changing it again — must not be cached from first call
+	annotations.SetAnnotationPrefix("another.io/")
+	assert.Equal(t, "another.io/ingress", IstioGatewayIngressSource(),
+		"IstioGatewayIngressSource() must track subsequent prefix changes")
+	assert.Equal(t, "another.io/gateway", K8sGatewaySource(),
+		"K8sGatewaySource() must track subsequent prefix changes")
+}
+
 type GatewaySuite struct {
 	suite.Suite
 	source     Source
@@ -211,7 +239,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					IstioGatewayIngressSource(): "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -263,7 +291,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					IstioGatewayIngressSource(): "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -324,7 +352,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					IstioGatewayIngressSource(): "ingress1",
 				},
 				dnsnames: [][]string{
 					{""},
@@ -385,7 +413,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "istio-other2/ingress1",
+					IstioGatewayIngressSource(): "istio-other2/ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"}, // Kubernetes requires removal of trailing dot
@@ -639,7 +667,7 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "testing2/ingress1",
+						IstioGatewayIngressSource(): "testing2/ingress1",
 					},
 				},
 			},
@@ -1005,7 +1033,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "not-real/ingress1",
+						IstioGatewayIngressSource(): "not-real/ingress1",
 						annotations.TargetKey:     "1.2.3.4",
 					},
 					dnsnames: [][]string{{"example3.org"}},
@@ -1147,7 +1175,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						IstioGatewayIngressSource(): "ingress1",
 						annotations.HostnameKey:   "dns-through-hostname.com",
 						annotations.TargetKey:     "gateway-target.com",
 					},
@@ -1322,7 +1350,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "",
+						IstioGatewayIngressSource(): "",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1456,7 +1484,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress2",
+						IstioGatewayIngressSource(): "ingress2",
 					},
 					dnsnames: [][]string{{"new.org"}},
 				},
@@ -1782,7 +1810,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				{
 					Hosts: []string{"example.org"},
 					Tls: &istionetworking.ServerTLSSettings{
-						ServerCertificate: IstioGatewayIngressSource,
+						ServerCertificate: IstioGatewayIngressSource(),
 						Mode:              istionetworking.ServerTLSSettings_SIMPLE,
 					},
 				},
@@ -1936,7 +1964,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -1961,7 +1989,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -1986,7 +2014,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -2011,7 +2039,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -2042,7 +2070,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			config: fakeGatewayConfig{
 				namespace: "user-ns",
 				annotations: map[string]string{
-					K8sGatewaySource: "istio-ingress/central-gw",
+					K8sGatewaySource(): "istio-ingress/central-gw",
 				},
 				dnsnames: [][]string{
 					{"my-service.example.com"},
@@ -2067,7 +2095,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 				},
 				dnsnames: [][]string{
 					{},
@@ -2086,7 +2114,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "nonexistent-gw",
+					K8sGatewaySource(): "nonexistent-gw",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -2106,7 +2134,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "my-gateway",
+					K8sGatewaySource(): "my-gateway",
 					annotations.TargetKey: "override-target.com",
 				},
 				dnsnames: [][]string{
@@ -2132,8 +2160,8 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource:     "my-gateway",
-					IstioGatewayIngressSource: "my-ingress",
+					K8sGatewaySource():     "my-gateway",
+					IstioGatewayIngressSource(): "my-ingress",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -2154,7 +2182,7 @@ func testEndpointsFromGatewayAPIGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					K8sGatewaySource: "",
+					K8sGatewaySource(): "",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -2214,7 +2242,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "istio-ingress/central-gw",
+						K8sGatewaySource(): "istio-ingress/central-gw",
 					},
 				},
 			},
@@ -2246,7 +2274,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource:  "central-gw",
+						K8sGatewaySource():  "central-gw",
 						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
@@ -2280,7 +2308,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource:  "central-gw",
+						K8sGatewaySource():  "central-gw",
 						annotations.HostnameKey: "dns-through-hostname.com",
 						annotations.TargetKey:   "gateway-target.com",
 					},
@@ -2315,7 +2343,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 						annotations.TtlKey:    "6",
 					},
 					dnsnames: [][]string{{"example.org"}},
@@ -2345,7 +2373,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 					},
 					dnsnames: [][]string{},
 				},
@@ -2374,7 +2402,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -2414,7 +2442,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource: "",
+						K8sGatewaySource(): "",
 					},
 					dnsnames: [][]string{},
 				},
@@ -2437,7 +2465,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource:  "central-gw",
+						K8sGatewaySource():  "central-gw",
 						annotations.HostnameKey: "ignore.me",
 					},
 					dnsnames: [][]string{{"example.org"}},
@@ -2467,7 +2495,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource:  "central-gw",
+						K8sGatewaySource():  "central-gw",
 						annotations.HostnameKey: "fake1.dns-through-hostname.com",
 					},
 					dnsnames: [][]string{{"*"}},
@@ -2498,7 +2526,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "nginx",
-						K8sGatewaySource:         "central-gw",
+						K8sGatewaySource():         "central-gw",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -2528,7 +2556,7 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "tectonic",
-						K8sGatewaySource:         "central-gw",
+						K8sGatewaySource():         "central-gw",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -2550,13 +2578,13 @@ func testGatewayAPIGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						K8sGatewaySource: "nonexistent-gw",
+						K8sGatewaySource(): "nonexistent-gw",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
 			},
 			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expectError: false, // bad annotation should be skipped gracefully, not crash the controller
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {

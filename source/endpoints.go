@@ -64,7 +64,7 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 // defaultNamespace is used when the reference omits a namespace.
 func EndpointTargetsFromK8sGateway(gwInformer gwinformers_v1.GatewayInformer, ref string, defaultNamespace string) (endpoint.Targets, error) {
 	if gwInformer == nil {
-		return nil, fmt.Errorf("Gateway API client not configured but %q annotation is set", K8sGatewaySource)
+		return nil, fmt.Errorf("Gateway API client not configured but %q annotation is set", K8sGatewaySource())
 	}
 
 	namespace, name, err := ParseNamespacedName(ref)

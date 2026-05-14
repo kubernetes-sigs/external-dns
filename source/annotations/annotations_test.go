@@ -50,6 +50,7 @@ func TestSetAnnotationPrefix(t *testing.T) {
 	assert.Equal(t, "custom.io/access", AccessKey)
 	assert.Equal(t, "custom.io/endpoints-type", EndpointsTypeKey)
 	assert.Equal(t, "custom.io/ingress", Ingress)
+	assert.Equal(t, "custom.io/gateway", GatewayKey)
 	assert.Equal(t, "custom.io/ingress-hostname-source", IngressHostnameSourceKey)
 
 	// ControllerValue should remain constant

@@ -129,7 +129,7 @@ func NewIstioVirtualServiceSource(
 	var gwAPIInformerFactory gwinformers.SharedInformerFactory
 	if gwAPIClient != nil {
 		if _, err := gwAPIClient.GatewayV1().Gateways("").List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
-			log.Debugf("Gateway API not available, %q annotation will not be supported: %v", K8sGatewaySource, err)
+			log.Debugf("Gateway API not available, %q annotation will not be supported: %v", K8sGatewaySource(), err)
 		} else {
 			gwAPIInformerFactory = gwinformers.NewSharedInformerFactory(gwAPIClient, 0)
 			gwAPIInformer = gwAPIInformerFactory.Gateway().V1().Gateways()
@@ -191,7 +191,8 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, vService)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not generate endpoints for VirtualService '%s/%s': %v", vService.Namespace, vService.Name, err)
+			continue
 		}
 
 		// apply template if host is missing on VirtualService
@@ -200,7 +201,8 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ctx, vService) },
 		)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not apply template for VirtualService '%s/%s': %v", vService.Namespace, vService.Name, err)
+			continue
 		}
 
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
@@ -441,12 +443,12 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource()]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	gatewayStr, ok := gateway.Annotations[K8sGatewaySource]
+	gatewayStr, ok := gateway.Annotations[K8sGatewaySource()]
 	if ok && gatewayStr != "" {
 		return sc.targetsFromGatewayAPIGateway(gatewayStr, gateway)
 	}

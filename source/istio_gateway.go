@@ -46,14 +46,15 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-// Using var instead of const because annotation keys can be customized
-var IstioGatewayIngressSource = annotations.Ingress
+// IstioGatewayIngressSource returns the annotation key used to determine if the gateway
+// is implemented by an Ingress object instead of a standard LoadBalancer service type.
+// This must be a function (not a package-level var) because the annotation prefix can
+// be customized at runtime via --annotation-prefix / SetAnnotationPrefix.
+func IstioGatewayIngressSource() string { return annotations.Ingress }
 
-// K8sGatewaySource is the annotation used to reference a Kubernetes Gateway API
+// K8sGatewaySource returns the annotation key used to reference a Kubernetes Gateway API
 // Gateway object for endpoint target resolution.
-var K8sGatewaySource = annotations.GatewayKey
+func K8sGatewaySource() string { return annotations.GatewayKey }
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
@@ -125,7 +126,7 @@ func NewIstioGatewaySource(
 	var gwAPIInformerFactory gwinformers.SharedInformerFactory
 	if gwAPIClient != nil {
 		if _, err := gwAPIClient.GatewayV1().Gateways("").List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
-			log.Debugf("Gateway API not available, %q annotation will not be supported: %v", K8sGatewaySource, err)
+			log.Debugf("Gateway API not available, %q annotation will not be supported: %v", K8sGatewaySource(), err)
 		} else {
 			gwAPIInformerFactory = gwinformers.NewSharedInformerFactory(gwAPIClient, 0)
 			gwAPIInformer = gwAPIInformerFactory.Gateway().V1().Gateways()
@@ -190,7 +191,8 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not generate endpoints for gateway '%s/%s': %v", gateway.Namespace, gateway.Name, err)
+			continue
 		}
 
 		// apply template if host is missing on gateway
@@ -205,7 +207,8 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			},
 		)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not apply template for gateway '%s/%s': %v", gateway.Namespace, gateway.Name, err)
+			continue
 		}
 
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
@@ -262,12 +265,12 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource()]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	gatewayStr, ok := gateway.Annotations[K8sGatewaySource]
+	gatewayStr, ok := gateway.Annotations[K8sGatewaySource()]
 	if ok && gatewayStr != "" {
 		return sc.targetsFromGatewayAPIGateway(gatewayStr, gateway)
 	}

@@ -586,7 +586,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				name:     "mygw",
 				dnsnames: [][]string{{"*"}},
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					IstioGatewayIngressSource(): "ingress1",
 				},
 			},
 			vsconfig: fakeVirtualServiceConfig{
@@ -619,7 +619,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				name:     "mygw",
 				dnsnames: [][]string{{"*"}},
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress/ingress2",
+					IstioGatewayIngressSource(): "ingress/ingress2",
 				},
 			},
 			vsconfig: fakeVirtualServiceConfig{
@@ -793,7 +793,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						IstioGatewayIngressSource(): "ingress1",
 					},
 				},
 				{
@@ -801,7 +801,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"new.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						IstioGatewayIngressSource(): "ingress1",
 					},
 				},
 			},
@@ -1066,7 +1066,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						IstioGatewayIngressSource(): "ingress1",
 					},
 				},
 			},
@@ -1286,7 +1286,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title: "gateway ingress annotation; ingress not found",
+			title: "gateway ingress annotation; ingress not found — skipped gracefully",
 			ingresses: []fakeIngress{
 				{
 					name:      "ingress1",
@@ -1300,7 +1300,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress2",
+						IstioGatewayIngressSource(): "ingress2",
 					},
 				},
 			},
@@ -1313,7 +1313,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				},
 			},
 			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expectError: false, // bad annotation should be skipped gracefully, not crash the controller
 		},
 		{
 			title: "our controller type is dns-controller",
@@ -1606,7 +1606,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
 						annotations.TargetKey:     "gateway-target.com",
-						IstioGatewayIngressSource: "ingress1",
+						IstioGatewayIngressSource(): "ingress1",
 					},
 				},
 			},
@@ -1960,7 +1960,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 						"app": "igw4",
 					},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "testing1/ingress1",
+						IstioGatewayIngressSource(): "testing1/ingress1",
 					},
 				},
 			},
@@ -2130,7 +2130,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 					},
 				},
 			},
@@ -2165,7 +2165,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "istio-ingress/central-gw",
+						K8sGatewaySource(): "istio-ingress/central-gw",
 					},
 				},
 			},
@@ -2191,7 +2191,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 			},
 		},
 		{
-			title: "gateway API annotation not found",
+			title: "gateway API annotation not found — skipped gracefully",
 			gwAPIs: []fakeGatewayAPIGateway{
 				{
 					name:      "existing-gw",
@@ -2205,7 +2205,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "nonexistent-gw",
+						K8sGatewaySource(): "nonexistent-gw",
 					},
 				},
 			},
@@ -2218,7 +2218,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 				},
 			},
 			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expectError: false, // bad annotation should be skipped gracefully, not crash the controller
 		},
 		{
 			title: "target annotation takes precedence over gateway API annotation",
@@ -2235,7 +2235,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 						annotations.TargetKey: "override-target.com",
 					},
 				},
@@ -2257,7 +2257,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 			},
 		},
 		{
-			title: "ingress annotation takes precedence over gateway API annotation",
+			title: "ingress annotation takes precedence over gateway API annotation — nonexistent ingress skipped gracefully",
 			gwAPIs: []fakeGatewayAPIGateway{
 				{
 					name:      "central-gw",
@@ -2271,8 +2271,8 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource:     "central-gw",
-						IstioGatewayIngressSource: "nonexistent-ingress",
+						K8sGatewaySource():          "central-gw",
+						IstioGatewayIngressSource(): "nonexistent-ingress",
 					},
 				},
 			},
@@ -2285,7 +2285,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 				},
 			},
 			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expectError: false, // bad annotation should be skipped gracefully, not crash the controller
 		},
 		{
 			title: "gateway API annotation with TTL",
@@ -2302,7 +2302,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 					},
 				},
 			},
@@ -2341,7 +2341,7 @@ func TestVirtualServiceWithGatewayAPIAnnotation(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						K8sGatewaySource: "central-gw",
+						K8sGatewaySource(): "central-gw",
 					},
 				},
 			},
