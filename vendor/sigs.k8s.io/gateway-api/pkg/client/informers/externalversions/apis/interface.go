@@ -19,36 +19,6 @@ limitations under the License.
 package apis
 
 import (
-<<<<<<< HEAD
-	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
-	v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
-	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
-)
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1alpha2 provides access to shared informers for resources in V1alpha2.
-	V1alpha2() v1alpha2.Interface
-	// V1beta1 provides access to shared informers for resources in V1beta1.
-	V1beta1() v1beta1.Interface
-}
-
-type group struct {
-	factory          internalinterfaces.SharedInformerFactory
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-}
-
-// New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
-	return &group{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// V1alpha2 returns a new v1alpha2.Interface.
-func (g *group) V1alpha2() v1alpha2.Interface {
-	return v1alpha2.New(g.factory, g.namespace, g.tweakListOptions)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 	v1alpha3 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha3"
@@ -92,7 +62,6 @@ func (g *group) V1alpha2() v1alpha2.Interface {
 // V1alpha3 returns a new v1alpha3.Interface.
 func (g *group) V1alpha3() v1alpha3.Interface {
 	return v1alpha3.New(g.factory, g.namespace, g.tweakListOptions)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // V1beta1 returns a new v1beta1.Interface.

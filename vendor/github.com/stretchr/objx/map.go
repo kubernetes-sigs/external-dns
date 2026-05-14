@@ -91,8 +91,6 @@ func MustFromJSON(jsonString string) Map {
 	return o
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // MustFromJSONSlice creates a new slice of Map containing the data specified in the
 // jsonString. Works with jsons with a top level array
 //
@@ -129,90 +127,6 @@ func FromJSONSlice(jsonString string) ([]Map, error) {
 		return nil, err
 	}
 	return slice, nil
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// MustFromJSONSlice creates a new slice of Map containing the data specified in the
-// jsonString. Works with jsons with a top level array
-//
-// Panics if the JSON is invalid.
-func MustFromJSONSlice(jsonString string) []Map {
-	slice, err := FromJSONSlice(jsonString)
-	if err != nil {
-		panic("objx: MustFromJSONSlice failed with error: " + err.Error())
-	}
-	return slice
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// FromJSON creates a new Map containing the data specified in the
-// jsonString.
-//
-// Returns an error if the JSON is invalid.
-func FromJSON(jsonString string) (Map, error) {
-	var m Map
-	err := json.Unmarshal([]byte(jsonString), &m)
-	if err != nil {
-		return Nil, err
-	}
-	return m, nil
-}
-
-// FromJSONSlice creates a new slice of Map containing the data specified in the
-// jsonString. Works with jsons with a top level array
-//
-// Returns an error if the JSON is invalid.
-func FromJSONSlice(jsonString string) ([]Map, error) {
-	var slice []Map
-	err := json.Unmarshal([]byte(jsonString), &slice)
-	if err != nil {
-		return nil, err
-	}
-<<<<<<< HEAD
-}
-
-func tryConvertFloat64InSlice(s []interface{}) []interface{} {
-	for k, v := range s {
-		switch v.(type) {
-		case float64:
-			f := v.(float64)
-			if float64(int(f)) == f {
-				s[k] = int(f)
-			}
-		case map[string]interface{}:
-			t := New(v)
-			t.tryConvertFloat64()
-			s[k] = t
-		case []interface{}:
-			s[k] = tryConvertFloat64InSlice(v.([]interface{}))
-		}
-	}
-	return s
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-}
-
-func tryConvertFloat64InSlice(s []interface{}) []interface{} {
-	for k, v := range s {
-		switch v.(type) {
-		case float64:
-			f := v.(float64)
-			if float64(int(f)) == f {
-				s[k] = int(f)
-			}
-		case map[string]interface{}:
-			t := New(v)
-			t.tryConvertFloat64()
-			s[k] = t
-		case []interface{}:
-			s[k] = tryConvertFloat64InSlice(v.([]interface{}))
-		}
-	}
-	return s
-=======
-	return slice, nil
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // FromBase64 creates a new Obj containing the data specified

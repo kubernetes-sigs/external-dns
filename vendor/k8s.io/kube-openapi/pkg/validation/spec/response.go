@@ -18,54 +18,6 @@ import (
 	"encoding/json"
 
 	"github.com/go-openapi/swag"
-<<<<<<< HEAD
-)
-
-// ResponseProps properties specific to a response
-type ResponseProps struct {
-	Description string                 `json:"description,omitempty"`
-	Schema      *Schema                `json:"schema,omitempty"`
-	Headers     map[string]Header      `json:"headers,omitempty"`
-	Examples    map[string]interface{} `json:"examples,omitempty"`
-}
-
-// Response describes a single response from an API Operation.
-//
-// For more information: http://goo.gl/8us55a#responseObject
-type Response struct {
-	Refable
-	ResponseProps
-	VendorExtensible
-}
-
-// UnmarshalJSON hydrates this items instance with the data from JSON
-func (r *Response) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &r.ResponseProps); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(data, &r.Refable); err != nil {
-		return err
-	}
-	return json.Unmarshal(data, &r.VendorExtensible)
-}
-
-// MarshalJSON converts this items object to JSON
-func (r Response) MarshalJSON() ([]byte, error) {
-	b1, err := json.Marshal(r.ResponseProps)
-	if err != nil {
-		return nil, err
-	}
-	b2, err := json.Marshal(r.Refable)
-	if err != nil {
-		return nil, err
-	}
-	b3, err := json.Marshal(r.VendorExtensible)
-	if err != nil {
-		return nil, err
-	}
-	return swag.ConcatJSON(b1, b2, b3), nil
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"k8s.io/kube-openapi/pkg/internal"
 	jsonv2 "k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json"
 )
@@ -164,7 +116,6 @@ func (r Response) MarshalNextJSON(opts jsonv2.MarshalOptions, enc *jsonv2.Encode
 	x.Extensions = internal.SanitizeExtensions(r.Extensions)
 	x.ResponseProps = responsePropsOmitZero(r.ResponseProps)
 	return opts.MarshalNext(enc, x)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // NewResponse creates a new response instance

@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -108,274 +108,7 @@ func parseNetUNIX(r io.Reader) (*NetUNIX, error) {
 		line := s.Text()
 		item, err := nu.parseLine(line, hasInode, minFields)
 		if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
-		}
-
-		nu.Rows = append(nu.Rows, item)
-	}
-
-	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %w", err)
-	}
-
-	return &nu, nil
-}
-
-func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
-	fields := strings.Fields(line)
-
-	l := len(fields)
-	if l < min {
-		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
-	}
-
-	// Field offsets are as follows:
-	// Num       RefCount Protocol Flags    Type St Inode Path
-
-	kernelPtr := strings.TrimSuffix(fields[0], ":")
-
-	users, err := u.parseUsers(fields[1])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count %q: %w", fields[1], err)
-	}
-
-	flags, err := u.parseFlags(fields[3])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags %q: %w", fields[3], err)
-	}
-
-	typ, err := u.parseType(fields[4])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", fields[4], err)
-	}
-
-	state, err := u.parseState(fields[5])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse state %q: %w", fields[5], err)
-	}
-
-	var inode uint64
-	if hasInode {
-		inode, err = u.parseInode(fields[6])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
->>>>>>> 5ce8c7613 (update vendored files)
-		}
-
-		nu.Rows = append(nu.Rows, item)
-	}
-
-	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %w", err)
-	}
-
-	return &nu, nil
-}
-
-func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
-	fields := strings.Fields(line)
-
-	l := len(fields)
-	if l < min {
-		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
-	}
-
-	// Field offsets are as follows:
-	// Num       RefCount Protocol Flags    Type St Inode Path
-
-	kernelPtr := strings.TrimSuffix(fields[0], ":")
-
-	users, err := u.parseUsers(fields[1])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count %q: %w", fields[1], err)
-	}
-
-	flags, err := u.parseFlags(fields[3])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags %q: %w", fields[3], err)
-	}
-
-	typ, err := u.parseType(fields[4])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", fields[4], err)
-	}
-
-	state, err := u.parseState(fields[5])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse state %q: %w", fields[5], err)
-	}
-
-	var inode uint64
-	if hasInode {
-		inode, err = u.parseInode(fields[6])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-||||||| parent of 6b7ce455e (update vendored files)
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
->>>>>>> 6b7ce455e (update vendored files)
-		}
-
-		nu.Rows = append(nu.Rows, item)
-	}
-
-	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %w", err)
-	}
-
-	return &nu, nil
-}
-
-func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
-	fields := strings.Fields(line)
-
-	l := len(fields)
-	if l < min {
-		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
-	}
-
-	// Field offsets are as follows:
-	// Num       RefCount Protocol Flags    Type St Inode Path
-
-	kernelPtr := strings.TrimSuffix(fields[0], ":")
-
-	users, err := u.parseUsers(fields[1])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count %q: %w", fields[1], err)
-	}
-
-	flags, err := u.parseFlags(fields[3])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags %q: %w", fields[3], err)
-	}
-
-	typ, err := u.parseType(fields[4])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", fields[4], err)
-	}
-
-	state, err := u.parseState(fields[5])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse state %q: %w", fields[5], err)
-	}
-
-	var inode uint64
-	if hasInode {
-		inode, err = u.parseInode(fields[6])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
->>>>>>> 4d7e5ad26 (update vendored files)
-		}
-
-		nu.Rows = append(nu.Rows, item)
-	}
-
-	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %w", err)
-	}
-
-	return &nu, nil
-}
-
-func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
-	fields := strings.Fields(line)
-
-	l := len(fields)
-	if l < min {
-		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
-	}
-
-	// Field offsets are as follows:
-	// Num       RefCount Protocol Flags    Type St Inode Path
-
-	kernelPtr := strings.TrimSuffix(fields[0], ":")
-
-	users, err := u.parseUsers(fields[1])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count %q: %w", fields[1], err)
-	}
-
-	flags, err := u.parseFlags(fields[3])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags %q: %w", fields[3], err)
-	}
-
-	typ, err := u.parseType(fields[4])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", fields[4], err)
-	}
-
-	state, err := u.parseState(fields[5])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse state %q: %w", fields[5], err)
-	}
-
-	var inode uint64
-	if hasInode {
-		inode, err = u.parseInode(fields[6])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
-=======
-			return nil, fmt.Errorf("%s: /proc/net/unix encountered data %q: %w", ErrFileParse, line, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-			return nil, fmt.Errorf("%s: /proc/net/unix encountered data %q: %w", ErrFileParse, line, err)
-=======
 			return nil, fmt.Errorf("%w: /proc/net/unix encountered data %q: %w", ErrFileParse, line, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 
 		nu.Rows = append(nu.Rows, item)
@@ -388,12 +121,12 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 	return &nu, nil
 }
 
-func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
+func (u *NetUNIX) parseLine(line string, hasInode bool, minFields int) (*NetUNIXLine, error) {
 	fields := strings.Fields(line)
 
 	l := len(fields)
-	if l < min {
-		return nil, fmt.Errorf("%w: expected at least %d fields but got %d", ErrFileParse, min, l)
+	if l < minFields {
+		return nil, fmt.Errorf("%w: expected at least %d fields but got %d", ErrFileParse, minFields, l)
 	}
 
 	// Field offsets are as follows:
@@ -425,20 +158,7 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 	if hasInode {
 		inode, err = u.parseInode(fields[6])
 		if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
-=======
-			return nil, fmt.Errorf("%s failed to parse inode %q: %w", ErrFileParse, fields[6], err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-			return nil, fmt.Errorf("%s failed to parse inode %q: %w", ErrFileParse, fields[6], err)
-=======
 			return nil, fmt.Errorf("%w failed to parse inode %q: %w", ErrFileParse, fields[6], err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 	}
 
@@ -452,7 +172,7 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 	}
 
 	// Path field is optional.
-	if l > min {
+	if l > minFields {
 		// Path occurs at either index 6 or 7 depending on whether inode is
 		// already present.
 		pathIdx := 7

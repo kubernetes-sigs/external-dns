@@ -1,5 +1,12 @@
 # Release History
 
+## 1.3.0 (2024-09-27)
+### Features Added
+
+- New enum type `ResolutionPolicy` with values `ResolutionPolicyDefault`, `ResolutionPolicyNxDomainRedirect`
+- New field `ResolutionPolicy` in struct `VirtualNetworkLinkProperties`
+
+
 ## 1.2.0 (2023-11-24)
 ### Features Added
 

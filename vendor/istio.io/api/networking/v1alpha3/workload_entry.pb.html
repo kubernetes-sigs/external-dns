@@ -28,7 +28,7 @@ account. The service is exposed on port 80 to applications in the
 mesh. The HTTP traffic to this service is wrapped in Istio mutual
 TLS and sent to sidecars on VMs on target port 8080, that in turn
 forward it to the application on localhost on the same port.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: WorkloadEntry
 metadata:
   name: details-svc
@@ -44,7 +44,7 @@ spec:
     instance-id: vm1
 </code></pre>
 <p>and the associated service entry</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: details-svc
@@ -67,7 +67,7 @@ its fully qualified DNS name. The service entry&rsquo;s resolution
 mode should be changed to DNS to indicate that the client-side
 sidecars should dynamically resolve the DNS name at runtime before
 forwarding the request.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: WorkloadEntry
 metadata:
   name: details-svc
@@ -83,7 +83,7 @@ spec:
     instance-id: vm1
 </code></pre>
 <p>and the associated service entry</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: details-svc
@@ -107,7 +107,7 @@ to write a <code>WorkloadEntry</code> in the local cluster that represents
 the Workload(s) in the remote network with the given labels. A
 single <code>WorkloadEntry</code> with weights represent the aggregate of all
 the actual workloads in a given remote network.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: WorkloadEntry
 metadata:
   name: foo-workloads-cluster-2
@@ -126,15 +126,14 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="WorkloadEntry-address">
-<td><code>address</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-address">address</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Address associated with the network endpoint without the
 port.  Domain names can be used if and only if the resolution is set
@@ -143,13 +142,11 @@ unix:///absolute/path/to/socket for Unix domain socket endpoints.
 If address is empty, network must be specified.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-ports">
-<td><code>ports</code></td>
-<td><code>map&lt;string,&nbsp;uint32&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-ports">ports</a></code></div>
+<div class="type">map&lt;string,&nbsp;uint32&gt;</div>
+</div></td>
 <td>
 <p>Set of ports associated with the endpoint. If the port map is
 specified, it must be a map of servicePortName to this endpoint&rsquo;s
@@ -165,24 +162,20 @@ the same port.</p>
 <p><strong>NOTE 2:</strong> endpoint port map takes precedence over targetPort.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-labels">
-<td><code>labels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-labels">labels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>One or more labels associated with the endpoint.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-network">
-<td><code>network</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-network">network</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Network enables Istio to group endpoints resident in the same L3
 domain/network. All endpoints in the same network are assumed to be
@@ -194,13 +187,11 @@ an advanced configuration used typically for spanning an Istio mesh
 over multiple clusters. Required if address is not provided.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-locality">
-<td><code>locality</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-locality">locality</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The locality associated with the endpoint. A locality corresponds
 to a failure domain (e.g., country/region/zone). Arbitrary failure
@@ -221,34 +212,27 @@ locality. Endpoint e2 could be the IP associated with a gateway
 standard service endpoint.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-weight">
-<td><code>weight</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-weight">weight</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>The load balancing weight associated with the endpoint. Endpoints
 with higher weights will receive proportionally higher traffic.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadEntry-service_account">
-<td><code>serviceAccount</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadEntry-service_account">serviceAccount</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The service account associated with the workload if a sidecar
 is present in the workload. The service account must be present
 in the same namespace as the configuration ( WorkloadEntry or a
 ServiceEntry)</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>

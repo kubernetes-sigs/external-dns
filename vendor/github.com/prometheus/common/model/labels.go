@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	// AlertNameLabel is the name of the label containing the an alert's name.
+	// AlertNameLabel is the name of the label containing the alert's name.
 	AlertNameLabel = "alertname"
 
 	// ExportedLabelPrefix is the prefix to prepend to the label names present in
@@ -32,6 +32,12 @@ const (
 	// MetricNameLabel is the label name indicating the metric name of a
 	// timeseries.
 	MetricNameLabel = "__name__"
+	// MetricTypeLabel is the label name indicating the metric type of
+	// timeseries as per the PROM-39 proposal.
+	MetricTypeLabel = "__type__"
+	// MetricUnitLabel is the label name indicating the metric unit of
+	// timeseries as per the PROM-39 proposal.
+	MetricUnitLabel = "__unit__"
 
 	// SchemeLabel is the name of the label that holds the scheme on which to
 	// scrape a target.
@@ -45,14 +51,6 @@ const (
 	// scrape a target.
 	MetricsPathLabel = "__metrics_path__"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
 	// used to scrape a target.
 	ScrapeIntervalLabel = "__scrape_interval__"
@@ -61,62 +59,6 @@ const (
 	// timeout used to scrape a target.
 	ScrapeTimeoutLabel = "__scrape_timeout__"
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
-	// used to scrape a target.
-	ScrapeIntervalLabel = "__scrape_interval__"
-
-	// ScrapeTimeoutLabel is the name of the label that holds the scrape
-	// timeout used to scrape a target.
-	ScrapeTimeoutLabel = "__scrape_timeout__"
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
-	// used to scrape a target.
-	ScrapeIntervalLabel = "__scrape_interval__"
-
-	// ScrapeTimeoutLabel is the name of the label that holds the scrape
-	// timeout used to scrape a target.
-	ScrapeTimeoutLabel = "__scrape_timeout__"
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
-	// used to scrape a target.
-	ScrapeIntervalLabel = "__scrape_interval__"
-
-	// ScrapeTimeoutLabel is the name of the label that holds the scrape
-	// timeout used to scrape a target.
-	ScrapeTimeoutLabel = "__scrape_timeout__"
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
-	// used to scrape a target.
-	ScrapeIntervalLabel = "__scrape_interval__"
-
-	// ScrapeTimeoutLabel is the name of the label that holds the scrape
-	// timeout used to scrape a target.
-	ScrapeTimeoutLabel = "__scrape_timeout__"
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// ReservedLabelPrefix is a prefix which is not legal in user-supplied
 	// label names.
 	ReservedLabelPrefix = "__"
@@ -164,33 +106,21 @@ type LabelName string
 // IsValid returns true iff the name matches the pattern of LabelNameRE when
 // NameValidationScheme is set to LegacyValidation, or valid UTF-8 if
 // NameValidationScheme is set to UTF8Validation.
+//
+// Deprecated: This method should not be used and may be removed in the future.
+// Use [ValidationScheme.IsValidLabelName] instead.
 func (ln LabelName) IsValid() bool {
-	if len(ln) == 0 {
-		return false
-	}
-	switch NameValidationScheme {
-	case LegacyValidation:
-		return ln.IsValidLegacy()
-	case UTF8Validation:
-		return utf8.ValidString(string(ln))
-	default:
-		panic(fmt.Sprintf("Invalid name validation scheme requested: %d", NameValidationScheme))
-	}
+	return NameValidationScheme.IsValidLabelName(string(ln))
 }
 
 // IsValidLegacy returns true iff name matches the pattern of LabelNameRE for
 // legacy names. It does not use LabelNameRE for the check but a much faster
 // hardcoded implementation.
+//
+// Deprecated: This method should not be used and may be removed in the future.
+// Use [LegacyValidation.IsValidLabelName] instead.
 func (ln LabelName) IsValidLegacy() bool {
-	if len(ln) == 0 {
-		return false
-	}
-	for i, b := range ln {
-		if !((b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || b == '_' || (b >= '0' && b <= '9' && i > 0)) {
-			return false
-		}
-	}
-	return true
+	return LegacyValidation.IsValidLabelName(string(ln))
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.

@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/managedfields"
 	"k8s.io/client-go/discovery"
 	"k8s.io/kube-openapi/pkg/util/proto"
-	"sigs.k8s.io/structured-merge-diff/v4/typed"
+	"sigs.k8s.io/structured-merge-diff/v6/typed"
 )
 
 // openAPISchemaTTL is how frequently we need to check
@@ -125,12 +125,7 @@ func (e *extractor) extractUnstructured(object *unstructured.Unstructured, field
 		return nil, fmt.Errorf("failed to fetch the objectType: %v", err)
 	}
 	result := &unstructured.Unstructured{}
-<<<<<<< HEAD
-	err = managedfields.ExtractInto(object, *objectType, fieldManager, result, subresource)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	err = managedfields.ExtractInto(object, *objectType, fieldManager, result, subresource) //nolint:forbidigo
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling ExtractInto for unstructured: %v", err)
 	}

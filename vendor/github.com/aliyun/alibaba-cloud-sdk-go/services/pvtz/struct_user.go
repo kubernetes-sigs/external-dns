@@ -20,4 +20,6 @@ type User struct {
 	AuthType           string `json:"AuthType" xml:"AuthType"`
 	AuthorizedUserId   int64  `json:"AuthorizedUserId" xml:"AuthorizedUserId"`
 	AuthorizedAliyunId string `json:"AuthorizedAliyunId" xml:"AuthorizedAliyunId"`
+	CreateTime         string `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp    int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 }

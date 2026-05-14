@@ -18,51 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-<<<<<<< HEAD
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"os/user"
-	"path/filepath"
-	"sync"
-	"time"
-)
-
-const (
-	metadataPath = ".secureConnect"
-	metadataFile = "context_aware_metadata.json"
-)
-
-type secureConnectSource struct {
-	metadata secureConnectMetadata
-
-	// Cache the cert to avoid executing helper command repeatedly.
-	cachedCertMutex sync.Mutex
-	cachedCert      *tls.Certificate
-}
-
-type secureConnectMetadata struct {
-	Cmd []string `json:"cert_provider_command"`
-}
-
-// NewSecureConnectSource creates a certificate source using
-// the Secure Connect Helper and its associated metadata file.
-//
-// The configFilePath points to the location of the context aware metadata file.
-// If configFilePath is empty, use the default context aware metadata location.
-func NewSecureConnectSource(configFilePath string) (Source, error) {
-	if configFilePath == "" {
-		user, err := user.Current()
-		if err != nil {
-			// Error locating the default config means Secure Connect is not supported.
-			return nil, errSourceUnavailable
-		}
-		configFilePath = filepath.Join(user.HomeDir, metadataPath, metadataFile)
-	}
-
-	file, err := ioutil.ReadFile(configFilePath)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"os"
 	"os/exec"
 	"os/user"
@@ -104,7 +59,6 @@ func NewSecureConnectSource(configFilePath string) (Source, error) {
 	}
 
 	file, err := os.ReadFile(configFilePath)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// Config file missing means Secure Connect is not supported.

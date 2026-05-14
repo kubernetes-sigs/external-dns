@@ -67,6 +67,9 @@ const (
 
 	// DNSRecordTypeTXT represents an TXT record
 	DNSRecordTypeTXT = "TXT"
+
+	// DNSRecordTypeNS represents an NS record
+	DNSRecordTypeNS = "NS"
 )
 
 var (

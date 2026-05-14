@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+// HealthCheck represents the health check configuration for an instance pool.
+type HealthCheck struct {
+	Port int32  `json:"port"`
+	Path string `json:"path"`
+}
+
 // LoadBalancerBackend represents a backend instance being load-balanced
 type LoadBalancerBackend struct {
 	IP              string `json:"ip"`
@@ -14,6 +20,16 @@ type LoadBalancerBackend struct {
 	SourcePort      int32  `json:"source_port"`
 	TargetPort      int32  `json:"target_port"`
 	HealthCheckPort int32  `json:"health_check_port,omitempty"`
+}
+
+// InstancePool represents an instance pool configuration in a load balancer.
+type InstancePool struct {
+	Tags        []string    `json:"tags"`
+	Names       []string    `json:"names"`
+	Protocol    string      `json:"protocol,omitempty"`
+	SourcePort  int32       `json:"source_port"`
+	TargetPort  int32       `json:"target_port"`
+	HealthCheck HealthCheck `json:"health_check"`
 }
 
 // LoadBalancerBackendConfig is the configuration for creating backends
@@ -25,13 +41,25 @@ type LoadBalancerBackendConfig struct {
 	HealthCheckPort int32  `json:"health_check_port,omitempty"`
 }
 
+// LoadBalancerInstancePoolConfig represents an instance pool configuration in a load balancer.
+type LoadBalancerInstancePoolConfig struct {
+	Tags        []string    `json:"tags"`
+	Names       []string    `json:"names"`
+	Protocol    string      `json:"protocol,omitempty"`
+	SourcePort  int32       `json:"source_port"`
+	TargetPort  int32       `json:"target_port"`
+	HealthCheck HealthCheck `json:"health_check"`
+}
+
 // LoadBalancer represents a load balancer configuration within Civo
 type LoadBalancer struct {
 	ID                           string                `json:"id"`
 	Name                         string                `json:"name"`
 	ServiceName                  string                `json:"service_name,omitempty"`
+	NetworkID                    string                `json:"network_id,omitempty"`
 	Algorithm                    string                `json:"algorithm"`
-	Backends                     []LoadBalancerBackend `json:"backends"`
+	Backends                     []LoadBalancerBackend `json:"backends,omitempty"`
+	InstancePool                 []InstancePool        `json:"instance_pools,omitempty"`
 	ExternalTrafficPolicy        string                `json:"external_traffic_policy,omitempty"`
 	SessionAffinity              string                `json:"session_affinity,omitempty"`
 	SessionAffinityConfigTimeout int32                 `json:"session_affinity_config_timeout,omitempty"`
@@ -50,21 +78,22 @@ type LoadBalancer struct {
 
 // LoadBalancerConfig represents a load balancer to be created
 type LoadBalancerConfig struct {
-	Region                       string                      `json:"region"`
-	Name                         string                      `json:"name"`
-	ServiceName                  string                      `json:"service_name,omitempty"`
-	NetworkID                    string                      `json:"network_id,omitempty"`
-	Algorithm                    string                      `json:"algorithm,omitempty"`
-	Backends                     []LoadBalancerBackendConfig `json:"backends"`
-	ExternalTrafficPolicy        string                      `json:"external_traffic_policy,omitempty"`
-	SessionAffinity              string                      `json:"session_affinity,omitempty"`
-	SessionAffinityConfigTimeout int32                       `json:"session_affinity_config_timeout,omitempty"`
-	EnableProxyProtocol          string                      `json:"enable_proxy_protocol,omitempty"`
-	ClusterID                    string                      `json:"cluster_id,omitempty"`
-	FirewallID                   string                      `json:"firewall_id,omitempty"`
-	FirewallRules                string                      `json:"firewall_rule,omitempty"`
-	MaxConcurrentRequests        *int                        `json:"max_concurrent_requests,omitempty"`
-	LoadBalancerOptions          *LoadBalancerOptions        `json:"options,omitempty"`
+	Region                       string                           `json:"region"`
+	Name                         string                           `json:"name"`
+	ServiceName                  string                           `json:"service_name,omitempty"`
+	NetworkID                    string                           `json:"network_id,omitempty"`
+	Algorithm                    string                           `json:"algorithm,omitempty"`
+	Backends                     []LoadBalancerBackendConfig      `json:"backends,omitempty"`
+	InstancePools                []LoadBalancerInstancePoolConfig `json:"instance_pools,omitempty"`
+	ExternalTrafficPolicy        string                           `json:"external_traffic_policy,omitempty"`
+	SessionAffinity              string                           `json:"session_affinity,omitempty"`
+	SessionAffinityConfigTimeout int32                            `json:"session_affinity_config_timeout,omitempty"`
+	EnableProxyProtocol          string                           `json:"enable_proxy_protocol,omitempty"`
+	ClusterID                    string                           `json:"cluster_id,omitempty"`
+	FirewallID                   string                           `json:"firewall_id,omitempty"`
+	FirewallRules                string                           `json:"firewall_rule,omitempty"`
+	MaxConcurrentRequests        *int                             `json:"max_concurrent_requests,omitempty"`
+	LoadBalancerOptions          *LoadBalancerOptions             `json:"options,omitempty"`
 }
 
 // LoadBalancerOptions are additional loadbalancer options
@@ -75,18 +104,19 @@ type LoadBalancerOptions struct {
 
 // LoadBalancerUpdateConfig represents a load balancer to be updated
 type LoadBalancerUpdateConfig struct {
-	Region                       string                      `json:"region"`
-	Name                         string                      `json:"name,omitempty"`
-	ServiceName                  string                      `json:"service_name,omitempty"`
-	Algorithm                    string                      `json:"algorithm,omitempty"`
-	Backends                     []LoadBalancerBackendConfig `json:"backends,omitempty"`
-	ExternalTrafficPolicy        string                      `json:"external_traffic_policy,omitempty"`
-	SessionAffinity              string                      `json:"session_affinity,omitempty"`
-	SessionAffinityConfigTimeout int32                       `json:"session_affinity_config_timeout,omitempty"`
-	EnableProxyProtocol          string                      `json:"enable_proxy_protocol,omitempty"`
-	FirewallID                   string                      `json:"firewall_id,omitempty"`
-	MaxConcurrentRequests        *int                        `json:"max_concurrent_requests,omitempty"`
-	LoadBalancerOptions          *LoadBalancerOptions        `json:"options,omitempty"`
+	Region                       string                           `json:"region"`
+	Name                         string                           `json:"name,omitempty"`
+	ServiceName                  string                           `json:"service_name,omitempty"`
+	Algorithm                    string                           `json:"algorithm,omitempty"`
+	Backends                     []LoadBalancerBackendConfig      `json:"backends,omitempty"`
+	InstancePools                []LoadBalancerInstancePoolConfig `json:"instance_pools,omitempty"`
+	ExternalTrafficPolicy        string                           `json:"external_traffic_policy,omitempty"`
+	SessionAffinity              string                           `json:"session_affinity,omitempty"`
+	SessionAffinityConfigTimeout int32                            `json:"session_affinity_config_timeout,omitempty"`
+	EnableProxyProtocol          string                           `json:"enable_proxy_protocol,omitempty"`
+	FirewallID                   string                           `json:"firewall_id,omitempty"`
+	MaxConcurrentRequests        *int                             `json:"max_concurrent_requests,omitempty"`
+	LoadBalancerOptions          *LoadBalancerOptions             `json:"options,omitempty"`
 }
 
 // ListLoadBalancers returns all load balancers owned by the calling API account

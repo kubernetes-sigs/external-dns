@@ -288,83 +288,6 @@ func ioctlIfreqData(fd int, req uint, value *ifreqData) error {
 	// identical so pass *IfreqData directly.
 	return ioctlPtr(fd, req, unsafe.Pointer(value))
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-
-// IoctlKCMClone attaches a new file descriptor to a multiplexor by cloning an
-// existing KCM socket, returning a structure containing the file descriptor of
-// the new socket.
-func IoctlKCMClone(fd int) (*KCMClone, error) {
-	var info KCMClone
-	if err := ioctlPtr(fd, SIOCKCMCLONE, unsafe.Pointer(&info)); err != nil {
-		return nil, err
-	}
-
-	return &info, nil
-}
-
-// IoctlKCMAttach attaches a TCP socket and associated BPF program file
-// descriptor to a multiplexor.
-func IoctlKCMAttach(fd int, info KCMAttach) error {
-	return ioctlPtr(fd, SIOCKCMATTACH, unsafe.Pointer(&info))
-}
-
-// IoctlKCMUnattach unattaches a TCP socket file descriptor from a multiplexor.
-func IoctlKCMUnattach(fd int, info KCMUnattach) error {
-	return ioctlPtr(fd, SIOCKCMUNATTACH, unsafe.Pointer(&info))
-}
-<<<<<<< HEAD
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-// IoctlKCMClone attaches a new file descriptor to a multiplexor by cloning an
-// existing KCM socket, returning a structure containing the file descriptor of
-// the new socket.
-func IoctlKCMClone(fd int) (*KCMClone, error) {
-	var info KCMClone
-	if err := ioctlPtr(fd, SIOCKCMCLONE, unsafe.Pointer(&info)); err != nil {
-		return nil, err
-	}
-
-	return &info, nil
-}
-
-// IoctlKCMAttach attaches a TCP socket and associated BPF program file
-// descriptor to a multiplexor.
-func IoctlKCMAttach(fd int, info KCMAttach) error {
-	return ioctlPtr(fd, SIOCKCMATTACH, unsafe.Pointer(&info))
-}
-
-// IoctlKCMUnattach unattaches a TCP socket file descriptor from a multiplexor.
-func IoctlKCMUnattach(fd int, info KCMUnattach) error {
-	return ioctlPtr(fd, SIOCKCMUNATTACH, unsafe.Pointer(&info))
-}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-=======
-
-// IoctlLoopGetStatus64 gets the status of the loop device associated with the
-// file descriptor fd using the LOOP_GET_STATUS64 operation.
-func IoctlLoopGetStatus64(fd int) (*LoopInfo64, error) {
-	var value LoopInfo64
-	if err := ioctlPtr(fd, LOOP_GET_STATUS64, unsafe.Pointer(&value)); err != nil {
-		return nil, err
-	}
-	return &value, nil
-}
-
-// IoctlLoopSetStatus64 sets the status of the loop device associated with the
-// file descriptor fd using the LOOP_SET_STATUS64 operation.
-func IoctlLoopSetStatus64(fd int, value *LoopInfo64) error {
-	return ioctlPtr(fd, LOOP_SET_STATUS64, unsafe.Pointer(value))
-}
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 // IoctlKCMClone attaches a new file descriptor to a multiplexor by cloning an
 // existing KCM socket, returning a structure containing the file descriptor of
@@ -409,4 +332,3 @@ func IoctlLoopSetStatus64(fd int, value *LoopInfo64) error {
 func IoctlLoopConfigure(fd int, value *LoopConfig) error {
 	return ioctlPtr(fd, LOOP_CONFIGURE, unsafe.Pointer(value))
 }
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

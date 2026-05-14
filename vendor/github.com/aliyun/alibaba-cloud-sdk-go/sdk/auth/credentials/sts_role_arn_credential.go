@@ -16,26 +16,8 @@ type RamRoleArnCredential struct {
 	RoleSessionName       string
 	RoleSessionExpiration int
 	Policy                string
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	StsRegion             string
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	StsRegion             string
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	StsRegion             string
 	ExternalId            string
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Deprecated: Use RamRoleArnCredential in this package instead.

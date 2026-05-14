@@ -17,13 +17,16 @@ package pvtz
 
 // ChangeLog is a nested struct in pvtz response
 type ChangeLog struct {
-	OperTime      string `json:"OperTime" xml:"OperTime"`
-	OperAction    string `json:"OperAction" xml:"OperAction"`
-	OperObject    string `json:"OperObject" xml:"OperObject"`
-	EntityId      string `json:"EntityId" xml:"EntityId"`
-	EntityName    string `json:"EntityName" xml:"EntityName"`
-	OperIp        string `json:"OperIp" xml:"OperIp"`
-	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
-	Id            int64  `json:"Id" xml:"Id"`
-	Content       string `json:"Content" xml:"Content"`
+	OperTimestamp  int64  `json:"OperTimestamp" xml:"OperTimestamp"`
+	EntityId       string `json:"EntityId" xml:"EntityId"`
+	OperObject     string `json:"OperObject" xml:"OperObject"`
+	OperTime       string `json:"OperTime" xml:"OperTime"`
+	OperIp         string `json:"OperIp" xml:"OperIp"`
+	OperAction     string `json:"OperAction" xml:"OperAction"`
+	Content        string `json:"Content" xml:"Content"`
+	EntityName     string `json:"EntityName" xml:"EntityName"`
+	Id             int64  `json:"Id" xml:"Id"`
+	CreatorId      string `json:"CreatorId" xml:"CreatorId"`
+	CreatorType    string `json:"CreatorType" xml:"CreatorType"`
+	CreatorSubType string `json:"CreatorSubType" xml:"CreatorSubType"`
 }

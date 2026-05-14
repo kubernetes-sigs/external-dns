@@ -26,56 +26,6 @@ import (
 
 var logger = grpclog.Component("channelz")
 
-<<<<<<< HEAD
-func withParens(id *Identifier) string {
-	return "[" + id.String() + "] "
-}
-
-// Info logs and adds a trace event if channelz is on.
-func Info(l grpclog.DepthLoggerV2, id *Identifier, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-		Desc:     fmt.Sprint(args...),
-		Severity: CtInfo,
-	})
-}
-
-// Infof logs and adds a trace event if channelz is on.
-func Infof(l grpclog.DepthLoggerV2, id *Identifier, format string, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-		Desc:     fmt.Sprintf(format, args...),
-		Severity: CtInfo,
-	})
-}
-
-// Warning logs and adds a trace event if channelz is on.
-func Warning(l grpclog.DepthLoggerV2, id *Identifier, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-		Desc:     fmt.Sprint(args...),
-		Severity: CtWarning,
-	})
-}
-
-// Warningf logs and adds a trace event if channelz is on.
-func Warningf(l grpclog.DepthLoggerV2, id *Identifier, format string, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-		Desc:     fmt.Sprintf(format, args...),
-		Severity: CtWarning,
-	})
-}
-
-// Error logs and adds a trace event if channelz is on.
-func Error(l grpclog.DepthLoggerV2, id *Identifier, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-		Desc:     fmt.Sprint(args...),
-		Severity: CtError,
-	})
-}
-
-// Errorf logs and adds a trace event if channelz is on.
-func Errorf(l grpclog.DepthLoggerV2, id *Identifier, format string, args ...interface{}) {
-	AddTraceEvent(l, id, 1, &TraceEventDesc{
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // Info logs and adds a trace event if channelz is on.
 func Info(l grpclog.DepthLoggerV2, e Entity, args ...any) {
 	AddTraceEvent(l, e, 1, &TraceEvent{
@@ -119,7 +69,6 @@ func Error(l grpclog.DepthLoggerV2, e Entity, args ...any) {
 // Errorf logs and adds a trace event if channelz is on.
 func Errorf(l grpclog.DepthLoggerV2, e Entity, format string, args ...any) {
 	AddTraceEvent(l, e, 1, &TraceEvent{
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		Desc:     fmt.Sprintf(format, args...),
 		Severity: CtError,
 	})

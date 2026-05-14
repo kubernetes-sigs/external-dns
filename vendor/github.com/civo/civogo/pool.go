@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // KubernetesClusterPoolUpdateConfig is used to create a new cluster pool
 type KubernetesClusterPoolUpdateConfig struct {
 	ID               string            `json:"id,omitempty"`
-	Count            int               `json:"count,omitempty"`
+	Count            *int              `json:"count,omitempty"`
 	Size             string            `json:"size,omitempty"`
 	Labels           map[string]string `json:"labels,omitempty"`
 	Taints           []corev1.Taint    `json:"taints"`
@@ -35,7 +36,7 @@ func (c *Client) ListKubernetesClusterPools(cid string) ([]KubernetesPool, error
 }
 
 // CreateKubernetesClusterPool update a single kubernetes cluster by its full ID
-func (c *Client) CreateKubernetesClusterPool(id string, i *KubernetesClusterPoolUpdateConfig) (*SimpleResponse, error) {
+func (c *Client) CreateKubernetesClusterPool(id string, i *KubernetesClusterPoolConfig) (*SimpleResponse, error) {
 	i.Region = c.Region
 	resp, err := c.SendPostRequest(fmt.Sprintf("/v2/kubernetes/clusters/%s/pools", id), i)
 	if err != nil {

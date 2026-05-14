@@ -18,6 +18,8 @@ limitations under the License.
 
 package v1
 
+type BackendTLSPolicyExpansion interface{}
+
 type GRPCRouteExpansion interface{}
 
 type GatewayExpansion interface{}
@@ -25,3 +27,9 @@ type GatewayExpansion interface{}
 type GatewayClassExpansion interface{}
 
 type HTTPRouteExpansion interface{}
+
+type ListenerSetExpansion interface{}
+
+type ReferenceGrantExpansion interface{}
+
+type TLSRouteExpansion interface{}

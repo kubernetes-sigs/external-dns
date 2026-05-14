@@ -16,54 +16,8 @@
  *
  */
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-//go:generate ./regenerate.sh
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-//go:generate ./regenerate.sh
-=======
 //go:generate ./scripts/regenerate.sh
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-//go:generate ./regenerate.sh
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-//go:generate ./regenerate.sh
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-//go:generate ./regenerate.sh
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-//go:generate ./regenerate.sh
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 /*
 Package grpc implements an RPC system called gRPC.
 

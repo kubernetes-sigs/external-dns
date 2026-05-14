@@ -24,6 +24,7 @@ import (
 )
 
 // MessageCountMap contains occurrence for each error message.
+// Deprecated: Not used anymore in the k8s.io codebase, use `errors.Join` instead.
 type MessageCountMap map[string]int
 
 // Aggregate represents an object that contains multiple errors, but does not
@@ -163,51 +164,7 @@ func matchesError(err error, fns ...Matcher) bool {
 
 // filterErrors returns any errors (or nested errors, if the list contains
 // nested Errors) for which all fns return false. If no errors
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // remain a nil list is returned. The resulting slice will have all
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// remain a nil list is returned. The resulting silec will have all
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// remain a nil list is returned. The resulting silec will have all
-=======
-// remain a nil list is returned. The resulting slice will have all
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// remain a nil list is returned. The resulting silec will have all
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// remain a nil list is returned. The resulting silec will have all
-=======
-// remain a nil list is returned. The resulting slice will have all
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// remain a nil list is returned. The resulting silec will have all
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// remain a nil list is returned. The resulting silec will have all
-=======
-// remain a nil list is returned. The resulting slice will have all
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// remain a nil list is returned. The resulting silec will have all
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// remain a nil list is returned. The resulting silec will have all
-=======
-// remain a nil list is returned. The resulting slice will have all
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // nested slices flattened as a side effect.
 func filterErrors(list []error, fns ...Matcher) []error {
 	result := []error{}
@@ -243,6 +200,7 @@ func Flatten(agg Aggregate) Aggregate {
 }
 
 // CreateAggregateFromMessageCountMap converts MessageCountMap Aggregate
+// Deprecated: Not used anymore in the k8s.io codebase, use `errors.Join` instead.
 func CreateAggregateFromMessageCountMap(m MessageCountMap) Aggregate {
 	if m == nil {
 		return nil

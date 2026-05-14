@@ -21,10 +21,6 @@ import (
 )
 
 // DescribeZones invokes the pvtz.DescribeZones API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) DescribeZones(request *DescribeZonesRequest) (response *DescribeZonesResponse, err error) {
 	response = CreateDescribeZonesResponse()
 	err = client.DoAction(request, response)
@@ -100,11 +96,11 @@ type DescribeZonesResourceTag struct {
 // DescribeZonesResponse is the response struct for api DescribeZones
 type DescribeZonesResponse struct {
 	*responses.BaseResponse
-	RequestId  string               `json:"RequestId" xml:"RequestId"`
-	TotalItems int                  `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                  `json:"TotalPages" xml:"TotalPages"`
 	PageSize   int                  `json:"PageSize" xml:"PageSize"`
+	RequestId  string               `json:"RequestId" xml:"RequestId"`
 	PageNumber int                  `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                  `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                  `json:"TotalItems" xml:"TotalItems"`
 	Zones      ZonesInDescribeZones `json:"Zones" xml:"Zones"`
 }
 
@@ -115,210 +111,6 @@ func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZones", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezones.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/describezones.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) DescribeZones(request *DescribeZonesRequest) (response *DescribeZonesResponse, err error) {
-	response = CreateDescribeZonesResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZonesWithChan invokes the pvtz.DescribeZones API asynchronously
-func (client *Client) DescribeZonesWithChan(request *DescribeZonesRequest) (<-chan *DescribeZonesResponse, <-chan error) {
-	responseChan := make(chan *DescribeZonesResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZones(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZonesWithCallback invokes the pvtz.DescribeZones API asynchronously
-func (client *Client) DescribeZonesWithCallback(request *DescribeZonesRequest, callback func(response *DescribeZonesResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZonesResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZones(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZonesRequest is the request struct for api DescribeZones
-type DescribeZonesRequest struct {
-	*requests.RpcRequest
-	QueryVpcId      string                      `position:"Query" name:"QueryVpcId"`
-	PageNumber      requests.Integer            `position:"Query" name:"PageNumber"`
-	ResourceGroupId string                      `position:"Query" name:"ResourceGroupId"`
-	PageSize        requests.Integer            `position:"Query" name:"PageSize"`
-	ResourceTag     *[]DescribeZonesResourceTag `position:"Query" name:"ResourceTag"  type:"Repeated"`
-	Lang            string                      `position:"Query" name:"Lang"`
-	Keyword         string                      `position:"Query" name:"Keyword"`
-	Direction       string                      `position:"Query" name:"Direction"`
-	OrderBy         string                      `position:"Query" name:"OrderBy"`
-	ZoneTag         *[]string                   `position:"Query" name:"ZoneTag"  type:"Repeated"`
-	UserClientIp    string                      `position:"Query" name:"UserClientIp"`
-	SearchMode      string                      `position:"Query" name:"SearchMode"`
-	ZoneType        string                      `position:"Query" name:"ZoneType"`
-	QueryRegionId   string                      `position:"Query" name:"QueryRegionId"`
-}
-
-// DescribeZonesResourceTag is a repeated param struct in DescribeZonesRequest
-type DescribeZonesResourceTag struct {
-	Value string `name:"Value"`
-	Key   string `name:"Key"`
-}
-
-// DescribeZonesResponse is the response struct for api DescribeZones
-type DescribeZonesResponse struct {
-	*responses.BaseResponse
-	RequestId  string               `json:"RequestId" xml:"RequestId"`
-	TotalItems int                  `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                  `json:"TotalPages" xml:"TotalPages"`
-	PageSize   int                  `json:"PageSize" xml:"PageSize"`
-	PageNumber int                  `json:"PageNumber" xml:"PageNumber"`
-	Zones      ZonesInDescribeZones `json:"Zones" xml:"Zones"`
-}
-
-// CreateDescribeZonesRequest creates a request to invoke DescribeZones API
-func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
-	request = &DescribeZonesRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZones", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezones.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/describezones.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) DescribeZones(request *DescribeZonesRequest) (response *DescribeZonesResponse, err error) {
-	response = CreateDescribeZonesResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZonesWithChan invokes the pvtz.DescribeZones API asynchronously
-func (client *Client) DescribeZonesWithChan(request *DescribeZonesRequest) (<-chan *DescribeZonesResponse, <-chan error) {
-	responseChan := make(chan *DescribeZonesResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZones(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZonesWithCallback invokes the pvtz.DescribeZones API asynchronously
-func (client *Client) DescribeZonesWithCallback(request *DescribeZonesRequest, callback func(response *DescribeZonesResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZonesResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZones(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZonesRequest is the request struct for api DescribeZones
-type DescribeZonesRequest struct {
-	*requests.RpcRequest
-	QueryVpcId      string                      `position:"Query" name:"QueryVpcId"`
-	PageNumber      requests.Integer            `position:"Query" name:"PageNumber"`
-	ResourceGroupId string                      `position:"Query" name:"ResourceGroupId"`
-	PageSize        requests.Integer            `position:"Query" name:"PageSize"`
-	ResourceTag     *[]DescribeZonesResourceTag `position:"Query" name:"ResourceTag"  type:"Repeated"`
-	Lang            string                      `position:"Query" name:"Lang"`
-	Keyword         string                      `position:"Query" name:"Keyword"`
-	Direction       string                      `position:"Query" name:"Direction"`
-	OrderBy         string                      `position:"Query" name:"OrderBy"`
-	ZoneTag         *[]string                   `position:"Query" name:"ZoneTag"  type:"Repeated"`
-	UserClientIp    string                      `position:"Query" name:"UserClientIp"`
-	SearchMode      string                      `position:"Query" name:"SearchMode"`
-	ZoneType        string                      `position:"Query" name:"ZoneType"`
-	QueryRegionId   string                      `position:"Query" name:"QueryRegionId"`
-}
-
-// DescribeZonesResourceTag is a repeated param struct in DescribeZonesRequest
-type DescribeZonesResourceTag struct {
-	Value string `name:"Value"`
-	Key   string `name:"Key"`
-}
-
-// DescribeZonesResponse is the response struct for api DescribeZones
-type DescribeZonesResponse struct {
-	*responses.BaseResponse
-	RequestId  string               `json:"RequestId" xml:"RequestId"`
-	TotalItems int                  `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                  `json:"TotalPages" xml:"TotalPages"`
-	PageSize   int                  `json:"PageSize" xml:"PageSize"`
-	PageNumber int                  `json:"PageNumber" xml:"PageNumber"`
-	Zones      ZonesInDescribeZones `json:"Zones" xml:"Zones"`
-}
-
-// CreateDescribeZonesRequest creates a request to invoke DescribeZones API
-func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
-	request = &DescribeZonesRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZones", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

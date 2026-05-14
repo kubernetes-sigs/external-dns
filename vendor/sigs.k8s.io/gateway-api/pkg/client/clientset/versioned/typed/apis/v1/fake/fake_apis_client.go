@@ -28,20 +28,36 @@ type FakeGatewayV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeGatewayV1) BackendTLSPolicies(namespace string) v1.BackendTLSPolicyInterface {
+	return newFakeBackendTLSPolicies(c, namespace)
+}
+
 func (c *FakeGatewayV1) GRPCRoutes(namespace string) v1.GRPCRouteInterface {
-	return &FakeGRPCRoutes{c, namespace}
+	return newFakeGRPCRoutes(c, namespace)
 }
 
 func (c *FakeGatewayV1) Gateways(namespace string) v1.GatewayInterface {
-	return &FakeGateways{c, namespace}
+	return newFakeGateways(c, namespace)
 }
 
 func (c *FakeGatewayV1) GatewayClasses() v1.GatewayClassInterface {
-	return &FakeGatewayClasses{c}
+	return newFakeGatewayClasses(c)
 }
 
 func (c *FakeGatewayV1) HTTPRoutes(namespace string) v1.HTTPRouteInterface {
-	return &FakeHTTPRoutes{c, namespace}
+	return newFakeHTTPRoutes(c, namespace)
+}
+
+func (c *FakeGatewayV1) ListenerSets(namespace string) v1.ListenerSetInterface {
+	return newFakeListenerSets(c, namespace)
+}
+
+func (c *FakeGatewayV1) ReferenceGrants(namespace string) v1.ReferenceGrantInterface {
+	return newFakeReferenceGrants(c, namespace)
+}
+
+func (c *FakeGatewayV1) TLSRoutes(namespace string) v1.TLSRouteInterface {
+	return newFakeTLSRoutes(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

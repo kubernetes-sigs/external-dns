@@ -19,72 +19,15 @@ limitations under the License.
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-<<<<<<< HEAD
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-)
-
-// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
-// sharedInformers based on type
-type GenericInformer interface {
-	Informer() cache.SharedIndexInformer
-	Lister() cache.GenericLister
-}
-
-type genericInformer struct {
-	informer cache.SharedIndexInformer
-	resource schema.GroupResource
-}
-
-// Informer returns the SharedIndexInformer.
-func (f *genericInformer) Informer() cache.SharedIndexInformer {
-	return f.informer
-}
-
-// Lister returns the GenericLister.
-func (f *genericInformer) Lister() cache.GenericLister {
-	return cache.NewGenericLister(f.Informer().GetIndexer(), f.resource)
-}
-
-// ForResource gives generic access to a shared informer of the matching type
-// TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
-	switch resource {
-	// Group=gateway.networking.k8s.io, Version=v1alpha2
-	case v1alpha2.SchemeGroupVersion.WithResource("gateways"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().Gateways().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("gatewayclasses"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().GatewayClasses().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("httproutes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().HTTPRoutes().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("referencegrants"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().ReferenceGrants().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("referencepolicies"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().ReferencePolicies().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("tcproutes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().TCPRoutes().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("tlsroutes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().TLSRoutes().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("udproutes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().UDPRoutes().Informer()}, nil
-
-		// Group=gateway.networking.k8s.io, Version=v1beta1
-	case v1beta1.SchemeGroupVersion.WithResource("gateways"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1beta1().Gateways().Informer()}, nil
-	case v1beta1.SchemeGroupVersion.WithResource("gatewayclasses"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1beta1().GatewayClasses().Informer()}, nil
-	case v1beta1.SchemeGroupVersion.WithResource("httproutes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1beta1().HTTPRoutes().Informer()}, nil
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	v1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	v1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
@@ -114,6 +57,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=gateway.networking.k8s.io, Version=v1
+	case v1.SchemeGroupVersion.WithResource("backendtlspolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().BackendTLSPolicies().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("grpcroutes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().GRPCRoutes().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("gateways"):
@@ -122,10 +67,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().GatewayClasses().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("httproutes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().HTTPRoutes().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("listenersets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().ListenerSets().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("referencegrants"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().ReferenceGrants().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("tlsroutes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().TLSRoutes().Informer()}, nil
 
 		// Group=gateway.networking.k8s.io, Version=v1alpha2
-	case v1alpha2.SchemeGroupVersion.WithResource("backendlbpolicies"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().BackendLBPolicies().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("grpcroutes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha2().GRPCRoutes().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("referencegrants"):
@@ -140,6 +89,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=gateway.networking.k8s.io, Version=v1alpha3
 	case v1alpha3.SchemeGroupVersion.WithResource("backendtlspolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha3().BackendTLSPolicies().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("tlsroutes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1alpha3().TLSRoutes().Informer()}, nil
 
 		// Group=gateway.networking.k8s.io, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("gateways"):
@@ -150,7 +101,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1beta1().HTTPRoutes().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("referencegrants"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1beta1().ReferenceGrants().Informer()}, nil
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+		// Group=gateway.networking.x-k8s.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("xbackendtrafficpolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().XBackendTrafficPolicies().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("xmeshes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().XMeshes().Informer()}, nil
 
 	}
 

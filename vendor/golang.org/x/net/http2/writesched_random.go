@@ -47,10 +47,6 @@ func (ws *randomWriteScheduler) AdjustStream(streamID uint32, priority PriorityP
 }
 
 func (ws *randomWriteScheduler) Push(wr FrameWriteRequest) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if wr.isControl() {
 		ws.zero.push(wr)
 		return
@@ -66,68 +62,6 @@ func (ws *randomWriteScheduler) Push(wr FrameWriteRequest) {
 
 func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
 	// Control and RST_STREAM frames first.
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	id := wr.StreamID()
-	if id == 0 {
-||||||| parent of 4d7e5ad26 (update vendored files)
-	id := wr.StreamID()
-	if id == 0 {
-=======
-	if wr.isControl() {
->>>>>>> 4d7e5ad26 (update vendored files)
-		ws.zero.push(wr)
-		return
-	}
-	id := wr.StreamID()
-	q, ok := ws.sq[id]
-	if !ok {
-		q = ws.queuePool.get()
-		ws.sq[id] = q
-	}
-	q.push(wr)
-}
-
-func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
-<<<<<<< HEAD
-	// Control frames first.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// Control frames first.
-=======
-	// Control and RST_STREAM frames first.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	id := wr.StreamID()
-	if id == 0 {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	id := wr.StreamID()
-	if id == 0 {
-=======
-	if wr.isControl() {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		ws.zero.push(wr)
-		return
-	}
-	id := wr.StreamID()
-	q, ok := ws.sq[id]
-	if !ok {
-		q = ws.queuePool.get()
-		ws.sq[id] = q
-	}
-	q.push(wr)
-}
-
-func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
-<<<<<<< HEAD
-	// Control frames first.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// Control frames first.
-=======
-	// Control and RST_STREAM frames first.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if !ws.zero.empty() {
 		return ws.zero.shift(), true
 	}

@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,116 +44,14 @@ func parseLoad(loadavgBytes []byte) (*LoadAvg, error) {
 	loads := make([]float64, 3)
 	parts := strings.Fields(string(loadavgBytes))
 	if len(parts) < 3 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %q", string(loadavgBytes))
-	}
-
-	var err error
-	for i, load := range parts[0:3] {
-		loads[i], err = strconv.ParseFloat(load, 64)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("could not parse load %q: %w", load, err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %q", string(loadavgBytes))
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-
-	var err error
-	for i, load := range parts[0:3] {
-		loads[i], err = strconv.ParseFloat(load, 64)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
-=======
-			return nil, fmt.Errorf("could not parse load %q: %w", load, err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %q", string(loadavgBytes))
->>>>>>> 6b7ce455e (update vendored files)
-	}
-
-	var err error
-	for i, load := range parts[0:3] {
-		loads[i], err = strconv.ParseFloat(load, 64)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
-=======
-			return nil, fmt.Errorf("could not parse load %q: %w", load, err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %q", string(loadavgBytes))
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	var err error
-	for i, load := range parts[0:3] {
-		loads[i], err = strconv.ParseFloat(load, 64)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
-=======
-			return nil, fmt.Errorf("could not parse load %q: %w", load, err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
-=======
 		return nil, fmt.Errorf("%w: Malformed line %q", ErrFileParse, string(loadavgBytes))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	var err error
 	for i, load := range parts[0:3] {
 		loads[i], err = strconv.ParseFloat(load, 64)
 		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
-=======
-			return nil, fmt.Errorf("%s: Cannot parse load: %f: %w", ErrFileParse, loads[i], err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-			return nil, fmt.Errorf("%s: Cannot parse load: %f: %w", ErrFileParse, loads[i], err)
-=======
 			return nil, fmt.Errorf("%w: Cannot parse load: %f: %w", ErrFileParse, loads[i], err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 	}
 	return &LoadAvg{

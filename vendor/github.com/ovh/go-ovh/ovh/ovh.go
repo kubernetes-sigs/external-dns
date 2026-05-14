@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -60,6 +61,9 @@ var (
 
 // Client represents a client to call the OVH API
 type Client struct {
+	// AccessToken is a short-lived access token that we got from auth/oauth2/token endpoint.
+	AccessToken string
+
 	// Self generated tokens. Create one by visiting
 	// https://eu.api.ovh.com/createApp/
 	// AppKey holds the Application key
@@ -141,8 +145,32 @@ func NewOAuth2Client(endpoint, clientID, clientSecret string) (*Client, error) {
 	return &client, nil
 }
 
+func NewAccessTokenClient(endpoint, accessToken string) (*Client, error) {
+	client := Client{
+		AccessToken: accessToken,
+		Client:      &http.Client{},
+		Timeout:     DefaultTimeout,
+	}
+
+	// Get and check the configuration
+	if err := client.loadConfig(endpoint); err != nil {
+		return nil, err
+	}
+	return &client, nil
+}
+
 func (c *Client) Endpoint() string {
 	return c.endpoint
+}
+
+func (c *Client) SetEndpoint(endpoint string) error {
+	if strings.HasSuffix(endpoint, "/") {
+		return errors.New("endpoint name cannot have a trailing slash")
+	}
+
+	c.endpoint = endpoint
+
+	return nil
 }
 
 //
@@ -351,6 +379,8 @@ func (c *Client) NewRequest(method, path string, reqBody interface{}, needAuth b
 			}
 
 			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		} else if c.AccessToken != "" {
+			req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 		}
 	}
 
@@ -358,7 +388,13 @@ func (c *Client) NewRequest(method, path string, reqBody interface{}, needAuth b
 	c.Client.Timeout = c.Timeout
 
 	if c.UserAgent != "" {
-		req.Header.Set("User-Agent", "github.com/ovh/go-ovh ("+c.UserAgent+")")
+		// When running in a WebAssembly binary, let the caller set
+		// the user-agent freely to be able to use the browser's one.
+		if runtime.GOARCH == "wasm" && runtime.GOOS == "js" {
+			req.Header.Set("User-Agent", c.UserAgent)
+		} else {
+			req.Header.Set("User-Agent", "github.com/ovh/go-ovh ("+c.UserAgent+")")
+		}
 	} else {
 		req.Header.Set("User-Agent", "github.com/ovh/go-ovh")
 	}

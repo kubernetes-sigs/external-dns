@@ -72,8 +72,8 @@ func (client *Client) DeleteResolverRuleWithCallback(request *DeleteResolverRule
 type DeleteResolverRuleRequest struct {
 	*requests.RpcRequest
 	UserClientIp string `position:"Query" name:"UserClientIp"`
-	Lang         string `position:"Query" name:"Lang"`
 	RuleId       string `position:"Query" name:"RuleId"`
+	Lang         string `position:"Query" name:"Lang"`
 }
 
 // DeleteResolverRuleResponse is the response struct for api DeleteResolverRule

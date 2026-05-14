@@ -13,29 +13,7 @@ import (
 	"golang.org/x/tools/internal/event/label"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Event holds the information about an event of note that occurred.
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// Event holds the information about an event of note that ocurred.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// Event holds the information about an event of note that ocurred.
-=======
-// Event holds the information about an event of note that occurred.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// Event holds the information about an event of note that ocurred.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// Event holds the information about an event of note that ocurred.
-=======
-// Event holds the information about an event of note that occurred.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type Event struct {
 	at time.Time
 

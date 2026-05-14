@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -75,110 +75,7 @@ var nodeZoneRE = regexp.MustCompile(`(\d+), zone\s+(\w+)`)
 func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
 	data, err := os.ReadFile(fs.proc.Path("zoneinfo"))
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
-	}
-	zoneinfo, err := parseZoneinfo(data)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-	zoneinfo, err := parseZoneinfo(data)
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error parsing zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 6b7ce455e (update vendored files)
-	}
-	zoneinfo, err := parseZoneinfo(data)
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error parsing zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-	zoneinfo, err := parseZoneinfo(data)
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("error parsing zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-	return zoneinfo, nil
-}
-
-func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
-
-	zoneinfo := []Zoneinfo{}
-
-	zoneinfoBlocks := bytes.Split(zoneinfoData, []byte("\nNode"))
-	for _, block := range zoneinfoBlocks {
-		var zoneinfoElement Zoneinfo
-		lines := strings.Split(string(block), "\n")
-		for _, line := range lines {
-
-			if nodeZone := nodeZoneRE.FindStringSubmatch(line); nodeZone != nil {
-				zoneinfoElement.Node = nodeZone[1]
-				zoneinfoElement.Zone = nodeZone[2]
-				continue
-			}
-			if strings.HasPrefix(strings.TrimSpace(line), "per-node stats") {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
-=======
-		return nil, fmt.Errorf("%s: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
-=======
 		return nil, fmt.Errorf("%w: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 	zoneinfo, err := parseZoneinfo(data)
 	if err != nil {
@@ -191,11 +88,9 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 
 	zoneinfo := []Zoneinfo{}
 
-	zoneinfoBlocks := bytes.Split(zoneinfoData, []byte("\nNode"))
-	for _, block := range zoneinfoBlocks {
+	for block := range bytes.SplitSeq(zoneinfoData, []byte("\nNode")) {
 		var zoneinfoElement Zoneinfo
-		lines := strings.Split(string(block), "\n")
-		for _, line := range lines {
+		for line := range strings.SplitSeq(string(block), "\n") {
 
 			if nodeZone := nodeZoneRE.FindStringSubmatch(line); nodeZone != nil {
 				zoneinfoElement.Node = nodeZone[1]
@@ -203,13 +98,6 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 				continue
 			}
 			if strings.HasPrefix(strings.TrimSpace(line), "per-node stats") {
-<<<<<<< HEAD
-				zoneinfoElement.Zone = ""
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-				zoneinfoElement.Zone = ""
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				continue
 			}
 			parts := strings.Fields(strings.TrimSpace(line))

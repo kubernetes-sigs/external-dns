@@ -16,8 +16,8 @@ import (
 // Each function in fns has to be a function with the following
 // possible signatures:
 //
-//	func (got A, expected A) bool
-//	func (got A, expected A) error
+//	func (got, expected A) bool
+//	func (got, expected A) error
 //
 // First arg is always got, and second is always expected.
 //

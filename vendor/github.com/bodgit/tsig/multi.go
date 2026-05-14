@@ -1,6 +1,10 @@
 package tsig
 
-import "github.com/miekg/dns"
+import (
+	"errors"
+
+	"github.com/miekg/dns"
+)
 
 type multiProvider struct {
 	providers []dns.TsigProvider
@@ -8,27 +12,21 @@ type multiProvider struct {
 
 func (mp *multiProvider) Generate(msg []byte, t *dns.TSIG) (b []byte, err error) {
 	for _, p := range mp.providers {
-		b, err = p.Generate(msg, t)
-		switch err {
-		case dns.ErrKeyAlg:
-			break
-		default:
+		if b, err = p.Generate(msg, t); err == nil || !errors.Is(err, dns.ErrKeyAlg) {
 			return
 		}
 	}
+
 	return nil, dns.ErrKeyAlg
 }
 
 func (mp *multiProvider) Verify(msg []byte, t *dns.TSIG) (err error) {
 	for _, p := range mp.providers {
-		err = p.Verify(msg, t)
-		switch err {
-		case dns.ErrKeyAlg:
-			break
-		default:
+		if err = p.Verify(msg, t); err == nil || !errors.Is(err, dns.ErrKeyAlg) {
 			return
 		}
 	}
+
 	return dns.ErrKeyAlg
 }
 
@@ -40,6 +38,7 @@ func (mp *multiProvider) Verify(msg []byte, t *dns.TSIG) (err error) {
 // returned; it does not continue down the list.
 func MultiProvider(providers ...dns.TsigProvider) dns.TsigProvider {
 	allProviders := make([]dns.TsigProvider, 0, len(providers))
+
 	for _, p := range providers {
 		if mp, ok := p.(*multiProvider); ok {
 			allProviders = append(allProviders, mp.providers...)
@@ -47,5 +46,6 @@ func MultiProvider(providers ...dns.TsigProvider) dns.TsigProvider {
 			allProviders = append(allProviders, p)
 		}
 	}
+
 	return &multiProvider{allProviders}
 }

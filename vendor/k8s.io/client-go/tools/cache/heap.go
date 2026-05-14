@@ -304,75 +304,7 @@ func (h *Heap) GetByKey(key string) (interface{}, bool, error) {
 func (h *Heap) IsClosed() bool {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	return h.closed
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if h.closed {
-		return true
-	}
-	return false
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	if h.closed {
-		return true
-	}
-	return false
-=======
-	return h.closed
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if h.closed {
-		return true
-	}
-	return false
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	if h.closed {
-		return true
-	}
-	return false
-=======
-	return h.closed
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if h.closed {
-		return true
-	}
-	return false
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	if h.closed {
-		return true
-	}
-	return false
-=======
-	return h.closed
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if h.closed {
-		return true
-	}
-	return false
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if h.closed {
-		return true
-	}
-	return false
-=======
-	return h.closed
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // NewHeap returns a Heap which can be used to queue up items to process.

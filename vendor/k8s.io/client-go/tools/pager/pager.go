@@ -94,78 +94,7 @@ func (p *ListPager) list(ctx context.Context, options metav1.ListOptions, allocN
 		options.Limit = p.PageSize
 	}
 	requestedResourceVersion := options.ResourceVersion
-<<<<<<< HEAD
-<<<<<<< HEAD
 	requestedResourceVersionMatch := options.ResourceVersionMatch
-	var list *metainternalversion.List
-	paginatedResult := false
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, paginatedResult, ctx.Err()
-		default:
-		}
-
-		obj, err := p.PageFn(ctx, options)
-		if err != nil {
-			// Only fallback to full list if an "Expired" errors is returned, FullListIfExpired is true, and
-			// the "Expired" error occurred in page 2 or later (since full list is intended to prevent a pager.List from
-			// failing when the resource versions is established by the first page request falls out of the compaction
-			// during the subsequent list requests).
-			if !errors.IsResourceExpired(err) || !p.FullListIfExpired || options.Continue == "" {
-				return nil, paginatedResult, err
-			}
-			// the list expired while we were processing, fall back to a full list at
-			// the requested ResourceVersion.
-			options.Limit = 0
-			options.Continue = ""
-			options.ResourceVersion = requestedResourceVersion
-			options.ResourceVersionMatch = requestedResourceVersionMatch
-			result, err := p.PageFn(ctx, options)
-			return result, paginatedResult, err
-		}
-		m, err := meta.ListAccessor(obj)
-		if err != nil {
-			return nil, paginatedResult, fmt.Errorf("returned object must be a list: %v", err)
-		}
-
-		// exit early and return the object we got if we haven't processed any pages
-		if len(m.GetContinue()) == 0 && list == nil {
-			return obj, paginatedResult, nil
-		}
-
-		// initialize the list and fill its contents
-		if list == nil {
-			list = &metainternalversion.List{Items: make([]runtime.Object, 0, options.Limit+1)}
-			list.ResourceVersion = m.GetResourceVersion()
-			list.SelfLink = m.GetSelfLink()
-		}
-		if err := meta.EachListItem(obj, func(obj runtime.Object) error {
-			list.Items = append(list.Items, obj)
-			return nil
-		}); err != nil {
-			return nil, paginatedResult, err
-		}
-
-		// if we have no more items, return the list
-		if len(m.GetContinue()) == 0 {
-			return list, paginatedResult, nil
-		}
-
-		// set the next loop up
-		options.Continue = m.GetContinue()
-		// Clear the ResourceVersion(Match) on the subsequent List calls to avoid the
-		// `specifying resource version is not allowed when using continue` error.
-		// See https://github.com/kubernetes/kubernetes/issues/85221#issuecomment-553748143.
-		options.ResourceVersion = ""
-		options.ResourceVersionMatch = ""
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	requestedResourceVersionMatch := options.ResourceVersionMatch
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	var list *metainternalversion.List
 	paginatedResult := false
 
@@ -232,12 +161,7 @@ func (p *ListPager) list(ctx context.Context, options metav1.ListOptions, allocN
 		// `specifying resource version is not allowed when using continue` error.
 		// See https://github.com/kubernetes/kubernetes/issues/85221#issuecomment-553748143.
 		options.ResourceVersion = ""
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		options.ResourceVersionMatch = ""
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		// At this point, result is already paginated.
 		paginatedResult = true
 	}

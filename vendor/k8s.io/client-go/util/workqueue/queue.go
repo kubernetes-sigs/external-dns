@@ -20,10 +20,7 @@ import (
 	"sync"
 	"time"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 )
 
@@ -40,524 +37,6 @@ type TypedInterface[T comparable] interface {
 	ShuttingDown() bool
 }
 
-<<<<<<< HEAD
-// New constructs a new work queue (see the package comment).
-func New() *Type {
-	return NewNamed("")
-}
-
-func NewNamed(name string) *Type {
-	rc := clock.RealClock{}
-	return newQueue(
-		rc,
-		globalMetricsFactory.newQueueMetrics(name, rc),
-		defaultUnfinishedWorkUpdatePeriod,
-	)
-}
-
-func newQueue(c clock.WithTicker, metrics queueMetrics, updatePeriod time.Duration) *Type {
-	t := &Type{
-		clock:                      c,
-		dirty:                      set{},
-		processing:                 set{},
-		cond:                       sync.NewCond(&sync.Mutex{}),
-		metrics:                    metrics,
-		unfinishedWorkUpdatePeriod: updatePeriod,
-	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-	// Don't start the goroutine for a type of noMetrics so we don't consume
-	// resources unnecessarily
-	if _, ok := metrics.(noMetrics); !ok {
-		go t.updateUnfinishedWorkLoop()
-	}
-
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go t.updateUnfinishedWorkLoop()
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	go t.updateUnfinishedWorkLoop()
-=======
-
-	// Don't start the goroutine for a type of noMetrics so we don't consume
-	// resources unnecessarily
-	if _, ok := metrics.(noMetrics); !ok {
-		go t.updateUnfinishedWorkLoop()
-	}
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go t.updateUnfinishedWorkLoop()
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	go t.updateUnfinishedWorkLoop()
-=======
-
-	// Don't start the goroutine for a type of noMetrics so we don't consume
-	// resources unnecessarily
-	if _, ok := metrics.(noMetrics); !ok {
-		go t.updateUnfinishedWorkLoop()
-	}
-
->>>>>>> 6b7ce455e (update vendored files)
-	return t
-}
-
-const defaultUnfinishedWorkUpdatePeriod = 500 * time.Millisecond
-
-// Type is a work queue (see the package comment).
-type Type struct {
-	// queue defines the order in which we will work on items. Every
-	// element of queue should be in the dirty set and not in the
-	// processing set.
-	queue []t
-
-	// dirty defines all of the items that need to be processed.
-	dirty set
-
-	// Things that are currently being processed are in the processing set.
-	// These things may be simultaneously in the dirty set. When we finish
-	// processing something and remove it from this set, we'll check if
-	// it's in the dirty set, and if so, add it to the queue.
-	processing set
-
-	cond *sync.Cond
-
-	shuttingDown bool
-	drain        bool
-
-	metrics queueMetrics
-
-	unfinishedWorkUpdatePeriod time.Duration
-	clock                      clock.WithTicker
-}
-
-type empty struct{}
-type t interface{}
-type set map[t]empty
-
-func (s set) has(item t) bool {
-	_, exists := s[item]
-	return exists
-}
-
-func (s set) insert(item t) {
-	s[item] = empty{}
-}
-
-func (s set) delete(item t) {
-	delete(s, item)
-}
-
-func (s set) len() int {
-	return len(s)
-}
-
-// Add marks item as needing processing.
-func (q *Type) Add(item interface{}) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	if q.shuttingDown {
-		return
-	}
-	if q.dirty.has(item) {
-		return
-	}
-
-	q.metrics.add(item)
-
-	q.dirty.insert(item)
-	if q.processing.has(item) {
-		return
-	}
-
-	q.queue = append(q.queue, item)
-	q.cond.Signal()
-}
-
-// Len returns the current queue length, for informational purposes only. You
-// shouldn't e.g. gate a call to Add() or Get() on Len() being a particular
-// value, that can't be synchronized properly.
-func (q *Type) Len() int {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return len(q.queue)
-}
-
-// Get blocks until it can return an item to be processed. If shutdown = true,
-// the caller should end their goroutine. You must call Done with item when you
-// have finished processing it.
-func (q *Type) Get() (item interface{}, shutdown bool) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	for len(q.queue) == 0 && !q.shuttingDown {
-		q.cond.Wait()
-	}
-	if len(q.queue) == 0 {
-		// We must be shutting down.
-		return nil, true
-	}
-
-	item = q.queue[0]
-	// The underlying array still exists and reference this object, so the object will not be garbage collected.
-	q.queue[0] = nil
-	q.queue = q.queue[1:]
-
-	q.metrics.get(item)
-
-	q.processing.insert(item)
-	q.dirty.delete(item)
-
-	return item, false
-}
-
-// Done marks item as done processing, and if it has been marked as dirty again
-// while it was being processed, it will be re-added to the queue for
-// re-processing.
-func (q *Type) Done(item interface{}) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-
-	q.metrics.done(item)
-
-	q.processing.delete(item)
-	if q.dirty.has(item) {
-		q.queue = append(q.queue, item)
-		q.cond.Signal()
-	} else if q.processing.len() == 0 {
-		q.cond.Signal()
-	}
-}
-
-// ShutDown will cause q to ignore all new items added to it and
-// immediately instruct the worker goroutines to exit.
-func (q *Type) ShutDown() {
-	q.setDrain(false)
-	q.shutdown()
-}
-
-// ShutDownWithDrain will cause q to ignore all new items added to it. As soon
-// as the worker goroutines have "drained", i.e: finished processing and called
-// Done on all existing items in the queue; they will be instructed to exit and
-// ShutDownWithDrain will return. Hence: a strict requirement for using this is;
-// your workers must ensure that Done is called on all items in the queue once
-// the shut down has been initiated, if that is not the case: this will block
-// indefinitely. It is, however, safe to call ShutDown after having called
-// ShutDownWithDrain, as to force the queue shut down to terminate immediately
-// without waiting for the drainage.
-func (q *Type) ShutDownWithDrain() {
-	q.setDrain(true)
-	q.shutdown()
-	for q.isProcessing() && q.shouldDrain() {
-		q.waitForProcessing()
-	}
-}
-
-// isProcessing indicates if there are still items on the work queue being
-// processed. It's used to drain the work queue on an eventual shutdown.
-func (q *Type) isProcessing() bool {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return q.processing.len() != 0
-}
-
-// waitForProcessing waits for the worker goroutines to finish processing items
-// and call Done on them.
-func (q *Type) waitForProcessing() {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	// Ensure that we do not wait on a queue which is already empty, as that
-	// could result in waiting for Done to be called on items in an empty queue
-	// which has already been shut down, which will result in waiting
-	// indefinitely.
-	if q.processing.len() == 0 {
-		return
-	}
-	q.cond.Wait()
-}
-
-func (q *Type) setDrain(shouldDrain bool) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	q.drain = shouldDrain
-}
-
-func (q *Type) shouldDrain() bool {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return q.drain
-}
-
-func (q *Type) shutdown() {
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/apimachinery/pkg/util/clock"
-=======
-	"k8s.io/utils/clock"
->>>>>>> 4d7e5ad26 (update vendored files)
-)
-
-type Interface interface {
-	Add(item interface{})
-	Len() int
-	Get() (item interface{}, shutdown bool)
-	Done(item interface{})
-	ShutDown()
-	ShutDownWithDrain()
-	ShuttingDown() bool
-}
-
-// New constructs a new work queue (see the package comment).
-func New() *Type {
-	return NewNamed("")
-}
-
-func NewNamed(name string) *Type {
-	rc := clock.RealClock{}
-	return newQueue(
-		rc,
-		globalMetricsFactory.newQueueMetrics(name, rc),
-		defaultUnfinishedWorkUpdatePeriod,
-	)
-}
-
-func newQueue(c clock.WithTicker, metrics queueMetrics, updatePeriod time.Duration) *Type {
-	t := &Type{
-		clock:                      c,
-		dirty:                      set{},
-		processing:                 set{},
-		cond:                       sync.NewCond(&sync.Mutex{}),
-		metrics:                    metrics,
-		unfinishedWorkUpdatePeriod: updatePeriod,
-	}
-
-	// Don't start the goroutine for a type of noMetrics so we don't consume
-	// resources unnecessarily
-	if _, ok := metrics.(noMetrics); !ok {
-		go t.updateUnfinishedWorkLoop()
-	}
-
-	return t
-}
-
-const defaultUnfinishedWorkUpdatePeriod = 500 * time.Millisecond
-
-// Type is a work queue (see the package comment).
-type Type struct {
-	// queue defines the order in which we will work on items. Every
-	// element of queue should be in the dirty set and not in the
-	// processing set.
-	queue []t
-
-	// dirty defines all of the items that need to be processed.
-	dirty set
-
-	// Things that are currently being processed are in the processing set.
-	// These things may be simultaneously in the dirty set. When we finish
-	// processing something and remove it from this set, we'll check if
-	// it's in the dirty set, and if so, add it to the queue.
-	processing set
-
-	cond *sync.Cond
-
-	shuttingDown bool
-	drain        bool
-
-	metrics queueMetrics
-
-	unfinishedWorkUpdatePeriod time.Duration
-	clock                      clock.WithTicker
-}
-
-type empty struct{}
-type t interface{}
-type set map[t]empty
-
-func (s set) has(item t) bool {
-	_, exists := s[item]
-	return exists
-}
-
-func (s set) insert(item t) {
-	s[item] = empty{}
-}
-
-func (s set) delete(item t) {
-	delete(s, item)
-}
-
-func (s set) len() int {
-	return len(s)
-}
-
-// Add marks item as needing processing.
-func (q *Type) Add(item interface{}) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	if q.shuttingDown {
-		return
-	}
-	if q.dirty.has(item) {
-		return
-	}
-
-	q.metrics.add(item)
-
-	q.dirty.insert(item)
-	if q.processing.has(item) {
-		return
-	}
-
-	q.queue = append(q.queue, item)
-	q.cond.Signal()
-}
-
-// Len returns the current queue length, for informational purposes only. You
-// shouldn't e.g. gate a call to Add() or Get() on Len() being a particular
-// value, that can't be synchronized properly.
-func (q *Type) Len() int {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return len(q.queue)
-}
-
-// Get blocks until it can return an item to be processed. If shutdown = true,
-// the caller should end their goroutine. You must call Done with item when you
-// have finished processing it.
-func (q *Type) Get() (item interface{}, shutdown bool) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	for len(q.queue) == 0 && !q.shuttingDown {
-		q.cond.Wait()
-	}
-	if len(q.queue) == 0 {
-		// We must be shutting down.
-		return nil, true
-	}
-
-	item = q.queue[0]
-	// The underlying array still exists and reference this object, so the object will not be garbage collected.
-	q.queue[0] = nil
-	q.queue = q.queue[1:]
-
-	q.metrics.get(item)
-
-	q.processing.insert(item)
-	q.dirty.delete(item)
-
-	return item, false
-}
-
-// Done marks item as done processing, and if it has been marked as dirty again
-// while it was being processed, it will be re-added to the queue for
-// re-processing.
-func (q *Type) Done(item interface{}) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-
-	q.metrics.done(item)
-
-	q.processing.delete(item)
-	if q.dirty.has(item) {
-		q.queue = append(q.queue, item)
-		q.cond.Signal()
-	} else if q.processing.len() == 0 {
-		q.cond.Signal()
-	}
-}
-
-// ShutDown will cause q to ignore all new items added to it and
-// immediately instruct the worker goroutines to exit.
-func (q *Type) ShutDown() {
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	q.setDrain(false)
-	q.shutdown()
-}
-
-// ShutDownWithDrain will cause q to ignore all new items added to it. As soon
-// as the worker goroutines have "drained", i.e: finished processing and called
-// Done on all existing items in the queue; they will be instructed to exit and
-// ShutDownWithDrain will return. Hence: a strict requirement for using this is;
-// your workers must ensure that Done is called on all items in the queue once
-// the shut down has been initiated, if that is not the case: this will block
-// indefinitely. It is, however, safe to call ShutDown after having called
-// ShutDownWithDrain, as to force the queue shut down to terminate immediately
-// without waiting for the drainage.
-func (q *Type) ShutDownWithDrain() {
-	q.setDrain(true)
-	q.shutdown()
-	for q.isProcessing() && q.shouldDrain() {
-		q.waitForProcessing()
-	}
-}
-
-// isProcessing indicates if there are still items on the work queue being
-// processed. It's used to drain the work queue on an eventual shutdown.
-func (q *Type) isProcessing() bool {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return q.processing.len() != 0
-}
-
-// waitForProcessing waits for the worker goroutines to finish processing items
-// and call Done on them.
-func (q *Type) waitForProcessing() {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	// Ensure that we do not wait on a queue which is already empty, as that
-	// could result in waiting for Done to be called on items in an empty queue
-	// which has already been shut down, which will result in waiting
-	// indefinitely.
-	if q.processing.len() == 0 {
-		return
-	}
-	q.cond.Wait()
-}
-
-func (q *Type) setDrain(shouldDrain bool) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	q.drain = shouldDrain
-}
-
-func (q *Type) shouldDrain() bool {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
-	return q.drain
-}
-
-func (q *Type) shutdown() {
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/apimachinery/pkg/util/clock"
-=======
-	"k8s.io/utils/clock"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-)
-
-type Interface interface {
-	Add(item interface{})
-	Len() int
-	Get() (item interface{}, shutdown bool)
-	Done(item interface{})
-	ShutDown()
-	ShutDownWithDrain()
-	ShuttingDown() bool
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 // Queue is the underlying storage for items. The functions below are always
 // called from the same goroutine.
 type Queue[T comparable] interface {
@@ -598,7 +77,6 @@ func (q *queue[T]) Pop() (item T) {
 	*q = (*q)[1:]
 
 	return item
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
 // QueueConfig specifies optional configurations to customize an Interface.
@@ -686,17 +164,18 @@ func newQueue[T comparable](c clock.WithTicker, queue Queue[T], metrics queueMet
 	t := &Typed[T]{
 		clock:                      c,
 		queue:                      queue,
-		dirty:                      set[T]{},
-		processing:                 set[T]{},
+		dirty:                      sets.Set[T]{},
+		processing:                 sets.Set[T]{},
 		cond:                       sync.NewCond(&sync.Mutex{}),
 		metrics:                    metrics,
 		unfinishedWorkUpdatePeriod: updatePeriod,
+		stopCh:                     make(chan struct{}),
 	}
 
 	// Don't start the goroutine for a type of noMetrics so we don't consume
 	// resources unnecessarily
 	if _, ok := metrics.(noMetrics[T]); !ok {
-		go t.updateUnfinishedWorkLoop()
+		t.wg.Go(t.updateUnfinishedWorkLoop)
 	}
 
 	return t
@@ -715,13 +194,13 @@ type Typed[t comparable] struct {
 	queue Queue[t]
 
 	// dirty defines all of the items that need to be processed.
-	dirty set[t]
+	dirty sets.Set[t]
 
 	// Things that are currently being processed are in the processing set.
 	// These things may be simultaneously in the dirty set. When we finish
 	// processing something and remove it from this set, we'll check if
 	// it's in the dirty set, and if so, add it to the queue.
-	processing set[t]
+	processing sets.Set[t]
 
 	cond *sync.Cond
 
@@ -732,39 +211,29 @@ type Typed[t comparable] struct {
 
 	unfinishedWorkUpdatePeriod time.Duration
 	clock                      clock.WithTicker
+
+	// wg manages goroutines started by the queue to allow graceful shutdown
+	// ShutDown() will wait for goroutines to exit before returning.
+	wg sync.WaitGroup
+
+	stopCh chan struct{}
+	// stopOnce guarantees we only signal shutdown a single time
+	stopOnce sync.Once
 }
 
-type empty struct{}
-type set[t comparable] map[t]empty
-
-func (s set[t]) has(item t) bool {
-	_, exists := s[item]
-	return exists
-}
-
-func (s set[t]) insert(item t) {
-	s[item] = empty{}
-}
-
-func (s set[t]) delete(item t) {
-	delete(s, item)
-}
-
-func (s set[t]) len() int {
-	return len(s)
-}
-
-// Add marks item as needing processing.
+// Add marks item as needing processing. When the queue is shutdown new
+// items will silently be ignored and not queued or marked as dirty for
+// reprocessing.
 func (q *Typed[T]) Add(item T) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 	if q.shuttingDown {
 		return
 	}
-	if q.dirty.has(item) {
+	if q.dirty.Has(item) {
 		// the same item is added again before it is processed, call the Touch
 		// function if the queue cares about it (for e.g, reset its priority)
-		if !q.processing.has(item) {
+		if !q.processing.Has(item) {
 			q.queue.Touch(item)
 		}
 		return
@@ -772,8 +241,8 @@ func (q *Typed[T]) Add(item T) {
 
 	q.metrics.add(item)
 
-	q.dirty.insert(item)
-	if q.processing.has(item) {
+	q.dirty.Insert(item)
+	if q.processing.Has(item) {
 		return
 	}
 
@@ -808,8 +277,8 @@ func (q *Typed[T]) Get() (item T, shutdown bool) {
 
 	q.metrics.get(item)
 
-	q.processing.insert(item)
-	q.dirty.delete(item)
+	q.processing.Insert(item)
+	q.dirty.Delete(item)
 
 	return item, false
 }
@@ -823,25 +292,24 @@ func (q *Typed[T]) Done(item T) {
 
 	q.metrics.done(item)
 
-	q.processing.delete(item)
-	if q.dirty.has(item) {
+	q.processing.Delete(item)
+	if q.dirty.Has(item) {
 		q.queue.Push(item)
 		q.cond.Signal()
-	} else if q.processing.len() == 0 {
+	} else if q.processing.Len() == 0 {
 		q.cond.Signal()
 	}
 }
 
-// ShutDown will cause q to ignore all new items added to it and
-// immediately instruct the worker goroutines to exit.
-<<<<<<< HEAD
-func (q *Type) ShutDown() {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-func (q *Type) ShutDown() {
-=======
+// ShutDown will cause q to ignore all new items added to it. Worker
+// goroutines will continue processing items in the queue until it is
+// empty and then receive the shutdown signal.
 func (q *Typed[T]) ShutDown() {
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	defer q.wg.Wait()
+	q.stopOnce.Do(func() {
+		defer close(q.stopCh)
+	})
+
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
@@ -850,16 +318,17 @@ func (q *Typed[T]) ShutDown() {
 	q.cond.Broadcast()
 }
 
-// ShutDownWithDrain will cause q to ignore all new items added to it. As soon
-// as the worker goroutines have "drained", i.e: finished processing and called
-// Done on all existing items in the queue; they will be instructed to exit and
-// ShutDownWithDrain will return. Hence: a strict requirement for using this is;
-// your workers must ensure that Done is called on all items in the queue once
-// the shut down has been initiated, if that is not the case: this will block
-// indefinitely. It is, however, safe to call ShutDown after having called
-// ShutDownWithDrain, as to force the queue shut down to terminate immediately
-// without waiting for the drainage.
+// ShutDownWithDrain is equivalent to ShutDown but waits until all items
+// in the queue have been processed.
+// ShutDown can be called after ShutDownWithDrain to force
+// ShutDownWithDrain to stop waiting.
+// Workers must call Done on an item after processing it, otherwise
+// ShutDownWithDrain will block indefinitely.
 func (q *Typed[T]) ShutDownWithDrain() {
+	defer q.wg.Wait()
+	q.stopOnce.Do(func() {
+		defer close(q.stopCh)
+	})
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
@@ -867,7 +336,7 @@ func (q *Typed[T]) ShutDownWithDrain() {
 	q.shuttingDown = true
 	q.cond.Broadcast()
 
-	for q.processing.len() != 0 && q.drain {
+	for q.processing.Len() != 0 && q.drain {
 		q.cond.Wait()
 	}
 }
@@ -879,20 +348,22 @@ func (q *Typed[T]) ShuttingDown() bool {
 	return q.shuttingDown
 }
 
+func (q *Typed[T]) updateUnfinishedWork() {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	if !q.shuttingDown {
+		q.metrics.updateUnfinishedWork()
+	}
+}
+
 func (q *Typed[T]) updateUnfinishedWorkLoop() {
 	t := q.clock.NewTicker(q.unfinishedWorkUpdatePeriod)
 	defer t.Stop()
-	for range t.C() {
-		if !func() bool {
-			q.cond.L.Lock()
-			defer q.cond.L.Unlock()
-			if !q.shuttingDown {
-				q.metrics.updateUnfinishedWork()
-				return true
-			}
-			return false
-
-		}() {
+	for {
+		select {
+		case <-t.C():
+			q.updateUnfinishedWork()
+		case <-q.stopCh:
 			return
 		}
 	}

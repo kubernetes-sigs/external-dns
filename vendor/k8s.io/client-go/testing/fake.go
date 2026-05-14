@@ -106,26 +106,6 @@ func (c *Fake) PrependReactor(verb, resource string, reaction ReactionFunc) {
 
 // AddWatchReactor appends a reactor to the end of the chain.
 func (c *Fake) AddWatchReactor(resource string, reaction WatchReactionFunc) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	c.Lock()
 	defer c.Unlock()
 	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
@@ -135,54 +115,6 @@ func (c *Fake) AddWatchReactor(resource string, reaction WatchReactionFunc) {
 func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
 	c.Lock()
 	defer c.Unlock()
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
-}
-
-// PrependWatchReactor adds a reactor to the beginning of the chain.
-func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
-}
-
-// PrependWatchReactor adds a reactor to the beginning of the chain.
-func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
-}
-
-// PrependWatchReactor adds a reactor to the beginning of the chain.
-func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
-}
-
-// PrependWatchReactor adds a reactor to the beginning of the chain.
-func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	c.WatchReactionChain = append([]WatchReactor{&SimpleWatchReactor{resource, reaction}}, c.WatchReactionChain...)
 }
 

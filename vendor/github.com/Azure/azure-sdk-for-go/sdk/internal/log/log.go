@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
@@ -44,7 +41,7 @@ func Should(cls Event) bool {
 	if log.lst == nil {
 		return false
 	}
-	if log.cls == nil || len(log.cls) == 0 {
+	if len(log.cls) == 0 {
 		return true
 	}
 	for _, c := range log.cls {

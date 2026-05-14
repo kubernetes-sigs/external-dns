@@ -1,32 +1,6 @@
 // Copyright 2020, The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // license that can be found in the LICENSE file.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// license that can be found in the LICENSE.md file.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// license that can be found in the LICENSE.md file.
-=======
-// license that can be found in the LICENSE file.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// license that can be found in the LICENSE.md file.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// license that can be found in the LICENSE.md file.
-=======
-// license that can be found in the LICENSE file.
->>>>>>> 6b7ce455e (update vendored files)
 
 package value
 
@@ -47,74 +21,6 @@ func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte 
 	// BUG: Go reflection provides no way to disambiguate two named types
 	// of the same name and within the same package,
 	// but declared within the namespace of different functions.
-
-	// Use the "any" alias instead of "interface{}" for better readability.
-	if t == anyType {
-		return append(b, "any"...)
-	}
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// license that can be found in the LICENSE.md file.
-||||||| parent of 4d7e5ad26 (update vendored files)
-// license that can be found in the LICENSE.md file.
-=======
-// license that can be found in the LICENSE file.
->>>>>>> 4d7e5ad26 (update vendored files)
-
-package value
-
-import (
-	"reflect"
-	"strconv"
-)
-
-var anyType = reflect.TypeOf((*interface{})(nil)).Elem()
-
-// TypeString is nearly identical to reflect.Type.String,
-// but has an additional option to specify that full type names be used.
-func TypeString(t reflect.Type, qualified bool) string {
-	return string(appendTypeName(nil, t, qualified, false))
-}
-
-func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte {
-	// BUG: Go reflection provides no way to disambiguate two named types
-	// of the same name and within the same package,
-	// but declared within the namespace of different functions.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-
-	// Use the "any" alias instead of "interface{}" for better readability.
-	if t == anyType {
-		return append(b, "any"...)
-	}
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// license that can be found in the LICENSE.md file.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// license that can be found in the LICENSE.md file.
-=======
-// license that can be found in the LICENSE file.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-package value
-
-import (
-	"reflect"
-	"strconv"
-)
-
-var anyType = reflect.TypeOf((*interface{})(nil)).Elem()
-
-// TypeString is nearly identical to reflect.Type.String,
-// but has an additional option to specify that full type names be used.
-func TypeString(t reflect.Type, qualified bool) string {
-	return string(appendTypeName(nil, t, qualified, false))
-}
-
-func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte {
-	// BUG: Go reflection provides no way to disambiguate two named types
-	// of the same name and within the same package,
-	// but declared within the namespace of different functions.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	// Use the "any" alias instead of "interface{}" for better readability.
 	if t == anyType {

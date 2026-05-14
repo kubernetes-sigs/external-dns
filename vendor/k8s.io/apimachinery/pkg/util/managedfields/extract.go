@@ -17,11 +17,10 @@ limitations under the License.
 package managedfields
 
 import (
-	"bytes"
 	"fmt"
 
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
-	"sigs.k8s.io/structured-merge-diff/v4/typed"
+	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
+	"sigs.k8s.io/structured-merge-diff/v6/typed"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +64,7 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 		return nil
 	}
 	fieldset := &fieldpath.Set{}
-	err = fieldset.FromJSON(bytes.NewReader(fieldsEntry.FieldsV1.Raw))
+	err = fieldset.FromJSON(fieldsEntry.FieldsV1.GetRawReader())
 	if err != nil {
 		return fmt.Errorf("error marshalling FieldsV1 to JSON: %w", err)
 	}
@@ -75,11 +74,6 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 	if !ok {
 		return fmt.Errorf("unable to convert managed fields for %s to unstructured, expected map, got %T", fieldManager, u)
 	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 6b7ce455e (update vendored files)
-=======
 
 	// set the type meta manually if it doesn't exist to avoid missing kind errors
 	// when decoding from unstructured JSON
@@ -87,27 +81,6 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 		m["kind"] = object.GetObjectKind().GroupVersionKind().Kind
 		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
 	}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-	// set the type meta manually if it doesn't exist to avoid missing kind errors
-	// when decoding from unstructured JSON
-	if _, ok := m["kind"]; !ok && object.GetObjectKind().GroupVersionKind().Kind != "" {
-		m["kind"] = object.GetObjectKind().GroupVersionKind().Kind
-		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-	// set the type meta manually if it doesn't exist to avoid missing kind errors
-	// when decoding from unstructured JSON
-	if _, ok := m["kind"]; !ok && object.GetObjectKind().GroupVersionKind().Kind != "" {
-		m["kind"] = object.GetObjectKind().GroupVersionKind().Kind
-		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
-	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(m, applyConfiguration); err != nil {
 		return fmt.Errorf("error extracting into obj from unstructured: %w", err)
 	}

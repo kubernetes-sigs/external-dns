@@ -20,44 +20,22 @@ package v1alpha1
 
 // ServerStorageVersionApplyConfiguration represents a declarative configuration of the ServerStorageVersion type for use
 // with apply.
+//
+// An API server instance reports the version it can decode and the version it
+// encodes objects to when persisting objects in the backend.
 type ServerStorageVersionApplyConfiguration struct {
-	APIServerID       *string  `json:"apiServerID,omitempty"`
-	EncodingVersion   *string  `json:"encodingVersion,omitempty"`
+	// apiServerID is the ID of the reporting API server.
+	APIServerID *string `json:"apiServerID,omitempty"`
+	// encodingVersion the API server encodes the object to when persisting it in
+	// the backend (e.g., etcd).
+	EncodingVersion *string `json:"encodingVersion,omitempty"`
+	// decodableVersions are the encoding versions the API server can handle to decode.
+	// The API server can decode objects encoded in these versions.
+	// The encodingVersion must be included in the decodableVersions.
 	DecodableVersions []string `json:"decodableVersions,omitempty"`
-<<<<<<< HEAD
-}
-
-// ServerStorageVersionApplyConfiguration constructs an declarative configuration of the ServerStorageVersion type for use with
-// apply.
-func ServerStorageVersion() *ServerStorageVersionApplyConfiguration {
-	return &ServerStorageVersionApplyConfiguration{}
-}
-
-// WithAPIServerID sets the APIServerID field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the APIServerID field is set to the value of the last call.
-func (b *ServerStorageVersionApplyConfiguration) WithAPIServerID(value string) *ServerStorageVersionApplyConfiguration {
-	b.APIServerID = &value
-	return b
-}
-
-// WithEncodingVersion sets the EncodingVersion field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the EncodingVersion field is set to the value of the last call.
-func (b *ServerStorageVersionApplyConfiguration) WithEncodingVersion(value string) *ServerStorageVersionApplyConfiguration {
-	b.EncodingVersion = &value
-	return b
-}
-
-// WithDecodableVersions adds the given value to the DecodableVersions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the DecodableVersions field.
-func (b *ServerStorageVersionApplyConfiguration) WithDecodableVersions(values ...string) *ServerStorageVersionApplyConfiguration {
-	for i := range values {
-		b.DecodableVersions = append(b.DecodableVersions, values[i])
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	ServedVersions    []string `json:"servedVersions,omitempty"`
+	// servedVersions lists all versions the API server can serve.
+	// DecodableVersions must include all ServedVersions.
+	ServedVersions []string `json:"servedVersions,omitempty"`
 }
 
 // ServerStorageVersionApplyConfiguration constructs a declarative configuration of the ServerStorageVersion type for use with
@@ -98,7 +76,6 @@ func (b *ServerStorageVersionApplyConfiguration) WithDecodableVersions(values ..
 func (b *ServerStorageVersionApplyConfiguration) WithServedVersions(values ...string) *ServerStorageVersionApplyConfiguration {
 	for i := range values {
 		b.ServedVersions = append(b.ServedVersions, values[i])
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return b
 }

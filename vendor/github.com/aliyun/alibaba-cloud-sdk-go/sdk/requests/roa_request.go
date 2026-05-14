@@ -123,16 +123,6 @@ func (request *RoaRequest) InitWithApiInfo(product, version, action, uriPattern,
 	request.baseRequest = defaultBaseRequest()
 	request.PathParams = make(map[string]string)
 	request.Headers["x-acs-version"] = version
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.Headers["x-acs-action"] = action
 	request.pathPattern = uriPattern
 	request.locationServiceCode = serviceCode
@@ -151,48 +141,6 @@ func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
 	if commonRequest.ApiName != "" {
 		request.Headers["x-acs-action"] = commonRequest.ApiName
 	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	request.pathPattern = uriPattern
-	request.locationServiceCode = serviceCode
-	request.locationEndpointType = endpointType
-	request.product = product
-	//request.version = version
-	request.actionName = action
-}
-
-func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
-	request.baseRequest = commonRequest.baseRequest
-	request.PathParams = commonRequest.PathParams
-	request.product = commonRequest.Product
-	//request.version = commonRequest.Version
-	request.Headers["x-acs-version"] = commonRequest.Version
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	request.pathPattern = uriPattern
-	request.locationServiceCode = serviceCode
-	request.locationEndpointType = endpointType
-	request.product = product
-	//request.version = version
-	request.actionName = action
-}
-
-func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
-	request.baseRequest = commonRequest.baseRequest
-	request.PathParams = commonRequest.PathParams
-	request.product = commonRequest.Product
-	//request.version = commonRequest.Version
-	request.Headers["x-acs-version"] = commonRequest.Version
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.actionName = commonRequest.ApiName
 	request.pathPattern = commonRequest.PathPattern
 	request.locationServiceCode = commonRequest.ServiceCode

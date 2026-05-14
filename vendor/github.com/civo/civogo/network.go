@@ -22,10 +22,11 @@ type Network struct {
 	NameserversV4         []string `json:"nameservers_v4,omitempty"`
 	NameserversV6         []string `json:"nameservers_v6,omitempty"`
 	VlanID                int      `json:"vlan_id" validate:"required" schema:"vlan_id"`
-	HardwareAddr          string   `json:"hardware_addr,omitempty" schema:"hardware_addr"`
+	PhysicalInterface     string   `json:"physical_interface,omitempty" schema:"physical_interface"`
 	GatewayIPv4           string   `json:"gateway_ipv4" validate:"required" schema:"gateway_ipv4"`
 	AllocationPoolV4Start string   `json:"allocation_pool_v4_start" validate:"required" schema:"allocation_pool_v4_start"`
 	AllocationPoolV4End   string   `json:"allocation_pool_v4_end" validate:"required" schema:"allocation_pool_v4_end"`
+	FreeIPCount           int      `json:"free_ip_count,omitempty"`
 }
 
 // Subnet represents a subnet within a private network
@@ -62,8 +63,8 @@ type VLANConnectConfig struct {
 	// VLanID is the ID of the VLAN to connect to
 	VlanID int `json:"vlan_id" validate:"required" schema:"vlan_id"`
 
-	// HardwareAddr is the base interface(default: eth0) at which we want to setup VLAN.
-	HardwareAddr string `json:"hardware_addr,omitempty" schema:"hardware_addr"`
+	// PhysicalInterface is the base interface(default: eth0) at which we want to setup VLAN.
+	PhysicalInterface string `json:"physical_interface,omitempty" schema:"physical_interface"`
 
 	// CIDRv4 is the CIDR of the VLAN to connect to
 	CIDRv4 string `json:"cidr_v4" validate:"required" schema:"cidr_v4"`
@@ -106,7 +107,9 @@ func (c *Client) GetDefaultNetwork() (*Network, error) {
 	}
 
 	networks := make([]Network, 0)
-	json.NewDecoder(bytes.NewReader(resp)).Decode(&networks)
+	if err := json.NewDecoder(bytes.NewReader(resp)).Decode(&networks); err != nil {
+		return nil, fmt.Errorf("could not decode networks: %w", err)
+	}
 	for _, network := range networks {
 		if network.Default {
 			return &network, nil

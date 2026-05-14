@@ -16,46 +16,12 @@ limitations under the License.
 
 // Package workqueue provides a simple queue that supports the following
 // features:
-<<<<<<< HEAD
-<<<<<<< HEAD
 //   - Fair: items processed in the order in which they are added.
 //   - Stingy: a single item will not be processed multiple times concurrently,
 //     and if an item is added multiple times before it can be processed, it
 //     will only be processed once.
 //   - Multiple consumers and producers. In particular, it is allowed for an
 //     item to be reenqueued while it is being processed.
+//     In this case it will be processed again.
 //   - Shutdown notifications.
-<<<<<<< HEAD
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//  * Fair: items processed in the order in which they are added.
-//  * Stingy: a single item will not be processed multiple times concurrently,
-//      and if an item is added multiple times before it can be processed, it
-//      will only be processed once.
-//  * Multiple consumers and producers. In particular, it is allowed for an
-//      item to be reenqueued while it is being processed.
-//  * Shutdown notifications.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//  * Fair: items processed in the order in which they are added.
-//  * Stingy: a single item will not be processed multiple times concurrently,
-//      and if an item is added multiple times before it can be processed, it
-//      will only be processed once.
-//  * Multiple consumers and producers. In particular, it is allowed for an
-//      item to be reenqueued while it is being processed.
-//  * Shutdown notifications.
-=======
-//   - Fair: items processed in the order in which they are added.
-//   - Stingy: a single item will not be processed multiple times concurrently,
-//     and if an item is added multiple times before it can be processed, it
-//     will only be processed once.
-//   - Multiple consumers and producers. In particular, it is allowed for an
-//     item to be reenqueued while it is being processed.
-//   - Shutdown notifications.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-package workqueue // import "k8s.io/client-go/util/workqueue"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-package workqueue // import "k8s.io/client-go/util/workqueue"
-=======
 package workqueue
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

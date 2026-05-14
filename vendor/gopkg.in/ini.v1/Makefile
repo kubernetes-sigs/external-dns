@@ -6,51 +6,7 @@ test:
 	go test -v -cover -race
 
 bench:
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	go test -v -cover -test.bench=. -test.benchmem
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go test -v -cover -race -test.bench=. -test.benchmem
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	go test -v -cover -race -test.bench=. -test.benchmem
-=======
-	go test -v -cover -test.bench=. -test.benchmem
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go test -v -cover -race -test.bench=. -test.benchmem
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	go test -v -cover -race -test.bench=. -test.benchmem
-=======
-	go test -v -cover -test.bench=. -test.benchmem
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go test -v -cover -race -test.bench=. -test.benchmem
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	go test -v -cover -race -test.bench=. -test.benchmem
-=======
-	go test -v -cover -test.bench=. -test.benchmem
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	go test -v -cover -race -test.bench=. -test.benchmem
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	go test -v -cover -race -test.bench=. -test.benchmem
-=======
-	go test -v -cover -test.bench=. -test.benchmem
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 vet:
 	go vet

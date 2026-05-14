@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,9 +23,9 @@ import (
 
 // Learned from include/uapi/linux/if_arp.h.
 const (
-	// completed entry (ha valid).
+	// Completed entry (ha valid).
 	ATFComplete = 0x02
-	// permanent entry.
+	// Permanent entry.
 	ATFPermanent = 0x04
 	// Publish entry.
 	ATFPublish = 0x08
@@ -55,21 +55,7 @@ type ARPEntry struct {
 func (fs FS) GatherARPEntries() ([]ARPEntry, error) {
 	data, err := os.ReadFile(fs.proc.Path("net/arp"))
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: error reading arp %s: %w", ErrFileRead, fs.proc.Path("net/arp"), err)
-=======
 		return nil, fmt.Errorf("%w: error reading arp %s: %w", ErrFileRead, fs.proc.Path("net/arp"), err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return parseARPEntries(data)
@@ -87,173 +73,16 @@ func parseARPEntries(data []byte) ([]ARPEntry, error) {
 		columns := strings.Fields(line)
 		width := len(columns)
 
-		if width == expectedHeaderWidth || width == 0 {
+		switch width {
+		case expectedHeaderWidth, 0:
 			continue
-		} else if width == expectedDataWidth {
+		case expectedDataWidth:
 			entry, err := parseARPEntry(columns)
 			if err != nil {
-<<<<<<< HEAD
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-=======
-		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-
-	return parseARPEntries(data)
-}
-
-func parseARPEntries(data []byte) ([]ARPEntry, error) {
-	lines := strings.Split(string(data), "\n")
-	entries := make([]ARPEntry, 0)
-	var err error
-	const (
-		expectedDataWidth   = 6
-		expectedHeaderWidth = 9
-	)
-	for _, line := range lines {
-		columns := strings.Fields(line)
-		width := len(columns)
-
-		if width == expectedHeaderWidth || width == 0 {
-			continue
-		} else if width == expectedDataWidth {
-			entry, err := parseARPEntry(columns)
-			if err != nil {
-<<<<<<< HEAD
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
-=======
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-=======
-		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
->>>>>>> 6b7ce455e (update vendored files)
-	}
-
-	return parseARPEntries(data)
-}
-
-func parseARPEntries(data []byte) ([]ARPEntry, error) {
-	lines := strings.Split(string(data), "\n")
-	entries := make([]ARPEntry, 0)
-	var err error
-	const (
-		expectedDataWidth   = 6
-		expectedHeaderWidth = 9
-	)
-	for _, line := range lines {
-		columns := strings.Fields(line)
-		width := len(columns)
-
-		if width == expectedHeaderWidth || width == 0 {
-			continue
-		} else if width == expectedDataWidth {
-			entry, err := parseARPEntry(columns)
-			if err != nil {
-<<<<<<< HEAD
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
-=======
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-=======
-		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	return parseARPEntries(data)
-}
-
-func parseARPEntries(data []byte) ([]ARPEntry, error) {
-	lines := strings.Split(string(data), "\n")
-	entries := make([]ARPEntry, 0)
-	var err error
-	const (
-		expectedDataWidth   = 6
-		expectedHeaderWidth = 9
-	)
-	for _, line := range lines {
-		columns := strings.Fields(line)
-		width := len(columns)
-
-		if width == expectedHeaderWidth || width == 0 {
-			continue
-		} else if width == expectedDataWidth {
-			entry, err := parseARPEntry(columns)
-			if err != nil {
-<<<<<<< HEAD
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
-=======
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
-=======
-		return nil, fmt.Errorf("%s: error reading arp %s: %w", ErrFileRead, fs.proc.Path("net/arp"), err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	}
-
-	return parseARPEntries(data)
-}
-
-func parseARPEntries(data []byte) ([]ARPEntry, error) {
-	lines := strings.Split(string(data), "\n")
-	entries := make([]ARPEntry, 0)
-	var err error
-	const (
-		expectedDataWidth   = 6
-		expectedHeaderWidth = 9
-	)
-	for _, line := range lines {
-		columns := strings.Fields(line)
-		width := len(columns)
-
-		if width == expectedHeaderWidth || width == 0 {
-			continue
-		} else if width == expectedDataWidth {
-			entry, err := parseARPEntry(columns)
-			if err != nil {
-<<<<<<< HEAD
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
-=======
-				return []ARPEntry{}, fmt.Errorf("%s: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-				return []ARPEntry{}, fmt.Errorf("%s: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
-=======
 				return []ARPEntry{}, fmt.Errorf("%w: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 			}
 			entries = append(entries, entry)
-		} else {
+		default:
 			return []ARPEntry{}, fmt.Errorf("%w: %d columns found, but expected %d: %w", ErrFileParse, width, expectedDataWidth, err)
 		}
 

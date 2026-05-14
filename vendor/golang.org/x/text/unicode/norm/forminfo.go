@@ -13,15 +13,7 @@ import "encoding/binary"
 // a rune to a uint16. The values take two forms.  For v >= 0x8000:
 //   bits
 //   15:    1 (inverse of NFD_QC bit of qcInfo)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-//   13..7: qcInfo (see below). isYesD is always true (no decomposition).
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-//   13..7: qcInfo (see below). isYesD is always true (no decomposition).
-=======
 //   12..7: qcInfo (see below). isYesD is always true (no decomposition).
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 //    6..0: ccc (compressed CCC value).
 // For v < 0x8000, the respective rune has a decomposition and v is an index
 // into a byte array of UTF-8 decomposition sequences and additional info and
@@ -126,128 +118,6 @@ func (p Properties) BoundaryAfter() bool {
 //	4..3: NFC_QC Yes(00), No (10), or Maybe (11)
 //	2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
 //	1..0: Number of trailing non-starters.
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//   13..7: qcInfo (see below). isYesD is always true (no decompostion).
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   13..7: qcInfo (see below). isYesD is always true (no decompostion).
-=======
-//   13..7: qcInfo (see below). isYesD is always true (no decomposition).
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//    6..0: ccc (compressed CCC value).
-// For v < 0x8000, the respective rune has a decomposition and v is an index
-// into a byte array of UTF-8 decomposition sequences and additional info and
-// has the form:
-//    <header> <decomp_byte>* [<tccc> [<lccc>]]
-// The header contains the number of bytes in the decomposition (excluding this
-// length byte). The two most significant bits of this length byte correspond
-// to bit 5 and 4 of qcInfo (see below).  The byte sequence itself starts at v+1.
-// The byte sequence is followed by a trailing and leading CCC if the values
-// for these are not zero.  The value of v determines which ccc are appended
-// to the sequences.  For v < firstCCC, there are none, for v >= firstCCC,
-// the sequence is followed by a trailing ccc, and for v >= firstLeadingCC
-// there is an additional leading ccc. The value of tccc itself is the
-// trailing CCC shifted left 2 bits. The two least-significant bits of tccc
-// are the number of trailing non-starters.
-
-const (
-	qcInfoMask      = 0x3F // to clear all but the relevant bits in a qcInfo
-	headerLenMask   = 0x3F // extract the length value from the header byte
-	headerFlagsMask = 0xC0 // extract the qcInfo bits from the header byte
-)
-
-// Properties provides access to normalization properties of a rune.
-type Properties struct {
-	pos   uint8  // start position in reorderBuffer; used in composition.go
-	size  uint8  // length of UTF-8 encoding of this rune
-	ccc   uint8  // leading canonical combining class (ccc if not decomposition)
-	tccc  uint8  // trailing canonical combining class (ccc if not decomposition)
-	nLead uint8  // number of leading non-starters.
-	flags qcInfo // quick check flags
-	index uint16
-}
-
-// functions dispatchable per form
-type lookupFunc func(b input, i int) Properties
-
-// formInfo holds Form-specific functions and tables.
-type formInfo struct {
-	form                     Form
-	composing, compatibility bool // form type
-	info                     lookupFunc
-	nextMain                 iterFunc
-}
-
-var formTable = []*formInfo{{
-	form:          NFC,
-	composing:     true,
-	compatibility: false,
-	info:          lookupInfoNFC,
-	nextMain:      nextComposed,
-}, {
-	form:          NFD,
-	composing:     false,
-	compatibility: false,
-	info:          lookupInfoNFC,
-	nextMain:      nextDecomposed,
-}, {
-	form:          NFKC,
-	composing:     true,
-	compatibility: true,
-	info:          lookupInfoNFKC,
-	nextMain:      nextComposed,
-}, {
-	form:          NFKD,
-	composing:     false,
-	compatibility: true,
-	info:          lookupInfoNFKC,
-	nextMain:      nextDecomposed,
-}}
-
-// We do not distinguish between boundaries for NFC, NFD, etc. to avoid
-// unexpected behavior for the user.  For example, in NFD, there is a boundary
-// after 'a'.  However, 'a' might combine with modifiers, so from the application's
-// perspective it is not a good boundary. We will therefore always use the
-// boundaries for the combining variants.
-
-// BoundaryBefore returns true if this rune starts a new segment and
-// cannot combine with any rune on the left.
-func (p Properties) BoundaryBefore() bool {
-	if p.ccc == 0 && !p.combinesBackward() {
-		return true
-	}
-	// We assume that the CCC of the first character in a decomposition
-	// is always non-zero if different from info.ccc and that we can return
-	// false at this point. This is verified by maketables.
-	return false
-}
-
-// BoundaryAfter returns true if runes cannot combine with or otherwise
-// interact with this or previous runes.
-func (p Properties) BoundaryAfter() bool {
-	// TODO: loosen these conditions.
-	return p.isInert()
-}
-
-// We pack quick check data in 4 bits:
-<<<<<<< HEAD
-//   5:    Combines forward  (0 == false, 1 == true)
-//   4..3: NFC_QC Yes(00), No (10), or Maybe (11)
-//   2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
-//   1..0: Number of trailing non-starters.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   5:    Combines forward  (0 == false, 1 == true)
-//   4..3: NFC_QC Yes(00), No (10), or Maybe (11)
-//   2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
-//   1..0: Number of trailing non-starters.
-=======
-//
-//	5:    Combines forward  (0 == false, 1 == true)
-//	4..3: NFC_QC Yes(00), No (10), or Maybe (11)
-//	2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
-//	1..0: Number of trailing non-starters.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // When all 6 bits are zero, the character is inert, meaning it is never
 // influenced by normalization.

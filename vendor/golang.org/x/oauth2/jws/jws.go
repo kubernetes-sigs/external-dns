@@ -175,25 +175,8 @@ func Verify(token string, key *rsa.PublicKey) error {
 	}
 
 	h := sha256.New()
-<<<<<<< HEAD
-	h.Write([]byte(signedContent))
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-	h.Write([]byte(signedContent))
-=======
 	h.Write([]byte(header + tokenDelim + claims))
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signatureString)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), []byte(signatureString))
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), []byte(signatureString))
-=======
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signatureString)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func parseToken(s string) (header, claims, sig string, ok bool) {

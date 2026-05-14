@@ -16,14 +16,6 @@ limitations under the License.
 
 package types
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -43,165 +35,6 @@ const (
 
 // String returns the general purpose string representation
 func (n NamespacedName) String() string {
-	return n.Namespace + string(Separator) + n.Name
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-import (
-	"fmt"
-)
-
-||||||| parent of 5ce8c7613 (update vendored files)
-import (
-	"fmt"
-)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-// NamespacedName comprises a resource name, with a mandatory namespace,
-// rendered as "<namespace>/<name>".  Being a type captures intent and
-// helps make sure that UIDs, namespaced names and non-namespaced names
-// do not get conflated in code.  For most use cases, namespace and name
-// will already have been format validated at the API entry point, so we
-// don't do that here.  Where that's not the case (e.g. in testing),
-// consider using NamespacedNameOrDie() in testing.go in this package.
-
-type NamespacedName struct {
-	Namespace string
-	Name      string
-}
-
-const (
-	Separator = '/'
-)
-
-// String returns the general purpose string representation
-func (n NamespacedName) String() string {
-<<<<<<< HEAD
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
-=======
-	return n.Namespace + string(Separator) + n.Name
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-import (
-	"fmt"
-)
-
-||||||| parent of 6b7ce455e (update vendored files)
-import (
-	"fmt"
-)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-// NamespacedName comprises a resource name, with a mandatory namespace,
-// rendered as "<namespace>/<name>".  Being a type captures intent and
-// helps make sure that UIDs, namespaced names and non-namespaced names
-// do not get conflated in code.  For most use cases, namespace and name
-// will already have been format validated at the API entry point, so we
-// don't do that here.  Where that's not the case (e.g. in testing),
-// consider using NamespacedNameOrDie() in testing.go in this package.
-
-type NamespacedName struct {
-	Namespace string
-	Name      string
-}
-
-const (
-	Separator = '/'
-)
-
-// String returns the general purpose string representation
-func (n NamespacedName) String() string {
-<<<<<<< HEAD
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
-=======
-	return n.Namespace + string(Separator) + n.Name
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-import (
-	"fmt"
-)
-
-||||||| parent of 4d7e5ad26 (update vendored files)
-import (
-	"fmt"
-)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-// NamespacedName comprises a resource name, with a mandatory namespace,
-// rendered as "<namespace>/<name>".  Being a type captures intent and
-// helps make sure that UIDs, namespaced names and non-namespaced names
-// do not get conflated in code.  For most use cases, namespace and name
-// will already have been format validated at the API entry point, so we
-// don't do that here.  Where that's not the case (e.g. in testing),
-// consider using NamespacedNameOrDie() in testing.go in this package.
-
-type NamespacedName struct {
-	Namespace string
-	Name      string
-}
-
-const (
-	Separator = '/'
-)
-
-// String returns the general purpose string representation
-func (n NamespacedName) String() string {
-<<<<<<< HEAD
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
-=======
-	return n.Namespace + string(Separator) + n.Name
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-import (
-	"fmt"
-)
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-import (
-	"fmt"
-)
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// NamespacedName comprises a resource name, with a mandatory namespace,
-// rendered as "<namespace>/<name>".  Being a type captures intent and
-// helps make sure that UIDs, namespaced names and non-namespaced names
-// do not get conflated in code.  For most use cases, namespace and name
-// will already have been format validated at the API entry point, so we
-// don't do that here.  Where that's not the case (e.g. in testing),
-// consider using NamespacedNameOrDie() in testing.go in this package.
-
-type NamespacedName struct {
-	Namespace string
-	Name      string
-}
-
-const (
-	Separator = '/'
-)
-
-// String returns the general purpose string representation
-func (n NamespacedName) String() string {
-<<<<<<< HEAD
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
-=======
 	return n.Namespace + string(Separator) + n.Name
 }
 
@@ -214,5 +47,4 @@ func (n NamespacedName) MarshalLog() interface{} {
 		Name:      n.Name,
 		Namespace: n.Namespace,
 	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

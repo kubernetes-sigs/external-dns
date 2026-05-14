@@ -3,10 +3,8 @@ package linodego
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -30,7 +28,7 @@ type LongviewClientCreateOptions struct {
 	Label string `json:"label"`
 }
 
-// LongviewClientCreateOptions is an options struct used when Updating a Longview Client
+// LongviewClientUpdateOptions is an options struct used when Updating a Longview Client
 type LongviewClientUpdateOptions struct {
 	Label string `json:"label"`
 }
@@ -51,150 +49,42 @@ type LongviewPlanUpdateOptions struct {
 	LongviewSubscription string `json:"longview_subscription"`
 }
 
-// LongviewClientsPagedResponse represents a paginated LongviewClient API response
-type LongviewClientsPagedResponse struct {
-	*PageOptions
-	Data []LongviewClient `json:"data"`
-}
-
-// endpoint gets the endpoint URL for LongviewClient
-func (LongviewClientsPagedResponse) endpoint(_ ...any) string {
-	return "longview/clients"
-}
-
-func (resp *LongviewClientsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(LongviewClientsPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*LongviewClientsPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
-}
-
 // ListLongviewClients lists LongviewClients
 func (c *Client) ListLongviewClients(ctx context.Context, opts *ListOptions) ([]LongviewClient, error) {
-	response := LongviewClientsPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[LongviewClient](ctx, c, "longview/clients", opts)
 }
 
 // GetLongviewClient gets the template with the provided ID
 func (c *Client) GetLongviewClient(ctx context.Context, clientID int) (*LongviewClient, error) {
-	e := fmt.Sprintf("longview/clients/%d", clientID)
-	r, err := c.R(ctx).SetResult(&LongviewClient{}).Get(e)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*LongviewClient), nil
+	e := formatAPIPath("longview/clients/%d", clientID)
+	return doGETRequest[LongviewClient](ctx, c, e)
 }
 
 // CreateLongviewClient creates a Longview Client
 func (c *Client) CreateLongviewClient(ctx context.Context, opts LongviewClientCreateOptions) (*LongviewClient, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := "longview/clients"
-	req := c.R(ctx).SetResult(&LongviewClient{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*LongviewClient), nil
+	return doPOSTRequest[LongviewClient](ctx, c, "longview/clients", opts)
 }
 
 // DeleteLongviewClient deletes a Longview Client
 func (c *Client) DeleteLongviewClient(ctx context.Context, clientID int) error {
-	e := fmt.Sprintf("longview/clients/%d", clientID)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
-	return err
+	e := formatAPIPath("longview/clients/%d", clientID)
+	return doDELETERequest(ctx, c, e)
 }
 
 // UpdateLongviewClient updates a Longview Client
 func (c *Client) UpdateLongviewClient(ctx context.Context, clientID int, opts LongviewClientUpdateOptions) (*LongviewClient, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf("longview/clients/%d", clientID)
-	req := c.R(ctx).SetResult(&LongviewClient{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*LongviewClient), nil
+	e := formatAPIPath("longview/clients/%d", clientID)
+	return doPUTRequest[LongviewClient](ctx, c, e, opts)
 }
 
 // GetLongviewPlan gets the template with the provided ID
 func (c *Client) GetLongviewPlan(ctx context.Context) (*LongviewPlan, error) {
-	e := "longview/plan"
-	r, err := c.R(ctx).SetResult(&LongviewPlan{}).Get(e)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*LongviewPlan), nil
+	return doGETRequest[LongviewPlan](ctx, c, "longview/plan")
 }
 
 // UpdateLongviewPlan updates a Longview Plan
 func (c *Client) UpdateLongviewPlan(ctx context.Context, opts LongviewPlanUpdateOptions) (*LongviewPlan, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := "longview/plan"
-	req := c.R(ctx).SetResult(&LongviewPlan{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*LongviewPlan), nil
+	return doPUTRequest[LongviewPlan](ctx, c, "longview/plan", opts)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface
@@ -203,6 +93,7 @@ func (i *LongviewClient) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 		Updated *parseabletime.ParseableTime `json:"updated"`
 	}{

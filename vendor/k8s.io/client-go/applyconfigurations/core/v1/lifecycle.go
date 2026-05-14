@@ -24,45 +24,30 @@ import (
 
 // LifecycleApplyConfiguration represents a declarative configuration of the Lifecycle type for use
 // with apply.
+//
+// Lifecycle describes actions that the management system should take in response to container lifecycle
+// events. For the PostStart and PreStop lifecycle handlers, management of the container blocks
+// until the action is complete, unless the container process fails, in which case the handler is aborted.
 type LifecycleApplyConfiguration struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	PostStart *HandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop   *HandlerApplyConfiguration `json:"preStop,omitempty"`
-}
-
-// LifecycleApplyConfiguration constructs an declarative configuration of the Lifecycle type for use with
-// apply.
-func Lifecycle() *LifecycleApplyConfiguration {
-	return &LifecycleApplyConfiguration{}
-}
-
-// WithPostStart sets the PostStart field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PostStart field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPostStart(value *HandlerApplyConfiguration) *LifecycleApplyConfiguration {
-	b.PostStart = value
-	return b
-}
-
-// WithPreStop sets the PreStop field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PreStop field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPreStop(value *HandlerApplyConfiguration) *LifecycleApplyConfiguration {
-||||||| parent of 6b7ce455e (update vendored files)
-=======
+	// PostStart is called immediately after a container is created. If the handler fails,
+	// the container is terminated and restarted according to its restart policy.
+	// Other management of the container blocks until the hook completes.
+	// More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
 	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
-=======
-	PostStart  *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop    *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
-	StopSignal *corev1.Signal                      `json:"stopSignal,omitempty"`
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	// PreStop is called immediately before a container is terminated due to an
+	// API request or management event such as liveness/startup probe failure,
+	// preemption, resource contention, etc. The handler is not called if the
+	// container crashes or exits. The Pod's termination grace period countdown begins before the
+	// PreStop hook is executed. Regardless of the outcome of the handler, the
+	// container will eventually terminate within the Pod's termination grace
+	// period (unless delayed by finalizers). Other management of the container blocks until the hook completes
+	// or until the termination grace period is reached.
+	// More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
+	PreStop *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
+	// StopSignal defines which signal will be sent to a container when it is being stopped.
+	// If not specified, the default is defined by the container runtime in use.
+	// StopSignal can only be set for Pods with a non-empty .spec.os.name
+	StopSignal *corev1.Signal `json:"stopSignal,omitempty"`
 }
 
 // LifecycleApplyConfiguration constructs a declarative configuration of the Lifecycle type for use with
@@ -83,57 +68,6 @@ func (b *LifecycleApplyConfiguration) WithPostStart(value *LifecycleHandlerApply
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PreStop field is set to the value of the last call.
 func (b *LifecycleApplyConfiguration) WithPreStop(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
-}
-
-// LifecycleApplyConfiguration constructs an declarative configuration of the Lifecycle type for use with
-// apply.
-func Lifecycle() *LifecycleApplyConfiguration {
-	return &LifecycleApplyConfiguration{}
-}
-
-// WithPostStart sets the PostStart field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PostStart field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPostStart(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
-	b.PostStart = value
-	return b
-}
-
-// WithPreStop sets the PreStop field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PreStop field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPreStop(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
-	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
-}
-
-// LifecycleApplyConfiguration constructs an declarative configuration of the Lifecycle type for use with
-// apply.
-func Lifecycle() *LifecycleApplyConfiguration {
-	return &LifecycleApplyConfiguration{}
-}
-
-// WithPostStart sets the PostStart field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PostStart field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPostStart(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
-	b.PostStart = value
-	return b
-}
-
-// WithPreStop sets the PreStop field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PreStop field is set to the value of the last call.
-func (b *LifecycleApplyConfiguration) WithPreStop(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	b.PreStop = value
 	return b
 }

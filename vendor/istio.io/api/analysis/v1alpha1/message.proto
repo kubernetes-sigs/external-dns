@@ -24,7 +24,7 @@ package istio.analysis.v1alpha1;
 
 import "google/protobuf/struct.proto";
 
-option go_package="istio.io/api/analysis/v1alpha1";
+option go_package = "istio.io/api/analysis/v1alpha1";
 
 // There are four messages described in this file. One of them is a struct
 // common to the other three: AnalysisMessageBase. Using this, we can construct
@@ -78,7 +78,6 @@ message AnalysisMessageBase {
   // `^http(s)?://(preliminary\.)?istio.io/docs/reference/config/analysis/`
   // Required.
   string documentation_url = 3;
-
 }
 
 // AnalysisMessageWeakSchema is the set of information that's needed to define a

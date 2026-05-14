@@ -18,7 +18,7 @@ package v1
 
 import (
 	v1alpha1 "istio.io/api/meta/v1alpha1"
-	securityv1 "istio.io/api/security/v1"
+	v1beta1 "istio.io/api/security/v1beta1"
 	v1 "istio.io/client-go/pkg/applyconfiguration/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -29,8 +29,8 @@ import (
 type RequestAuthenticationApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *securityv1.RequestAuthentication `json:"spec,omitempty"`
-	Status                           *v1alpha1.IstioStatus             `json:"status,omitempty"`
+	Spec                             *v1beta1.RequestAuthentication `json:"spec,omitempty"`
+	Status                           *v1alpha1.IstioStatus          `json:"status,omitempty"`
 }
 
 // RequestAuthentication constructs an declarative configuration of the RequestAuthentication type for use with
@@ -205,7 +205,7 @@ func (b *RequestAuthenticationApplyConfiguration) ensureObjectMetaApplyConfigura
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *RequestAuthenticationApplyConfiguration) WithSpec(value securityv1.RequestAuthentication) *RequestAuthenticationApplyConfiguration {
+func (b *RequestAuthenticationApplyConfiguration) WithSpec(value v1beta1.RequestAuthentication) *RequestAuthenticationApplyConfiguration {
 	b.Spec = &value
 	return b
 }

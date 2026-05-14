@@ -18,6 +18,7 @@ type Volume struct {
 	NetworkID     string    `json:"network_id"`
 	MountPoint    string    `json:"mountpoint"`
 	Status        string    `json:"status"`
+	VolumeType    string    `json:"volume_type"`
 	SizeGigabytes int       `json:"size_gb"`
 	Bootable      bool      `json:"bootable"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -39,6 +40,15 @@ type VolumeConfig struct {
 	Region        string `json:"region"`
 	SizeGigabytes int    `json:"size_gb"`
 	Bootable      bool   `json:"bootable"`
+	VolumeType    string `json:"volume_type"`
+	SnapshotID    string `json:"snapshot_id,omitempty"`
+}
+
+// VolumeAttachConfig is the configuration used to attach volume
+type VolumeAttachConfig struct {
+	InstanceID   string `json:"instance_id"`
+	AttachAtBoot bool   `json:"attach_at_boot"`
+	Region       string `json:"region"`
 }
 
 // ListVolumes returns all volumes owned by the calling API account
@@ -199,11 +209,8 @@ func (c *Client) ResizeVolume(id string, size int) (*SimpleResponse, error) {
 
 // AttachVolume attaches a volume to an instance
 // https://www.civo.com/api/volumes#attach-a-volume-to-an-instance
-func (c *Client) AttachVolume(id string, instance string) (*SimpleResponse, error) {
-	resp, err := c.SendPutRequest(fmt.Sprintf("/v2/volumes/%s/attach", id), map[string]string{
-		"instance_id": instance,
-		"region":      c.Region,
-	})
+func (c *Client) AttachVolume(id string, v VolumeAttachConfig) (*SimpleResponse, error) {
+	resp, err := c.SendPutRequest(fmt.Sprintf("/v2/volumes/%s/attach", id), v)
 	if err != nil {
 		return nil, decodeError(err)
 	}
@@ -230,6 +237,59 @@ func (c *Client) DetachVolume(id string) (*SimpleResponse, error) {
 // https://www.civo.com/api/volumes#deleting-a-volume
 func (c *Client) DeleteVolume(id string) (*SimpleResponse, error) {
 	resp, err := c.SendDeleteRequest(fmt.Sprintf("/v2/volumes/%s", id))
+	if err != nil {
+		return nil, decodeError(err)
+	}
+
+	return c.DecodeSimpleResponse(resp)
+}
+
+// GetVolumeSnapshotByVolumeID retrieves a specific volume snapshot by volume ID and snapshot ID
+func (c *Client) GetVolumeSnapshotByVolumeID(volumeID, snapshotID string) (*VolumeSnapshot, error) {
+	resp, err := c.SendGetRequest(fmt.Sprintf("/v2/volumes/%s/snapshots/%s", volumeID, snapshotID))
+	if err != nil {
+		return nil, decodeError(err)
+	}
+	var volumeSnapshot = VolumeSnapshot{}
+	if err := json.NewDecoder(bytes.NewReader(resp)).Decode(&volumeSnapshot); err != nil {
+		return nil, err
+	}
+	return &volumeSnapshot, nil
+}
+
+// ListVolumeSnapshotsByVolumeID returns all snapshots for a specific volume by volume ID
+func (c *Client) ListVolumeSnapshotsByVolumeID(volumeID string) ([]VolumeSnapshot, error) {
+	resp, err := c.SendGetRequest(fmt.Sprintf("/v2/volumes/%s/snapshots", volumeID))
+	if err != nil {
+		return nil, decodeError(err)
+	}
+
+	var volumeSnapshots = make([]VolumeSnapshot, 0)
+	if err := json.NewDecoder(bytes.NewReader(resp)).Decode(&volumeSnapshots); err != nil {
+		return nil, err
+	}
+
+	return volumeSnapshots, nil
+}
+
+// CreateVolumeSnapshot creates a snapshot of a volume
+func (c *Client) CreateVolumeSnapshot(volumeID string, config *VolumeSnapshotConfig) (*VolumeSnapshot, error) {
+	body, err := c.SendPostRequest(fmt.Sprintf("/v2/volumes/%s/snapshots", volumeID), config)
+	if err != nil {
+		return nil, decodeError(err)
+	}
+
+	var result = &VolumeSnapshot{}
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// DeleteVolumeAndAllSnapshot deletes a volume and all its snapshots
+func (c *Client) DeleteVolumeAndAllSnapshot(volumeID string) (*SimpleResponse, error) {
+	resp, err := c.SendDeleteRequest(fmt.Sprintf("/v2/volumes/%s?delete_snapshot=true", volumeID))
 	if err != nil {
 		return nil, decodeError(err)
 	}

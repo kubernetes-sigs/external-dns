@@ -24,269 +24,49 @@ import (
 
 // PersistentVolumeSpecApplyConfiguration represents a declarative configuration of the PersistentVolumeSpec type for use
 // with apply.
+//
+// PersistentVolumeSpec is the specification of a persistent volume.
 type PersistentVolumeSpecApplyConfiguration struct {
-	Capacity                                 *corev1.ResourceList `json:"capacity,omitempty"`
+	// capacity is the description of the persistent volume's resources and capacity.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity
+	Capacity *corev1.ResourceList `json:"capacity,omitempty"`
+	// persistentVolumeSource is the actual volume backing the persistent volume.
 	PersistentVolumeSourceApplyConfiguration `json:",inline"`
-	AccessModes                              []corev1.PersistentVolumeAccessMode   `json:"accessModes,omitempty"`
-	ClaimRef                                 *ObjectReferenceApplyConfiguration    `json:"claimRef,omitempty"`
-	PersistentVolumeReclaimPolicy            *corev1.PersistentVolumeReclaimPolicy `json:"persistentVolumeReclaimPolicy,omitempty"`
-	StorageClassName                         *string                               `json:"storageClassName,omitempty"`
-	MountOptions                             []string                              `json:"mountOptions,omitempty"`
-	VolumeMode                               *corev1.PersistentVolumeMode          `json:"volumeMode,omitempty"`
-	NodeAffinity                             *VolumeNodeAffinityApplyConfiguration `json:"nodeAffinity,omitempty"`
-<<<<<<< HEAD
-}
-
-// PersistentVolumeSpecApplyConfiguration constructs an declarative configuration of the PersistentVolumeSpec type for use with
-// apply.
-func PersistentVolumeSpec() *PersistentVolumeSpecApplyConfiguration {
-	return &PersistentVolumeSpecApplyConfiguration{}
-}
-
-// WithCapacity sets the Capacity field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Capacity field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithCapacity(value v1.ResourceList) *PersistentVolumeSpecApplyConfiguration {
-	b.Capacity = &value
-	return b
-}
-
-// WithGCEPersistentDisk sets the GCEPersistentDisk field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the GCEPersistentDisk field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithGCEPersistentDisk(value *GCEPersistentDiskVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.GCEPersistentDisk = value
-	return b
-}
-
-// WithAWSElasticBlockStore sets the AWSElasticBlockStore field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AWSElasticBlockStore field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithAWSElasticBlockStore(value *AWSElasticBlockStoreVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.AWSElasticBlockStore = value
-	return b
-}
-
-// WithHostPath sets the HostPath field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HostPath field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithHostPath(value *HostPathVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.HostPath = value
-	return b
-}
-
-// WithGlusterfs sets the Glusterfs field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Glusterfs field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithGlusterfs(value *GlusterfsPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.Glusterfs = value
-	return b
-}
-
-// WithNFS sets the NFS field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the NFS field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithNFS(value *NFSVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.NFS = value
-	return b
-}
-
-// WithRBD sets the RBD field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the RBD field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithRBD(value *RBDPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.RBD = value
-	return b
-}
-
-// WithISCSI sets the ISCSI field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ISCSI field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithISCSI(value *ISCSIPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.ISCSI = value
-	return b
-}
-
-// WithCinder sets the Cinder field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Cinder field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithCinder(value *CinderPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.Cinder = value
-	return b
-}
-
-// WithCephFS sets the CephFS field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the CephFS field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithCephFS(value *CephFSPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.CephFS = value
-	return b
-}
-
-// WithFC sets the FC field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the FC field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithFC(value *FCVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.FC = value
-	return b
-}
-
-// WithFlocker sets the Flocker field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Flocker field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithFlocker(value *FlockerVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.Flocker = value
-	return b
-}
-
-// WithFlexVolume sets the FlexVolume field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the FlexVolume field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithFlexVolume(value *FlexPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.FlexVolume = value
-	return b
-}
-
-// WithAzureFile sets the AzureFile field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AzureFile field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithAzureFile(value *AzureFilePersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.AzureFile = value
-	return b
-}
-
-// WithVsphereVolume sets the VsphereVolume field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the VsphereVolume field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithVsphereVolume(value *VsphereVirtualDiskVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.VsphereVolume = value
-	return b
-}
-
-// WithQuobyte sets the Quobyte field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Quobyte field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithQuobyte(value *QuobyteVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.Quobyte = value
-	return b
-}
-
-// WithAzureDisk sets the AzureDisk field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AzureDisk field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithAzureDisk(value *AzureDiskVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.AzureDisk = value
-	return b
-}
-
-// WithPhotonPersistentDisk sets the PhotonPersistentDisk field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PhotonPersistentDisk field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithPhotonPersistentDisk(value *PhotonPersistentDiskVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.PhotonPersistentDisk = value
-	return b
-}
-
-// WithPortworxVolume sets the PortworxVolume field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PortworxVolume field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithPortworxVolume(value *PortworxVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.PortworxVolume = value
-	return b
-}
-
-// WithScaleIO sets the ScaleIO field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ScaleIO field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithScaleIO(value *ScaleIOPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.ScaleIO = value
-	return b
-}
-
-// WithLocal sets the Local field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Local field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithLocal(value *LocalVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.Local = value
-	return b
-}
-
-// WithStorageOS sets the StorageOS field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the StorageOS field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithStorageOS(value *StorageOSPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.StorageOS = value
-	return b
-}
-
-// WithCSI sets the CSI field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the CSI field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithCSI(value *CSIPersistentVolumeSourceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.CSI = value
-	return b
-}
-
-// WithAccessModes adds the given value to the AccessModes field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the AccessModes field.
-func (b *PersistentVolumeSpecApplyConfiguration) WithAccessModes(values ...v1.PersistentVolumeAccessMode) *PersistentVolumeSpecApplyConfiguration {
-	for i := range values {
-		b.AccessModes = append(b.AccessModes, values[i])
-	}
-	return b
-}
-
-// WithClaimRef sets the ClaimRef field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ClaimRef field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithClaimRef(value *ObjectReferenceApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.ClaimRef = value
-	return b
-}
-
-// WithPersistentVolumeReclaimPolicy sets the PersistentVolumeReclaimPolicy field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PersistentVolumeReclaimPolicy field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithPersistentVolumeReclaimPolicy(value v1.PersistentVolumeReclaimPolicy) *PersistentVolumeSpecApplyConfiguration {
-	b.PersistentVolumeReclaimPolicy = &value
-	return b
-}
-
-// WithStorageClassName sets the StorageClassName field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the StorageClassName field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithStorageClassName(value string) *PersistentVolumeSpecApplyConfiguration {
-	b.StorageClassName = &value
-	return b
-}
-
-// WithMountOptions adds the given value to the MountOptions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the MountOptions field.
-func (b *PersistentVolumeSpecApplyConfiguration) WithMountOptions(values ...string) *PersistentVolumeSpecApplyConfiguration {
-	for i := range values {
-		b.MountOptions = append(b.MountOptions, values[i])
-	}
-	return b
-}
-
-// WithVolumeMode sets the VolumeMode field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the VolumeMode field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithVolumeMode(value v1.PersistentVolumeMode) *PersistentVolumeSpecApplyConfiguration {
-	b.VolumeMode = &value
-	return b
-}
-
-// WithNodeAffinity sets the NodeAffinity field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the NodeAffinity field is set to the value of the last call.
-func (b *PersistentVolumeSpecApplyConfiguration) WithNodeAffinity(value *VolumeNodeAffinityApplyConfiguration) *PersistentVolumeSpecApplyConfiguration {
-	b.NodeAffinity = value
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	VolumeAttributesClassName                *string                               `json:"volumeAttributesClassName,omitempty"`
+	// accessModes contains all ways the volume can be mounted.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes
+	AccessModes []corev1.PersistentVolumeAccessMode `json:"accessModes,omitempty"`
+	// claimRef is part of a bi-directional binding between PersistentVolume and PersistentVolumeClaim.
+	// Expected to be non-nil when bound.
+	// claim.VolumeName is the authoritative bind between PV and PVC.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#binding
+	ClaimRef *ObjectReferenceApplyConfiguration `json:"claimRef,omitempty"`
+	// persistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim.
+	// Valid options are Retain (default for manually created PersistentVolumes), Delete (default
+	// for dynamically provisioned PersistentVolumes), and Recycle (deprecated).
+	// Recycle must be supported by the volume plugin underlying this PersistentVolume.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming
+	PersistentVolumeReclaimPolicy *corev1.PersistentVolumeReclaimPolicy `json:"persistentVolumeReclaimPolicy,omitempty"`
+	// storageClassName is the name of StorageClass to which this persistent volume belongs. Empty value
+	// means that this volume does not belong to any StorageClass.
+	StorageClassName *string `json:"storageClassName,omitempty"`
+	// mountOptions is the list of mount options, e.g. ["ro", "soft"]. Not validated - mount will
+	// simply fail if one is invalid.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#mount-options
+	MountOptions []string `json:"mountOptions,omitempty"`
+	// volumeMode defines if a volume is intended to be used with a formatted filesystem
+	// or to remain in raw block state. Value of Filesystem is implied when not included in spec.
+	VolumeMode *corev1.PersistentVolumeMode `json:"volumeMode,omitempty"`
+	// nodeAffinity defines constraints that limit what nodes this volume can be accessed from.
+	// This field influences the scheduling of pods that use this volume.
+	// This field is mutable if MutablePVNodeAffinity feature gate is enabled.
+	NodeAffinity *VolumeNodeAffinityApplyConfiguration `json:"nodeAffinity,omitempty"`
+	// Name of VolumeAttributesClass to which this persistent volume belongs. Empty value
+	// is not allowed. When this field is not set, it indicates that this volume does not belong to any
+	// VolumeAttributesClass. This field is mutable and can be changed by the CSI driver
+	// after a volume has been updated successfully to a new class.
+	// For an unbound PersistentVolume, the volumeAttributesClassName will be matched with unbound
+	// PersistentVolumeClaims during the binding process.
+	VolumeAttributesClassName *string `json:"volumeAttributesClassName,omitempty"`
 }
 
 // PersistentVolumeSpecApplyConfiguration constructs a declarative configuration of the PersistentVolumeSpec type for use with
@@ -544,6 +324,5 @@ func (b *PersistentVolumeSpecApplyConfiguration) WithNodeAffinity(value *VolumeN
 // If called multiple times, the VolumeAttributesClassName field is set to the value of the last call.
 func (b *PersistentVolumeSpecApplyConfiguration) WithVolumeAttributesClassName(value string) *PersistentVolumeSpecApplyConfiguration {
 	b.VolumeAttributesClassName = &value
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

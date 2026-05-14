@@ -24,22 +24,6 @@ import (
 //     Unlike the == operator, a NaN is equal to another NaN.
 //
 //   - Enums are equal if they contain the same number.
-<<<<<<< HEAD
-//     Since Value does not contain an enum descriptor,
-//     enum values do not consider the type of the enum.
-//
-//   - Other scalar values are equal if they contain the same value.
-//
-//   - Message values are equal if they belong to the same message descriptor,
-//     have the same set of populated known and extension field values,
-//     and the same set of unknown fields values.
-//
-//   - Lists are equal if they are the same length and
-//     each corresponding element is equal.
-//
-//   - Maps are equal if they have the same set of keys and
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //     Since [Value] does not contain an enum descriptor,
 //     enum values do not consider the type of the enum.
 //
@@ -53,7 +37,6 @@ import (
 //     each corresponding element is equal.
 //
 //   - [Map] values are equal if they have the same set of keys and
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //     the corresponding value for each key is equal.
 func (v1 Value) Equal(v2 Value) bool {
 	return equalValue(v1, v2)

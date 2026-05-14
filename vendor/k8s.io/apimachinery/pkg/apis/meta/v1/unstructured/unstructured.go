@@ -449,38 +449,6 @@ func (u *Unstructured) SetFinalizers(finalizers []string) {
 	u.setNestedStringSlice(finalizers, "metadata", "finalizers")
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (u *Unstructured) GetClusterName() string {
-	return getNestedString(u.Object, "metadata", "clusterName")
-}
-
-func (u *Unstructured) SetClusterName(clusterName string) {
-	if len(clusterName) == 0 {
-		RemoveNestedField(u.Object, "metadata", "clusterName")
-		return
-	}
-	u.setNestedField(clusterName, "metadata", "clusterName")
-}
-
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (u *Unstructured) GetClusterName() string {
-	return getNestedString(u.Object, "metadata", "clusterName")
-}
-
-func (u *Unstructured) SetClusterName(clusterName string) {
-	if len(clusterName) == 0 {
-		RemoveNestedField(u.Object, "metadata", "clusterName")
-		return
-	}
-	u.setNestedField(clusterName, "metadata", "clusterName")
-}
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (u *Unstructured) GetManagedFields() []metav1.ManagedFieldsEntry {
 	v, found, err := NestedFieldNoCopy(u.Object, "metadata", "managedFields")
 	if !found || err != nil {

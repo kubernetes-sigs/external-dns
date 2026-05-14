@@ -17,10 +17,6 @@ package idna
 //
 // The per-rune values have the following format:
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 //	if mapped {
 //	  if inlinedXOR {
 //	    15..13 inline XOR marker
@@ -38,120 +34,6 @@ package idna
 //	}
 //	   2  use xor pattern
 //	1..0  mapped category
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//   if mapped {
-//     if inlinedXOR {
-//       15..13 inline XOR marker
-//       12..11 unused
-//       10..3  inline XOR mask
-//     } else {
-//       15..3  index into xor or mapping table
-//     }
-//   } else {
-//       15..14 unused
-//       13     mayNeedNorm
-//       12..11 attributes
-//       10..8  joining type
-//        7..3  category type
-//   }
-//      2  use xor pattern
-//   1..0  mapped category
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-//   if mapped {
-//     if inlinedXOR {
-//       15..13 inline XOR marker
-//       12..11 unused
-//       10..3  inline XOR mask
-//     } else {
-//       15..3  index into xor or mapping table
-//     }
-//   } else {
-//       15..14 unused
-//       13     mayNeedNorm
-//       12..11 attributes
-//       10..8  joining type
-//        7..3  category type
-//   }
-//      2  use xor pattern
-//   1..0  mapped category
-=======
-//	if mapped {
-//	  if inlinedXOR {
-//	    15..13 inline XOR marker
-//	    12..11 unused
-//	    10..3  inline XOR mask
-//	  } else {
-//	    15..3  index into xor or mapping table
-//	  }
-//	} else {
-//	    15..14 unused
-//	    13     mayNeedNorm
-//	    12..11 attributes
-//	    10..8  joining type
-//	     7..3  category type
-//	}
-//	   2  use xor pattern
-//	1..0  mapped category
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//   if mapped {
-//     if inlinedXOR {
-//       15..13 inline XOR marker
-//       12..11 unused
-//       10..3  inline XOR mask
-//     } else {
-//       15..3  index into xor or mapping table
-//     }
-//   } else {
-//       15..14 unused
-//       13     mayNeedNorm
-//       12..11 attributes
-//       10..8  joining type
-//        7..3  category type
-//   }
-//      2  use xor pattern
-//   1..0  mapped category
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   if mapped {
-//     if inlinedXOR {
-//       15..13 inline XOR marker
-//       12..11 unused
-//       10..3  inline XOR mask
-//     } else {
-//       15..3  index into xor or mapping table
-//     }
-//   } else {
-//       15..14 unused
-//       13     mayNeedNorm
-//       12..11 attributes
-//       10..8  joining type
-//        7..3  category type
-//   }
-//      2  use xor pattern
-//   1..0  mapped category
-=======
-//	if mapped {
-//	  if inlinedXOR {
-//	    15..13 inline XOR marker
-//	    12..11 unused
-//	    10..3  inline XOR mask
-//	  } else {
-//	    15..3  index into xor or mapping table
-//	  }
-//	} else {
-//	    15..14 unused
-//	    13     mayNeedNorm
-//	    12..11 attributes
-//	    10..8  joining type
-//	     7..3  category type
-//	}
-//	   2  use xor pattern
-//	1..0  mapped category
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // See the definitions below for a more detailed description of the various
 // bits.

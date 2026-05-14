@@ -21,10 +21,6 @@ import (
 )
 
 // DescribeZoneRecords invokes the pvtz.DescribeZoneRecords API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) DescribeZoneRecords(request *DescribeZoneRecordsRequest) (response *DescribeZoneRecordsResponse, err error) {
 	response = CreateDescribeZoneRecordsResponse()
 	err = client.DoAction(request, response)
@@ -75,26 +71,26 @@ func (client *Client) DescribeZoneRecordsWithCallback(request *DescribeZoneRecor
 // DescribeZoneRecordsRequest is the request struct for api DescribeZoneRecords
 type DescribeZoneRecordsRequest struct {
 	*requests.RpcRequest
-	OrderBy      string           `position:"Query" name:"OrderBy"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize     requests.Integer `position:"Query" name:"PageSize"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	SearchMode   string           `position:"Query" name:"SearchMode"`
 	Tag          string           `position:"Query" name:"Tag"`
 	Lang         string           `position:"Query" name:"Lang"`
 	Keyword      string           `position:"Query" name:"Keyword"`
 	Direction    string           `position:"Query" name:"Direction"`
+	OrderBy      string           `position:"Query" name:"OrderBy"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	ZoneId       string           `position:"Query" name:"ZoneId"`
+	SearchMode   string           `position:"Query" name:"SearchMode"`
 }
 
 // DescribeZoneRecordsResponse is the response struct for api DescribeZoneRecords
 type DescribeZoneRecordsResponse struct {
 	*responses.BaseResponse
-	RequestId  string  `json:"RequestId" xml:"RequestId"`
-	TotalItems int     `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int     `json:"TotalPages" xml:"TotalPages"`
 	PageSize   int     `json:"PageSize" xml:"PageSize"`
+	RequestId  string  `json:"RequestId" xml:"RequestId"`
 	PageNumber int     `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int     `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int     `json:"TotalItems" xml:"TotalItems"`
 	Records    Records `json:"Records" xml:"Records"`
 }
 
@@ -105,190 +101,6 @@ func CreateDescribeZoneRecordsRequest() (request *DescribeZoneRecordsRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneRecords", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) DescribeZoneRecords(request *DescribeZoneRecordsRequest) (response *DescribeZoneRecordsResponse, err error) {
-	response = CreateDescribeZoneRecordsResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZoneRecordsWithChan invokes the pvtz.DescribeZoneRecords API asynchronously
-func (client *Client) DescribeZoneRecordsWithChan(request *DescribeZoneRecordsRequest) (<-chan *DescribeZoneRecordsResponse, <-chan error) {
-	responseChan := make(chan *DescribeZoneRecordsResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZoneRecords(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZoneRecordsWithCallback invokes the pvtz.DescribeZoneRecords API asynchronously
-func (client *Client) DescribeZoneRecordsWithCallback(request *DescribeZoneRecordsRequest, callback func(response *DescribeZoneRecordsResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZoneRecordsResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZoneRecords(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZoneRecordsRequest is the request struct for api DescribeZoneRecords
-type DescribeZoneRecordsRequest struct {
-	*requests.RpcRequest
-	OrderBy      string           `position:"Query" name:"OrderBy"`
-	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize     requests.Integer `position:"Query" name:"PageSize"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	SearchMode   string           `position:"Query" name:"SearchMode"`
-	Tag          string           `position:"Query" name:"Tag"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Keyword      string           `position:"Query" name:"Keyword"`
-	Direction    string           `position:"Query" name:"Direction"`
-}
-
-// DescribeZoneRecordsResponse is the response struct for api DescribeZoneRecords
-type DescribeZoneRecordsResponse struct {
-	*responses.BaseResponse
-	RequestId  string  `json:"RequestId" xml:"RequestId"`
-	TotalItems int     `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int     `json:"TotalPages" xml:"TotalPages"`
-	PageSize   int     `json:"PageSize" xml:"PageSize"`
-	PageNumber int     `json:"PageNumber" xml:"PageNumber"`
-	Records    Records `json:"Records" xml:"Records"`
-}
-
-// CreateDescribeZoneRecordsRequest creates a request to invoke DescribeZoneRecords API
-func CreateDescribeZoneRecordsRequest() (request *DescribeZoneRecordsRequest) {
-	request = &DescribeZoneRecordsRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneRecords", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) DescribeZoneRecords(request *DescribeZoneRecordsRequest) (response *DescribeZoneRecordsResponse, err error) {
-	response = CreateDescribeZoneRecordsResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZoneRecordsWithChan invokes the pvtz.DescribeZoneRecords API asynchronously
-func (client *Client) DescribeZoneRecordsWithChan(request *DescribeZoneRecordsRequest) (<-chan *DescribeZoneRecordsResponse, <-chan error) {
-	responseChan := make(chan *DescribeZoneRecordsResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZoneRecords(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZoneRecordsWithCallback invokes the pvtz.DescribeZoneRecords API asynchronously
-func (client *Client) DescribeZoneRecordsWithCallback(request *DescribeZoneRecordsRequest, callback func(response *DescribeZoneRecordsResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZoneRecordsResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZoneRecords(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZoneRecordsRequest is the request struct for api DescribeZoneRecords
-type DescribeZoneRecordsRequest struct {
-	*requests.RpcRequest
-	OrderBy      string           `position:"Query" name:"OrderBy"`
-	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize     requests.Integer `position:"Query" name:"PageSize"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	SearchMode   string           `position:"Query" name:"SearchMode"`
-	Tag          string           `position:"Query" name:"Tag"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Keyword      string           `position:"Query" name:"Keyword"`
-	Direction    string           `position:"Query" name:"Direction"`
-}
-
-// DescribeZoneRecordsResponse is the response struct for api DescribeZoneRecords
-type DescribeZoneRecordsResponse struct {
-	*responses.BaseResponse
-	RequestId  string  `json:"RequestId" xml:"RequestId"`
-	TotalItems int     `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int     `json:"TotalPages" xml:"TotalPages"`
-	PageSize   int     `json:"PageSize" xml:"PageSize"`
-	PageNumber int     `json:"PageNumber" xml:"PageNumber"`
-	Records    Records `json:"Records" xml:"Records"`
-}
-
-// CreateDescribeZoneRecordsRequest creates a request to invoke DescribeZoneRecords API
-func CreateDescribeZoneRecordsRequest() (request *DescribeZoneRecordsRequest) {
-	request = &DescribeZoneRecordsRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneRecords", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

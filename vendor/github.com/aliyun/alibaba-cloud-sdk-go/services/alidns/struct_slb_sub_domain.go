@@ -17,57 +17,9 @@ package alidns
 
 // SlbSubDomain is a nested struct in alidns response
 type SlbSubDomain struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
-=======
-	Type           string         `json:"Type" xml:"Type"`
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
-	Open           bool           `json:"Open" xml:"Open"`
-	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
-	LineAlgorithms LineAlgorithms `json:"LineAlgorithms" xml:"LineAlgorithms"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
-	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
-	Open        bool   `json:"Open" xml:"Open"`
-	Type        string `json:"Type" xml:"Type"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
-	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
-	Open        bool   `json:"Open" xml:"Open"`
-	Type        string `json:"Type" xml:"Type"`
-=======
-	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
-	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
-	Open           bool           `json:"Open" xml:"Open"`
-	Type           string         `json:"Type" xml:"Type"`
-	LineAlgorithms LineAlgorithms `json:"LineAlgorithms" xml:"LineAlgorithms"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
-	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
-	Open        bool   `json:"Open" xml:"Open"`
-	Type        string `json:"Type" xml:"Type"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
-	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
-	Open        bool   `json:"Open" xml:"Open"`
-	Type        string `json:"Type" xml:"Type"`
-=======
 	Type           string         `json:"Type" xml:"Type"`
 	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
 	Open           bool           `json:"Open" xml:"Open"`
 	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
 	LineAlgorithms LineAlgorithms `json:"LineAlgorithms" xml:"LineAlgorithms"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

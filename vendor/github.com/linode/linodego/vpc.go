@@ -3,52 +3,53 @@ package linodego
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
 type VPC struct {
-	ID          int         `json:"id"`
-	Label       string      `json:"label"`
-	Description string      `json:"description"`
-	Region      string      `json:"region"`
-	Subnets     []VPCSubnet `json:"subnets"`
-	Created     *time.Time  `json:"-"`
-	Updated     *time.Time  `json:"-"`
+	ID          int    `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Region      string `json:"region"`
+
+	// NOTE: IPv6 VPCs may not currently be available to all users.
+	IPv6 []VPCIPv6Range `json:"ipv6"`
+
+	Subnets []VPCSubnet `json:"subnets"`
+	Created *time.Time  `json:"-"`
+	Updated *time.Time  `json:"-"`
+}
+
+// VPCIPv6Range represents a single IPv6 range assigned to a VPC.
+// NOTE: IPv6 VPCs may not currently be available to all users.
+type VPCIPv6Range struct {
+	Range string `json:"range"`
 }
 
 type VPCCreateOptions struct {
-	Label       string                   `json:"label"`
-	Description string                   `json:"description,omitempty"`
-	Region      string                   `json:"region"`
-	Subnets     []VPCSubnetCreateOptions `json:"subnets,omitempty"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Region      string `json:"region"`
+
+	// NOTE: IPv6 VPCs may not currently be available to all users.
+	IPv6 []VPCCreateOptionsIPv6 `json:"ipv6,omitempty"`
+
+	Subnets []VPCSubnetCreateOptions `json:"subnets,omitempty"`
+}
+
+// VPCCreateOptionsIPv6 represents a single IPv6 range assigned to a VPC
+// which is specified during a VPC's creation.
+// NOTE: IPv6 VPCs may not currently be available to all users.
+type VPCCreateOptionsIPv6 struct {
+	Range           *string `json:"range,omitempty"`
+	AllocationClass *string `json:"allocation_class,omitempty"`
 }
 
 type VPCUpdateOptions struct {
 	Label       string `json:"label,omitempty"`
 	Description string `json:"description,omitempty"`
-}
-
-type VPCsPagedResponse struct {
-	*PageOptions
-	Data []VPC `json:"data"`
-}
-
-func (VPCsPagedResponse) endpoint(_ ...any) string {
-	return "vpcs"
-}
-
-func (resp *VPCsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(VPCsPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*VPCsPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
 }
 
 func (v VPC) GetCreateOptions() VPCCreateOptions {
@@ -62,6 +63,11 @@ func (v VPC) GetCreateOptions() VPCCreateOptions {
 		Description: v.Description,
 		Region:      v.Region,
 		Subnets:     subnetCreations,
+		IPv6: mapSlice(v.IPv6, func(i VPCIPv6Range) VPCCreateOptionsIPv6 {
+			return VPCCreateOptionsIPv6{
+				Range: copyValue(&i.Range),
+			}
+		}),
 	}
 }
 
@@ -74,8 +80,10 @@ func (v VPC) GetUpdateOptions() VPCUpdateOptions {
 
 func (v *VPC) UnmarshalJSON(b []byte) error {
 	type Mask VPC
+
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 		Updated *parseabletime.ParseableTime `json:"updated"`
 	}{
@@ -95,37 +103,16 @@ func (c *Client) CreateVPC(
 	ctx context.Context,
 	opts VPCCreateOptions,
 ) (*VPC, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&VPC{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post("vpcs"))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*VPC), nil
+	return doPOSTRequest[VPC](ctx, c, "vpcs", opts)
 }
 
 func (c *Client) GetVPC(ctx context.Context, vpcID int) (*VPC, error) {
-	e := fmt.Sprintf("/vpcs/%d", vpcID)
-	req := c.R(ctx).SetResult(&VPC{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*VPC), nil
+	e := formatAPIPath("/vpcs/%d", vpcID)
+	return doGETRequest[VPC](ctx, c, e)
 }
 
 func (c *Client) ListVPCs(ctx context.Context, opts *ListOptions) ([]VPC, error) {
-	response := VPCsPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[VPC](ctx, c, "vpcs", opts)
 }
 
 func (c *Client) UpdateVPC(
@@ -133,23 +120,11 @@ func (c *Client) UpdateVPC(
 	vpcID int,
 	opts VPCUpdateOptions,
 ) (*VPC, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf("vpcs/%d", vpcID)
-	req := c.R(ctx).SetResult(&VPC{}).SetBody(body)
-	r, err := coupleAPIErrors(req.Put(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*VPC), nil
+	e := formatAPIPath("vpcs/%d", vpcID)
+	return doPUTRequest[VPC](ctx, c, e, opts)
 }
 
 func (c *Client) DeleteVPC(ctx context.Context, vpcID int) error {
-	e := fmt.Sprintf("vpcs/%d", vpcID)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
-	return err
+	e := formatAPIPath("vpcs/%d", vpcID)
+	return doDELETERequest(ctx, c, e)
 }

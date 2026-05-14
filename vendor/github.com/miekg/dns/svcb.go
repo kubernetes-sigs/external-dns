@@ -11,14 +11,10 @@ import (
 	"strings"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // SVCBKey is the type of the keys used in the SVCB RR.
 type SVCBKey uint16
 
-// Keys defined in draft-ietf-dnsop-svcb-https-08 Section 14.3.2.
+// Keys defined in rfc9460
 const (
 	SVCB_MANDATORY SVCBKey = iota
 	SVCB_ALPN
@@ -27,1336 +23,8 @@ const (
 	SVCB_IPV4HINT
 	SVCB_ECHCONFIG
 	SVCB_IPV6HINT
-
-	svcb_RESERVED SVCBKey = 65535
-)
-
-var svcbKeyToStringMap = map[SVCBKey]string{
-	SVCB_MANDATORY:       "mandatory",
-	SVCB_ALPN:            "alpn",
-	SVCB_NO_DEFAULT_ALPN: "no-default-alpn",
-	SVCB_PORT:            "port",
-	SVCB_IPV4HINT:        "ipv4hint",
-	SVCB_ECHCONFIG:       "ech",
-	SVCB_IPV6HINT:        "ipv6hint",
-}
-
-var svcbStringToKeyMap = reverseSVCBKeyMap(svcbKeyToStringMap)
-
-func reverseSVCBKeyMap(m map[SVCBKey]string) map[string]SVCBKey {
-	n := make(map[string]SVCBKey, len(m))
-	for u, s := range m {
-		n[s] = u
-	}
-	return n
-}
-
-// String takes the numerical code of an SVCB key and returns its name.
-// Returns an empty string for reserved keys.
-// Accepts unassigned keys as well as experimental/private keys.
-func (key SVCBKey) String() string {
-	if x := svcbKeyToStringMap[key]; x != "" {
-		return x
-	}
-	if key == svcb_RESERVED {
-		return ""
-	}
-	return "key" + strconv.FormatUint(uint64(key), 10)
-}
-
-// svcbStringToKey returns the numerical code of an SVCB key.
-// Returns svcb_RESERVED for reserved/invalid keys.
-// Accepts unassigned keys as well as experimental/private keys.
-func svcbStringToKey(s string) SVCBKey {
-	if strings.HasPrefix(s, "key") {
-		a, err := strconv.ParseUint(s[3:], 10, 16)
-		// no leading zeros
-		// key shouldn't be registered
-		if err != nil || a == 65535 || s[3] == '0' || svcbKeyToStringMap[SVCBKey(a)] != "" {
-			return svcb_RESERVED
-		}
-		return SVCBKey(a)
-	}
-	if key, ok := svcbStringToKeyMap[s]; ok {
-		return key
-	}
-	return svcb_RESERVED
-}
-
-func (rr *SVCB) parse(c *zlexer, o string) *ParseError {
-	l, _ := c.Next()
-	i, e := strconv.ParseUint(l.token, 10, 16)
-	if e != nil || l.err {
-		return &ParseError{l.token, "bad SVCB priority", l}
-	}
-	rr.Priority = uint16(i)
-
-	c.Next()        // zBlank
-	l, _ = c.Next() // zString
-	rr.Target = l.token
-
-	name, nameOk := toAbsoluteName(l.token, o)
-	if l.err || !nameOk {
-		return &ParseError{l.token, "bad SVCB Target", l}
-	}
-	rr.Target = name
-
-	// Values (if any)
-	l, _ = c.Next()
-	var xs []SVCBKeyValue
-	// Helps require whitespace between pairs.
-	// Prevents key1000="a"key1001=...
-	canHaveNextKey := true
-	for l.value != zNewline && l.value != zEOF {
-		switch l.value {
-		case zString:
-			if !canHaveNextKey {
-				// The key we can now read was probably meant to be
-				// a part of the last value.
-				return &ParseError{l.token, "bad SVCB value quotation", l}
-			}
-
-			// In key=value pairs, value does not have to be quoted unless value
-			// contains whitespace. And keys don't need to have values.
-			// Similarly, keys with an equality signs after them don't need values.
-			// l.token includes at least up to the first equality sign.
-			idx := strings.IndexByte(l.token, '=')
-			var key, value string
-			if idx < 0 {
-				// Key with no value and no equality sign
-				key = l.token
-			} else if idx == 0 {
-				return &ParseError{l.token, "bad SVCB key", l}
-			} else {
-				key, value = l.token[:idx], l.token[idx+1:]
-
-				if value == "" {
-					// We have a key and an equality sign. Maybe we have nothing
-					// after "=" or we have a double quote.
-					l, _ = c.Next()
-					if l.value == zQuote {
-						// Only needed when value ends with double quotes.
-						// Any value starting with zQuote ends with it.
-						canHaveNextKey = false
-
-						l, _ = c.Next()
-						switch l.value {
-						case zString:
-							// We have a value in double quotes.
-							value = l.token
-							l, _ = c.Next()
-							if l.value != zQuote {
-								return &ParseError{l.token, "SVCB unterminated value", l}
-							}
-						case zQuote:
-							// There's nothing in double quotes.
-						default:
-							return &ParseError{l.token, "bad SVCB value", l}
-						}
-					}
-				}
-			}
-			kv := makeSVCBKeyValue(svcbStringToKey(key))
-			if kv == nil {
-				return &ParseError{l.token, "bad SVCB key", l}
-			}
-			if err := kv.parse(value); err != nil {
-				return &ParseError{l.token, err.Error(), l}
-			}
-			xs = append(xs, kv)
-		case zQuote:
-			return &ParseError{l.token, "SVCB key can't contain double quotes", l}
-		case zBlank:
-			canHaveNextKey = true
-		default:
-			return &ParseError{l.token, "bad SVCB values", l}
-		}
-		l, _ = c.Next()
-	}
-
-	// "In AliasMode, records SHOULD NOT include any SvcParams, and recipients MUST
-	// ignore any SvcParams that are present."
-	// However, we don't check rr.Priority == 0 && len(xs) > 0 here
-	// It is the responsibility of the user of the library to check this.
-	// This is to encourage the fixing of the source of this error.
-
-	rr.Value = xs
-	return nil
-}
-
-// makeSVCBKeyValue returns an SVCBKeyValue struct with the key or nil for reserved keys.
-func makeSVCBKeyValue(key SVCBKey) SVCBKeyValue {
-	switch key {
-	case SVCB_MANDATORY:
-		return new(SVCBMandatory)
-	case SVCB_ALPN:
-		return new(SVCBAlpn)
-	case SVCB_NO_DEFAULT_ALPN:
-		return new(SVCBNoDefaultAlpn)
-	case SVCB_PORT:
-		return new(SVCBPort)
-	case SVCB_IPV4HINT:
-		return new(SVCBIPv4Hint)
-	case SVCB_ECHCONFIG:
-		return new(SVCBECHConfig)
-	case SVCB_IPV6HINT:
-		return new(SVCBIPv6Hint)
-	case svcb_RESERVED:
-		return nil
-	default:
-		e := new(SVCBLocal)
-		e.KeyCode = key
-		return e
-	}
-}
-
-// SVCB RR. See RFC xxxx (https://tools.ietf.org/html/draft-ietf-dnsop-svcb-https-08).
-type SVCB struct {
-	Hdr      RR_Header
-	Priority uint16         // If zero, Value must be empty or discarded by the user of this library
-	Target   string         `dns:"domain-name"`
-	Value    []SVCBKeyValue `dns:"pairs"`
-}
-
-// HTTPS RR. Everything valid for SVCB applies to HTTPS as well.
-// Except that the HTTPS record is intended for use with the HTTP and HTTPS protocols.
-type HTTPS struct {
-	SVCB
-}
-
-func (rr *HTTPS) String() string {
-	return rr.SVCB.String()
-}
-
-func (rr *HTTPS) parse(c *zlexer, o string) *ParseError {
-	return rr.SVCB.parse(c, o)
-}
-
-// SVCBKeyValue defines a key=value pair for the SVCB RR type.
-// An SVCB RR can have multiple SVCBKeyValues appended to it.
-type SVCBKeyValue interface {
-	Key() SVCBKey          // Key returns the numerical key code.
-	pack() ([]byte, error) // pack returns the encoded value.
-	unpack([]byte) error   // unpack sets the value.
-	String() string        // String returns the string representation of the value.
-	parse(string) error    // parse sets the value to the given string representation of the value.
-	copy() SVCBKeyValue    // copy returns a deep-copy of the pair.
-	len() int              // len returns the length of value in the wire format.
-}
-
-// SVCBMandatory pair adds to required keys that must be interpreted for the RR
-// to be functional. If ignored, the whole RRSet must be ignored.
-// "port" and "no-default-alpn" are mandatory by default if present,
-// so they shouldn't be included here.
-//
-// It is incumbent upon the user of this library to reject the RRSet if
-// or avoid constructing such an RRSet that:
-// - "mandatory" is included as one of the keys of mandatory
-// - no key is listed multiple times in mandatory
-// - all keys listed in mandatory are present
-// - escape sequences are not used in mandatory
-// - mandatory, when present, lists at least one key
-//
-// Basic use pattern for creating a mandatory option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	e := new(dns.SVCBMandatory)
-//	e.Code = []uint16{dns.SVCB_ALPN}
-//	s.Value = append(s.Value, e)
-//	t := new(dns.SVCBAlpn)
-//	t.Alpn = []string{"xmpp-client"}
-//	s.Value = append(s.Value, t)
-type SVCBMandatory struct {
-	Code []SVCBKey
-}
-
-func (*SVCBMandatory) Key() SVCBKey { return SVCB_MANDATORY }
-
-func (s *SVCBMandatory) String() string {
-	str := make([]string, len(s.Code))
-	for i, e := range s.Code {
-		str[i] = e.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBMandatory) pack() ([]byte, error) {
-	codes := append([]SVCBKey(nil), s.Code...)
-	sort.Slice(codes, func(i, j int) bool {
-		return codes[i] < codes[j]
-	})
-	b := make([]byte, 2*len(codes))
-	for i, e := range codes {
-		binary.BigEndian.PutUint16(b[2*i:], uint16(e))
-	}
-	return b, nil
-}
-
-func (s *SVCBMandatory) unpack(b []byte) error {
-	if len(b)%2 != 0 {
-		return errors.New("dns: svcbmandatory: value length is not a multiple of 2")
-	}
-	codes := make([]SVCBKey, 0, len(b)/2)
-	for i := 0; i < len(b); i += 2 {
-		// We assume strictly increasing order.
-		codes = append(codes, SVCBKey(binary.BigEndian.Uint16(b[i:])))
-	}
-	s.Code = codes
-	return nil
-}
-
-func (s *SVCBMandatory) parse(b string) error {
-	str := strings.Split(b, ",")
-	codes := make([]SVCBKey, 0, len(str))
-	for _, e := range str {
-		codes = append(codes, svcbStringToKey(e))
-	}
-	s.Code = codes
-	return nil
-}
-
-func (s *SVCBMandatory) len() int {
-	return 2 * len(s.Code)
-}
-
-func (s *SVCBMandatory) copy() SVCBKeyValue {
-	return &SVCBMandatory{
-		append([]SVCBKey(nil), s.Code...),
-	}
-}
-
-// SVCBAlpn pair is used to list supported connection protocols.
-// The user of this library must ensure that at least one protocol is listed when alpn is present.
-// Protocol IDs can be found at:
-// https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
-// Basic use pattern for creating an alpn option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBAlpn)
-//	e.Alpn = []string{"h2", "http/1.1"}
-//	h.Value = append(o.Value, e)
-type SVCBAlpn struct {
-	Alpn []string
-}
-
-func (*SVCBAlpn) Key() SVCBKey     { return SVCB_ALPN }
-func (s *SVCBAlpn) String() string { return strings.Join(s.Alpn, ",") }
-
-func (s *SVCBAlpn) pack() ([]byte, error) {
-	// Liberally estimate the size of an alpn as 10 octets
-	b := make([]byte, 0, 10*len(s.Alpn))
-	for _, e := range s.Alpn {
-		if e == "" {
-			return nil, errors.New("dns: svcbalpn: empty alpn-id")
-		}
-		if len(e) > 255 {
-			return nil, errors.New("dns: svcbalpn: alpn-id too long")
-		}
-		b = append(b, byte(len(e)))
-		b = append(b, e...)
-	}
-	return b, nil
-}
-
-func (s *SVCBAlpn) unpack(b []byte) error {
-	// Estimate the size of the smallest alpn as 4 bytes
-	alpn := make([]string, 0, len(b)/4)
-	for i := 0; i < len(b); {
-		length := int(b[i])
-		i++
-		if i+length > len(b) {
-			return errors.New("dns: svcbalpn: alpn array overflowing")
-		}
-		alpn = append(alpn, string(b[i:i+length]))
-		i += length
-	}
-	s.Alpn = alpn
-	return nil
-}
-
-func (s *SVCBAlpn) parse(b string) error {
-	s.Alpn = strings.Split(b, ",")
-	return nil
-}
-
-func (s *SVCBAlpn) len() int {
-	var l int
-	for _, e := range s.Alpn {
-		l += 1 + len(e)
-	}
-	return l
-}
-
-func (s *SVCBAlpn) copy() SVCBKeyValue {
-	return &SVCBAlpn{
-		append([]string(nil), s.Alpn...),
-	}
-}
-
-// SVCBNoDefaultAlpn pair signifies no support for default connection protocols.
-// Should be used in conjunction with alpn.
-// Basic use pattern for creating a no-default-alpn option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	t := new(dns.SVCBAlpn)
-//	t.Alpn = []string{"xmpp-client"}
-//	s.Value = append(s.Value, t)
-//	e := new(dns.SVCBNoDefaultAlpn)
-//	s.Value = append(s.Value, e)
-type SVCBNoDefaultAlpn struct{}
-
-func (*SVCBNoDefaultAlpn) Key() SVCBKey          { return SVCB_NO_DEFAULT_ALPN }
-func (*SVCBNoDefaultAlpn) copy() SVCBKeyValue    { return &SVCBNoDefaultAlpn{} }
-func (*SVCBNoDefaultAlpn) pack() ([]byte, error) { return []byte{}, nil }
-func (*SVCBNoDefaultAlpn) String() string        { return "" }
-func (*SVCBNoDefaultAlpn) len() int              { return 0 }
-
-func (*SVCBNoDefaultAlpn) unpack(b []byte) error {
-	if len(b) != 0 {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
-	}
-	return nil
-}
-
-func (*SVCBNoDefaultAlpn) parse(b string) error {
-	if b != "" {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
-	}
-	return nil
-}
-
-// SVCBPort pair defines the port for connection.
-// Basic use pattern for creating a port option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	e := new(dns.SVCBPort)
-//	e.Port = 80
-//	s.Value = append(s.Value, e)
-type SVCBPort struct {
-	Port uint16
-}
-
-func (*SVCBPort) Key() SVCBKey         { return SVCB_PORT }
-func (*SVCBPort) len() int             { return 2 }
-func (s *SVCBPort) String() string     { return strconv.FormatUint(uint64(s.Port), 10) }
-func (s *SVCBPort) copy() SVCBKeyValue { return &SVCBPort{s.Port} }
-
-func (s *SVCBPort) unpack(b []byte) error {
-	if len(b) != 2 {
-		return errors.New("dns: svcbport: port length is not exactly 2 octets")
-	}
-	s.Port = binary.BigEndian.Uint16(b)
-	return nil
-}
-
-func (s *SVCBPort) pack() ([]byte, error) {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, s.Port)
-	return b, nil
-}
-
-func (s *SVCBPort) parse(b string) error {
-	port, err := strconv.ParseUint(b, 10, 16)
-	if err != nil {
-		return errors.New("dns: svcbport: port out of range")
-	}
-	s.Port = uint16(port)
-	return nil
-}
-
-// SVCBIPv4Hint pair suggests an IPv4 address which may be used to open connections
-// if A and AAAA record responses for SVCB's Target domain haven't been received.
-// In that case, optionally, A and AAAA requests can be made, after which the connection
-// to the hinted IP address may be terminated and a new connection may be opened.
-// Basic use pattern for creating an ipv4hint option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBIPv4Hint)
-//	e.Hint = []net.IP{net.IPv4(1,1,1,1).To4()}
-//
-//  Or
-//
-//	e.Hint = []net.IP{net.ParseIP("1.1.1.1").To4()}
-//	h.Value = append(h.Value, e)
-type SVCBIPv4Hint struct {
-	Hint []net.IP
-}
-
-func (*SVCBIPv4Hint) Key() SVCBKey { return SVCB_IPV4HINT }
-func (s *SVCBIPv4Hint) len() int   { return 4 * len(s.Hint) }
-
-func (s *SVCBIPv4Hint) pack() ([]byte, error) {
-	b := make([]byte, 0, 4*len(s.Hint))
-	for _, e := range s.Hint {
-		x := e.To4()
-		if x == nil {
-			return nil, errors.New("dns: svcbipv4hint: expected ipv4, hint is ipv6")
-		}
-		b = append(b, x...)
-	}
-	return b, nil
-}
-
-func (s *SVCBIPv4Hint) unpack(b []byte) error {
-	if len(b) == 0 || len(b)%4 != 0 {
-		return errors.New("dns: svcbipv4hint: ipv4 address byte array length is not a multiple of 4")
-	}
-	x := make([]net.IP, 0, len(b)/4)
-	for i := 0; i < len(b); i += 4 {
-		x = append(x, net.IP(b[i:i+4]))
-	}
-	s.Hint = x
-	return nil
-}
-
-func (s *SVCBIPv4Hint) String() string {
-	str := make([]string, len(s.Hint))
-	for i, e := range s.Hint {
-		x := e.To4()
-		if x == nil {
-			return "<nil>"
-		}
-		str[i] = x.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBIPv4Hint) parse(b string) error {
-	if strings.Contains(b, ":") {
-		return errors.New("dns: svcbipv4hint: expected ipv4, got ipv6")
-	}
-	str := strings.Split(b, ",")
-	dst := make([]net.IP, len(str))
-	for i, e := range str {
-		ip := net.ParseIP(e).To4()
-		if ip == nil {
-			return errors.New("dns: svcbipv4hint: bad ip")
-		}
-		dst[i] = ip
-	}
-	s.Hint = dst
-	return nil
-}
-
-func (s *SVCBIPv4Hint) copy() SVCBKeyValue {
-	hint := make([]net.IP, len(s.Hint))
-	for i, ip := range s.Hint {
-		hint[i] = copyIP(ip)
-	}
-
-	return &SVCBIPv4Hint{
-		Hint: hint,
-	}
-}
-
-// SVCBECHConfig pair contains the ECHConfig structure defined in draft-ietf-tls-esni [RFC xxxx].
-// Basic use pattern for creating an ech option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBECHConfig)
-//	e.ECH = []byte{0xfe, 0x08, ...}
-//	h.Value = append(h.Value, e)
-type SVCBECHConfig struct {
-	ECH []byte // Specifically ECHConfigList including the redundant length prefix
-}
-
-func (*SVCBECHConfig) Key() SVCBKey     { return SVCB_ECHCONFIG }
-func (s *SVCBECHConfig) String() string { return toBase64(s.ECH) }
-func (s *SVCBECHConfig) len() int       { return len(s.ECH) }
-
-func (s *SVCBECHConfig) pack() ([]byte, error) {
-	return append([]byte(nil), s.ECH...), nil
-}
-
-func (s *SVCBECHConfig) copy() SVCBKeyValue {
-	return &SVCBECHConfig{
-		append([]byte(nil), s.ECH...),
-	}
-}
-
-func (s *SVCBECHConfig) unpack(b []byte) error {
-	s.ECH = append([]byte(nil), b...)
-	return nil
-}
-func (s *SVCBECHConfig) parse(b string) error {
-	x, err := fromBase64([]byte(b))
-	if err != nil {
-		return errors.New("dns: svcbech: bad base64 ech")
-	}
-	s.ECH = x
-	return nil
-}
-
-// SVCBIPv6Hint pair suggests an IPv6 address which may be used to open connections
-// if A and AAAA record responses for SVCB's Target domain haven't been received.
-// In that case, optionally, A and AAAA requests can be made, after which the
-// connection to the hinted IP address may be terminated and a new connection may be opened.
-// Basic use pattern for creating an ipv6hint option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBIPv6Hint)
-//	e.Hint = []net.IP{net.ParseIP("2001:db8::1")}
-//	h.Value = append(h.Value, e)
-type SVCBIPv6Hint struct {
-	Hint []net.IP
-}
-
-func (*SVCBIPv6Hint) Key() SVCBKey { return SVCB_IPV6HINT }
-func (s *SVCBIPv6Hint) len() int   { return 16 * len(s.Hint) }
-
-func (s *SVCBIPv6Hint) pack() ([]byte, error) {
-	b := make([]byte, 0, 16*len(s.Hint))
-	for _, e := range s.Hint {
-		if len(e) != net.IPv6len || e.To4() != nil {
-			return nil, errors.New("dns: svcbipv6hint: expected ipv6, hint is ipv4")
-		}
-		b = append(b, e...)
-	}
-	return b, nil
-}
-
-func (s *SVCBIPv6Hint) unpack(b []byte) error {
-	if len(b) == 0 || len(b)%16 != 0 {
-		return errors.New("dns: svcbipv6hint: ipv6 address byte array length not a multiple of 16")
-	}
-	x := make([]net.IP, 0, len(b)/16)
-	for i := 0; i < len(b); i += 16 {
-		ip := net.IP(b[i : i+16])
-		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4")
-		}
-		x = append(x, ip)
-	}
-	s.Hint = x
-	return nil
-}
-
-func (s *SVCBIPv6Hint) String() string {
-	str := make([]string, len(s.Hint))
-	for i, e := range s.Hint {
-		if x := e.To4(); x != nil {
-			return "<nil>"
-		}
-		str[i] = e.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBIPv6Hint) parse(b string) error {
-	str := strings.Split(b, ",")
-	dst := make([]net.IP, len(str))
-	for i, e := range str {
-		ip := net.ParseIP(e)
-		if ip == nil {
-			return errors.New("dns: svcbipv6hint: bad ip")
-		}
-		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4-mapped-ipv6")
-		}
-		dst[i] = ip
-	}
-	s.Hint = dst
-	return nil
-}
-
-func (s *SVCBIPv6Hint) copy() SVCBKeyValue {
-	hint := make([]net.IP, len(s.Hint))
-	for i, ip := range s.Hint {
-		hint[i] = copyIP(ip)
-	}
-
-	return &SVCBIPv6Hint{
-		Hint: hint,
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// SVCBKey is the type of the keys used in the SVCB RR.
->>>>>>> 4d7e5ad26 (update vendored files)
-type SVCBKey uint16
-
-// Keys defined in draft-ietf-dnsop-svcb-https-08 Section 14.3.2.
-const (
-	SVCB_MANDATORY SVCBKey = iota
-	SVCB_ALPN
-	SVCB_NO_DEFAULT_ALPN
-	SVCB_PORT
-	SVCB_IPV4HINT
-	SVCB_ECHCONFIG
-	SVCB_IPV6HINT
-
-	svcb_RESERVED SVCBKey = 65535
-)
-
-var svcbKeyToStringMap = map[SVCBKey]string{
-	SVCB_MANDATORY:       "mandatory",
-	SVCB_ALPN:            "alpn",
-	SVCB_NO_DEFAULT_ALPN: "no-default-alpn",
-	SVCB_PORT:            "port",
-	SVCB_IPV4HINT:        "ipv4hint",
-	SVCB_ECHCONFIG:       "ech",
-	SVCB_IPV6HINT:        "ipv6hint",
-}
-
-var svcbStringToKeyMap = reverseSVCBKeyMap(svcbKeyToStringMap)
-
-func reverseSVCBKeyMap(m map[SVCBKey]string) map[string]SVCBKey {
-	n := make(map[string]SVCBKey, len(m))
-	for u, s := range m {
-		n[s] = u
-	}
-	return n
-}
-
-// String takes the numerical code of an SVCB key and returns its name.
-// Returns an empty string for reserved keys.
-// Accepts unassigned keys as well as experimental/private keys.
-func (key SVCBKey) String() string {
-	if x := svcbKeyToStringMap[key]; x != "" {
-		return x
-	}
-	if key == svcb_RESERVED {
-		return ""
-	}
-	return "key" + strconv.FormatUint(uint64(key), 10)
-}
-
-// svcbStringToKey returns the numerical code of an SVCB key.
-// Returns svcb_RESERVED for reserved/invalid keys.
-// Accepts unassigned keys as well as experimental/private keys.
-func svcbStringToKey(s string) SVCBKey {
-	if strings.HasPrefix(s, "key") {
-		a, err := strconv.ParseUint(s[3:], 10, 16)
-		// no leading zeros
-		// key shouldn't be registered
-		if err != nil || a == 65535 || s[3] == '0' || svcbKeyToStringMap[SVCBKey(a)] != "" {
-			return svcb_RESERVED
-		}
-		return SVCBKey(a)
-	}
-	if key, ok := svcbStringToKeyMap[s]; ok {
-		return key
-	}
-	return svcb_RESERVED
-}
-
-func (rr *SVCB) parse(c *zlexer, o string) *ParseError {
-	l, _ := c.Next()
-	i, e := strconv.ParseUint(l.token, 10, 16)
-	if e != nil || l.err {
-		return &ParseError{l.token, "bad SVCB priority", l}
-	}
-	rr.Priority = uint16(i)
-
-	c.Next()        // zBlank
-	l, _ = c.Next() // zString
-	rr.Target = l.token
-
-	name, nameOk := toAbsoluteName(l.token, o)
-	if l.err || !nameOk {
-		return &ParseError{l.token, "bad SVCB Target", l}
-	}
-	rr.Target = name
-
-	// Values (if any)
-	l, _ = c.Next()
-	var xs []SVCBKeyValue
-	// Helps require whitespace between pairs.
-	// Prevents key1000="a"key1001=...
-	canHaveNextKey := true
-	for l.value != zNewline && l.value != zEOF {
-		switch l.value {
-		case zString:
-			if !canHaveNextKey {
-				// The key we can now read was probably meant to be
-				// a part of the last value.
-				return &ParseError{l.token, "bad SVCB value quotation", l}
-			}
-
-			// In key=value pairs, value does not have to be quoted unless value
-			// contains whitespace. And keys don't need to have values.
-			// Similarly, keys with an equality signs after them don't need values.
-			// l.token includes at least up to the first equality sign.
-			idx := strings.IndexByte(l.token, '=')
-			var key, value string
-			if idx < 0 {
-				// Key with no value and no equality sign
-				key = l.token
-			} else if idx == 0 {
-				return &ParseError{l.token, "bad SVCB key", l}
-			} else {
-				key, value = l.token[:idx], l.token[idx+1:]
-
-				if value == "" {
-					// We have a key and an equality sign. Maybe we have nothing
-					// after "=" or we have a double quote.
-					l, _ = c.Next()
-					if l.value == zQuote {
-						// Only needed when value ends with double quotes.
-						// Any value starting with zQuote ends with it.
-						canHaveNextKey = false
-
-						l, _ = c.Next()
-						switch l.value {
-						case zString:
-							// We have a value in double quotes.
-							value = l.token
-							l, _ = c.Next()
-							if l.value != zQuote {
-								return &ParseError{l.token, "SVCB unterminated value", l}
-							}
-						case zQuote:
-							// There's nothing in double quotes.
-						default:
-							return &ParseError{l.token, "bad SVCB value", l}
-						}
-					}
-				}
-			}
-			kv := makeSVCBKeyValue(svcbStringToKey(key))
-			if kv == nil {
-				return &ParseError{l.token, "bad SVCB key", l}
-			}
-			if err := kv.parse(value); err != nil {
-				return &ParseError{l.token, err.Error(), l}
-			}
-			xs = append(xs, kv)
-		case zQuote:
-			return &ParseError{l.token, "SVCB key can't contain double quotes", l}
-		case zBlank:
-			canHaveNextKey = true
-		default:
-			return &ParseError{l.token, "bad SVCB values", l}
-		}
-		l, _ = c.Next()
-	}
-
-	// "In AliasMode, records SHOULD NOT include any SvcParams, and recipients MUST
-	// ignore any SvcParams that are present."
-	// However, we don't check rr.Priority == 0 && len(xs) > 0 here
-	// It is the responsibility of the user of the library to check this.
-	// This is to encourage the fixing of the source of this error.
-
-	rr.Value = xs
-	return nil
-}
-
-// makeSVCBKeyValue returns an SVCBKeyValue struct with the key or nil for reserved keys.
-func makeSVCBKeyValue(key SVCBKey) SVCBKeyValue {
-	switch key {
-	case SVCB_MANDATORY:
-		return new(SVCBMandatory)
-	case SVCB_ALPN:
-		return new(SVCBAlpn)
-	case SVCB_NO_DEFAULT_ALPN:
-		return new(SVCBNoDefaultAlpn)
-	case SVCB_PORT:
-		return new(SVCBPort)
-	case SVCB_IPV4HINT:
-		return new(SVCBIPv4Hint)
-	case SVCB_ECHCONFIG:
-		return new(SVCBECHConfig)
-	case SVCB_IPV6HINT:
-		return new(SVCBIPv6Hint)
-	case svcb_RESERVED:
-		return nil
-	default:
-		e := new(SVCBLocal)
-		e.KeyCode = key
-		return e
-	}
-}
-
-// SVCB RR. See RFC xxxx (https://tools.ietf.org/html/draft-ietf-dnsop-svcb-https-08).
-type SVCB struct {
-	Hdr      RR_Header
-	Priority uint16         // If zero, Value must be empty or discarded by the user of this library
-	Target   string         `dns:"domain-name"`
-	Value    []SVCBKeyValue `dns:"pairs"`
-}
-
-// HTTPS RR. Everything valid for SVCB applies to HTTPS as well.
-// Except that the HTTPS record is intended for use with the HTTP and HTTPS protocols.
-type HTTPS struct {
-	SVCB
-}
-
-func (rr *HTTPS) String() string {
-	return rr.SVCB.String()
-}
-
-func (rr *HTTPS) parse(c *zlexer, o string) *ParseError {
-	return rr.SVCB.parse(c, o)
-}
-
-// SVCBKeyValue defines a key=value pair for the SVCB RR type.
-// An SVCB RR can have multiple SVCBKeyValues appended to it.
-type SVCBKeyValue interface {
-	Key() SVCBKey          // Key returns the numerical key code.
-	pack() ([]byte, error) // pack returns the encoded value.
-	unpack([]byte) error   // unpack sets the value.
-	String() string        // String returns the string representation of the value.
-	parse(string) error    // parse sets the value to the given string representation of the value.
-	copy() SVCBKeyValue    // copy returns a deep-copy of the pair.
-	len() int              // len returns the length of value in the wire format.
-}
-
-// SVCBMandatory pair adds to required keys that must be interpreted for the RR
-// to be functional. If ignored, the whole RRSet must be ignored.
-// "port" and "no-default-alpn" are mandatory by default if present,
-// so they shouldn't be included here.
-//
-// It is incumbent upon the user of this library to reject the RRSet if
-// or avoid constructing such an RRSet that:
-// - "mandatory" is included as one of the keys of mandatory
-// - no key is listed multiple times in mandatory
-// - all keys listed in mandatory are present
-// - escape sequences are not used in mandatory
-// - mandatory, when present, lists at least one key
-//
-// Basic use pattern for creating a mandatory option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	e := new(dns.SVCBMandatory)
-//	e.Code = []uint16{dns.SVCB_ALPN}
-//	s.Value = append(s.Value, e)
-//	t := new(dns.SVCBAlpn)
-//	t.Alpn = []string{"xmpp-client"}
-//	s.Value = append(s.Value, t)
-type SVCBMandatory struct {
-	Code []SVCBKey
-}
-
-func (*SVCBMandatory) Key() SVCBKey { return SVCB_MANDATORY }
-
-func (s *SVCBMandatory) String() string {
-	str := make([]string, len(s.Code))
-	for i, e := range s.Code {
-		str[i] = e.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBMandatory) pack() ([]byte, error) {
-	codes := append([]SVCBKey(nil), s.Code...)
-	sort.Slice(codes, func(i, j int) bool {
-		return codes[i] < codes[j]
-	})
-	b := make([]byte, 2*len(codes))
-	for i, e := range codes {
-		binary.BigEndian.PutUint16(b[2*i:], uint16(e))
-	}
-	return b, nil
-}
-
-func (s *SVCBMandatory) unpack(b []byte) error {
-	if len(b)%2 != 0 {
-		return errors.New("dns: svcbmandatory: value length is not a multiple of 2")
-	}
-	codes := make([]SVCBKey, 0, len(b)/2)
-	for i := 0; i < len(b); i += 2 {
-		// We assume strictly increasing order.
-		codes = append(codes, SVCBKey(binary.BigEndian.Uint16(b[i:])))
-	}
-	s.Code = codes
-	return nil
-}
-
-func (s *SVCBMandatory) parse(b string) error {
-	str := strings.Split(b, ",")
-	codes := make([]SVCBKey, 0, len(str))
-	for _, e := range str {
-		codes = append(codes, svcbStringToKey(e))
-	}
-	s.Code = codes
-	return nil
-}
-
-func (s *SVCBMandatory) len() int {
-	return 2 * len(s.Code)
-}
-
-func (s *SVCBMandatory) copy() SVCBKeyValue {
-	return &SVCBMandatory{
-		append([]SVCBKey(nil), s.Code...),
-	}
-}
-
-// SVCBAlpn pair is used to list supported connection protocols.
-// The user of this library must ensure that at least one protocol is listed when alpn is present.
-// Protocol IDs can be found at:
-// https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
-// Basic use pattern for creating an alpn option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBAlpn)
-//	e.Alpn = []string{"h2", "http/1.1"}
-//	h.Value = append(o.Value, e)
-type SVCBAlpn struct {
-	Alpn []string
-}
-
-func (*SVCBAlpn) Key() SVCBKey     { return SVCB_ALPN }
-func (s *SVCBAlpn) String() string { return strings.Join(s.Alpn, ",") }
-
-func (s *SVCBAlpn) pack() ([]byte, error) {
-	// Liberally estimate the size of an alpn as 10 octets
-	b := make([]byte, 0, 10*len(s.Alpn))
-	for _, e := range s.Alpn {
-		if e == "" {
-			return nil, errors.New("dns: svcbalpn: empty alpn-id")
-		}
-		if len(e) > 255 {
-			return nil, errors.New("dns: svcbalpn: alpn-id too long")
-		}
-		b = append(b, byte(len(e)))
-		b = append(b, e...)
-	}
-	return b, nil
-}
-
-func (s *SVCBAlpn) unpack(b []byte) error {
-	// Estimate the size of the smallest alpn as 4 bytes
-	alpn := make([]string, 0, len(b)/4)
-	for i := 0; i < len(b); {
-		length := int(b[i])
-		i++
-		if i+length > len(b) {
-			return errors.New("dns: svcbalpn: alpn array overflowing")
-		}
-		alpn = append(alpn, string(b[i:i+length]))
-		i += length
-	}
-	s.Alpn = alpn
-	return nil
-}
-
-func (s *SVCBAlpn) parse(b string) error {
-	s.Alpn = strings.Split(b, ",")
-	return nil
-}
-
-func (s *SVCBAlpn) len() int {
-	var l int
-	for _, e := range s.Alpn {
-		l += 1 + len(e)
-	}
-	return l
-}
-
-func (s *SVCBAlpn) copy() SVCBKeyValue {
-	return &SVCBAlpn{
-		append([]string(nil), s.Alpn...),
-	}
-}
-
-// SVCBNoDefaultAlpn pair signifies no support for default connection protocols.
-// Should be used in conjunction with alpn.
-// Basic use pattern for creating a no-default-alpn option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	t := new(dns.SVCBAlpn)
-//	t.Alpn = []string{"xmpp-client"}
-//	s.Value = append(s.Value, t)
-//	e := new(dns.SVCBNoDefaultAlpn)
-//	s.Value = append(s.Value, e)
-type SVCBNoDefaultAlpn struct{}
-
-func (*SVCBNoDefaultAlpn) Key() SVCBKey          { return SVCB_NO_DEFAULT_ALPN }
-func (*SVCBNoDefaultAlpn) copy() SVCBKeyValue    { return &SVCBNoDefaultAlpn{} }
-func (*SVCBNoDefaultAlpn) pack() ([]byte, error) { return []byte{}, nil }
-func (*SVCBNoDefaultAlpn) String() string        { return "" }
-func (*SVCBNoDefaultAlpn) len() int              { return 0 }
-
-func (*SVCBNoDefaultAlpn) unpack(b []byte) error {
-	if len(b) != 0 {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
-	}
-	return nil
-}
-
-func (*SVCBNoDefaultAlpn) parse(b string) error {
-	if b != "" {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
-	}
-	return nil
-}
-
-// SVCBPort pair defines the port for connection.
-// Basic use pattern for creating a port option:
-//
-//	s := &dns.SVCB{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}}
-//	e := new(dns.SVCBPort)
-//	e.Port = 80
-//	s.Value = append(s.Value, e)
-type SVCBPort struct {
-	Port uint16
-}
-
-func (*SVCBPort) Key() SVCBKey         { return SVCB_PORT }
-func (*SVCBPort) len() int             { return 2 }
-func (s *SVCBPort) String() string     { return strconv.FormatUint(uint64(s.Port), 10) }
-func (s *SVCBPort) copy() SVCBKeyValue { return &SVCBPort{s.Port} }
-
-func (s *SVCBPort) unpack(b []byte) error {
-	if len(b) != 2 {
-		return errors.New("dns: svcbport: port length is not exactly 2 octets")
-	}
-	s.Port = binary.BigEndian.Uint16(b)
-	return nil
-}
-
-func (s *SVCBPort) pack() ([]byte, error) {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, s.Port)
-	return b, nil
-}
-
-func (s *SVCBPort) parse(b string) error {
-	port, err := strconv.ParseUint(b, 10, 16)
-	if err != nil {
-		return errors.New("dns: svcbport: port out of range")
-	}
-	s.Port = uint16(port)
-	return nil
-}
-
-// SVCBIPv4Hint pair suggests an IPv4 address which may be used to open connections
-// if A and AAAA record responses for SVCB's Target domain haven't been received.
-// In that case, optionally, A and AAAA requests can be made, after which the connection
-// to the hinted IP address may be terminated and a new connection may be opened.
-// Basic use pattern for creating an ipv4hint option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBIPv4Hint)
-//	e.Hint = []net.IP{net.IPv4(1,1,1,1).To4()}
-//
-//  Or
-//
-//	e.Hint = []net.IP{net.ParseIP("1.1.1.1").To4()}
-//	h.Value = append(h.Value, e)
-type SVCBIPv4Hint struct {
-	Hint []net.IP
-}
-
-func (*SVCBIPv4Hint) Key() SVCBKey { return SVCB_IPV4HINT }
-func (s *SVCBIPv4Hint) len() int   { return 4 * len(s.Hint) }
-
-func (s *SVCBIPv4Hint) pack() ([]byte, error) {
-	b := make([]byte, 0, 4*len(s.Hint))
-	for _, e := range s.Hint {
-		x := e.To4()
-		if x == nil {
-			return nil, errors.New("dns: svcbipv4hint: expected ipv4, hint is ipv6")
-		}
-		b = append(b, x...)
-	}
-	return b, nil
-}
-
-func (s *SVCBIPv4Hint) unpack(b []byte) error {
-	if len(b) == 0 || len(b)%4 != 0 {
-		return errors.New("dns: svcbipv4hint: ipv4 address byte array length is not a multiple of 4")
-	}
-	x := make([]net.IP, 0, len(b)/4)
-	for i := 0; i < len(b); i += 4 {
-		x = append(x, net.IP(b[i:i+4]))
-	}
-	s.Hint = x
-	return nil
-}
-
-func (s *SVCBIPv4Hint) String() string {
-	str := make([]string, len(s.Hint))
-	for i, e := range s.Hint {
-		x := e.To4()
-		if x == nil {
-			return "<nil>"
-		}
-		str[i] = x.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBIPv4Hint) parse(b string) error {
-	if strings.Contains(b, ":") {
-		return errors.New("dns: svcbipv4hint: expected ipv4, got ipv6")
-	}
-	str := strings.Split(b, ",")
-	dst := make([]net.IP, len(str))
-	for i, e := range str {
-		ip := net.ParseIP(e).To4()
-		if ip == nil {
-			return errors.New("dns: svcbipv4hint: bad ip")
-		}
-		dst[i] = ip
-	}
-	s.Hint = dst
-	return nil
-}
-
-func (s *SVCBIPv4Hint) copy() SVCBKeyValue {
-	hint := make([]net.IP, len(s.Hint))
-	for i, ip := range s.Hint {
-		hint[i] = copyIP(ip)
-	}
-
-	return &SVCBIPv4Hint{
-		Hint: hint,
-	}
-}
-
-// SVCBECHConfig pair contains the ECHConfig structure defined in draft-ietf-tls-esni [RFC xxxx].
-// Basic use pattern for creating an ech option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBECHConfig)
-//	e.ECH = []byte{0xfe, 0x08, ...}
-//	h.Value = append(h.Value, e)
-type SVCBECHConfig struct {
-	ECH []byte // Specifically ECHConfigList including the redundant length prefix
-}
-
-func (*SVCBECHConfig) Key() SVCBKey     { return SVCB_ECHCONFIG }
-func (s *SVCBECHConfig) String() string { return toBase64(s.ECH) }
-func (s *SVCBECHConfig) len() int       { return len(s.ECH) }
-
-func (s *SVCBECHConfig) pack() ([]byte, error) {
-	return append([]byte(nil), s.ECH...), nil
-}
-
-func (s *SVCBECHConfig) copy() SVCBKeyValue {
-	return &SVCBECHConfig{
-		append([]byte(nil), s.ECH...),
-	}
-}
-
-func (s *SVCBECHConfig) unpack(b []byte) error {
-	s.ECH = append([]byte(nil), b...)
-	return nil
-}
-func (s *SVCBECHConfig) parse(b string) error {
-	x, err := fromBase64([]byte(b))
-	if err != nil {
-		return errors.New("dns: svcbech: bad base64 ech")
-	}
-	s.ECH = x
-	return nil
-}
-
-// SVCBIPv6Hint pair suggests an IPv6 address which may be used to open connections
-// if A and AAAA record responses for SVCB's Target domain haven't been received.
-// In that case, optionally, A and AAAA requests can be made, after which the
-// connection to the hinted IP address may be terminated and a new connection may be opened.
-// Basic use pattern for creating an ipv6hint option:
-//
-//	h := new(dns.HTTPS)
-//	h.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeHTTPS, Class: dns.ClassINET}
-//	e := new(dns.SVCBIPv6Hint)
-//	e.Hint = []net.IP{net.ParseIP("2001:db8::1")}
-//	h.Value = append(h.Value, e)
-type SVCBIPv6Hint struct {
-	Hint []net.IP
-}
-
-func (*SVCBIPv6Hint) Key() SVCBKey { return SVCB_IPV6HINT }
-func (s *SVCBIPv6Hint) len() int   { return 16 * len(s.Hint) }
-
-func (s *SVCBIPv6Hint) pack() ([]byte, error) {
-	b := make([]byte, 0, 16*len(s.Hint))
-	for _, e := range s.Hint {
-		if len(e) != net.IPv6len || e.To4() != nil {
-			return nil, errors.New("dns: svcbipv6hint: expected ipv6, hint is ipv4")
-		}
-		b = append(b, e...)
-	}
-	return b, nil
-}
-
-func (s *SVCBIPv6Hint) unpack(b []byte) error {
-	if len(b) == 0 || len(b)%16 != 0 {
-		return errors.New("dns: svcbipv6hint: ipv6 address byte array length not a multiple of 16")
-	}
-	x := make([]net.IP, 0, len(b)/16)
-	for i := 0; i < len(b); i += 16 {
-		ip := net.IP(b[i : i+16])
-		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4")
-		}
-		x = append(x, ip)
-	}
-	s.Hint = x
-	return nil
-}
-
-func (s *SVCBIPv6Hint) String() string {
-	str := make([]string, len(s.Hint))
-	for i, e := range s.Hint {
-		if x := e.To4(); x != nil {
-			return "<nil>"
-		}
-		str[i] = e.String()
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *SVCBIPv6Hint) parse(b string) error {
-	str := strings.Split(b, ",")
-	dst := make([]net.IP, len(str))
-	for i, e := range str {
-		ip := net.ParseIP(e)
-		if ip == nil {
-			return errors.New("dns: svcbipv6hint: bad ip")
-		}
-		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4-mapped-ipv6")
-		}
-		dst[i] = ip
-	}
-	s.Hint = dst
-	return nil
-}
-
-func (s *SVCBIPv6Hint) copy() SVCBKeyValue {
-	hint := make([]net.IP, len(s.Hint))
-	for i, ip := range s.Hint {
-		hint[i] = copyIP(ip)
-	}
-
-	return &SVCBIPv6Hint{
-<<<<<<< HEAD
-		append([]net.IP(nil), s.Hint...),
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		append([]net.IP(nil), s.Hint...),
-=======
-		Hint: hint,
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// SVCBKey is the type of the keys used in the SVCB RR.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-type SVCBKey uint16
-
-// Keys defined in draft-ietf-dnsop-svcb-https-08 Section 14.3.2.
-const (
-	SVCB_MANDATORY SVCBKey = iota
-	SVCB_ALPN
-	SVCB_NO_DEFAULT_ALPN
-	SVCB_PORT
-	SVCB_IPV4HINT
-	SVCB_ECHCONFIG
-	SVCB_IPV6HINT
-	SVCB_DOHPATH // draft-ietf-add-svcb-dns-02 Section 9
+	SVCB_DOHPATH // rfc9461 Section 5
+	SVCB_OHTTP   // rfc9540 Section 8
 
 	svcb_RESERVED SVCBKey = 65535
 )
@@ -1370,6 +38,7 @@ var svcbKeyToStringMap = map[SVCBKey]string{
 	SVCB_ECHCONFIG:       "ech",
 	SVCB_IPV6HINT:        "ipv6hint",
 	SVCB_DOHPATH:         "dohpath",
+	SVCB_OHTTP:           "ohttp",
 }
 
 var svcbStringToKeyMap = reverseSVCBKeyMap(svcbKeyToStringMap)
@@ -1534,6 +203,8 @@ func makeSVCBKeyValue(key SVCBKey) SVCBKeyValue {
 		return new(SVCBIPv6Hint)
 	case SVCB_DOHPATH:
 		return new(SVCBDoHPath)
+	case SVCB_OHTTP:
+		return new(SVCBOhttp)
 	case svcb_RESERVED:
 		return nil
 	default:
@@ -1543,11 +214,7 @@ func makeSVCBKeyValue(key SVCBKey) SVCBKeyValue {
 	}
 }
 
-// SVCB RR. See RFC xxxx (https://tools.ietf.org/html/draft-ietf-dnsop-svcb-https-08).
-//
-// NOTE: The HTTPS/SVCB RFCs are in the draft stage.
-// The API, including constants and types related to SVCBKeyValues, may
-// change in future versions in accordance with the latest drafts.
+// SVCB RR. See RFC 9460.
 type SVCB struct {
 	Hdr      RR_Header
 	Priority uint16         // If zero, Value must be empty or discarded by the user of this library
@@ -1555,12 +222,8 @@ type SVCB struct {
 	Value    []SVCBKeyValue `dns:"pairs"`
 }
 
-// HTTPS RR. Everything valid for SVCB applies to HTTPS as well.
+// HTTPS RR. See RFC 9460. Everything valid for SVCB applies to HTTPS as well.
 // Except that the HTTPS record is intended for use with the HTTP and HTTPS protocols.
-//
-// NOTE: The HTTPS/SVCB RFCs are in the draft stage.
-// The API, including constants and types related to SVCBKeyValues, may
-// change in future versions in accordance with the latest drafts.
 type HTTPS struct {
 	SVCB
 }
@@ -1635,7 +298,7 @@ func (s *SVCBMandatory) pack() ([]byte, error) {
 
 func (s *SVCBMandatory) unpack(b []byte) error {
 	if len(b)%2 != 0 {
-		return errors.New("dns: svcbmandatory: value length is not a multiple of 2")
+		return errors.New("bad svcbmandatory: value length is not a multiple of 2")
 	}
 	codes := make([]SVCBKey, 0, len(b)/2)
 	for i := 0; i < len(b); i += 2 {
@@ -1732,10 +395,10 @@ func (s *SVCBAlpn) pack() ([]byte, error) {
 	b := make([]byte, 0, 10*len(s.Alpn))
 	for _, e := range s.Alpn {
 		if e == "" {
-			return nil, errors.New("dns: svcbalpn: empty alpn-id")
+			return nil, errors.New("bad svcbalpn: empty alpn-id")
 		}
 		if len(e) > 255 {
-			return nil, errors.New("dns: svcbalpn: alpn-id too long")
+			return nil, errors.New("bad svcbalpn: alpn-id too long")
 		}
 		b = append(b, byte(len(e)))
 		b = append(b, e...)
@@ -1750,7 +413,7 @@ func (s *SVCBAlpn) unpack(b []byte) error {
 		length := int(b[i])
 		i++
 		if i+length > len(b) {
-			return errors.New("dns: svcbalpn: alpn array overflowing")
+			return errors.New("bad svcbalpn: alpn array overflowing")
 		}
 		alpn = append(alpn, string(b[i:i+length]))
 		i += length
@@ -1770,13 +433,13 @@ func (s *SVCBAlpn) parse(b string) error {
 	for p := 0; p < len(b); {
 		c, q := nextByte(b, p)
 		if q == 0 {
-			return errors.New("dns: svcbalpn: unterminated escape")
+			return errors.New("bad svcbalpn: unterminated escape")
 		}
 		p += q
 		// If we find a comma, we have finished reading an alpn.
 		if c == ',' {
 			if len(a) == 0 {
-				return errors.New("dns: svcbalpn: empty protocol identifier")
+				return errors.New("bad svcbalpn: empty protocol identifier")
 			}
 			alpn = append(alpn, string(a))
 			a = []byte{}
@@ -1786,10 +449,10 @@ func (s *SVCBAlpn) parse(b string) error {
 		if c == '\\' {
 			dc, dq := nextByte(b, p)
 			if dq == 0 {
-				return errors.New("dns: svcbalpn: unterminated escape decoding comma-separated list")
+				return errors.New("bad svcbalpn: unterminated escape decoding comma-separated list")
 			}
 			if dc != '\\' && dc != ',' {
-				return errors.New("dns: svcbalpn: bad escaped character decoding comma-separated list")
+				return errors.New("bad svcbalpn: bad escaped character decoding comma-separated list")
 			}
 			p += dq
 			c = dc
@@ -1798,7 +461,7 @@ func (s *SVCBAlpn) parse(b string) error {
 	}
 	// Add the final alpn.
 	if len(a) == 0 {
-		return errors.New("dns: svcbalpn: last protocol identifier empty")
+		return errors.New("bad svcbalpn: last protocol identifier empty")
 	}
 	s.Alpn = append(alpn, string(a))
 	return nil
@@ -1836,14 +499,14 @@ func (*SVCBNoDefaultAlpn) len() int              { return 0 }
 
 func (*SVCBNoDefaultAlpn) unpack(b []byte) error {
 	if len(b) != 0 {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
+		return errors.New("bad svcbnodefaultalpn: no-default-alpn must have no value")
 	}
 	return nil
 }
 
 func (*SVCBNoDefaultAlpn) parse(b string) error {
 	if b != "" {
-		return errors.New("dns: svcbnodefaultalpn: no-default-alpn must have no value")
+		return errors.New("bad svcbnodefaultalpn: no-default-alpn must have no value")
 	}
 	return nil
 }
@@ -1866,7 +529,7 @@ func (s *SVCBPort) copy() SVCBKeyValue { return &SVCBPort{s.Port} }
 
 func (s *SVCBPort) unpack(b []byte) error {
 	if len(b) != 2 {
-		return errors.New("dns: svcbport: port length is not exactly 2 octets")
+		return errors.New("bad svcbport: port length is not exactly 2 octets")
 	}
 	s.Port = binary.BigEndian.Uint16(b)
 	return nil
@@ -1881,7 +544,7 @@ func (s *SVCBPort) pack() ([]byte, error) {
 func (s *SVCBPort) parse(b string) error {
 	port, err := strconv.ParseUint(b, 10, 16)
 	if err != nil {
-		return errors.New("dns: svcbport: port out of range")
+		return errors.New("bad svcbport: port out of range")
 	}
 	s.Port = uint16(port)
 	return nil
@@ -1914,7 +577,7 @@ func (s *SVCBIPv4Hint) pack() ([]byte, error) {
 	for _, e := range s.Hint {
 		x := e.To4()
 		if x == nil {
-			return nil, errors.New("dns: svcbipv4hint: expected ipv4, hint is ipv6")
+			return nil, errors.New("bad svcbipv4hint: expected ipv4, hint is ipv6")
 		}
 		b = append(b, x...)
 	}
@@ -1923,7 +586,7 @@ func (s *SVCBIPv4Hint) pack() ([]byte, error) {
 
 func (s *SVCBIPv4Hint) unpack(b []byte) error {
 	if len(b) == 0 || len(b)%4 != 0 {
-		return errors.New("dns: svcbipv4hint: ipv4 address byte array length is not a multiple of 4")
+		return errors.New("bad svcbipv4hint: ipv4 address byte array length is not a multiple of 4")
 	}
 	b = cloneSlice(b)
 	x := make([]net.IP, 0, len(b)/4)
@@ -1948,10 +611,10 @@ func (s *SVCBIPv4Hint) String() string {
 
 func (s *SVCBIPv4Hint) parse(b string) error {
 	if b == "" {
-		return errors.New("dns: svcbipv4hint: empty hint")
+		return errors.New("bad svcbipv4hint: empty hint")
 	}
 	if strings.Contains(b, ":") {
-		return errors.New("dns: svcbipv4hint: expected ipv4, got ipv6")
+		return errors.New("bad svcbipv4hint: expected ipv4, got ipv6")
 	}
 
 	hint := make([]net.IP, 0, strings.Count(b, ",")+1)
@@ -1960,7 +623,7 @@ func (s *SVCBIPv4Hint) parse(b string) error {
 		e, b, _ = strings.Cut(b, ",")
 		ip := net.ParseIP(e).To4()
 		if ip == nil {
-			return errors.New("dns: svcbipv4hint: bad ip")
+			return errors.New("bad svcbipv4hint: bad ip")
 		}
 		hint = append(hint, ip)
 	}
@@ -2008,7 +671,7 @@ func (s *SVCBECHConfig) unpack(b []byte) error {
 func (s *SVCBECHConfig) parse(b string) error {
 	x, err := fromBase64([]byte(b))
 	if err != nil {
-		return errors.New("dns: svcbech: bad base64 ech")
+		return errors.New("bad svcbech: bad base64 ech")
 	}
 	s.ECH = x
 	return nil
@@ -2036,7 +699,7 @@ func (s *SVCBIPv6Hint) pack() ([]byte, error) {
 	b := make([]byte, 0, 16*len(s.Hint))
 	for _, e := range s.Hint {
 		if len(e) != net.IPv6len || e.To4() != nil {
-			return nil, errors.New("dns: svcbipv6hint: expected ipv6, hint is ipv4")
+			return nil, errors.New("bad svcbipv6hint: expected ipv6, hint is ipv4")
 		}
 		b = append(b, e...)
 	}
@@ -2045,14 +708,14 @@ func (s *SVCBIPv6Hint) pack() ([]byte, error) {
 
 func (s *SVCBIPv6Hint) unpack(b []byte) error {
 	if len(b) == 0 || len(b)%16 != 0 {
-		return errors.New("dns: svcbipv6hint: ipv6 address byte array length not a multiple of 16")
+		return errors.New("bas svcbipv6hint: ipv6 address byte array length not a multiple of 16")
 	}
 	b = cloneSlice(b)
 	x := make([]net.IP, 0, len(b)/16)
 	for i := 0; i < len(b); i += 16 {
 		ip := net.IP(b[i : i+16])
 		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4")
+			return errors.New("bad svcbipv6hint: expected ipv6, got ipv4")
 		}
 		x = append(x, ip)
 	}
@@ -2073,7 +736,7 @@ func (s *SVCBIPv6Hint) String() string {
 
 func (s *SVCBIPv6Hint) parse(b string) error {
 	if b == "" {
-		return errors.New("dns: svcbipv6hint: empty hint")
+		return errors.New("bad svcbipv6hint: empty hint")
 	}
 
 	hint := make([]net.IP, 0, strings.Count(b, ",")+1)
@@ -2082,10 +745,10 @@ func (s *SVCBIPv6Hint) parse(b string) error {
 		e, b, _ = strings.Cut(b, ",")
 		ip := net.ParseIP(e)
 		if ip == nil {
-			return errors.New("dns: svcbipv6hint: bad ip")
+			return errors.New("bad svcbipv6hint: bad ip")
 		}
 		if ip.To4() != nil {
-			return errors.New("dns: svcbipv6hint: expected ipv6, got ipv4-mapped-ipv6")
+			return errors.New("bad svcbipv6hint: expected ipv6, got ipv4-mapped-ipv6")
 		}
 		hint = append(hint, ip)
 	}
@@ -2094,14 +757,6 @@ func (s *SVCBIPv6Hint) parse(b string) error {
 }
 
 func (s *SVCBIPv6Hint) copy() SVCBKeyValue {
-<<<<<<< HEAD
-	return &SVCBIPv6Hint{
-		append([]net.IP(nil), s.Hint...),
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return &SVCBIPv6Hint{
-		append([]net.IP(nil), s.Hint...),
-=======
 	hint := make([]net.IP, len(s.Hint))
 	for i, ip := range s.Hint {
 		hint[i] = cloneSlice(ip)
@@ -2112,8 +767,8 @@ func (s *SVCBIPv6Hint) copy() SVCBKeyValue {
 // SVCBDoHPath pair is used to indicate the URI template that the
 // clients may use to construct a DNS over HTTPS URI.
 //
-// See RFC xxxx (https://datatracker.ietf.org/doc/html/draft-ietf-add-svcb-dns-02)
-// and RFC yyyy (https://datatracker.ietf.org/doc/html/draft-ietf-add-ddr-06).
+// See RFC 9461 (https://datatracker.ietf.org/doc/html/rfc9461)
+// and RFC 9462 (https://datatracker.ietf.org/doc/html/rfc9462).
 //
 // A basic example of using the dohpath option together with the alpn
 // option to indicate support for DNS over HTTPS on a certain path:
@@ -2145,7 +800,7 @@ func (s *SVCBDoHPath) unpack(b []byte) error {
 func (s *SVCBDoHPath) parse(b string) error {
 	template, err := svcbParseParam(b)
 	if err != nil {
-		return fmt.Errorf("dns: svcbdohpath: %w", err)
+		return fmt.Errorf("bad svcbdohpath: %w", err)
 	}
 	s.Template = string(template)
 	return nil
@@ -2154,8 +809,45 @@ func (s *SVCBDoHPath) parse(b string) error {
 func (s *SVCBDoHPath) copy() SVCBKeyValue {
 	return &SVCBDoHPath{
 		Template: s.Template,
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
+}
+
+// The "ohttp" SvcParamKey is used to indicate that a service described in a SVCB RR
+// can be accessed as a target using an associated gateway.
+// Both the presentation and wire-format values for the "ohttp" parameter MUST be empty.
+//
+// See RFC 9460 (https://datatracker.ietf.org/doc/html/rfc9460/)
+// and RFC 9230 (https://datatracker.ietf.org/doc/html/rfc9230/)
+//
+// A basic example of using the dohpath option together with the alpn
+// option to indicate support for DNS over HTTPS on a certain path:
+//
+//	s := new(dns.SVCB)
+//	s.Hdr = dns.RR_Header{Name: ".", Rrtype: dns.TypeSVCB, Class: dns.ClassINET}
+//	e := new(dns.SVCBAlpn)
+//	e.Alpn = []string{"h2", "h3"}
+//	p := new(dns.SVCBOhttp)
+//	s.Value = append(s.Value, e, p)
+type SVCBOhttp struct{}
+
+func (*SVCBOhttp) Key() SVCBKey          { return SVCB_OHTTP }
+func (*SVCBOhttp) copy() SVCBKeyValue    { return &SVCBOhttp{} }
+func (*SVCBOhttp) pack() ([]byte, error) { return []byte{}, nil }
+func (*SVCBOhttp) String() string        { return "" }
+func (*SVCBOhttp) len() int              { return 0 }
+
+func (*SVCBOhttp) unpack(b []byte) error {
+	if len(b) != 0 {
+		return errors.New("bad svcbotthp: svcbotthp must have no value")
+	}
+	return nil
+}
+
+func (*SVCBOhttp) parse(b string) error {
+	if b != "" {
+		return errors.New("bad svcbotthp: svcbotthp must have no value")
+	}
+	return nil
 }
 
 // SVCBLocal pair is intended for experimental/private use. The key is recommended
@@ -2186,7 +878,7 @@ func (s *SVCBLocal) unpack(b []byte) error {
 func (s *SVCBLocal) parse(b string) error {
 	data, err := svcbParseParam(b)
 	if err != nil {
-		return fmt.Errorf("dns: svcblocal: svcb private/experimental key %w", err)
+		return fmt.Errorf("bad svcblocal: svcb private/experimental key %w", err)
 	}
 	s.Data = data
 	return nil

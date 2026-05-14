@@ -116,6 +116,50 @@ func (this *EnvoyFilter_ListenerMatch_SubFilterMatch) UnmarshalJSON(b []byte) er
 	return EnvoyFilterUnmarshaler.Unmarshal(bytes.NewReader(b), this)
 }
 
+// MarshalJSON is a custom marshaler for EnvoyFilter_WaypointMatch
+func (this *EnvoyFilter_WaypointMatch) MarshalJSON() ([]byte, error) {
+	str, err := EnvoyFilterMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for EnvoyFilter_WaypointMatch
+func (this *EnvoyFilter_WaypointMatch) UnmarshalJSON(b []byte) error {
+	return EnvoyFilterUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for EnvoyFilter_WaypointMatch_RouteMatch
+func (this *EnvoyFilter_WaypointMatch_RouteMatch) MarshalJSON() ([]byte, error) {
+	str, err := EnvoyFilterMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for EnvoyFilter_WaypointMatch_RouteMatch
+func (this *EnvoyFilter_WaypointMatch_RouteMatch) UnmarshalJSON(b []byte) error {
+	return EnvoyFilterUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for EnvoyFilter_WaypointMatch_FilterMatch
+func (this *EnvoyFilter_WaypointMatch_FilterMatch) MarshalJSON() ([]byte, error) {
+	str, err := EnvoyFilterMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for EnvoyFilter_WaypointMatch_FilterMatch
+func (this *EnvoyFilter_WaypointMatch_FilterMatch) UnmarshalJSON(b []byte) error {
+	return EnvoyFilterUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for EnvoyFilter_WaypointMatch_FilterMatch_SubFilterMatch
+func (this *EnvoyFilter_WaypointMatch_FilterMatch_SubFilterMatch) MarshalJSON() ([]byte, error) {
+	str, err := EnvoyFilterMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for EnvoyFilter_WaypointMatch_FilterMatch_SubFilterMatch
+func (this *EnvoyFilter_WaypointMatch_FilterMatch_SubFilterMatch) UnmarshalJSON(b []byte) error {
+	return EnvoyFilterUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
 // MarshalJSON is a custom marshaler for EnvoyFilter_Patch
 func (this *EnvoyFilter_Patch) MarshalJSON() ([]byte, error) {
 	str, err := EnvoyFilterMarshaler.MarshalToString(this)

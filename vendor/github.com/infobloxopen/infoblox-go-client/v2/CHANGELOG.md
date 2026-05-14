@@ -1,5 +1,77 @@
 # Infoblox Go Client Release Notes
 
+
+## v2.12.0
+
+### Major Changes
+
+- Security: Updated the minimum supported Go version to 1.25.8 to address CVE-2025-68121 in the Go toolchain and standard library.
+
+## v2.11.0
+
+### Release Summary
+
+- This release introduces new features aimed at managing DNS resource record types HTTPS and SVCB Records (Compatible with NIOS 9.0.7 using WAPI v2.13.7). Updated Go Version to v1.24.7 and fixed security vulnerabilities by upgrading required dependencies.
+
+### Major Changes
+
+- Upgraded go version from 1.21 to 1.24.7
+
+### Minor Changes
+
+- Added Create, Read, Update and Delete operations for HTTPS and SVCB Records.
+- Added structs `RecordHttps` and `RecordSvcb` for HTTPS and SVCB Record.
+
+## v2.10.0
+
+### Release Summary
+
+- This release introduces several significant enhancements and new features aimed at management and Alias Record, NS Record, IPV4 SharedNetwork, IPV4 FixedAddress, IPV4 Range and IPV4 RangeTemplate objects.
+
+### Minor Changes
+
+- Added Create, Read, Update and Delete operations for Alias Record, NS Record, IPV4 SharedNetwork, IPV4 Range and IPV4 RangeTemplate objects.
+- Added GetAllFixedAddress for IPV4 FixedAddress object.
+- Modified AllocateIP, UpdateFixedAddress functions to support IPV4 FixedAddress object.
+
+## v2.9.0
+
+### Release Summary
+
+- This release introduces several significant enhancements and new features aimed at management and DTC Pool, LBDN and Server objects.
+
+### Minor Changes
+
+- Added Create, Read, Update and Delete operations for DTC LBDN, Pool and Server records.
+
+## v2.8.0
+
+### Release Summary
+
+- This release introduces several significant enhancements and new features aimed at improving record management and
+  network configuration capabilities.
+
+### Minor Changes
+
+- Added Create, Update and Delete operations for ZoneDelegated record.
+- Added structs `IpNextAvailable` for Next Available IP with extensible attribute for A, AAAA, and Host Record.
+- Added support for the Next Available Network with Extensible Attributes for Network and Network Container.
+- Added Aliases and disable field in HostRecord struct.
+
+## v2.7.0
+
+### Release Summary
+
+-  Create, Update, Delete and Get operations for zone-forward record is being added.
+
+### Major Changes
+
+- Upgraded go version from 1.17 to 1.21
+- Added Create, Update and Delete operations for zone-forward record.
+- Added `GetZoneForwardByRef` function to fetch zone-forward record by reference.
+- Added `GetZoneForwardFilters` function to fetch all zone-forward records with the given filters.
+- Added wrapper structs `NullableForwardingServers` and `NullForwardTo` to handle omitempty fields `Forwardingmemberserver` and `ForwardTo` of ZoneForward struct.
+
 ## v2.6.0
 
 ### Release Summary

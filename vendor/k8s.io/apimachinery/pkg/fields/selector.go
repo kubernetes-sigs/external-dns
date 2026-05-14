@@ -57,14 +57,6 @@ type Selector interface {
 
 type nothingSelector struct{}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (n nothingSelector) Matches(_ Fields) bool      { return false }
 func (n nothingSelector) Empty() bool                { return false }
 func (n nothingSelector) String() string             { return "" }
@@ -74,122 +66,6 @@ func (n nothingSelector) RequiresExactMatch(field string) (value string, found b
 	return "", false
 }
 func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
-=======
-func (n nothingSelector) Matches(_ Fields) bool      { return false }
-func (n nothingSelector) Empty() bool                { return false }
-func (n nothingSelector) String() string             { return "" }
-func (n nothingSelector) Requirements() Requirements { return nil }
-func (n nothingSelector) DeepCopySelector() Selector { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
-	return "", false
-}
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
-=======
-func (n nothingSelector) Matches(_ Fields) bool      { return false }
-func (n nothingSelector) Empty() bool                { return false }
-func (n nothingSelector) String() string             { return "" }
-func (n nothingSelector) Requirements() Requirements { return nil }
-func (n nothingSelector) DeepCopySelector() Selector { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
-	return "", false
-}
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
-=======
-func (n nothingSelector) Matches(_ Fields) bool      { return false }
-func (n nothingSelector) Empty() bool                { return false }
-func (n nothingSelector) String() string             { return "" }
-func (n nothingSelector) Requirements() Requirements { return nil }
-func (n nothingSelector) DeepCopySelector() Selector { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
-	return "", false
-}
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
-func (n nothingSelector) Empty() bool                                                { return false }
-func (n nothingSelector) String() string                                             { return "" }
-func (n nothingSelector) Requirements() Requirements                                 { return nil }
-func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
-=======
-func (n nothingSelector) Matches(_ Fields) bool      { return false }
-func (n nothingSelector) Empty() bool                { return false }
-func (n nothingSelector) String() string             { return "" }
-func (n nothingSelector) Requirements() Requirements { return nil }
-func (n nothingSelector) DeepCopySelector() Selector { return n }
-func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
-	return "", false
-}
-func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Nothing returns a selector that matches no fields
 func Nothing() Selector {

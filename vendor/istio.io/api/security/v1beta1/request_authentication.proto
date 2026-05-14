@@ -13,18 +13,11 @@
 // limitations under the License.
 syntax = "proto3";
 
-import "type/v1beta1/selector.proto";
-import "security/v1beta1/jwt.proto";
-
 // $schema: istio.security.v1beta1.RequestAuthentication
 // $title: RequestAuthentication
 // $description: Request authentication configuration for workloads.
 // $location: https://istio.io/docs/reference/config/security/request_authentication.html
-// $aliases: [/docs/reference/config/security/v1beta1/request_authentication]
-
-package istio.security.v1beta1;
-
-option go_package="istio.io/api/security/v1beta1";
+// $aliases: [/docs/reference/config/security/v1beta1/request_authentication, /docs/reference/config/security/v1beta1/jwt, /docs/reference/config/security/v1beta1/jwt.html]
 
 // RequestAuthentication defines what request authentication methods are supported by a workload.
 // It will reject a request if the request contains invalid authentication information, based on the
@@ -33,7 +26,7 @@ option go_package="istio.io/api/security/v1beta1";
 // requests only, this should be accompanied by an authorization rule.
 // Examples:
 //
-// - Require JWT for all request for workloads that have label `app:httpbin`
+// Require JWT for all request for workloads that have label `app:httpbin`:
 //
 // ```yaml
 // apiVersion: security.istio.io/v1
@@ -64,9 +57,9 @@ option go_package="istio.io/api/security/v1beta1";
 //         requestPrincipals: ["*"]
 // ```
 //
-// - A policy in the root namespace ("istio-system" by default) applies to workloads in all namespaces
+// A policy in the root namespace ("istio-system" by default) applies to workloads in all namespaces
 // in a mesh. The following policy makes all workloads only accept requests that contain a
-// valid JWT token.
+// valid JWT token:
 //
 // ```yaml
 // apiVersion: security.istio.io/v1
@@ -91,9 +84,9 @@ option go_package="istio.io/api/security/v1beta1";
 //         requestPrincipals: ["*"]
 // ```
 //
-// - The next example shows how to set a different JWT requirement for a different `host`. The `RequestAuthentication`
+// The next example shows how to set a different JWT requirement for a different `host`. The `RequestAuthentication`
 // declares it can accept JWTs issued by either `issuer-foo` or `issuer-bar` (the public key set is implicitly
-// set from the OpenID Connect spec).
+// set from the OpenID Connect spec):
 //
 // ```yaml
 // apiVersion: security.istio.io/v1
@@ -133,7 +126,7 @@ option go_package="istio.io/api/security/v1beta1";
 //         hosts: ["another-host.com"]
 // ```
 //
-// - You can fine tune the authorization policy to set different requirement per path. For example,
+// You can fine-tune the authorization policy to set different requirement per path. For example,
 // to require JWT on all paths, except /healthz, the same `RequestAuthentication` can be used, but the
 // authorization policy could be:
 //
@@ -199,7 +192,7 @@ option go_package="istio.io/api/security/v1beta1";
 //     - source:
 //         requestPrincipals: ["*"]
 // ---
-// apiVersion: networking.istio.io/v1alpha3
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: route-jwt
@@ -224,10 +217,17 @@ option go_package="istio.io/api/security/v1beta1";
 //         host: foo.prod.svc.cluster.local
 //         subset: v1
 // ```
-//
+package istio.security.v1beta1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "type/v1beta1/selector.proto";
+
+option go_package = "istio.io/api/security/v1beta1";
+
 // <!-- crd generation tags
 // +cue-gen:RequestAuthentication:groupName:security.istio.io
-// +cue-gen:RequestAuthentication:version:v1beta1
+// +cue-gen:RequestAuthentication:versions:v1,v1beta1
 // +cue-gen:RequestAuthentication:storageVersion
 // +cue-gen:RequestAuthentication:annotations:helm.sh/resource-policy=keep
 // +cue-gen:RequestAuthentication:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
@@ -243,9 +243,7 @@ option go_package="istio.io/api/security/v1beta1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 message RequestAuthentication {
   // Optional. The selector decides where to apply the request authentication policy. The selector will match with workloads
   // in the same namespace as the request authentication policy. If the request authentication policy is in the root namespace,
@@ -259,12 +257,15 @@ message RequestAuthentication {
   // $hide_from_docs
   istio.type.v1beta1.PolicyTargetReference targetRef = 3;
 
-  // Optional. The targetRef specifies the gateway the policy should be
-  // applied to. The targeted resource specified will determine which
-  // workloads the policy applies to.
+  // Optional. The targetRefs specifies a list of resources the policy should be
+  // applied to. The targeted resources specified will determine which workloads
+  // the policy applies to.
   //
   // Currently, the following resource attachment types are supported:
   // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  // * `kind: GatewayClass` with `group: gateway.networking.k8s.io` in the root namespace.
+  // * `kind: Service` with `group: ""` or `group: "core"` in the same namespace. This type is only supported for waypoints.
+  // * `kind: ServiceEntry` with `group: networking.istio.io` in the same namespace.
   //
   // If not set, the policy is applied as defined by the selector.
   // At most one of the selector and targetRefs can be set.
@@ -275,6 +276,7 @@ message RequestAuthentication {
   // from misinterpreting the policy as namespace-wide during the upgrade process.
   //
   // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  // +kubebuilder:validation:MaxItems=16
   repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 4;
 
   // Define the list of JWTs that can be validated at the selected workloads' proxy. A valid token
@@ -284,5 +286,232 @@ message RequestAuthentication {
   // be rejected.
   // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
   // such requests is undefined.
+  // +kubebuilder:validation:MaxItems=4096
   repeated JWTRule jwt_rules = 2;
+}
+
+// JSON Web Token (JWT) token format for authentication as defined by
+// [RFC 7519](https://tools.ietf.org/html/rfc7519). See [OAuth 2.0](https://tools.ietf.org/html/rfc6749) and
+// [OIDC 1.0](http://openid.net/connect) for how this is used in the whole
+// authentication flow.
+//
+// Examples:
+//
+// Spec for a JWT that is issued by `https://example.com`, with the audience claims must be either
+// `bookstore_android.apps.example.com` or `bookstore_web.apps.example.com`.
+// The token should be presented at the `Authorization` header (default). The JSON Web Key Set (JWKS)
+// will be discovered following OpenID Connect protocol.
+//
+// ```yaml
+// issuer: https://example.com
+// audiences:
+// - bookstore_android.apps.example.com
+//   bookstore_web.apps.example.com
+// ```
+//
+// This example specifies a token in a non-default location (`x-goog-iap-jwt-assertion` header). It also
+// defines the URI to fetch JWKS explicitly.
+//
+// ```yaml
+// issuer: https://example.com
+// jwksUri: https://example.com/.secret/jwks.json
+// fromHeaders:
+// - "x-goog-iap-jwt-assertion"
+// ```
+//
+// This example shows how to configure custom claims to be treated as space-delimited strings.
+// This is useful when JWT tokens contain custom claims with multiple space-separated values
+// that should be available for individual matching in authorization policies.
+//
+// ```yaml
+// issuer: https://example.com
+// spaceDelimitedClaims:
+// - "custom_scope"
+// - "provider.login.scope"
+// - "roles"
+// ```
+//
+// With this configuration, a JWT containing `"custom_scope": "read write admin"` will allow
+// authorization policies to match against individual values like "read", "write", or "admin".
+// +kubebuilder:validation:XValidation:message="only one of jwks or jwksUri can be set",rule="oneof(self.jwksUri, self.jwks_uri, self.jwks)"
+message JWTRule {
+  // Identifies the issuer that issued the JWT. See
+  // [issuer](https://tools.ietf.org/html/rfc7519#section-4.1.1)
+  // A JWT with different `iss` claim will be rejected.
+  //
+  // Example: `https://foobar.auth0.com`
+  // Example: `1234567-compute@developer.gserviceaccount.com`
+  // +kubebuilder:validation:MinLength=1
+  string issuer = 1;
+
+  // The list of JWT
+  // [audiences](https://tools.ietf.org/html/rfc7519#section-4.1.3)
+  // that are allowed to access. A JWT containing any of these
+  // audiences will be accepted.
+  //
+  // The service name will be accepted if audiences is empty.
+  //
+  // Example:
+  //
+  // ```yaml
+  // audiences:
+  // - bookstore_android.apps.example.com
+  //   bookstore_web.apps.example.com
+  // ```
+  // +protoc-gen-crd:list-value-validation:MinLength=1
+  repeated string audiences = 2;
+
+  // URL of the provider's public key set to validate signature of the
+  // JWT. See [OpenID Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
+  //
+  // Optional if the key set document can either (a) be retrieved from
+  // [OpenID
+  // Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html) of
+  // the issuer or (b) inferred from the email domain of the issuer (e.g. a
+  // Google service account).
+  //
+  // Example: `https://www.googleapis.com/oauth2/v1/certs`
+  //
+  // Note: Only one of `jwksUri` and `jwks` should be used.
+  // +kubebuilder:altName=jwks_uri
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:MaxLength=2048
+  // +kubebuilder:validation:XValidation:message="url must have scheme http:// or https://",rule="url(self).getScheme() in ['http', 'https']"
+  string jwks_uri = 3;
+
+  // JSON Web Key Set of public keys to validate signature of the JWT.
+  // See https://auth0.com/docs/jwks.
+  //
+  // Note: Only one of `jwksUri` and `jwks` should be used.
+  string jwks = 10;
+
+  // The next two fields define how to extract the JWT from an HTTP request.
+  //
+  // If no explicit location is specified the following default
+  // locations are tried in order:
+  //
+  //     1) The Authorization header using the Bearer schema,
+  //        e.g. Authorization: Bearer <token>. (see
+  //        [Authorization Request Header
+  //        Field](https://tools.ietf.org/html/rfc6750#section-2.1))
+  //
+  //     2) The `access_token` query parameter (see
+  //     [URI Query Parameter](https://tools.ietf.org/html/rfc6750#section-2.3))
+
+  // List of header locations from which JWT is expected. For example, below is the location spec
+  // if JWT is expected to be found in `x-jwt-assertion` header, and have `Bearer` prefix:
+  //
+  // ```yaml
+  //   fromHeaders:
+  //   - name: x-jwt-assertion
+  //     prefix: "Bearer "
+  // ```
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
+  repeated JWTHeader from_headers = 6;
+
+  // List of query parameters from which JWT is expected. For example, if JWT is provided via query
+  // parameter `my_token` (e.g `/path?my_token=<JWT>`), the config is:
+  //
+  // ```yaml
+  //   fromParams:
+  //   - "my_token"
+  // ```
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
+  // +protoc-gen-crd:list-value-validation:MinLength=1
+  repeated string from_params = 7;
+
+  // This field specifies the header name to output a successfully verified JWT payload to the
+  // backend. The forwarded data is `base64_encoded(jwt_payload_in_JSON)`. If it is not specified,
+  // the payload will not be emitted.
+  string output_payload_to_header = 8;
+
+  // List of cookie names from which JWT is expected.	//
+  // For example, if config is:
+  //
+  // ``` yaml
+  //   fromCookies:
+  //   - auth-token
+  // ```
+  // Then JWT will be extracted from `auth-token` cookie in the request.
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
+  // +protoc-gen-crd:list-value-validation:MinLength=1
+  repeated string from_cookies = 12;
+
+  // If set to true, the original token will be kept for the upstream request. Default is false.
+  bool forward_original_token = 9;
+
+  // This field specifies a list of operations to copy the claim to HTTP headers on a successfully verified token.
+  // This differs from the `output_payload_to_header` by allowing outputting individual claims instead of the whole payload.
+  // The header specified in each operation in the list must be unique. Nested claims of type string/int/bool is supported as well.
+  // ```
+  //   outputClaimToHeaders:
+  //   - header: x-my-company-jwt-group
+  //     claim: my-group
+  //   - header: x-test-environment-flag
+  //     claim: test-flag
+  //   - header: x-jwt-claim-group
+  //     claim: nested.key.group
+  // ```
+  // [Experimental] This feature is a experimental feature.
+  repeated ClaimToHeader output_claim_to_headers = 11; // [TODO:Update the status whenever this feature is promoted.]
+
+  // The maximum amount of time that the resolver, determined by the PILOT_JWT_ENABLE_REMOTE_JWKS environment variable,
+  // will spend waiting for the JWKS to be fetched. Default is 5s.
+  google.protobuf.Duration timeout = 13;
+
+  // List of JWT claim names that should be treated as space-delimited strings.
+  // These claims will be split on whitespace and each individual value will be available
+  // for matching in authorization policies. This extends the default behavior that only
+  // treats 'scope' and 'permission' claims as space-delimited.
+  //
+  // Example usage for custom claims:
+  // ```yaml
+  // spaceDelimitedClaims:
+  // - "custom_scope"
+  // - "provider.login.scope"
+  // - "roles"
+  // ```
+  //
+  // This allows authorization policies to match individual values within space-separated
+  // claim strings, maintaining compatibility with existing JWT token formats.
+  //
+  // Note: The default claims 'scope' and 'permission' are always treated as space-delimited
+  // regardless of this setting.
+  // +protoc-gen-crd:list-value-validation:MinLength=1
+  // +kubebuilder:validation:MaxItems=64
+  repeated string space_delimited_claims = 14;
+
+  // $hide_from_docs
+  // Next available field number: 15
+}
+
+// This message specifies a header location to extract JWT token.
+message JWTHeader {
+  // The HTTP header name.
+  // +kubebuilder:validation:MinLength=1
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The prefix that should be stripped before decoding the token.
+  // For example, for `Authorization: Bearer <token>`, prefix=`Bearer` with a space at the end.
+  // If the header doesn't have this exact prefix, it is considered invalid.
+  string prefix = 2;
+}
+
+// This message specifies the detail for copying claim to header.
+message ClaimToHeader {
+  // The name of the header to be created. The header will be overridden if it already exists in the request.
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:Pattern=^[-_A-Za-z0-9]+$
+  string header = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The name of the claim to be copied from. Only claim of type string/int/bool is supported.
+  // The header will not be there if the claim does not exist or the type of the claim is not supported.
+  // +kubebuilder:validation:MinLength=1
+  string claim = 2 [(google.api.field_behavior) = REQUIRED];
 }

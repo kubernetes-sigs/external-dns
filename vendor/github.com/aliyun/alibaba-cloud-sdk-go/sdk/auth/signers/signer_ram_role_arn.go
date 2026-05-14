@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	jmespath "github.com/jmespath/go-jmespath"
 )
 
@@ -109,42 +110,16 @@ func (signer *RamRoleArnSigner) GetExtraParam() map[string]string {
 
 func (signer *RamRoleArnSigner) Sign(stringToSign, secretSuffix string) string {
 	secret := signer.sessionCredential.AccessKeySecret + secretSuffix
-	return ShaHmac1(stringToSign, secret)
+	return utils.ShaHmac1(stringToSign, secret)
 }
 
 func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRequest, err error) {
 	request = requests.NewCommonRequest()
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if signer.credential.StsRegion != "" {
 		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
 	} else {
 		request.Domain = "sts.aliyuncs.com"
 	}
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	if signer.credential.StsRegion != "" {
-		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
-	} else {
-		request.Domain = "sts.aliyuncs.com"
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	if signer.credential.StsRegion != "" {
-		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
-	} else {
-		request.Domain = "sts.aliyuncs.com"
-	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.Product = "Sts"
 	request.Version = "2015-04-01"
 	request.ApiName = "AssumeRole"

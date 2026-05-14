@@ -9,33 +9,6 @@ import (
 	"strings"
 )
 
-<<<<<<< HEAD
-var allModes = []LoadMode{
-	NeedName,
-	NeedFiles,
-	NeedCompiledGoFiles,
-	NeedImports,
-	NeedDeps,
-<<<<<<< HEAD
-<<<<<<< HEAD
-	NeedExportFile,
-	NeedTypes,
-	NeedSyntax,
-	NeedTypesInfo,
-	NeedTypesSizes,
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-var allModes = []LoadMode{
-	NeedName,
-	NeedFiles,
-	NeedCompiledGoFiles,
-	NeedImports,
-	NeedDeps,
-	NeedExportFile,
-	NeedTypes,
-	NeedSyntax,
-	NeedTypesInfo,
-	NeedTypesSizes,
-=======
 var modes = [...]struct {
 	mode LoadMode
 	name string
@@ -54,80 +27,11 @@ var modes = [...]struct {
 	{NeedModule, "NeedModule"},
 	{NeedEmbedFiles, "NeedEmbedFiles"},
 	{NeedEmbedPatterns, "NeedEmbedPatterns"},
-<<<<<<< HEAD
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-=======
 	{NeedTarget, "NeedTarget"},
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 }
 
-<<<<<<< HEAD
-var modeStrings = []string{
-	"NeedName",
-	"NeedFiles",
-	"NeedCompiledGoFiles",
-	"NeedImports",
-	"NeedDeps",
-	"NeedExportFile",
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	NeedExportsFile,
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	NeedExportsFile,
-=======
-	NeedExportFile,
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	NeedTypes,
-	NeedSyntax,
-	NeedTypesInfo,
-	NeedTypesSizes,
-}
-
-var modeStrings = []string{
-	"NeedName",
-	"NeedFiles",
-	"NeedCompiledGoFiles",
-	"NeedImports",
-	"NeedDeps",
-<<<<<<< HEAD
-	"NeedExportsFile",
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"NeedExportsFile",
-=======
-	"NeedExportFile",
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"NeedTypes",
-	"NeedSyntax",
-	"NeedTypesInfo",
-	"NeedTypesSizes",
-}
-
-func (mod LoadMode) String() string {
-	m := mod
-	if m == 0 {
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-var modeStrings = []string{
-	"NeedName",
-	"NeedFiles",
-	"NeedCompiledGoFiles",
-	"NeedImports",
-	"NeedDeps",
-	"NeedExportFile",
-	"NeedTypes",
-	"NeedSyntax",
-	"NeedTypesInfo",
-	"NeedTypesSizes",
-}
-
-func (mod LoadMode) String() string {
-	m := mod
-	if m == 0 {
-=======
 func (mode LoadMode) String() string {
 	if mode == 0 {
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		return "LoadMode(0)"
 	}
 	var out []string

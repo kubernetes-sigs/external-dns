@@ -21,10 +21,6 @@ import (
 )
 
 // BindZoneVpc invokes the pvtz.BindZoneVpc API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) BindZoneVpc(request *BindZoneVpcRequest) (response *BindZoneVpcResponse, err error) {
 	response = CreateBindZoneVpcResponse()
 	err = client.DoAction(request, response)
@@ -75,14 +71,18 @@ func (client *Client) BindZoneVpcWithCallback(request *BindZoneVpcRequest, callb
 // BindZoneVpcRequest is the request struct for api BindZoneVpc
 type BindZoneVpcRequest struct {
 	*requests.RpcRequest
+	Dryrun       requests.Boolean   `position:"Query" name:"Dryrun"`
+	ClientToken  string             `position:"Query" name:"ClientToken"`
 	UserClientIp string             `position:"Query" name:"UserClientIp"`
 	ZoneId       string             `position:"Query" name:"ZoneId"`
 	Lang         string             `position:"Query" name:"Lang"`
 	Vpcs         *[]BindZoneVpcVpcs `position:"Query" name:"Vpcs"  type:"Repeated"`
+	RemoteType   string             `position:"Query" name:"RemoteType"`
 }
 
 // BindZoneVpcVpcs is a repeated param struct in BindZoneVpcRequest
 type BindZoneVpcVpcs struct {
+	VpcType  string `name:"VpcType"`
 	RegionId string `name:"RegionId"`
 	VpcId    string `name:"VpcId"`
 }
@@ -100,180 +100,6 @@ func CreateBindZoneVpcRequest() (request *BindZoneVpcRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "BindZoneVpc", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/bindzonevpc.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/bindzonevpc.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) BindZoneVpc(request *BindZoneVpcRequest) (response *BindZoneVpcResponse, err error) {
-	response = CreateBindZoneVpcResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// BindZoneVpcWithChan invokes the pvtz.BindZoneVpc API asynchronously
-func (client *Client) BindZoneVpcWithChan(request *BindZoneVpcRequest) (<-chan *BindZoneVpcResponse, <-chan error) {
-	responseChan := make(chan *BindZoneVpcResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.BindZoneVpc(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// BindZoneVpcWithCallback invokes the pvtz.BindZoneVpc API asynchronously
-func (client *Client) BindZoneVpcWithCallback(request *BindZoneVpcRequest, callback func(response *BindZoneVpcResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *BindZoneVpcResponse
-		var err error
-		defer close(result)
-		response, err = client.BindZoneVpc(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// BindZoneVpcRequest is the request struct for api BindZoneVpc
-type BindZoneVpcRequest struct {
-	*requests.RpcRequest
-	UserClientIp string             `position:"Query" name:"UserClientIp"`
-	ZoneId       string             `position:"Query" name:"ZoneId"`
-	Lang         string             `position:"Query" name:"Lang"`
-	Vpcs         *[]BindZoneVpcVpcs `position:"Query" name:"Vpcs"  type:"Repeated"`
-}
-
-// BindZoneVpcVpcs is a repeated param struct in BindZoneVpcRequest
-type BindZoneVpcVpcs struct {
-	RegionId string `name:"RegionId"`
-	VpcId    string `name:"VpcId"`
-}
-
-// BindZoneVpcResponse is the response struct for api BindZoneVpc
-type BindZoneVpcResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-}
-
-// CreateBindZoneVpcRequest creates a request to invoke BindZoneVpc API
-func CreateBindZoneVpcRequest() (request *BindZoneVpcRequest) {
-	request = &BindZoneVpcRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "BindZoneVpc", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/bindzonevpc.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/bindzonevpc.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) BindZoneVpc(request *BindZoneVpcRequest) (response *BindZoneVpcResponse, err error) {
-	response = CreateBindZoneVpcResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// BindZoneVpcWithChan invokes the pvtz.BindZoneVpc API asynchronously
-func (client *Client) BindZoneVpcWithChan(request *BindZoneVpcRequest) (<-chan *BindZoneVpcResponse, <-chan error) {
-	responseChan := make(chan *BindZoneVpcResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.BindZoneVpc(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// BindZoneVpcWithCallback invokes the pvtz.BindZoneVpc API asynchronously
-func (client *Client) BindZoneVpcWithCallback(request *BindZoneVpcRequest, callback func(response *BindZoneVpcResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *BindZoneVpcResponse
-		var err error
-		defer close(result)
-		response, err = client.BindZoneVpc(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// BindZoneVpcRequest is the request struct for api BindZoneVpc
-type BindZoneVpcRequest struct {
-	*requests.RpcRequest
-	UserClientIp string             `position:"Query" name:"UserClientIp"`
-	ZoneId       string             `position:"Query" name:"ZoneId"`
-	Lang         string             `position:"Query" name:"Lang"`
-	Vpcs         *[]BindZoneVpcVpcs `position:"Query" name:"Vpcs"  type:"Repeated"`
-}
-
-// BindZoneVpcVpcs is a repeated param struct in BindZoneVpcRequest
-type BindZoneVpcVpcs struct {
-	RegionId string `name:"RegionId"`
-	VpcId    string `name:"VpcId"`
-}
-
-// BindZoneVpcResponse is the response struct for api BindZoneVpc
-type BindZoneVpcResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-}
-
-// CreateBindZoneVpcRequest creates a request to invoke BindZoneVpc API
-func CreateBindZoneVpcRequest() (request *BindZoneVpcRequest) {
-	request = &BindZoneVpcRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "BindZoneVpc", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

@@ -17,5 +17,5 @@ package pvtz
 
 // BindVpcsInDescribeZoneInfo is a nested struct in pvtz response
 type BindVpcsInDescribeZoneInfo struct {
-	Vpc []Vpc `json:"Vpc" xml:"Vpc"`
+	Vpc []VpcInDescribeZoneInfo `json:"Vpc" xml:"Vpc"`
 }

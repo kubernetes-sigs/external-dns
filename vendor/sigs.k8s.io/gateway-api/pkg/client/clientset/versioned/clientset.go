@@ -19,139 +19,41 @@ limitations under the License.
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-<<<<<<< HEAD
-	gatewayv1alpha2 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1alpha2"
-	gatewayv1beta1 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1beta1"
-)
-
-type Interface interface {
-	Discovery() discovery.DiscoveryInterface
-	GatewayV1alpha2() gatewayv1alpha2.GatewayV1alpha2Interface
-	GatewayV1beta1() gatewayv1beta1.GatewayV1beta1Interface
-}
-
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
-type Clientset struct {
-	*discovery.DiscoveryClient
-	gatewayV1alpha2 *gatewayv1alpha2.GatewayV1alpha2Client
-	gatewayV1beta1  *gatewayv1beta1.GatewayV1beta1Client
-}
-
-// GatewayV1alpha2 retrieves the GatewayV1alpha2Client
-func (c *Clientset) GatewayV1alpha2() gatewayv1alpha2.GatewayV1alpha2Interface {
-	return c.gatewayV1alpha2
-}
-
-// GatewayV1beta1 retrieves the GatewayV1beta1Client
-func (c *Clientset) GatewayV1beta1() gatewayv1beta1.GatewayV1beta1Interface {
-	return c.gatewayV1beta1
-}
-
-// Discovery retrieves the DiscoveryClient
-func (c *Clientset) Discovery() discovery.DiscoveryInterface {
-	if c == nil {
-		return nil
-	}
-	return c.DiscoveryClient
-}
-
-// NewForConfig creates a new Clientset for the given config.
-// If config's RateLimiter is not set and QPS and Burst are acceptable,
-// NewForConfig will generate a rate-limiter in configShallowCopy.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*Clientset, error) {
-	configShallowCopy := *c
-
-	if configShallowCopy.UserAgent == "" {
-		configShallowCopy.UserAgent = rest.DefaultKubernetesUserAgent()
-	}
-
-	// share the transport between all clients
-	httpClient, err := rest.HTTPClientFor(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewForConfigAndClient(&configShallowCopy, httpClient)
-}
-
-// NewForConfigAndClient creates a new Clientset for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-// If config's RateLimiter is not set and QPS and Burst are acceptable,
-// NewForConfigAndClient will generate a rate-limiter in configShallowCopy.
-func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset, error) {
-	configShallowCopy := *c
-	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
-		if configShallowCopy.Burst <= 0 {
-			return nil, fmt.Errorf("burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
-		}
-		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
-	}
-
-	var cs Clientset
-	var err error
-	cs.gatewayV1alpha2, err = gatewayv1alpha2.NewForConfigAndClient(&configShallowCopy, httpClient)
-	if err != nil {
-		return nil, err
-	}
-	cs.gatewayV1beta1, err = gatewayv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
-	if err != nil {
-		return nil, err
-	}
-
-	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
-	if err != nil {
-		return nil, err
-	}
-	return &cs, nil
-}
-
-// NewForConfigOrDie creates a new Clientset for the given config and
-// panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *Clientset {
-	cs, err := NewForConfig(c)
-	if err != nil {
-		panic(err)
-	}
-	return cs
-}
-
-// New creates a new Clientset for the given RESTClient.
-func New(c rest.Interface) *Clientset {
-	var cs Clientset
-	cs.gatewayV1alpha2 = gatewayv1alpha2.New(c)
-	cs.gatewayV1beta1 = gatewayv1beta1.New(c)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	gatewayv1 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
 	gatewayv1alpha2 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1alpha2"
 	gatewayv1alpha3 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1alpha3"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1beta1"
+	experimentalv1alpha1 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apisx/v1alpha1"
 )
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	GatewayV1() gatewayv1.GatewayV1Interface
 	GatewayV1alpha2() gatewayv1alpha2.GatewayV1alpha2Interface
 	GatewayV1alpha3() gatewayv1alpha3.GatewayV1alpha3Interface
 	GatewayV1beta1() gatewayv1beta1.GatewayV1beta1Interface
-	GatewayV1() gatewayv1.GatewayV1Interface
+	ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	gatewayV1alpha2 *gatewayv1alpha2.GatewayV1alpha2Client
-	gatewayV1alpha3 *gatewayv1alpha3.GatewayV1alpha3Client
-	gatewayV1beta1  *gatewayv1beta1.GatewayV1beta1Client
-	gatewayV1       *gatewayv1.GatewayV1Client
+	gatewayV1            *gatewayv1.GatewayV1Client
+	gatewayV1alpha2      *gatewayv1alpha2.GatewayV1alpha2Client
+	gatewayV1alpha3      *gatewayv1alpha3.GatewayV1alpha3Client
+	gatewayV1beta1       *gatewayv1beta1.GatewayV1beta1Client
+	experimentalV1alpha1 *experimentalv1alpha1.ExperimentalV1alpha1Client
+}
+
+// GatewayV1 retrieves the GatewayV1Client
+func (c *Clientset) GatewayV1() gatewayv1.GatewayV1Interface {
+	return c.gatewayV1
 }
 
 // GatewayV1alpha2 retrieves the GatewayV1alpha2Client
@@ -169,9 +71,9 @@ func (c *Clientset) GatewayV1beta1() gatewayv1beta1.GatewayV1beta1Interface {
 	return c.gatewayV1beta1
 }
 
-// GatewayV1 retrieves the GatewayV1Client
-func (c *Clientset) GatewayV1() gatewayv1.GatewayV1Interface {
-	return c.gatewayV1
+// ExperimentalV1alpha1 retrieves the ExperimentalV1alpha1Client
+func (c *Clientset) ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface {
+	return c.experimentalV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -218,6 +120,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
+	cs.gatewayV1, err = gatewayv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.gatewayV1alpha2, err = gatewayv1alpha2.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -230,7 +136,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
-	cs.gatewayV1, err = gatewayv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.experimentalV1alpha1, err = experimentalv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -255,11 +161,11 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.gatewayV1 = gatewayv1.New(c)
 	cs.gatewayV1alpha2 = gatewayv1alpha2.New(c)
 	cs.gatewayV1alpha3 = gatewayv1alpha3.New(c)
 	cs.gatewayV1beta1 = gatewayv1beta1.New(c)
-	cs.gatewayV1 = gatewayv1.New(c)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	cs.experimentalV1alpha1 = experimentalv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

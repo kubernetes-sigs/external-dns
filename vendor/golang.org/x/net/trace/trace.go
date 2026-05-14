@@ -395,18 +395,7 @@ func New(family, title string) Trace {
 }
 
 func (tr *trace) Finish() {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	elapsed := time.Since(tr.Start)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	elapsed := time.Now().Sub(tr.Start)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	elapsed := time.Now().Sub(tr.Start)
-=======
-	elapsed := time.Since(tr.Start)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	tr.mu.Lock()
 	tr.Elapsed = elapsed
 	tr.mu.Unlock()

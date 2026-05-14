@@ -168,8 +168,7 @@ func (i *Info) AddSmuggleHooks(fns []any) error {
 		if !ft.IsVariadic() &&
 			ft.NumIn() == 1 &&
 			ft.In(0).Kind() != reflect.Interface &&
-			(ft.NumOut() == 1 || (ft.NumOut() == 2 && ft.Out(1) == types.Error)) &&
-			ft.Out(0).Kind() != reflect.Interface {
+			(ft.NumOut() == 1 || (ft.NumOut() == 2 && ft.Out(1) == types.Error)) {
 			i.Lock()
 			prop := i.props[ft.In(0)]
 			prop.smuggle = vfn

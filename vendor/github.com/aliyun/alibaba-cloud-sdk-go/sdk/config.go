@@ -17,49 +17,33 @@ package sdk
 import (
 	"net/http"
 	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 )
 
 type Config struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	AutoRetry         bool              `default:"false"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	AutoRetry         bool              `default:"true"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	AutoRetry         bool              `default:"true"`
-=======
-	AutoRetry         bool              `default:"false"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	AutoRetry         bool              `default:"true"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	AutoRetry         bool              `default:"true"`
-=======
-	AutoRetry         bool              `default:"false"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	MaxRetryTime      int               `default:"3"`
-	UserAgent         string            `default:""`
-	Debug             bool              `default:"false"`
-	HttpTransport     *http.Transport   `default:""`
-	Transport         http.RoundTripper `default:""`
-	EnableAsync       bool              `default:"false"`
-	MaxTaskQueueSize  int               `default:"1000"`
-	GoRoutinePoolSize int               `default:"5"`
-	Scheme            string            `default:"HTTP"`
+	AutoRetry         bool
+	MaxRetryTime      int
+	UserAgent         string
+	Debug             bool
+	HttpTransport     *http.Transport
+	Transport         http.RoundTripper
+	EnableAsync       bool
+	MaxTaskQueueSize  int
+	GoRoutinePoolSize int
+	Scheme            string
 	Timeout           time.Duration
 }
 
 func NewConfig() (config *Config) {
-	config = &Config{}
-	utils.InitStructWithDefaultTag(config)
+	// with default vaule
+	config = &Config{
+		AutoRetry:         false,
+		MaxRetryTime:      3,
+		Debug:             false,
+		EnableAsync:       false,
+		MaxTaskQueueSize:  1000,
+		GoRoutinePoolSize: 5,
+		Scheme:            "HTTP",
+	}
 	return
 }
 

@@ -19,6 +19,7 @@ limitations under the License.
 package informers
 
 import (
+	context "context"
 	reflect "reflect"
 	sync "sync"
 	time "time"
@@ -26,1073 +27,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	wait "k8s.io/apimachinery/pkg/util/wait"
 	admissionregistration "k8s.io/client-go/informers/admissionregistration"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
-	apps "k8s.io/client-go/informers/apps"
-	autoscaling "k8s.io/client-go/informers/autoscaling"
-	batch "k8s.io/client-go/informers/batch"
-	certificates "k8s.io/client-go/informers/certificates"
-	coordination "k8s.io/client-go/informers/coordination"
-	core "k8s.io/client-go/informers/core"
-	discovery "k8s.io/client-go/informers/discovery"
-	events "k8s.io/client-go/informers/events"
-	extensions "k8s.io/client-go/informers/extensions"
-	flowcontrol "k8s.io/client-go/informers/flowcontrol"
-	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
-	networking "k8s.io/client-go/informers/networking"
-	node "k8s.io/client-go/informers/node"
-	policy "k8s.io/client-go/informers/policy"
-	rbac "k8s.io/client-go/informers/rbac"
-	scheduling "k8s.io/client-go/informers/scheduling"
-	storage "k8s.io/client-go/informers/storage"
-	kubernetes "k8s.io/client-go/kubernetes"
-	cache "k8s.io/client-go/tools/cache"
-)
-
-// SharedInformerOption defines the functional option type for SharedInformerFactory.
-type SharedInformerOption func(*sharedInformerFactory) *sharedInformerFactory
-
-type sharedInformerFactory struct {
-	client           kubernetes.Interface
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	lock             sync.Mutex
-	defaultResync    time.Duration
-	customResync     map[reflect.Type]time.Duration
-
-	informers map[reflect.Type]cache.SharedIndexInformer
-	// startedInformers is used for tracking which informers have been started.
-	// This allows Start() to be called multiple times safely.
-	startedInformers map[reflect.Type]bool
-}
-
-// WithCustomResyncConfig sets a custom resync period for the specified informer types.
-func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		for k, v := range resyncConfig {
-			factory.customResync[reflect.TypeOf(k)] = v
-		}
-		return factory
-	}
-}
-
-// WithTweakListOptions sets a custom filter on all listers of the configured SharedInformerFactory.
-func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.tweakListOptions = tweakListOptions
-		return factory
-	}
-}
-
-// WithNamespace limits the SharedInformerFactory to the specified namespace.
-func WithNamespace(namespace string) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.namespace = namespace
-		return factory
-	}
-}
-
-// NewSharedInformerFactory constructs a new instance of sharedInformerFactory for all namespaces.
-func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync)
-}
-
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
-// Listers obtained via this SharedInformerFactory will be subject to the same filters
-// as specified here.
-// Deprecated: Please use NewSharedInformerFactoryWithOptions instead
-func NewFilteredSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync, WithNamespace(namespace), WithTweakListOptions(tweakListOptions))
-}
-
-// NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
-	factory := &sharedInformerFactory{
-		client:           client,
-		namespace:        v1.NamespaceAll,
-		defaultResync:    defaultResync,
-		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
-		startedInformers: make(map[reflect.Type]bool),
-		customResync:     make(map[reflect.Type]time.Duration),
-	}
-
-	// Apply all options
-	for _, opt := range options {
-		factory = opt(factory)
-	}
-
-	return factory
-}
-
-// Start initializes all requested informers.
-func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	for informerType, informer := range f.informers {
-		if !f.startedInformers[informerType] {
-			go informer.Run(stopCh)
-			f.startedInformers[informerType] = true
-		}
-	}
-}
-
-// WaitForCacheSync waits for all started informers' cache were synced.
-func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	informers := func() map[reflect.Type]cache.SharedIndexInformer {
-		f.lock.Lock()
-		defer f.lock.Unlock()
-
-		informers := map[reflect.Type]cache.SharedIndexInformer{}
-		for informerType, informer := range f.informers {
-			if f.startedInformers[informerType] {
-				informers[informerType] = informer
-			}
-		}
-		return informers
-	}()
-
-	res := map[reflect.Type]bool{}
-	for informType, informer := range informers {
-		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
-	}
-	return res
-}
-
-// InternalInformerFor returns the SharedIndexInformer for obj using an internal
-// client.
-func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	informerType := reflect.TypeOf(obj)
-	informer, exists := f.informers[informerType]
-	if exists {
-		return informer
-	}
-
-	resyncPeriod, exists := f.customResync[informerType]
-	if !exists {
-		resyncPeriod = f.defaultResync
-	}
-
-	informer = newFunc(f.client, resyncPeriod)
-	f.informers[informerType] = informer
-
-	return informer
-}
-
-// SharedInformerFactory provides shared informers for resources in all known
-// API group versions.
-type SharedInformerFactory interface {
-	internalinterfaces.SharedInformerFactory
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-
-	Admissionregistration() admissionregistration.Interface
-	Internal() apiserverinternal.Interface
-	Apps() apps.Interface
-	Autoscaling() autoscaling.Interface
-	Batch() batch.Interface
-	Certificates() certificates.Interface
-	Coordination() coordination.Interface
-	Core() core.Interface
-	Discovery() discovery.Interface
-	Events() events.Interface
-	Extensions() extensions.Interface
-	Flowcontrol() flowcontrol.Interface
-	Networking() networking.Interface
-	Node() node.Interface
-	Policy() policy.Interface
-	Rbac() rbac.Interface
-	Scheduling() scheduling.Interface
-	Storage() storage.Interface
-}
-
-func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
-	return admissionregistration.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
-	return apiserverinternal.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Batch() batch.Interface {
-	return batch.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Certificates() certificates.Interface {
-	return certificates.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Coordination() coordination.Interface {
-	return coordination.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Core() core.Interface {
-	return core.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Discovery() discovery.Interface {
-	return discovery.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Events() events.Interface {
-	return events.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Flowcontrol() flowcontrol.Interface {
-	return flowcontrol.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Node() node.Interface {
-	return node.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Rbac() rbac.Interface {
-	return rbac.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
-	return scheduling.New(f, f.namespace, f.tweakListOptions)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
->>>>>>> 5ce8c7613 (update vendored files)
-	apps "k8s.io/client-go/informers/apps"
-	autoscaling "k8s.io/client-go/informers/autoscaling"
-	batch "k8s.io/client-go/informers/batch"
-	certificates "k8s.io/client-go/informers/certificates"
-	coordination "k8s.io/client-go/informers/coordination"
-	core "k8s.io/client-go/informers/core"
-	discovery "k8s.io/client-go/informers/discovery"
-	events "k8s.io/client-go/informers/events"
-	extensions "k8s.io/client-go/informers/extensions"
-	flowcontrol "k8s.io/client-go/informers/flowcontrol"
-	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
-	networking "k8s.io/client-go/informers/networking"
-	node "k8s.io/client-go/informers/node"
-	policy "k8s.io/client-go/informers/policy"
-	rbac "k8s.io/client-go/informers/rbac"
-	scheduling "k8s.io/client-go/informers/scheduling"
-	storage "k8s.io/client-go/informers/storage"
-	kubernetes "k8s.io/client-go/kubernetes"
-	cache "k8s.io/client-go/tools/cache"
-)
-
-// SharedInformerOption defines the functional option type for SharedInformerFactory.
-type SharedInformerOption func(*sharedInformerFactory) *sharedInformerFactory
-
-type sharedInformerFactory struct {
-	client           kubernetes.Interface
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	lock             sync.Mutex
-	defaultResync    time.Duration
-	customResync     map[reflect.Type]time.Duration
-
-	informers map[reflect.Type]cache.SharedIndexInformer
-	// startedInformers is used for tracking which informers have been started.
-	// This allows Start() to be called multiple times safely.
-	startedInformers map[reflect.Type]bool
-}
-
-// WithCustomResyncConfig sets a custom resync period for the specified informer types.
-func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		for k, v := range resyncConfig {
-			factory.customResync[reflect.TypeOf(k)] = v
-		}
-		return factory
-	}
-}
-
-// WithTweakListOptions sets a custom filter on all listers of the configured SharedInformerFactory.
-func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.tweakListOptions = tweakListOptions
-		return factory
-	}
-}
-
-// WithNamespace limits the SharedInformerFactory to the specified namespace.
-func WithNamespace(namespace string) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.namespace = namespace
-		return factory
-	}
-}
-
-// NewSharedInformerFactory constructs a new instance of sharedInformerFactory for all namespaces.
-func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync)
-}
-
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
-// Listers obtained via this SharedInformerFactory will be subject to the same filters
-// as specified here.
-// Deprecated: Please use NewSharedInformerFactoryWithOptions instead
-func NewFilteredSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync, WithNamespace(namespace), WithTweakListOptions(tweakListOptions))
-}
-
-// NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
-	factory := &sharedInformerFactory{
-		client:           client,
-		namespace:        v1.NamespaceAll,
-		defaultResync:    defaultResync,
-		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
-		startedInformers: make(map[reflect.Type]bool),
-		customResync:     make(map[reflect.Type]time.Duration),
-	}
-
-	// Apply all options
-	for _, opt := range options {
-		factory = opt(factory)
-	}
-
-	return factory
-}
-
-// Start initializes all requested informers.
-func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	for informerType, informer := range f.informers {
-		if !f.startedInformers[informerType] {
-			go informer.Run(stopCh)
-			f.startedInformers[informerType] = true
-		}
-	}
-}
-
-// WaitForCacheSync waits for all started informers' cache were synced.
-func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	informers := func() map[reflect.Type]cache.SharedIndexInformer {
-		f.lock.Lock()
-		defer f.lock.Unlock()
-
-		informers := map[reflect.Type]cache.SharedIndexInformer{}
-		for informerType, informer := range f.informers {
-			if f.startedInformers[informerType] {
-				informers[informerType] = informer
-			}
-		}
-		return informers
-	}()
-
-	res := map[reflect.Type]bool{}
-	for informType, informer := range informers {
-		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
-	}
-	return res
-}
-
-// InternalInformerFor returns the SharedIndexInformer for obj using an internal
-// client.
-func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	informerType := reflect.TypeOf(obj)
-	informer, exists := f.informers[informerType]
-	if exists {
-		return informer
-	}
-
-	resyncPeriod, exists := f.customResync[informerType]
-	if !exists {
-		resyncPeriod = f.defaultResync
-	}
-
-	informer = newFunc(f.client, resyncPeriod)
-	f.informers[informerType] = informer
-
-	return informer
-}
-
-// SharedInformerFactory provides shared informers for resources in all known
-// API group versions.
-type SharedInformerFactory interface {
-	internalinterfaces.SharedInformerFactory
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-
-	Admissionregistration() admissionregistration.Interface
-	Internal() apiserverinternal.Interface
-	Apps() apps.Interface
-	Autoscaling() autoscaling.Interface
-	Batch() batch.Interface
-	Certificates() certificates.Interface
-	Coordination() coordination.Interface
-	Core() core.Interface
-	Discovery() discovery.Interface
-	Events() events.Interface
-	Extensions() extensions.Interface
-	Flowcontrol() flowcontrol.Interface
-	Networking() networking.Interface
-	Node() node.Interface
-	Policy() policy.Interface
-	Rbac() rbac.Interface
-	Scheduling() scheduling.Interface
-	Storage() storage.Interface
-}
-
-func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
-	return admissionregistration.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
-	return apiserverinternal.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Batch() batch.Interface {
-	return batch.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Certificates() certificates.Interface {
-	return certificates.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Coordination() coordination.Interface {
-	return coordination.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Core() core.Interface {
-	return core.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Discovery() discovery.Interface {
-	return discovery.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Events() events.Interface {
-	return events.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Flowcontrol() flowcontrol.Interface {
-	return flowcontrol.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Node() node.Interface {
-	return node.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Rbac() rbac.Interface {
-	return rbac.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
-	return scheduling.New(f, f.namespace, f.tweakListOptions)
-}
-
-<<<<<<< HEAD
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-||||||| parent of 5ce8c7613 (update vendored files)
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
-}
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
->>>>>>> 6b7ce455e (update vendored files)
-	apps "k8s.io/client-go/informers/apps"
-	autoscaling "k8s.io/client-go/informers/autoscaling"
-	batch "k8s.io/client-go/informers/batch"
-	certificates "k8s.io/client-go/informers/certificates"
-	coordination "k8s.io/client-go/informers/coordination"
-	core "k8s.io/client-go/informers/core"
-	discovery "k8s.io/client-go/informers/discovery"
-	events "k8s.io/client-go/informers/events"
-	extensions "k8s.io/client-go/informers/extensions"
-	flowcontrol "k8s.io/client-go/informers/flowcontrol"
-	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
-	networking "k8s.io/client-go/informers/networking"
-	node "k8s.io/client-go/informers/node"
-	policy "k8s.io/client-go/informers/policy"
-	rbac "k8s.io/client-go/informers/rbac"
-	scheduling "k8s.io/client-go/informers/scheduling"
-	storage "k8s.io/client-go/informers/storage"
-	kubernetes "k8s.io/client-go/kubernetes"
-	cache "k8s.io/client-go/tools/cache"
-)
-
-// SharedInformerOption defines the functional option type for SharedInformerFactory.
-type SharedInformerOption func(*sharedInformerFactory) *sharedInformerFactory
-
-type sharedInformerFactory struct {
-	client           kubernetes.Interface
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	lock             sync.Mutex
-	defaultResync    time.Duration
-	customResync     map[reflect.Type]time.Duration
-
-	informers map[reflect.Type]cache.SharedIndexInformer
-	// startedInformers is used for tracking which informers have been started.
-	// This allows Start() to be called multiple times safely.
-	startedInformers map[reflect.Type]bool
-}
-
-// WithCustomResyncConfig sets a custom resync period for the specified informer types.
-func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		for k, v := range resyncConfig {
-			factory.customResync[reflect.TypeOf(k)] = v
-		}
-		return factory
-	}
-}
-
-// WithTweakListOptions sets a custom filter on all listers of the configured SharedInformerFactory.
-func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.tweakListOptions = tweakListOptions
-		return factory
-	}
-}
-
-// WithNamespace limits the SharedInformerFactory to the specified namespace.
-func WithNamespace(namespace string) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.namespace = namespace
-		return factory
-	}
-}
-
-// NewSharedInformerFactory constructs a new instance of sharedInformerFactory for all namespaces.
-func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync)
-}
-
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
-// Listers obtained via this SharedInformerFactory will be subject to the same filters
-// as specified here.
-// Deprecated: Please use NewSharedInformerFactoryWithOptions instead
-func NewFilteredSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync, WithNamespace(namespace), WithTweakListOptions(tweakListOptions))
-}
-
-// NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
-	factory := &sharedInformerFactory{
-		client:           client,
-		namespace:        v1.NamespaceAll,
-		defaultResync:    defaultResync,
-		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
-		startedInformers: make(map[reflect.Type]bool),
-		customResync:     make(map[reflect.Type]time.Duration),
-	}
-
-	// Apply all options
-	for _, opt := range options {
-		factory = opt(factory)
-	}
-
-	return factory
-}
-
-// Start initializes all requested informers.
-func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	for informerType, informer := range f.informers {
-		if !f.startedInformers[informerType] {
-			go informer.Run(stopCh)
-			f.startedInformers[informerType] = true
-		}
-	}
-}
-
-// WaitForCacheSync waits for all started informers' cache were synced.
-func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	informers := func() map[reflect.Type]cache.SharedIndexInformer {
-		f.lock.Lock()
-		defer f.lock.Unlock()
-
-		informers := map[reflect.Type]cache.SharedIndexInformer{}
-		for informerType, informer := range f.informers {
-			if f.startedInformers[informerType] {
-				informers[informerType] = informer
-			}
-		}
-		return informers
-	}()
-
-	res := map[reflect.Type]bool{}
-	for informType, informer := range informers {
-		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
-	}
-	return res
-}
-
-// InternalInformerFor returns the SharedIndexInformer for obj using an internal
-// client.
-func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	informerType := reflect.TypeOf(obj)
-	informer, exists := f.informers[informerType]
-	if exists {
-		return informer
-	}
-
-	resyncPeriod, exists := f.customResync[informerType]
-	if !exists {
-		resyncPeriod = f.defaultResync
-	}
-
-	informer = newFunc(f.client, resyncPeriod)
-	f.informers[informerType] = informer
-
-	return informer
-}
-
-// SharedInformerFactory provides shared informers for resources in all known
-// API group versions.
-type SharedInformerFactory interface {
-	internalinterfaces.SharedInformerFactory
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-
-	Admissionregistration() admissionregistration.Interface
-	Internal() apiserverinternal.Interface
-	Apps() apps.Interface
-	Autoscaling() autoscaling.Interface
-	Batch() batch.Interface
-	Certificates() certificates.Interface
-	Coordination() coordination.Interface
-	Core() core.Interface
-	Discovery() discovery.Interface
-	Events() events.Interface
-	Extensions() extensions.Interface
-	Flowcontrol() flowcontrol.Interface
-	Networking() networking.Interface
-	Node() node.Interface
-	Policy() policy.Interface
-	Rbac() rbac.Interface
-	Scheduling() scheduling.Interface
-	Storage() storage.Interface
-}
-
-func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
-	return admissionregistration.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
-	return apiserverinternal.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Batch() batch.Interface {
-	return batch.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Certificates() certificates.Interface {
-	return certificates.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Coordination() coordination.Interface {
-	return coordination.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Core() core.Interface {
-	return core.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Discovery() discovery.Interface {
-	return discovery.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Events() events.Interface {
-	return events.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Flowcontrol() flowcontrol.Interface {
-	return flowcontrol.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Node() node.Interface {
-	return node.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Rbac() rbac.Interface {
-	return rbac.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
-	return scheduling.New(f, f.namespace, f.tweakListOptions)
-}
-
-<<<<<<< HEAD
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
-}
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
-}
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
->>>>>>> 4d7e5ad26 (update vendored files)
-	apps "k8s.io/client-go/informers/apps"
-	autoscaling "k8s.io/client-go/informers/autoscaling"
-	batch "k8s.io/client-go/informers/batch"
-	certificates "k8s.io/client-go/informers/certificates"
-	coordination "k8s.io/client-go/informers/coordination"
-	core "k8s.io/client-go/informers/core"
-	discovery "k8s.io/client-go/informers/discovery"
-	events "k8s.io/client-go/informers/events"
-	extensions "k8s.io/client-go/informers/extensions"
-	flowcontrol "k8s.io/client-go/informers/flowcontrol"
-	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
-	networking "k8s.io/client-go/informers/networking"
-	node "k8s.io/client-go/informers/node"
-	policy "k8s.io/client-go/informers/policy"
-	rbac "k8s.io/client-go/informers/rbac"
-	scheduling "k8s.io/client-go/informers/scheduling"
-	storage "k8s.io/client-go/informers/storage"
-	kubernetes "k8s.io/client-go/kubernetes"
-	cache "k8s.io/client-go/tools/cache"
-)
-
-// SharedInformerOption defines the functional option type for SharedInformerFactory.
-type SharedInformerOption func(*sharedInformerFactory) *sharedInformerFactory
-
-type sharedInformerFactory struct {
-	client           kubernetes.Interface
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	lock             sync.Mutex
-	defaultResync    time.Duration
-	customResync     map[reflect.Type]time.Duration
-
-	informers map[reflect.Type]cache.SharedIndexInformer
-	// startedInformers is used for tracking which informers have been started.
-	// This allows Start() to be called multiple times safely.
-	startedInformers map[reflect.Type]bool
-}
-
-// WithCustomResyncConfig sets a custom resync period for the specified informer types.
-func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		for k, v := range resyncConfig {
-			factory.customResync[reflect.TypeOf(k)] = v
-		}
-		return factory
-	}
-}
-
-// WithTweakListOptions sets a custom filter on all listers of the configured SharedInformerFactory.
-func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.tweakListOptions = tweakListOptions
-		return factory
-	}
-}
-
-// WithNamespace limits the SharedInformerFactory to the specified namespace.
-func WithNamespace(namespace string) SharedInformerOption {
-	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.namespace = namespace
-		return factory
-	}
-}
-
-// NewSharedInformerFactory constructs a new instance of sharedInformerFactory for all namespaces.
-func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync)
-}
-
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
-// Listers obtained via this SharedInformerFactory will be subject to the same filters
-// as specified here.
-// Deprecated: Please use NewSharedInformerFactoryWithOptions instead
-func NewFilteredSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
-	return NewSharedInformerFactoryWithOptions(client, defaultResync, WithNamespace(namespace), WithTweakListOptions(tweakListOptions))
-}
-
-// NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
-	factory := &sharedInformerFactory{
-		client:           client,
-		namespace:        v1.NamespaceAll,
-		defaultResync:    defaultResync,
-		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
-		startedInformers: make(map[reflect.Type]bool),
-		customResync:     make(map[reflect.Type]time.Duration),
-	}
-
-	// Apply all options
-	for _, opt := range options {
-		factory = opt(factory)
-	}
-
-	return factory
-}
-
-// Start initializes all requested informers.
-func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	for informerType, informer := range f.informers {
-		if !f.startedInformers[informerType] {
-			go informer.Run(stopCh)
-			f.startedInformers[informerType] = true
-		}
-	}
-}
-
-// WaitForCacheSync waits for all started informers' cache were synced.
-func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	informers := func() map[reflect.Type]cache.SharedIndexInformer {
-		f.lock.Lock()
-		defer f.lock.Unlock()
-
-		informers := map[reflect.Type]cache.SharedIndexInformer{}
-		for informerType, informer := range f.informers {
-			if f.startedInformers[informerType] {
-				informers[informerType] = informer
-			}
-		}
-		return informers
-	}()
-
-	res := map[reflect.Type]bool{}
-	for informType, informer := range informers {
-		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
-	}
-	return res
-}
-
-// InternalInformerFor returns the SharedIndexInformer for obj using an internal
-// client.
-func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	informerType := reflect.TypeOf(obj)
-	informer, exists := f.informers[informerType]
-	if exists {
-		return informer
-	}
-
-	resyncPeriod, exists := f.customResync[informerType]
-	if !exists {
-		resyncPeriod = f.defaultResync
-	}
-
-	informer = newFunc(f.client, resyncPeriod)
-	f.informers[informerType] = informer
-
-	return informer
-}
-
-// SharedInformerFactory provides shared informers for resources in all known
-// API group versions.
-type SharedInformerFactory interface {
-	internalinterfaces.SharedInformerFactory
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-
-	Admissionregistration() admissionregistration.Interface
-	Internal() apiserverinternal.Interface
-	Apps() apps.Interface
-	Autoscaling() autoscaling.Interface
-	Batch() batch.Interface
-	Certificates() certificates.Interface
-	Coordination() coordination.Interface
-	Core() core.Interface
-	Discovery() discovery.Interface
-	Events() events.Interface
-	Extensions() extensions.Interface
-	Flowcontrol() flowcontrol.Interface
-	Networking() networking.Interface
-	Node() node.Interface
-	Policy() policy.Interface
-	Rbac() rbac.Interface
-	Scheduling() scheduling.Interface
-	Storage() storage.Interface
-}
-
-func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
-	return admissionregistration.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
-	return apiserverinternal.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Batch() batch.Interface {
-	return batch.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Certificates() certificates.Interface {
-	return certificates.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Coordination() coordination.Interface {
-	return coordination.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Core() core.Interface {
-	return core.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Discovery() discovery.Interface {
-	return discovery.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Events() events.Interface {
-	return events.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Flowcontrol() flowcontrol.Interface {
-	return flowcontrol.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Node() node.Interface {
-	return node.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Rbac() rbac.Interface {
-	return rbac.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
-	return scheduling.New(f, f.namespace, f.tweakListOptions)
-}
-
-<<<<<<< HEAD
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
-}
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespace, f.tweakListOptions)
-}
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	apps "k8s.io/client-go/informers/apps"
 	autoscaling "k8s.io/client-go/informers/autoscaling"
 	batch "k8s.io/client-go/informers/batch"
@@ -1127,6 +64,7 @@ type sharedInformerFactory struct {
 	defaultResync    time.Duration
 	customResync     map[reflect.Type]time.Duration
 	transform        cache.TransformFunc
+	informerName     *cache.InformerName
 
 	informers map[reflect.Type]cache.SharedIndexInformer
 	// startedInformers is used for tracking which informers have been started.
@@ -1173,6 +111,21 @@ func WithTransform(transform cache.TransformFunc) SharedInformerOption {
 	}
 }
 
+// WithInformerName sets the InformerName for informer identity used in metrics.
+// The InformerName must be created via cache.NewInformerName() at startup,
+// which validates global uniqueness. Each informer type will register its
+// GVR under this name.
+func WithInformerName(informerName *cache.InformerName) SharedInformerOption {
+	return func(factory *sharedInformerFactory) *sharedInformerFactory {
+		factory.informerName = informerName
+		return factory
+	}
+}
+
+func (f *sharedInformerFactory) InformerName() *cache.InformerName {
+	return f.informerName
+}
+
 // NewSharedInformerFactory constructs a new instance of sharedInformerFactory for all namespaces.
 func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
 	return NewSharedInformerFactoryWithOptions(client, defaultResync)
@@ -1181,6 +134,7 @@ func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Du
 // NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
 // Listers obtained via this SharedInformerFactory will be subject to the same filters
 // as specified here.
+//
 // Deprecated: Please use NewSharedInformerFactoryWithOptions instead
 func NewFilteredSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
 	return NewSharedInformerFactoryWithOptions(client, defaultResync, WithNamespace(namespace), WithTweakListOptions(tweakListOptions))
@@ -1206,6 +160,10 @@ func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultRes
 }
 
 func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
+	f.StartWithContext(wait.ContextForChannel(stopCh))
+}
+
+func (f *sharedInformerFactory) StartWithContext(ctx context.Context) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -1215,15 +173,9 @@ func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
 
 	for informerType, informer := range f.informers {
 		if !f.startedInformers[informerType] {
-			f.wg.Add(1)
-			// We need a new variable in each loop iteration,
-			// otherwise the goroutine would use the loop variable
-			// and that keeps changing.
-			informer := informer
-			go func() {
-				defer f.wg.Done()
-				informer.Run(stopCh)
-			}()
+			f.wg.Go(func() {
+				informer.RunWithContext(ctx)
+			})
 			f.startedInformers[informerType] = true
 		}
 	}
@@ -1236,9 +188,15 @@ func (f *sharedInformerFactory) Shutdown() {
 
 	// Will return immediately if there is nothing to wait for.
 	f.wg.Wait()
+	f.informerName.Release()
 }
 
 func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
+	result := f.WaitForCacheSyncWithContext(wait.ContextForChannel(stopCh))
+	return result.Synced
+}
+
+func (f *sharedInformerFactory) WaitForCacheSyncWithContext(ctx context.Context) cache.SyncResult {
 	informers := func() map[reflect.Type]cache.SharedIndexInformer {
 		f.lock.Lock()
 		defer f.lock.Unlock()
@@ -1252,10 +210,31 @@ func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[ref
 		return informers
 	}()
 
-	res := map[reflect.Type]bool{}
-	for informType, informer := range informers {
-		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
+	// Wait for informers to sync, without polling.
+	cacheSyncs := make([]cache.DoneChecker, 0, len(informers))
+	for _, informer := range informers {
+		cacheSyncs = append(cacheSyncs, informer.HasSyncedChecker())
 	}
+	cache.WaitFor(ctx, "" /* no logging */, cacheSyncs...)
+
+	res := cache.SyncResult{
+		Synced: make(map[reflect.Type]bool, len(informers)),
+	}
+	failed := false
+	for informType, informer := range informers {
+		hasSynced := informer.HasSynced()
+		if !hasSynced {
+			failed = true
+		}
+		res.Synced[informType] = hasSynced
+	}
+	if failed {
+		// context.Cause is more informative than ctx.Err().
+		// This must be non-nil, otherwise WaitFor wouldn't have stopped
+		// prematurely.
+		res.Err = context.Cause(ctx)
+	}
+
 	return res
 }
 
@@ -1277,7 +256,9 @@ func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internal
 	}
 
 	informer = newFunc(f.client, resyncPeriod)
-	informer.SetTransform(f.transform)
+	if f.transform != nil {
+		informer.SetTransform(f.transform)
+	}
 	f.informers[informerType] = informer
 
 	return informer
@@ -1288,32 +269,51 @@ func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internal
 //
 // It is typically used like this:
 //
-//	ctx, cancel := context.Background()
+//	ctx, cancel := context.WithCancel(context.Background())
 //	defer cancel()
 //	factory := NewSharedInformerFactory(client, resyncPeriod)
 //	defer factory.WaitForStop()    // Returns immediately if nothing was started.
 //	genericInformer := factory.ForResource(resource)
 //	typedInformer := factory.SomeAPIGroup().V1().SomeType()
-//	factory.Start(ctx.Done())          // Start processing these informers.
-//	synced := factory.WaitForCacheSync(ctx.Done())
-//	for v, ok := range synced {
-//	    if !ok {
-//	        fmt.Fprintf(os.Stderr, "caches failed to sync: %v", v)
-//	        return
-//	    }
+//	handle, err := typeInformer.Informer().AddEventHandler(...)
+//	if err != nil {
+//	    return fmt.Errorf("register event handler: %v", err)
+//	}
+//	defer typeInformer.Informer().RemoveEventHandler(handle) // Avoids leaking goroutines.
+//	factory.StartWithContext(ctx)                            // Start processing these informers.
+//	synced := factory.WaitForCacheSyncWithContext(ctx)
+//	if err := synced.AsError(); err != nil {
+//	    return err
+//	}
+//	for v := range synced {
+//	    // Only if desired log some information similar to this.
+//	    fmt.Fprintf(os.Stdout, "cache synced: %s", v)
+//	}
+//
+//	// Also make sure that all of the initial cache events have been delivered.
+//	if !WaitFor(ctx, "event handler sync", handle.HasSyncedChecker()) {
+//	    // Must have failed because of context.
+//	    return fmt.Errorf("sync event handler: %w", context.Cause(ctx))
 //	}
 //
 //	// Creating informers can also be created after Start, but then
 //	// Start must be called again:
 //	anotherGenericInformer := factory.ForResource(resource)
-//	factory.Start(ctx.Done())
+//	factory.StartWithContext(ctx)
 type SharedInformerFactory interface {
 	internalinterfaces.SharedInformerFactory
 
 	// Start initializes all requested informers. They are handled in goroutines
 	// which run until the stop channel gets closed.
 	// Warning: Start does not block. When run in a go-routine, it will race with a later WaitForCacheSync.
+	//
+	// Contextual logging: StartWithContext should be used instead of Start in code which supports contextual logging.
 	Start(stopCh <-chan struct{})
+
+	// StartWithContext initializes all requested informers. They are handled in goroutines
+	// which run until the context gets canceled.
+	// Warning: StartWithContext does not block. When run in a go-routine, it will race with a later WaitForCacheSync.
+	StartWithContext(ctx context.Context)
 
 	// Shutdown marks a factory as shutting down. At that point no new
 	// informers can be started anymore and Start will return without
@@ -1329,7 +329,13 @@ type SharedInformerFactory interface {
 
 	// WaitForCacheSync blocks until all started informers' caches were synced
 	// or the stop channel gets closed.
+	//
+	// Contextual logging: WaitForCacheSync should be used instead of WaitForCacheSync in code which supports contextual logging. It also returns a more useful result.
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
+
+	// WaitForCacheSyncWithContext blocks until all started informers' caches were synced
+	// or the context gets canceled.
+	WaitForCacheSyncWithContext(ctx context.Context) cache.SyncResult
 
 	// ForResource gives generic access to a shared informer of the matching type.
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
@@ -1432,7 +438,6 @@ func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
 	return scheduling.New(f, f.namespace, f.tweakListOptions)
 }
 
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (f *sharedInformerFactory) Storage() storage.Interface {
 	return storage.New(f, f.namespace, f.tweakListOptions)
 }

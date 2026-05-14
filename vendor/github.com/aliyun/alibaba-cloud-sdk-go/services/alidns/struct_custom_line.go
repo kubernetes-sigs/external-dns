@@ -17,33 +17,11 @@ package alidns
 
 // CustomLine is a nested struct in alidns response
 type CustomLine struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
 	Code            string      `json:"Code" xml:"Code"`
 	Name            string      `json:"Name" xml:"Name"`
 	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
 	Id              int64       `json:"Id" xml:"Id"`
 	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Id              int64       `json:"Id" xml:"Id"`
-	Name            string      `json:"Name" xml:"Name"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Id              int64       `json:"Id" xml:"Id"`
-	Name            string      `json:"Name" xml:"Name"`
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
-	Code            string      `json:"Code" xml:"Code"`
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	Name            string      `json:"Name" xml:"Name"`
-	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
-	Id              int64       `json:"Id" xml:"Id"`
-	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	IpSegmentList   []IpSegment `json:"IpSegmentList" xml:"IpSegmentList"`
 }

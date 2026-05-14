@@ -26,14 +26,6 @@ import (
 )
 
 // CertificateSigningRequestLister helps list CertificateSigningRequests.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CertificateSigningRequestLister interface {
 	// List lists all CertificateSigningRequests in the indexer.
@@ -41,81 +33,7 @@ type CertificateSigningRequestLister interface {
 	List(selector labels.Selector) (ret []*certificatesv1beta1.CertificateSigningRequest, err error)
 	// Get retrieves the CertificateSigningRequest from the index for a given name.
 	// Objects returned here must be treated as read-only.
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 5ce8c7613 (update vendored files)
-type CertificateSigningRequestLister interface {
-	// List lists all CertificateSigningRequests in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.CertificateSigningRequest, err error)
-	// Get retrieves the CertificateSigningRequest from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 6b7ce455e (update vendored files)
-type CertificateSigningRequestLister interface {
-	// List lists all CertificateSigningRequests in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.CertificateSigningRequest, err error)
-	// Get retrieves the CertificateSigningRequest from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 4d7e5ad26 (update vendored files)
-type CertificateSigningRequestLister interface {
-	// List lists all CertificateSigningRequests in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.CertificateSigningRequest, err error)
-	// Get retrieves the CertificateSigningRequest from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-type CertificateSigningRequestLister interface {
-	// List lists all CertificateSigningRequests in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.CertificateSigningRequest, err error)
-	// Get retrieves the CertificateSigningRequest from the index for a given name.
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Get(name string) (*v1beta1.CertificateSigningRequest, error)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	Get(name string) (*v1beta1.CertificateSigningRequest, error)
-=======
 	Get(name string) (*certificatesv1beta1.CertificateSigningRequest, error)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	CertificateSigningRequestListerExpansion
 }
 

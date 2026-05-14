@@ -1,11 +1,10 @@
 package domain
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/scaleway/scaleway-sdk-go/errors"
 	"github.com/scaleway/scaleway-sdk-go/internal/async"
-	"github.com/scaleway/scaleway-sdk-go/internal/errors"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -34,7 +33,6 @@ func (s *API) WaitForDNSZone(
 	req *WaitForDNSZoneRequest,
 	opts ...scw.RequestOption,
 ) (*DNSZone, error) {
-
 	timeout := defaultTimeout
 	if req.Timeout != nil {
 		timeout = *req.Timeout
@@ -50,8 +48,8 @@ func (s *API) WaitForDNSZone(
 		DNSZoneStatusError:  {},
 	}
 
-	dns, err := async.WaitSync(&async.WaitSyncConfig{
-		Get: func() (interface{}, bool, error) {
+	dnsZone, err := async.WaitSync(&async.WaitSyncConfig{
+		Get: func() (any, bool, error) {
 			listReq := &ListDNSZonesRequest{
 				DNSZones: req.DNSZones,
 			}
@@ -60,32 +58,30 @@ func (s *API) WaitForDNSZone(
 				listReq.DNSZone = &req.DNSZone
 			}
 
-			// listing dns zones and take the first one
+			// listing dnsZone zones and take the first one
 			DNSZones, err := s.ListDNSZones(listReq, opts...)
-
 			if err != nil {
 				return nil, false, err
 			}
 
 			if len(DNSZones.DNSZones) == 0 {
-				return nil, true, fmt.Errorf(ErrCodeNoSuchDNSZone)
+				return nil, true, errors.New(ErrCodeNoSuchDNSZone)
 			}
 
-			Dns := DNSZones.DNSZones[0]
+			zone := DNSZones.DNSZones[0]
 
-			_, isTerminal := terminalStatus[Dns.Status]
+			_, isTerminal := terminalStatus[zone.Status]
 
-			return Dns, isTerminal, nil
+			return zone, isTerminal, nil
 		},
 		Timeout:          timeout,
 		IntervalStrategy: async.LinearIntervalStrategy(retryInterval),
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "waiting for DNS failed")
 	}
 
-	return dns.(*DNSZone), nil
+	return dnsZone.(*DNSZone), nil
 }
 
 // WaitForDNSRecordExistRequest is used by WaitForDNSRecordExist method.
@@ -111,20 +107,19 @@ func (s *API) WaitForDNSRecordExist(
 	}
 
 	dns, err := async.WaitSync(&async.WaitSyncConfig{
-		Get: func() (interface{}, bool, error) {
+		Get: func() (any, bool, error) {
 			// listing dns zone records and take the first one
 			DNSRecords, err := s.ListDNSZoneRecords(&ListDNSZoneRecordsRequest{
 				Name:    req.RecordName,
 				Type:    req.RecordType,
 				DNSZone: req.DNSZone,
 			}, opts...)
-
 			if err != nil {
 				return nil, false, err
 			}
 
 			if DNSRecords.TotalCount == 0 {
-				return nil, false, fmt.Errorf(ErrCodeNoSuchDNSRecord)
+				return nil, false, errors.New(ErrCodeNoSuchDNSRecord)
 			}
 
 			record := DNSRecords.Records[0]
@@ -134,10 +129,174 @@ func (s *API) WaitForDNSRecordExist(
 		Timeout:          timeout,
 		IntervalStrategy: async.LinearIntervalStrategy(retryInterval),
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "check for DNS Record exist failed")
 	}
 
 	return dns.(*Record), nil
+}
+
+// WaitForOrderDomainRequest is used by WaitForOrderDomain method.
+type WaitForOrderDomainRequest struct {
+	Domain        string
+	Timeout       *time.Duration
+	RetryInterval *time.Duration
+}
+
+// WaitForOrderDomain waits until the domain reaches a terminal status.
+func (s *RegistrarAPI) WaitForOrderDomain(
+	req *WaitForOrderDomainRequest,
+	opts ...scw.RequestOption,
+) (*Domain, error) {
+	timeout := defaultTimeout
+	if req.Timeout != nil {
+		timeout = *req.Timeout
+	}
+	retryInterval := defaultRetryInterval
+	if req.RetryInterval != nil {
+		retryInterval = *req.RetryInterval
+	}
+
+	// Terminal statuses indicating success or error.
+	terminalStatuses := map[DomainStatus]struct{}{
+		DomainStatusActive:      {},
+		DomainStatusExpired:     {},
+		DomainStatusLocked:      {},
+		DomainStatusCreateError: {},
+		DomainStatusRenewError:  {},
+		DomainStatusXferError:   {},
+	}
+
+	var lastStatus DomainStatus
+
+	domain, err := async.WaitSync(&async.WaitSyncConfig{
+		Get: func() (any, bool, error) {
+			resp, err := s.GetDomain(&RegistrarAPIGetDomainRequest{
+				Domain: req.Domain,
+			}, opts...)
+			if err != nil {
+				return nil, false, err
+			}
+
+			lastStatus = resp.Status
+
+			if _, isTerminal := terminalStatuses[resp.Status]; isTerminal {
+				return resp, true, nil
+			}
+			return resp, false, nil
+		},
+		Timeout:          timeout,
+		IntervalStrategy: async.LinearIntervalStrategy(retryInterval),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "waiting for domain %s failed, last known status: %s", req.Domain, lastStatus)
+	}
+
+	return domain.(*Domain), nil
+}
+
+// WaitForAutoRenewStatusRequest defines the parameters for waiting on the auto‑renew feature.
+type WaitForAutoRenewStatusRequest struct {
+	Domain        string         // The domain to wait for.
+	Timeout       *time.Duration // Optional timeout.
+	RetryInterval *time.Duration // Optional retry interval.
+}
+
+// WaitForAutoRenewStatus polls the domain until its auto‑renew feature reaches a terminal state
+// (either "enabled" or "disabled"). It uses GetDomain() to fetch the current status.
+func (s *RegistrarAPI) WaitForAutoRenewStatus(req *WaitForAutoRenewStatusRequest, opts ...scw.RequestOption) (*Domain, error) {
+	// Use default timeout and retry interval if not provided.
+	timeout := defaultTimeout
+	if req.Timeout != nil {
+		timeout = *req.Timeout
+	}
+	retryInterval := defaultRetryInterval
+	if req.RetryInterval != nil {
+		retryInterval = *req.RetryInterval
+	}
+
+	// Terminal statuses for auto_renew: enabled or disabled.
+	terminalStatuses := map[DomainFeatureStatus]struct{}{
+		DomainFeatureStatusEnabled:  {},
+		DomainFeatureStatusDisabled: {},
+	}
+
+	var lastStatus DomainFeatureStatus
+
+	domainResult, err := async.WaitSync(&async.WaitSyncConfig{
+		Get: func() (any, bool, error) {
+			resp, err := s.GetDomain(&RegistrarAPIGetDomainRequest{
+				Domain: req.Domain,
+			}, opts...)
+			if err != nil {
+				return nil, false, err
+			}
+
+			lastStatus = resp.AutoRenewStatus
+			if _, isTerminal := terminalStatuses[resp.AutoRenewStatus]; isTerminal {
+				return resp, true, nil
+			}
+			return resp, false, nil
+		},
+		Timeout:          timeout,
+		IntervalStrategy: async.LinearIntervalStrategy(retryInterval),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "waiting for auto_renew to reach a terminal state for domain %s failed, last known status: %s", req.Domain, lastStatus)
+	}
+	return domainResult.(*Domain), nil
+}
+
+// WaitForDNSSECStatusRequest defines the parameters for waiting on the DNSSEC feature.
+type WaitForDNSSECStatusRequest struct {
+	Domain        string         // The domain to wait for.
+	Timeout       *time.Duration // Optional timeout.
+	RetryInterval *time.Duration // Optional retry interval.
+}
+
+// WaitForDNSSECStatus polls the domain until its DNSSEC feature reaches a terminal state
+// (either "enabled" or "disabled"). It uses GetDomain() to fetch the current status.
+func (s *RegistrarAPI) WaitForDNSSECStatus(req *WaitForDNSSECStatusRequest, opts ...scw.RequestOption) (*Domain, error) {
+	// Use default timeout and retry interval if not provided.
+	timeout := defaultTimeout
+	if req.Timeout != nil {
+		timeout = *req.Timeout
+	}
+	retryInterval := defaultRetryInterval
+	if req.RetryInterval != nil {
+		retryInterval = *req.RetryInterval
+	}
+
+	// Terminal statuses for DNSSEC: enabled or disabled.
+	terminalStatuses := map[DomainFeatureStatus]struct{}{
+		DomainFeatureStatusEnabled:  {},
+		DomainFeatureStatusDisabled: {},
+	}
+
+	var lastStatus DomainFeatureStatus
+
+	domainResult, err := async.WaitSync(&async.WaitSyncConfig{
+		Get: func() (any, bool, error) {
+			// Retrieve the domain.
+			resp, err := s.GetDomain(&RegistrarAPIGetDomainRequest{
+				Domain: req.Domain,
+			}, opts...)
+			if err != nil {
+				return nil, false, err
+			}
+
+			// Check the current DNSSEC status.
+			lastStatus = resp.Dnssec.Status
+			if _, isTerminal := terminalStatuses[resp.Dnssec.Status]; isTerminal {
+				return resp, true, nil
+			}
+			return resp, false, nil
+		},
+		Timeout:          timeout,
+		IntervalStrategy: async.LinearIntervalStrategy(retryInterval),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "waiting for dnssec to reach a terminal state for domain %s failed, last known status: %s", req.Domain, lastStatus)
+	}
+	return domainResult.(*Domain), nil
 }

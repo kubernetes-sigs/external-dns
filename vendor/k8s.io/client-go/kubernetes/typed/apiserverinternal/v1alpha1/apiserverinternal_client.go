@@ -19,44 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	v1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type InternalV1alpha1Interface interface {
-	RESTClient() rest.Interface
-	StorageVersionsGetter
-}
-
-// InternalV1alpha1Client is used to interact with features provided by the internal.apiserver.k8s.io group.
-type InternalV1alpha1Client struct {
-	restClient rest.Interface
-}
-
-func (c *InternalV1alpha1Client) StorageVersions() StorageVersionInterface {
-	return newStorageVersions(c)
-}
-
-// NewForConfig creates a new InternalV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*InternalV1alpha1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientFor(&config)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	"net/http"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	"net/http"
-=======
 	http "net/http"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	apiserverinternalv1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -96,101 +59,6 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*InternalV1alpha1Cli
 	config := *c
 	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"net/http"
-
-	v1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type InternalV1alpha1Interface interface {
-	RESTClient() rest.Interface
-	StorageVersionsGetter
-}
-
-// InternalV1alpha1Client is used to interact with features provided by the internal.apiserver.k8s.io group.
-type InternalV1alpha1Client struct {
-	restClient rest.Interface
-}
-
-func (c *InternalV1alpha1Client) StorageVersions() StorageVersionInterface {
-	return newStorageVersions(c)
-}
-
-// NewForConfig creates a new InternalV1alpha1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*InternalV1alpha1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new InternalV1alpha1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*InternalV1alpha1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"net/http"
-
-	v1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type InternalV1alpha1Interface interface {
-	RESTClient() rest.Interface
-	StorageVersionsGetter
-}
-
-// InternalV1alpha1Client is used to interact with features provided by the internal.apiserver.k8s.io group.
-type InternalV1alpha1Client struct {
-	restClient rest.Interface
-}
-
-func (c *InternalV1alpha1Client) StorageVersions() StorageVersionInterface {
-	return newStorageVersions(c)
-}
-
-// NewForConfig creates a new InternalV1alpha1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*InternalV1alpha1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new InternalV1alpha1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*InternalV1alpha1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

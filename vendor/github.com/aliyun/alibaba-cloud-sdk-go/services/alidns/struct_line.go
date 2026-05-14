@@ -19,24 +19,8 @@ package alidns
 type Line struct {
 	GroupCode  string `json:"GroupCode" xml:"GroupCode"`
 	LineCode   string `json:"LineCode" xml:"LineCode"`
-<<<<<<< HEAD
-<<<<<<< HEAD
 	GroupName  string `json:"GroupName" xml:"GroupName"`
 	LineName   string `json:"LineName" xml:"LineName"`
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	LineName   string `json:"LineName" xml:"LineName"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	LineName   string `json:"LineName" xml:"LineName"`
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	GroupName  string `json:"GroupName" xml:"GroupName"`
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	LineName   string `json:"LineName" xml:"LineName"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Status     string `json:"Status" xml:"Status"`
 	FatherCode string `json:"FatherCode" xml:"FatherCode"`
 }

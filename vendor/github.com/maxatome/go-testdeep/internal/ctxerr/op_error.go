@@ -7,119 +7,33 @@
 package ctxerr
 
 import (
-<<<<<<< HEAD
-	"bytes"
 	"fmt"
 	"reflect"
-)
-
-// OpBadUsage returns a string to notice the user he passed a bad
-// parameter to an operator constructor.
-func OpBadUsage(op, usage string, param any, pos int, kind bool) *Error {
-	var b bytes.Buffer
-	fmt.Fprintf(&b, "usage: %s%s, but received ", op, usage)
-
-	if param == nil {
-		b.WriteString("nil")
-	} else {
-		t := reflect.TypeOf(param)
-		if kind && t.String() != t.Kind().String() {
-			fmt.Fprintf(&b, "%s (%s)", t, t.Kind())
-		} else {
-			b.WriteString(t.String())
-		}
-	}
-
-	b.WriteString(" as ")
-	switch pos {
-	case 1:
-		b.WriteString("1st")
-	case 2:
-		b.WriteString("2nd")
-	case 3:
-		b.WriteString("3rd")
-	default:
-		fmt.Fprintf(&b, "%dth", pos)
-	}
-	b.WriteString(" parameter")
-
-	return &Error{
-		Message: "bad usage of " + op + " operator",
-		Summary: NewSummary(b.String()),
-	}
-}
-
-// OpTooManyParams returns an [*Error] to notice the user he called a
-// variadic operator constructor with too many parameters.
-func OpTooManyParams(op, usage string) *Error {
-	return &Error{
-		Message: "bad usage of " + op + " operator",
-		Summary: NewSummary("usage: " + op + usage + ", too many parameters"),
-	}
-}
-
-// OpBad returns an [*Error] to notice the user a bad operator
-// constructor usage. If len(args) is > 0, s and args are given to
-// [fmt.Sprintf].
-func OpBad(op, s string, args ...any) *Error {
-	if len(args) > 0 {
-		s = fmt.Sprintf(s, args...)
-	}
-	return &Error{
-		Message: "bad usage of " + op + " operator",
-		Summary: NewSummary(s),
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"fmt"
-	"reflect"
-	"strings"
 
 	"github.com/maxatome/go-testdeep/internal/types"
+	"github.com/maxatome/go-testdeep/internal/util"
 )
 
-// OpBadUsage returns a string to notice the user he passed a bad
+// OpBadUsage returns an [*Error] to notice the user she/he passed a bad
 // parameter to an operator constructor.
+//
+// If kind and param's kind name ≠ param's type name:
+//
+//	usage: {op}{usage}, but received {param type} ({param kind}) as {pos}th parameter
+//
+// else
+//
+//	usage: {op}{usage}, but received {param type} as {pos}th parameter
 func OpBadUsage(op, usage string, param any, pos int, kind bool) *Error {
-	var b strings.Builder
-	fmt.Fprintf(&b, "usage: %s%s, but received ", op, usage)
-
-	if param == nil {
-		b.WriteString("nil")
-	} else {
-		t := reflect.TypeOf(param)
-		if kind && t.String() != t.Kind().String() {
-			fmt.Fprintf(&b, "%s (%s)", t, t.Kind())
-		} else {
-			b.WriteString(t.String())
-		}
-	}
-
-	b.WriteString(" as ")
-	switch pos {
-	case 1:
-		b.WriteString("1st")
-	case 2:
-		b.WriteString("2nd")
-	case 3:
-		b.WriteString("3rd")
-	default:
-		fmt.Fprintf(&b, "%dth", pos)
-	}
-	b.WriteString(" parameter")
-
-	return &Error{
-		Message: "bad usage of " + op + " operator",
-		Summary: NewSummary(b.String()),
-	}
+	return OpBad(op, "usage: %s%s, %s", op, usage, util.BadParam(param, pos, kind))
 }
 
-// OpTooManyParams returns an [*Error] to notice the user he called a
+// OpTooManyParams returns an [*Error] to notice the user she/he called a
 // variadic operator constructor with too many parameters.
+//
+//	usage: {op}{usage}, too many parameters
 func OpTooManyParams(op, usage string) *Error {
-	return &Error{
-		Message: "bad usage of " + op + " operator",
-		Summary: NewSummary("usage: " + op + usage + ", too many parameters"),
-	}
+	return OpBad(op, "usage: %s%s, too many parameters", op, usage)
 }
 
 // OpBad returns an [*Error] to notice the user a bad operator
@@ -132,6 +46,7 @@ func OpBad(op, s string, args ...any) *Error {
 	return &Error{
 		Message: "bad usage of " + op + " operator",
 		Summary: NewSummary(s),
+		User:    true,
 	}
 }
 
@@ -156,6 +71,5 @@ func NilPointer(got reflect.Value, expected string) *Error {
 		Message:  "nil pointer",
 		Got:      types.RawString("nil " + types.KindType(got)),
 		Expected: types.RawString(expected),
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }

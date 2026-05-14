@@ -21,10 +21,6 @@ import (
 )
 
 // DeleteZoneRecord invokes the pvtz.DeleteZoneRecord API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) DeleteZoneRecord(request *DeleteZoneRecordRequest) (response *DeleteZoneRecordResponse, err error) {
 	response = CreateDeleteZoneRecordResponse()
 	err = client.DoAction(request, response)
@@ -75,6 +71,7 @@ func (client *Client) DeleteZoneRecordWithCallback(request *DeleteZoneRecordRequ
 // DeleteZoneRecordRequest is the request struct for api DeleteZoneRecord
 type DeleteZoneRecordRequest struct {
 	*requests.RpcRequest
+	ClientToken  string           `position:"Query" name:"ClientToken"`
 	RecordId     requests.Integer `position:"Query" name:"RecordId"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
 	Lang         string           `position:"Query" name:"Lang"`
@@ -94,168 +91,6 @@ func CreateDeleteZoneRecordRequest() (request *DeleteZoneRecordRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DeleteZoneRecord", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/deletezonerecord.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/deletezonerecord.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) DeleteZoneRecord(request *DeleteZoneRecordRequest) (response *DeleteZoneRecordResponse, err error) {
-	response = CreateDeleteZoneRecordResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DeleteZoneRecordWithChan invokes the pvtz.DeleteZoneRecord API asynchronously
-func (client *Client) DeleteZoneRecordWithChan(request *DeleteZoneRecordRequest) (<-chan *DeleteZoneRecordResponse, <-chan error) {
-	responseChan := make(chan *DeleteZoneRecordResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DeleteZoneRecord(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DeleteZoneRecordWithCallback invokes the pvtz.DeleteZoneRecord API asynchronously
-func (client *Client) DeleteZoneRecordWithCallback(request *DeleteZoneRecordRequest, callback func(response *DeleteZoneRecordResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DeleteZoneRecordResponse
-		var err error
-		defer close(result)
-		response, err = client.DeleteZoneRecord(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DeleteZoneRecordRequest is the request struct for api DeleteZoneRecord
-type DeleteZoneRecordRequest struct {
-	*requests.RpcRequest
-	RecordId     requests.Integer `position:"Query" name:"RecordId"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	Lang         string           `position:"Query" name:"Lang"`
-}
-
-// DeleteZoneRecordResponse is the response struct for api DeleteZoneRecord
-type DeleteZoneRecordResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-}
-
-// CreateDeleteZoneRecordRequest creates a request to invoke DeleteZoneRecord API
-func CreateDeleteZoneRecordRequest() (request *DeleteZoneRecordRequest) {
-	request = &DeleteZoneRecordRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DeleteZoneRecord", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/deletezonerecord.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/deletezonerecord.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) DeleteZoneRecord(request *DeleteZoneRecordRequest) (response *DeleteZoneRecordResponse, err error) {
-	response = CreateDeleteZoneRecordResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DeleteZoneRecordWithChan invokes the pvtz.DeleteZoneRecord API asynchronously
-func (client *Client) DeleteZoneRecordWithChan(request *DeleteZoneRecordRequest) (<-chan *DeleteZoneRecordResponse, <-chan error) {
-	responseChan := make(chan *DeleteZoneRecordResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DeleteZoneRecord(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DeleteZoneRecordWithCallback invokes the pvtz.DeleteZoneRecord API asynchronously
-func (client *Client) DeleteZoneRecordWithCallback(request *DeleteZoneRecordRequest, callback func(response *DeleteZoneRecordResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DeleteZoneRecordResponse
-		var err error
-		defer close(result)
-		response, err = client.DeleteZoneRecord(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DeleteZoneRecordRequest is the request struct for api DeleteZoneRecord
-type DeleteZoneRecordRequest struct {
-	*requests.RpcRequest
-	RecordId     requests.Integer `position:"Query" name:"RecordId"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	Lang         string           `position:"Query" name:"Lang"`
-}
-
-// DeleteZoneRecordResponse is the response struct for api DeleteZoneRecord
-type DeleteZoneRecordResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-}
-
-// CreateDeleteZoneRecordRequest creates a request to invoke DeleteZoneRecord API
-func CreateDeleteZoneRecordRequest() (request *DeleteZoneRecordRequest) {
-	request = &DeleteZoneRecordRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DeleteZoneRecord", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

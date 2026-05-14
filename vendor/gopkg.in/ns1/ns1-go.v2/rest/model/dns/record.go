@@ -28,7 +28,7 @@ type Record struct {
 	// The records' filter chain.
 	Filters []*filter.Filter `json:"filters"`
 	// The records' regions.
-	Regions data.Regions `json:"regions,omitempty"`
+	Regions data.Regions `json:"regions"`
 
 	// Contains the key/value tag information associated to the record
 	Tags map[string]string `json:"tags,omitempty"` // Only relevant for DDI

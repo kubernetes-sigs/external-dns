@@ -25,8 +25,6 @@ var _ TestDeep = &tdLax{}
 // Lax is a smuggler operator, it temporarily enables the BeLax config
 // flag before letting the comparison process continue its course.
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
 // It is more commonly used as [CmpLax] function than as an operator. It
 // could be used when, for example, an operator is constructed once
 // but applied to different, but compatible types as in:
@@ -47,40 +45,6 @@ var _ TestDeep = &tdLax{}
 // expectedValue otherwise, except if expectedValue is a [TestDeep]
 // operator. In this case, it delegates TypeBehind() to the operator.
 func Lax(expectedValue any) TestDeep {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// It is more commonly used as CmpLax function than as an operator. It
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// It is more commonly used as CmpLax function than as an operator. It
-=======
-// It is more commonly used as [CmpLax] function than as an operator. It
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// could be used when, for example, an operator is constructed once
-// but applied to different, but compatible types as in:
-//
-//	bw := td.Between(20, 30)
-//	intValue := 21
-//	floatValue := 21.89
-//	td.Cmp(t, intValue, bw)           // no need to be lax here: same int types
-//	td.Cmp(t, floatValue, td.Lax(bw)) // be lax please, as float64 ≠ int
-//
-// Note that in the latter case, [CmpLax] could be used as well:
-//
-//	td.CmpLax(t, floatValue, bw)
-//
-// TypeBehind method returns the greatest convertible or more common
-// [reflect.Type] of expectedValue if it is a base type (bool, int*,
-// uint*, float*, complex*, string), the [reflect.Type] of
-// expectedValue otherwise, except if expectedValue is a [TestDeep]
-// operator. In this case, it delegates TypeBehind() to the operator.
-<<<<<<< HEAD
-func Lax(expectedValue interface{}) TestDeep {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func Lax(expectedValue interface{}) TestDeep {
-=======
-func Lax(expectedValue any) TestDeep {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	c := tdLax{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 	}

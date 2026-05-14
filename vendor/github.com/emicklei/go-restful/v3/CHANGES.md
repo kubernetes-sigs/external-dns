@@ -1,15 +1,24 @@
 # Change history of go-restful
 
-<<<<<<< HEAD
-## [v3.8.0] - 20221-06-06
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
+## [v3.13.0] - 2025-08-14
+
+- optimize performance of path matching in CurlyRouter ( thanks @wenhuang, Wen Huang)
+
+## [v3.12.2] - 2025-02-21
+
+- allow empty payloads in post,put,patch, issue #580 ( thanks @liggitt, Jordan Liggitt)
+
+## [v3.12.1] - 2024-05-28
+
+-  fix misroute when dealing multiple webservice with regex (#549) (thanks Haitao Chen)
 
 ## [v3.12.0] - 2024-03-11
+
 - add Flush method #529 (#538)
 - fix: Improper handling of empty POST requests (#543)
 
 ## [v3.11.3] - 2024-01-09
+
 - better not have 2 tags on one commit
 
 ## [v3.11.1, v3.11.2] - 2024-01-09
@@ -41,7 +50,6 @@
 - add support for http.Handler implementations to work as FilterFunction, issue #504 (thanks to https://github.com/ggicci)
 
 ## [v3.8.0] - 2022-06-06
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 - use exact matching of allowed domain entries, issue #489 (#493)
 	- this changes fixes [security] Authorization Bypass Through User-Controlled Key

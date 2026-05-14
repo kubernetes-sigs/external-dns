@@ -1,65 +1,11 @@
 ## universal-translator
-<<<<<<< HEAD
-<img align="right" src="https://raw.githubusercontent.com/go-playground/universal-translator/master/logo.png">![Project status](https://img.shields.io/badge/version-0.17.0-green.svg)
+<img align="right" src="https://raw.githubusercontent.com/go-playground/universal-translator/master/logo.png">![Project status](https://img.shields.io/badge/version-0.18.0-green.svg)
 [![Build Status](https://travis-ci.org/go-playground/universal-translator.svg?branch=master)](https://travis-ci.org/go-playground/universal-translator)
 [![Coverage Status](https://coveralls.io/repos/github/go-playground/universal-translator/badge.svg)](https://coveralls.io/github/go-playground/universal-translator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-playground/universal-translator)](https://goreportcard.com/report/github.com/go-playground/universal-translator)
 [![GoDoc](https://godoc.org/github.com/go-playground/universal-translator?status.svg)](https://godoc.org/github.com/go-playground/universal-translator)
 ![License](https://img.shields.io/dub/l/vibe-d.svg)
 [![Gitter](https://badges.gitter.im/go-playground/universal-translator.svg)](https://gitter.im/go-playground/universal-translator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
-Universal Translator is an i18n Translator for Go/Golang using CLDR data + pluralization rules
-
-Why another i18n library?
---------------------------
-Because none of the plural rules seem to be correct out there, including the previous implementation of this package,
-so I took it upon myself to create [locales](https://github.com/go-playground/locales) for everyone to use; this package 
-is a thin wrapper around [locales](https://github.com/go-playground/locales) in order to store and translate text for 
-use in your applications.
-
-Features
---------
-- [x] Rules generated from the [CLDR](http://cldr.unicode.org/index/downloads) data, v30.0.3
-- [x] Contains Cardinal, Ordinal and Range Plural Rules
-- [x] Contains Month, Weekday and Timezone translations built in
-- [x] Contains Date & Time formatting functions
-- [x] Contains Number, Currency, Accounting and Percent formatting functions
-- [x] Supports the "Gregorian" calendar only ( my time isn't unlimited, had to draw the line somewhere )
-- [x] Support loading translations from files
-- [x] Exporting translations to file(s), mainly for getting them professionally translated
-- [ ] Code Generation for translation files -> Go code.. i.e. after it has been professionally translated
-- [ ] Tests for all languages, I need help with this, please see [here](https://github.com/go-playground/locales/issues/1)
-
-Installation
------------
-
-Use go get 
-
-```shell
-go get github.com/go-playground/universal-translator
-```
-
-Usage & Documentation
--------
-
-Please see https://godoc.org/github.com/go-playground/universal-translator for usage docs
-
-##### Examples:
-
-- [Basic](https://github.com/go-playground/universal-translator/tree/master/_examples/basic)
-- [Full - no files](https://github.com/go-playground/universal-translator/tree/master/_examples/full-no-files)
-- [Full - with files](https://github.com/go-playground/universal-translator/tree/master/_examples/full-with-files)
-
-File formatting
---------------
-All types, Plain substitution, Cardinal, Ordinal and Range translations can all be contained withing the same file(s);
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-<img align="right" src="https://raw.githubusercontent.com/go-playground/universal-translator/master/logo.png">![Project status](https://img.shields.io/badge/version-0.18.1-green.svg)
-[![Coverage Status](https://coveralls.io/repos/github/go-playground/universal-translator/badge.svg)](https://coveralls.io/github/go-playground/universal-translator)
-[![Go Report Card](https://goreportcard.com/badge/github.com/go-playground/universal-translator)](https://goreportcard.com/report/github.com/go-playground/universal-translator)
-[![GoDoc](https://godoc.org/github.com/go-playground/universal-translator?status.svg)](https://godoc.org/github.com/go-playground/universal-translator)
-![License](https://img.shields.io/dub/l/vibe-d.svg)
 
 Universal Translator is an i18n Translator for Go/Golang using CLDR data + pluralization rules
 
@@ -106,7 +52,6 @@ Please see https://godoc.org/github.com/go-playground/universal-translator for u
 File formatting
 --------------
 All types, Plain substitution, Cardinal, Ordinal and Range translations can all be contained within the same file(s);
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 they are only separated for easy viewing.
 
 ##### Examples:

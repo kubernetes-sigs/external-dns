@@ -47,10 +47,6 @@ type PodDisruptionBudgetSpec struct {
 	// by specifying 0. This is a mutually exclusive setting with "minAvailable".
 	// +optional
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty" protobuf:"bytes,3,opt,name=maxUnavailable"`
-<<<<<<< HEAD
-}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 	// UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods
 	// should be considered for eviction. Current implementation considers healthy pods,
@@ -97,7 +93,6 @@ const (
 	// Healthy pods will be subject to the PDB for eviction.
 	AlwaysAllow UnhealthyPodEvictionPolicyType = "AlwaysAllow"
 )
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // PodDisruptionBudgetStatus represents information about the status of a
 // PodDisruptionBudget. Status may trail the actual state of a system.
@@ -122,15 +117,19 @@ type PodDisruptionBudgetStatus struct {
 	DisruptedPods map[string]metav1.Time `json:"disruptedPods,omitempty" protobuf:"bytes,2,rep,name=disruptedPods"`
 
 	// Number of pod disruptions that are currently allowed.
+	// +optional
 	DisruptionsAllowed int32 `json:"disruptionsAllowed" protobuf:"varint,3,opt,name=disruptionsAllowed"`
 
 	// current number of healthy pods
+	// +optional
 	CurrentHealthy int32 `json:"currentHealthy" protobuf:"varint,4,opt,name=currentHealthy"`
 
 	// minimum desired number of healthy pods
+	// +optional
 	DesiredHealthy int32 `json:"desiredHealthy" protobuf:"varint,5,opt,name=desiredHealthy"`
 
 	// total number of pods counted by this disruption budget
+	// +optional
 	ExpectedPods int32 `json:"expectedPods" protobuf:"varint,6,opt,name=expectedPods"`
 
 	// Conditions contain conditions for PDB. The disruption controller sets the

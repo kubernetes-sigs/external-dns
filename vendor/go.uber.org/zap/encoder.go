@@ -62,58 +62,10 @@ func RegisterEncoder(name string, constructor func(zapcore.EncoderConfig) (zapco
 }
 
 func newEncoder(name string, encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
-		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
-	}
-
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
-		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
-	}
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
-		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
-	}
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
-		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
-	}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
 		return nil, errors.New("missing EncodeTime in EncoderConfig")
 	}
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	_encoderMutex.RLock()
 	defer _encoderMutex.RUnlock()
 	if name == "" {

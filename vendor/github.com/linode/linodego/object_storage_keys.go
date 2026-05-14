@@ -2,33 +2,33 @@ package linodego
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-
-	"github.com/go-resty/resty/v2"
 )
+
+type ObjectStorageKeyRegion struct {
+	ID           string                    `json:"id"`
+	S3Endpoint   string                    `json:"s3_endpoint"`
+	EndpointType ObjectStorageEndpointType `json:"endpoint_type"`
+}
 
 // ObjectStorageKey represents a linode object storage key object
 type ObjectStorageKey struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	ID           int                             `json:"id"`
 	Label        string                          `json:"label"`
 	AccessKey    string                          `json:"access_key"`
 	SecretKey    string                          `json:"secret_key"`
 	Limited      bool                            `json:"limited"`
 	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
+	Regions      []ObjectStorageKeyRegion        `json:"regions"`
 }
 
 // ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
 type ObjectStorageKeyBucketAccess struct {
-	Cluster     string `json:"cluster"`
+	// Deprecated: Cluster field has been deprecated.
+	// Please consider switching to use the 'Region' field.
+	// If your Cluster is `us-mia-1`, then the region would be `us-mia`.
+	Cluster string `json:"cluster,omitempty"`
+	Region  string `json:"region,omitempty"`
+
 	BucketName  string `json:"bucket_name"`
 	Permissions string `json:"permissions"`
 }
@@ -36,629 +36,40 @@ type ObjectStorageKeyBucketAccess struct {
 // ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
 type ObjectStorageKeyCreateOptions struct {
 	Label        string                          `json:"label"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
+	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access,omitempty"`
+	Regions      []string                        `json:"regions,omitempty"`
 }
 
 // ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
 type ObjectStorageKeyUpdateOptions struct {
-	Label string `json:"label"`
-}
-
-// ObjectStorageKeysPagedResponse represents a linode API response for listing
-type ObjectStorageKeysPagedResponse struct {
-	*PageOptions
-	Data []ObjectStorageKey `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Object Storage keys
-func (ObjectStorageKeysPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends ObjectStorageKeys when processing paginated Objkey responses
-func (resp *ObjectStorageKeysPagedResponse) appendData(r *ObjectStorageKeysPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+	Label   string   `json:"label,omitempty"`
+	Regions []string `json:"regions,omitempty"`
 }
 
 // ListObjectStorageKeys lists ObjectStorageKeys
 func (c *Client) ListObjectStorageKeys(ctx context.Context, opts *ListOptions) ([]ObjectStorageKey, error) {
-	response := ObjectStorageKeysPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// CreateObjectStorageKey creates a ObjectStorageKey
-func (c *Client) CreateObjectStorageKey(ctx context.Context, createOpts ObjectStorageKeyCreateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// GetObjectStorageKey gets the object storage key with the provided ID
-func (c *Client) GetObjectStorageKey(ctx context.Context, id int) (*ObjectStorageKey, error) {
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&ObjectStorageKey{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// UpdateObjectStorageKey updates the object storage key with the specified id
-func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts ObjectStorageKeyUpdateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-||||||| parent of 5ce8c7613 (update vendored files)
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-=======
-	ID           int                             `json:"id"`
-	Label        string                          `json:"label"`
-	AccessKey    string                          `json:"access_key"`
-	SecretKey    string                          `json:"secret_key"`
-	Limited      bool                            `json:"limited"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
-type ObjectStorageKeyBucketAccess struct {
-	Cluster     string `json:"cluster"`
-	BucketName  string `json:"bucket_name"`
-	Permissions string `json:"permissions"`
->>>>>>> 5ce8c7613 (update vendored files)
-}
-
-// ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
-type ObjectStorageKeyCreateOptions struct {
-	Label        string                          `json:"label"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
-type ObjectStorageKeyUpdateOptions struct {
-	Label string `json:"label"`
-}
-
-// ObjectStorageKeysPagedResponse represents a linode API response for listing
-type ObjectStorageKeysPagedResponse struct {
-	*PageOptions
-	Data []ObjectStorageKey `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Object Storage keys
-func (ObjectStorageKeysPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends ObjectStorageKeys when processing paginated Objkey responses
-func (resp *ObjectStorageKeysPagedResponse) appendData(r *ObjectStorageKeysPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListObjectStorageKeys lists ObjectStorageKeys
-func (c *Client) ListObjectStorageKeys(ctx context.Context, opts *ListOptions) ([]ObjectStorageKey, error) {
-	response := ObjectStorageKeysPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// CreateObjectStorageKey creates a ObjectStorageKey
-func (c *Client) CreateObjectStorageKey(ctx context.Context, createOpts ObjectStorageKeyCreateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// GetObjectStorageKey gets the object storage key with the provided ID
-func (c *Client) GetObjectStorageKey(ctx context.Context, id int) (*ObjectStorageKey, error) {
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&ObjectStorageKey{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// UpdateObjectStorageKey updates the object storage key with the specified id
-func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts ObjectStorageKeyUpdateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-<<<<<<< HEAD
-
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-||||||| parent of 6b7ce455e (update vendored files)
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-=======
-	ID           int                             `json:"id"`
-	Label        string                          `json:"label"`
-	AccessKey    string                          `json:"access_key"`
-	SecretKey    string                          `json:"secret_key"`
-	Limited      bool                            `json:"limited"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
-type ObjectStorageKeyBucketAccess struct {
-	Cluster     string `json:"cluster"`
-	BucketName  string `json:"bucket_name"`
-	Permissions string `json:"permissions"`
->>>>>>> 6b7ce455e (update vendored files)
-}
-
-// ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
-type ObjectStorageKeyCreateOptions struct {
-	Label        string                          `json:"label"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
-type ObjectStorageKeyUpdateOptions struct {
-	Label string `json:"label"`
-}
-
-// ObjectStorageKeysPagedResponse represents a linode API response for listing
-type ObjectStorageKeysPagedResponse struct {
-	*PageOptions
-	Data []ObjectStorageKey `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Object Storage keys
-func (ObjectStorageKeysPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends ObjectStorageKeys when processing paginated Objkey responses
-func (resp *ObjectStorageKeysPagedResponse) appendData(r *ObjectStorageKeysPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListObjectStorageKeys lists ObjectStorageKeys
-func (c *Client) ListObjectStorageKeys(ctx context.Context, opts *ListOptions) ([]ObjectStorageKey, error) {
-	response := ObjectStorageKeysPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// CreateObjectStorageKey creates a ObjectStorageKey
-func (c *Client) CreateObjectStorageKey(ctx context.Context, createOpts ObjectStorageKeyCreateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// GetObjectStorageKey gets the object storage key with the provided ID
-func (c *Client) GetObjectStorageKey(ctx context.Context, id int) (*ObjectStorageKey, error) {
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&ObjectStorageKey{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// UpdateObjectStorageKey updates the object storage key with the specified id
-func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts ObjectStorageKeyUpdateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-<<<<<<< HEAD
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-||||||| parent of 4d7e5ad26 (update vendored files)
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-=======
-	ID           int                             `json:"id"`
-	Label        string                          `json:"label"`
-	AccessKey    string                          `json:"access_key"`
-	SecretKey    string                          `json:"secret_key"`
-	Limited      bool                            `json:"limited"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
-type ObjectStorageKeyBucketAccess struct {
-	Cluster     string `json:"cluster"`
-	BucketName  string `json:"bucket_name"`
-	Permissions string `json:"permissions"`
->>>>>>> 4d7e5ad26 (update vendored files)
-}
-
-// ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
-type ObjectStorageKeyCreateOptions struct {
-	Label        string                          `json:"label"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
-type ObjectStorageKeyUpdateOptions struct {
-	Label string `json:"label"`
-}
-
-// ObjectStorageKeysPagedResponse represents a linode API response for listing
-type ObjectStorageKeysPagedResponse struct {
-	*PageOptions
-	Data []ObjectStorageKey `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Object Storage keys
-func (ObjectStorageKeysPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends ObjectStorageKeys when processing paginated Objkey responses
-func (resp *ObjectStorageKeysPagedResponse) appendData(r *ObjectStorageKeysPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListObjectStorageKeys lists ObjectStorageKeys
-func (c *Client) ListObjectStorageKeys(ctx context.Context, opts *ListOptions) ([]ObjectStorageKey, error) {
-	response := ObjectStorageKeysPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// CreateObjectStorageKey creates a ObjectStorageKey
-func (c *Client) CreateObjectStorageKey(ctx context.Context, createOpts ObjectStorageKeyCreateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// GetObjectStorageKey gets the object storage key with the provided ID
-func (c *Client) GetObjectStorageKey(ctx context.Context, id int) (*ObjectStorageKey, error) {
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&ObjectStorageKey{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
-}
-
-// UpdateObjectStorageKey updates the object storage key with the specified id
-func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts ObjectStorageKeyUpdateOptions) (*ObjectStorageKey, error) {
-	var body string
-	e, err := c.ObjectStorageKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-<<<<<<< HEAD
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ID        int    `json:"id"`
-	Label     string `json:"label"`
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
-=======
-	ID           int                             `json:"id"`
-	Label        string                          `json:"label"`
-	AccessKey    string                          `json:"access_key"`
-	SecretKey    string                          `json:"secret_key"`
-	Limited      bool                            `json:"limited"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
-type ObjectStorageKeyBucketAccess struct {
-	Cluster     string `json:"cluster"`
-	BucketName  string `json:"bucket_name"`
-	Permissions string `json:"permissions"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-}
-
-// ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
-type ObjectStorageKeyCreateOptions struct {
-	Label        string                          `json:"label"`
-	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
-}
-
-// ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
-type ObjectStorageKeyUpdateOptions struct {
-	Label string `json:"label"`
-}
-
-// ObjectStorageKeysPagedResponse represents a linode API response for listing
-type ObjectStorageKeysPagedResponse struct {
-	*PageOptions
-	Data []ObjectStorageKey `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Object Storage keys
-func (ObjectStorageKeysPagedResponse) endpoint(_ ...any) string {
-	return "object-storage/keys"
-}
-
-func (resp *ObjectStorageKeysPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(ObjectStorageKeysPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*ObjectStorageKeysPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
-}
-
-// ListObjectStorageKeys lists ObjectStorageKeys
-func (c *Client) ListObjectStorageKeys(ctx context.Context, opts *ListOptions) ([]ObjectStorageKey, error) {
-	response := ObjectStorageKeysPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[ObjectStorageKey](ctx, c, "object-storage/keys", opts)
 }
 
 // CreateObjectStorageKey creates a ObjectStorageKey
 func (c *Client) CreateObjectStorageKey(ctx context.Context, opts ObjectStorageKeyCreateOptions) (*ObjectStorageKey, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, NewError(err)
-	}
-
-	e := "object-storage/keys"
-	req := c.R(ctx).SetResult(&ObjectStorageKey{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
+	return doPOSTRequest[ObjectStorageKey](ctx, c, "object-storage/keys", opts)
 }
 
 // GetObjectStorageKey gets the object storage key with the provided ID
 func (c *Client) GetObjectStorageKey(ctx context.Context, keyID int) (*ObjectStorageKey, error) {
-	e := fmt.Sprintf("object-storage/keys/%d", keyID)
-	req := c.R(ctx).SetResult(&ObjectStorageKey{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
+	e := formatAPIPath("object-storage/keys/%d", keyID)
+	return doGETRequest[ObjectStorageKey](ctx, c, e)
 }
 
 // UpdateObjectStorageKey updates the object storage key with the specified id
 func (c *Client) UpdateObjectStorageKey(ctx context.Context, keyID int, opts ObjectStorageKeyUpdateOptions) (*ObjectStorageKey, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	e := fmt.Sprintf("object-storage/keys/%d", keyID)
-	req := c.R(ctx).SetResult(&ObjectStorageKey{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*ObjectStorageKey), nil
+	e := formatAPIPath("object-storage/keys/%d", keyID)
+	return doPUTRequest[ObjectStorageKey](ctx, c, e, opts)
 }
 
 // DeleteObjectStorageKey deletes the ObjectStorageKey with the specified id
 func (c *Client) DeleteObjectStorageKey(ctx context.Context, keyID int) error {
-	e := fmt.Sprintf("object-storage/keys/%d", keyID)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
-	return err
+	e := formatAPIPath("object-storage/keys/%d", keyID)
+	return doDELETERequest(ctx, c, e)
 }

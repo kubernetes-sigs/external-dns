@@ -19,25 +19,8 @@ package pvtz
 type Vpc struct {
 	RegionId   string `json:"RegionId" xml:"RegionId"`
 	VpcName    string `json:"VpcName" xml:"VpcName"`
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	VpcType    string `json:"VpcType" xml:"VpcType"`
 	VpcId      string `json:"VpcId" xml:"VpcId"`
 	RegionName string `json:"RegionName" xml:"RegionName"`
+	VpcUserId  string `json:"VpcUserId" xml:"VpcUserId"`
 }

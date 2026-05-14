@@ -55,34 +55,6 @@ func ConfigToExecCluster(config *Config) (*clientauthenticationapi.Cluster, erro
 		InsecureSkipTLSVerify:    config.Insecure,
 		CertificateAuthorityData: caData,
 		ProxyURL:                 proxyURL,
-<<<<<<< HEAD
-		Config:                   config.ExecProvider.Config,
-	}, nil
-}
-
-// ExecClusterToConfig creates a Config with the corresponding fields from the provided
-// clientauthenticationapi.Cluster. The returned Config will be anonymous (i.e., it will not have
-// any authentication-related fields set).
-func ExecClusterToConfig(cluster *clientauthenticationapi.Cluster) (*Config, error) {
-	var proxy func(*http.Request) (*url.URL, error)
-	if cluster.ProxyURL != "" {
-		proxyURL, err := url.Parse(cluster.ProxyURL)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse proxy URL: %w", err)
-		}
-		proxy = http.ProxyURL(proxyURL)
-	}
-
-	return &Config{
-		Host: cluster.Server,
-		TLSClientConfig: TLSClientConfig{
-			Insecure:   cluster.InsecureSkipTLSVerify,
-			ServerName: cluster.TLSServerName,
-			CAData:     cluster.CertificateAuthorityData,
-		},
-		Proxy: proxy,
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		DisableCompression:       config.DisableCompression,
 		Config:                   config.ExecProvider.Config,
 	}, nil
@@ -110,6 +82,5 @@ func ExecClusterToConfig(cluster *clientauthenticationapi.Cluster) (*Config, err
 		},
 		Proxy:              proxy,
 		DisableCompression: cluster.DisableCompression,
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}, nil
 }

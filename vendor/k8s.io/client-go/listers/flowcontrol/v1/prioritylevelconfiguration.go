@@ -26,104 +26,14 @@ import (
 )
 
 // PriorityLevelConfigurationLister helps list PriorityLevelConfigurations.
-<<<<<<< HEAD:vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/prioritylevelconfiguration.go
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PriorityLevelConfigurationLister interface {
 	// List lists all PriorityLevelConfigurations in the indexer.
 	// Objects returned here must be treated as read-only.
-<<<<<<< HEAD
-	List(selector labels.Selector) (ret []*v1alpha1.PriorityLevelConfiguration, err error)
-	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-	// Objects returned here must be treated as read-only.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 5ce8c7613 (update vendored files)
-type PriorityLevelConfigurationLister interface {
-	// List lists all PriorityLevelConfigurations in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.PriorityLevelConfiguration, err error)
-	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 6b7ce455e (update vendored files)
-type PriorityLevelConfigurationLister interface {
-	// List lists all PriorityLevelConfigurations in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.PriorityLevelConfiguration, err error)
-	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> 4d7e5ad26 (update vendored files)
-type PriorityLevelConfigurationLister interface {
-	// List lists all PriorityLevelConfigurations in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.PriorityLevelConfiguration, err error)
-	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	// Objects returned here must be treated as read-only.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/prioritylevelconfiguration.go
-=======
-// All objects returned here must be treated as read-only.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1/prioritylevelconfiguration.go
-type PriorityLevelConfigurationLister interface {
-	// List lists all PriorityLevelConfigurations in the indexer.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.PriorityLevelConfiguration, err error)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	List(selector labels.Selector) (ret []*v1.PriorityLevelConfiguration, err error)
-=======
 	List(selector labels.Selector) (ret []*flowcontrolv1.PriorityLevelConfiguration, err error)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-<<<<<<< HEAD:vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/prioritylevelconfiguration.go
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	Get(name string) (*v1alpha1.PriorityLevelConfiguration, error)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/prioritylevelconfiguration.go
-	Get(name string) (*v1alpha1.PriorityLevelConfiguration, error)
-=======
 	// Objects returned here must be treated as read-only.
-<<<<<<< HEAD
-	Get(name string) (*v1.PriorityLevelConfiguration, error)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1/prioritylevelconfiguration.go
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	Get(name string) (*v1.PriorityLevelConfiguration, error)
-=======
 	Get(name string) (*flowcontrolv1.PriorityLevelConfiguration, error)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	PriorityLevelConfigurationListerExpansion
 }
 

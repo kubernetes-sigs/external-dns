@@ -11,6 +11,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/types"
+	"github.com/maxatome/go-testdeep/internal/util"
 )
 
 const grepUsage = "(FILTER_FUNC|FILTER_TESTDEEP_OPERATOR, TESTDEEP_OPERATOR|EXPECTED_VALUE)"
@@ -59,10 +60,10 @@ func (g *tdGrepBase) initGrepBase(filter, expectedValue any) {
 	g.filter = vfilter
 }
 
-func (g *tdGrepBase) matchItem(ctx ctxerr.Context, idx int, item reflect.Value) (bool, *ctxerr.Error) {
+func (g *tdGrepBase) matchItem(ctx ctxerr.Context, item reflect.Value) (bool, *ctxerr.Error) {
 	if g.argType == nil {
 		// g.filter is a TestDeep operator
-		return deepValueEqualFinalOK(ctx, item, g.filter), nil
+		return deepValueEqualFinalOK(ctx, item, g.filter)
 	}
 
 	// item is an interface, but the filter function does not expect an
@@ -76,11 +77,11 @@ func (g *tdGrepBase) matchItem(ctx ctxerr.Context, idx int, item reflect.Value) 
 			if ctx.BooleanError {
 				return false, ctxerr.BooleanError
 			}
-			return false, ctx.AddArrayIndex(idx).CollectError(&ctxerr.Error{
+			return false, &ctxerr.Error{
 				Message:  "incompatible parameter type",
 				Got:      types.RawString(item.Type().String()),
 				Expected: types.RawString(g.argType.String()),
-			})
+			}
 		}
 		item = item.Convert(g.argType)
 	}
@@ -97,9 +98,15 @@ func (g *tdGrepBase) String() string {
 		return g.stringError()
 	}
 	if g.argType == nil {
-		return S("%s(%s)", g.GetLocation().Func, g.filter.Interface().(TestDeep))
+		return S("%s(%s, %s)",
+			g.GetLocation().Func,
+			g.filter.Interface().(TestDeep),
+			util.ToString(g.expectedValue))
 	}
-	return S("%s(%s)", g.GetLocation().Func, g.filter.Type())
+	return S("%s(%s, %s)",
+		g.GetLocation().Func,
+		g.filter.Type(),
+		util.ToString(g.expectedValue))
 }
 
 func (g *tdGrepBase) TypeBehind() reflect.Type {
@@ -136,7 +143,7 @@ func grepResolvePtr(ctx ctxerr.Context, got *reflect.Value) *ctxerr.Error {
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}
-			return ctx.CollectError(ctxerr.NilPointer(*got, "non-nil *slice OR *array"))
+			return ctxerr.NilPointer(*got, "non-nil *slice OR *array")
 		}
 		switch gotElem.Kind() {
 		case reflect.Slice, reflect.Array:
@@ -209,39 +216,44 @@ func (g *tdGrep) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	}
 
 	if rErr := grepResolvePtr(ctx, &got); rErr != nil {
-		return rErr
+		return ctx.CollectError(rErr)
 	}
 
 	switch got.Kind() {
 	case reflect.Slice, reflect.Array:
-		const grepped = "<grepped>"
-
-		if got.Kind() == reflect.Slice && got.IsNil() {
-			return deepValueEqual(
-				ctx.AddCustomLevel(grepped),
-				reflect.New(got.Type()).Elem(),
-				g.expectedValue,
-			)
-		}
-
-		l := got.Len()
-		out := reflect.MakeSlice(reflect.SliceOf(got.Type().Elem()), 0, l)
-
-		for idx := 0; idx < l; idx++ {
-			item := got.Index(idx)
-			ok, rErr := g.matchItem(ctx, idx, item)
-			if rErr != nil {
-				return rErr
-			}
-			if ok {
-				out = reflect.Append(out, item)
-			}
-		}
-
-		return deepValueEqual(ctx.AddCustomLevel(grepped), out, g.expectedValue)
+	default:
+		return grepBadKind(ctx, got)
 	}
 
-	return grepBadKind(ctx, got)
+	const grepped = "<grepped>"
+
+	l := got.Len()
+	if l == 0 {
+		return deepValueEqual(ctx.AddCustomLevel(grepped), got, g.expectedValue)
+	}
+
+	outType := got.Type()
+	if got.Kind() == reflect.Array {
+		outType = reflect.SliceOf(outType.Elem())
+	}
+
+	out := reflect.MakeSlice(outType, 0, l)
+
+	for idx := 0; idx < l; idx++ {
+		item := got.Index(idx)
+		ok, rErr := g.matchItem(ctx, item)
+		if rErr != nil {
+			if !rErr.User {
+				ctx = ctx.AddArrayIndex(idx)
+			}
+			return ctx.CollectError(rErr)
+		}
+		if ok {
+			out = reflect.Append(out, item)
+		}
+	}
+
+	return deepValueEqual(ctx.AddCustomLevel(grepped), out, g.expectedValue)
 }
 
 type tdFirst struct {
@@ -290,16 +302,19 @@ func (g *tdFirst) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	}
 
 	if rErr := grepResolvePtr(ctx, &got); rErr != nil {
-		return rErr
+		return ctx.CollectError(rErr)
 	}
 
 	switch got.Kind() {
 	case reflect.Slice, reflect.Array:
 		for idx, l := 0, got.Len(); idx < l; idx++ {
 			item := got.Index(idx)
-			ok, rErr := g.matchItem(ctx, idx, item)
+			ok, rErr := g.matchItem(ctx, item)
 			if rErr != nil {
-				return rErr
+				if !rErr.User {
+					ctx = ctx.AddArrayIndex(idx)
+				}
+				return ctx.CollectError(rErr)
 			}
 			if ok {
 				return deepValueEqual(
@@ -365,16 +380,19 @@ func (g *tdLast) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	}
 
 	if rErr := grepResolvePtr(ctx, &got); rErr != nil {
-		return rErr
+		return ctx.CollectError(rErr)
 	}
 
 	switch got.Kind() {
 	case reflect.Slice, reflect.Array:
 		for idx := got.Len() - 1; idx >= 0; idx-- {
 			item := got.Index(idx)
-			ok, rErr := g.matchItem(ctx, idx, item)
+			ok, rErr := g.matchItem(ctx, item)
 			if rErr != nil {
-				return rErr
+				if !rErr.User {
+					ctx = ctx.AddArrayIndex(idx)
+				}
+				return ctx.CollectError(rErr)
 			}
 			if ok {
 				return deepValueEqual(

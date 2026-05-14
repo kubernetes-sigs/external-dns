@@ -25,63 +25,13 @@ const (
 	// This is a pro-forma convention given that Go dependencies
 	// tends to be fetched directly from the repo.
 	// It is also used in the user-agent identify the client.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Version = "0.71.1"
-
-	// defaultBaseURL to the DNSimple production API.
-	defaultBaseURL = "https://api.dnsimple.com"
-
-	// defaultUserAgent represents the base user agent
-	// and is appended to every request.
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Version = "0.60.0"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Version = "0.60.0"
-=======
-	Version = "0.71.1"
->>>>>>> 4d7e5ad26 (update vendored files)
-
-	// defaultBaseURL to the DNSimple production API.
-	defaultBaseURL = "https://api.dnsimple.com"
-
-<<<<<<< HEAD
-	// userAgent represents the default user agent used
-	// when no other user agent is set.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// userAgent represents the default user agent used
-	// when no other user agent is set.
-=======
-	// defaultUserAgent represents the base user agent
-	// and is appended to every request.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Version = "0.60.0"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Version = "0.60.0"
-=======
 	Version = "1.7.0"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	// defaultBaseURL to the DNSimple production API.
 	defaultBaseURL = "https://api.dnsimple.com"
 
-<<<<<<< HEAD
-	// userAgent represents the default user agent used
-	// when no other user agent is set.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// userAgent represents the default user agent used
-	// when no other user agent is set.
-=======
 	// defaultUserAgent represents the base user agent
 	// and is appended to every request.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	defaultUserAgent = "dnsimple-go/" + Version
 
 	apiVersion = "v2"

@@ -16,35 +16,9 @@ import (
 // RFC 4121, section 4.2.6.2
 
 const (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// HdrLen is the length of the Wrap Token's header
 	HdrLen = 16
 	// FillerByte is a filler in the WrapToken structure
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	HdrLen          = 16 // Length of the Wrap Token's header
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	HdrLen          = 16 // Length of the Wrap Token's header
-=======
-	// HdrLen is the length of the Wrap Token's header
-	HdrLen = 16
-	// FillerByte is a filler in the WrapToken structure
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	HdrLen          = 16 // Length of the Wrap Token's header
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	HdrLen          = 16 // Length of the Wrap Token's header
-=======
-	// HdrLen is the length of the Wrap Token's header
-	HdrLen = 16
-	// FillerByte is a filler in the WrapToken structure
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	FillerByte byte = 0xFF
 )
 

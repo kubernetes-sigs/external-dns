@@ -24,44 +24,25 @@ import (
 
 // ResourceRequirementsApplyConfiguration represents a declarative configuration of the ResourceRequirements type for use
 // with apply.
+//
+// ResourceRequirements describes the compute resource requirements.
 type ResourceRequirementsApplyConfiguration struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Limits   *v1.ResourceList `json:"limits,omitempty"`
-	Requests *v1.ResourceList `json:"requests,omitempty"`
-}
-
-// ResourceRequirementsApplyConfiguration constructs an declarative configuration of the ResourceRequirements type for use with
-// apply.
-func ResourceRequirements() *ResourceRequirementsApplyConfiguration {
-	return &ResourceRequirementsApplyConfiguration{}
-}
-
-// WithLimits sets the Limits field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Limits field is set to the value of the last call.
-func (b *ResourceRequirementsApplyConfiguration) WithLimits(value v1.ResourceList) *ResourceRequirementsApplyConfiguration {
-	b.Limits = &value
-	return b
-}
-
-// WithRequests sets the Requests field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Requests field is set to the value of the last call.
-func (b *ResourceRequirementsApplyConfiguration) WithRequests(value v1.ResourceList) *ResourceRequirementsApplyConfiguration {
-	b.Requests = &value
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	Limits   *v1.ResourceList                  `json:"limits,omitempty"`
-	Requests *v1.ResourceList                  `json:"requests,omitempty"`
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	Limits   *v1.ResourceList                  `json:"limits,omitempty"`
-	Requests *v1.ResourceList                  `json:"requests,omitempty"`
-=======
-	Limits   *corev1.ResourceList              `json:"limits,omitempty"`
-	Requests *corev1.ResourceList              `json:"requests,omitempty"`
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	Claims   []ResourceClaimApplyConfiguration `json:"claims,omitempty"`
+	// Limits describes the maximum amount of compute resources allowed.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	Limits *corev1.ResourceList `json:"limits,omitempty"`
+	// Requests describes the minimum amount of compute resources required.
+	// If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+	// otherwise to an implementation-defined value. Requests cannot exceed Limits.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	Requests *corev1.ResourceList `json:"requests,omitempty"`
+	// Claims lists the names of resources, defined in spec.resourceClaims,
+	// that are used by this container.
+	//
+	// This field depends on the
+	// DynamicResourceAllocation feature gate.
+	//
+	// This field is immutable. It can only be set for containers.
+	Claims []ResourceClaimApplyConfiguration `json:"claims,omitempty"`
 }
 
 // ResourceRequirementsApplyConfiguration constructs a declarative configuration of the ResourceRequirements type for use with
@@ -96,6 +77,5 @@ func (b *ResourceRequirementsApplyConfiguration) WithClaims(values ...*ResourceC
 		}
 		b.Claims = append(b.Claims, *values[i])
 	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // UDPRouteLister helps list UDPRoutes.
@@ -30,7 +30,7 @@ import (
 type UDPRouteLister interface {
 	// List lists all UDPRoutes in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.UDPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1alpha2.UDPRoute, err error)
 	// UDPRoutes returns an object that can list and get UDPRoutes.
 	UDPRoutes(namespace string) UDPRouteNamespaceLister
 	UDPRouteListerExpansion
@@ -38,25 +38,17 @@ type UDPRouteLister interface {
 
 // uDPRouteLister implements the UDPRouteLister interface.
 type uDPRouteLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*apisv1alpha2.UDPRoute]
 }
 
 // NewUDPRouteLister returns a new UDPRouteLister.
 func NewUDPRouteLister(indexer cache.Indexer) UDPRouteLister {
-	return &uDPRouteLister{indexer: indexer}
-}
-
-// List lists all UDPRoutes in the indexer.
-func (s *uDPRouteLister) List(selector labels.Selector) (ret []*v1alpha2.UDPRoute, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.UDPRoute))
-	})
-	return ret, err
+	return &uDPRouteLister{listers.New[*apisv1alpha2.UDPRoute](indexer, apisv1alpha2.Resource("udproute"))}
 }
 
 // UDPRoutes returns an object that can list and get UDPRoutes.
 func (s *uDPRouteLister) UDPRoutes(namespace string) UDPRouteNamespaceLister {
-	return uDPRouteNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return uDPRouteNamespaceLister{listers.NewNamespaced[*apisv1alpha2.UDPRoute](s.ResourceIndexer, namespace)}
 }
 
 // UDPRouteNamespaceLister helps list and get UDPRoutes.
@@ -64,36 +56,15 @@ func (s *uDPRouteLister) UDPRoutes(namespace string) UDPRouteNamespaceLister {
 type UDPRouteNamespaceLister interface {
 	// List lists all UDPRoutes in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.UDPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1alpha2.UDPRoute, err error)
 	// Get retrieves the UDPRoute from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.UDPRoute, error)
+	Get(name string) (*apisv1alpha2.UDPRoute, error)
 	UDPRouteNamespaceListerExpansion
 }
 
 // uDPRouteNamespaceLister implements the UDPRouteNamespaceLister
 // interface.
 type uDPRouteNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all UDPRoutes in the indexer for a given namespace.
-func (s uDPRouteNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.UDPRoute, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.UDPRoute))
-	})
-	return ret, err
-}
-
-// Get retrieves the UDPRoute from the indexer for a given namespace and name.
-func (s uDPRouteNamespaceLister) Get(name string) (*v1alpha2.UDPRoute, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("udproute"), name)
-	}
-	return obj.(*v1alpha2.UDPRoute), nil
+	listers.ResourceIndexer[*apisv1alpha2.UDPRoute]
 }

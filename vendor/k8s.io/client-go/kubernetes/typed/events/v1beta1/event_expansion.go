@@ -33,20 +33,7 @@ type EventExpansion interface {
 	// UpdateWithEventNamespace is the same as a Update
 	// except that it sends the request to the event.Namespace.
 	UpdateWithEventNamespace(event *v1beta1.Event) (*v1beta1.Event, error)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// PatchWithEventNamespace is the same as a Patch
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PatchWithEventNamespace is the same as an Update
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// PatchWithEventNamespace is the same as an Update
-=======
-	// PatchWithEventNamespace is the same as a Patch
->>>>>>> 4d7e5ad26 (update vendored files)
 	// except that it sends the request to the event.Namespace.
 	PatchWithEventNamespace(event *v1beta1.Event, data []byte) (*v1beta1.Event, error)
 }
@@ -95,72 +82,7 @@ func (e *events) UpdateWithEventNamespace(event *v1beta1.Event) (*v1beta1.Event,
 // It returns the copy of the event that the server returns, or an error.
 // The namespace and name of the target event is deduced from the event.
 // The namespace must either match this event client's namespace, or this event client must
-//
-//	have been created with the "" namespace.
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PatchWithEventNamespace is the same as an Update
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// PatchWithEventNamespace is the same as an Update
-=======
-	// PatchWithEventNamespace is the same as a Patch
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// except that it sends the request to the event.Namespace.
-	PatchWithEventNamespace(event *v1beta1.Event, data []byte) (*v1beta1.Event, error)
-}
-
-// CreateWithEventNamespace makes a new event.
-// Returns the copy of the event the server returns, or an error.
-// The namespace to create the event within is deduced from the event.
-// it must either match this event client's namespace, or this event client must
 // have been created with the "" namespace.
-func (e *events) CreateWithEventNamespace(event *v1beta1.Event) (*v1beta1.Event, error) {
-	if e.ns != "" && event.Namespace != e.ns {
-		return nil, fmt.Errorf("can't create an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)
-	}
-	result := &v1beta1.Event{}
-	err := e.client.Post().
-		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).
-		Resource("events").
-		Body(event).
-		Do(context.TODO()).
-		Into(result)
-	return result, err
-}
-
-// UpdateWithEventNamespace modifies an existing event.
-// It returns the copy of the event that the server returns, or an error.
-// The namespace and key to update the event within is deduced from the event.
-// The namespace must either match this event client's namespace, or this event client must have been
-// created with the "" namespace.
-// Update also requires the ResourceVersion to be set in the event object.
-func (e *events) UpdateWithEventNamespace(event *v1beta1.Event) (*v1beta1.Event, error) {
-	if e.ns != "" && event.Namespace != e.ns {
-		return nil, fmt.Errorf("can't update an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)
-	}
-	result := &v1beta1.Event{}
-	err := e.client.Put().
-		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).
-		Resource("events").
-		Name(event.Name).
-		Body(event).
-		Do(context.TODO()).
-		Into(result)
-	return result, err
-}
-
-// PatchWithEventNamespace modifies an existing event.
-// It returns the copy of the event that the server returns, or an error.
-// The namespace and name of the target event is deduced from the event.
-// The namespace must either match this event client's namespace, or this event client must
-<<<<<<< HEAD
-//  have been created with the "" namespace.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//  have been created with the "" namespace.
-=======
-// have been created with the "" namespace.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (e *events) PatchWithEventNamespace(event *v1beta1.Event, data []byte) (*v1beta1.Event, error) {
 	if e.GetNamespace() != "" && event.Namespace != e.GetNamespace() {
 		return nil, fmt.Errorf("can't patch an event with namespace '%v' in namespace '%v'", event.Namespace, e.GetNamespace())

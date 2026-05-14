@@ -3,86 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build linux && ppc
-<<<<<<< HEAD
-// +build linux,ppc
-
-package unix
-
-import (
-	"syscall"
-	"unsafe"
-)
-
-//sys	EpollWait(epfd int, events []EpollEvent, msec int) (n int, err error)
-//sys	Fchown(fd int, uid int, gid int) (err error)
-//sys	Fstat(fd int, stat *Stat_t) (err error) = SYS_FSTAT64
-//sys	Fstatat(dirfd int, path string, stat *Stat_t, flags int) (err error) = SYS_FSTATAT64
-//sys	Ftruncate(fd int, length int64) (err error) = SYS_FTRUNCATE64
-//sysnb	Getegid() (egid int)
-//sysnb	Geteuid() (euid int)
-//sysnb	Getgid() (gid int)
-//sysnb	Getuid() (uid int)
-//sys	Ioperm(from int, num int, on int) (err error)
-//sys	Iopl(level int) (err error)
-//sys	Lchown(path string, uid int, gid int) (err error)
-//sys	Listen(s int, n int) (err error)
-//sys	Lstat(path string, stat *Stat_t) (err error) = SYS_LSTAT64
-//sys	Pause() (err error)
-<<<<<<< HEAD
-<<<<<<< HEAD
-//sys	Pread(fd int, p []byte, offset int64) (n int, err error) = SYS_PREAD64
-//sys	Pwrite(fd int, p []byte, offset int64) (n int, err error) = SYS_PWRITE64
-//sys	Renameat(olddirfd int, oldpath string, newdirfd int, newpath string) (err error)
-//sys	Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error) = SYS__NEWSELECT
-//sys	sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) = SYS_SENDFILE64
-//sys	setfsgid(gid int) (prev int, err error)
-//sys	setfsuid(uid int) (prev int, err error)
-//sysnb	Setregid(rgid int, egid int) (err error)
-//sysnb	Setresgid(rgid int, egid int, sgid int) (err error)
-//sysnb	Setresuid(ruid int, euid int, suid int) (err error)
-//sysnb	Setreuid(ruid int, euid int) (err error)
-//sys	Shutdown(fd int, how int) (err error)
-//sys	Splice(rfd int, roff *int64, wfd int, woff *int64, len int, flags int) (n int, err error)
-//sys	Stat(path string, stat *Stat_t) (err error) = SYS_STAT64
-//sys	Truncate(path string, length int64) (err error) = SYS_TRUNCATE64
-//sys	Ustat(dev int, ubuf *Ustat_t) (err error)
-//sys	accept(s int, rsa *RawSockaddrAny, addrlen *_Socklen) (fd int, err error)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-//sys	pread(fd int, p []byte, offset int64) (n int, err error) = SYS_PREAD64
-//sys	pwrite(fd int, p []byte, offset int64) (n int, err error) = SYS_PWRITE64
-//sys	Renameat(olddirfd int, oldpath string, newdirfd int, newpath string) (err error)
-//sys	Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error) = SYS__NEWSELECT
-//sys	sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) = SYS_SENDFILE64
-//sys	setfsgid(gid int) (prev int, err error)
-//sys	setfsuid(uid int) (prev int, err error)
-//sys	Shutdown(fd int, how int) (err error)
-//sys	Splice(rfd int, roff *int64, wfd int, woff *int64, len int, flags int) (n int, err error)
-//sys	Stat(path string, stat *Stat_t) (err error) = SYS_STAT64
-//sys	Truncate(path string, length int64) (err error) = SYS_TRUNCATE64
-//sys	Ustat(dev int, ubuf *Ustat_t) (err error)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-//sys	pread(fd int, p []byte, offset int64) (n int, err error) = SYS_PREAD64
-//sys	pwrite(fd int, p []byte, offset int64) (n int, err error) = SYS_PWRITE64
-//sys	Renameat(olddirfd int, oldpath string, newdirfd int, newpath string) (err error)
-//sys	Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error) = SYS__NEWSELECT
-//sys	sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) = SYS_SENDFILE64
-//sys	setfsgid(gid int) (prev int, err error)
-//sys	setfsuid(uid int) (prev int, err error)
-//sysnb	Setregid(rgid int, egid int) (err error)
-//sysnb	Setresgid(rgid int, egid int, sgid int) (err error)
-//sysnb	Setresuid(ruid int, euid int, suid int) (err error)
-//sysnb	Setreuid(ruid int, euid int) (err error)
-//sys	Shutdown(fd int, how int) (err error)
-//sys	Splice(rfd int, roff *int64, wfd int, woff *int64, len int, flags int) (n int, err error)
-//sys	Stat(path string, stat *Stat_t) (err error) = SYS_STAT64
-//sys	Truncate(path string, length int64) (err error) = SYS_TRUNCATE64
-//sys	Ustat(dev int, ubuf *Ustat_t) (err error)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 package unix
 
@@ -118,7 +38,6 @@ import (
 //sys	Stat(path string, stat *Stat_t) (err error) = SYS_STAT64
 //sys	Truncate(path string, length int64) (err error) = SYS_TRUNCATE64
 //sys	Ustat(dev int, ubuf *Ustat_t) (err error)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //sys	accept4(s int, rsa *RawSockaddrAny, addrlen *_Socklen, flags int) (fd int, err error)
 //sys	bind(s int, addr unsafe.Pointer, addrlen _Socklen) (err error)
 //sys	connect(s int, addr unsafe.Pointer, addrlen _Socklen) (err error)

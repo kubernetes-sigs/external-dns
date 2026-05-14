@@ -1,18 +1,5 @@
 package livedns
 
-<<<<<<< HEAD
-// Tsig contains tsig data (no kidding!)
-type Tsig struct {
-	KeyName       string      `json:"key_name,omitempty"`
-	Secret        string      `json:"secret,omitempty"`
-	UUID          string      `json:"uuid,omitempty"`
-	AxfrTsigURL   string      `json:"axfr_tsig_url,omitempty"`
-	ConfigSamples interface{} `json:"config_samples,omitempty"`
-}
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // ListTsigs lists all tsigs
 func (g *LiveDNS) ListTsigs() (tsigs []Tsig, err error) {
 	_, err = g.client.Get("axfr/tsig", nil, &tsigs)

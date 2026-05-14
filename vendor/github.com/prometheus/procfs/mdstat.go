@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,876 +22,39 @@ import (
 )
 
 var (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	statusLineRE      = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE    = regexp.MustCompile(`\((\d+)/\d+\)`)
-	componentDeviceRE = regexp.MustCompile(`(.*)\[\d+\]`)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	statusLineRE      = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE    = regexp.MustCompile(`\((\d+)/\d+\)`)
-	componentDeviceRE = regexp.MustCompile(`(.*)\[\d+\]`)
-=======
 	statusLineRE         = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[([U_]+)\]`)
 	recoveryLineBlocksRE = regexp.MustCompile(`\((\d+/\d+)\)`)
 	recoveryLinePctRE    = regexp.MustCompile(`= (.+)%`)
 	recoveryLineFinishRE = regexp.MustCompile(`finish=(.+)min`)
 	recoveryLineSpeedRE  = regexp.MustCompile(`speed=(.+)[A-Z]`)
-	componentDeviceRE    = regexp.MustCompile(`(.*)\[\d+\]`)
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	componentDeviceRE    = regexp.MustCompile(`(.*)\[(\d+)\](\([SF]+\))?`)
+	personalitiesPrefix  = "Personalities : "
 )
+
+type MDStatComponent struct {
+	// Name of the component device.
+	Name string
+	// DescriptorIndex number of component device, e.g. the order in the superblock.
+	DescriptorIndex int32
+	// Flags per Linux drivers/md/md.[ch] as of v6.12-rc1
+	// Subset that are exposed in mdstat
+	WriteMostly bool
+	Journal     bool
+	Faulty      bool // "Faulty" is what kernel source uses for "(F)"
+	Spare       bool
+	Replacement bool
+	// Some additional flags that are NOT exposed in procfs today; they may
+	// be available via sysfs.
+	// In_sync, Bitmap_sync, Blocked, WriteErrorSeen, FaultRecorded,
+	// BlockedBadBlocks, WantReplacement, Candidate, ...
+}
 
 // MDStat holds info parsed from /proc/mdstat.
 type MDStat struct {
 	// Name of the device.
 	Name string
-	// activity-state of the device.
-	ActivityState string
-	// Number of active disks.
-	DisksActive int64
-	// Total number of disks the device requires.
-	DisksTotal int64
-	// Number of failed disks.
-	DisksFailed int64
-	// Number of "down" disks. (the _ indicator in the status line)
-	DisksDown int64
-	// Spare disks in the device.
-	DisksSpare int64
-	// Number of blocks the device holds.
-	BlocksTotal int64
-	// Number of blocks on the device that are in sync.
-	BlocksSynced int64
-	// progress percentage of current sync
-	BlocksSyncedPct float64
-	// estimated finishing time for current sync (in minutes)
-	BlocksSyncedFinishTime float64
-	// current sync speed (in Kilobytes/sec)
-	BlocksSyncedSpeed float64
-	// Name of md component devices
-	Devices []string
-}
-
-// MDStat parses an mdstat-file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.  More information available here:
-// https://raid.wiki.kernel.org/index.php/Mdstat
-func (fs FS) MDStat() ([]MDStat, error) {
-	data, err := ioutil.ReadFile(fs.proc.Path("mdstat"))
-	if err != nil {
-		return nil, err
-	}
-	mdstat, err := parseMDStat(data)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing mdstat %q: %w", fs.proc.Path("mdstat"), err)
-	}
-	return mdstat, nil
-}
-
-// parseMDStat parses data from mdstat file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.
-func parseMDStat(mdStatData []byte) ([]MDStat, error) {
-	mdStats := []MDStat{}
-	lines := strings.Split(string(mdStatData), "\n")
-
-	for i, line := range lines {
-		if strings.TrimSpace(line) == "" || line[0] == ' ' ||
-			strings.HasPrefix(line, "Personalities") ||
-			strings.HasPrefix(line, "unused") {
-			continue
-		}
-
-		deviceFields := strings.Fields(line)
-		if len(deviceFields) < 3 {
-			return nil, fmt.Errorf("not enough fields in mdline (expected at least 3): %s", line)
-		}
-		mdName := deviceFields[0] // mdx
-		state := deviceFields[2]  // active or inactive
-
-		if len(lines) <= i+3 {
-			return nil, fmt.Errorf("error parsing %q: too few lines for md device", mdName)
-		}
-
-		// Failed disks have the suffix (F) & Spare disks have the suffix (S).
-		fail := int64(strings.Count(line, "(F)"))
-		spare := int64(strings.Count(line, "(S)"))
-		active, total, down, size, err := evalStatusLine(lines[i], lines[i+1])
-
-		if err != nil {
-			return nil, fmt.Errorf("error parsing md device lines: %w", err)
-		}
-
-		syncLineIdx := i + 2
-		if strings.Contains(lines[i+2], "bitmap") { // skip bitmap line
-			syncLineIdx++
-		}
-
-		// If device is syncing at the moment, get the number of currently
-		// synced bytes, otherwise that number equals the size of the device.
-		syncedBlocks := size
-		speed := float64(0)
-		finish := float64(0)
-		pct := float64(0)
-		recovering := strings.Contains(lines[syncLineIdx], "recovery")
-		resyncing := strings.Contains(lines[syncLineIdx], "resync")
-		checking := strings.Contains(lines[syncLineIdx], "check")
-
-		// Append recovery and resyncing state info.
-		if recovering || resyncing || checking {
-			if recovering {
-				state = "recovering"
-			} else if checking {
-				state = "checking"
-			} else {
-				state = "resyncing"
-			}
-
-			// Handle case when resync=PENDING or resync=DELAYED.
-			if strings.Contains(lines[syncLineIdx], "PENDING") ||
-				strings.Contains(lines[syncLineIdx], "DELAYED") {
-				syncedBlocks = 0
-			} else {
-				syncedBlocks, pct, finish, speed, err = evalRecoveryLine(lines[syncLineIdx])
-				if err != nil {
-					return nil, fmt.Errorf("error parsing sync line in md device %q: %w", mdName, err)
-				}
-			}
-		}
-
-		mdStats = append(mdStats, MDStat{
-			Name:                   mdName,
-			ActivityState:          state,
-			DisksActive:            active,
-			DisksFailed:            fail,
-			DisksDown:              down,
-			DisksSpare:             spare,
-			DisksTotal:             total,
-			BlocksTotal:            size,
-			BlocksSynced:           syncedBlocks,
-			BlocksSyncedPct:        pct,
-			BlocksSyncedFinishTime: finish,
-			BlocksSyncedSpeed:      speed,
-			Devices:                evalComponentDevices(deviceFields),
-		})
-	}
-
-	return mdStats, nil
-}
-
-func evalStatusLine(deviceLine, statusLine string) (active, total, down, size int64, err error) {
-
-	sizeStr := strings.Fields(statusLine)[0]
-	size, err = strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	if strings.Contains(deviceLine, "raid0") || strings.Contains(deviceLine, "linear") {
-		// In the device deviceLine, only disks have a number associated with them in [].
-		total = int64(strings.Count(deviceLine, "["))
-		return total, total, 0, size, nil
-	}
-
-	if strings.Contains(deviceLine, "inactive") {
-		return 0, 0, 0, size, nil
-	}
-
-	matches := statusLineRE.FindStringSubmatch(statusLine)
-	if len(matches) != 5 {
-		return 0, 0, 0, 0, fmt.Errorf("couldn't find all the substring matches: %s", statusLine)
-	}
-
-	total, err = strconv.ParseInt(matches[2], 10, 64)
-	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	active, err = strconv.ParseInt(matches[3], 10, 64)
-	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-	down = int64(strings.Count(matches[4], "_"))
-
-	return active, total, down, size, nil
-}
-
-func evalRecoveryLine(recoveryLine string) (syncedBlocks int64, pct float64, finish float64, speed float64, err error) {
-	matches := recoveryLineBlocksRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return 0, 0, 0, 0, fmt.Errorf("unexpected recoveryLine: %s", recoveryLine)
-	}
-
-	syncedBlocks, err = strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("error parsing int from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	// Get percentage complete
-	matches = recoveryLinePctRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return syncedBlocks, 0, 0, 0, fmt.Errorf("unexpected recoveryLine matching percentage: %s", recoveryLine)
-	}
-	pct, err = strconv.ParseFloat(strings.TrimSpace(matches[1]), 64)
-	if err != nil {
-		return syncedBlocks, 0, 0, 0, fmt.Errorf("error parsing float from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	// Get time expected left to complete
-	matches = recoveryLineFinishRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return syncedBlocks, pct, 0, 0, fmt.Errorf("unexpected recoveryLine matching est. finish time: %s", recoveryLine)
-	}
-	finish, err = strconv.ParseFloat(matches[1], 64)
-	if err != nil {
-		return syncedBlocks, pct, 0, 0, fmt.Errorf("error parsing float from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	// Get recovery speed
-	matches = recoveryLineSpeedRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return syncedBlocks, pct, finish, 0, fmt.Errorf("unexpected recoveryLine matching speed: %s", recoveryLine)
-	}
-	speed, err = strconv.ParseFloat(matches[1], 64)
-	if err != nil {
-		return syncedBlocks, pct, finish, 0, fmt.Errorf("error parsing float from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	return syncedBlocks, pct, finish, speed, nil
-}
-
-func evalComponentDevices(deviceFields []string) []string {
-	mdComponentDevices := make([]string, 0)
-	if len(deviceFields) > 3 {
-		for _, field := range deviceFields[4:] {
-			match := componentDeviceRE.FindStringSubmatch(field)
-			if match == nil {
-				continue
-			}
-			mdComponentDevices = append(mdComponentDevices, match[1])
-		}
-	}
-
-	return mdComponentDevices
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-||||||| parent of 5ce8c7613 (update vendored files)
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-=======
-	statusLineRE      = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE    = regexp.MustCompile(`\((\d+)/\d+\)`)
-	componentDeviceRE = regexp.MustCompile(`(.*)\[\d+\]`)
->>>>>>> 5ce8c7613 (update vendored files)
-)
-
-// MDStat holds info parsed from /proc/mdstat.
-type MDStat struct {
-	// Name of the device.
-	Name string
-	// activity-state of the device.
-	ActivityState string
-	// Number of active disks.
-	DisksActive int64
-	// Total number of disks the device requires.
-	DisksTotal int64
-	// Number of failed disks.
-	DisksFailed int64
-	// Spare disks in the device.
-	DisksSpare int64
-	// Number of blocks the device holds.
-	BlocksTotal int64
-	// Number of blocks on the device that are in sync.
-	BlocksSynced int64
-	// Name of md component devices
-	Devices []string
-}
-
-// MDStat parses an mdstat-file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.  More information available here:
-// https://raid.wiki.kernel.org/index.php/Mdstat
-func (fs FS) MDStat() ([]MDStat, error) {
-	data, err := ioutil.ReadFile(fs.proc.Path("mdstat"))
-	if err != nil {
-		return nil, err
-	}
-	mdstat, err := parseMDStat(data)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing mdstat %q: %w", fs.proc.Path("mdstat"), err)
-	}
-	return mdstat, nil
-}
-
-// parseMDStat parses data from mdstat file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.
-func parseMDStat(mdStatData []byte) ([]MDStat, error) {
-	mdStats := []MDStat{}
-	lines := strings.Split(string(mdStatData), "\n")
-
-	for i, line := range lines {
-		if strings.TrimSpace(line) == "" || line[0] == ' ' ||
-			strings.HasPrefix(line, "Personalities") ||
-			strings.HasPrefix(line, "unused") {
-			continue
-		}
-
-		deviceFields := strings.Fields(line)
-		if len(deviceFields) < 3 {
-			return nil, fmt.Errorf("not enough fields in mdline (expected at least 3): %s", line)
-		}
-		mdName := deviceFields[0] // mdx
-		state := deviceFields[2]  // active or inactive
-
-		if len(lines) <= i+3 {
-			return nil, fmt.Errorf("error parsing %q: too few lines for md device", mdName)
-		}
-
-		// Failed disks have the suffix (F) & Spare disks have the suffix (S).
-		fail := int64(strings.Count(line, "(F)"))
-		spare := int64(strings.Count(line, "(S)"))
-		active, total, size, err := evalStatusLine(lines[i], lines[i+1])
-
-		if err != nil {
-			return nil, fmt.Errorf("error parsing md device lines: %w", err)
-		}
-
-		syncLineIdx := i + 2
-		if strings.Contains(lines[i+2], "bitmap") { // skip bitmap line
-			syncLineIdx++
-		}
-
-		// If device is syncing at the moment, get the number of currently
-		// synced bytes, otherwise that number equals the size of the device.
-		syncedBlocks := size
-		recovering := strings.Contains(lines[syncLineIdx], "recovery")
-		resyncing := strings.Contains(lines[syncLineIdx], "resync")
-		checking := strings.Contains(lines[syncLineIdx], "check")
-
-		// Append recovery and resyncing state info.
-		if recovering || resyncing || checking {
-			if recovering {
-				state = "recovering"
-			} else if checking {
-				state = "checking"
-			} else {
-				state = "resyncing"
-			}
-
-			// Handle case when resync=PENDING or resync=DELAYED.
-			if strings.Contains(lines[syncLineIdx], "PENDING") ||
-				strings.Contains(lines[syncLineIdx], "DELAYED") {
-				syncedBlocks = 0
-			} else {
-				syncedBlocks, err = evalRecoveryLine(lines[syncLineIdx])
-				if err != nil {
-					return nil, fmt.Errorf("error parsing sync line in md device %q: %w", mdName, err)
-				}
-			}
-		}
-
-		mdStats = append(mdStats, MDStat{
-			Name:          mdName,
-			ActivityState: state,
-			DisksActive:   active,
-			DisksFailed:   fail,
-			DisksSpare:    spare,
-			DisksTotal:    total,
-			BlocksTotal:   size,
-			BlocksSynced:  syncedBlocks,
-			Devices:       evalComponentDevices(deviceFields),
-		})
-	}
-
-	return mdStats, nil
-}
-
-func evalStatusLine(deviceLine, statusLine string) (active, total, size int64, err error) {
-
-	sizeStr := strings.Fields(statusLine)[0]
-	size, err = strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	if strings.Contains(deviceLine, "raid0") || strings.Contains(deviceLine, "linear") {
-		// In the device deviceLine, only disks have a number associated with them in [].
-		total = int64(strings.Count(deviceLine, "["))
-		return total, total, size, nil
-	}
-
-	if strings.Contains(deviceLine, "inactive") {
-		return 0, 0, size, nil
-	}
-
-	matches := statusLineRE.FindStringSubmatch(statusLine)
-	if len(matches) != 4 {
-		return 0, 0, 0, fmt.Errorf("couldn't find all the substring matches: %s", statusLine)
-	}
-
-	total, err = strconv.ParseInt(matches[2], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	active, err = strconv.ParseInt(matches[3], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	return active, total, size, nil
-}
-
-func evalRecoveryLine(recoveryLine string) (syncedBlocks int64, err error) {
-	matches := recoveryLineRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return 0, fmt.Errorf("unexpected recoveryLine: %s", recoveryLine)
-	}
-
-	syncedBlocks, err = strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing int from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	return syncedBlocks, nil
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func evalComponentDevices(deviceFields []string) []string {
-	mdComponentDevices := make([]string, 0)
-	if len(deviceFields) > 3 {
-		for _, field := range deviceFields[4:] {
-			match := componentDeviceRE.FindStringSubmatch(field)
-			if match == nil {
-				continue
-			}
-			mdComponentDevices = append(mdComponentDevices, match[1])
-		}
-	}
-
-	return mdComponentDevices
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-||||||| parent of 6b7ce455e (update vendored files)
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-=======
-	statusLineRE      = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE    = regexp.MustCompile(`\((\d+)/\d+\)`)
-	componentDeviceRE = regexp.MustCompile(`(.*)\[\d+\]`)
->>>>>>> 6b7ce455e (update vendored files)
-)
-
-// MDStat holds info parsed from /proc/mdstat.
-type MDStat struct {
-	// Name of the device.
-	Name string
-	// activity-state of the device.
-	ActivityState string
-	// Number of active disks.
-	DisksActive int64
-	// Total number of disks the device requires.
-	DisksTotal int64
-	// Number of failed disks.
-	DisksFailed int64
-	// Spare disks in the device.
-	DisksSpare int64
-	// Number of blocks the device holds.
-	BlocksTotal int64
-	// Number of blocks on the device that are in sync.
-	BlocksSynced int64
-	// Name of md component devices
-	Devices []string
-}
-
-// MDStat parses an mdstat-file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.  More information available here:
-// https://raid.wiki.kernel.org/index.php/Mdstat
-func (fs FS) MDStat() ([]MDStat, error) {
-	data, err := ioutil.ReadFile(fs.proc.Path("mdstat"))
-	if err != nil {
-		return nil, err
-	}
-	mdstat, err := parseMDStat(data)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing mdstat %q: %w", fs.proc.Path("mdstat"), err)
-	}
-	return mdstat, nil
-}
-
-// parseMDStat parses data from mdstat file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.
-func parseMDStat(mdStatData []byte) ([]MDStat, error) {
-	mdStats := []MDStat{}
-	lines := strings.Split(string(mdStatData), "\n")
-
-	for i, line := range lines {
-		if strings.TrimSpace(line) == "" || line[0] == ' ' ||
-			strings.HasPrefix(line, "Personalities") ||
-			strings.HasPrefix(line, "unused") {
-			continue
-		}
-
-		deviceFields := strings.Fields(line)
-		if len(deviceFields) < 3 {
-			return nil, fmt.Errorf("not enough fields in mdline (expected at least 3): %s", line)
-		}
-		mdName := deviceFields[0] // mdx
-		state := deviceFields[2]  // active or inactive
-
-		if len(lines) <= i+3 {
-			return nil, fmt.Errorf("error parsing %q: too few lines for md device", mdName)
-		}
-
-		// Failed disks have the suffix (F) & Spare disks have the suffix (S).
-		fail := int64(strings.Count(line, "(F)"))
-		spare := int64(strings.Count(line, "(S)"))
-		active, total, size, err := evalStatusLine(lines[i], lines[i+1])
-
-		if err != nil {
-			return nil, fmt.Errorf("error parsing md device lines: %w", err)
-		}
-
-		syncLineIdx := i + 2
-		if strings.Contains(lines[i+2], "bitmap") { // skip bitmap line
-			syncLineIdx++
-		}
-
-		// If device is syncing at the moment, get the number of currently
-		// synced bytes, otherwise that number equals the size of the device.
-		syncedBlocks := size
-		recovering := strings.Contains(lines[syncLineIdx], "recovery")
-		resyncing := strings.Contains(lines[syncLineIdx], "resync")
-		checking := strings.Contains(lines[syncLineIdx], "check")
-
-		// Append recovery and resyncing state info.
-		if recovering || resyncing || checking {
-			if recovering {
-				state = "recovering"
-			} else if checking {
-				state = "checking"
-			} else {
-				state = "resyncing"
-			}
-
-			// Handle case when resync=PENDING or resync=DELAYED.
-			if strings.Contains(lines[syncLineIdx], "PENDING") ||
-				strings.Contains(lines[syncLineIdx], "DELAYED") {
-				syncedBlocks = 0
-			} else {
-				syncedBlocks, err = evalRecoveryLine(lines[syncLineIdx])
-				if err != nil {
-					return nil, fmt.Errorf("error parsing sync line in md device %q: %w", mdName, err)
-				}
-			}
-		}
-
-		mdStats = append(mdStats, MDStat{
-			Name:          mdName,
-			ActivityState: state,
-			DisksActive:   active,
-			DisksFailed:   fail,
-			DisksSpare:    spare,
-			DisksTotal:    total,
-			BlocksTotal:   size,
-			BlocksSynced:  syncedBlocks,
-			Devices:       evalComponentDevices(deviceFields),
-		})
-	}
-
-	return mdStats, nil
-}
-
-func evalStatusLine(deviceLine, statusLine string) (active, total, size int64, err error) {
-
-	sizeStr := strings.Fields(statusLine)[0]
-	size, err = strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	if strings.Contains(deviceLine, "raid0") || strings.Contains(deviceLine, "linear") {
-		// In the device deviceLine, only disks have a number associated with them in [].
-		total = int64(strings.Count(deviceLine, "["))
-		return total, total, size, nil
-	}
-
-	if strings.Contains(deviceLine, "inactive") {
-		return 0, 0, size, nil
-	}
-
-	matches := statusLineRE.FindStringSubmatch(statusLine)
-	if len(matches) != 4 {
-		return 0, 0, 0, fmt.Errorf("couldn't find all the substring matches: %s", statusLine)
-	}
-
-	total, err = strconv.ParseInt(matches[2], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	active, err = strconv.ParseInt(matches[3], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	return active, total, size, nil
-}
-
-func evalRecoveryLine(recoveryLine string) (syncedBlocks int64, err error) {
-	matches := recoveryLineRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return 0, fmt.Errorf("unexpected recoveryLine: %s", recoveryLine)
-	}
-
-	syncedBlocks, err = strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing int from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	return syncedBlocks, nil
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func evalComponentDevices(deviceFields []string) []string {
-	mdComponentDevices := make([]string, 0)
-	if len(deviceFields) > 3 {
-		for _, field := range deviceFields[4:] {
-			match := componentDeviceRE.FindStringSubmatch(field)
-			if match == nil {
-				continue
-			}
-			mdComponentDevices = append(mdComponentDevices, match[1])
-		}
-	}
-
-	return mdComponentDevices
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-=======
-	statusLineRE      = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE    = regexp.MustCompile(`\((\d+)/\d+\)`)
-	componentDeviceRE = regexp.MustCompile(`(.*)\[\d+\]`)
->>>>>>> 4d7e5ad26 (update vendored files)
-)
-
-// MDStat holds info parsed from /proc/mdstat.
-type MDStat struct {
-	// Name of the device.
-	Name string
-	// activity-state of the device.
-	ActivityState string
-	// Number of active disks.
-	DisksActive int64
-	// Total number of disks the device requires.
-	DisksTotal int64
-	// Number of failed disks.
-	DisksFailed int64
-	// Spare disks in the device.
-	DisksSpare int64
-	// Number of blocks the device holds.
-	BlocksTotal int64
-	// Number of blocks on the device that are in sync.
-	BlocksSynced int64
-	// Name of md component devices
-	Devices []string
-}
-
-// MDStat parses an mdstat-file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.  More information available here:
-// https://raid.wiki.kernel.org/index.php/Mdstat
-func (fs FS) MDStat() ([]MDStat, error) {
-	data, err := ioutil.ReadFile(fs.proc.Path("mdstat"))
-	if err != nil {
-		return nil, err
-	}
-	mdstat, err := parseMDStat(data)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing mdstat %q: %w", fs.proc.Path("mdstat"), err)
-	}
-	return mdstat, nil
-}
-
-// parseMDStat parses data from mdstat file (/proc/mdstat) and returns a slice of
-// structs containing the relevant info.
-func parseMDStat(mdStatData []byte) ([]MDStat, error) {
-	mdStats := []MDStat{}
-	lines := strings.Split(string(mdStatData), "\n")
-
-	for i, line := range lines {
-		if strings.TrimSpace(line) == "" || line[0] == ' ' ||
-			strings.HasPrefix(line, "Personalities") ||
-			strings.HasPrefix(line, "unused") {
-			continue
-		}
-
-		deviceFields := strings.Fields(line)
-		if len(deviceFields) < 3 {
-			return nil, fmt.Errorf("not enough fields in mdline (expected at least 3): %s", line)
-		}
-		mdName := deviceFields[0] // mdx
-		state := deviceFields[2]  // active or inactive
-
-		if len(lines) <= i+3 {
-			return nil, fmt.Errorf("error parsing %q: too few lines for md device", mdName)
-		}
-
-		// Failed disks have the suffix (F) & Spare disks have the suffix (S).
-		fail := int64(strings.Count(line, "(F)"))
-		spare := int64(strings.Count(line, "(S)"))
-		active, total, size, err := evalStatusLine(lines[i], lines[i+1])
-
-		if err != nil {
-			return nil, fmt.Errorf("error parsing md device lines: %w", err)
-		}
-
-		syncLineIdx := i + 2
-		if strings.Contains(lines[i+2], "bitmap") { // skip bitmap line
-			syncLineIdx++
-		}
-
-		// If device is syncing at the moment, get the number of currently
-		// synced bytes, otherwise that number equals the size of the device.
-		syncedBlocks := size
-		recovering := strings.Contains(lines[syncLineIdx], "recovery")
-		resyncing := strings.Contains(lines[syncLineIdx], "resync")
-		checking := strings.Contains(lines[syncLineIdx], "check")
-
-		// Append recovery and resyncing state info.
-		if recovering || resyncing || checking {
-			if recovering {
-				state = "recovering"
-			} else if checking {
-				state = "checking"
-			} else {
-				state = "resyncing"
-			}
-
-			// Handle case when resync=PENDING or resync=DELAYED.
-			if strings.Contains(lines[syncLineIdx], "PENDING") ||
-				strings.Contains(lines[syncLineIdx], "DELAYED") {
-				syncedBlocks = 0
-			} else {
-				syncedBlocks, err = evalRecoveryLine(lines[syncLineIdx])
-				if err != nil {
-					return nil, fmt.Errorf("error parsing sync line in md device %q: %w", mdName, err)
-				}
-			}
-		}
-
-		mdStats = append(mdStats, MDStat{
-			Name:          mdName,
-			ActivityState: state,
-			DisksActive:   active,
-			DisksFailed:   fail,
-			DisksSpare:    spare,
-			DisksTotal:    total,
-			BlocksTotal:   size,
-			BlocksSynced:  syncedBlocks,
-			Devices:       evalComponentDevices(deviceFields),
-		})
-	}
-
-	return mdStats, nil
-}
-
-func evalStatusLine(deviceLine, statusLine string) (active, total, size int64, err error) {
-
-	sizeStr := strings.Fields(statusLine)[0]
-	size, err = strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	if strings.Contains(deviceLine, "raid0") || strings.Contains(deviceLine, "linear") {
-		// In the device deviceLine, only disks have a number associated with them in [].
-		total = int64(strings.Count(deviceLine, "["))
-		return total, total, size, nil
-	}
-
-	if strings.Contains(deviceLine, "inactive") {
-		return 0, 0, size, nil
-	}
-
-	matches := statusLineRE.FindStringSubmatch(statusLine)
-	if len(matches) != 4 {
-		return 0, 0, 0, fmt.Errorf("couldn't find all the substring matches: %s", statusLine)
-	}
-
-	total, err = strconv.ParseInt(matches[2], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	active, err = strconv.ParseInt(matches[3], 10, 64)
-	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unexpected statusLine %q: %w", statusLine, err)
-	}
-
-	return active, total, size, nil
-}
-
-func evalRecoveryLine(recoveryLine string) (syncedBlocks int64, err error) {
-	matches := recoveryLineRE.FindStringSubmatch(recoveryLine)
-	if len(matches) != 2 {
-		return 0, fmt.Errorf("unexpected recoveryLine: %s", recoveryLine)
-	}
-
-	syncedBlocks, err = strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing int from recoveryLine %q: %w", recoveryLine, err)
-	}
-
-	return syncedBlocks, nil
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func evalComponentDevices(deviceFields []string) []string {
-	mdComponentDevices := make([]string, 0)
-	if len(deviceFields) > 3 {
-		for _, field := range deviceFields[4:] {
-			match := componentDeviceRE.FindStringSubmatch(field)
-			if match == nil {
-				continue
-			}
-			mdComponentDevices = append(mdComponentDevices, match[1])
-		}
-	}
-
-	return mdComponentDevices
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	statusLineRE   = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[[U_]+\]`)
-	recoveryLineRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-=======
-	statusLineRE         = regexp.MustCompile(`(\d+) blocks .*\[(\d+)/(\d+)\] \[([U_]+)\]`)
-	recoveryLineBlocksRE = regexp.MustCompile(`\((\d+)/\d+\)`)
-	recoveryLinePctRE    = regexp.MustCompile(`= (.+)%`)
-	recoveryLineFinishRE = regexp.MustCompile(`finish=(.+)min`)
-	recoveryLineSpeedRE  = regexp.MustCompile(`speed=(.+)[A-Z]`)
-	componentDeviceRE    = regexp.MustCompile(`(.*)\[\d+\]`)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-)
-
-// MDStat holds info parsed from /proc/mdstat.
-type MDStat struct {
-	// Name of the device.
-	Name string
+	// raid type of the device.
+	Type string
 	// activity-state of the device.
 	ActivityState string
 	// Number of active disks.
@@ -916,8 +79,8 @@ type MDStat struct {
 	BlocksSyncedFinishTime float64
 	// current sync speed (in Kilobytes/sec)
 	BlocksSyncedSpeed float64
-	// Name of md component devices
-	Devices []string
+	// component devices
+	Devices []MDStatComponent
 }
 
 // MDStat parses an mdstat-file (/proc/mdstat) and returns a slice of
@@ -938,13 +101,24 @@ func (fs FS) MDStat() ([]MDStat, error) {
 // parseMDStat parses data from mdstat file (/proc/mdstat) and returns a slice of
 // structs containing the relevant info.
 func parseMDStat(mdStatData []byte) ([]MDStat, error) {
+	// TODO:
+	// - parse global hotspares from the "unused devices" line.
 	mdStats := []MDStat{}
 	lines := strings.Split(string(mdStatData), "\n")
+	knownRaidTypes := make(map[string]bool)
 
 	for i, line := range lines {
 		if strings.TrimSpace(line) == "" || line[0] == ' ' ||
-			strings.HasPrefix(line, "Personalities") ||
 			strings.HasPrefix(line, "unused") {
+			continue
+		}
+		// Personalities : [linear] [multipath] [raid0] [raid1] [raid6] [raid5] [raid4] [raid10]
+		if len(knownRaidTypes) == 0 && strings.HasPrefix(line, personalitiesPrefix) {
+			personalities := strings.Fields(line[len(personalitiesPrefix):])
+			for _, word := range personalities {
+				word := word[1 : len(word)-1]
+				knownRaidTypes[word] = true
+			}
 			continue
 		}
 
@@ -953,13 +127,26 @@ func parseMDStat(mdStatData []byte) ([]MDStat, error) {
 			return nil, fmt.Errorf("%w: Expected 3+ lines, got %q", ErrFileParse, line)
 		}
 		mdName := deviceFields[0] // mdx
-		state := deviceFields[2]  // active or inactive
+		state := deviceFields[2]  // active, inactive, broken
+
+		mdType := "unknown" // raid1, raid5, etc.
+		var deviceStartIndex int
+		if len(deviceFields) > 3 { // mdType may be in the 3rd or 4th field
+			if isRaidType(deviceFields[3], knownRaidTypes) {
+				mdType = deviceFields[3]
+				deviceStartIndex = 4
+			} else if len(deviceFields) > 4 && isRaidType(deviceFields[4], knownRaidTypes) {
+				// if the 3rd field is (...), the 4th field is the mdType
+				mdType = deviceFields[4]
+				deviceStartIndex = 5
+			}
+		}
 
 		if len(lines) <= i+3 {
 			return nil, fmt.Errorf("%w: Too few lines for md device: %q", ErrFileParse, mdName)
 		}
 
-		// Failed disks have the suffix (F) & Spare disks have the suffix (S).
+		// Failed (Faulty) disks have the suffix (F) & Spare disks have the suffix (S).
 		fail := int64(strings.Count(line, "(F)"))
 		spare := int64(strings.Count(line, "(S)"))
 		active, total, down, size, err := evalStatusLine(lines[i], lines[i+1])
@@ -981,16 +168,20 @@ func parseMDStat(mdStatData []byte) ([]MDStat, error) {
 		finish := float64(0)
 		pct := float64(0)
 		recovering := strings.Contains(lines[syncLineIdx], "recovery")
+		reshaping := strings.Contains(lines[syncLineIdx], "reshape")
 		resyncing := strings.Contains(lines[syncLineIdx], "resync")
 		checking := strings.Contains(lines[syncLineIdx], "check")
 
 		// Append recovery and resyncing state info.
-		if recovering || resyncing || checking {
-			if recovering {
+		if recovering || resyncing || checking || reshaping {
+			switch {
+			case recovering:
 				state = "recovering"
-			} else if checking {
+			case reshaping:
+				state = "reshaping"
+			case checking:
 				state = "checking"
-			} else {
+			default:
 				state = "resyncing"
 			}
 
@@ -1006,8 +197,14 @@ func parseMDStat(mdStatData []byte) ([]MDStat, error) {
 			}
 		}
 
+		devices, err := evalComponentDevices(deviceFields[deviceStartIndex:])
+		if err != nil {
+			return nil, fmt.Errorf("error parsing components in md device %q: %w", mdName, err)
+		}
+
 		mdStats = append(mdStats, MDStat{
 			Name:                   mdName,
+			Type:                   mdType,
 			ActivityState:          state,
 			DisksActive:            active,
 			DisksFailed:            fail,
@@ -1020,14 +217,24 @@ func parseMDStat(mdStatData []byte) ([]MDStat, error) {
 			BlocksSyncedPct:        pct,
 			BlocksSyncedFinishTime: finish,
 			BlocksSyncedSpeed:      speed,
-			Devices:                evalComponentDevices(deviceFields),
+			Devices:                devices,
 		})
 	}
 
 	return mdStats, nil
 }
 
+// check if a string's format is like the mdType
+// Rule 1: mdType should not be like (...)
+// Rule 2: mdType should not be like sda[0]
+// .
+func isRaidType(mdType string, knownRaidTypes map[string]bool) bool {
+	_, ok := knownRaidTypes[mdType]
+	return !strings.ContainsAny(mdType, "([") && ok
+}
+
 func evalStatusLine(deviceLine, statusLine string) (active, total, down, size int64, err error) {
+	// e.g. 523968 blocks super 1.2 [4/4] [UUUU]
 	statusFields := strings.Fields(statusLine)
 	if len(statusFields) < 1 {
 		return 0, 0, 0, 0, fmt.Errorf("%w: Unexpected statusline %q: %w", ErrFileParse, statusLine, err)
@@ -1085,12 +292,6 @@ func evalRecoveryLine(recoveryLine string) (blocksSynced int64, blocksToBeSynced
 		return blocksSynced, 0, 0, 0, 0, fmt.Errorf("%w: Unable to parse recovery to be synced blocks %q: %w", ErrFileParse, matches[2], err)
 	}
 
-<<<<<<< HEAD
-	return syncedBlocks, nil
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return syncedBlocks, nil
-=======
 	// Get percentage complete
 	matches = recoveryLinePctRE.FindStringSubmatch(recoveryLine)
 	if len(matches) != 2 {
@@ -1124,18 +325,29 @@ func evalRecoveryLine(recoveryLine string) (blocksSynced int64, blocksToBeSynced
 	return blocksSynced, blocksToBeSynced, pct, finish, speed, nil
 }
 
-func evalComponentDevices(deviceFields []string) []string {
-	mdComponentDevices := make([]string, 0)
-	if len(deviceFields) > 3 {
-		for _, field := range deviceFields[4:] {
-			match := componentDeviceRE.FindStringSubmatch(field)
-			if match == nil {
-				continue
-			}
-			mdComponentDevices = append(mdComponentDevices, match[1])
+func evalComponentDevices(deviceFields []string) ([]MDStatComponent, error) {
+	mdComponentDevices := make([]MDStatComponent, 0)
+	for _, field := range deviceFields {
+		match := componentDeviceRE.FindStringSubmatch(field)
+		if match == nil {
+			continue
 		}
+		descriptorIndex, err := strconv.ParseInt(match[2], 10, 32)
+		if err != nil {
+			return mdComponentDevices, fmt.Errorf("error parsing int from device %q: %w", match[2], err)
+		}
+		mdComponentDevices = append(mdComponentDevices, MDStatComponent{
+			Name:            match[1],
+			DescriptorIndex: int32(descriptorIndex),
+			// match may contain one or more of these
+			// https://github.com/torvalds/linux/blob/7ec462100ef9142344ddbf86f2c3008b97acddbe/drivers/md/md.c#L8376-L8392
+			Faulty:      strings.Contains(match[3], "(F)"),
+			Spare:       strings.Contains(match[3], "(S)"),
+			Journal:     strings.Contains(match[3], "(J)"),
+			Replacement: strings.Contains(match[3], "(R)"),
+			WriteMostly: strings.Contains(match[3], "(W)"),
+		})
 	}
 
-	return mdComponentDevices
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return mdComponentDevices, nil
 }

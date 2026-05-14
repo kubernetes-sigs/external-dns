@@ -13,28 +13,27 @@
 // limitations under the License.
 syntax = "proto3";
 
-import "type/v1beta1/selector.proto";
-
 // $schema: istio.security.v1beta1.PeerAuthentication
 // $title: PeerAuthentication
 // $description: Peer authentication configuration for workloads.
 // $location: https://istio.io/docs/reference/config/security/peer_authentication.html
 // $aliases: [/docs/reference/config/security/v1beta1/peer_authentication]
 
-package istio.security.v1beta1;
-
-option go_package="istio.io/api/security/v1beta1";
-
-// {{< warning >}}
-// Development of PeerAuthentication is currently frozen and likely to be replaced in Ambient.
-// {{< /warning >}}
-// PeerAuthentication defines how traffic will be tunneled (or not) to the sidecar.
+// PeerAuthentication defines mutual TLS (mTLS) requirements for incoming connections.
+//
+// In sidecar mode, PeerAuthentication determines whether or not mTLS is allowed or required
+// for connections to an Envoy proxy sidecar.
+//
+// In ambient mode, security is transparently enabled for a pod by the ztunnel node agent.
+// (Traffic between proxies uses the HBONE protocol, which includes encryption with mTLS.)
+// Because of this, `DISABLE` mode is not supported.
+// `STRICT` mode is useful to ensure that connections that bypass the mesh are not possible.
 //
 // Examples:
 //
-// Policy to allow mTLS traffic for all workloads under namespace `foo`:
+// Policy to require mTLS traffic for all workloads under namespace `foo`:
 // ```yaml
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: default
@@ -45,10 +44,12 @@ option go_package="istio.io/api/security/v1beta1";
 // ```
 // For mesh level, put the policy in root-namespace according to your Istio installation.
 //
+// Note: PeerAuthentication policies with workload selectors are ignored when deployed in the root namespace.
+//
 // Policies to allow both mTLS and plaintext traffic for all workloads under namespace `foo`, but
 // require mTLS for workload `finance`.
 // ```yaml
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: default
@@ -57,7 +58,7 @@ option go_package="istio.io/api/security/v1beta1";
 //   mtls:
 //     mode: PERMISSIVE
 // ---
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: finance
@@ -73,7 +74,7 @@ option go_package="istio.io/api/security/v1beta1";
 // plaintext. Note the port value in the `portLevelMtls` field refers to the port
 // of the workload, not the port of the Kubernetes service.
 // ```yaml
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: default
@@ -91,7 +92,7 @@ option go_package="istio.io/api/security/v1beta1";
 // Policy that inherits mTLS mode from namespace (or mesh) settings, and disables
 // mTLS for workload port `8080`.
 // ```yaml
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: default
@@ -106,10 +107,15 @@ option go_package="istio.io/api/security/v1beta1";
 //     8080:
 //       mode: DISABLE
 // ```
-//
+package istio.security.v1beta1;
+
+import "type/v1beta1/selector.proto";
+
+option go_package = "istio.io/api/security/v1beta1";
+
 // <!-- crd generation tags
 // +cue-gen:PeerAuthentication:groupName:security.istio.io
-// +cue-gen:PeerAuthentication:version:v1beta1
+// +cue-gen:PeerAuthentication:versions:v1,v1beta1
 // +cue-gen:PeerAuthentication:storageVersion
 // +cue-gen:PeerAuthentication:annotations:helm.sh/resource-policy=keep
 // +cue-gen:PeerAuthentication:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
@@ -130,9 +136,7 @@ option go_package="istio.io/api/security/v1beta1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="portLevelMtls requires selector",rule="has(self.portLevelMtls) ? self.index({}, selector, matchLabels).size() > 0 : true"
 message PeerAuthentication {
   // The selector determines the workloads to apply the PeerAuthentication on. The selector will match with workloads in the
   // same namespace as the policy. If the policy is in the root namespace, the selector will additionally match with workloads in all namespace.
@@ -167,5 +171,7 @@ message PeerAuthentication {
   // Port specific mutual TLS settings. These only apply when a workload selector
   // is specified. The port refers to the port of the workload, not the port of the
   // Kubernetes service.
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="self.all(key, 0 < int(key) && int(key) <= 65535)"
+  // +kubebuilder:validation:MinProperties=1
   map<uint32, MutualTLS> port_level_mtls = 3;
 }

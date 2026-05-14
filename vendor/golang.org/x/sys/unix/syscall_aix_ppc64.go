@@ -2,77 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 //go:build aix && ppc64
-// +build aix,ppc64
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// +build aix
-// +build ppc64
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// +build aix
-// +build ppc64
-=======
-//go:build aix && ppc64
-// +build aix,ppc64
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// +build aix
-// +build ppc64
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// +build aix
-// +build ppc64
-=======
-//go:build aix && ppc64
-// +build aix,ppc64
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// +build aix
-// +build ppc64
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// +build aix
-// +build ppc64
-=======
-//go:build aix && ppc64
-// +build aix,ppc64
->>>>>>> 4d7e5ad26 (update vendored files)
 
 package unix
 
 //sysnb	Getrlimit(resource int, rlim *Rlimit) (err error)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// +build aix
-// +build ppc64
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// +build aix
-// +build ppc64
-=======
-//go:build aix && ppc64
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-package unix
-
-//sysnb	Getrlimit(resource int, rlim *Rlimit) (err error)
-<<<<<<< HEAD
-//sysnb	Setrlimit(resource int, rlim *Rlimit) (err error)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//sysnb	Setrlimit(resource int, rlim *Rlimit) (err error)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //sys	Seek(fd int, offset int64, whence int) (off int64, err error) = lseek
 
 //sys	mmap(addr uintptr, length uintptr, prot int, flags int, fd int, offset int64) (xaddr uintptr, err error) = mmap64

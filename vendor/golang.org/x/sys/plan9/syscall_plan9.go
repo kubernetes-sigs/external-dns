@@ -128,32 +128,10 @@ func Pipe(p []int) (err error) {
 	}
 	var pp [2]int32
 	err = pipe(&pp)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	p[0] = int(pp[0])
-	p[1] = int(pp[1])
-||||||| parent of 6b7ce455e (update vendored files)
-=======
 	if err == nil {
 		p[0] = int(pp[0])
 		p[1] = int(pp[1])
 	}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	if err == nil {
-		p[0] = int(pp[0])
-		p[1] = int(pp[1])
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	if err == nil {
-		p[0] = int(pp[0])
-		p[1] = int(pp[1])
-	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

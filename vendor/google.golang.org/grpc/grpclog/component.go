@@ -29,74 +29,6 @@ type componentData struct {
 
 var cache = map[string]*componentData{}
 
-<<<<<<< HEAD
-func (c *componentData) InfoDepth(depth int, args ...interface{}) {
-	args = append([]interface{}{"[" + string(c.name) + "]"}, args...)
-	grpclog.InfoDepth(depth+1, args...)
-}
-
-func (c *componentData) WarningDepth(depth int, args ...interface{}) {
-	args = append([]interface{}{"[" + string(c.name) + "]"}, args...)
-	grpclog.WarningDepth(depth+1, args...)
-}
-
-func (c *componentData) ErrorDepth(depth int, args ...interface{}) {
-	args = append([]interface{}{"[" + string(c.name) + "]"}, args...)
-	grpclog.ErrorDepth(depth+1, args...)
-}
-
-func (c *componentData) FatalDepth(depth int, args ...interface{}) {
-	args = append([]interface{}{"[" + string(c.name) + "]"}, args...)
-	grpclog.FatalDepth(depth+1, args...)
-}
-
-func (c *componentData) Info(args ...interface{}) {
-	c.InfoDepth(1, args...)
-}
-
-func (c *componentData) Warning(args ...interface{}) {
-	c.WarningDepth(1, args...)
-}
-
-func (c *componentData) Error(args ...interface{}) {
-	c.ErrorDepth(1, args...)
-}
-
-func (c *componentData) Fatal(args ...interface{}) {
-	c.FatalDepth(1, args...)
-}
-
-func (c *componentData) Infof(format string, args ...interface{}) {
-	c.InfoDepth(1, fmt.Sprintf(format, args...))
-}
-
-func (c *componentData) Warningf(format string, args ...interface{}) {
-	c.WarningDepth(1, fmt.Sprintf(format, args...))
-}
-
-func (c *componentData) Errorf(format string, args ...interface{}) {
-	c.ErrorDepth(1, fmt.Sprintf(format, args...))
-}
-
-func (c *componentData) Fatalf(format string, args ...interface{}) {
-	c.FatalDepth(1, fmt.Sprintf(format, args...))
-}
-
-func (c *componentData) Infoln(args ...interface{}) {
-	c.InfoDepth(1, args...)
-}
-
-func (c *componentData) Warningln(args ...interface{}) {
-	c.WarningDepth(1, args...)
-}
-
-func (c *componentData) Errorln(args ...interface{}) {
-	c.ErrorDepth(1, args...)
-}
-
-func (c *componentData) Fatalln(args ...interface{}) {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 func (c *componentData) InfoDepth(depth int, args ...any) {
 	args = append([]any{"[" + string(c.name) + "]"}, args...)
 	InfoDepth(depth+1, args...)
@@ -162,7 +94,6 @@ func (c *componentData) Errorln(args ...any) {
 }
 
 func (c *componentData) Fatalln(args ...any) {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	c.FatalDepth(1, args...)
 }
 

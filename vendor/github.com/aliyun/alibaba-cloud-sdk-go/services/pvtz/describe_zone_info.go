@@ -21,10 +21,6 @@ import (
 )
 
 // DescribeZoneInfo invokes the pvtz.DescribeZoneInfo API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
 	response = CreateDescribeZoneInfoResponse()
 	err = client.DoAction(request, response)
@@ -83,22 +79,26 @@ type DescribeZoneInfoRequest struct {
 // DescribeZoneInfoResponse is the response struct for api DescribeZoneInfo
 type DescribeZoneInfoResponse struct {
 	*responses.BaseResponse
-	RequestId       string                     `json:"RequestId" xml:"RequestId"`
-	ZoneId          string                     `json:"ZoneId" xml:"ZoneId"`
-	ZoneName        string                     `json:"ZoneName" xml:"ZoneName"`
-	Remark          string                     `json:"Remark" xml:"Remark"`
-	RecordCount     int                        `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string                     `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64                      `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime      string                     `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp int64                      `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	IsPtr           bool                       `json:"IsPtr" xml:"IsPtr"`
-	ProxyPattern    string                     `json:"ProxyPattern" xml:"ProxyPattern"`
-	SlaveDns        bool                       `json:"SlaveDns" xml:"SlaveDns"`
-	ResourceGroupId string                     `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneType        string                     `json:"ZoneType" xml:"ZoneType"`
-	ZoneTag         string                     `json:"ZoneTag" xml:"ZoneTag"`
-	BindVpcs        BindVpcsInDescribeZoneInfo `json:"BindVpcs" xml:"BindVpcs"`
+	RequestId        string                     `json:"RequestId" xml:"RequestId"`
+	SlaveDns         bool                       `json:"SlaveDns" xml:"SlaveDns"`
+	ResourceGroupId  string                     `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	ZoneId           string                     `json:"ZoneId" xml:"ZoneId"`
+	ProxyPattern     string                     `json:"ProxyPattern" xml:"ProxyPattern"`
+	CreateTime       string                     `json:"CreateTime" xml:"CreateTime"`
+	ZoneType         string                     `json:"ZoneType" xml:"ZoneType"`
+	Remark           string                     `json:"Remark" xml:"Remark"`
+	ZoneName         string                     `json:"ZoneName" xml:"ZoneName"`
+	ZoneTag          string                     `json:"ZoneTag" xml:"ZoneTag"`
+	UpdateTime       string                     `json:"UpdateTime" xml:"UpdateTime"`
+	UpdateTimestamp  int64                      `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	RecordCount      int                        `json:"RecordCount" xml:"RecordCount"`
+	CreateTimestamp  int64                      `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	IsPtr            bool                       `json:"IsPtr" xml:"IsPtr"`
+	DnsGroup         string                     `json:"DnsGroup" xml:"DnsGroup"`
+	Creator          string                     `json:"Creator" xml:"Creator"`
+	CreatorType      string                     `json:"CreatorType" xml:"CreatorType"`
+	DnsGroupChanging bool                       `json:"DnsGroupChanging" xml:"DnsGroupChanging"`
+	BindVpcs         BindVpcsInDescribeZoneInfo `json:"BindVpcs" xml:"BindVpcs"`
 }
 
 // CreateDescribeZoneInfoRequest creates a request to invoke DescribeZoneInfo API
@@ -108,196 +108,6 @@ func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
-	response = CreateDescribeZoneInfoResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZoneInfoWithChan invokes the pvtz.DescribeZoneInfo API asynchronously
-func (client *Client) DescribeZoneInfoWithChan(request *DescribeZoneInfoRequest) (<-chan *DescribeZoneInfoResponse, <-chan error) {
-	responseChan := make(chan *DescribeZoneInfoResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZoneInfo(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZoneInfoWithCallback invokes the pvtz.DescribeZoneInfo API asynchronously
-func (client *Client) DescribeZoneInfoWithCallback(request *DescribeZoneInfoRequest, callback func(response *DescribeZoneInfoResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZoneInfoResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZoneInfo(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZoneInfoRequest is the request struct for api DescribeZoneInfo
-type DescribeZoneInfoRequest struct {
-	*requests.RpcRequest
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	ZoneId       string `position:"Query" name:"ZoneId"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// DescribeZoneInfoResponse is the response struct for api DescribeZoneInfo
-type DescribeZoneInfoResponse struct {
-	*responses.BaseResponse
-	RequestId       string                     `json:"RequestId" xml:"RequestId"`
-	ZoneId          string                     `json:"ZoneId" xml:"ZoneId"`
-	ZoneName        string                     `json:"ZoneName" xml:"ZoneName"`
-	Remark          string                     `json:"Remark" xml:"Remark"`
-	RecordCount     int                        `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string                     `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64                      `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime      string                     `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp int64                      `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	IsPtr           bool                       `json:"IsPtr" xml:"IsPtr"`
-	ProxyPattern    string                     `json:"ProxyPattern" xml:"ProxyPattern"`
-	SlaveDns        bool                       `json:"SlaveDns" xml:"SlaveDns"`
-	ResourceGroupId string                     `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneType        string                     `json:"ZoneType" xml:"ZoneType"`
-	ZoneTag         string                     `json:"ZoneTag" xml:"ZoneTag"`
-	BindVpcs        BindVpcsInDescribeZoneInfo `json:"BindVpcs" xml:"BindVpcs"`
-}
-
-// CreateDescribeZoneInfoRequest creates a request to invoke DescribeZoneInfo API
-func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
-	request = &DescribeZoneInfoRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
-	response = CreateDescribeZoneInfoResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeZoneInfoWithChan invokes the pvtz.DescribeZoneInfo API asynchronously
-func (client *Client) DescribeZoneInfoWithChan(request *DescribeZoneInfoRequest) (<-chan *DescribeZoneInfoResponse, <-chan error) {
-	responseChan := make(chan *DescribeZoneInfoResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeZoneInfo(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeZoneInfoWithCallback invokes the pvtz.DescribeZoneInfo API asynchronously
-func (client *Client) DescribeZoneInfoWithCallback(request *DescribeZoneInfoRequest, callback func(response *DescribeZoneInfoResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeZoneInfoResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeZoneInfo(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeZoneInfoRequest is the request struct for api DescribeZoneInfo
-type DescribeZoneInfoRequest struct {
-	*requests.RpcRequest
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	ZoneId       string `position:"Query" name:"ZoneId"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// DescribeZoneInfoResponse is the response struct for api DescribeZoneInfo
-type DescribeZoneInfoResponse struct {
-	*responses.BaseResponse
-	RequestId       string                     `json:"RequestId" xml:"RequestId"`
-	ZoneId          string                     `json:"ZoneId" xml:"ZoneId"`
-	ZoneName        string                     `json:"ZoneName" xml:"ZoneName"`
-	Remark          string                     `json:"Remark" xml:"Remark"`
-	RecordCount     int                        `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string                     `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64                      `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime      string                     `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp int64                      `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	IsPtr           bool                       `json:"IsPtr" xml:"IsPtr"`
-	ProxyPattern    string                     `json:"ProxyPattern" xml:"ProxyPattern"`
-	SlaveDns        bool                       `json:"SlaveDns" xml:"SlaveDns"`
-	ResourceGroupId string                     `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneType        string                     `json:"ZoneType" xml:"ZoneType"`
-	ZoneTag         string                     `json:"ZoneTag" xml:"ZoneTag"`
-	BindVpcs        BindVpcsInDescribeZoneInfo `json:"BindVpcs" xml:"BindVpcs"`
-}
-
-// CreateDescribeZoneInfoRequest creates a request to invoke DescribeZoneInfo API
-func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
-	request = &DescribeZoneInfoRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

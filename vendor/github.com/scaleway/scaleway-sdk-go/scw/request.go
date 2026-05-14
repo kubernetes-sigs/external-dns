@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/scaleway/scaleway-sdk-go/errors"
 	"github.com/scaleway/scaleway-sdk-go/internal/auth"
-	"github.com/scaleway/scaleway-sdk-go/internal/errors"
 )
 
 // ScalewayRequest contains all the contents related to performing a request on the Scaleway API.
@@ -41,7 +41,7 @@ func (req *ScalewayRequest) getURL(baseURL string) (*url.URL, error) {
 
 // SetBody json marshal the given body and write the json content type
 // to the request. It also catches when body is a file.
-func (req *ScalewayRequest) SetBody(body interface{}) error {
+func (req *ScalewayRequest) SetBody(body any) error {
 	var contentType string
 	var content io.Reader
 

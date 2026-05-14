@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // TCPRouteLister helps list TCPRoutes.
@@ -30,7 +30,7 @@ import (
 type TCPRouteLister interface {
 	// List lists all TCPRoutes in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.TCPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1alpha2.TCPRoute, err error)
 	// TCPRoutes returns an object that can list and get TCPRoutes.
 	TCPRoutes(namespace string) TCPRouteNamespaceLister
 	TCPRouteListerExpansion
@@ -38,25 +38,17 @@ type TCPRouteLister interface {
 
 // tCPRouteLister implements the TCPRouteLister interface.
 type tCPRouteLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*apisv1alpha2.TCPRoute]
 }
 
 // NewTCPRouteLister returns a new TCPRouteLister.
 func NewTCPRouteLister(indexer cache.Indexer) TCPRouteLister {
-	return &tCPRouteLister{indexer: indexer}
-}
-
-// List lists all TCPRoutes in the indexer.
-func (s *tCPRouteLister) List(selector labels.Selector) (ret []*v1alpha2.TCPRoute, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.TCPRoute))
-	})
-	return ret, err
+	return &tCPRouteLister{listers.New[*apisv1alpha2.TCPRoute](indexer, apisv1alpha2.Resource("tcproute"))}
 }
 
 // TCPRoutes returns an object that can list and get TCPRoutes.
 func (s *tCPRouteLister) TCPRoutes(namespace string) TCPRouteNamespaceLister {
-	return tCPRouteNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return tCPRouteNamespaceLister{listers.NewNamespaced[*apisv1alpha2.TCPRoute](s.ResourceIndexer, namespace)}
 }
 
 // TCPRouteNamespaceLister helps list and get TCPRoutes.
@@ -64,36 +56,15 @@ func (s *tCPRouteLister) TCPRoutes(namespace string) TCPRouteNamespaceLister {
 type TCPRouteNamespaceLister interface {
 	// List lists all TCPRoutes in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.TCPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1alpha2.TCPRoute, err error)
 	// Get retrieves the TCPRoute from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.TCPRoute, error)
+	Get(name string) (*apisv1alpha2.TCPRoute, error)
 	TCPRouteNamespaceListerExpansion
 }
 
 // tCPRouteNamespaceLister implements the TCPRouteNamespaceLister
 // interface.
 type tCPRouteNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all TCPRoutes in the indexer for a given namespace.
-func (s tCPRouteNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.TCPRoute, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.TCPRoute))
-	})
-	return ret, err
-}
-
-// Get retrieves the TCPRoute from the indexer for a given namespace and name.
-func (s tCPRouteNamespaceLister) Get(name string) (*v1alpha2.TCPRoute, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("tcproute"), name)
-	}
-	return obj.(*v1alpha2.TCPRoute), nil
+	listers.ResourceIndexer[*apisv1alpha2.TCPRoute]
 }

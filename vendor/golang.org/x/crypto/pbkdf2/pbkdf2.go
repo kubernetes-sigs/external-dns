@@ -32,29 +32,7 @@ import (
 // can get a derived key for e.g. AES-256 (which needs a 32-byte key) by
 // doing:
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 //	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// 	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// 	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
-=======
-//	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// 	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// 	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
-=======
-//	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Remember to get a good random salt. At least 8 bytes is recommended by the
 // RFC.

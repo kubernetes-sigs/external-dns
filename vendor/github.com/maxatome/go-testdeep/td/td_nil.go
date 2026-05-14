@@ -24,8 +24,6 @@ var _ TestDeep = &tdNil{}
 // Nil operator checks that data is nil (or is a non-nil interface,
 // but containing a nil pointer.)
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
 //	var got *int
 //	td.Cmp(t, got, td.Nil())    // succeeds
 //	td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
@@ -97,101 +95,6 @@ var _ TestDeep = &tdNotNil{}
 //	td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
 //
 // See also [Nil], [NotEmpty] and [NotZero].
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//   var got *int
-//   td.Cmp(t, got, td.Nil())    // succeeds
-//   td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
-//   td.Cmp(t, got, (*int)(nil)) // succeeds
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   var got *int
-//   td.Cmp(t, got, td.Nil())    // succeeds
-//   td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
-//   td.Cmp(t, got, (*int)(nil)) // succeeds
-=======
-//	var got *int
-//	td.Cmp(t, got, td.Nil())    // succeeds
-//	td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
-//	td.Cmp(t, got, (*int)(nil)) // succeeds
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//
-// but:
-//
-//	var got fmt.Stringer = (*bytes.Buffer)(nil)
-//	td.Cmp(t, got, td.Nil()) // succeeds
-//	td.Cmp(t, got, nil)      // fails, as the interface is not nil
-//	got = nil
-//	td.Cmp(t, got, nil) // succeeds
-//
-// See also [Empty], [NotNil] and [Zero].
-func Nil() TestDeep {
-	return &tdNil{
-		baseOKNil: newBaseOKNil(3),
-	}
-}
-
-func (n *tdNil) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
-	if !got.IsValid() {
-		return nil
-	}
-
-	switch got.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface,
-		reflect.Map, reflect.Ptr, reflect.Slice:
-		if got.IsNil() {
-			return nil
-		}
-	}
-
-	if ctx.BooleanError {
-		return ctxerr.BooleanError
-	}
-	return ctx.CollectError(&ctxerr.Error{
-		Message:  "non-nil",
-		Got:      got,
-		Expected: n,
-	})
-}
-
-func (n *tdNil) String() string {
-	return "nil"
-}
-
-type tdNotNil struct {
-	baseOKNil
-}
-
-var _ TestDeep = &tdNotNil{}
-
-// summary(NotNil): checks that data is not nil
-// input(NotNil): nil,slice,map,ptr,chan,func
-
-// NotNil operator checks that data is not nil (or is a non-nil
-// interface, containing a non-nil pointer.)
-//
-//	got := &Person{}
-//	td.Cmp(t, got, td.NotNil()) // succeeds
-//	td.Cmp(t, got, td.Not(nil)) // succeeds too, but be careful it is first
-//	// because of got type *Person ≠ untyped nil so prefer NotNil()
-//
-// but:
-//
-<<<<<<< HEAD
-//   var got fmt.Stringer = (*bytes.Buffer)(nil)
-//   td.Cmp(t, got, td.NotNil()) // fails
-//   td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   var got fmt.Stringer = (*bytes.Buffer)(nil)
-//   td.Cmp(t, got, td.NotNil()) // fails
-//   td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
-=======
-//	var got fmt.Stringer = (*bytes.Buffer)(nil)
-//	td.Cmp(t, got, td.NotNil()) // fails
-//	td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
-//
-// See also [Nil], [NotEmpty] and [NotZero].
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NotNil() TestDeep {
 	return &tdNotNil{
 		baseOKNil: newBaseOKNil(3),

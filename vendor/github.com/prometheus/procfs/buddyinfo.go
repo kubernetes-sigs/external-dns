@@ -1,4 +1,4 @@
-// Copyright 2017 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,67 +64,15 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 
 		if bucketCount == -1 {
 			bucketCount = arraySize
-		} else {
-			if bucketCount != arraySize {
-				return nil, fmt.Errorf("%w: mismatch in number of buddyinfo buckets, previous count %d, new count %d", ErrFileParse, bucketCount, arraySize)
-			}
+		} else if bucketCount != arraySize {
+			return nil, fmt.Errorf("%w: mismatch in number of buddyinfo buckets, previous count %d, new count %d", ErrFileParse, bucketCount, arraySize)
 		}
 
 		sizes := make([]float64, arraySize)
-		for i := 0; i < arraySize; i++ {
+		for i := range arraySize {
 			sizes[i], err = strconv.ParseFloat(parts[i+4], 64)
 			if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
-=======
-				return nil, fmt.Errorf("%s: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-				return nil, fmt.Errorf("%s: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
-=======
 				return nil, fmt.Errorf("%w: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 			}
 		}
 

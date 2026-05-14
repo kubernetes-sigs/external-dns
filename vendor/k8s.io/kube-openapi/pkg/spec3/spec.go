@@ -17,26 +17,6 @@ limitations under the License.
 package spec3
 
 import (
-<<<<<<< HEAD
-	"k8s.io/kube-openapi/pkg/validation/spec"
-)
-
-// OpenAPI is an object that describes an API and conforms to the OpenAPI Specification.
-type OpenAPI struct {
-	// Version represents the semantic version number of the OpenAPI Specification that this document uses
-	Version string `json:"openapi"`
-	// Info provides metadata about the API
-	Info *spec.Info `json:"info"`
-	// Paths holds the available target and operations for the API
-	Paths *Paths `json:"paths,omitempty"`
-	// Servers is an array of Server objects which provide connectivity information to a target server
-	Servers []*Server `json:"servers,omitempty"`
-	// Components hold various schemas for the specification
-	Components *Components `json:"components,omitempty"`
-	// ExternalDocs holds additional external documentation
-	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"encoding/json"
 
 	"k8s.io/kube-openapi/pkg/internal"
@@ -92,5 +72,4 @@ func (o *OpenAPI) MarshalNextJSON(opts jsonv2.MarshalOptions, enc *jsonv2.Encode
 	}
 	x := (*OpenAPIOmitZero)(o)
 	return opts.MarshalNext(enc, x)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -225,46 +225,8 @@ func PrivateKeyFromBytes(pemData []byte, password *string) (key *rsa.PrivateKey,
 // PrivateKeyFromBytesWithPassword is a helper function that will produce a RSA private
 // key from bytes and a password.
 func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.PrivateKey, e error) {
-<<<<<<< HEAD
-	if pemBlock, _ := pem.Decode(pemData); pemBlock != nil {
-		decrypted := pemBlock.Bytes
-		if x509.IsEncryptedPEMBlock(pemBlock) {
-			if password == nil {
-				e = fmt.Errorf("private key password is required for encrypted private keys")
-				return
-			}
-			if decrypted, e = x509.DecryptPEMBlock(pemBlock, password); e != nil {
-				return
-			}
-		}
-
-<<<<<<< HEAD:vendor/github.com/oracle/oci-go-sdk/common/helpers.go
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		key, e = parsePKCSPrivateKey(decrypted)
-
-	} else {
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-	if pemBlock, _ := pem.Decode(pemData); pemBlock != nil {
-		decrypted := pemBlock.Bytes
-		if x509.IsEncryptedPEMBlock(pemBlock) {
-			if password == nil {
-				e = fmt.Errorf("private key password is required for encrypted private keys")
-				return
-			}
-			if decrypted, e = x509.DecryptPEMBlock(pemBlock, password); e != nil {
-				return
-			}
-		}
-
-		key, e = parsePKCSPrivateKey(decrypted)
-
-	} else {
-=======
 	pemBlock, _ := pem.Decode(pemData)
 	if pemBlock == nil {
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 		e = fmt.Errorf("PEM data was not found in buffer")
 		return
 	}
@@ -288,68 +250,6 @@ func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.Private
 	}
 	key, e = parsePKCSPrivateKey(decrypted)
 	return
-}
-
-// ParsePrivateKey using PKCS1 or PKCS8
-func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
-	if key, err := x509.ParsePKCS1PrivateKey(decryptedKey); err == nil {
-		return key, nil
-	}
-	if key, err := x509.ParsePKCS8PrivateKey(decryptedKey); err == nil {
-		switch key := key.(type) {
-		case *rsa.PrivateKey:
-			return key, nil
-		default:
-			return nil, fmt.Errorf("unsupportesd private key type in PKCS8 wrapping")
-		}
-	}
-	return nil, fmt.Errorf("failed to parse private key")
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		key, e = x509.ParsePKCS1PrivateKey(decrypted)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		key, e = x509.ParsePKCS1PrivateKey(decrypted)
-=======
-		key, e = parsePKCSPrivateKey(decrypted)
->>>>>>> 4d7e5ad26 (update vendored files)
-
-	} else {
-		e = fmt.Errorf("PEM data was not found in buffer")
-		return
-	}
-	return
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-// ParsePrivateKey using PKCS1 or PKCS8
-func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
-	if key, err := x509.ParsePKCS1PrivateKey(decryptedKey); err == nil {
-		return key, nil
-	}
-	if key, err := x509.ParsePKCS8PrivateKey(decryptedKey); err == nil {
-		switch key := key.(type) {
-		case *rsa.PrivateKey:
-			return key, nil
-		default:
-			return nil, fmt.Errorf("unsupportesd private key type in PKCS8 wrapping")
-		}
-	}
-	return nil, fmt.Errorf("failed to parse private key")
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		key, e = x509.ParsePKCS1PrivateKey(decrypted)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/oracle/oci-go-sdk/common/helpers.go
-		key, e = x509.ParsePKCS1PrivateKey(decrypted)
-=======
-		key, e = parsePKCSPrivateKey(decrypted)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/oracle/oci-go-sdk/v65/common/helpers.go
-
-	} else {
-		e = fmt.Errorf("PEM data was not found in buffer")
-		return
-	}
-	return
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // ParsePrivateKey using PKCS1 or PKCS8

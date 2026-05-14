@@ -1,35 +1,10 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-<<<<<<< HEAD:vendor/k8s.io/client-go/plugin/pkg/client/auth/gcp/OWNERS
-<<<<<<< HEAD
-  - cjcullen
-reviewers:
-  - cjcullen
-emeritus_approvers:
-  - jlowdermilk
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-- cjcullen
-- jlowdermilk
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/plugin/pkg/client/auth/gcp/OWNERS
-- cjcullen
-- jlowdermilk
-=======
 - apelisse
 - stewart-yu
 - thockin
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/utils/ptr/OWNERS
 reviewers:
-<<<<<<< HEAD:vendor/k8s.io/client-go/plugin/pkg/client/auth/gcp/OWNERS
-- cjcullen
-- jlowdermilk
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/plugin/pkg/client/auth/gcp/OWNERS
-- cjcullen
-- jlowdermilk
-=======
 - apelisse
 - stewart-yu
 - thockin
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/utils/ptr/OWNERS

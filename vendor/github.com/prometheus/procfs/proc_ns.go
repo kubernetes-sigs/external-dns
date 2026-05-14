@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,146 +40,7 @@ func (p Proc) Namespaces() (Namespaces, error) {
 
 	names, err := d.Readdirnames(-1)
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
-	}
-
-	ns := make(Namespaces, len(names))
-	for _, name := range names {
-		target, err := os.Readlink(p.path("ns", name))
-		if err != nil {
-			return nil, err
-		}
-
-		fields := strings.SplitN(target, ":", 2)
-		if len(fields) != 2 {
-			return nil, fmt.Errorf("failed to parse namespace type and inode from %q", target)
-		}
-
-		typ := fields[0]
-		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-
-	ns := make(Namespaces, len(names))
-	for _, name := range names {
-		target, err := os.Readlink(p.path("ns", name))
-		if err != nil {
-			return nil, err
-		}
-
-		fields := strings.SplitN(target, ":", 2)
-		if len(fields) != 2 {
-			return nil, fmt.Errorf("failed to parse namespace type and inode from %q", target)
-		}
-
-		typ := fields[0]
-		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
->>>>>>> 6b7ce455e (update vendored files)
-	}
-
-	ns := make(Namespaces, len(names))
-	for _, name := range names {
-		target, err := os.Readlink(p.path("ns", name))
-		if err != nil {
-			return nil, err
-		}
-
-		fields := strings.SplitN(target, ":", 2)
-		if len(fields) != 2 {
-			return nil, fmt.Errorf("failed to parse namespace type and inode from %q", target)
-		}
-
-		typ := fields[0]
-		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	ns := make(Namespaces, len(names))
-	for _, name := range names {
-		target, err := os.Readlink(p.path("ns", name))
-		if err != nil {
-			return nil, err
-		}
-
-		fields := strings.SplitN(target, ":", 2)
-		if len(fields) != 2 {
-			return nil, fmt.Errorf("failed to parse namespace type and inode from %q", target)
-		}
-
-		typ := fields[0]
-		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
-=======
-			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
-=======
-		return nil, fmt.Errorf("%s: failed to read contents of ns dir: %w", ErrFileRead, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: failed to read contents of ns dir: %w", ErrFileRead, err)
-=======
 		return nil, fmt.Errorf("%w: failed to read contents of ns dir: %w", ErrFileRead, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	ns := make(Namespaces, len(names))
@@ -197,20 +58,7 @@ func (p Proc) Namespaces() (Namespaces, error) {
 		typ := fields[0]
 		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
 		if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
-=======
-			return nil, fmt.Errorf("%s: inode from %q: %w", ErrFileParse, fields[1], err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-			return nil, fmt.Errorf("%s: inode from %q: %w", ErrFileParse, fields[1], err)
-=======
 			return nil, fmt.Errorf("%w: inode from %q: %w", ErrFileParse, fields[1], err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 
 		ns[name] = Namespace{typ, uint32(inode)}

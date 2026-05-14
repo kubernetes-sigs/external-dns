@@ -1,475 +1,11 @@
 # linodego
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
-=======
-![Build](https://img.shields.io/github/workflow/status/linode/linodego/Testing/main?label=tests)
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-[![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
-[![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
-[![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
-[![codecov](https://codecov.io/gh/linode/linodego/branch/main/graph/badge.svg)](https://codecov.io/gh/linode/linodego)
-
-Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
-
-## Installation
-
-```sh
-go get -u github.com/linode/linodego
-```
-
-## API Support
-
-Check [API_SUPPORT.md](API_SUPPORT.md) for current support of the Linode `v4` API endpoints.
-
-** Note: This project will change and break until we release a v1.0.0 tagged version. Breaking changes in v0.x.x will be denoted with a minor version bump (v0.2.4 -> v0.3.0) **
-
-## Documentation
-
-See [godoc](https://godoc.org/github.com/linode/linodego) for a complete reference.
-
-The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://developers.linode.com/api/v4).
-
-Deviations in naming have been made to avoid using "Linode" and "Instance" redundantly or inconsistently.
-
-A brief summary of the features offered in this API client are shown here.
-
-## Examples
-
-### General Usage
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
-
-	"log"
-	"net/http"
-	"os"
-)
-
-func main() {
-  apiKey, ok := os.LookupEnv("LINODE_TOKEN")
-  if !ok {
-    log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
-  }
-  tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
-
-  oauth2Client := &http.Client{
-    Transport: &oauth2.Transport{
-      Source: tokenSource,
-    },
-  }
-
-  linodeClient := linodego.NewClient(oauth2Client)
-  linodeClient.SetDebug(true)
-  
-  res, err := linodeClient.GetInstance(context.Background(), 4090913)
-  if err != nil {
-    log.Fatal(err)
-  }
-  fmt.Printf("%v", res)
-}
-```
-
-### Pagination
-
-#### Auto-Pagination Requests
-
-```go
-kernels, err := linodego.ListKernels(context.Background(), nil)
-// len(kernels) == 218
-```
-
-Or, use a page value of "0":
-
-```go
-opts := linodego.NewListOptions(0,"")
-kernels, err := linodego.ListKernels(context.Background(), opts)
-// len(kernels) == 218
-```
-
-#### Single Page
-
-```go
-opts := linodego.NewListOptions(2,"")
-// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-||||||| parent of 5ce8c7613 (update vendored files)
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-=======
-[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
->>>>>>> 5ce8c7613 (update vendored files)
-[![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
-[![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
-[![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
-[![codecov](https://codecov.io/gh/linode/linodego/branch/master/graph/badge.svg)](https://codecov.io/gh/linode/linodego)
-
-Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
-
-## Installation
-
-```sh
-go get -u github.com/linode/linodego
-```
-
-## API Support
-
-Check [API_SUPPORT.md](API_SUPPORT.md) for current support of the Linode `v4` API endpoints.
-
-** Note: This project will change and break until we release a v1.0.0 tagged version. Breaking changes in v0.x.x will be denoted with a minor version bump (v0.2.4 -> v0.3.0) **
-
-## Documentation
-
-See [godoc](https://godoc.org/github.com/linode/linodego) for a complete reference.
-
-The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://developers.linode.com/api/v4).
-
-Deviations in naming have been made to avoid using "Linode" and "Instance" redundantly or inconsistently.
-
-A brief summary of the features offered in this API client are shown here.
-
-## Examples
-
-### General Usage
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
-
-	"log"
-	"net/http"
-	"os"
-)
-
-func main() {
-  apiKey, ok := os.LookupEnv("LINODE_TOKEN")
-  if !ok {
-    log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
-  }
-  tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
-
-  oauth2Client := &http.Client{
-    Transport: &oauth2.Transport{
-      Source: tokenSource,
-    },
-  }
-
-  linodeClient := linodego.NewClient(oauth2Client)
-  linodeClient.SetDebug(true)
-  
-  res, err := linodeClient.GetInstance(context.Background(), 4090913)
-  if err != nil {
-    log.Fatal(err)
-  }
-  fmt.Printf("%v", res)
-}
-```
-
-### Pagination
-
-#### Auto-Pagination Requests
-
-```go
-kernels, err := linodego.ListKernels(context.Background(), nil)
-// len(kernels) == 218
-```
-
-Or, use a page value of "0":
-
-```go
-opts := linodego.NewListOptions(0,"")
-kernels, err := linodego.ListKernels(context.Background(), opts)
-// len(kernels) == 218
-```
-
-#### Single Page
-
-```go
-opts := linodego.NewListOptions(2,"")
-<<<<<<< HEAD
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
-=======
-// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-||||||| parent of 6b7ce455e (update vendored files)
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-=======
-[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
->>>>>>> 6b7ce455e (update vendored files)
-[![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
-[![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
-[![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
-[![codecov](https://codecov.io/gh/linode/linodego/branch/master/graph/badge.svg)](https://codecov.io/gh/linode/linodego)
-
-Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
-
-## Installation
-
-```sh
-go get -u github.com/linode/linodego
-```
-
-## API Support
-
-Check [API_SUPPORT.md](API_SUPPORT.md) for current support of the Linode `v4` API endpoints.
-
-** Note: This project will change and break until we release a v1.0.0 tagged version. Breaking changes in v0.x.x will be denoted with a minor version bump (v0.2.4 -> v0.3.0) **
-
-## Documentation
-
-See [godoc](https://godoc.org/github.com/linode/linodego) for a complete reference.
-
-The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://developers.linode.com/api/v4).
-
-Deviations in naming have been made to avoid using "Linode" and "Instance" redundantly or inconsistently.
-
-A brief summary of the features offered in this API client are shown here.
-
-## Examples
-
-### General Usage
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
-
-	"log"
-	"net/http"
-	"os"
-)
-
-func main() {
-  apiKey, ok := os.LookupEnv("LINODE_TOKEN")
-  if !ok {
-    log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
-  }
-  tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
-
-  oauth2Client := &http.Client{
-    Transport: &oauth2.Transport{
-      Source: tokenSource,
-    },
-  }
-
-  linodeClient := linodego.NewClient(oauth2Client)
-  linodeClient.SetDebug(true)
-  
-  res, err := linodeClient.GetInstance(context.Background(), 4090913)
-  if err != nil {
-    log.Fatal(err)
-  }
-  fmt.Printf("%v", res)
-}
-```
-
-### Pagination
-
-#### Auto-Pagination Requests
-
-```go
-kernels, err := linodego.ListKernels(context.Background(), nil)
-// len(kernels) == 218
-```
-
-Or, use a page value of "0":
-
-```go
-opts := linodego.NewListOptions(0,"")
-kernels, err := linodego.ListKernels(context.Background(), opts)
-// len(kernels) == 218
-```
-
-#### Single Page
-
-```go
-opts := linodego.NewListOptions(2,"")
-<<<<<<< HEAD
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
-=======
-// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-||||||| parent of 4d7e5ad26 (update vendored files)
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-=======
-[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
->>>>>>> 4d7e5ad26 (update vendored files)
-[![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
-[![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
-[![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
-[![codecov](https://codecov.io/gh/linode/linodego/branch/master/graph/badge.svg)](https://codecov.io/gh/linode/linodego)
-
-Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
-
-## Installation
-
-```sh
-go get -u github.com/linode/linodego
-```
-
-## API Support
-
-Check [API_SUPPORT.md](API_SUPPORT.md) for current support of the Linode `v4` API endpoints.
-
-** Note: This project will change and break until we release a v1.0.0 tagged version. Breaking changes in v0.x.x will be denoted with a minor version bump (v0.2.4 -> v0.3.0) **
-
-## Documentation
-
-See [godoc](https://godoc.org/github.com/linode/linodego) for a complete reference.
-
-The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://developers.linode.com/api/v4).
-
-Deviations in naming have been made to avoid using "Linode" and "Instance" redundantly or inconsistently.
-
-A brief summary of the features offered in this API client are shown here.
-
-## Examples
-
-### General Usage
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
-
-	"log"
-	"net/http"
-	"os"
-)
-
-func main() {
-  apiKey, ok := os.LookupEnv("LINODE_TOKEN")
-  if !ok {
-    log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
-  }
-  tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
-
-  oauth2Client := &http.Client{
-    Transport: &oauth2.Transport{
-      Source: tokenSource,
-    },
-  }
-
-  linodeClient := linodego.NewClient(oauth2Client)
-  linodeClient.SetDebug(true)
-  
-  res, err := linodeClient.GetInstance(context.Background(), 4090913)
-  if err != nil {
-    log.Fatal(err)
-  }
-  fmt.Printf("%v", res)
-}
-```
-
-### Pagination
-
-#### Auto-Pagination Requests
-
-```go
-kernels, err := linodego.ListKernels(context.Background(), nil)
-// len(kernels) == 218
-```
-
-Or, use a page value of "0":
-
-```go
-opts := linodego.NewListOptions(0,"")
-kernels, err := linodego.ListKernels(context.Background(), opts)
-// len(kernels) == 218
-```
-
-#### Single Page
-
-```go
-opts := linodego.NewListOptions(2,"")
-<<<<<<< HEAD
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
-=======
-// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
->>>>>>> 4d7e5ad26 (update vendored files)
-kernels, err := linodego.ListKernels(context.Background(), opts)
-// len(kernels) == 100
-```
-
-ListOptions are supplied as a pointer because the Pages and Results
-values are set in the supplied ListOptions.
-
-```go
-// opts.Results == 218
-```
-
-#### Filtering
-
-```go
-f := linodego.Filter{}
-f.AddField(linodego.Eq, "mine", true)
-fStr, err := f.MarshalJSON()
-if err != nil {
-    log.Fatal(err)
-}
-opts := linodego.NewListOptions(0, string(fStr))
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
-=======
 ![Tests](https://img.shields.io/github/actions/workflow/status/linode/linodego/ci.yml?branch=main)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 [![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
 [![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
 [![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
 
-Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
+Go client for [Linode REST v4 API](https://techdocs.akamai.com/linode-api/reference/api)
 
 ## Installation
 
@@ -481,7 +17,7 @@ go get -u github.com/linode/linodego
 
 See [godoc](https://godoc.org/github.com/linode/linodego) for a complete reference.
 
-The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://developers.linode.com/api/v4).
+The API generally follows the naming patterns prescribed in the [OpenAPIv3 document for Linode APIv4](https://techdocs.akamai.com/linode-api/reference/api).
 
 Deviations in naming have been made to avoid using "Linode" and "Instance" redundantly or inconsistently.
 
@@ -497,36 +33,35 @@ package main
 import (
 	"context"
 	"fmt"
-
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
-
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/linode/linodego"
+	"golang.org/x/oauth2"
 )
 
 func main() {
-  apiKey, ok := os.LookupEnv("LINODE_TOKEN")
-  if !ok {
-    log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
-  }
-  tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
+	apiKey, ok := os.LookupEnv("LINODE_TOKEN")
+	if !ok {
+		log.Fatal("Could not find LINODE_TOKEN, please assert it is set.")
+	}
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
 
-  oauth2Client := &http.Client{
-    Transport: &oauth2.Transport{
-      Source: tokenSource,
-    },
-  }
+	oauth2Client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: tokenSource,
+		},
+	}
 
-  linodeClient := linodego.NewClient(oauth2Client)
-  linodeClient.SetDebug(true)
-  
-  res, err := linodeClient.GetInstance(context.Background(), 4090913)
-  if err != nil {
-    log.Fatal(err)
-  }
-  fmt.Printf("%v", res)
+	linodeClient := linodego.NewClient(oauth2Client)
+	linodeClient.SetDebug(true)
+
+	res, err := linodeClient.GetInstance(context.Background(), 4090913)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%v", res)
 }
 ```
 
@@ -563,17 +98,14 @@ values are set in the supplied ListOptions.
 // opts.Results == 218
 ```
 
+> **_NOTES:_**  
+>	- The ListOptions will be mutated by list endpoint functions.
+>	- Instances of ListOptions should NOT be shared across multiple list endpoint functions.
+>	- The resulting number of results and pages can be accessed through the user-supplied ListOptions instance.
+
 #### Filtering
 
 ```go
-<<<<<<< HEAD
-opts := linodego.ListOptions{Filter: "{\"mine\":true}"}
-// or opts := linodego.NewListOptions(0, "{\"mine\":true}")
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-opts := linodego.ListOptions{Filter: "{\"mine\":true}"}
-// or opts := linodego.NewListOptions(0, "{\"mine\":true}")
-=======
 f := linodego.Filter{}
 f.AddField(linodego.Eq, "mine", true)
 fStr, err := f.MarshalJSON()
@@ -581,7 +113,6 @@ if err != nil {
     log.Fatal(err)
 }
 opts := linodego.NewListOptions(0, string(fStr))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 stackscripts, err := linodego.ListStackscripts(context.Background(), opts)
 ```
 
@@ -637,15 +168,15 @@ When performing a `POST` or `PUT` request, multiple field related errors will be
 
 ## Tests
 
-Run `make testunit` to run the unit tests. 
+Run `make test-unit` to run the unit tests. 
 
-Run `make testint` to run the integration tests. The integration tests use fixtures.
+Run `make test-int` to run the integration tests. The integration tests use fixtures.
 
 To update the test fixtures, run `make fixtures`.  This will record the API responses into the `fixtures/` directory.
 Be careful about committing any sensitive account details.  An attempt has been made to sanitize IP addresses and
 dates, but no automated sanitization will be performed against `fixtures/*Account*.yaml`, for example.
 
-To prevent disrupting unaffected fixtures, target fixture generation like so: `make ARGS="-run TestListVolumes" fixtures`.
+To prevent disrupting unaffected fixtures, target fixture generation like so: `make TEST_ARGS="-run TestListVolumes" fixtures`.
 
 ## Discussion / Help
 

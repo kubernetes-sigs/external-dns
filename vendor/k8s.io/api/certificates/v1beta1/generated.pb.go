@@ -23,280 +23,43 @@ import (
 	fmt "fmt"
 
 	io "io"
+	"sort"
 
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	k8s_io_api_core_v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	math "math"
 	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
+
+	k8s_io_apimachinery_pkg_types "k8s.io/apimachinery/pkg/types"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+func (m *CertificateSigningRequest) Reset() { *m = CertificateSigningRequest{} }
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+func (m *CertificateSigningRequestCondition) Reset() { *m = CertificateSigningRequestCondition{} }
 
-func (m *CertificateSigningRequest) Reset()      { *m = CertificateSigningRequest{} }
-func (*CertificateSigningRequest) ProtoMessage() {}
-func (*CertificateSigningRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{0}
-}
-func (m *CertificateSigningRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequest.Merge(m, src)
-}
-func (m *CertificateSigningRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequest.DiscardUnknown(m)
-}
+func (m *CertificateSigningRequestList) Reset() { *m = CertificateSigningRequestList{} }
 
-var xxx_messageInfo_CertificateSigningRequest proto.InternalMessageInfo
+func (m *CertificateSigningRequestSpec) Reset() { *m = CertificateSigningRequestSpec{} }
 
-func (m *CertificateSigningRequestCondition) Reset()      { *m = CertificateSigningRequestCondition{} }
-func (*CertificateSigningRequestCondition) ProtoMessage() {}
-func (*CertificateSigningRequestCondition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{1}
-}
-func (m *CertificateSigningRequestCondition) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestCondition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestCondition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestCondition.Merge(m, src)
-}
-func (m *CertificateSigningRequestCondition) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestCondition) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestCondition.DiscardUnknown(m)
-}
+func (m *CertificateSigningRequestStatus) Reset() { *m = CertificateSigningRequestStatus{} }
 
-var xxx_messageInfo_CertificateSigningRequestCondition proto.InternalMessageInfo
+func (m *ClusterTrustBundle) Reset() { *m = ClusterTrustBundle{} }
 
-func (m *CertificateSigningRequestList) Reset()      { *m = CertificateSigningRequestList{} }
-func (*CertificateSigningRequestList) ProtoMessage() {}
-func (*CertificateSigningRequestList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{2}
-}
-func (m *CertificateSigningRequestList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestList.Merge(m, src)
-}
-func (m *CertificateSigningRequestList) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestList) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestList.DiscardUnknown(m)
-}
+func (m *ClusterTrustBundleList) Reset() { *m = ClusterTrustBundleList{} }
 
-var xxx_messageInfo_CertificateSigningRequestList proto.InternalMessageInfo
+func (m *ClusterTrustBundleSpec) Reset() { *m = ClusterTrustBundleSpec{} }
 
-func (m *CertificateSigningRequestSpec) Reset()      { *m = CertificateSigningRequestSpec{} }
-func (*CertificateSigningRequestSpec) ProtoMessage() {}
-func (*CertificateSigningRequestSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{3}
-}
-func (m *CertificateSigningRequestSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestSpec.Merge(m, src)
-}
-func (m *CertificateSigningRequestSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestSpec.DiscardUnknown(m)
-}
+func (m *ExtraValue) Reset() { *m = ExtraValue{} }
 
-var xxx_messageInfo_CertificateSigningRequestSpec proto.InternalMessageInfo
+func (m *PodCertificateRequest) Reset() { *m = PodCertificateRequest{} }
 
-func (m *CertificateSigningRequestStatus) Reset()      { *m = CertificateSigningRequestStatus{} }
-func (*CertificateSigningRequestStatus) ProtoMessage() {}
-func (*CertificateSigningRequestStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{4}
-}
-func (m *CertificateSigningRequestStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestStatus.Merge(m, src)
-}
-func (m *CertificateSigningRequestStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestStatus.DiscardUnknown(m)
-}
+func (m *PodCertificateRequestList) Reset() { *m = PodCertificateRequestList{} }
 
-var xxx_messageInfo_CertificateSigningRequestStatus proto.InternalMessageInfo
+func (m *PodCertificateRequestSpec) Reset() { *m = PodCertificateRequestSpec{} }
 
-func (m *ExtraValue) Reset()      { *m = ExtraValue{} }
-func (*ExtraValue) ProtoMessage() {}
-func (*ExtraValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{5}
-}
-func (m *ExtraValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ExtraValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ExtraValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtraValue.Merge(m, src)
-}
-func (m *ExtraValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *ExtraValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtraValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ExtraValue proto.InternalMessageInfo
-
-func init() {
-	proto.RegisterType((*CertificateSigningRequest)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequest")
-	proto.RegisterType((*CertificateSigningRequestCondition)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestCondition")
-	proto.RegisterType((*CertificateSigningRequestList)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestList")
-	proto.RegisterType((*CertificateSigningRequestSpec)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec")
-	proto.RegisterMapType((map[string]ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec.ExtraEntry")
-	proto.RegisterType((*CertificateSigningRequestStatus)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestStatus")
-	proto.RegisterType((*ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.ExtraValue")
-}
-
-func init() {
-	proto.RegisterFile("k8s.io/kubernetes/vendor/k8s.io/api/certificates/v1beta1/generated.proto", fileDescriptor_09d156762b8218ef)
-}
-
-var fileDescriptor_09d156762b8218ef = []byte{
-	// 915 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x5d, 0x6f, 0x1b, 0x45,
-	0x17, 0xf6, 0xc6, 0x1f, 0xb1, 0xc7, 0x79, 0xd3, 0x76, 0xf4, 0x52, 0x2d, 0x96, 0xea, 0xb5, 0x2c,
-	0x40, 0xe1, 0x6b, 0x96, 0x54, 0x15, 0x44, 0xb9, 0x40, 0xb0, 0x21, 0x82, 0x88, 0x14, 0xa4, 0x49,
-	0xc2, 0x05, 0x42, 0xa2, 0xe3, 0xf5, 0xe9, 0x66, 0xea, 0xee, 0x07, 0x3b, 0xb3, 0xa6, 0xbe, 0xeb,
-	0x4f, 0xe0, 0x92, 0x4b, 0xfe, 0x03, 0x7f, 0x22, 0x5c, 0x20, 0xf5, 0xb2, 0x17, 0xc8, 0x22, 0xee,
-	0xbf, 0xc8, 0x15, 0x9a, 0xd9, 0xf1, 0xda, 0xb1, 0x13, 0x5c, 0xda, 0xbb, 0x9d, 0x67, 0xce, 0xf3,
-	0x3c, 0x67, 0xce, 0x9c, 0x33, 0x36, 0xfa, 0x6a, 0xb0, 0x23, 0x08, 0x8f, 0xdd, 0x41, 0xd6, 0x83,
-	0x34, 0x02, 0x09, 0xc2, 0x1d, 0x42, 0xd4, 0x8f, 0x53, 0xd7, 0x6c, 0xb0, 0x84, 0xbb, 0x3e, 0xa4,
-	0x92, 0x3f, 0xe4, 0x3e, 0xd3, 0xdb, 0xdb, 0x3d, 0x90, 0x6c, 0xdb, 0x0d, 0x20, 0x82, 0x94, 0x49,
-	0xe8, 0x93, 0x24, 0x8d, 0x65, 0x8c, 0x9d, 0x9c, 0x40, 0x58, 0xc2, 0xc9, 0x3c, 0x81, 0x18, 0x42,
-	0xeb, 0xc3, 0x80, 0xcb, 0xd3, 0xac, 0x47, 0xfc, 0x38, 0x74, 0x83, 0x38, 0x88, 0x5d, 0xcd, 0xeb,
-	0x65, 0x0f, 0xf5, 0x4a, 0x2f, 0xf4, 0x57, 0xae, 0xd7, 0xea, 0xce, 0x27, 0x10, 0xa7, 0xe0, 0x0e,
-	0x97, 0x3c, 0x5b, 0xf7, 0x66, 0x31, 0x21, 0xf3, 0x4f, 0x79, 0x04, 0xe9, 0xc8, 0x4d, 0x06, 0x81,
-	0x02, 0x84, 0x1b, 0x82, 0x64, 0x57, 0xb1, 0xdc, 0xeb, 0x58, 0x69, 0x16, 0x49, 0x1e, 0xc2, 0x12,
-	0xe1, 0xe3, 0x55, 0x04, 0xe1, 0x9f, 0x42, 0xc8, 0x16, 0x79, 0xdd, 0x3f, 0xd6, 0xd0, 0x9b, 0x7b,
-	0xb3, 0x52, 0x1c, 0xf1, 0x20, 0xe2, 0x51, 0x40, 0xe1, 0xa7, 0x0c, 0x84, 0xc4, 0x0f, 0x50, 0x5d,
-	0x65, 0xd8, 0x67, 0x92, 0xd9, 0x56, 0xc7, 0xda, 0x6a, 0xde, 0xfd, 0x88, 0xcc, 0x6a, 0x58, 0x18,
-	0x91, 0x64, 0x10, 0x28, 0x40, 0x10, 0x15, 0x4d, 0x86, 0xdb, 0xe4, 0xdb, 0xde, 0x23, 0xf0, 0xe5,
-	0x7d, 0x90, 0xcc, 0xc3, 0x67, 0x63, 0xa7, 0x34, 0x19, 0x3b, 0x68, 0x86, 0xd1, 0x42, 0x15, 0x3f,
-	0x40, 0x15, 0x91, 0x80, 0x6f, 0xaf, 0x69, 0xf5, 0x4f, 0xc9, 0x8a, 0x1b, 0x22, 0xd7, 0xe6, 0x7a,
-	0x94, 0x80, 0xef, 0x6d, 0x18, 0xaf, 0x8a, 0x5a, 0x51, 0xad, 0x8c, 0x4f, 0x51, 0x4d, 0x48, 0x26,
-	0x33, 0x61, 0x97, 0xb5, 0xc7, 0x67, 0xaf, 0xe1, 0xa1, 0x75, 0xbc, 0x4d, 0xe3, 0x52, 0xcb, 0xd7,
-	0xd4, 0xe8, 0x77, 0x5f, 0x94, 0x51, 0xf7, 0x5a, 0xee, 0x5e, 0x1c, 0xf5, 0xb9, 0xe4, 0x71, 0x84,
-	0x77, 0x50, 0x45, 0x8e, 0x12, 0xd0, 0x05, 0x6d, 0x78, 0x6f, 0x4d, 0x53, 0x3e, 0x1e, 0x25, 0x70,
-	0x31, 0x76, 0xfe, 0xbf, 0x18, 0xaf, 0x70, 0xaa, 0x19, 0xf8, 0xb0, 0x38, 0x4a, 0x4d, 0x73, 0xef,
-	0x5d, 0x4e, 0xe4, 0x62, 0xec, 0x5c, 0xd1, 0x91, 0xa4, 0x50, 0xba, 0x9c, 0x2e, 0x7e, 0x07, 0xd5,
-	0x52, 0x60, 0x22, 0x8e, 0x74, 0xf1, 0x1b, 0xb3, 0x63, 0x51, 0x8d, 0x52, 0xb3, 0x8b, 0xdf, 0x45,
-	0xeb, 0x21, 0x08, 0xc1, 0x02, 0xd0, 0x15, 0x6c, 0x78, 0x37, 0x4c, 0xe0, 0xfa, 0xfd, 0x1c, 0xa6,
-	0xd3, 0x7d, 0xfc, 0x08, 0x6d, 0x3e, 0x66, 0x42, 0x9e, 0x24, 0x7d, 0x26, 0xe1, 0x98, 0x87, 0x60,
-	0x57, 0x74, 0xcd, 0xdf, 0x7b, 0xb9, 0xae, 0x51, 0x0c, 0xef, 0xb6, 0x51, 0xdf, 0x3c, 0xbc, 0xa4,
-	0x44, 0x17, 0x94, 0xf1, 0x10, 0x61, 0x85, 0x1c, 0xa7, 0x2c, 0x12, 0x79, 0xa1, 0x94, 0x5f, 0xf5,
-	0x3f, 0xfb, 0xb5, 0x8c, 0x1f, 0x3e, 0x5c, 0x52, 0xa3, 0x57, 0x38, 0x74, 0xc7, 0x16, 0xba, 0x73,
-	0xed, 0x2d, 0x1f, 0x72, 0x21, 0xf1, 0x0f, 0x4b, 0x53, 0x43, 0x5e, 0x2e, 0x1f, 0xc5, 0xd6, 0x33,
-	0x73, 0xd3, 0xe4, 0x54, 0x9f, 0x22, 0x73, 0x13, 0xf3, 0x23, 0xaa, 0x72, 0x09, 0xa1, 0xb0, 0xd7,
-	0x3a, 0xe5, 0xad, 0xe6, 0xdd, 0xdd, 0x57, 0x6f, 0x67, 0xef, 0x7f, 0xc6, 0xa6, 0x7a, 0xa0, 0x04,
-	0x69, 0xae, 0xdb, 0xfd, 0xbd, 0xf2, 0x2f, 0x07, 0x54, 0x83, 0x85, 0xdf, 0x46, 0xeb, 0x69, 0xbe,
-	0xd4, 0xe7, 0xdb, 0xf0, 0x9a, 0xaa, 0x1b, 0x4c, 0x04, 0x9d, 0xee, 0x61, 0x82, 0x90, 0xe0, 0x41,
-	0x04, 0xe9, 0x37, 0x2c, 0x04, 0x7b, 0x3d, 0x6f, 0x32, 0xf5, 0x12, 0x1c, 0x15, 0x28, 0x9d, 0x8b,
-	0xc0, 0x7b, 0xe8, 0x16, 0x3c, 0x49, 0x78, 0xca, 0x74, 0xb3, 0x82, 0x1f, 0x47, 0x7d, 0x61, 0xd7,
-	0x3b, 0xd6, 0x56, 0xd5, 0x7b, 0x63, 0x32, 0x76, 0x6e, 0xed, 0x2f, 0x6e, 0xd2, 0xe5, 0x78, 0x4c,
-	0x50, 0x2d, 0x53, 0xbd, 0x28, 0xec, 0x6a, 0xa7, 0xbc, 0xd5, 0xf0, 0x6e, 0xab, 0x8e, 0x3e, 0xd1,
-	0xc8, 0xc5, 0xd8, 0xa9, 0x7f, 0x0d, 0x23, 0xbd, 0xa0, 0x26, 0x0a, 0x7f, 0x80, 0xea, 0x99, 0x80,
-	0x34, 0x52, 0x29, 0xe6, 0x73, 0x50, 0x14, 0xff, 0xc4, 0xe0, 0xb4, 0x88, 0xc0, 0x77, 0x50, 0x39,
-	0xe3, 0x7d, 0x33, 0x07, 0x4d, 0x13, 0x58, 0x3e, 0x39, 0xf8, 0x82, 0x2a, 0x1c, 0x77, 0x51, 0x2d,
-	0x48, 0xe3, 0x2c, 0x11, 0x76, 0x45, 0x9b, 0x23, 0x65, 0xfe, 0xa5, 0x46, 0xa8, 0xd9, 0xc1, 0x11,
-	0xaa, 0xc2, 0x13, 0x99, 0x32, 0xbb, 0xa6, 0xef, 0xef, 0xe0, 0xf5, 0x9e, 0x3c, 0xb2, 0xaf, 0xb4,
-	0xf6, 0x23, 0x99, 0x8e, 0x66, 0xd7, 0xa9, 0x31, 0x9a, 0xdb, 0xb4, 0x00, 0xa1, 0x59, 0x0c, 0xbe,
-	0x89, 0xca, 0x03, 0x18, 0xe5, 0x6f, 0x0f, 0x55, 0x9f, 0xf8, 0x73, 0x54, 0x1d, 0xb2, 0xc7, 0x19,
-	0x98, 0x27, 0xf8, 0xfd, 0x95, 0xf9, 0x68, 0xb5, 0xef, 0x14, 0x85, 0xe6, 0xcc, 0xdd, 0xb5, 0x1d,
-	0xab, 0xfb, 0xa7, 0x85, 0x9c, 0x15, 0x0f, 0x27, 0xfe, 0x19, 0x21, 0x7f, 0xfa, 0x18, 0x09, 0xdb,
-	0xd2, 0xe7, 0xdf, 0x7b, 0xf5, 0xf3, 0x17, 0x0f, 0xdb, 0xec, 0x37, 0xa6, 0x80, 0x04, 0x9d, 0xb3,
-	0xc2, 0xdb, 0xa8, 0x39, 0x27, 0xad, 0x4f, 0xba, 0xe1, 0xdd, 0x98, 0x8c, 0x9d, 0xe6, 0x9c, 0x38,
-	0x9d, 0x8f, 0xe9, 0x7e, 0x62, 0xca, 0xa6, 0x0f, 0x8a, 0x9d, 0xe9, 0xd0, 0x59, 0xfa, 0x5e, 0x1b,
-	0x8b, 0x43, 0xb3, 0x5b, 0xff, 0xf5, 0x37, 0xa7, 0xf4, 0xf4, 0xaf, 0x4e, 0xc9, 0xdb, 0x3f, 0x3b,
-	0x6f, 0x97, 0x9e, 0x9d, 0xb7, 0x4b, 0xcf, 0xcf, 0xdb, 0xa5, 0xa7, 0x93, 0xb6, 0x75, 0x36, 0x69,
-	0x5b, 0xcf, 0x26, 0x6d, 0xeb, 0xf9, 0xa4, 0x6d, 0xfd, 0x3d, 0x69, 0x5b, 0xbf, 0xbc, 0x68, 0x97,
-	0xbe, 0x77, 0x56, 0xfc, 0x77, 0xf9, 0x27, 0x00, 0x00, 0xff, 0xff, 0x7b, 0xe7, 0x9b, 0x78, 0xf6,
-	0x08, 0x00, 0x00,
-}
+func (m *PodCertificateRequestStatus) Reset() { *m = PodCertificateRequestStatus{} }
 
 func (m *CertificateSigningRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -498,7890 +261,7 @@ func (m *CertificateSigningRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, 
 		for k := range m.Extra {
 			keysForExtra = append(keysForExtra, string(k))
 		}
-		github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-		for iNdEx := len(keysForExtra) - 1; iNdEx >= 0; iNdEx-- {
-			v := m.Extra[string(keysForExtra[iNdEx])]
-			baseI := i
-			{
-				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-			i -= len(keysForExtra[iNdEx])
-			copy(dAtA[i:], keysForExtra[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForExtra[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Usages) > 0 {
-		for iNdEx := len(m.Usages) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Usages[iNdEx])
-			copy(dAtA[i:], m.Usages[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Usages[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if len(m.Groups) > 0 {
-		for iNdEx := len(m.Groups) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Groups[iNdEx])
-			copy(dAtA[i:], m.Groups[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Groups[iNdEx])))
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	i -= len(m.UID)
-	copy(dAtA[i:], m.UID)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.UID)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Username)
-	copy(dAtA[i:], m.Username)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Username)))
-	i--
-	dAtA[i] = 0x12
-	if m.Request != nil {
-		i -= len(m.Request)
-		copy(dAtA[i:], m.Request)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Request)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Certificate != nil {
-		i -= len(m.Certificate)
-		copy(dAtA[i:], m.Certificate)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Certificate)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Conditions) > 0 {
-		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Conditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m ExtraValue) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m ExtraValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m ExtraValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for iNdEx := len(m) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m[iNdEx])
-			copy(dAtA[i:], m[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintGenerated(dAtA []byte, offset int, v uint64) int {
-	offset -= sovGenerated(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func (m *CertificateSigningRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ObjectMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Spec.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Status.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestCondition) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Reason)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Message)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastUpdateTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastTransitionTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Status)
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ListMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Items) > 0 {
-		for _, e := range m.Items {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestSpec) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Request != nil {
-		l = len(m.Request)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	l = len(m.Username)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.UID)
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Groups) > 0 {
-		for _, s := range m.Groups {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Usages) > 0 {
-		for _, s := range m.Usages {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Extra) > 0 {
-		for k, v := range m.Extra {
-			_ = k
-			_ = v
-			l = v.Size()
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
-			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
-		}
-	}
-	if m.SignerName != nil {
-		l = len(*m.SignerName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ExpirationSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.ExpirationSeconds))
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Conditions) > 0 {
-		for _, e := range m.Conditions {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if m.Certificate != nil {
-		l = len(m.Certificate)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	return n
-}
-
-func (m ExtraValue) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for _, s := range m {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func sovGenerated(x uint64) (n int) {
-	return (math_bits.Len64(x|1) + 6) / 7
-}
-func sozGenerated(x uint64) (n int) {
-	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *CertificateSigningRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequest{`,
-		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v1.ObjectMeta", 1), `&`, ``, 1) + `,`,
-		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "CertificateSigningRequestSpec", "CertificateSigningRequestSpec", 1), `&`, ``, 1) + `,`,
-		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "CertificateSigningRequestStatus", "CertificateSigningRequestStatus", 1), `&`, ``, 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestCondition) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequestCondition{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`LastUpdateTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdateTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`LastTransitionTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastTransitionTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestList) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForItems := "[]CertificateSigningRequest{"
-	for _, f := range this.Items {
-		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequest", "CertificateSigningRequest", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForItems += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestList{`,
-		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v1.ListMeta", 1), `&`, ``, 1) + `,`,
-		`Items:` + repeatedStringForItems + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	keysForExtra := make([]string, 0, len(this.Extra))
-	for k := range this.Extra {
-		keysForExtra = append(keysForExtra, k)
-	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-	mapStringForExtra := "map[string]ExtraValue{"
-	for _, k := range keysForExtra {
-		mapStringForExtra += fmt.Sprintf("%v: %v,", k, this.Extra[k])
-	}
-	mapStringForExtra += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestSpec{`,
-		`Request:` + valueToStringGenerated(this.Request) + `,`,
-		`Username:` + fmt.Sprintf("%v", this.Username) + `,`,
-		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
-		`Groups:` + fmt.Sprintf("%v", this.Groups) + `,`,
-		`Usages:` + fmt.Sprintf("%v", this.Usages) + `,`,
-		`Extra:` + mapStringForExtra + `,`,
-		`SignerName:` + valueToStringGenerated(this.SignerName) + `,`,
-		`ExpirationSeconds:` + valueToStringGenerated(this.ExpirationSeconds) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestStatus) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForConditions := "[]CertificateSigningRequestCondition{"
-	for _, f := range this.Conditions {
-		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequestCondition", "CertificateSigningRequestCondition", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForConditions += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestStatus{`,
-		`Conditions:` + repeatedStringForConditions + `,`,
-		`Certificate:` + valueToStringGenerated(this.Certificate) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func valueToStringGenerated(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
-func (m *CertificateSigningRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestCondition) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = RequestConditionType(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Reason = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastUpdateTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastTransitionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastTransitionTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Status = k8s_io_api_core_v1.ConditionStatus(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Items = append(m.Items, CertificateSigningRequest{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Request = append(m.Request[:0], dAtA[iNdEx:postIndex]...)
-			if m.Request == nil {
-				m.Request = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Username", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Username = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Groups", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Groups = append(m.Groups, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Usages", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Usages = append(m.Usages, KeyUsage(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Extra", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Extra == nil {
-				m.Extra = make(map[string]ExtraValue)
-			}
-			var mapkey string
-			mapvalue := &ExtraValue{}
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGenerated
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var mapmsglen int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						mapmsglen |= int(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					if mapmsglen < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postmsgIndex := iNdEx + mapmsglen
-					if postmsgIndex < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postmsgIndex > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = &ExtraValue{}
-					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
-						return err
-					}
-					iNdEx = postmsgIndex
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipGenerated(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Extra[mapkey] = *mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SignerName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SignerName = &s
-			iNdEx = postIndex
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationSeconds", wireType)
-			}
-			var v int32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ExpirationSeconds = &v
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Conditions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Conditions = append(m.Conditions, CertificateSigningRequestCondition{})
-			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Certificate", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Certificate = append(m.Certificate[:0], dAtA[iNdEx:postIndex]...)
-			if m.Certificate == nil {
-				m.Certificate = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ExtraValue) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ExtraValue: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtraValue: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			*m = append(*m, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	k8s_io_api_core_v1 "k8s.io/api/core/v1"
-
->>>>>>> 5ce8c7613 (update vendored files)
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-)
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-func (m *CertificateSigningRequest) Reset()      { *m = CertificateSigningRequest{} }
-func (*CertificateSigningRequest) ProtoMessage() {}
-func (*CertificateSigningRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{0}
-}
-func (m *CertificateSigningRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequest.Merge(m, src)
-}
-func (m *CertificateSigningRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequest proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestCondition) Reset()      { *m = CertificateSigningRequestCondition{} }
-func (*CertificateSigningRequestCondition) ProtoMessage() {}
-func (*CertificateSigningRequestCondition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{1}
-}
-func (m *CertificateSigningRequestCondition) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestCondition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestCondition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestCondition.Merge(m, src)
-}
-func (m *CertificateSigningRequestCondition) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestCondition) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestCondition.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestCondition proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestList) Reset()      { *m = CertificateSigningRequestList{} }
-func (*CertificateSigningRequestList) ProtoMessage() {}
-func (*CertificateSigningRequestList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{2}
-}
-func (m *CertificateSigningRequestList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestList.Merge(m, src)
-}
-func (m *CertificateSigningRequestList) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestList) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestList proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestSpec) Reset()      { *m = CertificateSigningRequestSpec{} }
-func (*CertificateSigningRequestSpec) ProtoMessage() {}
-func (*CertificateSigningRequestSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{3}
-}
-func (m *CertificateSigningRequestSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestSpec.Merge(m, src)
-}
-func (m *CertificateSigningRequestSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestSpec proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestStatus) Reset()      { *m = CertificateSigningRequestStatus{} }
-func (*CertificateSigningRequestStatus) ProtoMessage() {}
-func (*CertificateSigningRequestStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{4}
-}
-func (m *CertificateSigningRequestStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestStatus.Merge(m, src)
-}
-func (m *CertificateSigningRequestStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestStatus proto.InternalMessageInfo
-
-func (m *ExtraValue) Reset()      { *m = ExtraValue{} }
-func (*ExtraValue) ProtoMessage() {}
-func (*ExtraValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{5}
-}
-func (m *ExtraValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ExtraValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ExtraValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtraValue.Merge(m, src)
-}
-func (m *ExtraValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *ExtraValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtraValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ExtraValue proto.InternalMessageInfo
-
-func init() {
-	proto.RegisterType((*CertificateSigningRequest)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequest")
-	proto.RegisterType((*CertificateSigningRequestCondition)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestCondition")
-	proto.RegisterType((*CertificateSigningRequestList)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestList")
-	proto.RegisterType((*CertificateSigningRequestSpec)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec")
-	proto.RegisterMapType((map[string]ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec.ExtraEntry")
-	proto.RegisterType((*CertificateSigningRequestStatus)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestStatus")
-	proto.RegisterType((*ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.ExtraValue")
-}
-
-func init() {
-	proto.RegisterFile("k8s.io/kubernetes/vendor/k8s.io/api/certificates/v1beta1/generated.proto", fileDescriptor_09d156762b8218ef)
-}
-
-var fileDescriptor_09d156762b8218ef = []byte{
-	// 912 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xdd, 0x6e, 0x1b, 0x45,
-	0x14, 0xf6, 0xc6, 0xff, 0xe3, 0x92, 0xb6, 0x23, 0xa8, 0x16, 0x4b, 0xf5, 0x5a, 0x16, 0xa0, 0xf0,
-	0xd3, 0x59, 0x52, 0x55, 0x10, 0xe5, 0x02, 0xc1, 0x86, 0x08, 0x22, 0x52, 0x90, 0x26, 0x09, 0x17,
-	0x08, 0x89, 0x8e, 0xd7, 0xa7, 0x9b, 0xa9, 0xbb, 0x3f, 0xec, 0xcc, 0x9a, 0xfa, 0xae, 0x8f, 0xc0,
-	0x25, 0x97, 0xbc, 0x03, 0x2f, 0x11, 0x2e, 0x90, 0x7a, 0xd9, 0x0b, 0x64, 0x11, 0xf7, 0x2d, 0x72,
-	0x85, 0x66, 0x76, 0xbc, 0x76, 0xec, 0x84, 0x94, 0xf6, 0xce, 0xf3, 0xcd, 0xf9, 0xbe, 0xef, 0x9c,
-	0xb3, 0xe7, 0x8c, 0xd1, 0xd7, 0xc3, 0x2d, 0x41, 0x78, 0xec, 0x0e, 0xb3, 0x3e, 0xa4, 0x11, 0x48,
-	0x10, 0xee, 0x08, 0xa2, 0x41, 0x9c, 0xba, 0xe6, 0x82, 0x25, 0xdc, 0xf5, 0x21, 0x95, 0xfc, 0x21,
-	0xf7, 0x99, 0xbe, 0xde, 0xec, 0x83, 0x64, 0x9b, 0x6e, 0x00, 0x11, 0xa4, 0x4c, 0xc2, 0x80, 0x24,
-	0x69, 0x2c, 0x63, 0xec, 0xe4, 0x04, 0xc2, 0x12, 0x4e, 0x16, 0x09, 0xc4, 0x10, 0xda, 0x77, 0x02,
-	0x2e, 0x8f, 0xb3, 0x3e, 0xf1, 0xe3, 0xd0, 0x0d, 0xe2, 0x20, 0x76, 0x35, 0xaf, 0x9f, 0x3d, 0xd4,
-	0x27, 0x7d, 0xd0, 0xbf, 0x72, 0xbd, 0x76, 0x6f, 0x31, 0x81, 0x38, 0x05, 0x77, 0xb4, 0xe2, 0xd9,
-	0xbe, 0x37, 0x8f, 0x09, 0x99, 0x7f, 0xcc, 0x23, 0x48, 0xc7, 0x6e, 0x32, 0x0c, 0x14, 0x20, 0xdc,
-	0x10, 0x24, 0xbb, 0x88, 0xe5, 0x5e, 0xc6, 0x4a, 0xb3, 0x48, 0xf2, 0x10, 0x56, 0x08, 0x9f, 0x5c,
-	0x45, 0x10, 0xfe, 0x31, 0x84, 0x6c, 0x99, 0xd7, 0xfb, 0x73, 0x0d, 0xbd, 0xbd, 0x33, 0x6f, 0xc5,
-	0x01, 0x0f, 0x22, 0x1e, 0x05, 0x14, 0x7e, 0xce, 0x40, 0x48, 0xfc, 0x00, 0x35, 0x54, 0x86, 0x03,
-	0x26, 0x99, 0x6d, 0x75, 0xad, 0x8d, 0xd6, 0xdd, 0x8f, 0xc9, 0xbc, 0x87, 0x85, 0x11, 0x49, 0x86,
-	0x81, 0x02, 0x04, 0x51, 0xd1, 0x64, 0xb4, 0x49, 0xbe, 0xeb, 0x3f, 0x02, 0x5f, 0xde, 0x07, 0xc9,
-	0x3c, 0x7c, 0x32, 0x71, 0x4a, 0xd3, 0x89, 0x83, 0xe6, 0x18, 0x2d, 0x54, 0xf1, 0x03, 0x54, 0x11,
-	0x09, 0xf8, 0xf6, 0x9a, 0x56, 0xff, 0x8c, 0x5c, 0xf1, 0x85, 0xc8, 0xa5, 0xb9, 0x1e, 0x24, 0xe0,
-	0x7b, 0xd7, 0x8c, 0x57, 0x45, 0x9d, 0xa8, 0x56, 0xc6, 0xc7, 0xa8, 0x26, 0x24, 0x93, 0x99, 0xb0,
-	0xcb, 0xda, 0xe3, 0xf3, 0xd7, 0xf0, 0xd0, 0x3a, 0xde, 0xba, 0x71, 0xa9, 0xe5, 0x67, 0x6a, 0xf4,
-	0x7b, 0x2f, 0xca, 0xa8, 0x77, 0x29, 0x77, 0x27, 0x8e, 0x06, 0x5c, 0xf2, 0x38, 0xc2, 0x5b, 0xa8,
-	0x22, 0xc7, 0x09, 0xe8, 0x86, 0x36, 0xbd, 0x77, 0x66, 0x29, 0x1f, 0x8e, 0x13, 0x38, 0x9b, 0x38,
-	0x6f, 0x2e, 0xc7, 0x2b, 0x9c, 0x6a, 0x06, 0xde, 0x2f, 0x4a, 0xa9, 0x69, 0xee, 0xbd, 0xf3, 0x89,
-	0x9c, 0x4d, 0x9c, 0x0b, 0x26, 0x92, 0x14, 0x4a, 0xe7, 0xd3, 0xc5, 0xef, 0xa1, 0x5a, 0x0a, 0x4c,
-	0xc4, 0x91, 0x6e, 0x7e, 0x73, 0x5e, 0x16, 0xd5, 0x28, 0x35, 0xb7, 0xf8, 0x7d, 0x54, 0x0f, 0x41,
-	0x08, 0x16, 0x80, 0xee, 0x60, 0xd3, 0xbb, 0x6e, 0x02, 0xeb, 0xf7, 0x73, 0x98, 0xce, 0xee, 0xf1,
-	0x23, 0xb4, 0xfe, 0x98, 0x09, 0x79, 0x94, 0x0c, 0x98, 0x84, 0x43, 0x1e, 0x82, 0x5d, 0xd1, 0x3d,
-	0xff, 0xe0, 0xe5, 0xa6, 0x46, 0x31, 0xbc, 0x5b, 0x46, 0x7d, 0x7d, 0xff, 0x9c, 0x12, 0x5d, 0x52,
-	0xc6, 0x23, 0x84, 0x15, 0x72, 0x98, 0xb2, 0x48, 0xe4, 0x8d, 0x52, 0x7e, 0xd5, 0xff, 0xed, 0xd7,
-	0x36, 0x7e, 0x78, 0x7f, 0x45, 0x8d, 0x5e, 0xe0, 0xd0, 0x9b, 0x58, 0xe8, 0xf6, 0xa5, 0x5f, 0x79,
-	0x9f, 0x0b, 0x89, 0x7f, 0x5c, 0xd9, 0x1a, 0xf2, 0x72, 0xf9, 0x28, 0xb6, 0xde, 0x99, 0x1b, 0x26,
-	0xa7, 0xc6, 0x0c, 0x59, 0xd8, 0x98, 0x9f, 0x50, 0x95, 0x4b, 0x08, 0x85, 0xbd, 0xd6, 0x2d, 0x6f,
-	0xb4, 0xee, 0x6e, 0xbf, 0xfa, 0x38, 0x7b, 0x6f, 0x18, 0x9b, 0xea, 0x9e, 0x12, 0xa4, 0xb9, 0x6e,
-	0xef, 0x8f, 0xca, 0x7f, 0x14, 0xa8, 0x16, 0x0b, 0xbf, 0x8b, 0xea, 0x69, 0x7e, 0xd4, 0xf5, 0x5d,
-	0xf3, 0x5a, 0x6a, 0x1a, 0x4c, 0x04, 0x9d, 0xdd, 0x61, 0x82, 0x90, 0xe0, 0x41, 0x04, 0xe9, 0xb7,
-	0x2c, 0x04, 0xbb, 0x9e, 0x0f, 0x99, 0x7a, 0x09, 0x0e, 0x0a, 0x94, 0x2e, 0x44, 0xe0, 0x1d, 0x74,
-	0x13, 0x9e, 0x24, 0x3c, 0x65, 0x7a, 0x58, 0xc1, 0x8f, 0xa3, 0x81, 0xb0, 0x1b, 0x5d, 0x6b, 0xa3,
-	0xea, 0xbd, 0x35, 0x9d, 0x38, 0x37, 0x77, 0x97, 0x2f, 0xe9, 0x6a, 0x3c, 0x26, 0xa8, 0x96, 0xa9,
-	0x59, 0x14, 0x76, 0xb5, 0x5b, 0xde, 0x68, 0x7a, 0xb7, 0xd4, 0x44, 0x1f, 0x69, 0xe4, 0x6c, 0xe2,
-	0x34, 0xbe, 0x81, 0xb1, 0x3e, 0x50, 0x13, 0x85, 0x3f, 0x42, 0x8d, 0x4c, 0x40, 0x1a, 0xa9, 0x14,
-	0xf3, 0x3d, 0x28, 0x9a, 0x7f, 0x64, 0x70, 0x5a, 0x44, 0xe0, 0xdb, 0xa8, 0x9c, 0xf1, 0x81, 0xd9,
-	0x83, 0x96, 0x09, 0x2c, 0x1f, 0xed, 0x7d, 0x49, 0x15, 0x8e, 0x7b, 0xa8, 0x16, 0xa4, 0x71, 0x96,
-	0x08, 0xbb, 0xa2, 0xcd, 0x91, 0x32, 0xff, 0x4a, 0x23, 0xd4, 0xdc, 0xe0, 0x08, 0x55, 0xe1, 0x89,
-	0x4c, 0x99, 0x5d, 0xd3, 0xdf, 0x6f, 0xef, 0xf5, 0x9e, 0x3c, 0xb2, 0xab, 0xb4, 0x76, 0x23, 0x99,
-	0x8e, 0xe7, 0x9f, 0x53, 0x63, 0x34, 0xb7, 0x69, 0x03, 0x42, 0xf3, 0x18, 0x7c, 0x03, 0x95, 0x87,
-	0x30, 0xce, 0xdf, 0x1e, 0xaa, 0x7e, 0xe2, 0x2f, 0x50, 0x75, 0xc4, 0x1e, 0x67, 0x60, 0x9e, 0xe0,
-	0x0f, 0xaf, 0xcc, 0x47, 0xab, 0x7d, 0xaf, 0x28, 0x34, 0x67, 0x6e, 0xaf, 0x6d, 0x59, 0xbd, 0xbf,
-	0x2c, 0xe4, 0x5c, 0xf1, 0x70, 0xe2, 0x5f, 0x10, 0xf2, 0x67, 0x8f, 0x91, 0xb0, 0x2d, 0x5d, 0xff,
-	0xce, 0xab, 0xd7, 0x5f, 0x3c, 0x6c, 0xf3, 0xff, 0x98, 0x02, 0x12, 0x74, 0xc1, 0x0a, 0x6f, 0xa2,
-	0xd6, 0x82, 0xb4, 0xae, 0xf4, 0x9a, 0x77, 0x7d, 0x3a, 0x71, 0x5a, 0x0b, 0xe2, 0x74, 0x31, 0xa6,
-	0xf7, 0xa9, 0x69, 0x9b, 0x2e, 0x14, 0x3b, 0xb3, 0xa5, 0xb3, 0xf4, 0x77, 0x6d, 0x2e, 0x2f, 0xcd,
-	0x76, 0xe3, 0xb7, 0xdf, 0x9d, 0xd2, 0xd3, 0xbf, 0xbb, 0x25, 0xef, 0xce, 0xc9, 0x69, 0xa7, 0xf4,
-	0xec, 0xb4, 0x53, 0x7a, 0x7e, 0xda, 0x29, 0x3d, 0x9d, 0x76, 0xac, 0x93, 0x69, 0xc7, 0x7a, 0x36,
-	0xed, 0x58, 0xcf, 0xa7, 0x1d, 0xeb, 0x9f, 0x69, 0xc7, 0xfa, 0xf5, 0x45, 0xa7, 0xf4, 0x43, 0xdd,
-	0x54, 0xf7, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x95, 0x4b, 0xd3, 0xe2, 0xde, 0x08, 0x00, 0x00,
-}
-
-func (m *CertificateSigningRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestCondition) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestCondition) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestCondition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	i -= len(m.Status)
-	copy(dAtA[i:], m.Status)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Status)))
-	i--
-	dAtA[i] = 0x32
-	{
-		size, err := m.LastTransitionTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size, err := m.LastUpdateTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	i -= len(m.Message)
-	copy(dAtA[i:], m.Message)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Reason)
-	copy(dAtA[i:], m.Reason)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Reason)))
-	i--
-	dAtA[i] = 0x12
-	i -= len(m.Type)
-	copy(dAtA[i:], m.Type)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Items) > 0 {
-		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	{
-		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ExpirationSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.ExpirationSeconds))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.SignerName != nil {
-		i -= len(*m.SignerName)
-		copy(dAtA[i:], *m.SignerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SignerName)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Extra) > 0 {
-		keysForExtra := make([]string, 0, len(m.Extra))
-		for k := range m.Extra {
-			keysForExtra = append(keysForExtra, string(k))
-		}
-		github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-		for iNdEx := len(keysForExtra) - 1; iNdEx >= 0; iNdEx-- {
-			v := m.Extra[string(keysForExtra[iNdEx])]
-			baseI := i
-			{
-				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-			i -= len(keysForExtra[iNdEx])
-			copy(dAtA[i:], keysForExtra[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForExtra[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Usages) > 0 {
-		for iNdEx := len(m.Usages) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Usages[iNdEx])
-			copy(dAtA[i:], m.Usages[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Usages[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if len(m.Groups) > 0 {
-		for iNdEx := len(m.Groups) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Groups[iNdEx])
-			copy(dAtA[i:], m.Groups[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Groups[iNdEx])))
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	i -= len(m.UID)
-	copy(dAtA[i:], m.UID)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.UID)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Username)
-	copy(dAtA[i:], m.Username)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Username)))
-	i--
-	dAtA[i] = 0x12
-	if m.Request != nil {
-		i -= len(m.Request)
-		copy(dAtA[i:], m.Request)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Request)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Certificate != nil {
-		i -= len(m.Certificate)
-		copy(dAtA[i:], m.Certificate)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Certificate)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Conditions) > 0 {
-		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Conditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m ExtraValue) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m ExtraValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m ExtraValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for iNdEx := len(m) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m[iNdEx])
-			copy(dAtA[i:], m[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintGenerated(dAtA []byte, offset int, v uint64) int {
-	offset -= sovGenerated(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func (m *CertificateSigningRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ObjectMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Spec.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Status.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestCondition) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Reason)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Message)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastUpdateTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastTransitionTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Status)
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ListMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Items) > 0 {
-		for _, e := range m.Items {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestSpec) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Request != nil {
-		l = len(m.Request)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	l = len(m.Username)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.UID)
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Groups) > 0 {
-		for _, s := range m.Groups {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Usages) > 0 {
-		for _, s := range m.Usages {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Extra) > 0 {
-		for k, v := range m.Extra {
-			_ = k
-			_ = v
-			l = v.Size()
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
-			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
-		}
-	}
-	if m.SignerName != nil {
-		l = len(*m.SignerName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ExpirationSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.ExpirationSeconds))
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Conditions) > 0 {
-		for _, e := range m.Conditions {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if m.Certificate != nil {
-		l = len(m.Certificate)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	return n
-}
-
-func (m ExtraValue) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for _, s := range m {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func sovGenerated(x uint64) (n int) {
-	return (math_bits.Len64(x|1) + 6) / 7
-}
-func sozGenerated(x uint64) (n int) {
-	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *CertificateSigningRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequest{`,
-		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v1.ObjectMeta", 1), `&`, ``, 1) + `,`,
-		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "CertificateSigningRequestSpec", "CertificateSigningRequestSpec", 1), `&`, ``, 1) + `,`,
-		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "CertificateSigningRequestStatus", "CertificateSigningRequestStatus", 1), `&`, ``, 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestCondition) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequestCondition{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`LastUpdateTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdateTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`LastTransitionTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastTransitionTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestList) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForItems := "[]CertificateSigningRequest{"
-	for _, f := range this.Items {
-		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequest", "CertificateSigningRequest", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForItems += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestList{`,
-		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v1.ListMeta", 1), `&`, ``, 1) + `,`,
-		`Items:` + repeatedStringForItems + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	keysForExtra := make([]string, 0, len(this.Extra))
-	for k := range this.Extra {
-		keysForExtra = append(keysForExtra, k)
-	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-	mapStringForExtra := "map[string]ExtraValue{"
-	for _, k := range keysForExtra {
-		mapStringForExtra += fmt.Sprintf("%v: %v,", k, this.Extra[k])
-	}
-	mapStringForExtra += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestSpec{`,
-		`Request:` + valueToStringGenerated(this.Request) + `,`,
-		`Username:` + fmt.Sprintf("%v", this.Username) + `,`,
-		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
-		`Groups:` + fmt.Sprintf("%v", this.Groups) + `,`,
-		`Usages:` + fmt.Sprintf("%v", this.Usages) + `,`,
-		`Extra:` + mapStringForExtra + `,`,
-		`SignerName:` + valueToStringGenerated(this.SignerName) + `,`,
-		`ExpirationSeconds:` + valueToStringGenerated(this.ExpirationSeconds) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestStatus) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForConditions := "[]CertificateSigningRequestCondition{"
-	for _, f := range this.Conditions {
-		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequestCondition", "CertificateSigningRequestCondition", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForConditions += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestStatus{`,
-		`Conditions:` + repeatedStringForConditions + `,`,
-		`Certificate:` + valueToStringGenerated(this.Certificate) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func valueToStringGenerated(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
-func (m *CertificateSigningRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestCondition) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = RequestConditionType(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Reason = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastUpdateTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastTransitionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastTransitionTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Status = k8s_io_api_core_v1.ConditionStatus(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Items = append(m.Items, CertificateSigningRequest{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Request = append(m.Request[:0], dAtA[iNdEx:postIndex]...)
-			if m.Request == nil {
-				m.Request = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Username", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Username = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Groups", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Groups = append(m.Groups, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Usages", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Usages = append(m.Usages, KeyUsage(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Extra", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Extra == nil {
-				m.Extra = make(map[string]ExtraValue)
-			}
-			var mapkey string
-			mapvalue := &ExtraValue{}
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGenerated
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var mapmsglen int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						mapmsglen |= int(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					if mapmsglen < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postmsgIndex := iNdEx + mapmsglen
-					if postmsgIndex < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postmsgIndex > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = &ExtraValue{}
-					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
-						return err
-					}
-					iNdEx = postmsgIndex
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipGenerated(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Extra[mapkey] = *mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SignerName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SignerName = &s
-			iNdEx = postIndex
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationSeconds", wireType)
-			}
-			var v int32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ExpirationSeconds = &v
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Conditions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Conditions = append(m.Conditions, CertificateSigningRequestCondition{})
-			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Certificate", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Certificate = append(m.Certificate[:0], dAtA[iNdEx:postIndex]...)
-			if m.Certificate == nil {
-				m.Certificate = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ExtraValue) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ExtraValue: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtraValue: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			*m = append(*m, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-<<<<<<< HEAD
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
-=======
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	k8s_io_api_core_v1 "k8s.io/api/core/v1"
-
->>>>>>> 6b7ce455e (update vendored files)
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-)
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-func (m *CertificateSigningRequest) Reset()      { *m = CertificateSigningRequest{} }
-func (*CertificateSigningRequest) ProtoMessage() {}
-func (*CertificateSigningRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{0}
-}
-func (m *CertificateSigningRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequest.Merge(m, src)
-}
-func (m *CertificateSigningRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequest proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestCondition) Reset()      { *m = CertificateSigningRequestCondition{} }
-func (*CertificateSigningRequestCondition) ProtoMessage() {}
-func (*CertificateSigningRequestCondition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{1}
-}
-func (m *CertificateSigningRequestCondition) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestCondition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestCondition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestCondition.Merge(m, src)
-}
-func (m *CertificateSigningRequestCondition) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestCondition) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestCondition.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestCondition proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestList) Reset()      { *m = CertificateSigningRequestList{} }
-func (*CertificateSigningRequestList) ProtoMessage() {}
-func (*CertificateSigningRequestList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{2}
-}
-func (m *CertificateSigningRequestList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestList.Merge(m, src)
-}
-func (m *CertificateSigningRequestList) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestList) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestList proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestSpec) Reset()      { *m = CertificateSigningRequestSpec{} }
-func (*CertificateSigningRequestSpec) ProtoMessage() {}
-func (*CertificateSigningRequestSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{3}
-}
-func (m *CertificateSigningRequestSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestSpec.Merge(m, src)
-}
-func (m *CertificateSigningRequestSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestSpec proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestStatus) Reset()      { *m = CertificateSigningRequestStatus{} }
-func (*CertificateSigningRequestStatus) ProtoMessage() {}
-func (*CertificateSigningRequestStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{4}
-}
-func (m *CertificateSigningRequestStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestStatus.Merge(m, src)
-}
-func (m *CertificateSigningRequestStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestStatus proto.InternalMessageInfo
-
-func (m *ExtraValue) Reset()      { *m = ExtraValue{} }
-func (*ExtraValue) ProtoMessage() {}
-func (*ExtraValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{5}
-}
-func (m *ExtraValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ExtraValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ExtraValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtraValue.Merge(m, src)
-}
-func (m *ExtraValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *ExtraValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtraValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ExtraValue proto.InternalMessageInfo
-
-func init() {
-	proto.RegisterType((*CertificateSigningRequest)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequest")
-	proto.RegisterType((*CertificateSigningRequestCondition)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestCondition")
-	proto.RegisterType((*CertificateSigningRequestList)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestList")
-	proto.RegisterType((*CertificateSigningRequestSpec)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec")
-	proto.RegisterMapType((map[string]ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec.ExtraEntry")
-	proto.RegisterType((*CertificateSigningRequestStatus)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestStatus")
-	proto.RegisterType((*ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.ExtraValue")
-}
-
-func init() {
-	proto.RegisterFile("k8s.io/kubernetes/vendor/k8s.io/api/certificates/v1beta1/generated.proto", fileDescriptor_09d156762b8218ef)
-}
-
-var fileDescriptor_09d156762b8218ef = []byte{
-	// 912 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xdd, 0x6e, 0x1b, 0x45,
-	0x14, 0xf6, 0xc6, 0xff, 0xe3, 0x92, 0xb6, 0x23, 0xa8, 0x16, 0x4b, 0xf5, 0x5a, 0x16, 0xa0, 0xf0,
-	0xd3, 0x59, 0x52, 0x55, 0x10, 0xe5, 0x02, 0xc1, 0x86, 0x08, 0x22, 0x52, 0x90, 0x26, 0x09, 0x17,
-	0x08, 0x89, 0x8e, 0xd7, 0xa7, 0x9b, 0xa9, 0xbb, 0x3f, 0xec, 0xcc, 0x9a, 0xfa, 0xae, 0x8f, 0xc0,
-	0x25, 0x97, 0xbc, 0x03, 0x2f, 0x11, 0x2e, 0x90, 0x7a, 0xd9, 0x0b, 0x64, 0x11, 0xf7, 0x2d, 0x72,
-	0x85, 0x66, 0x76, 0xbc, 0x76, 0xec, 0x84, 0x94, 0xf6, 0xce, 0xf3, 0xcd, 0xf9, 0xbe, 0xef, 0x9c,
-	0xb3, 0xe7, 0x8c, 0xd1, 0xd7, 0xc3, 0x2d, 0x41, 0x78, 0xec, 0x0e, 0xb3, 0x3e, 0xa4, 0x11, 0x48,
-	0x10, 0xee, 0x08, 0xa2, 0x41, 0x9c, 0xba, 0xe6, 0x82, 0x25, 0xdc, 0xf5, 0x21, 0x95, 0xfc, 0x21,
-	0xf7, 0x99, 0xbe, 0xde, 0xec, 0x83, 0x64, 0x9b, 0x6e, 0x00, 0x11, 0xa4, 0x4c, 0xc2, 0x80, 0x24,
-	0x69, 0x2c, 0x63, 0xec, 0xe4, 0x04, 0xc2, 0x12, 0x4e, 0x16, 0x09, 0xc4, 0x10, 0xda, 0x77, 0x02,
-	0x2e, 0x8f, 0xb3, 0x3e, 0xf1, 0xe3, 0xd0, 0x0d, 0xe2, 0x20, 0x76, 0x35, 0xaf, 0x9f, 0x3d, 0xd4,
-	0x27, 0x7d, 0xd0, 0xbf, 0x72, 0xbd, 0x76, 0x6f, 0x31, 0x81, 0x38, 0x05, 0x77, 0xb4, 0xe2, 0xd9,
-	0xbe, 0x37, 0x8f, 0x09, 0x99, 0x7f, 0xcc, 0x23, 0x48, 0xc7, 0x6e, 0x32, 0x0c, 0x14, 0x20, 0xdc,
-	0x10, 0x24, 0xbb, 0x88, 0xe5, 0x5e, 0xc6, 0x4a, 0xb3, 0x48, 0xf2, 0x10, 0x56, 0x08, 0x9f, 0x5c,
-	0x45, 0x10, 0xfe, 0x31, 0x84, 0x6c, 0x99, 0xd7, 0xfb, 0x73, 0x0d, 0xbd, 0xbd, 0x33, 0x6f, 0xc5,
-	0x01, 0x0f, 0x22, 0x1e, 0x05, 0x14, 0x7e, 0xce, 0x40, 0x48, 0xfc, 0x00, 0x35, 0x54, 0x86, 0x03,
-	0x26, 0x99, 0x6d, 0x75, 0xad, 0x8d, 0xd6, 0xdd, 0x8f, 0xc9, 0xbc, 0x87, 0x85, 0x11, 0x49, 0x86,
-	0x81, 0x02, 0x04, 0x51, 0xd1, 0x64, 0xb4, 0x49, 0xbe, 0xeb, 0x3f, 0x02, 0x5f, 0xde, 0x07, 0xc9,
-	0x3c, 0x7c, 0x32, 0x71, 0x4a, 0xd3, 0x89, 0x83, 0xe6, 0x18, 0x2d, 0x54, 0xf1, 0x03, 0x54, 0x11,
-	0x09, 0xf8, 0xf6, 0x9a, 0x56, 0xff, 0x8c, 0x5c, 0xf1, 0x85, 0xc8, 0xa5, 0xb9, 0x1e, 0x24, 0xe0,
-	0x7b, 0xd7, 0x8c, 0x57, 0x45, 0x9d, 0xa8, 0x56, 0xc6, 0xc7, 0xa8, 0x26, 0x24, 0x93, 0x99, 0xb0,
-	0xcb, 0xda, 0xe3, 0xf3, 0xd7, 0xf0, 0xd0, 0x3a, 0xde, 0xba, 0x71, 0xa9, 0xe5, 0x67, 0x6a, 0xf4,
-	0x7b, 0x2f, 0xca, 0xa8, 0x77, 0x29, 0x77, 0x27, 0x8e, 0x06, 0x5c, 0xf2, 0x38, 0xc2, 0x5b, 0xa8,
-	0x22, 0xc7, 0x09, 0xe8, 0x86, 0x36, 0xbd, 0x77, 0x66, 0x29, 0x1f, 0x8e, 0x13, 0x38, 0x9b, 0x38,
-	0x6f, 0x2e, 0xc7, 0x2b, 0x9c, 0x6a, 0x06, 0xde, 0x2f, 0x4a, 0xa9, 0x69, 0xee, 0xbd, 0xf3, 0x89,
-	0x9c, 0x4d, 0x9c, 0x0b, 0x26, 0x92, 0x14, 0x4a, 0xe7, 0xd3, 0xc5, 0xef, 0xa1, 0x5a, 0x0a, 0x4c,
-	0xc4, 0x91, 0x6e, 0x7e, 0x73, 0x5e, 0x16, 0xd5, 0x28, 0x35, 0xb7, 0xf8, 0x7d, 0x54, 0x0f, 0x41,
-	0x08, 0x16, 0x80, 0xee, 0x60, 0xd3, 0xbb, 0x6e, 0x02, 0xeb, 0xf7, 0x73, 0x98, 0xce, 0xee, 0xf1,
-	0x23, 0xb4, 0xfe, 0x98, 0x09, 0x79, 0x94, 0x0c, 0x98, 0x84, 0x43, 0x1e, 0x82, 0x5d, 0xd1, 0x3d,
-	0xff, 0xe0, 0xe5, 0xa6, 0x46, 0x31, 0xbc, 0x5b, 0x46, 0x7d, 0x7d, 0xff, 0x9c, 0x12, 0x5d, 0x52,
-	0xc6, 0x23, 0x84, 0x15, 0x72, 0x98, 0xb2, 0x48, 0xe4, 0x8d, 0x52, 0x7e, 0xd5, 0xff, 0xed, 0xd7,
-	0x36, 0x7e, 0x78, 0x7f, 0x45, 0x8d, 0x5e, 0xe0, 0xd0, 0x9b, 0x58, 0xe8, 0xf6, 0xa5, 0x5f, 0x79,
-	0x9f, 0x0b, 0x89, 0x7f, 0x5c, 0xd9, 0x1a, 0xf2, 0x72, 0xf9, 0x28, 0xb6, 0xde, 0x99, 0x1b, 0x26,
-	0xa7, 0xc6, 0x0c, 0x59, 0xd8, 0x98, 0x9f, 0x50, 0x95, 0x4b, 0x08, 0x85, 0xbd, 0xd6, 0x2d, 0x6f,
-	0xb4, 0xee, 0x6e, 0xbf, 0xfa, 0x38, 0x7b, 0x6f, 0x18, 0x9b, 0xea, 0x9e, 0x12, 0xa4, 0xb9, 0x6e,
-	0xef, 0x8f, 0xca, 0x7f, 0x14, 0xa8, 0x16, 0x0b, 0xbf, 0x8b, 0xea, 0x69, 0x7e, 0xd4, 0xf5, 0x5d,
-	0xf3, 0x5a, 0x6a, 0x1a, 0x4c, 0x04, 0x9d, 0xdd, 0x61, 0x82, 0x90, 0xe0, 0x41, 0x04, 0xe9, 0xb7,
-	0x2c, 0x04, 0xbb, 0x9e, 0x0f, 0x99, 0x7a, 0x09, 0x0e, 0x0a, 0x94, 0x2e, 0x44, 0xe0, 0x1d, 0x74,
-	0x13, 0x9e, 0x24, 0x3c, 0x65, 0x7a, 0x58, 0xc1, 0x8f, 0xa3, 0x81, 0xb0, 0x1b, 0x5d, 0x6b, 0xa3,
-	0xea, 0xbd, 0x35, 0x9d, 0x38, 0x37, 0x77, 0x97, 0x2f, 0xe9, 0x6a, 0x3c, 0x26, 0xa8, 0x96, 0xa9,
-	0x59, 0x14, 0x76, 0xb5, 0x5b, 0xde, 0x68, 0x7a, 0xb7, 0xd4, 0x44, 0x1f, 0x69, 0xe4, 0x6c, 0xe2,
-	0x34, 0xbe, 0x81, 0xb1, 0x3e, 0x50, 0x13, 0x85, 0x3f, 0x42, 0x8d, 0x4c, 0x40, 0x1a, 0xa9, 0x14,
-	0xf3, 0x3d, 0x28, 0x9a, 0x7f, 0x64, 0x70, 0x5a, 0x44, 0xe0, 0xdb, 0xa8, 0x9c, 0xf1, 0x81, 0xd9,
-	0x83, 0x96, 0x09, 0x2c, 0x1f, 0xed, 0x7d, 0x49, 0x15, 0x8e, 0x7b, 0xa8, 0x16, 0xa4, 0x71, 0x96,
-	0x08, 0xbb, 0xa2, 0xcd, 0x91, 0x32, 0xff, 0x4a, 0x23, 0xd4, 0xdc, 0xe0, 0x08, 0x55, 0xe1, 0x89,
-	0x4c, 0x99, 0x5d, 0xd3, 0xdf, 0x6f, 0xef, 0xf5, 0x9e, 0x3c, 0xb2, 0xab, 0xb4, 0x76, 0x23, 0x99,
-	0x8e, 0xe7, 0x9f, 0x53, 0x63, 0x34, 0xb7, 0x69, 0x03, 0x42, 0xf3, 0x18, 0x7c, 0x03, 0x95, 0x87,
-	0x30, 0xce, 0xdf, 0x1e, 0xaa, 0x7e, 0xe2, 0x2f, 0x50, 0x75, 0xc4, 0x1e, 0x67, 0x60, 0x9e, 0xe0,
-	0x0f, 0xaf, 0xcc, 0x47, 0xab, 0x7d, 0xaf, 0x28, 0x34, 0x67, 0x6e, 0xaf, 0x6d, 0x59, 0xbd, 0xbf,
-	0x2c, 0xe4, 0x5c, 0xf1, 0x70, 0xe2, 0x5f, 0x10, 0xf2, 0x67, 0x8f, 0x91, 0xb0, 0x2d, 0x5d, 0xff,
-	0xce, 0xab, 0xd7, 0x5f, 0x3c, 0x6c, 0xf3, 0xff, 0x98, 0x02, 0x12, 0x74, 0xc1, 0x0a, 0x6f, 0xa2,
-	0xd6, 0x82, 0xb4, 0xae, 0xf4, 0x9a, 0x77, 0x7d, 0x3a, 0x71, 0x5a, 0x0b, 0xe2, 0x74, 0x31, 0xa6,
-	0xf7, 0xa9, 0x69, 0x9b, 0x2e, 0x14, 0x3b, 0xb3, 0xa5, 0xb3, 0xf4, 0x77, 0x6d, 0x2e, 0x2f, 0xcd,
-	0x76, 0xe3, 0xb7, 0xdf, 0x9d, 0xd2, 0xd3, 0xbf, 0xbb, 0x25, 0xef, 0xce, 0xc9, 0x69, 0xa7, 0xf4,
-	0xec, 0xb4, 0x53, 0x7a, 0x7e, 0xda, 0x29, 0x3d, 0x9d, 0x76, 0xac, 0x93, 0x69, 0xc7, 0x7a, 0x36,
-	0xed, 0x58, 0xcf, 0xa7, 0x1d, 0xeb, 0x9f, 0x69, 0xc7, 0xfa, 0xf5, 0x45, 0xa7, 0xf4, 0x43, 0xdd,
-	0x54, 0xf7, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x95, 0x4b, 0xd3, 0xe2, 0xde, 0x08, 0x00, 0x00,
-}
-
-func (m *CertificateSigningRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestCondition) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestCondition) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestCondition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	i -= len(m.Status)
-	copy(dAtA[i:], m.Status)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Status)))
-	i--
-	dAtA[i] = 0x32
-	{
-		size, err := m.LastTransitionTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size, err := m.LastUpdateTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	i -= len(m.Message)
-	copy(dAtA[i:], m.Message)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Reason)
-	copy(dAtA[i:], m.Reason)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Reason)))
-	i--
-	dAtA[i] = 0x12
-	i -= len(m.Type)
-	copy(dAtA[i:], m.Type)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Items) > 0 {
-		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	{
-		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ExpirationSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.ExpirationSeconds))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.SignerName != nil {
-		i -= len(*m.SignerName)
-		copy(dAtA[i:], *m.SignerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SignerName)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Extra) > 0 {
-		keysForExtra := make([]string, 0, len(m.Extra))
-		for k := range m.Extra {
-			keysForExtra = append(keysForExtra, string(k))
-		}
-		github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-		for iNdEx := len(keysForExtra) - 1; iNdEx >= 0; iNdEx-- {
-			v := m.Extra[string(keysForExtra[iNdEx])]
-			baseI := i
-			{
-				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-			i -= len(keysForExtra[iNdEx])
-			copy(dAtA[i:], keysForExtra[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForExtra[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Usages) > 0 {
-		for iNdEx := len(m.Usages) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Usages[iNdEx])
-			copy(dAtA[i:], m.Usages[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Usages[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if len(m.Groups) > 0 {
-		for iNdEx := len(m.Groups) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Groups[iNdEx])
-			copy(dAtA[i:], m.Groups[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Groups[iNdEx])))
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	i -= len(m.UID)
-	copy(dAtA[i:], m.UID)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.UID)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Username)
-	copy(dAtA[i:], m.Username)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Username)))
-	i--
-	dAtA[i] = 0x12
-	if m.Request != nil {
-		i -= len(m.Request)
-		copy(dAtA[i:], m.Request)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Request)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Certificate != nil {
-		i -= len(m.Certificate)
-		copy(dAtA[i:], m.Certificate)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Certificate)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Conditions) > 0 {
-		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Conditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m ExtraValue) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m ExtraValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m ExtraValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for iNdEx := len(m) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m[iNdEx])
-			copy(dAtA[i:], m[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintGenerated(dAtA []byte, offset int, v uint64) int {
-	offset -= sovGenerated(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func (m *CertificateSigningRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ObjectMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Spec.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Status.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestCondition) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Reason)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Message)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastUpdateTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastTransitionTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Status)
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ListMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Items) > 0 {
-		for _, e := range m.Items {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestSpec) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Request != nil {
-		l = len(m.Request)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	l = len(m.Username)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.UID)
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Groups) > 0 {
-		for _, s := range m.Groups {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Usages) > 0 {
-		for _, s := range m.Usages {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Extra) > 0 {
-		for k, v := range m.Extra {
-			_ = k
-			_ = v
-			l = v.Size()
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
-			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
-		}
-	}
-	if m.SignerName != nil {
-		l = len(*m.SignerName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ExpirationSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.ExpirationSeconds))
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Conditions) > 0 {
-		for _, e := range m.Conditions {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if m.Certificate != nil {
-		l = len(m.Certificate)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	return n
-}
-
-func (m ExtraValue) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for _, s := range m {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func sovGenerated(x uint64) (n int) {
-	return (math_bits.Len64(x|1) + 6) / 7
-}
-func sozGenerated(x uint64) (n int) {
-	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *CertificateSigningRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequest{`,
-		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v1.ObjectMeta", 1), `&`, ``, 1) + `,`,
-		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "CertificateSigningRequestSpec", "CertificateSigningRequestSpec", 1), `&`, ``, 1) + `,`,
-		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "CertificateSigningRequestStatus", "CertificateSigningRequestStatus", 1), `&`, ``, 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestCondition) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequestCondition{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`LastUpdateTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdateTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`LastTransitionTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastTransitionTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestList) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForItems := "[]CertificateSigningRequest{"
-	for _, f := range this.Items {
-		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequest", "CertificateSigningRequest", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForItems += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestList{`,
-		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v1.ListMeta", 1), `&`, ``, 1) + `,`,
-		`Items:` + repeatedStringForItems + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	keysForExtra := make([]string, 0, len(this.Extra))
-	for k := range this.Extra {
-		keysForExtra = append(keysForExtra, k)
-	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-	mapStringForExtra := "map[string]ExtraValue{"
-	for _, k := range keysForExtra {
-		mapStringForExtra += fmt.Sprintf("%v: %v,", k, this.Extra[k])
-	}
-	mapStringForExtra += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestSpec{`,
-		`Request:` + valueToStringGenerated(this.Request) + `,`,
-		`Username:` + fmt.Sprintf("%v", this.Username) + `,`,
-		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
-		`Groups:` + fmt.Sprintf("%v", this.Groups) + `,`,
-		`Usages:` + fmt.Sprintf("%v", this.Usages) + `,`,
-		`Extra:` + mapStringForExtra + `,`,
-		`SignerName:` + valueToStringGenerated(this.SignerName) + `,`,
-		`ExpirationSeconds:` + valueToStringGenerated(this.ExpirationSeconds) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestStatus) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForConditions := "[]CertificateSigningRequestCondition{"
-	for _, f := range this.Conditions {
-		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequestCondition", "CertificateSigningRequestCondition", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForConditions += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestStatus{`,
-		`Conditions:` + repeatedStringForConditions + `,`,
-		`Certificate:` + valueToStringGenerated(this.Certificate) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func valueToStringGenerated(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
-func (m *CertificateSigningRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestCondition) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = RequestConditionType(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Reason = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastUpdateTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastTransitionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastTransitionTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Status = k8s_io_api_core_v1.ConditionStatus(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Items = append(m.Items, CertificateSigningRequest{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Request = append(m.Request[:0], dAtA[iNdEx:postIndex]...)
-			if m.Request == nil {
-				m.Request = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Username", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Username = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Groups", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Groups = append(m.Groups, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Usages", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Usages = append(m.Usages, KeyUsage(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Extra", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Extra == nil {
-				m.Extra = make(map[string]ExtraValue)
-			}
-			var mapkey string
-			mapvalue := &ExtraValue{}
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGenerated
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var mapmsglen int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						mapmsglen |= int(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					if mapmsglen < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postmsgIndex := iNdEx + mapmsglen
-					if postmsgIndex < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postmsgIndex > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = &ExtraValue{}
-					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
-						return err
-					}
-					iNdEx = postmsgIndex
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipGenerated(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Extra[mapkey] = *mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SignerName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SignerName = &s
-			iNdEx = postIndex
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationSeconds", wireType)
-			}
-			var v int32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ExpirationSeconds = &v
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Conditions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Conditions = append(m.Conditions, CertificateSigningRequestCondition{})
-			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Certificate", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Certificate = append(m.Certificate[:0], dAtA[iNdEx:postIndex]...)
-			if m.Certificate == nil {
-				m.Certificate = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ExtraValue) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ExtraValue: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtraValue: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			*m = append(*m, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-<<<<<<< HEAD
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
-=======
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	k8s_io_api_core_v1 "k8s.io/api/core/v1"
-
->>>>>>> 4d7e5ad26 (update vendored files)
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-)
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-func (m *CertificateSigningRequest) Reset()      { *m = CertificateSigningRequest{} }
-func (*CertificateSigningRequest) ProtoMessage() {}
-func (*CertificateSigningRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{0}
-}
-func (m *CertificateSigningRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequest.Merge(m, src)
-}
-func (m *CertificateSigningRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequest proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestCondition) Reset()      { *m = CertificateSigningRequestCondition{} }
-func (*CertificateSigningRequestCondition) ProtoMessage() {}
-func (*CertificateSigningRequestCondition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{1}
-}
-func (m *CertificateSigningRequestCondition) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestCondition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestCondition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestCondition.Merge(m, src)
-}
-func (m *CertificateSigningRequestCondition) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestCondition) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestCondition.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestCondition proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestList) Reset()      { *m = CertificateSigningRequestList{} }
-func (*CertificateSigningRequestList) ProtoMessage() {}
-func (*CertificateSigningRequestList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{2}
-}
-func (m *CertificateSigningRequestList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestList.Merge(m, src)
-}
-func (m *CertificateSigningRequestList) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestList) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestList proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestSpec) Reset()      { *m = CertificateSigningRequestSpec{} }
-func (*CertificateSigningRequestSpec) ProtoMessage() {}
-func (*CertificateSigningRequestSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{3}
-}
-func (m *CertificateSigningRequestSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestSpec.Merge(m, src)
-}
-func (m *CertificateSigningRequestSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestSpec proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestStatus) Reset()      { *m = CertificateSigningRequestStatus{} }
-func (*CertificateSigningRequestStatus) ProtoMessage() {}
-func (*CertificateSigningRequestStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{4}
-}
-func (m *CertificateSigningRequestStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestStatus.Merge(m, src)
-}
-func (m *CertificateSigningRequestStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestStatus proto.InternalMessageInfo
-
-func (m *ExtraValue) Reset()      { *m = ExtraValue{} }
-func (*ExtraValue) ProtoMessage() {}
-func (*ExtraValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_09d156762b8218ef, []int{5}
-}
-func (m *ExtraValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ExtraValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ExtraValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtraValue.Merge(m, src)
-}
-func (m *ExtraValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *ExtraValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtraValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ExtraValue proto.InternalMessageInfo
-
-func init() {
-	proto.RegisterType((*CertificateSigningRequest)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequest")
-	proto.RegisterType((*CertificateSigningRequestCondition)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestCondition")
-	proto.RegisterType((*CertificateSigningRequestList)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestList")
-	proto.RegisterType((*CertificateSigningRequestSpec)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec")
-	proto.RegisterMapType((map[string]ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec.ExtraEntry")
-	proto.RegisterType((*CertificateSigningRequestStatus)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestStatus")
-	proto.RegisterType((*ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.ExtraValue")
-}
-
-func init() {
-	proto.RegisterFile("k8s.io/kubernetes/vendor/k8s.io/api/certificates/v1beta1/generated.proto", fileDescriptor_09d156762b8218ef)
-}
-
-var fileDescriptor_09d156762b8218ef = []byte{
-	// 912 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xdd, 0x6e, 0x1b, 0x45,
-	0x14, 0xf6, 0xc6, 0xff, 0xe3, 0x92, 0xb6, 0x23, 0xa8, 0x16, 0x4b, 0xf5, 0x5a, 0x16, 0xa0, 0xf0,
-	0xd3, 0x59, 0x52, 0x55, 0x10, 0xe5, 0x02, 0xc1, 0x86, 0x08, 0x22, 0x52, 0x90, 0x26, 0x09, 0x17,
-	0x08, 0x89, 0x8e, 0xd7, 0xa7, 0x9b, 0xa9, 0xbb, 0x3f, 0xec, 0xcc, 0x9a, 0xfa, 0xae, 0x8f, 0xc0,
-	0x25, 0x97, 0xbc, 0x03, 0x2f, 0x11, 0x2e, 0x90, 0x7a, 0xd9, 0x0b, 0x64, 0x11, 0xf7, 0x2d, 0x72,
-	0x85, 0x66, 0x76, 0xbc, 0x76, 0xec, 0x84, 0x94, 0xf6, 0xce, 0xf3, 0xcd, 0xf9, 0xbe, 0xef, 0x9c,
-	0xb3, 0xe7, 0x8c, 0xd1, 0xd7, 0xc3, 0x2d, 0x41, 0x78, 0xec, 0x0e, 0xb3, 0x3e, 0xa4, 0x11, 0x48,
-	0x10, 0xee, 0x08, 0xa2, 0x41, 0x9c, 0xba, 0xe6, 0x82, 0x25, 0xdc, 0xf5, 0x21, 0x95, 0xfc, 0x21,
-	0xf7, 0x99, 0xbe, 0xde, 0xec, 0x83, 0x64, 0x9b, 0x6e, 0x00, 0x11, 0xa4, 0x4c, 0xc2, 0x80, 0x24,
-	0x69, 0x2c, 0x63, 0xec, 0xe4, 0x04, 0xc2, 0x12, 0x4e, 0x16, 0x09, 0xc4, 0x10, 0xda, 0x77, 0x02,
-	0x2e, 0x8f, 0xb3, 0x3e, 0xf1, 0xe3, 0xd0, 0x0d, 0xe2, 0x20, 0x76, 0x35, 0xaf, 0x9f, 0x3d, 0xd4,
-	0x27, 0x7d, 0xd0, 0xbf, 0x72, 0xbd, 0x76, 0x6f, 0x31, 0x81, 0x38, 0x05, 0x77, 0xb4, 0xe2, 0xd9,
-	0xbe, 0x37, 0x8f, 0x09, 0x99, 0x7f, 0xcc, 0x23, 0x48, 0xc7, 0x6e, 0x32, 0x0c, 0x14, 0x20, 0xdc,
-	0x10, 0x24, 0xbb, 0x88, 0xe5, 0x5e, 0xc6, 0x4a, 0xb3, 0x48, 0xf2, 0x10, 0x56, 0x08, 0x9f, 0x5c,
-	0x45, 0x10, 0xfe, 0x31, 0x84, 0x6c, 0x99, 0xd7, 0xfb, 0x73, 0x0d, 0xbd, 0xbd, 0x33, 0x6f, 0xc5,
-	0x01, 0x0f, 0x22, 0x1e, 0x05, 0x14, 0x7e, 0xce, 0x40, 0x48, 0xfc, 0x00, 0x35, 0x54, 0x86, 0x03,
-	0x26, 0x99, 0x6d, 0x75, 0xad, 0x8d, 0xd6, 0xdd, 0x8f, 0xc9, 0xbc, 0x87, 0x85, 0x11, 0x49, 0x86,
-	0x81, 0x02, 0x04, 0x51, 0xd1, 0x64, 0xb4, 0x49, 0xbe, 0xeb, 0x3f, 0x02, 0x5f, 0xde, 0x07, 0xc9,
-	0x3c, 0x7c, 0x32, 0x71, 0x4a, 0xd3, 0x89, 0x83, 0xe6, 0x18, 0x2d, 0x54, 0xf1, 0x03, 0x54, 0x11,
-	0x09, 0xf8, 0xf6, 0x9a, 0x56, 0xff, 0x8c, 0x5c, 0xf1, 0x85, 0xc8, 0xa5, 0xb9, 0x1e, 0x24, 0xe0,
-	0x7b, 0xd7, 0x8c, 0x57, 0x45, 0x9d, 0xa8, 0x56, 0xc6, 0xc7, 0xa8, 0x26, 0x24, 0x93, 0x99, 0xb0,
-	0xcb, 0xda, 0xe3, 0xf3, 0xd7, 0xf0, 0xd0, 0x3a, 0xde, 0xba, 0x71, 0xa9, 0xe5, 0x67, 0x6a, 0xf4,
-	0x7b, 0x2f, 0xca, 0xa8, 0x77, 0x29, 0x77, 0x27, 0x8e, 0x06, 0x5c, 0xf2, 0x38, 0xc2, 0x5b, 0xa8,
-	0x22, 0xc7, 0x09, 0xe8, 0x86, 0x36, 0xbd, 0x77, 0x66, 0x29, 0x1f, 0x8e, 0x13, 0x38, 0x9b, 0x38,
-	0x6f, 0x2e, 0xc7, 0x2b, 0x9c, 0x6a, 0x06, 0xde, 0x2f, 0x4a, 0xa9, 0x69, 0xee, 0xbd, 0xf3, 0x89,
-	0x9c, 0x4d, 0x9c, 0x0b, 0x26, 0x92, 0x14, 0x4a, 0xe7, 0xd3, 0xc5, 0xef, 0xa1, 0x5a, 0x0a, 0x4c,
-	0xc4, 0x91, 0x6e, 0x7e, 0x73, 0x5e, 0x16, 0xd5, 0x28, 0x35, 0xb7, 0xf8, 0x7d, 0x54, 0x0f, 0x41,
-	0x08, 0x16, 0x80, 0xee, 0x60, 0xd3, 0xbb, 0x6e, 0x02, 0xeb, 0xf7, 0x73, 0x98, 0xce, 0xee, 0xf1,
-	0x23, 0xb4, 0xfe, 0x98, 0x09, 0x79, 0x94, 0x0c, 0x98, 0x84, 0x43, 0x1e, 0x82, 0x5d, 0xd1, 0x3d,
-	0xff, 0xe0, 0xe5, 0xa6, 0x46, 0x31, 0xbc, 0x5b, 0x46, 0x7d, 0x7d, 0xff, 0x9c, 0x12, 0x5d, 0x52,
-	0xc6, 0x23, 0x84, 0x15, 0x72, 0x98, 0xb2, 0x48, 0xe4, 0x8d, 0x52, 0x7e, 0xd5, 0xff, 0xed, 0xd7,
-	0x36, 0x7e, 0x78, 0x7f, 0x45, 0x8d, 0x5e, 0xe0, 0xd0, 0x9b, 0x58, 0xe8, 0xf6, 0xa5, 0x5f, 0x79,
-	0x9f, 0x0b, 0x89, 0x7f, 0x5c, 0xd9, 0x1a, 0xf2, 0x72, 0xf9, 0x28, 0xb6, 0xde, 0x99, 0x1b, 0x26,
-	0xa7, 0xc6, 0x0c, 0x59, 0xd8, 0x98, 0x9f, 0x50, 0x95, 0x4b, 0x08, 0x85, 0xbd, 0xd6, 0x2d, 0x6f,
-	0xb4, 0xee, 0x6e, 0xbf, 0xfa, 0x38, 0x7b, 0x6f, 0x18, 0x9b, 0xea, 0x9e, 0x12, 0xa4, 0xb9, 0x6e,
-	0xef, 0x8f, 0xca, 0x7f, 0x14, 0xa8, 0x16, 0x0b, 0xbf, 0x8b, 0xea, 0x69, 0x7e, 0xd4, 0xf5, 0x5d,
-	0xf3, 0x5a, 0x6a, 0x1a, 0x4c, 0x04, 0x9d, 0xdd, 0x61, 0x82, 0x90, 0xe0, 0x41, 0x04, 0xe9, 0xb7,
-	0x2c, 0x04, 0xbb, 0x9e, 0x0f, 0x99, 0x7a, 0x09, 0x0e, 0x0a, 0x94, 0x2e, 0x44, 0xe0, 0x1d, 0x74,
-	0x13, 0x9e, 0x24, 0x3c, 0x65, 0x7a, 0x58, 0xc1, 0x8f, 0xa3, 0x81, 0xb0, 0x1b, 0x5d, 0x6b, 0xa3,
-	0xea, 0xbd, 0x35, 0x9d, 0x38, 0x37, 0x77, 0x97, 0x2f, 0xe9, 0x6a, 0x3c, 0x26, 0xa8, 0x96, 0xa9,
-	0x59, 0x14, 0x76, 0xb5, 0x5b, 0xde, 0x68, 0x7a, 0xb7, 0xd4, 0x44, 0x1f, 0x69, 0xe4, 0x6c, 0xe2,
-	0x34, 0xbe, 0x81, 0xb1, 0x3e, 0x50, 0x13, 0x85, 0x3f, 0x42, 0x8d, 0x4c, 0x40, 0x1a, 0xa9, 0x14,
-	0xf3, 0x3d, 0x28, 0x9a, 0x7f, 0x64, 0x70, 0x5a, 0x44, 0xe0, 0xdb, 0xa8, 0x9c, 0xf1, 0x81, 0xd9,
-	0x83, 0x96, 0x09, 0x2c, 0x1f, 0xed, 0x7d, 0x49, 0x15, 0x8e, 0x7b, 0xa8, 0x16, 0xa4, 0x71, 0x96,
-	0x08, 0xbb, 0xa2, 0xcd, 0x91, 0x32, 0xff, 0x4a, 0x23, 0xd4, 0xdc, 0xe0, 0x08, 0x55, 0xe1, 0x89,
-	0x4c, 0x99, 0x5d, 0xd3, 0xdf, 0x6f, 0xef, 0xf5, 0x9e, 0x3c, 0xb2, 0xab, 0xb4, 0x76, 0x23, 0x99,
-	0x8e, 0xe7, 0x9f, 0x53, 0x63, 0x34, 0xb7, 0x69, 0x03, 0x42, 0xf3, 0x18, 0x7c, 0x03, 0x95, 0x87,
-	0x30, 0xce, 0xdf, 0x1e, 0xaa, 0x7e, 0xe2, 0x2f, 0x50, 0x75, 0xc4, 0x1e, 0x67, 0x60, 0x9e, 0xe0,
-	0x0f, 0xaf, 0xcc, 0x47, 0xab, 0x7d, 0xaf, 0x28, 0x34, 0x67, 0x6e, 0xaf, 0x6d, 0x59, 0xbd, 0xbf,
-	0x2c, 0xe4, 0x5c, 0xf1, 0x70, 0xe2, 0x5f, 0x10, 0xf2, 0x67, 0x8f, 0x91, 0xb0, 0x2d, 0x5d, 0xff,
-	0xce, 0xab, 0xd7, 0x5f, 0x3c, 0x6c, 0xf3, 0xff, 0x98, 0x02, 0x12, 0x74, 0xc1, 0x0a, 0x6f, 0xa2,
-	0xd6, 0x82, 0xb4, 0xae, 0xf4, 0x9a, 0x77, 0x7d, 0x3a, 0x71, 0x5a, 0x0b, 0xe2, 0x74, 0x31, 0xa6,
-	0xf7, 0xa9, 0x69, 0x9b, 0x2e, 0x14, 0x3b, 0xb3, 0xa5, 0xb3, 0xf4, 0x77, 0x6d, 0x2e, 0x2f, 0xcd,
-	0x76, 0xe3, 0xb7, 0xdf, 0x9d, 0xd2, 0xd3, 0xbf, 0xbb, 0x25, 0xef, 0xce, 0xc9, 0x69, 0xa7, 0xf4,
-	0xec, 0xb4, 0x53, 0x7a, 0x7e, 0xda, 0x29, 0x3d, 0x9d, 0x76, 0xac, 0x93, 0x69, 0xc7, 0x7a, 0x36,
-	0xed, 0x58, 0xcf, 0xa7, 0x1d, 0xeb, 0x9f, 0x69, 0xc7, 0xfa, 0xf5, 0x45, 0xa7, 0xf4, 0x43, 0xdd,
-	0x54, 0xf7, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x95, 0x4b, 0xd3, 0xe2, 0xde, 0x08, 0x00, 0x00,
-}
-
-func (m *CertificateSigningRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestCondition) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestCondition) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestCondition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	i -= len(m.Status)
-	copy(dAtA[i:], m.Status)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Status)))
-	i--
-	dAtA[i] = 0x32
-	{
-		size, err := m.LastTransitionTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size, err := m.LastUpdateTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	i -= len(m.Message)
-	copy(dAtA[i:], m.Message)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Reason)
-	copy(dAtA[i:], m.Reason)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Reason)))
-	i--
-	dAtA[i] = 0x12
-	i -= len(m.Type)
-	copy(dAtA[i:], m.Type)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Items) > 0 {
-		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	{
-		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ExpirationSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.ExpirationSeconds))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.SignerName != nil {
-		i -= len(*m.SignerName)
-		copy(dAtA[i:], *m.SignerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SignerName)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Extra) > 0 {
-		keysForExtra := make([]string, 0, len(m.Extra))
-		for k := range m.Extra {
-			keysForExtra = append(keysForExtra, string(k))
-		}
-		github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-		for iNdEx := len(keysForExtra) - 1; iNdEx >= 0; iNdEx-- {
-			v := m.Extra[string(keysForExtra[iNdEx])]
-			baseI := i
-			{
-				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-			i -= len(keysForExtra[iNdEx])
-			copy(dAtA[i:], keysForExtra[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForExtra[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Usages) > 0 {
-		for iNdEx := len(m.Usages) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Usages[iNdEx])
-			copy(dAtA[i:], m.Usages[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Usages[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if len(m.Groups) > 0 {
-		for iNdEx := len(m.Groups) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Groups[iNdEx])
-			copy(dAtA[i:], m.Groups[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Groups[iNdEx])))
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	i -= len(m.UID)
-	copy(dAtA[i:], m.UID)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.UID)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Username)
-	copy(dAtA[i:], m.Username)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Username)))
-	i--
-	dAtA[i] = 0x12
-	if m.Request != nil {
-		i -= len(m.Request)
-		copy(dAtA[i:], m.Request)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Request)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Certificate != nil {
-		i -= len(m.Certificate)
-		copy(dAtA[i:], m.Certificate)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(m.Certificate)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Conditions) > 0 {
-		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Conditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m ExtraValue) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m ExtraValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m ExtraValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for iNdEx := len(m) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m[iNdEx])
-			copy(dAtA[i:], m[iNdEx])
-			i = encodeVarintGenerated(dAtA, i, uint64(len(m[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintGenerated(dAtA []byte, offset int, v uint64) int {
-	offset -= sovGenerated(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func (m *CertificateSigningRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ObjectMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Spec.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.Status.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestCondition) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Reason)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Message)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastUpdateTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = m.LastTransitionTime.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Status)
-	n += 1 + l + sovGenerated(uint64(l))
-	return n
-}
-
-func (m *CertificateSigningRequestList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.ListMeta.Size()
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Items) > 0 {
-		for _, e := range m.Items {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestSpec) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Request != nil {
-		l = len(m.Request)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	l = len(m.Username)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.UID)
-	n += 1 + l + sovGenerated(uint64(l))
-	if len(m.Groups) > 0 {
-		for _, s := range m.Groups {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Usages) > 0 {
-		for _, s := range m.Usages {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if len(m.Extra) > 0 {
-		for k, v := range m.Extra {
-			_ = k
-			_ = v
-			l = v.Size()
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
-			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
-		}
-	}
-	if m.SignerName != nil {
-		l = len(*m.SignerName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ExpirationSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.ExpirationSeconds))
-	}
-	return n
-}
-
-func (m *CertificateSigningRequestStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Conditions) > 0 {
-		for _, e := range m.Conditions {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	if m.Certificate != nil {
-		l = len(m.Certificate)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	return n
-}
-
-func (m ExtraValue) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m) > 0 {
-		for _, s := range m {
-			l = len(s)
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	return n
-}
-
-func sovGenerated(x uint64) (n int) {
-	return (math_bits.Len64(x|1) + 6) / 7
-}
-func sozGenerated(x uint64) (n int) {
-	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *CertificateSigningRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequest{`,
-		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v1.ObjectMeta", 1), `&`, ``, 1) + `,`,
-		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "CertificateSigningRequestSpec", "CertificateSigningRequestSpec", 1), `&`, ``, 1) + `,`,
-		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "CertificateSigningRequestStatus", "CertificateSigningRequestStatus", 1), `&`, ``, 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestCondition) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CertificateSigningRequestCondition{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`LastUpdateTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdateTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`LastTransitionTime:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastTransitionTime), "Time", "v1.Time", 1), `&`, ``, 1) + `,`,
-		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestList) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForItems := "[]CertificateSigningRequest{"
-	for _, f := range this.Items {
-		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequest", "CertificateSigningRequest", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForItems += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestList{`,
-		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v1.ListMeta", 1), `&`, ``, 1) + `,`,
-		`Items:` + repeatedStringForItems + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	keysForExtra := make([]string, 0, len(this.Extra))
-	for k := range this.Extra {
-		keysForExtra = append(keysForExtra, k)
-	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
-	mapStringForExtra := "map[string]ExtraValue{"
-	for _, k := range keysForExtra {
-		mapStringForExtra += fmt.Sprintf("%v: %v,", k, this.Extra[k])
-	}
-	mapStringForExtra += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestSpec{`,
-		`Request:` + valueToStringGenerated(this.Request) + `,`,
-		`Username:` + fmt.Sprintf("%v", this.Username) + `,`,
-		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
-		`Groups:` + fmt.Sprintf("%v", this.Groups) + `,`,
-		`Usages:` + fmt.Sprintf("%v", this.Usages) + `,`,
-		`Extra:` + mapStringForExtra + `,`,
-		`SignerName:` + valueToStringGenerated(this.SignerName) + `,`,
-		`ExpirationSeconds:` + valueToStringGenerated(this.ExpirationSeconds) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CertificateSigningRequestStatus) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForConditions := "[]CertificateSigningRequestCondition{"
-	for _, f := range this.Conditions {
-		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "CertificateSigningRequestCondition", "CertificateSigningRequestCondition", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForConditions += "}"
-	s := strings.Join([]string{`&CertificateSigningRequestStatus{`,
-		`Conditions:` + repeatedStringForConditions + `,`,
-		`Certificate:` + valueToStringGenerated(this.Certificate) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func valueToStringGenerated(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
-func (m *CertificateSigningRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestCondition) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestCondition: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = RequestConditionType(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Reason = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastUpdateTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastTransitionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastTransitionTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Status = k8s_io_api_core_v1.ConditionStatus(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Items = append(m.Items, CertificateSigningRequest{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Request = append(m.Request[:0], dAtA[iNdEx:postIndex]...)
-			if m.Request == nil {
-				m.Request = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Username", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Username = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Groups", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Groups = append(m.Groups, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Usages", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Usages = append(m.Usages, KeyUsage(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Extra", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Extra == nil {
-				m.Extra = make(map[string]ExtraValue)
-			}
-			var mapkey string
-			mapvalue := &ExtraValue{}
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGenerated
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var mapmsglen int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGenerated
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						mapmsglen |= int(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					if mapmsglen < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					postmsgIndex := iNdEx + mapmsglen
-					if postmsgIndex < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if postmsgIndex > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = &ExtraValue{}
-					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
-						return err
-					}
-					iNdEx = postmsgIndex
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipGenerated(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthGenerated
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Extra[mapkey] = *mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SignerName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SignerName = &s
-			iNdEx = postIndex
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationSeconds", wireType)
-			}
-			var v int32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ExpirationSeconds = &v
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CertificateSigningRequestStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CertificateSigningRequestStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Conditions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Conditions = append(m.Conditions, CertificateSigningRequestCondition{})
-			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Certificate", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Certificate = append(m.Certificate[:0], dAtA[iNdEx:postIndex]...)
-			if m.Certificate == nil {
-				m.Certificate = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ExtraValue) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ExtraValue: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtraValue: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			*m = append(*m, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-<<<<<<< HEAD
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
-=======
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	k8s_io_api_core_v1 "k8s.io/api/core/v1"
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-)
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-func (m *CertificateSigningRequest) Reset()      { *m = CertificateSigningRequest{} }
-func (*CertificateSigningRequest) ProtoMessage() {}
-func (*CertificateSigningRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{0}
-}
-func (m *CertificateSigningRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequest.Merge(m, src)
-}
-func (m *CertificateSigningRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequest proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestCondition) Reset()      { *m = CertificateSigningRequestCondition{} }
-func (*CertificateSigningRequestCondition) ProtoMessage() {}
-func (*CertificateSigningRequestCondition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{1}
-}
-func (m *CertificateSigningRequestCondition) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestCondition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestCondition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestCondition.Merge(m, src)
-}
-func (m *CertificateSigningRequestCondition) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestCondition) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestCondition.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestCondition proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestList) Reset()      { *m = CertificateSigningRequestList{} }
-func (*CertificateSigningRequestList) ProtoMessage() {}
-func (*CertificateSigningRequestList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{2}
-}
-func (m *CertificateSigningRequestList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestList.Merge(m, src)
-}
-func (m *CertificateSigningRequestList) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestList) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestList proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestSpec) Reset()      { *m = CertificateSigningRequestSpec{} }
-func (*CertificateSigningRequestSpec) ProtoMessage() {}
-func (*CertificateSigningRequestSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{3}
-}
-func (m *CertificateSigningRequestSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestSpec.Merge(m, src)
-}
-func (m *CertificateSigningRequestSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestSpec proto.InternalMessageInfo
-
-func (m *CertificateSigningRequestStatus) Reset()      { *m = CertificateSigningRequestStatus{} }
-func (*CertificateSigningRequestStatus) ProtoMessage() {}
-func (*CertificateSigningRequestStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{4}
-}
-func (m *CertificateSigningRequestStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CertificateSigningRequestStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *CertificateSigningRequestStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateSigningRequestStatus.Merge(m, src)
-}
-func (m *CertificateSigningRequestStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *CertificateSigningRequestStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateSigningRequestStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateSigningRequestStatus proto.InternalMessageInfo
-
-func (m *ClusterTrustBundle) Reset()      { *m = ClusterTrustBundle{} }
-func (*ClusterTrustBundle) ProtoMessage() {}
-func (*ClusterTrustBundle) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{5}
-}
-func (m *ClusterTrustBundle) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ClusterTrustBundle) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ClusterTrustBundle) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClusterTrustBundle.Merge(m, src)
-}
-func (m *ClusterTrustBundle) XXX_Size() int {
-	return m.Size()
-}
-func (m *ClusterTrustBundle) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClusterTrustBundle.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ClusterTrustBundle proto.InternalMessageInfo
-
-func (m *ClusterTrustBundleList) Reset()      { *m = ClusterTrustBundleList{} }
-func (*ClusterTrustBundleList) ProtoMessage() {}
-func (*ClusterTrustBundleList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{6}
-}
-func (m *ClusterTrustBundleList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ClusterTrustBundleList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ClusterTrustBundleList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClusterTrustBundleList.Merge(m, src)
-}
-func (m *ClusterTrustBundleList) XXX_Size() int {
-	return m.Size()
-}
-func (m *ClusterTrustBundleList) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClusterTrustBundleList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ClusterTrustBundleList proto.InternalMessageInfo
-
-func (m *ClusterTrustBundleSpec) Reset()      { *m = ClusterTrustBundleSpec{} }
-func (*ClusterTrustBundleSpec) ProtoMessage() {}
-func (*ClusterTrustBundleSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{7}
-}
-func (m *ClusterTrustBundleSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ClusterTrustBundleSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ClusterTrustBundleSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClusterTrustBundleSpec.Merge(m, src)
-}
-func (m *ClusterTrustBundleSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *ClusterTrustBundleSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClusterTrustBundleSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ClusterTrustBundleSpec proto.InternalMessageInfo
-
-func (m *ExtraValue) Reset()      { *m = ExtraValue{} }
-func (*ExtraValue) ProtoMessage() {}
-func (*ExtraValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6529c11a462c48a5, []int{8}
-}
-func (m *ExtraValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ExtraValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	b = b[:cap(b)]
-	n, err := m.MarshalToSizedBuffer(b)
-	if err != nil {
-		return nil, err
-	}
-	return b[:n], nil
-}
-func (m *ExtraValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtraValue.Merge(m, src)
-}
-func (m *ExtraValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *ExtraValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtraValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ExtraValue proto.InternalMessageInfo
-
-func init() {
-	proto.RegisterType((*CertificateSigningRequest)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequest")
-	proto.RegisterType((*CertificateSigningRequestCondition)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestCondition")
-	proto.RegisterType((*CertificateSigningRequestList)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestList")
-	proto.RegisterType((*CertificateSigningRequestSpec)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec")
-	proto.RegisterMapType((map[string]ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestSpec.ExtraEntry")
-	proto.RegisterType((*CertificateSigningRequestStatus)(nil), "k8s.io.api.certificates.v1beta1.CertificateSigningRequestStatus")
-	proto.RegisterType((*ClusterTrustBundle)(nil), "k8s.io.api.certificates.v1beta1.ClusterTrustBundle")
-	proto.RegisterType((*ClusterTrustBundleList)(nil), "k8s.io.api.certificates.v1beta1.ClusterTrustBundleList")
-	proto.RegisterType((*ClusterTrustBundleSpec)(nil), "k8s.io.api.certificates.v1beta1.ClusterTrustBundleSpec")
-	proto.RegisterType((*ExtraValue)(nil), "k8s.io.api.certificates.v1beta1.ExtraValue")
-}
-
-func init() {
-	proto.RegisterFile("k8s.io/api/certificates/v1beta1/generated.proto", fileDescriptor_6529c11a462c48a5)
-}
-
-var fileDescriptor_6529c11a462c48a5 = []byte{
-	// 991 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x4f, 0x6f, 0xe3, 0x44,
-	0x14, 0x8f, 0x9b, 0x3f, 0x4d, 0x26, 0xa5, 0xbb, 0x3b, 0x40, 0x65, 0x22, 0x6d, 0x1c, 0x59, 0x80,
-	0xca, 0x3f, 0x9b, 0x96, 0x85, 0xad, 0x7a, 0x40, 0xe0, 0x50, 0xa1, 0x8a, 0x2e, 0x48, 0xd3, 0x16,
-	0x01, 0x42, 0x62, 0xa7, 0xce, 0x5b, 0xd7, 0xdb, 0xc6, 0x36, 0x9e, 0x71, 0xd8, 0xdc, 0x56, 0xe2,
-	0x0b, 0x70, 0xe4, 0xc8, 0x77, 0xe0, 0x4b, 0x94, 0x03, 0x52, 0xb9, 0xed, 0x01, 0x45, 0x34, 0xfb,
-	0x2d, 0x7a, 0x42, 0x33, 0x9e, 0x38, 0x4e, 0xd2, 0x90, 0xa5, 0x2b, 0xed, 0x2d, 0xf3, 0xe6, 0xfd,
-	0x7e, 0xbf, 0xf7, 0x9e, 0xdf, 0x7b, 0x13, 0x64, 0x9f, 0x6c, 0x31, 0xcb, 0x0f, 0x6d, 0x1a, 0xf9,
-	0xb6, 0x0b, 0x31, 0xf7, 0x1f, 0xf8, 0x2e, 0xe5, 0xc0, 0xec, 0xde, 0xc6, 0x11, 0x70, 0xba, 0x61,
-	0x7b, 0x10, 0x40, 0x4c, 0x39, 0x74, 0xac, 0x28, 0x0e, 0x79, 0x88, 0x8d, 0x14, 0x60, 0xd1, 0xc8,
-	0xb7, 0xf2, 0x00, 0x4b, 0x01, 0x1a, 0xef, 0x79, 0x3e, 0x3f, 0x4e, 0x8e, 0x2c, 0x37, 0xec, 0xda,
-	0x5e, 0xe8, 0x85, 0xb6, 0xc4, 0x1d, 0x25, 0x0f, 0xe4, 0x49, 0x1e, 0xe4, 0xaf, 0x94, 0xaf, 0x61,
-	0xe6, 0x03, 0x08, 0x63, 0xb0, 0x7b, 0x33, 0x9a, 0x8d, 0x3b, 0x63, 0x9f, 0x2e, 0x75, 0x8f, 0xfd,
-	0x00, 0xe2, 0xbe, 0x1d, 0x9d, 0x78, 0xc2, 0xc0, 0xec, 0x2e, 0x70, 0x7a, 0x15, 0xca, 0x9e, 0x87,
-	0x8a, 0x93, 0x80, 0xfb, 0x5d, 0x98, 0x01, 0x7c, 0xb4, 0x08, 0xc0, 0xdc, 0x63, 0xe8, 0xd2, 0x69,
-	0x9c, 0xf9, 0xc7, 0x12, 0x7a, 0xad, 0x3d, 0x2e, 0xc5, 0xbe, 0xef, 0x05, 0x7e, 0xe0, 0x11, 0xf8,
-	0x31, 0x01, 0xc6, 0xf1, 0x7d, 0x54, 0x15, 0x11, 0x76, 0x28, 0xa7, 0xba, 0xd6, 0xd2, 0xd6, 0xeb,
-	0x9b, 0xef, 0x5b, 0xe3, 0x1a, 0x66, 0x42, 0x56, 0x74, 0xe2, 0x09, 0x03, 0xb3, 0x84, 0xb7, 0xd5,
-	0xdb, 0xb0, 0xbe, 0x3a, 0x7a, 0x08, 0x2e, 0xbf, 0x07, 0x9c, 0x3a, 0xf8, 0x6c, 0x60, 0x14, 0x86,
-	0x03, 0x03, 0x8d, 0x6d, 0x24, 0x63, 0xc5, 0xf7, 0x51, 0x89, 0x45, 0xe0, 0xea, 0x4b, 0x92, 0xfd,
-	0x63, 0x6b, 0xc1, 0x17, 0xb2, 0xe6, 0xc6, 0xba, 0x1f, 0x81, 0xeb, 0xac, 0x28, 0xad, 0x92, 0x38,
-	0x11, 0xc9, 0x8c, 0x8f, 0x51, 0x85, 0x71, 0xca, 0x13, 0xa6, 0x17, 0xa5, 0xc6, 0x27, 0xcf, 0xa1,
-	0x21, 0x79, 0x9c, 0x55, 0xa5, 0x52, 0x49, 0xcf, 0x44, 0xf1, 0x9b, 0x4f, 0x8b, 0xc8, 0x9c, 0x8b,
-	0x6d, 0x87, 0x41, 0xc7, 0xe7, 0x7e, 0x18, 0xe0, 0x2d, 0x54, 0xe2, 0xfd, 0x08, 0x64, 0x41, 0x6b,
-	0xce, 0xeb, 0xa3, 0x90, 0x0f, 0xfa, 0x11, 0x5c, 0x0e, 0x8c, 0x57, 0xa6, 0xfd, 0x85, 0x9d, 0x48,
-	0x04, 0xde, 0xcb, 0x52, 0xa9, 0x48, 0xec, 0x9d, 0xc9, 0x40, 0x2e, 0x07, 0xc6, 0x15, 0x1d, 0x69,
-	0x65, 0x4c, 0x93, 0xe1, 0xe2, 0x37, 0x51, 0x25, 0x06, 0xca, 0xc2, 0x40, 0x16, 0xbf, 0x36, 0x4e,
-	0x8b, 0x48, 0x2b, 0x51, 0xb7, 0xf8, 0x2d, 0xb4, 0xdc, 0x05, 0xc6, 0xa8, 0x07, 0xb2, 0x82, 0x35,
-	0xe7, 0x86, 0x72, 0x5c, 0xbe, 0x97, 0x9a, 0xc9, 0xe8, 0x1e, 0x3f, 0x44, 0xab, 0xa7, 0x94, 0xf1,
-	0xc3, 0xa8, 0x43, 0x39, 0x1c, 0xf8, 0x5d, 0xd0, 0x4b, 0xb2, 0xe6, 0x6f, 0x3f, 0x5b, 0xd7, 0x08,
-	0x84, 0xb3, 0xa6, 0xd8, 0x57, 0xf7, 0x26, 0x98, 0xc8, 0x14, 0x33, 0xee, 0x21, 0x2c, 0x2c, 0x07,
-	0x31, 0x0d, 0x58, 0x5a, 0x28, 0xa1, 0x57, 0xfe, 0xdf, 0x7a, 0x0d, 0xa5, 0x87, 0xf7, 0x66, 0xd8,
-	0xc8, 0x15, 0x0a, 0xe6, 0x40, 0x43, 0xb7, 0xe7, 0x7e, 0xe5, 0x3d, 0x9f, 0x71, 0xfc, 0xfd, 0xcc,
-	0xd4, 0x58, 0xcf, 0x16, 0x8f, 0x40, 0xcb, 0x99, 0xb9, 0xa9, 0x62, 0xaa, 0x8e, 0x2c, 0xb9, 0x89,
-	0xf9, 0x01, 0x95, 0x7d, 0x0e, 0x5d, 0xa6, 0x2f, 0xb5, 0x8a, 0xeb, 0xf5, 0xcd, 0xed, 0xeb, 0xb7,
-	0xb3, 0xf3, 0x92, 0x92, 0x29, 0xef, 0x0a, 0x42, 0x92, 0xf2, 0x9a, 0xbf, 0x97, 0xfe, 0x23, 0x41,
-	0x31, 0x58, 0xf8, 0x0d, 0xb4, 0x1c, 0xa7, 0x47, 0x99, 0xdf, 0x8a, 0x53, 0x17, 0xdd, 0xa0, 0x3c,
-	0xc8, 0xe8, 0x0e, 0x5b, 0x08, 0x31, 0xdf, 0x0b, 0x20, 0xfe, 0x92, 0x76, 0x41, 0x5f, 0x4e, 0x9b,
-	0x4c, 0x6c, 0x82, 0xfd, 0xcc, 0x4a, 0x72, 0x1e, 0xb8, 0x8d, 0x6e, 0xc1, 0xa3, 0xc8, 0x8f, 0xa9,
-	0x6c, 0x56, 0x70, 0xc3, 0xa0, 0xc3, 0xf4, 0x6a, 0x4b, 0x5b, 0x2f, 0x3b, 0xaf, 0x0e, 0x07, 0xc6,
-	0xad, 0x9d, 0xe9, 0x4b, 0x32, 0xeb, 0x8f, 0x2d, 0x54, 0x49, 0x44, 0x2f, 0x32, 0xbd, 0xdc, 0x2a,
-	0xae, 0xd7, 0x9c, 0x35, 0xd1, 0xd1, 0x87, 0xd2, 0x72, 0x39, 0x30, 0xaa, 0x5f, 0x40, 0x5f, 0x1e,
-	0x88, 0xf2, 0xc2, 0xef, 0xa2, 0x6a, 0xc2, 0x20, 0x0e, 0x44, 0x88, 0xe9, 0x1c, 0x64, 0xc5, 0x3f,
-	0x54, 0x76, 0x92, 0x79, 0xe0, 0xdb, 0xa8, 0x98, 0xf8, 0x1d, 0x35, 0x07, 0x75, 0xe5, 0x58, 0x3c,
-	0xdc, 0xfd, 0x8c, 0x08, 0x3b, 0x36, 0x51, 0xc5, 0x8b, 0xc3, 0x24, 0x62, 0x7a, 0x49, 0x8a, 0x23,
-	0x21, 0xfe, 0xb9, 0xb4, 0x10, 0x75, 0x83, 0x03, 0x54, 0x86, 0x47, 0x3c, 0xa6, 0x7a, 0x45, 0x7e,
-	0xbf, 0xdd, 0xe7, 0x5b, 0x79, 0xd6, 0x8e, 0xe0, 0xda, 0x09, 0x78, 0xdc, 0x1f, 0x7f, 0x4e, 0x69,
-	0x23, 0xa9, 0x4c, 0x03, 0x10, 0x1a, 0xfb, 0xe0, 0x9b, 0xa8, 0x78, 0x02, 0xfd, 0x74, 0xf7, 0x10,
-	0xf1, 0x13, 0x7f, 0x8a, 0xca, 0x3d, 0x7a, 0x9a, 0x80, 0x5a, 0xc1, 0xef, 0x2c, 0x8c, 0x47, 0xb2,
-	0x7d, 0x2d, 0x20, 0x24, 0x45, 0x6e, 0x2f, 0x6d, 0x69, 0xe6, 0x9f, 0x1a, 0x32, 0x16, 0x2c, 0x4e,
-	0xfc, 0x13, 0x42, 0xee, 0x68, 0x19, 0x31, 0x5d, 0x93, 0xf9, 0xb7, 0xaf, 0x9f, 0x7f, 0xb6, 0xd8,
-	0xc6, 0x6f, 0x4c, 0x66, 0x62, 0x24, 0x27, 0x85, 0x37, 0x50, 0x3d, 0x47, 0x2d, 0x33, 0x5d, 0x71,
-	0x6e, 0x0c, 0x07, 0x46, 0x3d, 0x47, 0x4e, 0xf2, 0x3e, 0xe6, 0x5f, 0x1a, 0xc2, 0xed, 0xd3, 0x84,
-	0x71, 0x88, 0x0f, 0xe2, 0x84, 0x71, 0x27, 0x09, 0x3a, 0xa7, 0xf0, 0x02, 0x5e, 0xc4, 0x6f, 0x27,
-	0x5e, 0xc4, 0xbb, 0x8b, 0xcb, 0x33, 0x13, 0xe4, 0xbc, 0xa7, 0xd0, 0x3c, 0xd7, 0xd0, 0xda, 0xac,
-	0xfb, 0x0b, 0xd8, 0x59, 0xdf, 0x4c, 0xee, 0xac, 0x0f, 0xae, 0x91, 0xd4, 0x9c, 0x65, 0xf5, 0xf3,
-	0x95, 0x29, 0xc9, 0x2d, 0xb5, 0x39, 0xb1, 0x7e, 0xd2, 0xd7, 0x36, 0x2b, 0xfd, 0x9c, 0x15, 0xf4,
-	0x21, 0xaa, 0xf3, 0x31, 0x8d, 0x5a, 0x08, 0x2f, 0x2b, 0x50, 0x3d, 0xa7, 0x40, 0xf2, 0x7e, 0xe6,
-	0x5d, 0x35, 0x63, 0x72, 0x2a, 0xb0, 0x31, 0xca, 0x56, 0x93, 0x4b, 0xa0, 0x36, 0x1d, 0xf4, 0x76,
-	0xf5, 0xd7, 0xdf, 0x8c, 0xc2, 0xe3, 0xbf, 0x5b, 0x05, 0x67, 0xe7, 0xec, 0xa2, 0x59, 0x38, 0xbf,
-	0x68, 0x16, 0x9e, 0x5c, 0x34, 0x0b, 0x8f, 0x87, 0x4d, 0xed, 0x6c, 0xd8, 0xd4, 0xce, 0x87, 0x4d,
-	0xed, 0xc9, 0xb0, 0xa9, 0xfd, 0x33, 0x6c, 0x6a, 0xbf, 0x3c, 0x6d, 0x16, 0xbe, 0x33, 0x16, 0xfc,
-	0xd1, 0xfd, 0x37, 0x00, 0x00, 0xff, 0xff, 0x17, 0xbe, 0xe3, 0x02, 0x0a, 0x0b, 0x00, 0x00,
-}
-
-func (m *CertificateSigningRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestCondition) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestCondition) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestCondition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	i -= len(m.Status)
-	copy(dAtA[i:], m.Status)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Status)))
-	i--
-	dAtA[i] = 0x32
-	{
-		size, err := m.LastTransitionTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size, err := m.LastUpdateTime.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	i -= len(m.Message)
-	copy(dAtA[i:], m.Message)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
-	i--
-	dAtA[i] = 0x1a
-	i -= len(m.Reason)
-	copy(dAtA[i:], m.Reason)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Reason)))
-	i--
-	dAtA[i] = 0x12
-	i -= len(m.Type)
-	copy(dAtA[i:], m.Type)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Items) > 0 {
-		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	{
-		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintGenerated(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CertificateSigningRequestSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CertificateSigningRequestSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CertificateSigningRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ExpirationSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.ExpirationSeconds))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.SignerName != nil {
-		i -= len(*m.SignerName)
-		copy(dAtA[i:], *m.SignerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SignerName)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Extra) > 0 {
-		keysForExtra := make([]string, 0, len(m.Extra))
-		for k := range m.Extra {
-			keysForExtra = append(keysForExtra, string(k))
-		}
-		github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
+		sort.Strings(keysForExtra)
 		for iNdEx := len(keysForExtra) - 1; iNdEx >= 0; iNdEx-- {
 			v := m.Extra[string(keysForExtra[iNdEx])]
 			baseI := i
@@ -8642,6 +522,292 @@ func (m ExtraValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *PodCertificateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PodCertificateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PodCertificateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *PodCertificateRequestList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PodCertificateRequestList) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PodCertificateRequestList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Items) > 0 {
+		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *PodCertificateRequestSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PodCertificateRequestSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PodCertificateRequestSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.StubPKCS10Request != nil {
+		i -= len(m.StubPKCS10Request)
+		copy(dAtA[i:], m.StubPKCS10Request)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(m.StubPKCS10Request)))
+		i--
+		dAtA[i] = 0x62
+	}
+	if len(m.UnverifiedUserAnnotations) > 0 {
+		keysForUnverifiedUserAnnotations := make([]string, 0, len(m.UnverifiedUserAnnotations))
+		for k := range m.UnverifiedUserAnnotations {
+			keysForUnverifiedUserAnnotations = append(keysForUnverifiedUserAnnotations, string(k))
+		}
+		sort.Strings(keysForUnverifiedUserAnnotations)
+		for iNdEx := len(keysForUnverifiedUserAnnotations) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.UnverifiedUserAnnotations[string(keysForUnverifiedUserAnnotations[iNdEx])]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintGenerated(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForUnverifiedUserAnnotations[iNdEx])
+			copy(dAtA[i:], keysForUnverifiedUserAnnotations[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForUnverifiedUserAnnotations[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x5a
+		}
+	}
+	if m.ProofOfPossession != nil {
+		i -= len(m.ProofOfPossession)
+		copy(dAtA[i:], m.ProofOfPossession)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(m.ProofOfPossession)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.PKIXPublicKey != nil {
+		i -= len(m.PKIXPublicKey)
+		copy(dAtA[i:], m.PKIXPublicKey)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(m.PKIXPublicKey)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.MaxExpirationSeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.MaxExpirationSeconds))
+		i--
+		dAtA[i] = 0x40
+	}
+	i -= len(m.NodeUID)
+	copy(dAtA[i:], m.NodeUID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.NodeUID)))
+	i--
+	dAtA[i] = 0x3a
+	i -= len(m.NodeName)
+	copy(dAtA[i:], m.NodeName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.NodeName)))
+	i--
+	dAtA[i] = 0x32
+	i -= len(m.ServiceAccountUID)
+	copy(dAtA[i:], m.ServiceAccountUID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccountUID)))
+	i--
+	dAtA[i] = 0x2a
+	i -= len(m.ServiceAccountName)
+	copy(dAtA[i:], m.ServiceAccountName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccountName)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.PodUID)
+	copy(dAtA[i:], m.PodUID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodUID)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.PodName)
+	copy(dAtA[i:], m.PodName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodName)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.SignerName)
+	copy(dAtA[i:], m.SignerName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SignerName)))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *PodCertificateRequestStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PodCertificateRequestStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PodCertificateRequestStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.NotAfter != nil {
+		{
+			size, err := m.NotAfter.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.BeginRefreshAt != nil {
+		{
+			size, err := m.BeginRefreshAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.NotBefore != nil {
+		{
+			size, err := m.NotBefore.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	i -= len(m.CertificateChain)
+	copy(dAtA[i:], m.CertificateChain)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CertificateChain)))
+	i--
+	dAtA[i] = 0x12
+	if len(m.Conditions) > 0 {
+		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Conditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintGenerated(dAtA []byte, offset int, v uint64) int {
 	offset -= sovGenerated(v)
 	base := offset
@@ -8828,6 +994,113 @@ func (m ExtraValue) Size() (n int) {
 	return n
 }
 
+func (m *PodCertificateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
+func (m *PodCertificateRequestList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if len(m.Items) > 0 {
+		for _, e := range m.Items {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PodCertificateRequestSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.SignerName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.PodName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.PodUID)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.ServiceAccountName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.ServiceAccountUID)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.NodeName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.NodeUID)
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.MaxExpirationSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.MaxExpirationSeconds))
+	}
+	if m.PKIXPublicKey != nil {
+		l = len(m.PKIXPublicKey)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ProofOfPossession != nil {
+		l = len(m.ProofOfPossession)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if len(m.UnverifiedUserAnnotations) > 0 {
+		for k, v := range m.UnverifiedUserAnnotations {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + len(v) + sovGenerated(uint64(len(v)))
+			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
+		}
+	}
+	if m.StubPKCS10Request != nil {
+		l = len(m.StubPKCS10Request)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
+func (m *PodCertificateRequestStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Conditions) > 0 {
+		for _, e := range m.Conditions {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	l = len(m.CertificateChain)
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.NotBefore != nil {
+		l = m.NotBefore.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.BeginRefreshAt != nil {
+		l = m.BeginRefreshAt.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.NotAfter != nil {
+		l = m.NotAfter.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
 func sovGenerated(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -8885,7 +1158,7 @@ func (this *CertificateSigningRequestSpec) String() string {
 	for k := range this.Extra {
 		keysForExtra = append(keysForExtra, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForExtra)
+	sort.Strings(keysForExtra)
 	mapStringForExtra := "map[string]ExtraValue{"
 	for _, k := range keysForExtra {
 		mapStringForExtra += fmt.Sprintf("%v: %v,", k, this.Extra[k])
@@ -8954,6 +1227,84 @@ func (this *ClusterTrustBundleSpec) String() string {
 	s := strings.Join([]string{`&ClusterTrustBundleSpec{`,
 		`SignerName:` + fmt.Sprintf("%v", this.SignerName) + `,`,
 		`TrustBundle:` + fmt.Sprintf("%v", this.TrustBundle) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodCertificateRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodCertificateRequest{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v1.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "PodCertificateRequestSpec", "PodCertificateRequestSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "PodCertificateRequestStatus", "PodCertificateRequestStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodCertificateRequestList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]PodCertificateRequest{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "PodCertificateRequest", "PodCertificateRequest", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&PodCertificateRequestList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v1.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodCertificateRequestSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForUnverifiedUserAnnotations := make([]string, 0, len(this.UnverifiedUserAnnotations))
+	for k := range this.UnverifiedUserAnnotations {
+		keysForUnverifiedUserAnnotations = append(keysForUnverifiedUserAnnotations, k)
+	}
+	sort.Strings(keysForUnverifiedUserAnnotations)
+	mapStringForUnverifiedUserAnnotations := "map[string]string{"
+	for _, k := range keysForUnverifiedUserAnnotations {
+		mapStringForUnverifiedUserAnnotations += fmt.Sprintf("%v: %v,", k, this.UnverifiedUserAnnotations[k])
+	}
+	mapStringForUnverifiedUserAnnotations += "}"
+	s := strings.Join([]string{`&PodCertificateRequestSpec{`,
+		`SignerName:` + fmt.Sprintf("%v", this.SignerName) + `,`,
+		`PodName:` + fmt.Sprintf("%v", this.PodName) + `,`,
+		`PodUID:` + fmt.Sprintf("%v", this.PodUID) + `,`,
+		`ServiceAccountName:` + fmt.Sprintf("%v", this.ServiceAccountName) + `,`,
+		`ServiceAccountUID:` + fmt.Sprintf("%v", this.ServiceAccountUID) + `,`,
+		`NodeName:` + fmt.Sprintf("%v", this.NodeName) + `,`,
+		`NodeUID:` + fmt.Sprintf("%v", this.NodeUID) + `,`,
+		`MaxExpirationSeconds:` + valueToStringGenerated(this.MaxExpirationSeconds) + `,`,
+		`PKIXPublicKey:` + valueToStringGenerated(this.PKIXPublicKey) + `,`,
+		`ProofOfPossession:` + valueToStringGenerated(this.ProofOfPossession) + `,`,
+		`UnverifiedUserAnnotations:` + mapStringForUnverifiedUserAnnotations + `,`,
+		`StubPKCS10Request:` + valueToStringGenerated(this.StubPKCS10Request) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodCertificateRequestStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForConditions := "[]Condition{"
+	for _, f := range this.Conditions {
+		repeatedStringForConditions += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForConditions += "}"
+	s := strings.Join([]string{`&PodCertificateRequestStatus{`,
+		`Conditions:` + repeatedStringForConditions + `,`,
+		`CertificateChain:` + fmt.Sprintf("%v", this.CertificateChain) + `,`,
+		`NotBefore:` + strings.Replace(fmt.Sprintf("%v", this.NotBefore), "Time", "v1.Time", 1) + `,`,
+		`BeginRefreshAt:` + strings.Replace(fmt.Sprintf("%v", this.BeginRefreshAt), "Time", "v1.Time", 1) + `,`,
+		`NotAfter:` + strings.Replace(fmt.Sprintf("%v", this.NotAfter), "Time", "v1.Time", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -10402,20 +2753,1020 @@ func (m *ExtraValue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-<<<<<<< HEAD
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
-=======
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PodCertificateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PodCertificateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PodCertificateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PodCertificateRequestList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PodCertificateRequestList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PodCertificateRequestList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Items = append(m.Items, PodCertificateRequest{})
+			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PodCertificateRequestSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PodCertificateRequestSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PodCertificateRequestSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SignerName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SignerName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PodName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PodUID = k8s_io_apimachinery_pkg_types.UID(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServiceAccountName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ServiceAccountName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServiceAccountUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ServiceAccountUID = k8s_io_apimachinery_pkg_types.UID(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NodeName = k8s_io_apimachinery_pkg_types.NodeName(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NodeUID = k8s_io_apimachinery_pkg_types.UID(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxExpirationSeconds", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.MaxExpirationSeconds = &v
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PKIXPublicKey", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PKIXPublicKey = append(m.PKIXPublicKey[:0], dAtA[iNdEx:postIndex]...)
+			if m.PKIXPublicKey == nil {
+				m.PKIXPublicKey = []byte{}
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProofOfPossession", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProofOfPossession = append(m.ProofOfPossession[:0], dAtA[iNdEx:postIndex]...)
+			if m.ProofOfPossession == nil {
+				m.ProofOfPossession = []byte{}
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnverifiedUserAnnotations", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.UnverifiedUserAnnotations == nil {
+				m.UnverifiedUserAnnotations = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGenerated
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowGenerated
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthGenerated
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthGenerated
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowGenerated
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthGenerated
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthGenerated
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipGenerated(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthGenerated
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.UnverifiedUserAnnotations[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StubPKCS10Request", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StubPKCS10Request = append(m.StubPKCS10Request[:0], dAtA[iNdEx:postIndex]...)
+			if m.StubPKCS10Request == nil {
+				m.StubPKCS10Request = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PodCertificateRequestStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PodCertificateRequestStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PodCertificateRequestStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Conditions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Conditions = append(m.Conditions, v1.Condition{})
+			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CertificateChain", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CertificateChain = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NotBefore", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.NotBefore == nil {
+				m.NotBefore = &v1.Time{}
+			}
+			if err := m.NotBefore.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeginRefreshAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BeginRefreshAt == nil {
+				m.BeginRefreshAt = &v1.Time{}
+			}
+			if err := m.BeginRefreshAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NotAfter", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.NotAfter == nil {
+				m.NotAfter = &v1.Time{}
+			}
+			if err := m.NotAfter.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {

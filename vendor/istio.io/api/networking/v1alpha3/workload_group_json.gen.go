@@ -50,6 +50,17 @@ func (this *HTTPHealthCheckConfig) UnmarshalJSON(b []byte) error {
 	return WorkloadGroupUnmarshaler.Unmarshal(bytes.NewReader(b), this)
 }
 
+// MarshalJSON is a custom marshaler for GrpcHealthCheckConfig
+func (this *GrpcHealthCheckConfig) MarshalJSON() ([]byte, error) {
+	str, err := WorkloadGroupMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for GrpcHealthCheckConfig
+func (this *GrpcHealthCheckConfig) UnmarshalJSON(b []byte) error {
+	return WorkloadGroupUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
 // MarshalJSON is a custom marshaler for HTTPHeader
 func (this *HTTPHeader) MarshalJSON() ([]byte, error) {
 	str, err := WorkloadGroupMarshaler.MarshalToString(this)

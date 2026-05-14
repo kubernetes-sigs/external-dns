@@ -19,63 +19,26 @@ limitations under the License.
 package v1
 
 import (
-<<<<<<< HEAD
-	v1 "k8s.io/api/core/v1"
-<<<<<<< HEAD
-)
-
-// PersistentVolumeStatusApplyConfiguration represents an declarative configuration of the PersistentVolumeStatus type for use
-// with apply.
-type PersistentVolumeStatusApplyConfiguration struct {
-	Phase   *v1.PersistentVolumePhase `json:"phase,omitempty"`
-	Message *string                   `json:"message,omitempty"`
-	Reason  *string                   `json:"reason,omitempty"`
-}
-
-// PersistentVolumeStatusApplyConfiguration constructs an declarative configuration of the PersistentVolumeStatus type for use with
-// apply.
-func PersistentVolumeStatus() *PersistentVolumeStatusApplyConfiguration {
-	return &PersistentVolumeStatusApplyConfiguration{}
-}
-
-// WithPhase sets the Phase field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Phase field is set to the value of the last call.
-func (b *PersistentVolumeStatusApplyConfiguration) WithPhase(value v1.PersistentVolumePhase) *PersistentVolumeStatusApplyConfiguration {
-	b.Phase = &value
-	return b
-}
-
-// WithMessage sets the Message field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Message field is set to the value of the last call.
-func (b *PersistentVolumeStatusApplyConfiguration) WithMessage(value string) *PersistentVolumeStatusApplyConfiguration {
-	b.Message = &value
-	return b
-}
-
-// WithReason sets the Reason field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Reason field is set to the value of the last call.
-func (b *PersistentVolumeStatusApplyConfiguration) WithReason(value string) *PersistentVolumeStatusApplyConfiguration {
-	b.Reason = &value
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	v1 "k8s.io/api/core/v1"
-=======
 	corev1 "k8s.io/api/core/v1"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PersistentVolumeStatusApplyConfiguration represents a declarative configuration of the PersistentVolumeStatus type for use
 // with apply.
+//
+// PersistentVolumeStatus is the current status of a persistent volume.
 type PersistentVolumeStatusApplyConfiguration struct {
-	Phase                   *corev1.PersistentVolumePhase `json:"phase,omitempty"`
-	Message                 *string                       `json:"message,omitempty"`
-	Reason                  *string                       `json:"reason,omitempty"`
-	LastPhaseTransitionTime *metav1.Time                  `json:"lastPhaseTransitionTime,omitempty"`
+	// phase indicates if a volume is available, bound to a claim, or released by a claim.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#phase
+	Phase *corev1.PersistentVolumePhase `json:"phase,omitempty"`
+	// message is a human-readable message indicating details about why the volume is in this state.
+	Message *string `json:"message,omitempty"`
+	// reason is a brief CamelCase string that describes any failure and is meant
+	// for machine parsing and tidy display in the CLI.
+	Reason *string `json:"reason,omitempty"`
+	// lastPhaseTransitionTime is the time the phase transitioned from one to another
+	// and automatically resets to current time everytime a volume phase transitions.
+	LastPhaseTransitionTime *metav1.Time `json:"lastPhaseTransitionTime,omitempty"`
 }
 
 // PersistentVolumeStatusApplyConfiguration constructs a declarative configuration of the PersistentVolumeStatus type for use with
@@ -113,6 +76,5 @@ func (b *PersistentVolumeStatusApplyConfiguration) WithReason(value string) *Per
 // If called multiple times, the LastPhaseTransitionTime field is set to the value of the last call.
 func (b *PersistentVolumeStatusApplyConfiguration) WithLastPhaseTransitionTime(value metav1.Time) *PersistentVolumeStatusApplyConfiguration {
 	b.LastPhaseTransitionTime = &value
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

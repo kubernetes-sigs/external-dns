@@ -2,7 +2,6 @@ package utils
 
 import (
 	"math/rand"
-	"time"
 )
 
 var adjectives = [...]string{
@@ -42,7 +41,5 @@ var nouns = [...]string{
 
 // RandomName generates a Heroku-style random name for instances/clusters/etc
 func RandomName() string {
-	rand.Seed(time.Now().Unix())
-
 	return adjectives[rand.Intn(len(adjectives))] + "-" + nouns[rand.Intn(len(nouns))]
 }

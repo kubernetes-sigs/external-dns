@@ -14,9 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-import "networking/v1alpha3/workload_entry.proto";
-
 // $schema: istio.networking.v1alpha3.WorkloadGroup
 // $title: Workload Group
 // $description: Describes a collection of workload instances.
@@ -24,21 +21,21 @@ import "networking/v1alpha3/workload_entry.proto";
 // $aliases: [/docs/reference/config/networking/v1alpha3/workload-group]
 
 // `WorkloadGroup` describes a collection of workload instances.
-// It provides a specification that the workload instances can use to bootstrap 
-// their proxies, including the metadata and identity. It is only intended to 
-// be used with non-k8s workloads like Virtual Machines, and is meant to mimic 
-// the existing sidecar injection and deployment specification model used for 
+// It provides a specification that the workload instances can use to bootstrap
+// their proxies, including the metadata and identity. It is only intended to
+// be used with non-k8s workloads like Virtual Machines, and is meant to mimic
+// the existing sidecar injection and deployment specification model used for
 // Kubernetes workloads to bootstrap Istio proxies.
 //
-// The following example declares a workload group representing a collection 
+// The following example declares a workload group representing a collection
 // of workloads that will be registered under `reviews` in namespace
-// `bookinfo`. The set of labels will be associated with each workload 
+// `bookinfo`. The set of labels will be associated with each workload
 // instance during the bootstrap process, and the ports 3550 and 8080
 // will be associated with the workload group and use service account `default`.
 // `app.kubernetes.io/version` is just an arbitrary example of a label.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadGroup
 // metadata:
 //   name: reviews
@@ -71,17 +68,21 @@ import "networking/v1alpha3/workload_entry.proto";
 //
 package istio.networking.v1alpha3;
 
+import "google/api/field_behavior.proto";
+import "networking/v1alpha3/workload_entry.proto";
+
 option go_package = "istio.io/api/networking/v1alpha3";
 
 // `WorkloadGroup` enables specifying the properties of a single workload for bootstrap and
 // provides a template for `WorkloadEntry`, similar to how `Deployment` specifies properties
 // of workloads via `Pod` templates. A `WorkloadGroup` can have more than one `WorkloadEntry`.
-// `WorkloadGroup` has no relationship to resources which control service registry like `ServiceEntry` 
+// `WorkloadGroup` has no relationship to resources which control service registry like `ServiceEntry`
 // and as such doesn't configure host name for these workloads.
 //
 // <!-- crd generation tags
 // +cue-gen:WorkloadGroup:groupName:networking.istio.io
-// +cue-gen:WorkloadGroup:version:v1alpha3
+// +cue-gen:WorkloadGroup:versions:v1,v1beta1,v1alpha3
+// +cue-gen:WorkloadGroup:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WorkloadGroup:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WorkloadGroup:subresource:status
 // +cue-gen:WorkloadGroup:scope:Namespaced
@@ -91,6 +92,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // Clients may not set this value. It is represented in RFC3339 form and is in UTC.
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:WorkloadGroup:preserveUnknownFields:false
+// +cue-gen:WorkloadGroup:spec:required
 // -->
 //
 // <!-- go code generation tags
@@ -98,9 +100,6 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
 // -->
 message WorkloadGroup {
   // Metadata that will be used for all corresponding `WorkloadEntries`.
@@ -112,16 +111,19 @@ message WorkloadGroup {
   // should default to `default`. The workload identities (mTLS certificates) will be bootstrapped using the
   // specified service account's token. Workload entries in this group will be in the same namespace as the
   // workload group, and inherit the labels and annotations from the above `metadata` field.
+  // +protoc-gen-crd:validation:IgnoreSubValidation:["Address is required"]
   WorkloadEntry template = 2 [(google.api.field_behavior) = REQUIRED];
 
   // `ObjectMeta` describes metadata that will be attached to a `WorkloadEntry`.
   // It is a subset of the supported Kubernetes metadata.
   message ObjectMeta {
-      // Labels to attach
-      map<string, string> labels = 1;
+    // Labels to attach
+    // +kubebuilder:validation:MaxProperties=256
+    map<string, string> labels = 1;
 
-      // Annotations to attach
-      map<string, string> annotations = 2;
+    // Annotations to attach
+    // +kubebuilder:validation:MaxProperties=256
+    map<string, string> annotations = 2;
   }
 
   // `ReadinessProbe` describes the configuration the user must provide for healthchecking on their workload.
@@ -130,76 +132,95 @@ message WorkloadGroup {
 }
 
 message ReadinessProbe {
+  // Number of seconds after the container has started before readiness probes are initiated.
+  // +kubebuilder:validation:Minimum=0
+  int32 initial_delay_seconds = 2;
 
-    // Number of seconds after the container has started before readiness probes are initiated.
-    int32 initial_delay_seconds = 2;
+  // Number of seconds after which the probe times out.
+  // Defaults to 1 second. Minimum value is 1 second.
+  // +kubebuilder:validation:Minimum=0
+  int32 timeout_seconds = 3;
 
-    // Number of seconds after which the probe times out.
-    // Defaults to 1 second. Minimum value is 1 second.
-    int32 timeout_seconds = 3;
+  // How often (in seconds) to perform the probe.
+  // Default to 10 seconds. Minimum value is 1 second.
+  // +kubebuilder:validation:Minimum=0
+  int32 period_seconds = 4;
 
-    // How often (in seconds) to perform the probe.
-    // Default to 10 seconds. Minimum value is 1 second.
-    int32 period_seconds = 4;
+  // Minimum consecutive successes for the probe to be considered successful after having failed.
+  // Defaults to 1 second.
+  // +kubebuilder:validation:Minimum=0
+  int32 success_threshold = 5;
 
-    // Minimum consecutive successes for the probe to be considered successful after having failed.
-    // Defaults to 1 second.
-    int32 success_threshold = 5;
+  // Minimum consecutive failures for the probe to be considered failed after having succeeded.
+  // Defaults to 3 seconds.
+  // +kubebuilder:validation:Minimum=0
+  int32 failure_threshold = 6;
 
-    // Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    // Defaults to 3 seconds.
-    int32 failure_threshold = 6;
-
-    // Users can only provide one configuration for healthchecks (tcp, http, exec),
-    // and this is expressed as a oneof. All of the other configuration values
-    // hold true for any of the healthcheck methods.
-    oneof health_check_method {
-        // `httpGet` is performed to a given endpoint
-        // and the status/able to connect determines health.
-        HTTPHealthCheckConfig http_get = 7;
-        // Health is determined by if the proxy is able to connect.
-        TCPHealthCheckConfig tcp_socket = 8;
-        // Health is determined by how the command that is executed exited.
-        ExecHealthCheckConfig exec = 9;
-    }
+  // Users can only provide one configuration for healthchecks (tcp, http, exec),
+  // and this is expressed as a oneof. All of the other configuration values
+  // hold true for any of the healthcheck methods.
+  oneof health_check_method {
+    // `httpGet` is performed to a given endpoint
+    // and the status/able to connect determines health.
+    HTTPHealthCheckConfig http_get = 7;
+    // Health is determined by if the proxy is able to connect.
+    TCPHealthCheckConfig tcp_socket = 8;
+    // Health is determined by how the command that is executed exited.
+    ExecHealthCheckConfig exec = 9;
+    // GRPC call is made and response/error is used to determine health.
+    GrpcHealthCheckConfig grpc = 10;
+  }
 }
 
 message HTTPHealthCheckConfig {
-    // Path to access on the HTTP server.
-    string path = 1;
+  // Path to access on the HTTP server.
+  string path = 1;
 
-    // Port on which the endpoint lives.
-    uint32 port = 2 [(google.api.field_behavior) = REQUIRED];
+  // Port on which the endpoint lives.
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
+  uint32 port = 2 [(google.api.field_behavior) = REQUIRED];
 
-    // Host name to connect to, defaults to the pod IP. You probably want to set
-    // "Host" in httpHeaders instead.
-    string host = 3;
+  // Host name to connect to, defaults to the pod IP. You probably want to set
+  // "Host" in httpHeaders instead.
+  string host = 3;
 
-    // HTTP or HTTPS, defaults to HTTP
-    string scheme = 4;
+  // HTTP or HTTPS, defaults to HTTP
+  // +kubebuilder:validation:XValidation:message="scheme must be one of [HTTP, HTTPS]",rule="self in ['', 'HTTP', 'HTTPS']"
+  string scheme = 4;
 
-    // Headers the proxy will pass on to make the request.
-    // Allows repeated headers.
-    repeated HTTPHeader http_headers = 5;
+  // Headers the proxy will pass on to make the request.
+  // Allows repeated headers.
+  repeated HTTPHeader http_headers = 5;
+}
+
+message GrpcHealthCheckConfig {
+  // Port on which the endpoint lives.
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
+  uint32 port = 1;
+
+  // Service is the fully qualified name of the service to send the grpc health check request
+  string service = 2;
 }
 
 message HTTPHeader {
-    // The header field name
-    string name = 1;
+  // The header field name
+  // +kubebuilder:validation:Pattern=^[-_A-Za-z0-9]+$
+  string name = 1;
 
-    // The header field value
-    string value = 2;
+  // The header field value
+  string value = 2;
 }
 
 message TCPHealthCheckConfig {
-    // Host to connect to, defaults to localhost
-    string host = 1;
-    // Port of host
-    uint32 port = 2 [(google.api.field_behavior) = REQUIRED];
+  // Host to connect to, defaults to localhost
+  string host = 1;
+  // Port of host
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
+  uint32 port = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ExecHealthCheckConfig {
-    // Command to run. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
-    repeated string command = 1;
+  // Command to run. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
+  // +protoc-gen-crd:list-value-validation:MinLength=1
+  repeated string command = 1 [(google.api.field_behavior) = REQUIRED];
 }
-

@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-# Setup a Global .gitignore for OS and editor generated files:
-# https://help.github.com/articles/ignoring-files
-# git config --global core.excludesfile ~/.gitignore_global
-
-.vagrant
-*.sublime-project
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 # go test -c output
 *.test
 *.test.exe
@@ -14,4 +5,6 @@
 # Output of go build ./cmd/fsnotify
 /fsnotify
 /fsnotify.exe
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+/test/kqueue
+/test/a.out

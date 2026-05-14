@@ -20,361 +20,6 @@ import (
 	"strings"
 	"time"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-	dto "github.com/prometheus/client_model/go"
-)
-
-var separatorByteSlice = []byte{model.SeparatorByte} // For convenient use with xxhash.
-
-// A Metric models a single sample value with its meta data being exported to
-// Prometheus. Implementations of Metric in this package are Gauge, Counter,
-// Histogram, Summary, and Untyped.
-type Metric interface {
-	// Desc returns the descriptor for the Metric. This method idempotently
-	// returns the same descriptor throughout the lifetime of the
-	// Metric. The returned descriptor is immutable by contract. A Metric
-	// unable to describe itself must return an invalid descriptor (created
-	// with NewInvalidDesc).
-	Desc() *Desc
-	// Write encodes the Metric into a "Metric" Protocol Buffer data
-	// transmission object.
-	//
-	// Metric implementations must observe concurrency safety as reads of
-	// this metric may occur at any time, and any blocking occurs at the
-	// expense of total performance of rendering all registered
-	// metrics. Ideally, Metric implementations should support concurrent
-	// readers.
-	//
-	// While populating dto.Metric, it is the responsibility of the
-	// implementation to ensure validity of the Metric protobuf (like valid
-	// UTF-8 strings or syntactically valid metric and label names). It is
-	// recommended to sort labels lexicographically. Callers of Write should
-	// still make sure of sorting if they depend on it.
-	Write(*dto.Metric) error
-	// TODO(beorn7): The original rationale of passing in a pre-allocated
-	// dto.Metric protobuf to save allocations has disappeared. The
-	// signature of this method should be changed to "Write() (*dto.Metric,
-	// error)".
-}
-
-// Opts bundles the options for creating most Metric types. Each metric
-// implementation XXX has its own XXXOpts type, but in most cases, it is just
-// an alias of this type (which might change when the requirement arises.)
-//
-// It is mandatory to set Name to a non-empty string. All other fields are
-// optional and can safely be left at their zero value, although it is strongly
-// encouraged to set a Help string.
-type Opts struct {
-	// Namespace, Subsystem, and Name are components of the fully-qualified
-	// name of the Metric (created by joining these components with
-	// "_"). Only Name is mandatory, the others merely help structuring the
-	// name. Note that the fully-qualified name of the metric must be a
-	// valid Prometheus metric name.
-	Namespace string
-	Subsystem string
-	Name      string
-
-	// Help provides information about this metric.
-	//
-	// Metrics with the same fully-qualified name must have the same Help
-	// string.
-	Help string
-
-	// ConstLabels are used to attach fixed labels to this metric. Metrics
-	// with the same fully-qualified name must have the same label names in
-	// their ConstLabels.
-	//
-	// ConstLabels are only used rarely. In particular, do not use them to
-	// attach the same labels to all your metrics. Those use cases are
-	// better covered by target labels set by the scraping Prometheus
-	// server, or by one specific metric (e.g. a build_info or a
-	// machine_role metric). See also
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-||||||| parent of 5ce8c7613 (update vendored files)
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-=======
-	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
->>>>>>> 5ce8c7613 (update vendored files)
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-	dto "github.com/prometheus/client_model/go"
-)
-
-var separatorByteSlice = []byte{model.SeparatorByte} // For convenient use with xxhash.
-
-// A Metric models a single sample value with its meta data being exported to
-// Prometheus. Implementations of Metric in this package are Gauge, Counter,
-// Histogram, Summary, and Untyped.
-type Metric interface {
-	// Desc returns the descriptor for the Metric. This method idempotently
-	// returns the same descriptor throughout the lifetime of the
-	// Metric. The returned descriptor is immutable by contract. A Metric
-	// unable to describe itself must return an invalid descriptor (created
-	// with NewInvalidDesc).
-	Desc() *Desc
-	// Write encodes the Metric into a "Metric" Protocol Buffer data
-	// transmission object.
-	//
-	// Metric implementations must observe concurrency safety as reads of
-	// this metric may occur at any time, and any blocking occurs at the
-	// expense of total performance of rendering all registered
-	// metrics. Ideally, Metric implementations should support concurrent
-	// readers.
-	//
-	// While populating dto.Metric, it is the responsibility of the
-	// implementation to ensure validity of the Metric protobuf (like valid
-	// UTF-8 strings or syntactically valid metric and label names). It is
-	// recommended to sort labels lexicographically. Callers of Write should
-	// still make sure of sorting if they depend on it.
-	Write(*dto.Metric) error
-	// TODO(beorn7): The original rationale of passing in a pre-allocated
-	// dto.Metric protobuf to save allocations has disappeared. The
-	// signature of this method should be changed to "Write() (*dto.Metric,
-	// error)".
-}
-
-// Opts bundles the options for creating most Metric types. Each metric
-// implementation XXX has its own XXXOpts type, but in most cases, it is just
-// an alias of this type (which might change when the requirement arises.)
-//
-// It is mandatory to set Name to a non-empty string. All other fields are
-// optional and can safely be left at their zero value, although it is strongly
-// encouraged to set a Help string.
-type Opts struct {
-	// Namespace, Subsystem, and Name are components of the fully-qualified
-	// name of the Metric (created by joining these components with
-	// "_"). Only Name is mandatory, the others merely help structuring the
-	// name. Note that the fully-qualified name of the metric must be a
-	// valid Prometheus metric name.
-	Namespace string
-	Subsystem string
-	Name      string
-
-	// Help provides information about this metric.
-	//
-	// Metrics with the same fully-qualified name must have the same Help
-	// string.
-	Help string
-
-	// ConstLabels are used to attach fixed labels to this metric. Metrics
-	// with the same fully-qualified name must have the same label names in
-	// their ConstLabels.
-	//
-	// ConstLabels are only used rarely. In particular, do not use them to
-	// attach the same labels to all your metrics. Those use cases are
-	// better covered by target labels set by the scraping Prometheus
-	// server, or by one specific metric (e.g. a build_info or a
-	// machine_role metric). See also
-<<<<<<< HEAD
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
-=======
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-||||||| parent of 6b7ce455e (update vendored files)
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-=======
-	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
->>>>>>> 6b7ce455e (update vendored files)
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-	dto "github.com/prometheus/client_model/go"
-)
-
-var separatorByteSlice = []byte{model.SeparatorByte} // For convenient use with xxhash.
-
-// A Metric models a single sample value with its meta data being exported to
-// Prometheus. Implementations of Metric in this package are Gauge, Counter,
-// Histogram, Summary, and Untyped.
-type Metric interface {
-	// Desc returns the descriptor for the Metric. This method idempotently
-	// returns the same descriptor throughout the lifetime of the
-	// Metric. The returned descriptor is immutable by contract. A Metric
-	// unable to describe itself must return an invalid descriptor (created
-	// with NewInvalidDesc).
-	Desc() *Desc
-	// Write encodes the Metric into a "Metric" Protocol Buffer data
-	// transmission object.
-	//
-	// Metric implementations must observe concurrency safety as reads of
-	// this metric may occur at any time, and any blocking occurs at the
-	// expense of total performance of rendering all registered
-	// metrics. Ideally, Metric implementations should support concurrent
-	// readers.
-	//
-	// While populating dto.Metric, it is the responsibility of the
-	// implementation to ensure validity of the Metric protobuf (like valid
-	// UTF-8 strings or syntactically valid metric and label names). It is
-	// recommended to sort labels lexicographically. Callers of Write should
-	// still make sure of sorting if they depend on it.
-	Write(*dto.Metric) error
-	// TODO(beorn7): The original rationale of passing in a pre-allocated
-	// dto.Metric protobuf to save allocations has disappeared. The
-	// signature of this method should be changed to "Write() (*dto.Metric,
-	// error)".
-}
-
-// Opts bundles the options for creating most Metric types. Each metric
-// implementation XXX has its own XXXOpts type, but in most cases, it is just
-// an alias of this type (which might change when the requirement arises.)
-//
-// It is mandatory to set Name to a non-empty string. All other fields are
-// optional and can safely be left at their zero value, although it is strongly
-// encouraged to set a Help string.
-type Opts struct {
-	// Namespace, Subsystem, and Name are components of the fully-qualified
-	// name of the Metric (created by joining these components with
-	// "_"). Only Name is mandatory, the others merely help structuring the
-	// name. Note that the fully-qualified name of the metric must be a
-	// valid Prometheus metric name.
-	Namespace string
-	Subsystem string
-	Name      string
-
-	// Help provides information about this metric.
-	//
-	// Metrics with the same fully-qualified name must have the same Help
-	// string.
-	Help string
-
-	// ConstLabels are used to attach fixed labels to this metric. Metrics
-	// with the same fully-qualified name must have the same label names in
-	// their ConstLabels.
-	//
-	// ConstLabels are only used rarely. In particular, do not use them to
-	// attach the same labels to all your metrics. Those use cases are
-	// better covered by target labels set by the scraping Prometheus
-	// server, or by one specific metric (e.g. a build_info or a
-	// machine_role metric). See also
-<<<<<<< HEAD
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
-=======
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-||||||| parent of 4d7e5ad26 (update vendored files)
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-=======
-	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
->>>>>>> 4d7e5ad26 (update vendored files)
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-	dto "github.com/prometheus/client_model/go"
-)
-
-var separatorByteSlice = []byte{model.SeparatorByte} // For convenient use with xxhash.
-
-// A Metric models a single sample value with its meta data being exported to
-// Prometheus. Implementations of Metric in this package are Gauge, Counter,
-// Histogram, Summary, and Untyped.
-type Metric interface {
-	// Desc returns the descriptor for the Metric. This method idempotently
-	// returns the same descriptor throughout the lifetime of the
-	// Metric. The returned descriptor is immutable by contract. A Metric
-	// unable to describe itself must return an invalid descriptor (created
-	// with NewInvalidDesc).
-	Desc() *Desc
-	// Write encodes the Metric into a "Metric" Protocol Buffer data
-	// transmission object.
-	//
-	// Metric implementations must observe concurrency safety as reads of
-	// this metric may occur at any time, and any blocking occurs at the
-	// expense of total performance of rendering all registered
-	// metrics. Ideally, Metric implementations should support concurrent
-	// readers.
-	//
-	// While populating dto.Metric, it is the responsibility of the
-	// implementation to ensure validity of the Metric protobuf (like valid
-	// UTF-8 strings or syntactically valid metric and label names). It is
-	// recommended to sort labels lexicographically. Callers of Write should
-	// still make sure of sorting if they depend on it.
-	Write(*dto.Metric) error
-	// TODO(beorn7): The original rationale of passing in a pre-allocated
-	// dto.Metric protobuf to save allocations has disappeared. The
-	// signature of this method should be changed to "Write() (*dto.Metric,
-	// error)".
-}
-
-// Opts bundles the options for creating most Metric types. Each metric
-// implementation XXX has its own XXXOpts type, but in most cases, it is just
-// an alias of this type (which might change when the requirement arises.)
-//
-// It is mandatory to set Name to a non-empty string. All other fields are
-// optional and can safely be left at their zero value, although it is strongly
-// encouraged to set a Help string.
-type Opts struct {
-	// Namespace, Subsystem, and Name are components of the fully-qualified
-	// name of the Metric (created by joining these components with
-	// "_"). Only Name is mandatory, the others merely help structuring the
-	// name. Note that the fully-qualified name of the metric must be a
-	// valid Prometheus metric name.
-	Namespace string
-	Subsystem string
-	Name      string
-
-	// Help provides information about this metric.
-	//
-	// Metrics with the same fully-qualified name must have the same Help
-	// string.
-	Help string
-
-	// ConstLabels are used to attach fixed labels to this metric. Metrics
-	// with the same fully-qualified name must have the same label names in
-	// their ConstLabels.
-	//
-	// ConstLabels are only used rarely. In particular, do not use them to
-	// attach the same labels to all your metrics. Those use cases are
-	// better covered by target labels set by the scraping Prometheus
-	// server, or by one specific metric (e.g. a build_info or a
-	// machine_role metric). See also
-<<<<<<< HEAD
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
-=======
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 	"google.golang.org/protobuf/proto"
@@ -445,14 +90,7 @@ type Opts struct {
 	// better covered by target labels set by the scraping Prometheus
 	// server, or by one specific metric (e.g. a build_info or a
 	// machine_role metric). See also
-<<<<<<< HEAD
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
-=======
 	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	ConstLabels Labels
 
 	// now is for testing purposes, by default it's time.Now.
@@ -548,21 +186,31 @@ func (m *withExemplarsMetric) Write(pb *dto.Metric) error {
 	case pb.Counter != nil:
 		pb.Counter.Exemplar = m.exemplars[len(m.exemplars)-1]
 	case pb.Histogram != nil:
+		h := pb.Histogram
 		for _, e := range m.exemplars {
-			// pb.Histogram.Bucket are sorted by UpperBound.
-			i := sort.Search(len(pb.Histogram.Bucket), func(i int) bool {
-				return pb.Histogram.Bucket[i].GetUpperBound() >= e.GetValue()
+			if (h.GetZeroThreshold() != 0 || h.GetZeroCount() != 0 ||
+				len(h.PositiveSpan) != 0 || len(h.NegativeSpan) != 0) &&
+				e.GetTimestamp() != nil {
+				h.Exemplars = append(h.Exemplars, e)
+				if len(h.Bucket) == 0 {
+					// Don't proceed to classic buckets if there are none.
+					continue
+				}
+			}
+			// h.Bucket are sorted by UpperBound.
+			i := sort.Search(len(h.Bucket), func(i int) bool {
+				return h.Bucket[i].GetUpperBound() >= e.GetValue()
 			})
-			if i < len(pb.Histogram.Bucket) {
-				pb.Histogram.Bucket[i].Exemplar = e
+			if i < len(h.Bucket) {
+				h.Bucket[i].Exemplar = e
 			} else {
 				// The +Inf bucket should be explicitly added if there is an exemplar for it, similar to non-const histogram logic in https://github.com/prometheus/client_golang/blob/main/prometheus/histogram.go#L357-L365.
 				b := &dto.Bucket{
-					CumulativeCount: proto.Uint64(pb.Histogram.GetSampleCount()),
+					CumulativeCount: proto.Uint64(h.GetSampleCount()),
 					UpperBound:      proto.Float64(math.Inf(1)),
 					Exemplar:        e,
 				}
-				pb.Histogram.Bucket = append(pb.Histogram.Bucket, b)
+				h.Bucket = append(h.Bucket, b)
 			}
 		}
 	default:
@@ -589,6 +237,7 @@ type Exemplar struct {
 // Only last applicable exemplar is injected from the list.
 // For example for Counter it means last exemplar is injected.
 // For Histogram, it means last applicable exemplar for each bucket is injected.
+// For a Native Histogram, all valid exemplars are injected.
 //
 // NewMetricWithExemplars works best with MustNewConstMetric and
 // MustNewConstHistogram, see example.

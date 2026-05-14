@@ -11,27 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-<<<<<<< HEAD:vendor/github.com/prometheus/client_golang/prometheus/process_collector_other.go
-<<<<<<< HEAD
-<<<<<<< HEAD
-//go:build !windows
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-// +build !windows
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// +build !windows
-=======
-//go:build !windows && !js && !wasip1
-// +build !windows,!js,!wasip1
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/github.com/prometheus/client_golang/prometheus/process_collector_other.go
-//go:build !windows && !js && !wasip1
-// +build !windows,!js,!wasip1
-=======
 //go:build !windows && !js && !wasip1 && !darwin
 // +build !windows,!js,!wasip1,!darwin
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/github.com/prometheus/client_golang/prometheus/process_collector_procfsenabled.go
 
 package prometheus
 
@@ -85,11 +66,11 @@ func (c *processCollector) processCollect(ch chan<- Metric) {
 
 	if netstat, err := p.Netstat(); err == nil {
 		var inOctets, outOctets float64
-		if netstat.IpExt.InOctets != nil {
-			inOctets = *netstat.IpExt.InOctets
+		if netstat.InOctets != nil {
+			inOctets = *netstat.InOctets
 		}
-		if netstat.IpExt.OutOctets != nil {
-			outOctets = *netstat.IpExt.OutOctets
+		if netstat.OutOctets != nil {
+			outOctets = *netstat.OutOctets
 		}
 		ch <- MustNewConstMetric(c.inBytes, CounterValue, inOctets)
 		ch <- MustNewConstMetric(c.outBytes, CounterValue, outOctets)

@@ -19,94 +19,6 @@ linters-settings:
   goconst:
     min-len: 3
     min-occurrences: 2
-<<<<<<< HEAD
-  depguard: {}
-  lll:
-    line-length: 160
-  nakedret:
-    max-func-lines: 10
-
-linters:
-  enable:
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - deadcode
-    - decorder
-    - depguard
-    - dogsled
-    - dupl
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - exhaustive
-    - exportloopref
-    - forcetypeassert
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - godox
-    - gofmt
-    - goheader
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - grouper
-    - ifshort
-    - importas
-    - ineffassign
-    - lll
-    - maintidx
-    - makezero
-    - misspell
-    - nakedret
-    - nestif
-    - nilerr
-    - nilnil
-    - nolintlint
-    - prealloc
-    - predeclared
-    - revive
-    - rowserrcheck
-    - sqlclosecheck
-    - staticcheck
-    - structcheck
-    - stylecheck
-    - tenv
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - varcheck
-    - wastedassign
-  enable-all: false
-  disable-all: false
-  fast: false
-
-issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - dupl
-        - goconst
-        - ifshort
-        - lll
-    - path: jwt/token_test.go
-      linters:
-        - gosec
-    - path: mocks/*
-      linters:
-        - typecheck
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
   depguard:
     rules:
       Main:
@@ -225,13 +137,7 @@ issues:
     - path: jwt/token_test.go
       linters:
         - gosec
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-        - gosec
-=======
     - path: mocks/*
       linters:
         - typecheck
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

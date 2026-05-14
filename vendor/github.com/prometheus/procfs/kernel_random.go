@@ -1,4 +1,4 @@
-// Copyright 2020 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,51 +26,7 @@ import (
 type KernelRandom struct {
 	// EntropyAvaliable gives the available entropy, in bits.
 	EntropyAvaliable *uint64
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// PoolSize gives the size of the entropy pool, in bits.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PoolSize gives the size of the entropy pool, in bytes.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	// PoolSize gives the size of the entropy pool, in bytes.
-=======
-	// PoolSize gives the size of the entropy pool, in bits.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PoolSize gives the size of the entropy pool, in bytes.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	// PoolSize gives the size of the entropy pool, in bytes.
-=======
-	// PoolSize gives the size of the entropy pool, in bits.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PoolSize gives the size of the entropy pool, in bytes.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// PoolSize gives the size of the entropy pool, in bytes.
-=======
-	// PoolSize gives the size of the entropy pool, in bits.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// PoolSize gives the size of the entropy pool, in bytes.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// PoolSize gives the size of the entropy pool, in bytes.
-=======
-	// PoolSize gives the size of the entropy pool, in bits.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	PoolSize *uint64
 	// URandomMinReseedSeconds is the number of seconds after which the DRNG will be reseeded.
 	URandomMinReseedSeconds *uint64

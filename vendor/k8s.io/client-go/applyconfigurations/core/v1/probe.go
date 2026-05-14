@@ -20,55 +20,39 @@ package v1
 
 // ProbeApplyConfiguration represents a declarative configuration of the Probe type for use
 // with apply.
+//
+// Probe describes a health check to be performed against a container to determine whether it is
+// alive or ready to receive traffic.
 type ProbeApplyConfiguration struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	HandlerApplyConfiguration     `json:",inline"`
-	InitialDelaySeconds           *int32 `json:"initialDelaySeconds,omitempty"`
-	TimeoutSeconds                *int32 `json:"timeoutSeconds,omitempty"`
-	PeriodSeconds                 *int32 `json:"periodSeconds,omitempty"`
-	SuccessThreshold              *int32 `json:"successThreshold,omitempty"`
-	FailureThreshold              *int32 `json:"failureThreshold,omitempty"`
-	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
-}
-
-// ProbeApplyConfiguration constructs an declarative configuration of the Probe type for use with
-// apply.
-func Probe() *ProbeApplyConfiguration {
-	return &ProbeApplyConfiguration{}
-}
-
-// WithExec sets the Exec field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Exec field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithExec(value *ExecActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.Exec = value
-	return b
-}
-
-// WithHTTPGet sets the HTTPGet field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HTTPGet field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithHTTPGet(value *HTTPGetActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.HTTPGet = value
-	return b
-}
-
-// WithTCPSocket sets the TCPSocket field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TCPSocket field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.TCPSocket = value
-||||||| parent of 6b7ce455e (update vendored files)
-=======
+	// The action taken to determine the health of a container
 	ProbeHandlerApplyConfiguration `json:",inline"`
-	InitialDelaySeconds            *int32 `json:"initialDelaySeconds,omitempty"`
-	TimeoutSeconds                 *int32 `json:"timeoutSeconds,omitempty"`
-	PeriodSeconds                  *int32 `json:"periodSeconds,omitempty"`
-	SuccessThreshold               *int32 `json:"successThreshold,omitempty"`
-	FailureThreshold               *int32 `json:"failureThreshold,omitempty"`
-	TerminationGracePeriodSeconds  *int64 `json:"terminationGracePeriodSeconds,omitempty"`
+	// Number of seconds after the container has started before liveness probes are initiated.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	InitialDelaySeconds *int32 `json:"initialDelaySeconds,omitempty"`
+	// Number of seconds after which the probe times out.
+	// Defaults to 1 second. Minimum value is 1.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	TimeoutSeconds *int32 `json:"timeoutSeconds,omitempty"`
+	// How often (in seconds) to perform the probe.
+	// Default to 10 seconds. Minimum value is 1.
+	PeriodSeconds *int32 `json:"periodSeconds,omitempty"`
+	// Minimum consecutive successes for the probe to be considered successful after having failed.
+	// Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
+	SuccessThreshold *int32 `json:"successThreshold,omitempty"`
+	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
+	// Defaults to 3. Minimum value is 1.
+	FailureThreshold *int32 `json:"failureThreshold,omitempty"`
+	// Optional duration in seconds the pod needs to terminate gracefully upon probe failure.
+	// The grace period is the duration in seconds after the processes running in the pod are sent
+	// a termination signal and the time when the processes are forcibly halted with a kill signal.
+	// Set this value longer than the expected cleanup time for your process.
+	// If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this
+	// value overrides the value provided by the pod spec.
+	// Value must be non-negative integer. The value zero indicates stop immediately via
+	// the kill signal (no opportunity to shut down).
+	// This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
+	// Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 }
 
 // ProbeApplyConfiguration constructs a declarative configuration of the Probe type for use with
@@ -105,108 +89,7 @@ func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfi
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GRPC field is set to the value of the last call.
 func (b *ProbeApplyConfiguration) WithGRPC(value *GRPCActionApplyConfiguration) *ProbeApplyConfiguration {
-<<<<<<< HEAD
-	b.GRPC = value
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	ProbeHandlerApplyConfiguration `json:",inline"`
-	InitialDelaySeconds            *int32 `json:"initialDelaySeconds,omitempty"`
-	TimeoutSeconds                 *int32 `json:"timeoutSeconds,omitempty"`
-	PeriodSeconds                  *int32 `json:"periodSeconds,omitempty"`
-	SuccessThreshold               *int32 `json:"successThreshold,omitempty"`
-	FailureThreshold               *int32 `json:"failureThreshold,omitempty"`
-	TerminationGracePeriodSeconds  *int64 `json:"terminationGracePeriodSeconds,omitempty"`
-}
-
-// ProbeApplyConfiguration constructs an declarative configuration of the Probe type for use with
-// apply.
-func Probe() *ProbeApplyConfiguration {
-	return &ProbeApplyConfiguration{}
-}
-
-// WithExec sets the Exec field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Exec field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithExec(value *ExecActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.Exec = value
-	return b
-}
-
-// WithHTTPGet sets the HTTPGet field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HTTPGet field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithHTTPGet(value *HTTPGetActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.HTTPGet = value
-	return b
-}
-
-// WithTCPSocket sets the TCPSocket field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TCPSocket field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.TCPSocket = value
-	return b
-}
-
-// WithGRPC sets the GRPC field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the GRPC field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithGRPC(value *GRPCActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.GRPC = value
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	ProbeHandlerApplyConfiguration `json:",inline"`
-	InitialDelaySeconds            *int32 `json:"initialDelaySeconds,omitempty"`
-	TimeoutSeconds                 *int32 `json:"timeoutSeconds,omitempty"`
-	PeriodSeconds                  *int32 `json:"periodSeconds,omitempty"`
-	SuccessThreshold               *int32 `json:"successThreshold,omitempty"`
-	FailureThreshold               *int32 `json:"failureThreshold,omitempty"`
-	TerminationGracePeriodSeconds  *int64 `json:"terminationGracePeriodSeconds,omitempty"`
-}
-
-// ProbeApplyConfiguration constructs an declarative configuration of the Probe type for use with
-// apply.
-func Probe() *ProbeApplyConfiguration {
-	return &ProbeApplyConfiguration{}
-}
-
-// WithExec sets the Exec field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Exec field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithExec(value *ExecActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.Exec = value
-	return b
-}
-
-// WithHTTPGet sets the HTTPGet field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HTTPGet field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithHTTPGet(value *HTTPGetActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.HTTPGet = value
-	return b
-}
-
-// WithTCPSocket sets the TCPSocket field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TCPSocket field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.TCPSocket = value
-	return b
-}
-
-// WithGRPC sets the GRPC field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the GRPC field is set to the value of the last call.
-func (b *ProbeApplyConfiguration) WithGRPC(value *GRPCActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.GRPC = value
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	b.GRPC = value
-=======
 	b.ProbeHandlerApplyConfiguration.GRPC = value
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	return b
 }
 

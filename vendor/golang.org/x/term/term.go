@@ -7,50 +7,6 @@
 //
 // Putting a terminal into raw mode is the most common requirement:
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-// 	oldState, err := term.MakeRaw(0)
-// 	if err != nil {
-// 	        panic(err)
-// 	}
-// 	defer term.Restore(0, oldState)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-// 	if err != nil {
-// 	        panic(err)
-// 	}
-// 	defer term.Restore(int(os.Stdin.Fd()), oldState)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-// 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-// 	if err != nil {
-// 	        panic(err)
-// 	}
-// 	defer term.Restore(int(os.Stdin.Fd()), oldState)
-=======
-//	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-//	if err != nil {
-//	        panic(err)
-//	}
-//	defer term.Restore(int(os.Stdin.Fd()), oldState)
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-//
-// Note that on non-Unix systems os.Stdin.Fd() may not be 0.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-// 	if err != nil {
-// 	        panic(err)
-// 	}
-// 	defer term.Restore(int(os.Stdin.Fd()), oldState)
-//
-// Note that on non-Unix systems os.Stdin.Fd() may not be 0.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 //	if err != nil {
 //	        panic(err)
@@ -58,7 +14,6 @@
 //	defer term.Restore(int(os.Stdin.Fd()), oldState)
 //
 // Note that on non-Unix systems os.Stdin.Fd() may not be 0.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 package term
 
 // State contains the state of a terminal.

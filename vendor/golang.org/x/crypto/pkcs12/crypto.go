@@ -117,18 +117,7 @@ func pbDecrypt(info decryptable, password []byte) (decrypted []byte, err error) 
 	}
 	ps := decrypted[len(decrypted)-psLen:]
 	decrypted = decrypted[:len(decrypted)-psLen]
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if !bytes.Equal(ps, bytes.Repeat([]byte{byte(psLen)}, psLen)) {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if bytes.Compare(ps, bytes.Repeat([]byte{byte(psLen)}, psLen)) != 0 {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if bytes.Compare(ps, bytes.Repeat([]byte{byte(psLen)}, psLen)) != 0 {
-=======
-	if !bytes.Equal(ps, bytes.Repeat([]byte{byte(psLen)}, psLen)) {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return nil, ErrDecryption
 	}
 

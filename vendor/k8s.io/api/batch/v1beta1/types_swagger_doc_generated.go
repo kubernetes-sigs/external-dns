@@ -51,86 +51,7 @@ func (CronJobList) SwaggerDoc() map[string]string {
 var map_CronJobSpec = map[string]string{
 	"":                           "CronJobSpec describes how the job execution will look like and when it will actually run.",
 	"schedule":                   "The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.",
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"timeZone":                   "The time zone name for the given schedule, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. If not specified, this will default to the time zone of the kube-controller-manager process. The set of valid time zone names and the time zone offset is loaded from the system-wide time zone database by the API server during CronJob validation and the controller manager during execution. If no system-wide time zone database can be found a bundled version of the database is used instead. If the time zone name becomes invalid during the lifetime of a CronJob or due to a change in host configuration, the controller will stop creating new new Jobs and will create a system event with the reason UnknownTimeZone. More information can be found in https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones This is beta field and must be enabled via the `CronJobTimeZone` feature gate.",
-	"startingDeadlineSeconds":    "Optional deadline in seconds for starting the job if it misses scheduled time for any reason.  Missed jobs executions will be counted as failed ones.",
-	"concurrencyPolicy":          "Specifies how to treat concurrent executions of a Job. Valid values are: - \"Allow\" (default): allows CronJobs to run concurrently; - \"Forbid\": forbids concurrent runs, skipping next run if previous run hasn't finished yet; - \"Replace\": cancels currently running job and replaces it with a new one",
-	"suspend":                    "This flag tells the controller to suspend subsequent executions, it does not apply to already started executions.  Defaults to false.",
-	"jobTemplate":                "Specifies the job that will be created when executing a CronJob.",
-	"successfulJobsHistoryLimit": "The number of successful finished jobs to retain. This is a pointer to distinguish between explicit zero and not specified. Defaults to 3.",
-	"failedJobsHistoryLimit":     "The number of failed finished jobs to retain. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.",
-}
-
-func (CronJobSpec) SwaggerDoc() map[string]string {
-	return map_CronJobSpec
-}
-
-var map_CronJobStatus = map[string]string{
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"":                   "CronJobStatus represents the current state of a cron job.",
-	"active":             "A list of pointers to currently running jobs.",
-	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
-	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
-=======
-	"":                   "CronJobStatus represents the current state of a cron job.",
-	"active":             "A list of pointers to currently running jobs.",
-	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
-	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
-=======
-	"":                   "CronJobStatus represents the current state of a cron job.",
-	"active":             "A list of pointers to currently running jobs.",
-	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
-	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
-=======
-	"":                   "CronJobStatus represents the current state of a cron job.",
-	"active":             "A list of pointers to currently running jobs.",
-	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
-	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"timeZone":                   "The time zone name for the given schedule, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. If not specified, this will default to the time zone of the kube-controller-manager process. The set of valid time zone names and the time zone offset is loaded from the system-wide time zone database by the API server during CronJob validation and the controller manager during execution. If no system-wide time zone database can be found a bundled version of the database is used instead. If the time zone name becomes invalid during the lifetime of a CronJob or due to a change in host configuration, the controller will stop creating new new Jobs and will create a system event with the reason UnknownTimeZone. More information can be found in https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones",
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"startingDeadlineSeconds":    "Optional deadline in seconds for starting the job if it misses scheduled time for any reason.  Missed jobs executions will be counted as failed ones.",
 	"concurrencyPolicy":          "Specifies how to treat concurrent executions of a Job. Valid values are:\n\n- \"Allow\" (default): allows CronJobs to run concurrently; - \"Forbid\": forbids concurrent runs, skipping next run if previous run hasn't finished yet; - \"Replace\": cancels currently running job and replaces it with a new one",
 	"suspend":                    "This flag tells the controller to suspend subsequent executions, it does not apply to already started executions.  Defaults to false.",
@@ -144,21 +65,10 @@ func (CronJobSpec) SwaggerDoc() map[string]string {
 }
 
 var map_CronJobStatus = map[string]string{
-<<<<<<< HEAD
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"":                 "CronJobStatus represents the current state of a cron job.",
-	"active":           "A list of pointers to currently running jobs.",
-	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
-=======
 	"":                   "CronJobStatus represents the current state of a cron job.",
 	"active":             "A list of pointers to currently running jobs.",
 	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
 	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (CronJobStatus) SwaggerDoc() map[string]string {

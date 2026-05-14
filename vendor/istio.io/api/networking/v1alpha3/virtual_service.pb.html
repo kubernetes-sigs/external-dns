@@ -6,7 +6,7 @@ layout: protoc-gen-docs
 generator: protoc-gen-docs
 schema: istio.networking.v1alpha3.VirtualService
 aliases: [/docs/reference/config/networking/v1alpha3/virtual-service]
-number_of_entries: 29
+number_of_entries: 30
 ---
 <p>Configuration affecting traffic routing. Here are a few terms useful to define
 in the context of traffic routing.</p>
@@ -41,7 +41,7 @@ to be customized for specific client contexts.</p>
 pods of the reviews service with label &ldquo;version: v1&rdquo;. In addition,
 HTTP requests with path starting with /wpcatalog/ or /consumercatalog/ will
 be rewritten to /newcatalog and sent to pods with label &ldquo;version: v2&rdquo;.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
@@ -70,7 +70,7 @@ spec:
 <p>A subset/version of a route destination is identified with a reference
 to a named service subset which must be declared in a corresponding
 <code>DestinationRule</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
   name: reviews-destination
@@ -93,15 +93,14 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="VirtualService-hosts">
-<td><code>hosts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-hosts">hosts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>The destination hosts to which traffic is being sent. Could
 be a DNS name with wildcard prefix or an IP address.  Depending on the
@@ -130,13 +129,11 @@ only for services defined via the Gateway.</p>
 <p><em>Note</em>: It must be empty for a delegate VirtualService.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="VirtualService-gateways">
-<td><code>gateways</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-gateways">gateways</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>The names of gateways and sidecars that should apply these routes.
 Gateways in other namespaces may be referred to by
@@ -153,13 +150,11 @@ rules will apply only to the gateways. To apply the rules to both
 gateways and sidecars, specify <code>mesh</code> as one of the gateway names.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="VirtualService-http">
-<td><code>http</code></td>
-<td><code><a href="#HTTPRoute">HTTPRoute[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-http">http</a></code></div>
+<div class="type"><a href="#HTTPRoute">HTTPRoute[]</a></div>
+</div></td>
 <td>
 <p>An ordered list of route rules for HTTP traffic. HTTP routes will be
 applied to platform service ports using HTTP/HTTP2/GRPC protocols, gateway
@@ -168,13 +163,11 @@ entry ports using HTTP/HTTP2/GRPC protocols.  The first rule matching
 an incoming request is used.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="VirtualService-tls">
-<td><code>tls</code></td>
-<td><code><a href="#TLSRoute">TLSRoute[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-tls">tls</a></code></div>
+<div class="type"><a href="#TLSRoute">TLSRoute[]</a></div>
+</div></td>
 <td>
 <p>An ordered list of route rule for non-terminated TLS &amp; HTTPS
 traffic. Routing is typically performed using the SNI value presented
@@ -187,26 +180,22 @@ without associated virtual service will be treated as opaque TCP
 traffic.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="VirtualService-tcp">
-<td><code>tcp</code></td>
-<td><code><a href="#TCPRoute">TCPRoute[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-tcp">tcp</a></code></div>
+<div class="type"><a href="#TCPRoute">TCPRoute[]</a></div>
+</div></td>
 <td>
 <p>An ordered list of route rules for opaque TCP traffic. TCP routes will
 be applied to any port that is not a HTTP or TLS port. The first rule
 matching an incoming request is used.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="VirtualService-export_to">
-<td><code>exportTo</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#VirtualService-export_to">exportTo</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>A list of namespaces to which this virtual service is exported. Exporting a
 virtual service allows it to be used by sidecars and gateways defined in
@@ -219,9 +208,6 @@ namespaces by default.</p>
 the virtual service is declared in. Similarly the value &ldquo;*&rdquo; is reserved and
 defines an export to all namespaces.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -239,7 +225,7 @@ services), as well as services declared through the
 <p><em>Note for Kubernetes users</em>: When short names are used (e.g. &ldquo;reviews&rdquo;
 instead of &ldquo;reviews.default.svc.cluster.local&rdquo;), Istio will interpret
 the short name based on the namespace of the rule, not the service. A
-rule in the &ldquo;default&rdquo; namespace containing a host &ldquo;reviews will be
+rule in the &ldquo;default&rdquo; namespace containing a host &ldquo;reviews&rdquo; will be
 interpreted as &ldquo;reviews.default.svc.cluster.local&rdquo;, irrespective of the
 actual namespace associated with the reviews service. <em>To avoid potential
 misconfigurations, it is recommended to always use fully qualified
@@ -247,7 +233,7 @@ domain names over short names.</em></p>
 <p>The following Kubernetes example routes all traffic by default to pods
 of the reviews service with label &ldquo;version: v1&rdquo; (i.e., subset v1), and
 some to subset v2, in a Kubernetes environment.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
@@ -273,7 +259,7 @@ spec:
         subset: v1
 </code></pre>
 <p>And the associated DestinationRule</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
   name: reviews-destination
@@ -297,7 +283,7 @@ that this rule is set in the istio-system namespace but uses the fully
 qualified domain name of the productpage service,
 productpage.prod.svc.cluster.local. Therefore the rule&rsquo;s namespace does
 not have an impact in resolving the name of the productpage service.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: my-productpage-rule
@@ -316,7 +302,7 @@ services must first be added to Istio&rsquo;s internal service registry using th
 ServiceEntry resource. VirtualServices can then be defined to control traffic
 bound to these external services. For example, the following rules define a
 Service for wikipedia.org and set a timeout of 5s for HTTP requests.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: external-svc-wikipedia
@@ -330,7 +316,7 @@ spec:
     protocol: HTTP
   resolution: DNS
 ---
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: my-wiki-rule
@@ -348,15 +334,15 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Destination-host">
-<td><code>host</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#Destination-host">host</a></code></div>
+<div class="type">string</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>The name of a service from the service registry. Service
 names are looked up from the platform&rsquo;s service registry (e.g.,
@@ -366,41 +352,34 @@ destinations that are not found in either of the two, will be dropped.</p>
 <p><em>Note for Kubernetes users</em>: When short names are used (e.g. &ldquo;reviews&rdquo;
 instead of &ldquo;reviews.default.svc.cluster.local&rdquo;), Istio will interpret
 the short name based on the namespace of the rule, not the service. A
-rule in the &ldquo;default&rdquo; namespace containing a host &ldquo;reviews will be
+rule in the &ldquo;default&rdquo; namespace containing a host &ldquo;reviews&rdquo; will be
 interpreted as &ldquo;reviews.default.svc.cluster.local&rdquo;, irrespective of
 the actual namespace associated with the reviews service. To avoid
 potential misconfiguration, it is recommended to always use fully
 qualified domain names over short names.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="Destination-subset">
-<td><code>subset</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#Destination-subset">subset</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The name of a subset within the service. Applicable only to services
 within the mesh. The subset must be defined in a corresponding
 DestinationRule.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Destination-port">
-<td><code>port</code></td>
-<td><code><a href="#PortSelector">PortSelector</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Destination-port">port</a></code></div>
+<div class="type"><a href="#PortSelector">PortSelector</a></div>
+</div></td>
 <td>
 <p>Specifies the port on the host that is being addressed. If a service
 exposes only a single port it is not required to explicitly select the
 port.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -415,15 +394,14 @@ gRPC traffic. See VirtualService for usage examples.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPRoute-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The name assigned to the route for debugging purposes. The
 route&rsquo;s name will be concatenated with the match&rsquo;s name and will
@@ -431,13 +409,11 @@ be logged in the access logs for requests matching this
 route/match.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-match">
-<td><code>match</code></td>
-<td><code><a href="#HTTPMatchRequest">HTTPMatchRequest[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-match">match</a></code></div>
+<div class="type"><a href="#HTTPMatchRequest">HTTPMatchRequest[]</a></div>
+</div></td>
 <td>
 <p>Match conditions to be satisfied for the rule to be
 activated. All conditions inside a single match block have AND
@@ -445,13 +421,11 @@ semantics, while the list of match blocks have OR semantics. The rule
 is matched if any one of the match blocks succeed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-route">
-<td><code>route</code></td>
-<td><code><a href="#HTTPRouteDestination">HTTPRouteDestination[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-route">route</a></code></div>
+<div class="type"><a href="#HTTPRouteDestination">HTTPRouteDestination[]</a></div>
+</div></td>
 <td>
 <p>A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
 The forwarding target can be one of several versions of a service (see
@@ -459,13 +433,11 @@ glossary in beginning of document). Weights associated with the
 service version determine the proportion of traffic it receives.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-redirect">
-<td><code>redirect</code></td>
-<td><code><a href="#HTTPRedirect">HTTPRedirect</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-redirect">redirect</a></code></div>
+<div class="type"><a href="#HTTPRedirect">HTTPRedirect</a></div>
+</div></td>
 <td>
 <p>A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
 If traffic passthrough option is specified in the rule,
@@ -473,13 +445,11 @@ route/redirect will be ignored. The redirect primitive can be used to
 send a HTTP 301 redirect to a different URI or Authority.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-direct_response">
-<td><code>directResponse</code></td>
-<td><code><a href="#HTTPDirectResponse">HTTPDirectResponse</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-direct_response">directResponse</a></code></div>
+<div class="type"><a href="#HTTPDirectResponse">HTTPDirectResponse</a></div>
+</div></td>
 <td>
 <p>A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
 Direct Response is used to specify a fixed response that should
@@ -487,13 +457,11 @@ be sent to clients.</p>
 <p>It can be set only when <code>Route</code> and <code>Redirect</code> are empty.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-delegate">
-<td><code>delegate</code></td>
-<td><code><a href="#Delegate">Delegate</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-delegate">delegate</a></code></div>
+<div class="type"><a href="#Delegate">Delegate</a></div>
+</div></td>
 <td>
 <p>Delegate is used to specify the particular VirtualService which
 can be used to define delegate HTTPRoute.</p>
@@ -508,60 +476,55 @@ otherwise there is a conflict and the HTTPRoute will not take effect.</li>
 </ol>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-rewrite">
-<td><code>rewrite</code></td>
-<td><code><a href="#HTTPRewrite">HTTPRewrite</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-rewrite">rewrite</a></code></div>
+<div class="type"><a href="#HTTPRewrite">HTTPRewrite</a></div>
+</div></td>
 <td>
 <p>Rewrite HTTP URIs and Authority headers. Rewrite cannot be used with
 Redirect primitive. Rewrite will be performed before forwarding.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-timeout">
-<td><code>timeout</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-timeout">timeout</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></div>
+</div></td>
 <td>
 <p>Timeout for HTTP requests, default is disabled.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-retries">
-<td><code>retries</code></td>
-<td><code><a href="#HTTPRetry">HTTPRetry</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-retries">retries</a></code></div>
+<div class="type"><a href="#HTTPRetry">HTTPRetry</a></div>
+</div></td>
 <td>
 <p>Retry policy for HTTP requests.</p>
+<p>Note: the default cluster-wide retry policy, if not specified, is:</p>
+<pre><code class="language-yaml">attempts: 2
+retryOn: &quot;connect-failure,refused-stream,unavailable,cancelled&quot;
+</code></pre>
+<p>This can be customized in <a href="https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig"><code>Mesh Config</code> <code>defaultHttpRetryPolicy</code></a>.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="HTTPRoute-fault">
-<td><code>fault</code></td>
-<td><code><a href="#HTTPFaultInjection">HTTPFaultInjection</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-fault">fault</a></code></div>
+<div class="type"><a href="#HTTPFaultInjection">HTTPFaultInjection</a></div>
+</div></td>
 <td>
 <p>Fault injection policy to apply on HTTP traffic at the client side.
 Note that timeouts or retries will not be enabled when faults are
 enabled on the client side.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-mirror">
-<td><code>mirror</code></td>
-<td><code><a href="#Destination">Destination</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-mirror">mirror</a></code></div>
+<div class="type"><a href="#Destination">Destination</a></div>
+</div></td>
 <td>
 <p>Mirror HTTP traffic to a another destination in addition to forwarding
 the requests to the intended destination. Mirrored traffic is on a
@@ -571,13 +534,11 @@ original destination.  Statistics will be generated for the mirrored
 destination.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-mirrors">
-<td><code>mirrors</code></td>
-<td><code><a href="#HTTPMirrorPolicy">HTTPMirrorPolicy[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-mirrors">mirrors</a></code></div>
+<div class="type"><a href="#HTTPMirrorPolicy">HTTPMirrorPolicy[]</a></div>
+</div></td>
 <td>
 <p>Specifies the destinations to mirror HTTP traffic in addition
 to the original destination. Mirrored traffic is on a
@@ -587,45 +548,36 @@ original destination. Statistics will be generated for the mirrored
 destination.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-mirror_percentage">
-<td><code>mirrorPercentage</code></td>
-<td><code><a href="#Percent">Percent</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-mirror_percentage">mirrorPercentage</a></code></div>
+<div class="type"><a href="#Percent">Percent</a></div>
+</div></td>
 <td>
 <p>Percentage of the traffic to be mirrored by the <code>mirror</code> field.
 If this field is absent, all the traffic (100%) will be mirrored.
 Max value is 100.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-cors_policy">
-<td><code>corsPolicy</code></td>
-<td><code><a href="#CorsPolicy">CorsPolicy</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-cors_policy">corsPolicy</a></code></div>
+<div class="type"><a href="#CorsPolicy">CorsPolicy</a></div>
+</div></td>
 <td>
 <p>Cross-Origin Resource Sharing policy (CORS). Refer to
 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a>
 for further details about cross origin resource sharing.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRoute-headers">
-<td><code>headers</code></td>
-<td><code><a href="#Headers">Headers</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRoute-headers">headers</a></code></div>
+<div class="type"><a href="#Headers">Headers</a></div>
+</div></td>
 <td>
 <p>Header manipulation rules</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -636,7 +588,7 @@ No
 <p>Describes the delegate VirtualService.
 The following routing rules forward the traffic to <code>/productpage</code> by a delegate VirtualService named <code>productpage</code>,
 forward the traffic to <code>/reviews</code> by a delegate VirtualService named <code>reviews</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1alpha3
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: bookinfo
@@ -659,7 +611,7 @@ spec:
         name: reviews
         namespace: nsB
 </code></pre>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1alpha3
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: productpage
@@ -676,7 +628,7 @@ spec:
     - destination:
         host: productpage.nsA.svc.cluster.local
 </code></pre>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1alpha3
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews
@@ -692,33 +644,27 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Delegate-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#Delegate-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Name specifies the name of the delegate VirtualService.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Delegate-namespace">
-<td><code>namespace</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#Delegate-namespace">namespace</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Namespace specifies the namespace where the delegate VirtualService resides.
 By default, it is same to the root&rsquo;s.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -733,7 +679,7 @@ The following VirtualService adds a <code>test</code> header with the value <cod
 to requests that are routed to any <code>reviews</code> service destination.
 It also removes the <code>foo</code> response header, but only from responses
 coming from the <code>v1</code> subset (version) of the <code>reviews</code> service.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
@@ -764,34 +710,71 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Headers-request">
-<td><code>request</code></td>
-<td><code><a href="#Headers-HeaderOperations">HeaderOperations</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Headers-request">request</a></code></div>
+<div class="type"><a href="#Headers-HeaderOperations">HeaderOperations</a></div>
+</div></td>
 <td>
 <p>Header manipulation rules to apply before forwarding a request
 to the destination service</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Headers-response">
-<td><code>response</code></td>
-<td><code><a href="#Headers-HeaderOperations">HeaderOperations</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Headers-response">response</a></code></div>
+<div class="type"><a href="#Headers-HeaderOperations">HeaderOperations</a></div>
+</div></td>
 <td>
 <p>Header manipulation rules to apply before returning a response
 to the caller</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="Headers-HeaderOperations">HeaderOperations</h3>
+<section>
+<p>HeaderOperations Describes the header manipulations to apply</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Headers-HeaderOperations-set">
+<td><div class="field"><div class="name"><code><a href="#Headers-HeaderOperations-set">set</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
-No
+<p>Overwrite the headers specified by key with the given values</p>
+
+</td>
+</tr>
+<tr id="Headers-HeaderOperations-add">
+<td><div class="field"><div class="name"><code><a href="#Headers-HeaderOperations-add">add</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
+<td>
+<p>Append the given values to the headers specified by keys
+(will create a comma-separated list of values)</p>
+
+</td>
+</tr>
+<tr id="Headers-HeaderOperations-remove">
+<td><div class="field"><div class="name"><code><a href="#Headers-HeaderOperations-remove">remove</a></code></div>
+<div class="type">string[]</div>
+</div></td>
+<td>
+<p>Remove the specified headers</p>
+
 </td>
 </tr>
 </tbody>
@@ -803,7 +786,7 @@ No
 traffic (TLS/HTTPS) The following routing rule forwards unterminated TLS
 traffic arriving at port 443 of gateway called &ldquo;mygateway&rdquo; to internal
 services in the mesh based on the SNI value.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: bookinfo-sni
@@ -833,15 +816,15 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="TLSRoute-match">
-<td><code>match</code></td>
-<td><code><a href="#TLSMatchAttributes">TLSMatchAttributes[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSRoute-match">match</a></code></div>
+<div class="type"><a href="#TLSMatchAttributes">TLSMatchAttributes[]</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Match conditions to be satisfied for the rule to be
 activated. All conditions inside a single match block have AND
@@ -849,19 +832,14 @@ semantics, while the list of match blocks have OR semantics. The rule
 is matched if any one of the match blocks succeed.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="TLSRoute-route">
-<td><code>route</code></td>
-<td><code><a href="#RouteDestination">RouteDestination[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSRoute-route">route</a></code></div>
+<div class="type"><a href="#RouteDestination">RouteDestination[]</a></div>
+</div></td>
 <td>
 <p>The destination to which the connection should be forwarded to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -872,7 +850,7 @@ No
 <p>Describes match conditions and actions for routing TCP traffic. The
 following routing rule forwards traffic arriving at port 27017 for
 mongo.prod.svc.cluster.local to another Mongo server on port 5555.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: bookinfo-mongo
@@ -893,15 +871,14 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="TCPRoute-match">
-<td><code>match</code></td>
-<td><code><a href="#L4MatchAttributes">L4MatchAttributes[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#TCPRoute-match">match</a></code></div>
+<div class="type"><a href="#L4MatchAttributes">L4MatchAttributes[]</a></div>
+</div></td>
 <td>
 <p>Match conditions to be satisfied for the rule to be
 activated. All conditions inside a single match block have AND
@@ -909,19 +886,14 @@ semantics, while the list of match blocks have OR semantics. The rule
 is matched if any one of the match blocks succeed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="TCPRoute-route">
-<td><code>route</code></td>
-<td><code><a href="#RouteDestination">RouteDestination[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#TCPRoute-route">route</a></code></div>
+<div class="type"><a href="#RouteDestination">RouteDestination[]</a></div>
+</div></td>
 <td>
 <p>The destination to which the connection should be forwarded to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -929,12 +901,12 @@ No
 </section>
 <h2 id="HTTPMatchRequest">HTTPMatchRequest</h2>
 <section>
-<p>HttpMatchRequest specifies a set of criterion to be met in order for the
+<p>HttpMatchRequest specifies a set of criteria to be met in order for the
 rule to be applied to the HTTP request. For example, the following
 restricts the rule to match only requests where the URL path
 starts with /ratings/v2/ and the request contains a custom <code>end-user</code> header
 with value <code>jason</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -964,28 +936,25 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPMatchRequest-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The name assigned to a match. The match&rsquo;s name will be
 concatenated with the parent route&rsquo;s name and will be logged in
 the access logs for requests matching this route.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-uri">
-<td><code>uri</code></td>
-<td><code><a href="#StringMatch">StringMatch</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-uri">uri</a></code></div>
+<div class="type"><a href="#StringMatch">StringMatch</a></div>
+</div></td>
 <td>
 <p>URI to match
 values are case-sensitive and formatted as follows:</p>
@@ -997,20 +966,18 @@ values are case-sensitive and formatted as follows:</p>
 <p><code>prefix: &quot;value&quot;</code> for prefix-based match</p>
 </li>
 <li>
-<p><code>regex: &quot;value&quot;</code> for RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><code>regex: &quot;value&quot;</code> for <a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 </li>
 </ul>
 <p><strong>Note:</strong> Case-insensitive matching could be enabled via the
 <code>ignoreUriCase</code> flag.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-scheme">
-<td><code>scheme</code></td>
-<td><code><a href="#StringMatch">StringMatch</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-scheme">scheme</a></code></div>
+<div class="type"><a href="#StringMatch">StringMatch</a></div>
+</div></td>
 <td>
 <p>URI Scheme
 values are case-sensitive and formatted as follows:</p>
@@ -1022,18 +989,16 @@ values are case-sensitive and formatted as follows:</p>
 <p><code>prefix: &quot;value&quot;</code> for prefix-based match</p>
 </li>
 <li>
-<p><code>regex: &quot;value&quot;</code> for RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><code>regex: &quot;value&quot;</code> for <a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 </li>
 </ul>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-method">
-<td><code>method</code></td>
-<td><code><a href="#StringMatch">StringMatch</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-method">method</a></code></div>
+<div class="type"><a href="#StringMatch">StringMatch</a></div>
+</div></td>
 <td>
 <p>HTTP Method
 values are case-sensitive and formatted as follows:</p>
@@ -1045,18 +1010,16 @@ values are case-sensitive and formatted as follows:</p>
 <p><code>prefix: &quot;value&quot;</code> for prefix-based match</p>
 </li>
 <li>
-<p><code>regex: &quot;value&quot;</code> for RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><code>regex: &quot;value&quot;</code> for <a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 </li>
 </ul>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-authority">
-<td><code>authority</code></td>
-<td><code><a href="#StringMatch">StringMatch</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-authority">authority</a></code></div>
+<div class="type"><a href="#StringMatch">StringMatch</a></div>
+</div></td>
 <td>
 <p>HTTP Authority
 values are case-sensitive and formatted as follows:</p>
@@ -1068,18 +1031,16 @@ values are case-sensitive and formatted as follows:</p>
 <p><code>prefix: &quot;value&quot;</code> for prefix-based match</p>
 </li>
 <li>
-<p><code>regex: &quot;value&quot;</code> for RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><code>regex: &quot;value&quot;</code> for <a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 </li>
 </ul>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-headers">
-<td><code>headers</code></td>
-<td><code>map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-headers">headers</a></code></div>
+<div class="type">map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</div>
+</div></td>
 <td>
 <p>The header keys must be lowercase and use hyphen as the separator,
 e.g. <em>x-request-id</em>.</p>
@@ -1092,7 +1053,7 @@ e.g. <em>x-request-id</em>.</p>
 <p><code>prefix: &quot;value&quot;</code> for prefix-based match</p>
 </li>
 <li>
-<p><code>regex: &quot;value&quot;</code> for RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><code>regex: &quot;value&quot;</code> for <a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 </li>
 </ul>
 <p>If the value is empty and only the name of header is specified, presence of the header is checked.
@@ -1104,53 +1065,47 @@ To provide an empty value, use <code>{}</code>, for example:</p>
 <p><strong>Note:</strong> The keys <code>uri</code>, <code>scheme</code>, <code>method</code>, and <code>authority</code> will be ignored.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-port">
-<td><code>port</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-port">port</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>Specifies the ports on the host that is being addressed. Many services
 only expose a single port or label ports with the protocols they support,
 in these cases it is not required to explicitly select the port.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-source_labels">
-<td><code>sourceLabels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-source_labels">sourceLabels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>One or more labels that constrain the applicability of a rule to source (client) workloads
 with the given labels. If the VirtualService has a list of gateways specified
 in the top-level <code>gateways</code> field, it must include the reserved gateway
 <code>mesh</code> for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="HTTPMatchRequest-gateways">
-<td><code>gateways</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-gateways">gateways</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>Names of gateways where the rule should be applied. Gateway names
 in the top-level <code>gateways</code> field of the VirtualService (if any) are overridden. The gateway
 match is independent of sourceLabels.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-query_params">
-<td><code>queryParams</code></td>
-<td><code>map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-query_params">queryParams</a></code></div>
+<div class="type">map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</div>
+</div></td>
 <td>
 <p>Query parameters for matching.</p>
 <p>Ex:</p>
@@ -1175,51 +1130,45 @@ configuration will only match values like &ldquo;123&rdquo; but not &ldquo;a123&
 </ul>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-ignore_uri_case">
-<td><code>ignoreUriCase</code></td>
-<td><code>bool</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-ignore_uri_case">ignoreUriCase</a></code></div>
+<div class="type">bool</div>
+</div></td>
 <td>
 <p>Flag to specify whether the URI matching should be case-insensitive.</p>
 <p><strong>Note:</strong> The case will be ignored only in the case of <code>exact</code> and <code>prefix</code>
 URI matches.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-without_headers">
-<td><code>withoutHeaders</code></td>
-<td><code>map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-without_headers">withoutHeaders</a></code></div>
+<div class="type">map&lt;string,&nbsp;<a href="#StringMatch">StringMatch</a>&gt;</div>
+</div></td>
 <td>
 <p>withoutHeader has the same syntax with the header, but has opposite meaning.
 If a header is matched with a matching rule among withoutHeader, the traffic becomes not matched one.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPMatchRequest-source_namespace">
-<td><code>sourceNamespace</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-source_namespace">sourceNamespace</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Source namespace constraining the applicability of a rule to workloads in that namespace.
 If the VirtualService has a list of gateways specified in the top-level <code>gateways</code> field,
 it must include the reserved gateway <code>mesh</code> for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="HTTPMatchRequest-stat_prefix">
-<td><code>statPrefix</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPMatchRequest-stat_prefix">statPrefix</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The human readable prefix to use when emitting statistics for this route.
 The statistics are generated with prefix route.&lt;stat_prefix&gt;.
@@ -1228,9 +1177,6 @@ This prefix is only for proxy-level statistics (envoy_<em>) and not service-leve
 Refer to <a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-route-stat-prefix">https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-route-stat-prefix</a>
 for statistics that are generated when this is configured.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1244,7 +1190,7 @@ determine the proportion of traffic it receives. For example, the
 following rule will route 25% of traffic for the &ldquo;reviews&rdquo; service to
 instances with the &ldquo;v2&rdquo; tag and the remaining traffic (i.e., 75%) to
 &ldquo;v1&rdquo;.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
@@ -1263,7 +1209,7 @@ spec:
       weight: 75
 </code></pre>
 <p>And the associated DestinationRule</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
   name: reviews-destination
@@ -1280,7 +1226,7 @@ spec:
 <p>Traffic can also be split across two entirely different services without
 having to define new subsets. For example, the following rule forwards 25% of
 traffic to reviews.com to dev.reviews.com</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route-two-domains
@@ -1301,46 +1247,39 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPRouteDestination-destination">
-<td><code>destination</code></td>
-<td><code><a href="#Destination">Destination</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRouteDestination-destination">destination</a></code></div>
+<div class="type"><a href="#Destination">Destination</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Destination uniquely identifies the instances of a service
 to which the request/connection should be forwarded to.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="HTTPRouteDestination-weight">
-<td><code>weight</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRouteDestination-weight">weight</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Weight specifies the relative proportion of traffic to be forwarded to the destination. A destination will receive <code>weight/(sum of all weights)</code> requests.
 If there is only one destination in a rule, it will receive all traffic.
 Otherwise, if weight is <code>0</code>, the destination will not receive any traffic.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRouteDestination-headers">
-<td><code>headers</code></td>
-<td><code><a href="#Headers">Headers</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRouteDestination-headers">headers</a></code></div>
+<div class="type"><a href="#Headers">Headers</a></div>
+</div></td>
 <td>
 <p>Header manipulation rules</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1354,35 +1293,30 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="RouteDestination-destination">
-<td><code>destination</code></td>
-<td><code><a href="#Destination">Destination</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#RouteDestination-destination">destination</a></code></div>
+<div class="type"><a href="#Destination">Destination</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Destination uniquely identifies the instances of a service
 to which the request/connection should be forwarded to.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="RouteDestination-weight">
-<td><code>weight</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#RouteDestination-weight">weight</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Weight specifies the relative proportion of traffic to be forwarded to the destination. A destination will receive <code>weight/(sum of all weights)</code> requests.
 If there is only one destination in a rule, it will receive all traffic.
 Otherwise, if weight is <code>0</code>, the destination will not receive any traffic.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1397,75 +1331,67 @@ is incomplete.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="L4MatchAttributes-destination_subnets">
-<td><code>destinationSubnets</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#L4MatchAttributes-destination_subnets">destinationSubnets</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>IPv4 or IPv6 ip addresses of destination with optional subnet.  E.g.,
 a.b.c.d/xx form or just a.b.c.d.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="L4MatchAttributes-port">
-<td><code>port</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#L4MatchAttributes-port">port</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>Specifies the port on the host that is being addressed. Many services
 only expose a single port or label ports with the protocols they support,
 in these cases it is not required to explicitly select the port.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="L4MatchAttributes-source_labels">
-<td><code>sourceLabels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#L4MatchAttributes-source_labels">sourceLabels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>One or more labels that constrain the applicability of a rule to
 workloads with the given labels. If the VirtualService has a list of
 gateways specified in the top-level <code>gateways</code> field, it should include the reserved gateway
 <code>mesh</code> in order for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="L4MatchAttributes-gateways">
-<td><code>gateways</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#L4MatchAttributes-gateways">gateways</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>Names of gateways where the rule should be applied. Gateway names
 in the top-level <code>gateways</code> field of the VirtualService (if any) are overridden. The gateway
 match is independent of sourceLabels.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="L4MatchAttributes-source_namespace">
-<td><code>sourceNamespace</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#L4MatchAttributes-source_namespace">sourceNamespace</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Source namespace constraining the applicability of a rule to workloads in that namespace.
 If the VirtualService has a list of gateways specified in the top-level <code>gateways</code> field,
 it must include the reserved gateway <code>mesh</code> for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1479,15 +1405,15 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="TLSMatchAttributes-sni_hosts">
-<td><code>sniHosts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-sni_hosts">sniHosts</a></code></div>
+<div class="type">string[]</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>SNI (server name indicator) to match on. Wildcard prefixes
 can be used in the SNI value, e.g., *.com will match foo.example.com
@@ -1495,25 +1421,21 @@ as well as example.com. An SNI value must be a subset (i.e., fall
 within the domain) of the corresponding virtual service&rsquo;s hosts.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="TLSMatchAttributes-destination_subnets">
-<td><code>destinationSubnets</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-destination_subnets">destinationSubnets</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>IPv4 or IPv6 ip addresses of destination with optional subnet.  E.g.,
 a.b.c.d/xx form or just a.b.c.d.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="TLSMatchAttributes-port">
-<td><code>port</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-port">port</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>Specifies the port on the host that is being addressed. Many services
 only expose a single port or label ports with the protocols they
@@ -1521,48 +1443,43 @@ support, in these cases it is not required to explicitly select the
 port.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="TLSMatchAttributes-source_labels">
-<td><code>sourceLabels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-source_labels">sourceLabels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>One or more labels that constrain the applicability of a rule to
 workloads with the given labels. If the VirtualService has a list of
 gateways specified in the top-level <code>gateways</code> field, it should include the reserved gateway
 <code>mesh</code> in order for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="TLSMatchAttributes-gateways">
-<td><code>gateways</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-gateways">gateways</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>Names of gateways where the rule should be applied. Gateway names
 in the top-level <code>gateways</code> field of the VirtualService (if any) are overridden. The gateway
 match is independent of sourceLabels.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="TLSMatchAttributes-source_namespace">
-<td><code>sourceNamespace</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#TLSMatchAttributes-source_namespace">sourceNamespace</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Source namespace constraining the applicability of a rule to workloads in that namespace.
 If the VirtualService has a list of gateways specified in the top-level <code>gateways</code> field,
 it must include the reserved gateway <code>mesh</code> for this field to be applicable.</p>
+<p><strong>Note:</strong> This is not a runtime match, but is a selector; it filters which workloads the
+VirtualService applies to.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1575,7 +1492,7 @@ where the Authority/Host and the URI in the response can be swapped with
 the specified values. For example, the following rule redirects
 requests for /v1/getProductRatings API on the ratings service to
 /v1/bookRatings provided by the bookratings service.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -1596,51 +1513,44 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPRedirect-uri">
-<td><code>uri</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-uri">uri</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>On a redirect, overwrite the Path portion of the URL with this
 value. Note that the entire path will be replaced, irrespective of the
 request URI being matched as an exact path or prefix.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRedirect-authority">
-<td><code>authority</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-authority">authority</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>On a redirect, overwrite the Authority/Host portion of the URL with
 this value.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRedirect-port" class="oneof oneof-start">
-<td><code>port</code></td>
-<td><code>uint32 (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-port">port</a></code></div>
+<div class="type">uint32 (oneof)</div>
+</div></td>
 <td>
 <p>On a redirect, overwrite the port portion of the URL with this value.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRedirect-derive_port" class="oneof">
-<td><code>derivePort</code></td>
-<td><code><a href="#HTTPRedirect-RedirectPortSelection">RedirectPortSelection (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-derive_port">derivePort</a></code></div>
+<div class="type"><a href="#HTTPRedirect-RedirectPortSelection">RedirectPortSelection (oneof)</a></div>
+</div></td>
 <td>
 <p>On a redirect, dynamically set the port:</p>
 <ul>
@@ -1649,13 +1559,11 @@ No
 </ul>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRedirect-scheme">
-<td><code>scheme</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-scheme">scheme</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>On a redirect, overwrite the scheme portion of the URL with this value.
 For example, <code>http</code> or <code>https</code>.
@@ -1663,20 +1571,38 @@ If unset, the original scheme will be used.
 If <code>derivePort</code> is set to <code>FROM_PROTOCOL_DEFAULT</code>, this will impact the port used as well</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRedirect-redirect_code">
-<td><code>redirectCode</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRedirect-redirect_code">redirectCode</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>On a redirect, Specifies the HTTP status code to use in the redirect
 response. The default response code is MOVED_PERMANENTLY (301).</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="HTTPRedirect-RedirectPortSelection">RedirectPortSelection</h3>
+<section>
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="HTTPRedirect-RedirectPortSelection-FROM_PROTOCOL_DEFAULT">
+<td><code><a href="#HTTPRedirect-RedirectPortSelection-FROM_PROTOCOL_DEFAULT">FROM_PROTOCOL_DEFAULT</a></code></td>
 <td>
-No
+</td>
+</tr>
+<tr id="HTTPRedirect-RedirectPortSelection-FROM_REQUEST_PORT">
+<td><code><a href="#HTTPRedirect-RedirectPortSelection-FROM_REQUEST_PORT">FROM_REQUEST_PORT</a></code></td>
+<td>
 </td>
 </tr>
 </tbody>
@@ -1687,7 +1613,7 @@ No
 <p>HTTPDirectResponse can be used to send a fixed response to clients.
 For example, the following rule returns a fixed 503 status with a body
 to requests for /v1/getProductRatings API.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -1706,7 +1632,7 @@ spec:
 </code></pre>
 <p>It is also possible to specify a binary response body.
 This is mostly useful for non text-based protocols such as gRPC.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -1726,7 +1652,7 @@ spec:
 <p>It is good practice to add headers in the HTTPRoute
 as well as the direct_response, for example to specify
 the returned Content-Type.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -1752,33 +1678,28 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPDirectResponse-status">
-<td><code>status</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPDirectResponse-status">status</a></code></div>
+<div class="type">uint32</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Specifies the HTTP response status to be returned.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="HTTPDirectResponse-body">
-<td><code>body</code></td>
-<td><code><a href="#HTTPBody">HTTPBody</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPDirectResponse-body">body</a></code></div>
+<div class="type"><a href="#HTTPBody">HTTPBody</a></div>
+</div></td>
 <td>
 <p>Specifies the content of the response body. If this setting is omitted,
 no body is included in the generated response.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1790,32 +1711,26 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPBody-string" class="oneof oneof-start">
-<td><code>string</code></td>
-<td><code>string (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPBody-string">string</a></code></div>
+<div class="type">string (oneof)</div>
+</div></td>
 <td>
 <p>response body as a string</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPBody-bytes" class="oneof">
-<td><code>bytes</code></td>
-<td><code>bytes (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPBody-bytes">bytes</a></code></div>
+<div class="type">bytes (oneof)</div>
+</div></td>
 <td>
 <p>response body as base64 encoded bytes.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1828,7 +1743,7 @@ before forwarding the request to the destination. Rewrite primitive can
 be used only with HTTPRouteDestination. The following example
 demonstrates how to rewrite the URL prefix for api call (/ratings) to
 ratings service before making the actual API call.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -1851,45 +1766,37 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPRewrite-uri">
-<td><code>uri</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRewrite-uri">uri</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>rewrite the path (or the prefix) portion of the URI with this
 value. If the original URI was matched based on prefix, the value
 provided in this field will replace the corresponding matched prefix.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRewrite-authority">
-<td><code>authority</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRewrite-authority">authority</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>rewrite the Authority/Host header with this value.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRewrite-uri_regex_rewrite">
-<td><code>uriRegexRewrite</code></td>
-<td><code><a href="#RegexRewrite">RegexRewrite</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRewrite-uri_regex_rewrite">uriRegexRewrite</a></code></div>
+<div class="type"><a href="#RegexRewrite">RegexRewrite</a></div>
+</div></td>
 <td>
 <p>rewrite the path portion of the URI with the specified regex.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1901,26 +1808,23 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="RegexRewrite-match">
-<td><code>match</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#RegexRewrite-match">match</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
-<p>RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="RegexRewrite-rewrite">
-<td><code>rewrite</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#RegexRewrite-rewrite">rewrite</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The string that should replace into matching portions of original URI.
 Capture groups in the pattern can be referenced in the new URI.
@@ -1933,59 +1837,49 @@ Path pattern &ldquo;/aaa/XxX/bbb&rdquo; with match &ldquo;(?i)/xxx/&rdquo; and a
 case-insensitive match and transform the path to &ldquo;/aaa/yyy/bbb&rdquo;.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 </tbody>
 </table>
 </section>
 <h2 id="StringMatch">StringMatch</h2>
 <section>
-<p>Describes how to match a given string in HTTP headers. Match is
-case-sensitive.</p>
+<p>Describes how to match a given string in HTTP headers. <code>exact</code> and <code>prefix</code> matching is
+case-sensitive. <code>regex</code> matching supports case-insensitive matches.</p>
 
 <table class="message-fields">
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="StringMatch-exact" class="oneof oneof-start">
-<td><code>exact</code></td>
-<td><code>string (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#StringMatch-exact">exact</a></code></div>
+<div class="type">string (oneof)</div>
+</div></td>
 <td>
 <p>exact string match</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="StringMatch-prefix" class="oneof">
-<td><code>prefix</code></td>
-<td><code>string (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#StringMatch-prefix">prefix</a></code></div>
+<div class="type">string (oneof)</div>
+</div></td>
 <td>
 <p>prefix-based match</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="StringMatch-regex" class="oneof">
-<td><code>regex</code></td>
-<td><code>string (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#StringMatch-regex">regex</a></code></div>
+<div class="type">string (oneof)</div>
+</div></td>
 <td>
-<p>RE2 style regex-based match (<a href="https://github.com/google/re2/wiki/Syntax)">https://github.com/google/re2/wiki/Syntax)</a>.</p>
+<p><a href="https://github.com/google/re2/wiki/Syntax">RE2 style regex-based match</a>.</p>
+<p>Example: <code>(?i)^aaa$</code> can be used to case-insensitive match a string consisting of three a&rsquo;s.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -1998,7 +1892,7 @@ example, the following rule sets the maximum number of retries to 3 when
 calling ratings:v1 service, with a 2s timeout per retry attempt.
 A retry will be attempted if there is a connect-failure, refused_stream
 or when the upstream server responds with Service Unavailable(503).</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -2020,67 +1914,84 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPRetry-attempts">
-<td><code>attempts</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-attempts">attempts</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Number of retries to be allowed for a given request. The interval
 between retries will be determined automatically (25ms+). When request
 <code>timeout</code> of the <a href="https://istio.io/docs/reference/config/networking/virtual-service/#HTTPRoute">HTTP route</a>
 or <code>per_try_timeout</code> is configured, the actual number of retries attempted also depends on
-the specified request <code>timeout</code> and <code>per_try_timeout</code> values. MUST BE &gt;= 0. If <code>0</code>, retries will be disabled.
+the specified request <code>timeout</code> and <code>per_try_timeout</code> values. MUST be &gt;= 0. If <code>0</code>, retries will be disabled.
 The maximum possible number of requests made will be 1 + <code>attempts</code>.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRetry-per_try_timeout">
-<td><code>perTryTimeout</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-per_try_timeout">perTryTimeout</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></div>
+</div></td>
 <td>
-<p>Timeout per attempt for a given request, including the initial call and any retries. Format: 1h/1m/1s/1ms. MUST BE &gt;=1ms.
+<p>Timeout per attempt for a given request, including the initial call and any retries. Format: 1h/1m/1s/1ms. MUST be &gt;=1ms.
 Default is same value as request
 <code>timeout</code> of the <a href="https://istio.io/docs/reference/config/networking/virtual-service/#HTTPRoute">HTTP route</a>,
 which means no timeout.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPRetry-retry_on">
-<td><code>retryOn</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-retry_on">retryOn</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Specifies the conditions under which retry takes place.
 One or more policies can be specified using a ‘,’ delimited list.
-If <code>retry_on</code> specifies a valid HTTP status, it will be added to retriable_status_codes retry policy.
 See the <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-on">retry policies</a>
 and <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-grpc-on">gRPC retry policies</a> for more details.</p>
+<p>In addition to the policies specified above, a list of HTTP status codes can be passed, such as <code>retryOn: &quot;503,reset&quot;</code>.
+Note these status codes refer to the actual responses received from the destination.
+For example, if a connection is reset, Istio will translate this to 503 for it&rsquo;s response.
+However, the destination did not return a 503 error, so this would not match <code>&quot;503&quot;</code> (it would, however, match <code>&quot;reset&quot;</code>).</p>
+<p>If not specified, this defaults to <code>connect-failure,refused-stream,unavailable,cancelled</code>.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="HTTPRetry-retry_remote_localities">
-<td><code>retryRemoteLocalities</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#boolvalue">BoolValue</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-retry_remote_localities">retryRemoteLocalities</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#boolvalue">BoolValue</a></div>
+</div></td>
 <td>
 <p>Flag to specify whether the retries should retry to other localities.
 See the <a href="https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_connection_management#retry-plugin-configuration">retry plugin configuration</a> for more details.</p>
 
 </td>
+</tr>
+<tr id="HTTPRetry-retry_ignore_previous_hosts">
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-retry_ignore_previous_hosts">retryIgnorePreviousHosts</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#boolvalue">BoolValue</a></div>
+</div></td>
 <td>
-No
+<p>Flag to specify whether the retries should ignore previously tried hosts during retry.
+Defaults to true.</p>
+
+</td>
+</tr>
+<tr id="HTTPRetry-backoff">
+<td><div class="field"><div class="name"><code><a href="#HTTPRetry-backoff">backoff</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></div>
+</div></td>
+<td>
+<p>Specifies the minimum duration between retry attempts.
+If unset, default minimum duration of 25ms is used as base interval for exponetial backoff.
+This has an impact on the total number of retries that will be attempted based on the <code>attempts</code> field
+and route timeout. For example, with attempts is set to 3, backoff to 2s and timeout to 3s, the request will
+be retried only once.</p>
+
 </td>
 </tr>
 </tbody>
@@ -2095,7 +2006,7 @@ the following rule restricts cross origin requests to those originating
 from example.com domain using HTTP POST/GET, and sets the
 <code>Access-Control-Allow-Credentials</code> header to false. In addition, it only
 exposes <code>X-Foo-bar</code> header and sets an expiry period of 1 day.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -2123,84 +2034,117 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="CorsPolicy-allow_origins">
-<td><code>allowOrigins</code></td>
-<td><code><a href="#StringMatch">StringMatch[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-allow_origins">allowOrigins</a></code></div>
+<div class="type"><a href="#StringMatch">StringMatch[]</a></div>
+</div></td>
 <td>
 <p>String patterns that match allowed origins.
 An origin is allowed if any of the string matchers match.
 If a match is found, then the outgoing Access-Control-Allow-Origin would be set to the origin as provided by the client.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="CorsPolicy-allow_methods">
-<td><code>allowMethods</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-allow_methods">allowMethods</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>List of HTTP methods allowed to access the resource. The content will
 be serialized into the Access-Control-Allow-Methods header.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="CorsPolicy-allow_headers">
-<td><code>allowHeaders</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-allow_headers">allowHeaders</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>List of HTTP headers that can be used when requesting the
 resource. Serialized to Access-Control-Allow-Headers header.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="CorsPolicy-expose_headers">
-<td><code>exposeHeaders</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-expose_headers">exposeHeaders</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
 <p>A list of HTTP headers that the browsers are allowed to
 access. Serialized into Access-Control-Expose-Headers header.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="CorsPolicy-max_age">
-<td><code>maxAge</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-max_age">maxAge</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration</a></div>
+</div></td>
 <td>
 <p>Specifies how long the results of a preflight request can be
 cached. Translates to the <code>Access-Control-Max-Age</code> header.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="CorsPolicy-allow_credentials">
-<td><code>allowCredentials</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#boolvalue">BoolValue</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-allow_credentials">allowCredentials</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#boolvalue">BoolValue</a></div>
+</div></td>
 <td>
 <p>Indicates whether the caller is allowed to send the actual request
 (not the preflight) using credentials. Translates to
 <code>Access-Control-Allow-Credentials</code> header.</p>
 
 </td>
+</tr>
+<tr id="CorsPolicy-unmatched_preflights">
+<td><div class="field"><div class="name"><code><a href="#CorsPolicy-unmatched_preflights">unmatchedPreflights</a></code></div>
+<div class="type"><a href="#CorsPolicy-UnmatchedPreflights">UnmatchedPreflights</a></div>
+</div></td>
 <td>
-No
+<p>Indicates whether preflight requests not matching the configured
+allowed origin shouldn&rsquo;t be forwarded to the upstream.
+Default is forward to upstream.</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="CorsPolicy-UnmatchedPreflights">UnmatchedPreflights</h3>
+<section>
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="CorsPolicy-UnmatchedPreflights-UNSPECIFIED">
+<td><code><a href="#CorsPolicy-UnmatchedPreflights-UNSPECIFIED">UNSPECIFIED</a></code></td>
+<td>
+<p>Default to FORWARD</p>
+
+</td>
+</tr>
+<tr id="CorsPolicy-UnmatchedPreflights-FORWARD">
+<td><code><a href="#CorsPolicy-UnmatchedPreflights-FORWARD">FORWARD</a></code></td>
+<td>
+<p>Preflight requests not matching the configured allowed origin
+will be forwarded to the upstream.</p>
+
+</td>
+</tr>
+<tr id="CorsPolicy-UnmatchedPreflights-IGNORE">
+<td><code><a href="#CorsPolicy-UnmatchedPreflights-IGNORE">IGNORE</a></code></td>
+<td>
+<p>Preflight requests not matching the configured allowed origin
+will not be forwarded to the upstream.</p>
+
 </td>
 </tr>
 </tbody>
@@ -2220,198 +2164,40 @@ both are specified simultaneously.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPFaultInjection-delay">
-<td><code>delay</code></td>
-<td><code><a href="#HTTPFaultInjection-Delay">Delay</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-delay">delay</a></code></div>
+<div class="type"><a href="#HTTPFaultInjection-Delay">Delay</a></div>
+</div></td>
 <td>
 <p>Delay requests before forwarding, emulating various failures such as
 network issues, overloaded upstream service, etc.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPFaultInjection-abort">
-<td><code>abort</code></td>
-<td><code><a href="#HTTPFaultInjection-Abort">Abort</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-abort">abort</a></code></div>
+<div class="type"><a href="#HTTPFaultInjection-Abort">Abort</a></div>
+</div></td>
 <td>
 <p>Abort Http request attempts and return error codes back to downstream
 service, giving the impression that the upstream service is faulty.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 </tbody>
 </table>
 </section>
-<h2 id="HTTPMirrorPolicy">HTTPMirrorPolicy</h2>
-<section>
-<p>HTTPMirrorPolicy can be used to specify the destinations to mirror HTTP traffic in addition
-to the original destination. Mirrored traffic is on a
-best effort basis where the sidecar/gateway will not wait for the
-mirrored destinations to respond before returning the response from the
-original destination. Statistics will be generated for the mirrored
-destination.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="HTTPMirrorPolicy-destination">
-<td><code>destination</code></td>
-<td><code><a href="#Destination">Destination</a></code></td>
-<td>
-<p>Destination specifies the target of the mirror operation.</p>
-
-</td>
-<td>
-Yes
-</td>
-</tr>
-<tr id="HTTPMirrorPolicy-percentage">
-<td><code>percentage</code></td>
-<td><code><a href="#Percent">Percent</a></code></td>
-<td>
-<p>Percentage of the traffic to be mirrored by the <code>destination</code> field.
-If this field is absent, all the traffic (100%) will be mirrored.
-Max value is 100.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="PortSelector">PortSelector</h2>
-<section>
-<p>PortSelector specifies the number of a port to be used for
-matching or selection for final routing.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="PortSelector-number">
-<td><code>number</code></td>
-<td><code>uint32</code></td>
-<td>
-<p>Valid port number</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Percent">Percent</h2>
-<section>
-<p>Percent specifies a percentage in the range of [0.0, 100.0].</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Percent-value">
-<td><code>value</code></td>
-<td><code>double</code></td>
-<td>
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Headers-HeaderOperations">Headers.HeaderOperations</h2>
-<section>
-<p>HeaderOperations Describes the header manipulations to apply</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Headers-HeaderOperations-set">
-<td><code>set</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
-<td>
-<p>Overwrite the headers specified by key with the given values</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Headers-HeaderOperations-add">
-<td><code>add</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
-<td>
-<p>Append the given values to the headers specified by keys
-(will create a comma-separated list of values)</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Headers-HeaderOperations-remove">
-<td><code>remove</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Remove the specified headers</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="HTTPFaultInjection-Delay">HTTPFaultInjection.Delay</h2>
+<h3 id="HTTPFaultInjection-Delay">Delay</h3>
 <section>
 <p>Delay specification is used to inject latency into the request
 forwarding path. The following example will introduce a 5 second delay
 in 1 out of every 1000 requests to the &ldquo;v1&rdquo; version of the &ldquo;reviews&rdquo;
 service from all pods with label env: prod</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
@@ -2440,58 +2226,50 @@ percentage of requests. If left unspecified, no request will be delayed.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPFaultInjection-Delay-fixed_delay" class="oneof oneof-start">
-<td><code>fixedDelay</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Delay-fixed_delay">fixedDelay</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">Duration (oneof)</a></div>
+</div></td>
 <td>
 <p>Add a fixed delay before forwarding the request. Format:
 1h/1m/1s/1ms. MUST be &gt;=1ms.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPFaultInjection-Delay-percentage">
-<td><code>percentage</code></td>
-<td><code><a href="#Percent">Percent</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Delay-percentage">percentage</a></code></div>
+<div class="type"><a href="#Percent">Percent</a></div>
+</div></td>
 <td>
 <p>Percentage of requests on which the delay will be injected.
 If left unspecified, no request will be delayed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPFaultInjection-Delay-percent" class="deprecated ">
-<td><code>percent</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Delay-percent">percent</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Percentage of requests on which the delay will be injected (0-100).
 Use of integer <code>percent</code> value is deprecated. Use the double <code>percentage</code>
 field instead.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 </tbody>
 </table>
 </section>
-<h2 id="HTTPFaultInjection-Abort">HTTPFaultInjection.Abort</h2>
+<h3 id="HTTPFaultInjection-Abort">Abort</h3>
 <section>
 <p>Abort specification is used to prematurely abort a request with a
 pre-specified error code. The following example will return an HTTP 400
 error code for 1 out of every 1000 requests to the &ldquo;ratings&rdquo; service &ldquo;v1&rdquo;.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: ratings-route
@@ -2518,26 +2296,23 @@ aborted.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPFaultInjection-Abort-http_status" class="oneof oneof-start">
-<td><code>httpStatus</code></td>
-<td><code>int32 (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Abort-http_status">httpStatus</a></code></div>
+<div class="type">int32 (oneof)</div>
+</div></td>
 <td>
 <p>HTTP status code to use to abort the Http request.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPFaultInjection-Abort-grpc_status" class="oneof">
-<td><code>grpcStatus</code></td>
-<td><code>string (oneof)</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Abort-grpc_status">grpcStatus</a></code></div>
+<div class="type">string (oneof)</div>
+</div></td>
 <td>
 <p>GRPC status code to use to abort the request. The supported
 codes are documented in <a href="https://github.com/grpc/grpc/blob/master/doc/statuscodes.md">https://github.com/grpc/grpc/blob/master/doc/statuscodes.md</a>
@@ -2545,26 +2320,109 @@ Note: If you want to return the status &ldquo;Unavailable&rdquo;, then you shoul
 specify the code as <code>UNAVAILABLE</code>(all caps), but not <code>14</code>.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPFaultInjection-Abort-percentage">
-<td><code>percentage</code></td>
-<td><code><a href="#Percent">Percent</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPFaultInjection-Abort-percentage">percentage</a></code></div>
+<div class="type"><a href="#Percent">Percent</a></div>
+</div></td>
 <td>
 <p>Percentage of requests to be aborted with the error code provided.
 If not specified, no request will be aborted.</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="HTTPMirrorPolicy">HTTPMirrorPolicy</h2>
+<section>
+<p>HTTPMirrorPolicy can be used to specify the destinations to mirror HTTP traffic in addition
+to the original destination. Mirrored traffic is on a
+best effort basis where the sidecar/gateway will not wait for the
+mirrored destinations to respond before returning the response from the
+original destination. Statistics will be generated for the mirrored
+destination.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="HTTPMirrorPolicy-destination">
+<td><div class="field"><div class="name"><code><a href="#HTTPMirrorPolicy-destination">destination</a></code></div>
+<div class="type"><a href="#Destination">Destination</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
-No
+<p>Destination specifies the target of the mirror operation.</p>
+
+</td>
+</tr>
+<tr id="HTTPMirrorPolicy-percentage">
+<td><div class="field"><div class="name"><code><a href="#HTTPMirrorPolicy-percentage">percentage</a></code></div>
+<div class="type"><a href="#Percent">Percent</a></div>
+</div></td>
+<td>
+<p>Percentage of the traffic to be mirrored by the <code>destination</code> field.
+If this field is absent, all the traffic (100%) will be mirrored.
+Max value is 100.</p>
+
 </td>
 </tr>
 </tbody>
 </table>
 </section>
-<h2 id="google-protobuf-UInt32Value">google.protobuf.UInt32Value</h2>
+<h2 id="PortSelector">PortSelector</h2>
+<section>
+<p>PortSelector specifies the number of a port to be used for
+matching or selection for final routing.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="PortSelector-number">
+<td><div class="field"><div class="name"><code><a href="#PortSelector-number">number</a></code></div>
+<div class="type">uint32</div>
+</div></td>
+<td>
+<p>Valid port number</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Percent">Percent</h2>
+<section>
+<p>Percent specifies a percentage in the range of [0.0, 100.0].</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Percent-value">
+<td><div class="field"><div class="name"><code><a href="#Percent-value">value</a></code></div>
+<div class="type">double</div>
+</div></td>
+<td>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h4 id="google-protobuf-UInt32Value">UInt32Value</h4>
 <section>
 <p>Wrapper message for <code>uint32</code>.</p>
 <p>The JSON representation for <code>UInt32Value</code> is JSON number.</p>
@@ -2573,44 +2431,17 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="google-protobuf-UInt32Value-value">
-<td><code>value</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#google-protobuf-UInt32Value-value">value</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>The uint32 value.</p>
 
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="HTTPRedirect-RedirectPortSelection">HTTPRedirect.RedirectPortSelection</h2>
-<section>
-<table class="enum-values">
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr id="HTTPRedirect-RedirectPortSelection-FROM_PROTOCOL_DEFAULT">
-<td><code>FROM_PROTOCOL_DEFAULT</code></td>
-<td>
-</td>
-</tr>
-<tr id="HTTPRedirect-RedirectPortSelection-FROM_REQUEST_PORT">
-<td><code>FROM_REQUEST_PORT</code></td>
-<td>
 </td>
 </tr>
 </tbody>

@@ -90,22 +90,6 @@ func (d *decoder) Decode(defaults *schema.GroupVersionKind, into runtime.Object)
 			}
 			// must read the rest of the frame (until we stop getting ErrShortBuffer)
 			d.resetRead = true
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			base = 0
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			base = 0
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			base = 0
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return nil, nil, ErrObjectTooLarge
 		}
 		if err != nil {
@@ -149,71 +133,4 @@ func (e *encoder) Encode(obj runtime.Object) error {
 	_, err := e.writer.Write(e.buf.Bytes())
 	e.buf.Reset()
 	return err
-}
-
-type encoderWithAllocator struct {
-	writer       io.Writer
-	encoder      runtime.EncoderWithAllocator
-	memAllocator runtime.MemoryAllocator
-}
-
-// NewEncoderWithAllocator returns a new streaming encoder
-func NewEncoderWithAllocator(w io.Writer, e runtime.EncoderWithAllocator, a runtime.MemoryAllocator) Encoder {
-	return &encoderWithAllocator{
-		writer:       w,
-		encoder:      e,
-		memAllocator: a,
-	}
-}
-
-// Encode writes the provided object to the nested writer
-func (e *encoderWithAllocator) Encode(obj runtime.Object) error {
-	return e.encoder.EncodeWithAllocator(obj, e.writer, e.memAllocator)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			base = 0
-			return nil, nil, ErrObjectTooLarge
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-		if d.resetRead {
-			// now that we have drained the large read, continue
-			d.resetRead = false
-			continue
-		}
-		base += n
-		break
-	}
-	return d.decoder.Decode(d.buf[:base], defaults, into)
-}
-
-func (d *decoder) Close() error {
-	return d.reader.Close()
-}
-
-type encoder struct {
-	writer  io.Writer
-	encoder runtime.Encoder
-	buf     *bytes.Buffer
-}
-
-// NewEncoder returns a new streaming encoder.
-func NewEncoder(w io.Writer, e runtime.Encoder) Encoder {
-	return &encoder{
-		writer:  w,
-		encoder: e,
-		buf:     &bytes.Buffer{},
-	}
-}
-
-// Encode writes the provided object to the nested writer.
-func (e *encoder) Encode(obj runtime.Object) error {
-	if err := e.encoder.Encode(obj, e.buf); err != nil {
-		return err
-	}
-	_, err := e.writer.Write(e.buf.Bytes())
-	e.buf.Reset()
-	return err
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

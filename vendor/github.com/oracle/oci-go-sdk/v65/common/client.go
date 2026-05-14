@@ -778,7 +778,11 @@ func (client BaseClient) RefreshableTokenWrappedCallWithDetails(ctx context.Cont
 		}
 
 		response, err = client.CallWithDetails(ctx, request, ClientCallDetails{Signer: client.Signer})
-		if response != nil && response.StatusCode != http.StatusUnauthorized {
+		// Retry only on a HTTP 401 response
+		if response == nil {
+			return nil, err
+		}
+		if response.StatusCode != http.StatusUnauthorized {
 			return response, err
 		}
 		time.Sleep(1 * time.Second)

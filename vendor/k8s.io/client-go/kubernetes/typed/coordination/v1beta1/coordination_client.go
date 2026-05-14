@@ -19,17 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"net/http"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	"net/http"
-=======
 	http "net/http"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	coordinationv1beta1 "k8s.io/api/coordination/v1beta1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -74,118 +64,6 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CoordinationV1beta1
 	config := *c
 	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"net/http"
-
->>>>>>> 4d7e5ad26 (update vendored files)
-	v1beta1 "k8s.io/api/coordination/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type CoordinationV1beta1Interface interface {
-	RESTClient() rest.Interface
-	LeasesGetter
-}
-
-// CoordinationV1beta1Client is used to interact with features provided by the coordination.k8s.io group.
-type CoordinationV1beta1Client struct {
-	restClient rest.Interface
-}
-
-func (c *CoordinationV1beta1Client) Leases(namespace string) LeaseInterface {
-	return newLeases(c, namespace)
-}
-
-// NewForConfig creates a new CoordinationV1beta1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*CoordinationV1beta1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-<<<<<<< HEAD
-	client, err := rest.RESTClientFor(&config)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	client, err := rest.RESTClientFor(&config)
-=======
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new CoordinationV1beta1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CoordinationV1beta1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"net/http"
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	v1beta1 "k8s.io/api/coordination/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type CoordinationV1beta1Interface interface {
-	RESTClient() rest.Interface
-	LeasesGetter
-}
-
-// CoordinationV1beta1Client is used to interact with features provided by the coordination.k8s.io group.
-type CoordinationV1beta1Client struct {
-	restClient rest.Interface
-}
-
-func (c *CoordinationV1beta1Client) Leases(namespace string) LeaseInterface {
-	return newLeases(c, namespace)
-}
-
-// NewForConfig creates a new CoordinationV1beta1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*CoordinationV1beta1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-<<<<<<< HEAD
-	client, err := rest.RESTClientFor(&config)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	client, err := rest.RESTClientFor(&config)
-=======
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new CoordinationV1beta1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CoordinationV1beta1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

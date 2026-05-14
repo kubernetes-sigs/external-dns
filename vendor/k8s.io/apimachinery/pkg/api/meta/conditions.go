@@ -22,55 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-<<<<<<< HEAD
-// SetStatusCondition sets the corresponding condition in conditions to newCondition.
-// conditions must be non-nil.
-//  1. if the condition of the specified type already exists (all fields of the existing condition are updated to
-//     newCondition, LastTransitionTime is set to now if the new status differs from the old status)
-//  2. if a condition of the specified type does not exist (LastTransitionTime is set to now() if unset, and newCondition is appended)
-func SetStatusCondition(conditions *[]metav1.Condition, newCondition metav1.Condition) {
-	if conditions == nil {
-		return
-	}
-	existingCondition := FindStatusCondition(*conditions, newCondition.Type)
-	if existingCondition == nil {
-		if newCondition.LastTransitionTime.IsZero() {
-			newCondition.LastTransitionTime = metav1.NewTime(time.Now())
-		}
-		*conditions = append(*conditions, newCondition)
-		return
-	}
-
-	if existingCondition.Status != newCondition.Status {
-		existingCondition.Status = newCondition.Status
-		if !newCondition.LastTransitionTime.IsZero() {
-			existingCondition.LastTransitionTime = newCondition.LastTransitionTime
-		} else {
-			existingCondition.LastTransitionTime = metav1.NewTime(time.Now())
-		}
-	}
-
-	existingCondition.Reason = newCondition.Reason
-	existingCondition.Message = newCondition.Message
-	existingCondition.ObservedGeneration = newCondition.ObservedGeneration
-}
-
-// RemoveStatusCondition removes the corresponding conditionType from conditions.
-// conditions must be non-nil.
-func RemoveStatusCondition(conditions *[]metav1.Condition, conditionType string) {
-	if conditions == nil || len(*conditions) == 0 {
-		return
-	}
-	newConditions := make([]metav1.Condition, 0, len(*conditions)-1)
-	for _, condition := range *conditions {
-		if condition.Type != conditionType {
-			newConditions = append(newConditions, condition)
-		}
-	}
-
-	*conditions = newConditions
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // SetStatusCondition sets the corresponding condition in conditions to newCondition and returns true
 // if the conditions are changed by this call.
 // conditions must be non-nil.
@@ -134,7 +85,6 @@ func RemoveStatusCondition(conditions *[]metav1.Condition, conditionType string)
 	*conditions = newConditions
 
 	return removed
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // FindStatusCondition finds the conditionType in conditions.

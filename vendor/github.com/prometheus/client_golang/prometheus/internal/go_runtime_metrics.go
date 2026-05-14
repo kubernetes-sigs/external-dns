@@ -61,20 +61,13 @@ func RuntimeMetricsToProm(d *metrics.Description) (string, string, string, bool)
 	// name has - replaced with _ and is concatenated with the unit and
 	// other data.
 	name = strings.ReplaceAll(name, "-", "_")
-<<<<<<< HEAD
-	name = name + "_" + unit
-	if d.Cumulative && d.Kind != metrics.KindFloat64Histogram {
-		name = name + "_total"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	name += "_" + unit
 	if d.Cumulative && d.Kind != metrics.KindFloat64Histogram {
 		name += "_total"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	// Our current conversion moves to legacy naming, so use legacy validation.
-	valid := model.IsValidLegacyMetricName(namespace + "_" + subsystem + "_" + name)
+	valid := model.LegacyValidation.IsValidMetricName(namespace + "_" + subsystem + "_" + name)
 	switch d.Kind {
 	case metrics.KindUint64:
 	case metrics.KindFloat64:

@@ -26,18 +26,7 @@ import (
 // Returns an error if this is not possible.
 func EnforcePtr(obj interface{}) (reflect.Value, error) {
 	v := reflect.ValueOf(obj)
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if v.Kind() != reflect.Pointer {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	if v.Kind() != reflect.Ptr {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if v.Kind() != reflect.Ptr {
-=======
-	if v.Kind() != reflect.Pointer {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if v.Kind() == reflect.Invalid {
 			return reflect.Value{}, fmt.Errorf("expected pointer, but got invalid kind")
 		}

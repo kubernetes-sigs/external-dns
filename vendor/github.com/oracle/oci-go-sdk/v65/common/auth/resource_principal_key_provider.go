@@ -89,12 +89,12 @@ func ResourcePrincipalConfigurationProvider() (ConfigurationProviderWithClaimAcc
 	case ResourcePrincipalVersion2_2:
 		rpst := requireEnv(ResourcePrincipalRPSTEnvVar)
 		if rpst == nil {
-			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalVersionEnvVar)
+			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalRPSTEnvVar)
 			return nil, resourcePrincipalError{err: err}
 		}
 		private := requireEnv(ResourcePrincipalPrivatePEMEnvVar)
 		if private == nil {
-			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalVersionEnvVar)
+			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalPrivatePEMEnvVar)
 			return nil, resourcePrincipalError{err: err}
 		}
 		passphrase := requireEnv(ResourcePrincipalPrivatePEMPassphraseEnvVar)
@@ -220,12 +220,12 @@ func ResourcePrincipalConfigurationProviderForRegion(region common.Region) (Conf
 	case ResourcePrincipalVersion2_2:
 		rpst := requireEnv(ResourcePrincipalRPSTEnvVar)
 		if rpst == nil {
-			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalVersionEnvVar)
+			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalRPSTEnvVar)
 			return nil, resourcePrincipalError{err: err}
 		}
 		private := requireEnv(ResourcePrincipalPrivatePEMEnvVar)
 		if private == nil {
-			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalVersionEnvVar)
+			err := fmt.Errorf("can not create resource principal, environment variable: %s, not present", ResourcePrincipalPrivatePEMEnvVar)
 			return nil, resourcePrincipalError{err: err}
 		}
 		passphrase := requireEnv(ResourcePrincipalPrivatePEMPassphraseEnvVar)

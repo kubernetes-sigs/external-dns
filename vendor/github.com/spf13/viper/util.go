@@ -12,13 +12,13 @@ package viper
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"unicode"
 
-	slog "github.com/sagikazarmark/slog-shim"
 	"github.com/spf13/cast"
 )
 
@@ -128,15 +128,6 @@ func absPathify(logger *slog.Logger, inPath string) string {
 	return ""
 }
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
 func userHomeDir() string {
 	if runtime.GOOS == "windows" {
 		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
@@ -156,7 +147,7 @@ func safeMul(a, b uint) uint {
 	return c
 }
 
-// parseSizeInBytes converts strings like 1GB or 12 mb into an unsigned integer number of bytes
+// parseSizeInBytes converts strings like 1GB or 12 mb into an unsigned integer number of bytes.
 func parseSizeInBytes(sizeStr string) uint {
 	sizeStr = strings.TrimSpace(sizeStr)
 	lastChar := len(sizeStr) - 1
@@ -183,10 +174,7 @@ func parseSizeInBytes(sizeStr string) uint {
 		}
 	}
 
-	size := cast.ToInt(sizeStr)
-	if size < 0 {
-		size = 0
-	}
+	size := max(cast.ToInt(sizeStr), 0)
 
 	return safeMul(uint(size), multiplier)
 }

@@ -30,35 +30,6 @@ type Interface interface {
 	GatewayClasses() GatewayClassInformer
 	// HTTPRoutes returns a HTTPRouteInformer.
 	HTTPRoutes() HTTPRouteInformer
-<<<<<<< HEAD
-}
-
-type version struct {
-	factory          internalinterfaces.SharedInformerFactory
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-}
-
-// New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
-	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
-	return &gatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// GatewayClasses returns a GatewayClassInformer.
-func (v *version) GatewayClasses() GatewayClassInformer {
-	return &gatewayClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// HTTPRoutes returns a HTTPRouteInformer.
-func (v *version) HTTPRoutes() HTTPRouteInformer {
-	return &hTTPRouteInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	// ReferenceGrants returns a ReferenceGrantInformer.
 	ReferenceGrants() ReferenceGrantInformer
 }
@@ -92,5 +63,4 @@ func (v *version) HTTPRoutes() HTTPRouteInformer {
 // ReferenceGrants returns a ReferenceGrantInformer.
 func (v *version) ReferenceGrants() ReferenceGrantInformer {
 	return &referenceGrantInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

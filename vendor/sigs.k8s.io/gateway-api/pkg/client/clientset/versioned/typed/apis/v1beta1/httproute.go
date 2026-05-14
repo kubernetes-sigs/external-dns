@@ -19,15 +19,14 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
-<<<<<<< HEAD
-	"time"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gentype "k8s.io/client-go/gentype"
+	apisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	applyconfigurationapisv1beta1 "sigs.k8s.io/gateway-api/applyconfiguration/apis/v1beta1"
 	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
@@ -39,390 +38,37 @@ type HTTPRoutesGetter interface {
 
 // HTTPRouteInterface has methods to work with HTTPRoute resources.
 type HTTPRouteInterface interface {
-	Create(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.CreateOptions) (*v1beta1.HTTPRoute, error)
-	Update(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (*v1beta1.HTTPRoute, error)
-	UpdateStatus(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (*v1beta1.HTTPRoute, error)
+	Create(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRoute, opts v1.CreateOptions) (*apisv1beta1.HTTPRoute, error)
+	Update(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRoute, opts v1.UpdateOptions) (*apisv1beta1.HTTPRoute, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRoute, opts v1.UpdateOptions) (*apisv1beta1.HTTPRoute, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.HTTPRoute, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.HTTPRouteList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*apisv1beta1.HTTPRoute, error)
+	List(ctx context.Context, opts v1.ListOptions) (*apisv1beta1.HTTPRouteList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.HTTPRoute, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apisv1beta1.HTTPRoute, err error)
+	Apply(ctx context.Context, hTTPRoute *applyconfigurationapisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *apisv1beta1.HTTPRoute, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, hTTPRoute *applyconfigurationapisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *apisv1beta1.HTTPRoute, err error)
 	HTTPRouteExpansion
 }
 
 // hTTPRoutes implements HTTPRouteInterface
 type hTTPRoutes struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*apisv1beta1.HTTPRoute, *apisv1beta1.HTTPRouteList, *applyconfigurationapisv1beta1.HTTPRouteApplyConfiguration]
 }
 
 // newHTTPRoutes returns a HTTPRoutes
 func newHTTPRoutes(c *GatewayV1beta1Client, namespace string) *hTTPRoutes {
 	return &hTTPRoutes{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*apisv1beta1.HTTPRoute, *apisv1beta1.HTTPRouteList, *applyconfigurationapisv1beta1.HTTPRouteApplyConfiguration](
+			"httproutes",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *apisv1beta1.HTTPRoute { return &apisv1beta1.HTTPRoute{} },
+			func() *apisv1beta1.HTTPRouteList { return &apisv1beta1.HTTPRouteList{} },
+		),
 	}
-}
-
-// Get takes name of the hTTPRoute, and returns the corresponding hTTPRoute object, and an error if there is any.
-func (c *hTTPRoutes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of HTTPRoutes that match those selectors.
-func (c *hTTPRoutes) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.HTTPRouteList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1beta1.HTTPRouteList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested hTTPRoutes.
-func (c *hTTPRoutes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a hTTPRoute and creates it.  Returns the server's representation of the hTTPRoute, and an error, if there is any.
-func (c *hTTPRoutes) Create(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.CreateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a hTTPRoute and updates it. Returns the server's representation of the hTTPRoute, and an error, if there is any.
-func (c *hTTPRoutes) Update(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(hTTPRoute.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *hTTPRoutes) UpdateStatus(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(hTTPRoute.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the hTTPRoute and deletes it. Returns an error if one occurs.
-func (c *hTTPRoutes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *hTTPRoutes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched hTTPRoute.
-func (c *hTTPRoutes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	json "encoding/json"
-	"fmt"
-	"time"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
-	apisv1beta1 "sigs.k8s.io/gateway-api/apis/applyconfiguration/apis/v1beta1"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
-)
-
-// HTTPRoutesGetter has a method to return a HTTPRouteInterface.
-// A group's client should implement this interface.
-type HTTPRoutesGetter interface {
-	HTTPRoutes(namespace string) HTTPRouteInterface
-}
-
-// HTTPRouteInterface has methods to work with HTTPRoute resources.
-type HTTPRouteInterface interface {
-	Create(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.CreateOptions) (*v1beta1.HTTPRoute, error)
-	Update(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (*v1beta1.HTTPRoute, error)
-	UpdateStatus(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (*v1beta1.HTTPRoute, error)
-	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
-	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.HTTPRoute, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.HTTPRouteList, error)
-	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.HTTPRoute, err error)
-	Apply(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.HTTPRoute, err error)
-	ApplyStatus(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.HTTPRoute, err error)
-	HTTPRouteExpansion
-}
-
-// hTTPRoutes implements HTTPRouteInterface
-type hTTPRoutes struct {
-	client rest.Interface
-	ns     string
-}
-
-// newHTTPRoutes returns a HTTPRoutes
-func newHTTPRoutes(c *GatewayV1beta1Client, namespace string) *hTTPRoutes {
-	return &hTTPRoutes{
-		client: c.RESTClient(),
-		ns:     namespace,
-	}
-}
-
-// Get takes name of the hTTPRoute, and returns the corresponding hTTPRoute object, and an error if there is any.
-func (c *hTTPRoutes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of HTTPRoutes that match those selectors.
-func (c *hTTPRoutes) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.HTTPRouteList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1beta1.HTTPRouteList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested hTTPRoutes.
-func (c *hTTPRoutes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a hTTPRoute and creates it.  Returns the server's representation of the hTTPRoute, and an error, if there is any.
-func (c *hTTPRoutes) Create(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.CreateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a hTTPRoute and updates it. Returns the server's representation of the hTTPRoute, and an error, if there is any.
-func (c *hTTPRoutes) Update(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(hTTPRoute.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *hTTPRoutes) UpdateStatus(ctx context.Context, hTTPRoute *v1beta1.HTTPRoute, opts v1.UpdateOptions) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(hTTPRoute.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hTTPRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the hTTPRoute and deletes it. Returns an error if one occurs.
-func (c *hTTPRoutes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *hTTPRoutes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httproutes").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched hTTPRoute.
-func (c *hTTPRoutes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.HTTPRoute, err error) {
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied hTTPRoute.
-func (c *hTTPRoutes) Apply(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.HTTPRoute, err error) {
-	if hTTPRoute == nil {
-		return nil, fmt.Errorf("hTTPRoute provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(hTTPRoute)
-	if err != nil {
-		return nil, err
-	}
-	name := hTTPRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("hTTPRoute.Name must be provided to Apply")
-	}
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *hTTPRoutes) ApplyStatus(ctx context.Context, hTTPRoute *apisv1beta1.HTTPRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.HTTPRoute, err error) {
-	if hTTPRoute == nil {
-		return nil, fmt.Errorf("hTTPRoute provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(hTTPRoute)
-	if err != nil {
-		return nil, err
-	}
-
-	name := hTTPRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("hTTPRoute.Name must be provided to Apply")
-	}
-
-	result = &v1beta1.HTTPRoute{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("httproutes").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

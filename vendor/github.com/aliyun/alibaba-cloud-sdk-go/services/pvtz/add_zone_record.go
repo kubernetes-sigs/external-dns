@@ -21,10 +21,6 @@ import (
 )
 
 // AddZoneRecord invokes the pvtz.AddZoneRecord API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
 	response = CreateAddZoneRecordResponse()
 	err = client.DoAction(request, response)
@@ -76,14 +72,17 @@ func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, c
 type AddZoneRecordRequest struct {
 	*requests.RpcRequest
 	Rr           string           `position:"Query" name:"Rr"`
+	ClientToken  string           `position:"Query" name:"ClientToken"`
+	Line         string           `position:"Query" name:"Line"`
 	Remark       string           `position:"Query" name:"Remark"`
 	Type         string           `position:"Query" name:"Type"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Value        string           `position:"Query" name:"Value"`
+	Weight       requests.Integer `position:"Query" name:"Weight"`
 	Priority     requests.Integer `position:"Query" name:"Priority"`
 	Ttl          requests.Integer `position:"Query" name:"Ttl"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
 	ZoneId       string           `position:"Query" name:"ZoneId"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Value        string           `position:"Query" name:"Value"`
 }
 
 // AddZoneRecordResponse is the response struct for api AddZoneRecord
@@ -101,182 +100,6 @@ func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
-	response = CreateAddZoneRecordResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// AddZoneRecordWithChan invokes the pvtz.AddZoneRecord API asynchronously
-func (client *Client) AddZoneRecordWithChan(request *AddZoneRecordRequest) (<-chan *AddZoneRecordResponse, <-chan error) {
-	responseChan := make(chan *AddZoneRecordResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.AddZoneRecord(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// AddZoneRecordWithCallback invokes the pvtz.AddZoneRecord API asynchronously
-func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, callback func(response *AddZoneRecordResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *AddZoneRecordResponse
-		var err error
-		defer close(result)
-		response, err = client.AddZoneRecord(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// AddZoneRecordRequest is the request struct for api AddZoneRecord
-type AddZoneRecordRequest struct {
-	*requests.RpcRequest
-	Rr           string           `position:"Query" name:"Rr"`
-	Remark       string           `position:"Query" name:"Remark"`
-	Type         string           `position:"Query" name:"Type"`
-	Priority     requests.Integer `position:"Query" name:"Priority"`
-	Ttl          requests.Integer `position:"Query" name:"Ttl"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Value        string           `position:"Query" name:"Value"`
-}
-
-// AddZoneRecordResponse is the response struct for api AddZoneRecord
-type AddZoneRecordResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-	Success   bool   `json:"Success" xml:"Success"`
-}
-
-// CreateAddZoneRecordRequest creates a request to invoke AddZoneRecord API
-func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
-	request = &AddZoneRecordRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
-	response = CreateAddZoneRecordResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// AddZoneRecordWithChan invokes the pvtz.AddZoneRecord API asynchronously
-func (client *Client) AddZoneRecordWithChan(request *AddZoneRecordRequest) (<-chan *AddZoneRecordResponse, <-chan error) {
-	responseChan := make(chan *AddZoneRecordResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.AddZoneRecord(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// AddZoneRecordWithCallback invokes the pvtz.AddZoneRecord API asynchronously
-func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, callback func(response *AddZoneRecordResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *AddZoneRecordResponse
-		var err error
-		defer close(result)
-		response, err = client.AddZoneRecord(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// AddZoneRecordRequest is the request struct for api AddZoneRecord
-type AddZoneRecordRequest struct {
-	*requests.RpcRequest
-	Rr           string           `position:"Query" name:"Rr"`
-	Remark       string           `position:"Query" name:"Remark"`
-	Type         string           `position:"Query" name:"Type"`
-	Priority     requests.Integer `position:"Query" name:"Priority"`
-	Ttl          requests.Integer `position:"Query" name:"Ttl"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Value        string           `position:"Query" name:"Value"`
-}
-
-// AddZoneRecordResponse is the response struct for api AddZoneRecord
-type AddZoneRecordResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-	Success   bool   `json:"Success" xml:"Success"`
-}
-
-// CreateAddZoneRecordRequest creates a request to invoke AddZoneRecord API
-func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
-	request = &AddZoneRecordRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
@@ -32,6 +29,7 @@ type PagingHandler[T any] struct {
 }
 
 // Pager provides operations for iterating over paged responses.
+// Methods on this type are not safe for concurrent use.
 type Pager[T any] struct {
 	current   *T
 	handler   PagingHandler[T]
@@ -94,6 +92,15 @@ type FetcherForNextLinkOptions struct {
 	// NextReq is the func to be called when requesting subsequent pages.
 	// Used for paged operations that have a custom next link operation.
 	NextReq func(context.Context, string) (*policy.Request, error)
+
+	// StatusCodes contains additional HTTP status codes indicating success.
+	// The default value is http.StatusOK.
+	StatusCodes []int
+
+	// HTTPVerb specifies the HTTP verb to use when fetching the next page.
+	// The default value is http.MethodGet.
+	// This field is only used when NextReq is not specified.
+	HTTPVerb string
 }
 
 // FetcherForNextLink is a helper containing boilerplate code to simplify creating a PagingHandler[T].Fetcher from a next link URL.
@@ -105,13 +112,20 @@ type FetcherForNextLinkOptions struct {
 func FetcherForNextLink(ctx context.Context, pl Pipeline, nextLink string, firstReq func(context.Context) (*policy.Request, error), options *FetcherForNextLinkOptions) (*http.Response, error) {
 	var req *policy.Request
 	var err error
+	if options == nil {
+		options = &FetcherForNextLinkOptions{}
+	}
 	if nextLink == "" {
 		req, err = firstReq(ctx)
 	} else if nextLink, err = EncodeQueryParams(nextLink); err == nil {
-		if options != nil && options.NextReq != nil {
+		if options.NextReq != nil {
 			req, err = options.NextReq(ctx, nextLink)
 		} else {
-			req, err = NewRequest(ctx, http.MethodGet, nextLink)
+			verb := http.MethodGet
+			if options.HTTPVerb != "" {
+				verb = options.HTTPVerb
+			}
+			req, err = NewRequest(ctx, verb, nextLink)
 		}
 	}
 	if err != nil {
@@ -121,7 +135,9 @@ func FetcherForNextLink(ctx context.Context, pl Pipeline, nextLink string, first
 	if err != nil {
 		return nil, err
 	}
-	if !HasStatusCode(resp, http.StatusOK) {
+	successCodes := []int{http.StatusOK}
+	successCodes = append(successCodes, options.StatusCodes...)
+	if !HasStatusCode(resp, successCodes...) {
 		return nil, NewResponseError(resp)
 	}
 	return resp, nil

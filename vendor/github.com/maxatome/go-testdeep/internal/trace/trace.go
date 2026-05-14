@@ -114,7 +114,7 @@ func Reset() {
 // Init initializes trace global variables.
 func Init() {
 	// GOPATH directories
-	goPaths = nil
+	goPaths = nil //nolint: prealloc
 	for _, dir := range filepath.SplitList(build.Default.GOPATH) {
 		dir = filepath.Clean(dir)
 		goPaths = append(goPaths,

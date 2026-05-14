@@ -22,6 +22,7 @@ type FakeClient struct {
 	IP                      []IP
 	Networks                []Network
 	Volumes                 []Volume
+	VolumeSnapshots         []VolumeSnapshot
 	SSHKeys                 []SSHKey
 	Webhooks                []Webhook
 	DiskImage               []DiskImage
@@ -82,7 +83,6 @@ type Clienter interface {
 	SoftRebootInstance(id string) (*SimpleResponse, error)
 	StopInstance(id string) (*SimpleResponse, error)
 	StartInstance(id string) (*SimpleResponse, error)
-	GetInstanceConsoleURL(id string) (string, error)
 	UpgradeInstance(id, newSize string) (*SimpleResponse, error)
 	MovePublicIPToInstance(id, ipAddress string) (*SimpleResponse, error)
 	SetInstanceFirewall(id, firewallID string) (*SimpleResponse, error)
@@ -125,6 +125,9 @@ type Clienter interface {
 
 	// Regions
 	ListRegions() ([]Region, error)
+	CreateRegion(r *CreateRegionRequest) (*Region, error)
+	ConnectRegion(r *ConnectRegionRequest) error
+	DisconnectRegion(r *DisconnectRegionRequest) error
 
 	// Snapshots
 	// CreateSnapshot(name string, r *SnapshotConfig) (*Snapshot, error)
@@ -148,7 +151,7 @@ type Clienter interface {
 	// DeleteTemplate(id string) (*SimpleResponse, error)
 
 	// DiskImages
-	ListDiskImages() ([]DiskImage, error)
+	ListDiskImages(includeCustom ...bool) ([]DiskImage, error)
 	GetDiskImage(id string) (*DiskImage, error)
 	FindDiskImage(search string) (*DiskImage, error)
 
@@ -158,9 +161,18 @@ type Clienter interface {
 	FindVolume(search string) (*Volume, error)
 	NewVolume(v *VolumeConfig) (*VolumeResult, error)
 	ResizeVolume(id string, size int) (*SimpleResponse, error)
-	AttachVolume(id string, instance string) (*SimpleResponse, error)
+	AttachVolume(id string, cfg VolumeAttachConfig) (*SimpleResponse, error)
 	DetachVolume(id string) (*SimpleResponse, error)
 	DeleteVolume(id string) (*SimpleResponse, error)
+
+	// VolumeSnapshot
+	GetVolumeSnapshotByVolumeID(volumeID, snapshotID string) (*VolumeSnapshot, error)
+	ListVolumeSnapshotsByVolumeID(volumeID string) ([]VolumeSnapshot, error)
+	CreateVolumeSnapshot(volumeID string, config *VolumeSnapshotConfig) (*VolumeSnapshot, error)
+	DeleteVolumeAndAllSnapshot(volumeID string) (*SimpleResponse, error)
+	ListVolumeSnapshots() ([]VolumeSnapshot, error)
+	GetVolumeSnapshot(id string) (*VolumeSnapshot, error)
+	DeleteVolumeSnapshot(id string) (*SimpleResponse, error)
 
 	// Webhooks
 	CreateWebhook(r *WebhookConfig) (*Webhook, error)
@@ -189,6 +201,8 @@ type Clienter interface {
 
 	// Ping
 	Ping() error
+
+	ListMemberships() (*MembershipResponse, error)
 }
 
 // NewFakeClient initializes a Client that doesn't attach to a
@@ -265,6 +279,11 @@ func NewFakeClient() (*FakeClient, error) {
 			},
 		},
 	}, nil
+}
+
+// ListMemberships implemented in a fake way for automated tests
+func (c *FakeClient) ListMemberships() (*MembershipResponse, error) {
+	return &MembershipResponse{}, nil
 }
 
 // Ping implemented in a fake way for automated tests
@@ -925,7 +944,7 @@ func (c *FakeClient) CreateNetwork(config NetworkConfig) (*NetworkResult, error)
 	// Handle VLAN configuration if present
 	if config.VLanConfig != nil {
 		newNetwork.VlanID = config.VLanConfig.VlanID
-		newNetwork.HardwareAddr = config.VLanConfig.HardwareAddr
+		newNetwork.PhysicalInterface = config.VLanConfig.PhysicalInterface
 		newNetwork.GatewayIPv4 = config.VLanConfig.GatewayIPv4
 		newNetwork.AllocationPoolV4Start = config.VLanConfig.AllocationPoolV4Start
 		newNetwork.AllocationPoolV4Start = config.VLanConfig.AllocationPoolV4End
@@ -1003,6 +1022,27 @@ func (c *FakeClient) ListRegions() ([]Region, error) {
 			Default: true,
 		},
 	}, nil
+}
+
+// CreateRegion implemented in a fake way for automated tests
+func (c *FakeClient) CreateRegion(r *CreateRegionRequest) (*Region, error) {
+	region := Region{
+		Code:          r.Code,
+		Name:          r.Code,
+		OutOfCapacity: false,
+		Country:       r.CountryISOCode,
+	}
+	return &region, nil
+}
+
+// ConnectRegion implemented in a fake way for automated tests
+func (c *FakeClient) ConnectRegion(r *ConnectRegionRequest) error {
+	return nil
+}
+
+// DisconnectRegion implemented in a fake way for automated tests
+func (c *FakeClient) DisconnectRegion(r *DisconnectRegionRequest) error {
+	return nil
 }
 
 // CreateSnapshot implemented in a fake way for automated tests
@@ -1171,7 +1211,7 @@ func (c *FakeClient) DeleteSSHKey(id string) (*SimpleResponse, error) {
 // }
 
 // ListDiskImages implemented in a fake way for automated tests
-func (c *FakeClient) ListDiskImages() ([]DiskImage, error) {
+func (c *FakeClient) ListDiskImages(includeCustom ...bool) ([]DiskImage, error) {
 	return c.DiskImage, nil
 }
 
@@ -1259,10 +1299,10 @@ func (c *FakeClient) ResizeVolume(id string, size int) (*SimpleResponse, error) 
 }
 
 // AttachVolume implemented in a fake way for automated tests
-func (c *FakeClient) AttachVolume(id string, instance string) (*SimpleResponse, error) {
+func (c *FakeClient) AttachVolume(id string, cfg VolumeAttachConfig) (*SimpleResponse, error) {
 	for i, volume := range c.Volumes {
 		if volume.ID == id {
-			c.Volumes[i].InstanceID = instance
+			c.Volumes[i].InstanceID = cfg.InstanceID
 			c.Volumes[i].Status = "attached"
 			return &SimpleResponse{Result: "success"}, nil
 		}
@@ -1292,6 +1332,93 @@ func (c *FakeClient) DeleteVolume(id string) (*SimpleResponse, error) {
 		if volume.ID == id {
 			c.Volumes[len(c.Volumes)-1], c.Volumes[i] = c.Volumes[i], c.Volumes[len(c.Volumes)-1]
 			c.Volumes = c.Volumes[:len(c.Volumes)-1]
+			return &SimpleResponse{Result: "success"}, nil
+		}
+	}
+
+	return &SimpleResponse{Result: "failed"}, nil
+}
+
+// GetVolumeSnapshotByVolumeID implemented in a fake way for automated tests
+func (c *FakeClient) GetVolumeSnapshotByVolumeID(volumeID, snapshotID string) (*VolumeSnapshot, error) {
+	for _, snapshot := range c.VolumeSnapshots {
+		if snapshot.VolumeID == volumeID && snapshot.SnapshotID == snapshotID {
+			return &snapshot, nil
+		}
+	}
+
+	err := fmt.Errorf("unable to find volume snapshot %s, zero matches", snapshotID)
+	return nil, ZeroMatchesError.wrap(err)
+}
+
+// ListVolumeSnapshotsByVolumeID implemented in a fake way for automated tests
+func (c *FakeClient) ListVolumeSnapshotsByVolumeID(volumeID string) ([]VolumeSnapshot, error) {
+	snapshots := make([]VolumeSnapshot, 0)
+	for _, snapshot := range c.VolumeSnapshots {
+		if snapshot.VolumeID == volumeID {
+			snapshots = append(snapshots, snapshot)
+		}
+	}
+
+	return snapshots, nil
+}
+
+// CreateVolumeSnapshot implemented in a fake way for automated tests
+func (c *FakeClient) CreateVolumeSnapshot(volumeID string, config *VolumeSnapshotConfig) (*VolumeSnapshot, error) {
+	snapshot := VolumeSnapshot{
+		SnapshotID: c.generateID(),
+		Name:       config.Name,
+		VolumeID:   volumeID,
+		State:      "Ready",
+	}
+	c.VolumeSnapshots = append(c.VolumeSnapshots, snapshot)
+
+	return &snapshot, nil
+}
+
+// DeleteVolumeAndAllSnapshot implemented in a fake way for automated tests
+func (c *FakeClient) DeleteVolumeAndAllSnapshot(volumeID string) (*SimpleResponse, error) {
+	for i, volume := range c.Volumes {
+		if volume.ID == volumeID {
+			c.Volumes[len(c.Volumes)-1], c.Volumes[i] = c.Volumes[i], c.Volumes[len(c.Volumes)-1]
+			c.Volumes = c.Volumes[:len(c.Volumes)-1]
+			break
+		}
+	}
+
+	for i := 0; i < len(c.VolumeSnapshots); i++ {
+		if c.VolumeSnapshots[i].VolumeID == volumeID {
+			c.VolumeSnapshots = append(c.VolumeSnapshots[:i], c.VolumeSnapshots[i+1:]...)
+			i--
+		}
+	}
+
+	return &SimpleResponse{Result: "success"}, nil
+}
+
+// ListVolumeSnapshots implemented in a fake way for automated tests
+func (c *FakeClient) ListVolumeSnapshots() ([]VolumeSnapshot, error) {
+	return c.VolumeSnapshots, nil
+}
+
+// GetVolumeSnapshot implemented in a fake way for automated tests
+func (c *FakeClient) GetVolumeSnapshot(snapshotID string) (*VolumeSnapshot, error) {
+	for _, snapshot := range c.VolumeSnapshots {
+		if snapshot.SnapshotID == snapshotID {
+			return &snapshot, nil
+		}
+	}
+
+	err := fmt.Errorf("unable to find volume snapshot %s, zero matches", snapshotID)
+	return nil, ZeroMatchesError.wrap(err)
+}
+
+// DeleteVolumeSnapshot implemented in a fake way for automated tests
+func (c *FakeClient) DeleteVolumeSnapshot(snapshotID string) (*SimpleResponse, error) {
+	for i, snapshot := range c.VolumeSnapshots {
+		if snapshot.SnapshotID == snapshotID {
+			c.VolumeSnapshots[len(c.VolumeSnapshots)-1], c.VolumeSnapshots[i] = c.VolumeSnapshots[i], c.VolumeSnapshots[len(c.VolumeSnapshots)-1]
+			c.VolumeSnapshots = c.VolumeSnapshots[:len(c.VolumeSnapshots)-1]
 			return &SimpleResponse{Result: "success"}, nil
 		}
 	}
@@ -1802,7 +1929,7 @@ func (c *FakeClient) UpdateKubernetesClusterPool(cid, pid string, config *Kubern
 			for _, p := range cs.Pools {
 				if p.ID == pid {
 					poolFound = true
-					p.Count = config.Count
+					p.Count = *config.Count
 					pool = p
 				}
 			}

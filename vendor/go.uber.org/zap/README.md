@@ -75,167 +75,6 @@ Log a message and 10 fields:
 
 | Package | Time | Time % to zap | Objects Allocated |
 | :------ | :--: | :-----------: | :---------------: |
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-| :zap: zap | 2900 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 3475 ns/op | +20% | 10 allocs/op
-| zerolog | 10639 ns/op | +267% | 32 allocs/op
-| go-kit | 14434 ns/op | +398% | 59 allocs/op
-| logrus | 17104 ns/op | +490% | 81 allocs/op
-| apex/log | 32424 ns/op | +1018% | 66 allocs/op
-| log15 | 33579 ns/op | +1058% | 76 allocs/op
-
-Log a message with a logger that already has 10 fields of context:
-
-| Package | Time | Time % to zap | Objects Allocated |
-| :------ | :--: | :-----------: | :---------------: |
-| :zap: zap | 373 ns/op | +0% | 0 allocs/op
-| :zap: zap (sugared) | 452 ns/op | +21% | 1 allocs/op
-| zerolog | 288 ns/op | -23% | 0 allocs/op
-| go-kit | 11785 ns/op | +3060% | 58 allocs/op
-| logrus | 19629 ns/op | +5162% | 70 allocs/op
-| log15 | 21866 ns/op | +5762% | 72 allocs/op
-| apex/log | 30890 ns/op | +8182% | 55 allocs/op
-
-Log a static string, without any context or `printf`-style templating:
-
-| Package | Time | Time % to zap | Objects Allocated |
-| :------ | :--: | :-----------: | :---------------: |
-| :zap: zap | 381 ns/op | +0% | 0 allocs/op
-| :zap: zap (sugared) | 410 ns/op | +8% | 1 allocs/op
-| zerolog | 369 ns/op | -3% | 0 allocs/op
-| standard library | 385 ns/op | +1% | 2 allocs/op
-| go-kit | 606 ns/op | +59% | 11 allocs/op
-| logrus | 1730 ns/op | +354% | 25 allocs/op
-| apex/log | 1998 ns/op | +424% | 7 allocs/op
-| log15 | 4546 ns/op | +1093% | 22 allocs/op
-
-## Development Status: Stable
-
-All APIs are finalized, and no breaking changes will be made in the 1.x series
-of releases. Users of semver-aware dependency management systems should pin
-zap to `^1`.
-
-## Contributing
-
-We encourage and support an active, healthy community of contributors &mdash;
-including you! Details are in the [contribution guide](CONTRIBUTING.md) and
-the [code of conduct](CODE_OF_CONDUCT.md). The zap maintainers keep an eye on
-issues and pull requests, but you can also report any negative conduct to
-oss-conduct@uber.com. That email list is a private, safe space; even the zap
-maintainers don't have access, so don't hesitate to hold us to a high
-standard.
-
-<hr>
-
-Released under the [MIT License](LICENSE.txt).
-
-<sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
-benchmarking against slightly older versions of other packages. Versions are
-pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-[doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
-[doc]: https://pkg.go.dev/go.uber.org/zap
-[ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
-[ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
-=======
-[doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
-[doc]: https://pkg.go.dev/go.uber.org/zap
-[ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
-[ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
-=======
-[doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
-[doc]: https://pkg.go.dev/go.uber.org/zap
-[ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
-[ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
-=======
-[doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
-[doc]: https://pkg.go.dev/go.uber.org/zap
-[ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
-[ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-| :zap: zap | 862 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 1250 ns/op | +45% | 11 allocs/op
-| zerolog | 4021 ns/op | +366% | 76 allocs/op
-| go-kit | 4542 ns/op | +427% | 105 allocs/op
-| apex/log | 26785 ns/op | +3007% | 115 allocs/op
-| logrus | 29501 ns/op | +3322% | 125 allocs/op
-| log15 | 29906 ns/op | +3369% | 122 allocs/op
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-| :zap: zap | 862 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 1250 ns/op | +45% | 11 allocs/op
-| zerolog | 4021 ns/op | +366% | 76 allocs/op
-| go-kit | 4542 ns/op | +427% | 105 allocs/op
-| apex/log | 26785 ns/op | +3007% | 115 allocs/op
-| logrus | 29501 ns/op | +3322% | 125 allocs/op
-| log15 | 29906 ns/op | +3369% | 122 allocs/op
-=======
-| :zap: zap | 1744 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 2483 ns/op | +42% | 10 allocs/op
-| zerolog | 918 ns/op | -47% | 1 allocs/op
-| go-kit | 5590 ns/op | +221% | 57 allocs/op
-| slog | 5640 ns/op | +223% | 40 allocs/op
-| apex/log | 21184 ns/op | +1115% | 63 allocs/op
-| logrus | 24338 ns/op | +1296% | 79 allocs/op
-| log15 | 26054 ns/op | +1394% | 74 allocs/op
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-| :zap: zap | 1744 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 2483 ns/op | +42% | 10 allocs/op
-| zerolog | 918 ns/op | -47% | 1 allocs/op
-| go-kit | 5590 ns/op | +221% | 57 allocs/op
-| slog | 5640 ns/op | +223% | 40 allocs/op
-| apex/log | 21184 ns/op | +1115% | 63 allocs/op
-| logrus | 24338 ns/op | +1296% | 79 allocs/op
-| log15 | 26054 ns/op | +1394% | 74 allocs/op
-=======
 | :zap: zap | 656 ns/op | +0% | 5 allocs/op
 | :zap: zap (sugared) | 935 ns/op | +43% | 10 allocs/op
 | zerolog | 380 ns/op | -42% | 1 allocs/op
@@ -245,7 +84,6 @@ pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 | apex/log | 9591 ns/op | +1362% | 63 allocs/op
 | log15 | 11393 ns/op | +1637% | 75 allocs/op
 | logrus | 11654 ns/op | +1677% | 79 allocs/op
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 Log a message with a logger that already has 10 fields of context:
 
@@ -300,23 +138,10 @@ Released under the [MIT License](LICENSE).
 benchmarking against slightly older versions of other packages. Versions are
 pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 
-<<<<<<< HEAD
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.com/uber-go/zap
-=======
 [doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
 [doc]: https://pkg.go.dev/go.uber.org/zap
 [ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
 [ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 [cov-img]: https://codecov.io/gh/uber-go/zap/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/zap
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks

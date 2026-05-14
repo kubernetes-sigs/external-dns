@@ -3,7 +3,6 @@ package linodego
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/linode/linodego/internal/parseabletime"
@@ -68,6 +67,7 @@ func (i *InstanceSnapshot) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created  *parseabletime.ParseableTime `json:"created"`
 		Updated  *parseabletime.ParseableTime `json:"updated"`
 		Finished *parseabletime.ParseableTime `json:"finished"`
@@ -88,488 +88,40 @@ func (i *InstanceSnapshot) UnmarshalJSON(b []byte) error {
 
 // GetInstanceSnapshot gets the snapshot with the provided ID
 func (c *Client) GetInstanceSnapshot(ctx context.Context, linodeID int, snapshotID int) (*InstanceSnapshot, error) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceSnapshot), nil
+	e := formatAPIPath("linode/instances/%d/backups/%d", linodeID, snapshotID)
+	return doGETRequest[InstanceSnapshot](ctx, c, e)
 }
 
 // CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
 func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	o, err := json.Marshal(map[string]string{"label": label})
-	if err != nil {
-		return nil, err
-	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
+	opts := map[string]string{"label": label}
 
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetBody(body).
-		SetResult(&InstanceSnapshot{}).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
+	e := formatAPIPath("linode/instances/%d/backups", linodeID)
 
-	return r.Result().(*InstanceSnapshot), nil
+	return doPOSTRequest[InstanceSnapshot](ctx, c, e, opts)
 }
 
 // GetInstanceBackups gets the Instance's available Backups.
 // This is not called ListInstanceBackups because a single object is returned, matching the API response.
 func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&InstanceBackupsResponse{}).
-		Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceBackupsResponse), nil
+	e := formatAPIPath("linode/instances/%d/backups", linodeID)
+	return doGETRequest[InstanceBackupsResponse](ctx, c, e)
 }
 
 // EnableInstanceBackups Enables backups for the specified Linode.
 func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/enable", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
+	e := formatAPIPath("linode/instances/%d/backups/enable", linodeID)
+	return doPOSTRequestNoRequestResponseBody(ctx, c, e)
 }
 
 // CancelInstanceBackups Cancels backups for the specified Linode.
 func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/cancel", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
+	e := formatAPIPath("linode/instances/%d/backups/cancel", linodeID)
+	return doPOSTRequestNoRequestResponseBody(ctx, c, e)
 }
 
 // RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
 func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	o, err := json.Marshal(opts)
-	if err != nil {
-		return NewError(err)
-	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-||||||| parent of 5ce8c7613 (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 5ce8c7613 (update vendored files)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
-func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	o, err := json.Marshal(map[string]string{"label": label})
-	if err != nil {
-		return nil, err
-	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetBody(body).
-		SetResult(&InstanceSnapshot{}).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// GetInstanceBackups gets the Instance's available Backups.
-// This is not called ListInstanceBackups because a single object is returned, matching the API response.
-func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&InstanceBackupsResponse{}).
-		Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceBackupsResponse), nil
-}
-
-// EnableInstanceBackups Enables backups for the specified Linode.
-func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/enable", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// CancelInstanceBackups Cancels backups for the specified Linode.
-func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/cancel", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
-func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	o, err := json.Marshal(opts)
-	if err != nil {
-		return NewError(err)
-	}
-	body := string(o)
-<<<<<<< HEAD
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-||||||| parent of 6b7ce455e (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 6b7ce455e (update vendored files)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
-func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	o, err := json.Marshal(map[string]string{"label": label})
-	if err != nil {
-		return nil, err
-	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetBody(body).
-		SetResult(&InstanceSnapshot{}).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// GetInstanceBackups gets the Instance's available Backups.
-// This is not called ListInstanceBackups because a single object is returned, matching the API response.
-func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&InstanceBackupsResponse{}).
-		Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceBackupsResponse), nil
-}
-
-// EnableInstanceBackups Enables backups for the specified Linode.
-func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/enable", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// CancelInstanceBackups Cancels backups for the specified Linode.
-func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/cancel", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
-func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	o, err := json.Marshal(opts)
-	if err != nil {
-		return NewError(err)
-	}
-	body := string(o)
-<<<<<<< HEAD
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 4d7e5ad26 (update vendored files)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
-func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	o, err := json.Marshal(map[string]string{"label": label})
-	if err != nil {
-		return nil, err
-	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetBody(body).
-		SetResult(&InstanceSnapshot{}).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// GetInstanceBackups gets the Instance's available Backups.
-// This is not called ListInstanceBackups because a single object is returned, matching the API response.
-func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&InstanceBackupsResponse{}).
-		Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceBackupsResponse), nil
-}
-
-// EnableInstanceBackups Enables backups for the specified Linode.
-func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/enable", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// CancelInstanceBackups Cancels backups for the specified Linode.
-func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/cancel", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
-func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	o, err := json.Marshal(opts)
-	if err != nil {
-		return NewError(err)
-	}
-	body := string(o)
-<<<<<<< HEAD
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, snapshotID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-
-=======
-	e := fmt.Sprintf("linode/instances/%d/backups/%d", linodeID, snapshotID)
-	req := c.R(ctx).SetResult(&InstanceSnapshot{})
-	r, err := coupleAPIErrors(req.Get(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
-func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	body, err := json.Marshal(map[string]string{"label": label})
-	if err != nil {
-		return nil, err
-	}
-	e := fmt.Sprintf("linode/instances/%d/backups", linodeID)
-	req := c.R(ctx).SetResult(&InstanceSnapshot{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*InstanceSnapshot), nil
-}
-
-// GetInstanceBackups gets the Instance's available Backups.
-// This is not called ListInstanceBackups because a single object is returned, matching the API response.
-func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e := fmt.Sprintf("linode/instances/%d/backups", linodeID)
-	req := c.R(ctx).SetResult(&InstanceBackupsResponse{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceBackupsResponse), nil
-}
-
-// EnableInstanceBackups Enables backups for the specified Linode.
-func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e := fmt.Sprintf("linode/instances/%d/backups/enable", linodeID)
-	_, err := coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// CancelInstanceBackups Cancels backups for the specified Linode.
-func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e := fmt.Sprintf("linode/instances/%d/backups/cancel", linodeID)
-	_, err := coupleAPIErrors(c.R(ctx).Post(e))
-	return err
-}
-
-// RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
-func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return NewError(err)
-	}
-<<<<<<< HEAD
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d/restore", e, backupID)
-
-	_, err = coupleAPIErrors(c.R(ctx).SetBody(body).Post(e))
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d/restore", e, backupID)
-
-	_, err = coupleAPIErrors(c.R(ctx).SetBody(body).Post(e))
-
-=======
-	e := fmt.Sprintf("linode/instances/%d/backups/%d/restore", linodeID, backupID)
-	_, err = coupleAPIErrors(c.R(ctx).SetBody(string(body)).Post(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return err
+	e := formatAPIPath("linode/instances/%d/backups/%d/restore", linodeID, backupID)
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }

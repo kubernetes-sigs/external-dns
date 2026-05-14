@@ -10,46 +10,10 @@ type DelegationSignerRecord struct {
 	ID         int64  `json:"id,omitempty"`
 	DomainID   int64  `json:"domain_id,omitempty"`
 	Algorithm  string `json:"algorithm"`
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	Digest     string `json:"digest,omitempty"`
 	DigestType string `json:"digest_type,omitempty"`
 	Keytag     string `json:"keytag,omitempty"`
 	PublicKey  string `json:"public_key,omitempty"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Digest     string `json:"digest"`
-	DigestType string `json:"digest_type"`
-	Keytag     string `json:"keytag"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Digest     string `json:"digest"`
-	DigestType string `json:"digest_type"`
-	Keytag     string `json:"keytag"`
-=======
-	Digest     string `json:"digest,omitempty"`
-	DigestType string `json:"digest_type,omitempty"`
-	Keytag     string `json:"keytag,omitempty"`
-	PublicKey  string `json:"public_key,omitempty"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Digest     string `json:"digest"`
-	DigestType string `json:"digest_type"`
-	Keytag     string `json:"keytag"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Digest     string `json:"digest"`
-	DigestType string `json:"digest_type"`
-	Keytag     string `json:"keytag"`
-=======
-	Digest     string `json:"digest,omitempty"`
-	DigestType string `json:"digest_type,omitempty"`
-	Keytag     string `json:"keytag,omitempty"`
-	PublicKey  string `json:"public_key,omitempty"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	CreatedAt  string `json:"created_at,omitempty"`
 	UpdatedAt  string `json:"updated_at,omitempty"`
 }

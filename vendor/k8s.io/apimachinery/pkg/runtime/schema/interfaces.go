@@ -23,64 +23,8 @@ type ObjectKind interface {
 	// SetGroupVersionKind sets or clears the intended serialized kind of an object. Passing kind nil
 	// should clear the current setting.
 	SetGroupVersionKind(kind GroupVersionKind)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
 	// if the object does not expose or provide these fields.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
-	// if the object does not expose or provide these fields.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
-	// if the object does not expose or provide these fields.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
-	// if the object does not expose or provide these fields.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
-	// not expose or provide these fields.
-=======
-	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
-	// if the object does not expose or provide these fields.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	GroupVersionKind() GroupVersionKind
 }
 

@@ -44,7 +44,7 @@ syntax = "proto3";
 // forward it to the application on localhost on the same port.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadEntry
 // metadata:
 //   name: details-svc
@@ -63,7 +63,7 @@ syntax = "proto3";
 // and the associated service entry
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: details-svc
@@ -90,7 +90,7 @@ syntax = "proto3";
 // forwarding the request.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadEntry
 // metadata:
 //   name: details-svc
@@ -109,7 +109,7 @@ syntax = "proto3";
 // and the associated service entry
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: details-svc
@@ -129,14 +129,14 @@ syntax = "proto3";
 // ```
 //
 // The following example declares a VM workload without an address.
-// An alternative to having istiod read from remote API servers is 
-// to write a `WorkloadEntry` in the local cluster that represents 
-// the Workload(s) in the remote network with the given labels. A 
+// An alternative to having istiod read from remote API servers is
+// to write a `WorkloadEntry` in the local cluster that represents
+// the Workload(s) in the remote network with the given labels. A
 // single `WorkloadEntry` with weights represent the aggregate of all
 // the actual workloads in a given remote network.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadEntry
 // metadata:
 //   name: foo-workloads-cluster-2
@@ -154,7 +154,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //
 // <!-- crd generation tags
 // +cue-gen:WorkloadEntry:groupName:networking.istio.io
-// +cue-gen:WorkloadEntry:version:v1alpha3
+// +cue-gen:WorkloadEntry:versions:v1,v1beta1,v1alpha3
 // +cue-gen:WorkloadEntry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WorkloadEntry:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WorkloadEntry:subresource:status
@@ -166,6 +166,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:WorkloadEntry:printerColumn:name=Address,type=string,JSONPath=.spec.address,description="Address associated with the network endpoint."
 // +cue-gen:WorkloadEntry:preserveUnknownFields:false
+// +cue-gen:WorkloadEntry:spec:required
 // -->
 //
 // <!-- go code generation tags
@@ -174,15 +175,17 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="Address is required",rule="has(self.address) || has(self.network)"
+// +kubebuilder:validation:XValidation:message="UDS may not include ports",rule="(default(self.address, "").startsWith('unix://')) ? !has(self.ports) : true"
 message WorkloadEntry {
   // Address associated with the network endpoint without the
   // port.  Domain names can be used if and only if the resolution is set
   // to DNS, and must be fully-qualified without wildcards. Use the form
   // unix:///absolute/path/to/socket for Unix domain socket endpoints.
   // If address is empty, network must be specified.
+  // +kubebuilder:validation:XValidation:message="UDS must be an absolute path or abstract socket",rule="self.startsWith('unix://') ? (self.substring(7,8) == '/' || self.substring(7,8) == '@') : true"
+  // +kubebuilder:validation:XValidation:message="UDS may not be a dir",rule="self.startsWith('unix://') ? !self.endsWith('/') : true"
+  // +kubebuilder:validation:MaxLength=256
   string address = 1;
 
   // Set of ports associated with the endpoint. If the port map is
@@ -199,9 +202,13 @@ message WorkloadEntry {
   // **NOTE 1:** Do not use for `unix://` addresses.
   //
   // **NOTE 2:** endpoint port map takes precedence over targetPort.
+  // +protoc-gen-crd:map-value-validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
+  // +kubebuilder:validation:MaxProperties=128
+  // +kubebuilder:validation:XValidation:message="port name must be valid",rule="self.all(key, size(key) < 63 && key.matches('^[a-zA-Z0-9](?:[-a-zA-Z0-9]*[a-zA-Z0-9])?$'))"
   map<string, uint32> ports = 2;
 
   // One or more labels associated with the endpoint.
+  // +kubebuilder:validation:MaxProperties=256
   map<string, string> labels = 3;
 
   // Network enables Istio to group endpoints resident in the same L3
@@ -212,6 +219,7 @@ message WorkloadEntry {
   // `AUTO_PASSTHROUGH` mode in a Gateway Server). This is
   // an advanced configuration used typically for spanning an Istio mesh
   // over multiple clusters. Required if address is not provided.
+  // +kubebuilder:validation:MaxLength=2048
   string network = 4;
 
   // The locality associated with the endpoint. A locality corresponds
@@ -231,6 +239,7 @@ message WorkloadEntry {
   // locality. Endpoint e2 could be the IP associated with a gateway
   // (that bridges networks n1 and n2), or the IP associated with a
   // standard service endpoint.
+  // +kubebuilder:validation:MaxLength=2048
   string locality = 5;
 
   // The load balancing weight associated with the endpoint. Endpoints
@@ -241,6 +250,6 @@ message WorkloadEntry {
   // is present in the workload. The service account must be present
   // in the same namespace as the configuration ( WorkloadEntry or a
   // ServiceEntry)
+  // +kubebuilder:validation:MaxLength=253
   string service_account = 7;
-};
-
+}

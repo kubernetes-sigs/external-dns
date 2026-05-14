@@ -14,10 +14,13 @@ package tdutil
 import (
 	"reflect"
 	"testing"
+	"unsafe"
+
+	"github.com/maxatome/go-testdeep/internal/or"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+var testingT = reflect.TypeOf(testing.T{})
+
 // T can be used in tests, to test [testing.T] behavior as it overrides
 // [testing.T.Run] method.
 type T struct {
@@ -25,18 +28,14 @@ type T struct {
 	name string
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 type tFailedNow struct{}
 
 // NewT returns a new [*T] instance. name is the string returned by
 // method Name.
 func NewT(name string) *T {
-	return &T{name: name}
+	t := &T{name: name}
+	t.prepareForLogs()
+	return t
 }
 
 // Run is a simplified version of [testing.T.Run] method, without edge
@@ -54,145 +53,6 @@ func (t *T) Name() string {
 // LogBuf is an ugly hack allowing to access internal [testing.T] log
 // buffer. Keep cool, it is only used for internal unit tests.
 func (t *T) LogBuf() string {
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
-}
-
-// FailNow simulates the original (*testing.T).FailNow using
-// panic. CatchFailNow should be used to properly intercept it.
-func (t *T) FailNow() {
-	t.Fail()
-	panic(tFailedNow{})
-}
-
-// Fatal simulates the original (*testing.T).Fatal.
-func (t *T) Fatal(args ...interface{}) {
-	t.Helper()
-	t.Error(args...)
-	t.FailNow()
-}
-
-// Fatal simulates the original (*testing.T).Fatalf.
-func (t *T) Fatalf(format string, args ...interface{}) {
-	t.Helper()
-	t.Errorf(format, args...)
-	t.FailNow()
-}
-
-// CatchFailNow returns true if a FailNow, Fatal or Fatalf call
-// occurred during the execution of fn.
-func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
-	defer func() {
-		if x := recover(); x != nil {
-			_, failNowOccurred = x.(tFailedNow)
-			if !failNowOccurred {
-				panic(x) // rethrow
-			}
-		}
-	}()
-
-	fn()
-	return
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-type tFailedNow struct{}
-
->>>>>>> 5ce8c7613 (update vendored files)
-// NewT returns a new *T instance. "name" is the string returned by
-// method Name.
-func NewT(name string) *T {
-	return &T{name: name}
-}
-
-// Run is a simplified version of testing.T.Run() method, without edge
-// cases.
-func (t *T) Run(name string, f func(*testing.T)) bool {
-	t.CatchFailNow(func() { f(&t.T) })
-	return !t.Failed()
-}
-
-// Name returns the name of the running test (in fact the one set by NewT).
-func (t *T) Name() string {
-	return t.name
-}
-
-// LogBuf is an ugly hack allowing to access internal testing.T log
-// buffer. Keep cool, it is only used for internal unit tests.
-func (t *T) LogBuf() string {
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-// FailNow simulates the original (*testing.T).FailNow using
-// panic. CatchFailNow should be used to properly intercept it.
-func (t *T) FailNow() {
-	t.Fail()
-	panic(tFailedNow{})
-}
-
-// Fatal simulates the original (*testing.T).Fatal.
-func (t *T) Fatal(args ...interface{}) {
-	t.Helper()
-	t.Error(args...)
-	t.FailNow()
-}
-
-// Fatal simulates the original (*testing.T).Fatalf.
-func (t *T) Fatalf(format string, args ...interface{}) {
-	t.Helper()
-	t.Errorf(format, args...)
-	t.FailNow()
-}
-
-// CatchFailNow returns true if a FailNow, Fatal or Fatalf call
-// occurred during the execution of fn.
-func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
-	defer func() {
-		if x := recover(); x != nil {
-			_, failNowOccurred = x.(tFailedNow)
-			if !failNowOccurred {
-				panic(x) // rethrow
-			}
-		}
-	}()
-
-	fn()
-	return
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-type tFailedNow struct{}
-
->>>>>>> 6b7ce455e (update vendored files)
-// NewT returns a new *T instance. "name" is the string returned by
-// method Name.
-func NewT(name string) *T {
-	return &T{name: name}
-}
-
-// Run is a simplified version of testing.T.Run() method, without edge
-// cases.
-func (t *T) Run(name string, f func(*testing.T)) bool {
-	t.CatchFailNow(func() { f(&t.T) })
-	return !t.Failed()
-}
-
-// Name returns the name of the running test (in fact the one set by NewT).
-func (t *T) Name() string {
-	return t.name
-}
-
-// LogBuf is an ugly hack allowing to access internal testing.T log
-// buffer. Keep cool, it is only used for internal unit tests.
-func (t *T) LogBuf() string {
-<<<<<<< HEAD
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
-=======
 	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) //nolint: govet
 }
 
@@ -217,161 +77,9 @@ func (t *T) Fatalf(format string, args ...any) {
 	t.FailNow()
 }
 
-// CatchFailNow returns true if a [T.FailNow], [T.Fatal] or [T.Fatalf] call
-// occurred during the execution of fn.
-func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
-	defer func() {
-		if x := recover(); x != nil {
-			_, failNowOccurred = x.(tFailedNow)
-			if !failNowOccurred {
-				panic(x) // rethrow
-			}
-		}
-	}()
-
-	fn()
-	return
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-type tFailedNow struct{}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-// NewT returns a new *T instance. "name" is the string returned by
-// method Name.
-func NewT(name string) *T {
-	return &T{name: name}
-}
-
-// Run is a simplified version of testing.T.Run() method, without edge
-// cases.
-func (t *T) Run(name string, f func(*testing.T)) bool {
-	t.CatchFailNow(func() { f(&t.T) })
-	return !t.Failed()
-}
-
-// Name returns the name of the running test (in fact the one set by NewT).
-func (t *T) Name() string {
-	return t.name
-}
-
-// LogBuf is an ugly hack allowing to access internal testing.T log
-// buffer. Keep cool, it is only used for internal unit tests.
-func (t *T) LogBuf() string {
-<<<<<<< HEAD
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
-=======
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) //nolint: govet
-}
-
-// FailNow simulates the original (*testing.T).FailNow using
-// panic. CatchFailNow should be used to properly intercept it.
-func (t *T) FailNow() {
-	t.Fail()
-	panic(tFailedNow{})
-}
-
-// Fatal simulates the original (*testing.T).Fatal.
-func (t *T) Fatal(args ...interface{}) {
-	t.Helper()
-	t.Error(args...)
-	t.FailNow()
-}
-
-// Fatal simulates the original (*testing.T).Fatalf.
-func (t *T) Fatalf(format string, args ...interface{}) {
-	t.Helper()
-	t.Errorf(format, args...)
-	t.FailNow()
-}
-
-// CatchFailNow returns true if a FailNow, Fatal or Fatalf call
-// occurred during the execution of fn.
-func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
-	defer func() {
-		if x := recover(); x != nil {
-			_, failNowOccurred = x.(tFailedNow)
-			if !failNowOccurred {
-				panic(x) // rethrow
-			}
-		}
-	}()
-
-	fn()
-	return
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// T can be used in tests, to test testing.T behavior as it overrides
-// Run() method.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// T can be used in tests, to test testing.T behavior as it overrides
-// Run() method.
-=======
-// T can be used in tests, to test [testing.T] behavior as it overrides
-// [testing.T.Run] method.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-type T struct {
-	testing.T
-	name string
-}
-
-type tFailedNow struct{}
-
-// NewT returns a new [*T] instance. name is the string returned by
-// method Name.
-func NewT(name string) *T {
-	return &T{name: name}
-}
-
-// Run is a simplified version of [testing.T.Run] method, without edge
-// cases.
-func (t *T) Run(name string, f func(*testing.T)) bool {
-	t.CatchFailNow(func() { f(&t.T) })
-	return !t.Failed()
-}
-
-// Name returns the name of the running test (in fact the one set by [NewT]).
-func (t *T) Name() string {
-	return t.name
-}
-
-// LogBuf is an ugly hack allowing to access internal [testing.T] log
-// buffer. Keep cool, it is only used for internal unit tests.
-func (t *T) LogBuf() string {
-<<<<<<< HEAD
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
-=======
-	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) //nolint: govet
-}
-
-// FailNow simulates the original [testing.T.FailNow] using
-// panic. [T.CatchFailNow] should be used to properly intercept it.
-func (t *T) FailNow() {
-	t.Fail()
-	panic(tFailedNow{})
-}
-
-// Fatal simulates the original [testing.T.Fatal].
-func (t *T) Fatal(args ...any) {
-	t.Helper()
-	t.Error(args...)
-	t.FailNow()
-}
-
-// Fatal simulates the original [testing.T.Fatalf].
-func (t *T) Fatalf(format string, args ...any) {
-	t.Helper()
-	t.Errorf(format, args...)
-	t.FailNow()
+// Starting go1.18, unsafe.Add can be used instead.
+func ptrAdd(p unsafe.Pointer, x uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
 }
 
 // CatchFailNow returns true if a [T.FailNow], [T.Fatal] or [T.Fatalf] call
@@ -388,5 +96,34 @@ func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
 
 	fn()
 	return
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+}
+
+func (t *T) prepareForLogs() {
+	_, ok := testingT.FieldByName("output")
+	or.Panic(ok, "testing.T.output field not found!")
+
+	// o is a new go1.25 testing.common field
+	if o, ok := testingT.FieldByName("o"); ok {
+		ot := o.Type.Elem()
+
+		// With go1.25 t.T.o needs to be set to feed t.T.output
+		type outputWriter struct {
+			c       *testing.T
+			partial []byte //nolint: unused
+		}
+		owt := reflect.TypeOf(outputWriter{})
+
+		or.Panic(
+			ot.NumField() == owt.NumField() &&
+				ot.Field(0).Name == owt.Field(0).Name && // ot.c is *testing.common
+				ot.Field(1).Type == owt.Field(1).Type,
+			"testing.T.outputWriter changed")
+
+		// Use ptrAdd to support go1.16 & go1.17, but starting go1.18 we can use:
+		// oAddr := (**outputWriter)(unsafe.Add(unsafe.Pointer(&t.T), o.Offset))
+		oAddr := (**outputWriter)(ptrAdd(unsafe.Pointer(&t.T), o.Offset))
+		*oAddr = &outputWriter{
+			c: &t.T,
+		}
+	}
 }

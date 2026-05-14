@@ -36,18 +36,7 @@ func (xl termlist) String() string {
 	var buf strings.Builder
 	for i, x := range xl {
 		if i > 0 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-			buf.WriteString(" ∪ ")
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
-			buf.WriteString(" | ")
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-			buf.WriteString(" | ")
-=======
 			buf.WriteString(termSep)
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 		}
 		buf.WriteString(x.String())
 	}

@@ -75,20 +75,8 @@ f.Fill(&myObject) // Type will correspond to whether A or B info is set.
 
 See more examples in ```example_test.go```.
 
-<<<<<<< HEAD:vendor/github.com/google/gofuzz/README.md
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/github.com/google/gofuzz/README.md
-=======
 ## dvyukov/go-fuzz integration
 
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/sigs.k8s.io/randfill/README.md
 You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
 go-fuzz provides the user a byte-slice, which should be converted to different inputs
 for the tested function. This library can help convert the byte slice. Consider for
@@ -107,100 +95,4 @@ func Fuzz(data []byte) int {
 }
 ```
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
-go-fuzz provides the user a byte-slice, which should be converted to different inputs
-for the tested function. This library can help convert the byte slice. Consider for
-example a fuzz test for a the function `mypackage.MyFunc` that takes an int arguments:
-```go
-// +build gofuzz
-package mypackage
-
-import fuzz "github.com/google/gofuzz"
-
-func Fuzz(data []byte) int {
-        var i int
-        fuzz.NewFromGoFuzz(data).Fuzz(&i)
-        MyFunc(i)
-        return 0
-}
-```
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
-go-fuzz provides the user a byte-slice, which should be converted to different inputs
-for the tested function. This library can help convert the byte slice. Consider for
-example a fuzz test for a the function `mypackage.MyFunc` that takes an int arguments:
-```go
-// +build gofuzz
-package mypackage
-
-import fuzz "github.com/google/gofuzz"
-
-func Fuzz(data []byte) int {
-        var i int
-        fuzz.NewFromGoFuzz(data).Fuzz(&i)
-        MyFunc(i)
-        return 0
-}
-```
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
-go-fuzz provides the user a byte-slice, which should be converted to different inputs
-for the tested function. This library can help convert the byte slice. Consider for
-example a fuzz test for a the function `mypackage.MyFunc` that takes an int arguments:
-```go
-// +build gofuzz
-package mypackage
-
-import fuzz "github.com/google/gofuzz"
-
-func Fuzz(data []byte) int {
-        var i int
-        fuzz.NewFromGoFuzz(data).Fuzz(&i)
-        MyFunc(i)
-        return 0
-}
-```
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
-go-fuzz provides the user a byte-slice, which should be converted to different inputs
-for the tested function. This library can help convert the byte slice. Consider for
-example a fuzz test for a the function `mypackage.MyFunc` that takes an int arguments:
-```go
-// +build gofuzz
-package mypackage
-
-import fuzz "github.com/google/gofuzz"
-
-func Fuzz(data []byte) int {
-        var i int
-        fuzz.NewFromGoFuzz(data).Fuzz(&i)
-        MyFunc(i)
-        return 0
-}
-```
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 Happy testing!

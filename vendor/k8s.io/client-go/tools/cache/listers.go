@@ -17,51 +17,7 @@ limitations under the License.
 package cache
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"k8s.io/klog/v2"
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -76,6 +32,10 @@ type AppendFunc func(interface{})
 
 // ListAll lists items in the store matching the given selector, calling appendFn on each one.
 func ListAll(store Store, selector labels.Selector, appendFn AppendFunc) error {
+	if labels.MatchesNothing(selector) {
+		return nil
+	}
+
 	selectAll := selector.Empty()
 	for _, m := range store.List() {
 		if selectAll {
@@ -99,6 +59,10 @@ func ListAll(store Store, selector labels.Selector, appendFn AppendFunc) error {
 // calling appendFn on each one.
 // If a blank namespace (NamespaceAll) is specified, this delegates to ListAll().
 func ListAllByNamespace(indexer Indexer, namespace string, selector labels.Selector, appendFn AppendFunc) error {
+	if labels.MatchesNothing(selector) {
+		return nil
+	}
+
 	if namespace == metav1.NamespaceAll {
 		return ListAll(indexer, selector, appendFn)
 	}

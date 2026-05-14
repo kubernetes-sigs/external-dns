@@ -1,5 +1,146 @@
 # Release History
 
+## 1.21.1 (2026-04-16)
+
+### Bugs Fixed
+
+* Fixed an issue in `ResponseError.Error()` where the request URL path was being logged unescaped.
+* Redact query parameters when logging errors.
+* For `runtime.JoinPaths`, don't add a slash between root and paths when `paths` starts with `?` (query string).
+
+### Other Changes
+
+* Upgraded to Go 1.25.0.
+* Upgraded dependencies.
+
+## 1.21.0 (2026-01-12)
+
+### Features Added
+
+* Added `runtime/datetime` package which provides specialized time type wrappers for serializing and deserializing
+time values in various formats used by Azure services.
+
+### Other Changes
+
+* Aligned `cloud.AzureGovernment` and `cloud.AzureChina` audience values with Azure CLI
+
+## 1.20.0 (2025-11-06)
+
+### Features Added
+
+* Added `runtime.FetcherForNextLinkOptions.HTTPVerb` to specify the HTTP verb when fetching the next page via next link. Defaults to `http.MethodGet`.
+
+### Bugs Fixed
+
+* Fixed potential panic when decoding base64 strings.
+* Fixed an issue in resource identifier parsing which prevented it from returning an error for malformed resource IDs.
+
+## 1.19.1 (2025-09-11)
+
+### Bugs Fixed
+
+* Fixed resource identifier parsing for provider-specific resource hierarchies containing "resourceGroups" segments.
+
+### Other Changes
+
+* Improved error fall-back for improperly authored long-running operations.
+* Upgraded dependencies.
+
+## 1.19.0 (2025-08-21)
+
+### Features Added
+
+* Added `runtime.APIVersionLocationPath` to be set by clients that set the API version in the path.
+
+## 1.18.2 (2025-07-31)
+
+### Bugs Fixed
+
+* Fixed a case in which `BearerTokenPolicy` didn't ensure an authentication error is non-retriable
+
+## 1.18.1 (2025-07-10)
+
+### Bugs Fixed
+
+* Fixed incorrect request/response logging try info when logging a request that's being retried.
+* Fixed a data race in `ResourceID.String()`
+
+## 1.18.0 (2025-04-03)
+
+### Features Added
+
+* Added `AccessToken.RefreshOn` and updated `BearerTokenPolicy` to consider nonzero values of it when deciding whether to request a new token
+
+## 1.17.1 (2025-03-20)
+
+### Other Changes
+
+* Upgraded to Go 1.23
+* Upgraded dependencies
+
+## 1.17.0 (2025-01-07)
+
+### Features Added
+
+* Added field `OperationLocationResultPath` to `runtime.NewPollerOptions[T]` for LROs that use the `Operation-Location` pattern.
+* Support `encoding.TextMarshaler` and `encoding.TextUnmarshaler` interfaces in `arm.ResourceID`.
+
+## 1.16.0 (2024-10-17)
+
+### Features Added
+
+* Added field `Kind` to `runtime.StartSpanOptions` to allow a kind to be set when starting a span.
+
+### Bugs Fixed
+
+* `BearerTokenPolicy` now rewinds request bodies before retrying
+
+## 1.15.0 (2024-10-14)
+
+### Features Added
+
+* `BearerTokenPolicy` handles CAE claims challenges
+
+### Bugs Fixed
+
+* Omit the `ResponseError.RawResponse` field from JSON marshaling so instances can be marshaled.
+* Fixed an integer overflow in the retry policy.
+
+### Other Changes
+
+* Update dependencies.
+
+## 1.14.0 (2024-08-07)
+
+### Features Added
+
+* Added field `Attributes` to `runtime.StartSpanOptions` to simplify creating spans with attributes.
+
+### Other Changes
+
+* Include the HTTP verb and URL in `log.EventRetryPolicy` log entries so it's clear which operation is being retried.
+
+## 1.13.0 (2024-07-16)
+
+### Features Added
+
+- Added runtime.NewRequestFromRequest(), allowing for a policy.Request to be created from an existing *http.Request.
+
+## 1.12.0 (2024-06-06)
+
+### Features Added
+
+* Added field `StatusCodes` to `runtime.FetcherForNextLinkOptions` allowing for additional HTTP status codes indicating success.
+* Added func `NewUUID` to the `runtime` package for generating UUIDs.
+
+### Bugs Fixed
+
+* Fixed an issue that prevented pollers using the `Operation-Location` strategy from unmarshaling the final result in some cases.
+
+### Other Changes
+
+* Updated dependencies.
+
 ## 1.11.1 (2024-04-02)
 
 ### Bugs Fixed

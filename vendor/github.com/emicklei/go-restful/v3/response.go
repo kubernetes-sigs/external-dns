@@ -109,13 +109,9 @@ func (r *Response) EntityWriter() (EntityReaderWriter, bool) {
 		if DefaultResponseMimeType == MIME_XML {
 			return entityAccessRegistry.accessorAt(MIME_XML)
 		}
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		if DefaultResponseMimeType == MIME_ZIP {
 			return entityAccessRegistry.accessorAt(MIME_ZIP)
 		}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		// Fallback to whatever the route says it can produce.
 		// https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
 		for _, each := range r.routeProduces {

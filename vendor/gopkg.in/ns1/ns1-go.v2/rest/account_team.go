@@ -64,18 +64,9 @@ func (s *TeamsService) Create(t *account.Team) (*http.Response, error) {
 		err error
 	)
 
-	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
-	if s.client.DDI && t != nil {
-		ddiTeam := teamToDDITeam(t)
-		req, err = s.client.NewRequest("PUT", "account/teams", ddiTeam)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		req, err = s.client.NewRequest("PUT", "account/teams", t)
-		if err != nil {
-			return nil, err
-		}
+	req, err = s.client.NewRequest("PUT", "account/teams", t)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update team fields with data from api(ensure consistent)
@@ -104,18 +95,9 @@ func (s *TeamsService) Update(t *account.Team) (*http.Response, error) {
 		err error
 	)
 
-	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
-	if s.client.DDI && t != nil {
-		ddiTeam := teamToDDITeam(t)
-		req, err = s.client.NewRequest("POST", path, ddiTeam)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		req, err = s.client.NewRequest("POST", path, t)
-		if err != nil {
-			return nil, err
-		}
+	req, err = s.client.NewRequest("POST", path, t)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update team fields with data from api(ensure consistent)
@@ -164,36 +146,3 @@ var (
 	// ErrTeamMissing bundles GET/POST/DELETE error.
 	ErrTeamMissing = errors.New("team does not exist")
 )
-
-func teamToDDITeam(t *account.Team) *ddiTeam {
-	ddiTeam := &ddiTeam{
-		ID:          t.ID,
-		Name:        t.Name,
-		IPWhitelist: t.IPWhitelist,
-		Permissions: ddiPermissionsMap{
-			DNS:  t.Permissions.DNS,
-			Data: t.Permissions.Data,
-			Account: permissionsDDIAccount{
-				ManageUsers:           t.Permissions.Account.ManageUsers,
-				ManageTeams:           t.Permissions.Account.ManageTeams,
-				ManageApikeys:         t.Permissions.Account.ManageApikeys,
-				ManageAccountSettings: t.Permissions.Account.ManageAccountSettings,
-				ViewActivityLog:       t.Permissions.Account.ViewActivityLog,
-			},
-		},
-	}
-
-	if t.Permissions.Security != nil {
-		ddiTeam.Permissions.Security = permissionsDDISecurity(*t.Permissions.Security)
-	}
-
-	if t.Permissions.DHCP != nil {
-		ddiTeam.Permissions.DHCP = *t.Permissions.DHCP
-	}
-
-	if t.Permissions.IPAM != nil {
-		ddiTeam.Permissions.IPAM = *t.Permissions.IPAM
-	}
-
-	return ddiTeam
-}

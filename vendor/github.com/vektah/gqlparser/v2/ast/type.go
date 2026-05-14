@@ -20,7 +20,7 @@ type Type struct {
 	NamedType string
 	Elem      *Type
 	NonNull   bool
-	Position  *Position `dump:"-"`
+	Position  *Position `dump:"-" json:"-"`
 }
 
 func (t *Type) Name() string {
@@ -63,6 +63,6 @@ func (t *Type) IsCompatible(other *Type) bool {
 	return true
 }
 
-func (v *Type) Dump() string {
-	return v.String()
+func (t *Type) Dump() string {
+	return t.String()
 }

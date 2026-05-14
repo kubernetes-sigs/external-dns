@@ -13,7 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 )
 
 // ServiceError models all potential errors generated the service call

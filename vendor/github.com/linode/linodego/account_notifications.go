@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -45,38 +44,18 @@ type NotificationType string
 
 // NotificationType constants represent the actions that cause a Notification. New types may be added in the future.
 const (
-	NotificationMigrationScheduled NotificationType = "migration_scheduled"
-	NotificationMigrationImminent  NotificationType = "migration_imminent"
-	NotificationMigrationPending   NotificationType = "migration_pending"
-	NotificationRebootScheduled    NotificationType = "reboot_scheduled"
-	NotificationOutage             NotificationType = "outage"
-	NotificationPaymentDue         NotificationType = "payment_due"
-	NotificationTicketImportant    NotificationType = "ticket_important"
-	NotificationTicketAbuse        NotificationType = "ticket_abuse"
-	NotificationNotice             NotificationType = "notice"
-	NotificationMaintenance        NotificationType = "maintenance"
+	NotificationMigrationScheduled   NotificationType = "migration_scheduled"
+	NotificationMigrationImminent    NotificationType = "migration_imminent"
+	NotificationMigrationPending     NotificationType = "migration_pending"
+	NotificationRebootScheduled      NotificationType = "reboot_scheduled"
+	NotificationOutage               NotificationType = "outage"
+	NotificationPaymentDue           NotificationType = "payment_due"
+	NotificationTicketImportant      NotificationType = "ticket_important"
+	NotificationTicketAbuse          NotificationType = "ticket_abuse"
+	NotificationNotice               NotificationType = "notice"
+	NotificationMaintenance          NotificationType = "maintenance"
+	NotificationMaintenanceScheduled NotificationType = "maintenance_scheduled"
 )
-
-// NotificationsPagedResponse represents a paginated Notifications API response
-type NotificationsPagedResponse struct {
-	*PageOptions
-	Data []Notification `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Notification
-func (NotificationsPagedResponse) endpoint(_ ...any) string {
-	return "account/notifications"
-}
-
-func (resp *NotificationsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(NotificationsPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*NotificationsPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
-}
 
 // ListNotifications gets a collection of Notification objects representing important,
 // often time-sensitive items related to the Account. An account cannot interact directly with
@@ -84,53 +63,7 @@ func (resp *NotificationsPagedResponse) castResult(r *resty.Request, e string) (
 // have been resolved. For example, if the account has an important Ticket open, a response
 // to the Ticket will dismiss the Notification.
 func (c *Client) ListNotifications(ctx context.Context, opts *ListOptions) ([]Notification, error) {
-	response := NotificationsPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-
-	return response.Data, nil
+	return getPaginatedResults[Notification](ctx, c, "account/notifications", opts)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface
@@ -139,6 +72,7 @@ func (i *Notification) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Until *parseabletime.ParseableTime `json:"until"`
 		When  *parseabletime.ParseableTime `json:"when"`
 	}{

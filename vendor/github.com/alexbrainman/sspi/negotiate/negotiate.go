@@ -2,32 +2,55 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 // Package negotiate provides access to the Microsoft Negotiate SSP Package.
-//
 package negotiate
 
 import (
 	"errors"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
 
 	"github.com/alexbrainman/sspi"
+	"github.com/alexbrainman/sspi/internal/common"
 )
 
 // TODO: maybe (if possible) move all winapi related out of sspi and into sspi/internal/winapi
 
-// PackageInfo contains Negotiate SSP package description.
+// PackageInfo contains the Negotiate SSP package description.
+//
+// It's initialized best-effort during init. During early boot it may not
+// yet be loaded & available and thus this will be nil.
+//
+// Deprecated: use GetPackageInfo instead.
 var PackageInfo *sspi.PackageInfo
 
 func init() {
-	var err error
-	PackageInfo, err = sspi.QueryPackageInfo(sspi.NEGOSSP_NAME)
-	if err != nil {
-		panic("failed to fetch Negotiate package info: " + err.Error())
+	PackageInfo, _ = GetPackageInfo()
+}
+
+var (
+	pkgInfoMu sync.Mutex
+	pkgInfo   *sspi.PackageInfo
+)
+
+// GetPackageInfo returns the Negotiate SSP package description.
+func GetPackageInfo() (*sspi.PackageInfo, error) {
+	pkgInfoMu.Lock()
+	defer pkgInfoMu.Unlock()
+	if pkgInfo != nil {
+		return pkgInfo, nil
 	}
+	v, err := sspi.QueryPackageInfo(sspi.NEGOSSP_NAME)
+	if err != nil {
+		return nil, err
+	}
+	pkgInfo = v
+	return v, nil
 }
 
 func acquireCredentials(principalName string, creduse uint32, ai *sspi.SEC_WINNT_AUTH_IDENTITY) (*sspi.Credentials, error) {
@@ -46,38 +69,16 @@ func AcquireCurrentUserCredentials() (*sspi.Credentials, error) {
 	return acquireCredentials("", sspi.SECPKG_CRED_OUTBOUND, nil)
 }
 
-// TODO: see if I can share this common ntlm and negotiate code
-
 // AcquireUserCredentials acquires credentials of user described by
 // domain, username and password. These will be used by the client to
 // authenticate itself to the server. It will also be used by the
 // server to impersonate the user.
 func AcquireUserCredentials(domain, username, password string) (*sspi.Credentials, error) {
-	if len(username) == 0 {
-		return nil, errors.New("username parameter cannot be empty")
-	}
-	d, err := syscall.UTF16FromString(domain)
+	ai, err := common.BuildAuthIdentity(domain, username, password)
 	if err != nil {
 		return nil, err
 	}
-	u, err := syscall.UTF16FromString(username)
-	if err != nil {
-		return nil, err
-	}
-	p, err := syscall.UTF16FromString(password)
-	if err != nil {
-		return nil, err
-	}
-	ai := sspi.SEC_WINNT_AUTH_IDENTITY{
-		User:           &u[0],
-		UserLength:     uint32(len(u) - 1), // do not count terminating 0
-		Domain:         &d[0],
-		DomainLength:   uint32(len(d) - 1), // do not count terminating 0
-		Password:       &p[0],
-		PasswordLength: uint32(len(p) - 1), // do not count terminating 0
-		Flags:          sspi.SEC_WINNT_AUTH_IDENTITY_UNICODE,
-	}
-	return acquireCredentials("", sspi.SECPKG_CRED_OUTBOUND, &ai)
+	return acquireCredentials("", sspi.SECPKG_CRED_OUTBOUND, ai)
 }
 
 // AcquireServerCredentials acquires server credentials that will
@@ -91,117 +92,6 @@ func AcquireUserCredentials(domain, username, password string) (*sspi.Credential
 // the current process is running.
 func AcquireServerCredentials(principalName string) (*sspi.Credentials, error) {
 	return acquireCredentials(principalName, sspi.SECPKG_CRED_INBOUND, nil)
-}
-
-func updateContext(c *sspi.Context, dst, src []byte, targetName *uint16) (authCompleted bool, n int, err error) {
-	var inBuf, outBuf [1]sspi.SecBuffer
-	inBuf[0].Set(sspi.SECBUFFER_TOKEN, src)
-	inBufs := &sspi.SecBufferDesc{
-		Version:      sspi.SECBUFFER_VERSION,
-		BuffersCount: 1,
-		Buffers:      &inBuf[0],
-	}
-	outBuf[0].Set(sspi.SECBUFFER_TOKEN, dst)
-	outBufs := &sspi.SecBufferDesc{
-		Version:      sspi.SECBUFFER_VERSION,
-		BuffersCount: 1,
-		Buffers:      &outBuf[0],
-	}
-	ret := c.Update(targetName, outBufs, inBufs)
-	switch ret {
-	case sspi.SEC_E_OK:
-		// session established -> return success
-		return true, int(outBuf[0].BufferSize), nil
-	case sspi.SEC_I_COMPLETE_NEEDED, sspi.SEC_I_COMPLETE_AND_CONTINUE:
-		ret = sspi.CompleteAuthToken(c.Handle, outBufs)
-		if ret != sspi.SEC_E_OK {
-			return false, 0, ret
-		}
-	case sspi.SEC_I_CONTINUE_NEEDED:
-	default:
-		return false, 0, ret
-	}
-	return false, int(outBuf[0].BufferSize), nil
-}
-
-func makeSignature(c *sspi.Context, msg []byte, qop, seqno uint32) ([]byte, error) {
-	_, maxSignature, _, _, err := c.Sizes()
-	if err != nil {
-		return nil, err
-	}
-
-	if maxSignature == 0 {
-		return nil, errors.New("integrity services are not requested or unavailable")
-	}
-
-	var b [2]sspi.SecBuffer
-	b[0].Set(sspi.SECBUFFER_DATA, msg)
-	b[1].Set(sspi.SECBUFFER_TOKEN, make([]byte, maxSignature))
-
-	ret := sspi.MakeSignature(c.Handle, qop, sspi.NewSecBufferDesc(b[:]), seqno)
-	if ret != sspi.SEC_E_OK {
-		return nil, ret
-	}
-
-	return b[1].Bytes(), nil
-}
-
-func encryptMessage(c *sspi.Context, msg []byte, qop, seqno uint32) ([]byte, error) {
-	_ /*maxToken*/, maxSignature, cBlockSize, cSecurityTrailer, err := c.Sizes()
-	if err != nil {
-		return nil, err
-	}
-
-	if maxSignature == 0 {
-		return nil, errors.New("integrity services are not requested or unavailable")
-	}
-
-	var b [3]sspi.SecBuffer
-	b[0].Set(sspi.SECBUFFER_TOKEN, make([]byte, cSecurityTrailer))
-	b[1].Set(sspi.SECBUFFER_DATA, msg)
-	b[2].Set(sspi.SECBUFFER_PADDING, make([]byte, cBlockSize))
-
-	ret := sspi.EncryptMessage(c.Handle, qop, sspi.NewSecBufferDesc(b[:]), seqno)
-	if ret != sspi.SEC_E_OK {
-		return nil, ret
-	}
-
-	r0, r1, r2 := b[0].Bytes(), b[1].Bytes(), b[2].Bytes()
-	res := make([]byte, 0, len(r0)+len(r1)+len(r2))
-	res = append(res, r0...)
-	res = append(res, r1...)
-	res = append(res, r2...)
-
-	return res, nil
-}
-
-func decryptMessage(c *sspi.Context, msg []byte, seqno uint32) (uint32, []byte, error) {
-	var b [2]sspi.SecBuffer
-	b[0].Set(sspi.SECBUFFER_STREAM, msg)
-	b[1].Set(sspi.SECBUFFER_DATA, []byte{})
-
-	var qop uint32
-	ret := sspi.DecryptMessage(c.Handle, sspi.NewSecBufferDesc(b[:]), seqno, &qop)
-	if ret != sspi.SEC_E_OK {
-		return qop, nil, ret
-	}
-
-	return qop, b[1].Bytes(), nil
-}
-
-func verifySignature(c *sspi.Context, msg, token []byte, seqno uint32) (uint32, error) {
-	var b [2]sspi.SecBuffer
-	b[0].Set(sspi.SECBUFFER_DATA, msg)
-	b[1].Set(sspi.SECBUFFER_TOKEN, token)
-
-	var qop uint32
-
-	ret := sspi.VerifySignature(c.Handle, sspi.NewSecBufferDesc(b[:]), seqno, &qop)
-	if ret != sspi.SEC_E_OK {
-		return 0, ret
-	}
-
-	return qop, nil
 }
 
 // ClientContext is used by the client to manage all steps of Negotiate negotiation.
@@ -239,10 +129,14 @@ func NewClientContextWithFlags(cred *sspi.Credentials, targetName string, flags 
 			tname = &p[0]
 		}
 	}
-	otoken := make([]byte, PackageInfo.MaxToken)
+	pkgInfo, err := GetPackageInfo()
+	if err != nil {
+		return nil, nil, err
+	}
+	otoken := make([]byte, pkgInfo.MaxToken)
 	c := sspi.NewClientContext(cred, flags)
 
-	authCompleted, n, err2 := updateContext(c, otoken, nil, tname)
+	authCompleted, n, err2 := common.UpdateContext(c, otoken, nil, tname)
 	if err2 != nil {
 		return nil, nil, err2
 	}
@@ -276,8 +170,12 @@ func (c *ClientContext) Expiry() time.Time {
 // of authentication is complete. It also returns new token to be
 // sent to the server.
 func (c *ClientContext) Update(token []byte) (authCompleted bool, outputToken []byte, err error) {
-	otoken := make([]byte, PackageInfo.MaxToken)
-	authDone, n, err2 := updateContext(c.sctxt, otoken, token, c.targetName)
+	pkgInfo, err := GetPackageInfo()
+	if err != nil {
+		return false, nil, err
+	}
+	otoken := make([]byte, pkgInfo.MaxToken)
+	authDone, n, err2 := common.UpdateContext(c.sctxt, otoken, token, c.targetName)
 	if err2 != nil {
 		return false, nil, err2
 	}
@@ -300,7 +198,7 @@ func (c *ClientContext) Sizes() (uint32, uint32, uint32, uint32, error) {
 // for the given message using the provided quality of protection flags and
 // sequence number. It returns the signature token in addition to any error.
 func (c *ClientContext) MakeSignature(msg []byte, qop, seqno uint32) ([]byte, error) {
-	return makeSignature(c.sctxt, msg, qop, seqno)
+	return common.MakeSignature(c.sctxt, msg, qop, seqno)
 }
 
 // VerifySignature uses the established client context and signature token
@@ -308,7 +206,7 @@ func (c *ClientContext) MakeSignature(msg []byte, qop, seqno uint32) ([]byte, er
 // of sequence. It returns any quality of protection flags and any error
 // that occurred.
 func (c *ClientContext) VerifySignature(msg, token []byte, seqno uint32) (uint32, error) {
-	return verifySignature(c.sctxt, msg, token, seqno)
+	return common.VerifySignature(c.sctxt, msg, token, seqno)
 }
 
 // EncryptMessage uses the established client context to encrypt a message
@@ -317,14 +215,14 @@ func (c *ClientContext) VerifySignature(msg, token []byte, seqno uint32) (uint32
 // IMPORTANT: the input msg parameter is updated in place by the low-level windows api
 // so must be copied if the initial content should not be modified.
 func (c *ClientContext) EncryptMessage(msg []byte, qop, seqno uint32) ([]byte, error) {
-	return encryptMessage(c.sctxt, msg, qop, seqno)
+	return common.EncryptMessage(c.sctxt, msg, qop, seqno)
 }
 
 // DecryptMessage uses the established client context to decrypt a message
 // using the provided sequence number.
 // It returns the quality of protection flag and the decrypted message in addition to any error.
 func (c *ClientContext) DecryptMessage(msg []byte, seqno uint32) (uint32, []byte, error) {
-	return decryptMessage(c.sctxt, msg, seqno)
+	return common.DecryptMessage(c.sctxt, msg, seqno)
 }
 
 // VerifyFlags determines if all flags used to construct the client context
@@ -351,9 +249,13 @@ type ServerContext struct {
 // the client to start server Negotiate negotiation sequence.
 // It also returns new token to be sent to the client.
 func NewServerContext(cred *sspi.Credentials, token []byte) (sc *ServerContext, authDone bool, outputToken []byte, err error) {
-	otoken := make([]byte, PackageInfo.MaxToken)
+	pkgInfo, err := GetPackageInfo()
+	if err != nil {
+		return nil, false, nil, err
+	}
+	otoken := make([]byte, pkgInfo.MaxToken)
 	c := sspi.NewServerContext(cred, sspi.ASC_REQ_CONNECTION)
-	authDone, n, err2 := updateContext(c, otoken, token, nil)
+	authDone, n, err2 := common.UpdateContext(c, otoken, token, nil)
 	if err2 != nil {
 		return nil, false, nil, err2
 	}
@@ -379,8 +281,12 @@ func (c *ServerContext) Expiry() time.Time {
 // of authentication is complete. It also returns new token to be
 // sent to the client.
 func (c *ServerContext) Update(token []byte) (authCompleted bool, outputToken []byte, err error) {
-	otoken := make([]byte, PackageInfo.MaxToken)
-	authDone, n, err2 := updateContext(c.sctxt, otoken, token, nil)
+	pkgInfo, err := GetPackageInfo()
+	if err != nil {
+		return false, nil, err
+	}
+	otoken := make([]byte, pkgInfo.MaxToken)
+	authDone, n, err2 := common.UpdateContext(c.sctxt, otoken, token, nil)
 	if err2 != nil {
 		return false, nil, err2
 	}
@@ -434,7 +340,7 @@ func (c *ServerContext) Sizes() (uint32, uint32, uint32, uint32, error) {
 // for the given message using the provided quality of protection flags and
 // sequence number. It returns the signature token in addition to any error.
 func (c *ServerContext) MakeSignature(msg []byte, qop, seqno uint32) ([]byte, error) {
-	return makeSignature(c.sctxt, msg, qop, seqno)
+	return common.MakeSignature(c.sctxt, msg, qop, seqno)
 }
 
 // VerifySignature uses the established server context and signature token
@@ -442,7 +348,7 @@ func (c *ServerContext) MakeSignature(msg []byte, qop, seqno uint32) ([]byte, er
 // of sequence. It returns any quality of protection flags and any error
 // that occurred.
 func (c *ServerContext) VerifySignature(msg, token []byte, seqno uint32) (uint32, error) {
-	return verifySignature(c.sctxt, msg, token, seqno)
+	return common.VerifySignature(c.sctxt, msg, token, seqno)
 }
 
 // EncryptMessage uses the established server context to encrypt a message
@@ -451,12 +357,12 @@ func (c *ServerContext) VerifySignature(msg, token []byte, seqno uint32) (uint32
 // IMPORTANT: the input msg parameter is updated in place by the low-level windows api
 // so must be copied if the initial content should not be modified.
 func (c *ServerContext) EncryptMessage(msg []byte, qop, seqno uint32) ([]byte, error) {
-	return encryptMessage(c.sctxt, msg, qop, seqno)
+	return common.EncryptMessage(c.sctxt, msg, qop, seqno)
 }
 
 // DecryptMessage uses the established server context to decrypt a message
 // using the provided sequence number.
 // It returns the quality of protection flag and the decrypted message in addition to any error.
 func (c *ServerContext) DecryptMessage(msg []byte, seqno uint32) (uint32, []byte, error) {
-	return decryptMessage(c.sctxt, msg, seqno)
+	return common.DecryptMessage(c.sctxt, msg, seqno)
 }

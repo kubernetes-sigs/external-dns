@@ -115,28 +115,8 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 			// Refresh the body reader so the body can be sent again
 			req.Body = io.NopCloser(&body)
 		}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return c.Do(req)
 	}
 	return resp, err

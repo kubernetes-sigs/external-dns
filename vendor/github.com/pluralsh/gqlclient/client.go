@@ -6,425 +6,917 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Yamashou/gqlgenc/client"
+	"github.com/Yamashou/gqlgenc/clientv2"
 )
 
 type Client struct {
-	Client *client.Client
+	Client *clientv2.Client
 }
 
-func NewClient(cli *http.Client, baseURL string, options ...client.HTTPRequestOption) *Client {
-	return &Client{Client: client.NewClient(cli, baseURL, options...)}
+func NewClient(cli *http.Client, baseURL string, options *clientv2.Options, interceptors ...clientv2.RequestInterceptor) *Client {
+	return &Client{Client: clientv2.NewClient(cli, baseURL, options, interceptors...)}
 }
 
-type RootQueryType struct {
-<<<<<<< HEAD
-	AuditMetrics           []*GeoMetric                      "json:\"auditMetrics\" graphql:\"auditMetrics\""
-	Audits                 *AuditConnection                  "json:\"audits\" graphql:\"audits\""
-	Categories             []*CategoryInfo                   "json:\"categories\" graphql:\"categories\""
-	Category               *CategoryInfo                     "json:\"category\" graphql:\"category\""
-	Chart                  *Chart                            "json:\"chart\" graphql:\"chart\""
-	ChartInstallations     *ChartInstallationConnection      "json:\"chartInstallations\" graphql:\"chartInstallations\""
-	Charts                 *ChartConnection                  "json:\"charts\" graphql:\"charts\""
-	Closure                []*ClosureItem                    "json:\"closure\" graphql:\"closure\""
-	Configuration          *PluralConfiguration              "json:\"configuration\" graphql:\"configuration\""
-	DeferredUpdates        *DeferredUpdateConnection         "json:\"deferredUpdates\" graphql:\"deferredUpdates\""
-	DemoProject            *DemoProject                      "json:\"demoProject\" graphql:\"demoProject\""
-	DNSDomain              *DNSDomain                        "json:\"dnsDomain\" graphql:\"dnsDomain\""
-	DNSDomains             *DNSDomainConnection              "json:\"dnsDomains\" graphql:\"dnsDomains\""
-	DNSRecords             *DNSRecordConnection              "json:\"dnsRecords\" graphql:\"dnsRecords\""
-	DockerImage            *DockerImage                      "json:\"dockerImage\" graphql:\"dockerImage\""
-	DockerImages           *DockerImageConnection            "json:\"dockerImages\" graphql:\"dockerImages\""
-	DockerRepositories     *DockerRepositoryConnection       "json:\"dockerRepositories\" graphql:\"dockerRepositories\""
-	EabCredential          *EabCredential                    "json:\"eabCredential\" graphql:\"eabCredential\""
-	EabCredentials         []*EabCredential                  "json:\"eabCredentials\" graphql:\"eabCredentials\""
-	GroupMembers           *GroupMemberConnection            "json:\"groupMembers\" graphql:\"groupMembers\""
-	Groups                 *GroupConnection                  "json:\"groups\" graphql:\"groups\""
-	Incident               *Incident                         "json:\"incident\" graphql:\"incident\""
-	Incidents              *IncidentConnection               "json:\"incidents\" graphql:\"incidents\""
-	Installation           *Installation                     "json:\"installation\" graphql:\"installation\""
-	Installations          *InstallationConnection           "json:\"installations\" graphql:\"installations\""
-	IntegrationWebhook     *IntegrationWebhook               "json:\"integrationWebhook\" graphql:\"integrationWebhook\""
-	IntegrationWebhooks    *IntegrationWebhookConnection     "json:\"integrationWebhooks\" graphql:\"integrationWebhooks\""
-	Integrations           *IntegrationConnection            "json:\"integrations\" graphql:\"integrations\""
-	Invite                 *Invite                           "json:\"invite\" graphql:\"invite\""
-	Invites                *InviteConnection                 "json:\"invites\" graphql:\"invites\""
-	LoginMethod            *LoginMethodResponse              "json:\"loginMethod\" graphql:\"loginMethod\""
-	LoginMetrics           []*GeoMetric                      "json:\"loginMetrics\" graphql:\"loginMetrics\""
-	Me                     *User                             "json:\"me\" graphql:\"me\""
-	Notifications          *NotificationConnection           "json:\"notifications\" graphql:\"notifications\""
-	OauthConsent           *Repository                       "json:\"oauthConsent\" graphql:\"oauthConsent\""
-	OauthIntegrations      []*OauthIntegration               "json:\"oauthIntegrations\" graphql:\"oauthIntegrations\""
-	OauthLogin             *Repository                       "json:\"oauthLogin\" graphql:\"oauthLogin\""
-	OauthUrls              []*OauthInfo                      "json:\"oauthUrls\" graphql:\"oauthUrls\""
-	OidcConsent            *OidcStepResponse                 "json:\"oidcConsent\" graphql:\"oidcConsent\""
-	OidcLogin              *OidcStepResponse                 "json:\"oidcLogin\" graphql:\"oidcLogin\""
-	OidcLogins             *OidcLoginConnection              "json:\"oidcLogins\" graphql:\"oidcLogins\""
-	PlatformMetrics        *PlatformMetrics                  "json:\"platformMetrics\" graphql:\"platformMetrics\""
-	PublicKeys             *PublicKeyConnection              "json:\"publicKeys\" graphql:\"publicKeys\""
-	Publisher              *Publisher                        "json:\"publisher\" graphql:\"publisher\""
-	Publishers             *PublisherConnection              "json:\"publishers\" graphql:\"publishers\""
-	Recipe                 *Recipe                           "json:\"recipe\" graphql:\"recipe\""
-	Recipes                *RecipeConnection                 "json:\"recipes\" graphql:\"recipes\""
-	Repositories           *RepositoryConnection             "json:\"repositories\" graphql:\"repositories\""
-	Repository             *Repository                       "json:\"repository\" graphql:\"repository\""
-	RepositorySubscription *RepositorySubscription           "json:\"repositorySubscription\" graphql:\"repositorySubscription\""
-	ResetToken             *ResetToken                       "json:\"resetToken\" graphql:\"resetToken\""
-	Role                   *Role                             "json:\"role\" graphql:\"role\""
-	Roles                  *RoleConnection                   "json:\"roles\" graphql:\"roles\""
-	Rollouts               *RolloutConnection                "json:\"rollouts\" graphql:\"rollouts\""
-	Scaffold               []*ScaffoldFile                   "json:\"scaffold\" graphql:\"scaffold\""
-	ScmAuthorization       []*AuthorizationURL               "json:\"scmAuthorization\" graphql:\"scmAuthorization\""
-	ScmToken               *string                           "json:\"scmToken\" graphql:\"scmToken\""
-	SearchRepositories     *RepositoryConnection             "json:\"searchRepositories\" graphql:\"searchRepositories\""
-	SearchUsers            *UserConnection                   "json:\"searchUsers\" graphql:\"searchUsers\""
-	Shell                  *CloudShell                       "json:\"shell\" graphql:\"shell\""
-	Stack                  *Stack                            "json:\"stack\" graphql:\"stack\""
-	Stacks                 *StackConnection                  "json:\"stacks\" graphql:\"stacks\""
-	Subscriptions          *RepositorySubscriptionConnection "json:\"subscriptions\" graphql:\"subscriptions\""
-	Tags                   *GroupedTagConnection             "json:\"tags\" graphql:\"tags\""
-	Terraform              *TerraformConnection              "json:\"terraform\" graphql:\"terraform\""
-	TerraformInstallations *TerraformInstallationConnection  "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
-	TerraformModule        *Terraform                        "json:\"terraformModule\" graphql:\"terraformModule\""
-	TerraformProvider      *TerraformProvider                "json:\"terraformProvider\" graphql:\"terraformProvider\""
-	TerraformProviders     []*Provider                       "json:\"terraformProviders\" graphql:\"terraformProviders\""
-	Test                   *Test                             "json:\"test\" graphql:\"test\""
-	TestLogs               *string                           "json:\"testLogs\" graphql:\"testLogs\""
-	Tests                  *TestConnection                   "json:\"tests\" graphql:\"tests\""
-	Token                  *PersistedToken                   "json:\"token\" graphql:\"token\""
-	Tokens                 *PersistedTokenConnection         "json:\"tokens\" graphql:\"tokens\""
-	UpgradeQueue           *UpgradeQueue                     "json:\"upgradeQueue\" graphql:\"upgradeQueue\""
-	UpgradeQueues          []*UpgradeQueue                   "json:\"upgradeQueues\" graphql:\"upgradeQueues\""
-	Users                  *UserConnection                   "json:\"users\" graphql:\"users\""
-	Versions               *VersionConnection                "json:\"versions\" graphql:\"versions\""
-	Webhooks               *WebhookConnection                "json:\"webhooks\" graphql:\"webhooks\""
+type ConsoleInstanceFragment struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+	URL  string "json:\"url\" graphql:\"url\""
 }
-type RootMutationType struct {
-	AcceptIncident            *Incident               "json:\"acceptIncident\" graphql:\"acceptIncident\""
-	AcceptLogin               *OauthResponse          "json:\"acceptLogin\" graphql:\"acceptLogin\""
-	AcquireLock               *ApplyLock              "json:\"acquireLock\" graphql:\"acquireLock\""
-	CompleteIncident          *Incident               "json:\"completeIncident\" graphql:\"completeIncident\""
-	CreateArtifact            *Artifact               "json:\"createArtifact\" graphql:\"createArtifact\""
-	CreateCard                *Account                "json:\"createCard\" graphql:\"createCard\""
-	CreateCrd                 *Crd                    "json:\"createCrd\" graphql:\"createCrd\""
-	CreateDemoProject         *DemoProject            "json:\"createDemoProject\" graphql:\"createDemoProject\""
-	CreateDNSRecord           *DNSRecord              "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
-	CreateDomain              *DNSDomain              "json:\"createDomain\" graphql:\"createDomain\""
-	CreateGroup               *Group                  "json:\"createGroup\" graphql:\"createGroup\""
-	CreateGroupMember         *GroupMember            "json:\"createGroupMember\" graphql:\"createGroupMember\""
-	CreateIncident            *Incident               "json:\"createIncident\" graphql:\"createIncident\""
-	CreateInstallation        *Installation           "json:\"createInstallation\" graphql:\"createInstallation\""
-	CreateIntegration         *Integration            "json:\"createIntegration\" graphql:\"createIntegration\""
-	CreateIntegrationWebhook  *IntegrationWebhook     "json:\"createIntegrationWebhook\" graphql:\"createIntegrationWebhook\""
-	CreateInvite              *Invite                 "json:\"createInvite\" graphql:\"createInvite\""
-	CreateMessage             *IncidentMessage        "json:\"createMessage\" graphql:\"createMessage\""
-	CreateOauthIntegration    *OauthIntegration       "json:\"createOauthIntegration\" graphql:\"createOauthIntegration\""
-	CreateOidcProvider        *OidcProvider           "json:\"createOidcProvider\" graphql:\"createOidcProvider\""
-	CreatePlan                *Plan                   "json:\"createPlan\" graphql:\"createPlan\""
-	CreatePublicKey           *PublicKey              "json:\"createPublicKey\" graphql:\"createPublicKey\""
-	CreatePublisher           *Publisher              "json:\"createPublisher\" graphql:\"createPublisher\""
-	CreateQueue               *UpgradeQueue           "json:\"createQueue\" graphql:\"createQueue\""
-	CreateReaction            *IncidentMessage        "json:\"createReaction\" graphql:\"createReaction\""
-	CreateRecipe              *Recipe                 "json:\"createRecipe\" graphql:\"createRecipe\""
-	CreateRepository          *Repository             "json:\"createRepository\" graphql:\"createRepository\""
-	CreateResetToken          *bool                   "json:\"createResetToken\" graphql:\"createResetToken\""
-	CreateRole                *Role                   "json:\"createRole\" graphql:\"createRole\""
-	CreateServiceAccount      *User                   "json:\"createServiceAccount\" graphql:\"createServiceAccount\""
-	CreateShell               *CloudShell             "json:\"createShell\" graphql:\"createShell\""
-	CreateStack               *Stack                  "json:\"createStack\" graphql:\"createStack\""
-	CreateSubscription        *RepositorySubscription "json:\"createSubscription\" graphql:\"createSubscription\""
-	CreateTerraform           *Terraform              "json:\"createTerraform\" graphql:\"createTerraform\""
-	CreateTest                *Test                   "json:\"createTest\" graphql:\"createTest\""
-	CreateToken               *PersistedToken         "json:\"createToken\" graphql:\"createToken\""
-	CreateUserEvent           *bool                   "json:\"createUserEvent\" graphql:\"createUserEvent\""
-	CreateWebhook             *Webhook                "json:\"createWebhook\" graphql:\"createWebhook\""
-	CreateZoom                *ZoomMeeting            "json:\"createZoom\" graphql:\"createZoom\""
-	DeleteCard                *Account                "json:\"deleteCard\" graphql:\"deleteCard\""
-	DeleteChartInstallation   *ChartInstallation      "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
-	DeleteDNSRecord           *DNSRecord              "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
-	DeleteDomain              *DNSDomain              "json:\"deleteDomain\" graphql:\"deleteDomain\""
-	DeleteEabKey              *EabCredential          "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
-	DeleteGroup               *Group                  "json:\"deleteGroup\" graphql:\"deleteGroup\""
-	DeleteGroupMember         *GroupMember            "json:\"deleteGroupMember\" graphql:\"deleteGroupMember\""
-	DeleteIncident            *Incident               "json:\"deleteIncident\" graphql:\"deleteIncident\""
-	DeleteInstallation        *Installation           "json:\"deleteInstallation\" graphql:\"deleteInstallation\""
-	DeleteIntegrationWebhook  *IntegrationWebhook     "json:\"deleteIntegrationWebhook\" graphql:\"deleteIntegrationWebhook\""
-	DeleteInvite              *Invite                 "json:\"deleteInvite\" graphql:\"deleteInvite\""
-	DeleteMessage             *IncidentMessage        "json:\"deleteMessage\" graphql:\"deleteMessage\""
-	DeletePublicKey           *PublicKey              "json:\"deletePublicKey\" graphql:\"deletePublicKey\""
-	DeleteReaction            *IncidentMessage        "json:\"deleteReaction\" graphql:\"deleteReaction\""
-	DeleteRecipe              *Recipe                 "json:\"deleteRecipe\" graphql:\"deleteRecipe\""
-	DeleteRepository          *Repository             "json:\"deleteRepository\" graphql:\"deleteRepository\""
-	DeleteRole                *Role                   "json:\"deleteRole\" graphql:\"deleteRole\""
-	DeleteShell               *CloudShell             "json:\"deleteShell\" graphql:\"deleteShell\""
-	DeleteStack               *Stack                  "json:\"deleteStack\" graphql:\"deleteStack\""
-	DeleteTerraform           *Terraform              "json:\"deleteTerraform\" graphql:\"deleteTerraform\""
-	DeleteToken               *PersistedToken         "json:\"deleteToken\" graphql:\"deleteToken\""
-	DeleteUser                *User                   "json:\"deleteUser\" graphql:\"deleteUser\""
-	DestroyCluster            *bool                   "json:\"destroyCluster\" graphql:\"destroyCluster\""
-	DeviceLogin               *DeviceLogin            "json:\"deviceLogin\" graphql:\"deviceLogin\""
-	ExternalToken             *string                 "json:\"externalToken\" graphql:\"externalToken\""
-	FollowIncident            *Follower               "json:\"followIncident\" graphql:\"followIncident\""
-	ImpersonateServiceAccount *User                   "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
-	InstallChart              *ChartInstallation      "json:\"installChart\" graphql:\"installChart\""
-	InstallRecipe             []*Installation         "json:\"installRecipe\" graphql:\"installRecipe\""
-	InstallTerraform          *TerraformInstallation  "json:\"installTerraform\" graphql:\"installTerraform\""
-	LinkPublisher             *Publisher              "json:\"linkPublisher\" graphql:\"linkPublisher\""
-	Login                     *User                   "json:\"login\" graphql:\"login\""
-	LoginToken                *User                   "json:\"loginToken\" graphql:\"loginToken\""
-	OauthCallback             *User                   "json:\"oauthCallback\" graphql:\"oauthCallback\""
-	OauthConsent              *OauthResponse          "json:\"oauthConsent\" graphql:\"oauthConsent\""
-	PasswordlessLogin         *User                   "json:\"passwordlessLogin\" graphql:\"passwordlessLogin\""
-	PingWebhook               *WebhookResponse        "json:\"pingWebhook\" graphql:\"pingWebhook\""
-	ProvisionDomain           *DNSDomain              "json:\"provisionDomain\" graphql:\"provisionDomain\""
-	PublishLogs               *TestStep               "json:\"publishLogs\" graphql:\"publishLogs\""
-	ReadNotifications         *int64                  "json:\"readNotifications\" graphql:\"readNotifications\""
-	RealizeInvite             *User                   "json:\"realizeInvite\" graphql:\"realizeInvite\""
-	RealizeResetToken         *bool                   "json:\"realizeResetToken\" graphql:\"realizeResetToken\""
-	RebootShell               *CloudShell             "json:\"rebootShell\" graphql:\"rebootShell\""
-	ReleaseLock               *ApplyLock              "json:\"releaseLock\" graphql:\"releaseLock\""
-	ResetInstallations        *int64                  "json:\"resetInstallations\" graphql:\"resetInstallations\""
-	RestartShell              *bool                   "json:\"restartShell\" graphql:\"restartShell\""
-	Signup                    *User                   "json:\"signup\" graphql:\"signup\""
-	SsoCallback               *User                   "json:\"ssoCallback\" graphql:\"ssoCallback\""
-	StopShell                 *bool                   "json:\"stopShell\" graphql:\"stopShell\""
-	TransferDemoProject       *DemoProject            "json:\"transferDemoProject\" graphql:\"transferDemoProject\""
-	UnfollowIncident          *Follower               "json:\"unfollowIncident\" graphql:\"unfollowIncident\""
-	UninstallTerraform        *TerraformInstallation  "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
-	UnlockRepository          *int64                  "json:\"unlockRepository\" graphql:\"unlockRepository\""
-	UpdateAccount             *Account                "json:\"updateAccount\" graphql:\"updateAccount\""
-	UpdateChart               *Chart                  "json:\"updateChart\" graphql:\"updateChart\""
-	UpdateChartInstallation   *ChartInstallation      "json:\"updateChartInstallation\" graphql:\"updateChartInstallation\""
-	UpdateDockerRepository    *DockerRepository       "json:\"updateDockerRepository\" graphql:\"updateDockerRepository\""
-	UpdateDomain              *DNSDomain              "json:\"updateDomain\" graphql:\"updateDomain\""
-	UpdateGroup               *Group                  "json:\"updateGroup\" graphql:\"updateGroup\""
-	UpdateIncident            *Incident               "json:\"updateIncident\" graphql:\"updateIncident\""
-	UpdateInstallation        *Installation           "json:\"updateInstallation\" graphql:\"updateInstallation\""
-	UpdateIntegrationWebhook  *IntegrationWebhook     "json:\"updateIntegrationWebhook\" graphql:\"updateIntegrationWebhook\""
-	UpdateLineItem            *RepositorySubscription "json:\"updateLineItem\" graphql:\"updateLineItem\""
-	UpdateMessage             *IncidentMessage        "json:\"updateMessage\" graphql:\"updateMessage\""
-	UpdateOidcProvider        *OidcProvider           "json:\"updateOidcProvider\" graphql:\"updateOidcProvider\""
-	UpdatePlan                *RepositorySubscription "json:\"updatePlan\" graphql:\"updatePlan\""
-	UpdatePlanAttributes      *Plan                   "json:\"updatePlanAttributes\" graphql:\"updatePlanAttributes\""
-	UpdatePublisher           *Publisher              "json:\"updatePublisher\" graphql:\"updatePublisher\""
-	UpdateRepository          *Repository             "json:\"updateRepository\" graphql:\"updateRepository\""
-	UpdateRole                *Role                   "json:\"updateRole\" graphql:\"updateRole\""
-	UpdateServiceAccount      *User                   "json:\"updateServiceAccount\" graphql:\"updateServiceAccount\""
-	UpdateStep                *TestStep               "json:\"updateStep\" graphql:\"updateStep\""
-	UpdateTerraform           *Terraform              "json:\"updateTerraform\" graphql:\"updateTerraform\""
-	UpdateTest                *Test                   "json:\"updateTest\" graphql:\"updateTest\""
-	UpdateUser                *User                   "json:\"updateUser\" graphql:\"updateUser\""
-	UpdateVersion             *Version                "json:\"updateVersion\" graphql:\"updateVersion\""
-	UploadTerraform           *Terraform              "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
-	UpsertOidcProvider        *OidcProvider           "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
-	UpsertRepository          *Repository             "json:\"upsertRepository\" graphql:\"upsertRepository\""
+
+func (t *ConsoleInstanceFragment) GetID() string {
+	if t == nil {
+		t = &ConsoleInstanceFragment{}
+	}
+	return t.ID
 }
+func (t *ConsoleInstanceFragment) GetName() string {
+	if t == nil {
+		t = &ConsoleInstanceFragment{}
+	}
+	return t.Name
+}
+func (t *ConsoleInstanceFragment) GetURL() string {
+	if t == nil {
+		t = &ConsoleInstanceFragment{}
+	}
+	return t.URL
+}
+
 type DNSRecordFragment struct {
 	Type    DNSRecordType "json:\"type\" graphql:\"type\""
 	Name    string        "json:\"name\" graphql:\"name\""
-	Records []*string     "json:\"records\" graphql:\"records\""
+	Records []*string     "json:\"records,omitempty\" graphql:\"records\""
 }
+
+func (t *DNSRecordFragment) GetType() *DNSRecordType {
+	if t == nil {
+		t = &DNSRecordFragment{}
+	}
+	return &t.Type
+}
+func (t *DNSRecordFragment) GetName() string {
+	if t == nil {
+		t = &DNSRecordFragment{}
+	}
+	return t.Name
+}
+func (t *DNSRecordFragment) GetRecords() []*string {
+	if t == nil {
+		t = &DNSRecordFragment{}
+	}
+	return t.Records
+}
+
 type ApplyLockFragment struct {
 	ID   string  "json:\"id\" graphql:\"id\""
-	Lock *string "json:\"lock\" graphql:\"lock\""
+	Lock *string "json:\"lock,omitempty\" graphql:\"lock\""
 }
+
+func (t *ApplyLockFragment) GetID() string {
+	if t == nil {
+		t = &ApplyLockFragment{}
+	}
+	return t.ID
+}
+func (t *ApplyLockFragment) GetLock() *string {
+	if t == nil {
+		t = &ApplyLockFragment{}
+	}
+	return t.Lock
+}
+
 type ArtifactFragment struct {
-	ID       *string           "json:\"id\" graphql:\"id\""
-	Name     *string           "json:\"name\" graphql:\"name\""
-	Readme   *string           "json:\"readme\" graphql:\"readme\""
-	Platform *ArtifactPlatform "json:\"platform\" graphql:\"platform\""
-	Arch     *string           "json:\"arch\" graphql:\"arch\""
-	Blob     *string           "json:\"blob\" graphql:\"blob\""
-	Sha      *string           "json:\"sha\" graphql:\"sha\""
-	Filesize *int64            "json:\"filesize\" graphql:\"filesize\""
+	ID       *string           "json:\"id,omitempty\" graphql:\"id\""
+	Name     *string           "json:\"name,omitempty\" graphql:\"name\""
+	Readme   *string           "json:\"readme,omitempty\" graphql:\"readme\""
+	Platform *ArtifactPlatform "json:\"platform,omitempty\" graphql:\"platform\""
+	Arch     *string           "json:\"arch,omitempty\" graphql:\"arch\""
+	Blob     *string           "json:\"blob,omitempty\" graphql:\"blob\""
+	Sha      *string           "json:\"sha,omitempty\" graphql:\"sha\""
+	Filesize *int64            "json:\"filesize,omitempty\" graphql:\"filesize\""
 }
+
+func (t *ArtifactFragment) GetID() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.ID
+}
+func (t *ArtifactFragment) GetName() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Name
+}
+func (t *ArtifactFragment) GetReadme() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Readme
+}
+func (t *ArtifactFragment) GetPlatform() *ArtifactPlatform {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Platform
+}
+func (t *ArtifactFragment) GetArch() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Arch
+}
+func (t *ArtifactFragment) GetBlob() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Blob
+}
+func (t *ArtifactFragment) GetSha() *string {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Sha
+}
+func (t *ArtifactFragment) GetFilesize() *int64 {
+	if t == nil {
+		t = &ArtifactFragment{}
+	}
+	return t.Filesize
+}
+
 type CloudShellFragment struct {
 	ID     string "json:\"id\" graphql:\"id\""
 	AesKey string "json:\"aesKey\" graphql:\"aesKey\""
 	GitURL string "json:\"gitUrl\" graphql:\"gitUrl\""
 }
+
+func (t *CloudShellFragment) GetID() string {
+	if t == nil {
+		t = &CloudShellFragment{}
+	}
+	return t.ID
+}
+func (t *CloudShellFragment) GetAesKey() string {
+	if t == nil {
+		t = &CloudShellFragment{}
+	}
+	return t.AesKey
+}
+func (t *CloudShellFragment) GetGitURL() string {
+	if t == nil {
+		t = &CloudShellFragment{}
+	}
+	return t.GitURL
+}
+
 type ChartFragment struct {
-	ID            *string "json:\"id\" graphql:\"id\""
+	ID            *string "json:\"id,omitempty\" graphql:\"id\""
 	Name          string  "json:\"name\" graphql:\"name\""
-	Description   *string "json:\"description\" graphql:\"description\""
-	LatestVersion *string "json:\"latestVersion\" graphql:\"latestVersion\""
+	Description   *string "json:\"description,omitempty\" graphql:\"description\""
+	LatestVersion *string "json:\"latestVersion,omitempty\" graphql:\"latestVersion\""
 }
+
+func (t *ChartFragment) GetID() *string {
+	if t == nil {
+		t = &ChartFragment{}
+	}
+	return t.ID
+}
+func (t *ChartFragment) GetName() string {
+	if t == nil {
+		t = &ChartFragment{}
+	}
+	return t.Name
+}
+func (t *ChartFragment) GetDescription() *string {
+	if t == nil {
+		t = &ChartFragment{}
+	}
+	return t.Description
+}
+func (t *ChartFragment) GetLatestVersion() *string {
+	if t == nil {
+		t = &ChartFragment{}
+	}
+	return t.LatestVersion
+}
+
 type DependenciesFragment struct {
-	Dependencies []*struct {
-		Type *DependencyType "json:\"type\" graphql:\"type\""
-		Name *string         "json:\"name\" graphql:\"name\""
-		Repo *string         "json:\"repo\" graphql:\"repo\""
-	} "json:\"dependencies\" graphql:\"dependencies\""
-	Wait        *bool       "json:\"wait\" graphql:\"wait\""
-	Application *bool       "json:\"application\" graphql:\"application\""
-	Providers   []*Provider "json:\"providers\" graphql:\"providers\""
-	Secrets     []*string   "json:\"secrets\" graphql:\"secrets\""
-	Wirings     *struct {
-		Terraform map[string]interface{} "json:\"terraform\" graphql:\"terraform\""
-		Helm      map[string]interface{} "json:\"helm\" graphql:\"helm\""
-	} "json:\"wirings\" graphql:\"wirings\""
-	ProviderWirings map[string]interface{} "json:\"providerWirings\" graphql:\"providerWirings\""
-	Outputs         map[string]interface{} "json:\"outputs\" graphql:\"outputs\""
-	ProviderVsn     *string                "json:\"providerVsn\" graphql:\"providerVsn\""
+	Dependencies    []*DependenciesFragment_Dependencies "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+	Breaking        *bool                                "json:\"breaking,omitempty\" graphql:\"breaking\""
+	Instructions    *DependenciesFragment_Instructions   "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Wait            *bool                                "json:\"wait,omitempty\" graphql:\"wait\""
+	Application     *bool                                "json:\"application,omitempty\" graphql:\"application\""
+	Providers       []*Provider                          "json:\"providers,omitempty\" graphql:\"providers\""
+	Secrets         []*string                            "json:\"secrets,omitempty\" graphql:\"secrets\""
+	Wirings         *DependenciesFragment_Wirings        "json:\"wirings,omitempty\" graphql:\"wirings\""
+	ProviderWirings map[string]interface{}               "json:\"providerWirings,omitempty\" graphql:\"providerWirings\""
+	Outputs         map[string]interface{}               "json:\"outputs,omitempty\" graphql:\"outputs\""
+	ProviderVsn     *string                              "json:\"providerVsn,omitempty\" graphql:\"providerVsn\""
+	CliVsn          *string                              "json:\"cliVsn,omitempty\" graphql:\"cliVsn\""
 }
+
+func (t *DependenciesFragment) GetDependencies() []*DependenciesFragment_Dependencies {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Dependencies
+}
+func (t *DependenciesFragment) GetBreaking() *bool {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Breaking
+}
+func (t *DependenciesFragment) GetInstructions() *DependenciesFragment_Instructions {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Instructions
+}
+func (t *DependenciesFragment) GetWait() *bool {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Wait
+}
+func (t *DependenciesFragment) GetApplication() *bool {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Application
+}
+func (t *DependenciesFragment) GetProviders() []*Provider {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Providers
+}
+func (t *DependenciesFragment) GetSecrets() []*string {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Secrets
+}
+func (t *DependenciesFragment) GetWirings() *DependenciesFragment_Wirings {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Wirings
+}
+func (t *DependenciesFragment) GetProviderWirings() map[string]interface{} {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.ProviderWirings
+}
+func (t *DependenciesFragment) GetOutputs() map[string]interface{} {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.Outputs
+}
+func (t *DependenciesFragment) GetProviderVsn() *string {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.ProviderVsn
+}
+func (t *DependenciesFragment) GetCliVsn() *string {
+	if t == nil {
+		t = &DependenciesFragment{}
+	}
+	return t.CliVsn
+}
+
 type DNSDomainFragment struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
 }
+
+func (t *DNSDomainFragment) GetID() string {
+	if t == nil {
+		t = &DNSDomainFragment{}
+	}
+	return t.ID
+}
+func (t *DNSDomainFragment) GetName() string {
+	if t == nil {
+		t = &DNSDomainFragment{}
+	}
+	return t.Name
+}
+
 type RecipeSectionFragment struct {
-	Index         *int64                         "json:\"index\" graphql:\"index\""
-	Repository    *RepositoryFragment            "json:\"repository\" graphql:\"repository\""
-	RecipeItems   []*RecipeItemFragment          "json:\"recipeItems\" graphql:\"recipeItems\""
-	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
+	Index         *int64                         "json:\"index,omitempty\" graphql:\"index\""
+	Repository    *RepositoryFragment            "json:\"repository,omitempty\" graphql:\"repository\""
+	RecipeItems   []*RecipeItemFragment          "json:\"recipeItems,omitempty\" graphql:\"recipeItems\""
+	Configuration []*RecipeConfigurationFragment "json:\"configuration,omitempty\" graphql:\"configuration\""
 }
+
+func (t *RecipeSectionFragment) GetIndex() *int64 {
+	if t == nil {
+		t = &RecipeSectionFragment{}
+	}
+	return t.Index
+}
+func (t *RecipeSectionFragment) GetRepository() *RepositoryFragment {
+	if t == nil {
+		t = &RecipeSectionFragment{}
+	}
+	return t.Repository
+}
+func (t *RecipeSectionFragment) GetRecipeItems() []*RecipeItemFragment {
+	if t == nil {
+		t = &RecipeSectionFragment{}
+	}
+	return t.RecipeItems
+}
+func (t *RecipeSectionFragment) GetConfiguration() []*RecipeConfigurationFragment {
+	if t == nil {
+		t = &RecipeSectionFragment{}
+	}
+	return t.Configuration
+}
+
 type RecipeFragment struct {
-	ID          string    "json:\"id\" graphql:\"id\""
-	Name        string    "json:\"name\" graphql:\"name\""
-	Description *string   "json:\"description\" graphql:\"description\""
-	Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
-	Provider    *Provider "json:\"provider\" graphql:\"provider\""
-	Tests       []*struct {
-		Type    TestType "json:\"type\" graphql:\"type\""
-		Name    string   "json:\"name\" graphql:\"name\""
-		Message *string  "json:\"message\" graphql:\"message\""
-		Args    []*struct {
-			Name string "json:\"name\" graphql:\"name\""
-			Repo string "json:\"repo\" graphql:\"repo\""
-			Key  string "json:\"key\" graphql:\"key\""
-		} "json:\"args\" graphql:\"args\""
-	} "json:\"tests\" graphql:\"tests\""
-	Repository *struct {
-		ID   string "json:\"id\" graphql:\"id\""
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"repository\" graphql:\"repository\""
-	OidcSettings *struct {
-		URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
-		URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
-		AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
-		DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
-		Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
-	} "json:\"oidcSettings\" graphql:\"oidcSettings\""
-	RecipeSections []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
+	ID             string                       "json:\"id\" graphql:\"id\""
+	Name           string                       "json:\"name\" graphql:\"name\""
+	Primary        *bool                        "json:\"primary,omitempty\" graphql:\"primary\""
+	Description    *string                      "json:\"description,omitempty\" graphql:\"description\""
+	Restricted     *bool                        "json:\"restricted,omitempty\" graphql:\"restricted\""
+	Provider       *Provider                    "json:\"provider,omitempty\" graphql:\"provider\""
+	Tests          []*RecipeFragment_Tests      "json:\"tests,omitempty\" graphql:\"tests\""
+	Repository     *RecipeFragment_Repository   "json:\"repository,omitempty\" graphql:\"repository\""
+	OidcSettings   *RecipeFragment_OidcSettings "json:\"oidcSettings,omitempty\" graphql:\"oidcSettings\""
+	RecipeSections []*RecipeSectionFragment     "json:\"recipeSections,omitempty\" graphql:\"recipeSections\""
 }
+
+func (t *RecipeFragment) GetID() string {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.ID
+}
+func (t *RecipeFragment) GetName() string {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Name
+}
+func (t *RecipeFragment) GetPrimary() *bool {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Primary
+}
+func (t *RecipeFragment) GetDescription() *string {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Description
+}
+func (t *RecipeFragment) GetRestricted() *bool {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Restricted
+}
+func (t *RecipeFragment) GetProvider() *Provider {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Provider
+}
+func (t *RecipeFragment) GetTests() []*RecipeFragment_Tests {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Tests
+}
+func (t *RecipeFragment) GetRepository() *RecipeFragment_Repository {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.Repository
+}
+func (t *RecipeFragment) GetOidcSettings() *RecipeFragment_OidcSettings {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.OidcSettings
+}
+func (t *RecipeFragment) GetRecipeSections() []*RecipeSectionFragment {
+	if t == nil {
+		t = &RecipeFragment{}
+	}
+	return t.RecipeSections
+}
+
 type RecipeItemFragment struct {
-	ID            *string                        "json:\"id\" graphql:\"id\""
-	Chart         *ChartFragment                 "json:\"chart\" graphql:\"chart\""
-	Terraform     *TerraformFragment             "json:\"terraform\" graphql:\"terraform\""
-	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
+	ID            *string                        "json:\"id,omitempty\" graphql:\"id\""
+	Chart         *ChartFragment                 "json:\"chart,omitempty\" graphql:\"chart\""
+	Terraform     *TerraformFragment             "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Configuration []*RecipeConfigurationFragment "json:\"configuration,omitempty\" graphql:\"configuration\""
 }
+
+func (t *RecipeItemFragment) GetID() *string {
+	if t == nil {
+		t = &RecipeItemFragment{}
+	}
+	return t.ID
+}
+func (t *RecipeItemFragment) GetChart() *ChartFragment {
+	if t == nil {
+		t = &RecipeItemFragment{}
+	}
+	return t.Chart
+}
+func (t *RecipeItemFragment) GetTerraform() *TerraformFragment {
+	if t == nil {
+		t = &RecipeItemFragment{}
+	}
+	return t.Terraform
+}
+func (t *RecipeItemFragment) GetConfiguration() []*RecipeConfigurationFragment {
+	if t == nil {
+		t = &RecipeItemFragment{}
+	}
+	return t.Configuration
+}
+
 type RecipeConfigurationFragment struct {
-	Name          *string   "json:\"name\" graphql:\"name\""
-	Type          *Datatype "json:\"type\" graphql:\"type\""
-	Default       *string   "json:\"default\" graphql:\"default\""
-	Documentation *string   "json:\"documentation\" graphql:\"documentation\""
-	Optional      *bool     "json:\"optional\" graphql:\"optional\""
-	Placeholder   *string   "json:\"placeholder\" graphql:\"placeholder\""
-	FunctionName  *string   "json:\"functionName\" graphql:\"functionName\""
-	Condition     *struct {
-		Field     string    "json:\"field\" graphql:\"field\""
-		Operation Operation "json:\"operation\" graphql:\"operation\""
-		Value     *string   "json:\"value\" graphql:\"value\""
-	} "json:\"condition\" graphql:\"condition\""
-	Validation *struct {
-		Type    ValidationType "json:\"type\" graphql:\"type\""
-		Regex   *string        "json:\"regex\" graphql:\"regex\""
-		Message string         "json:\"message\" graphql:\"message\""
-	} "json:\"validation\" graphql:\"validation\""
+	Name          *string                                 "json:\"name,omitempty\" graphql:\"name\""
+	Type          *Datatype                               "json:\"type,omitempty\" graphql:\"type\""
+	Default       *string                                 "json:\"default,omitempty\" graphql:\"default\""
+	Documentation *string                                 "json:\"documentation,omitempty\" graphql:\"documentation\""
+	Optional      *bool                                   "json:\"optional,omitempty\" graphql:\"optional\""
+	Placeholder   *string                                 "json:\"placeholder,omitempty\" graphql:\"placeholder\""
+	FunctionName  *string                                 "json:\"functionName,omitempty\" graphql:\"functionName\""
+	Condition     *RecipeConfigurationFragment_Condition  "json:\"condition,omitempty\" graphql:\"condition\""
+	Validation    *RecipeConfigurationFragment_Validation "json:\"validation,omitempty\" graphql:\"validation\""
 }
+
+func (t *RecipeConfigurationFragment) GetName() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Name
+}
+func (t *RecipeConfigurationFragment) GetType() *Datatype {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Type
+}
+func (t *RecipeConfigurationFragment) GetDefault() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Default
+}
+func (t *RecipeConfigurationFragment) GetDocumentation() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Documentation
+}
+func (t *RecipeConfigurationFragment) GetOptional() *bool {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Optional
+}
+func (t *RecipeConfigurationFragment) GetPlaceholder() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Placeholder
+}
+func (t *RecipeConfigurationFragment) GetFunctionName() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.FunctionName
+}
+func (t *RecipeConfigurationFragment) GetCondition() *RecipeConfigurationFragment_Condition {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Condition
+}
+func (t *RecipeConfigurationFragment) GetValidation() *RecipeConfigurationFragment_Validation {
+	if t == nil {
+		t = &RecipeConfigurationFragment{}
+	}
+	return t.Validation
+}
+
 type RepositoryFragment struct {
-	ID          string  "json:\"id\" graphql:\"id\""
-	Name        string  "json:\"name\" graphql:\"name\""
-	Notes       *string "json:\"notes\" graphql:\"notes\""
-	Icon        *string "json:\"icon\" graphql:\"icon\""
-	DarkIcon    *string "json:\"darkIcon\" graphql:\"darkIcon\""
-	Description *string "json:\"description\" graphql:\"description\""
-	Publisher   *struct {
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"publisher\" graphql:\"publisher\""
-	Recipes []*struct {
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"recipes\" graphql:\"recipes\""
+	ID          string                        "json:\"id\" graphql:\"id\""
+	Name        string                        "json:\"name\" graphql:\"name\""
+	Notes       *string                       "json:\"notes,omitempty\" graphql:\"notes\""
+	Icon        *string                       "json:\"icon,omitempty\" graphql:\"icon\""
+	DarkIcon    *string                       "json:\"darkIcon,omitempty\" graphql:\"darkIcon\""
+	Description *string                       "json:\"description,omitempty\" graphql:\"description\""
+	Publisher   *RepositoryFragment_Publisher "json:\"publisher,omitempty\" graphql:\"publisher\""
+	Recipes     []*RepositoryFragment_Recipes "json:\"recipes,omitempty\" graphql:\"recipes\""
 }
+
+func (t *RepositoryFragment) GetID() string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.ID
+}
+func (t *RepositoryFragment) GetName() string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Name
+}
+func (t *RepositoryFragment) GetNotes() *string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Notes
+}
+func (t *RepositoryFragment) GetIcon() *string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Icon
+}
+func (t *RepositoryFragment) GetDarkIcon() *string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.DarkIcon
+}
+func (t *RepositoryFragment) GetDescription() *string {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Description
+}
+func (t *RepositoryFragment) GetPublisher() *RepositoryFragment_Publisher {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Publisher
+}
+func (t *RepositoryFragment) GetRecipes() []*RepositoryFragment_Recipes {
+	if t == nil {
+		t = &RepositoryFragment{}
+	}
+	return t.Recipes
+}
+
 type TerraformFragment struct {
-	ID             *string               "json:\"id\" graphql:\"id\""
-	Name           *string               "json:\"name\" graphql:\"name\""
-	Package        *string               "json:\"package\" graphql:\"package\""
-	Description    *string               "json:\"description\" graphql:\"description\""
-	Dependencies   *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
-	ValuesTemplate *string               "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
+	ID             *string               "json:\"id,omitempty\" graphql:\"id\""
+	Name           *string               "json:\"name,omitempty\" graphql:\"name\""
+	Package        *string               "json:\"package,omitempty\" graphql:\"package\""
+	Description    *string               "json:\"description,omitempty\" graphql:\"description\""
+	Dependencies   *DependenciesFragment "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+	ValuesTemplate *string               "json:\"valuesTemplate,omitempty\" graphql:\"valuesTemplate\""
 }
+
+func (t *TerraformFragment) GetID() *string {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.ID
+}
+func (t *TerraformFragment) GetName() *string {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.Name
+}
+func (t *TerraformFragment) GetPackage() *string {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.Package
+}
+func (t *TerraformFragment) GetDescription() *string {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.Description
+}
+func (t *TerraformFragment) GetDependencies() *DependenciesFragment {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.Dependencies
+}
+func (t *TerraformFragment) GetValuesTemplate() *string {
+	if t == nil {
+		t = &TerraformFragment{}
+	}
+	return t.ValuesTemplate
+}
+
 type TerraformInstallationFragment struct {
-	ID        *string            "json:\"id\" graphql:\"id\""
-	Terraform *TerraformFragment "json:\"terraform\" graphql:\"terraform\""
-	Version   *VersionFragment   "json:\"version\" graphql:\"version\""
+	ID        *string            "json:\"id,omitempty\" graphql:\"id\""
+	Terraform *TerraformFragment "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Version   *VersionFragment   "json:\"version,omitempty\" graphql:\"version\""
 }
+
+func (t *TerraformInstallationFragment) GetID() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment{}
+	}
+	return t.ID
+}
+func (t *TerraformInstallationFragment) GetTerraform() *TerraformFragment {
+	if t == nil {
+		t = &TerraformInstallationFragment{}
+	}
+	return t.Terraform
+}
+func (t *TerraformInstallationFragment) GetVersion() *VersionFragment {
+	if t == nil {
+		t = &TerraformInstallationFragment{}
+	}
+	return t.Version
+}
+
 type VersionFragment struct {
-	ID             string                "json:\"id\" graphql:\"id\""
-	Readme         *string               "json:\"readme\" graphql:\"readme\""
-	Version        string                "json:\"version\" graphql:\"version\""
-	ValuesTemplate *string               "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
-	Package        *string               "json:\"package\" graphql:\"package\""
-	Crds           []*CrdFragment        "json:\"crds\" graphql:\"crds\""
-	Dependencies   *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
+	ID             string                 "json:\"id\" graphql:\"id\""
+	Helm           map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+	Readme         *string                "json:\"readme,omitempty\" graphql:\"readme\""
+	Version        string                 "json:\"version\" graphql:\"version\""
+	ValuesTemplate *string                "json:\"valuesTemplate,omitempty\" graphql:\"valuesTemplate\""
+	TemplateType   *TemplateType          "json:\"templateType,omitempty\" graphql:\"templateType\""
+	Package        *string                "json:\"package,omitempty\" graphql:\"package\""
+	Crds           []*CrdFragment         "json:\"crds,omitempty\" graphql:\"crds\""
+	Dependencies   *DependenciesFragment  "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+	InsertedAt     *string                "json:\"insertedAt,omitempty\" graphql:\"insertedAt\""
 }
+
+func (t *VersionFragment) GetID() string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.ID
+}
+func (t *VersionFragment) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Helm
+}
+func (t *VersionFragment) GetReadme() *string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Readme
+}
+func (t *VersionFragment) GetVersion() string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Version
+}
+func (t *VersionFragment) GetValuesTemplate() *string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.ValuesTemplate
+}
+func (t *VersionFragment) GetTemplateType() *TemplateType {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.TemplateType
+}
+func (t *VersionFragment) GetPackage() *string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Package
+}
+func (t *VersionFragment) GetCrds() []*CrdFragment {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Crds
+}
+func (t *VersionFragment) GetDependencies() *DependenciesFragment {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.Dependencies
+}
+func (t *VersionFragment) GetInsertedAt() *string {
+	if t == nil {
+		t = &VersionFragment{}
+	}
+	return t.InsertedAt
+}
+
 type CrdFragment struct {
 	ID   string  "json:\"id\" graphql:\"id\""
 	Name string  "json:\"name\" graphql:\"name\""
-	Blob *string "json:\"blob\" graphql:\"blob\""
+	Blob *string "json:\"blob,omitempty\" graphql:\"blob\""
 }
+
+func (t *CrdFragment) GetID() string {
+	if t == nil {
+		t = &CrdFragment{}
+	}
+	return t.ID
+}
+func (t *CrdFragment) GetName() string {
+	if t == nil {
+		t = &CrdFragment{}
+	}
+	return t.Name
+}
+func (t *CrdFragment) GetBlob() *string {
+	if t == nil {
+		t = &CrdFragment{}
+	}
+	return t.Blob
+}
+
 type ChartInstallationFragment struct {
-	ID    *string "json:\"id\" graphql:\"id\""
-	Chart *struct {
-		ID            *string               "json:\"id\" graphql:\"id\""
-		Name          string                "json:\"name\" graphql:\"name\""
-		Description   *string               "json:\"description\" graphql:\"description\""
-		LatestVersion *string               "json:\"latestVersion\" graphql:\"latestVersion\""
-		Dependencies  *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
-	} "json:\"chart\" graphql:\"chart\""
-	Version *VersionFragment "json:\"version\" graphql:\"version\""
+	ID      *string                          "json:\"id,omitempty\" graphql:\"id\""
+	Chart   *ChartInstallationFragment_Chart "json:\"chart,omitempty\" graphql:\"chart\""
+	Version *VersionFragment                 "json:\"version,omitempty\" graphql:\"version\""
 }
+
+func (t *ChartInstallationFragment) GetID() *string {
+	if t == nil {
+		t = &ChartInstallationFragment{}
+	}
+	return t.ID
+}
+func (t *ChartInstallationFragment) GetChart() *ChartInstallationFragment_Chart {
+	if t == nil {
+		t = &ChartInstallationFragment{}
+	}
+	return t.Chart
+}
+func (t *ChartInstallationFragment) GetVersion() *VersionFragment {
+	if t == nil {
+		t = &ChartInstallationFragment{}
+	}
+	return t.Version
+}
+
 type InstallationFragment struct {
 	ID           string                 "json:\"id\" graphql:\"id\""
-	Context      map[string]interface{} "json:\"context\" graphql:\"context\""
-	LicenseKey   *string                "json:\"licenseKey\" graphql:\"licenseKey\""
-	AcmeKeyID    *string                "json:\"acmeKeyId\" graphql:\"acmeKeyId\""
-	AcmeSecret   *string                "json:\"acmeSecret\" graphql:\"acmeSecret\""
-	Repository   *RepositoryFragment    "json:\"repository\" graphql:\"repository\""
-	OidcProvider *OIDCProvider          "json:\"oidcProvider\" graphql:\"oidcProvider\""
+	Context      map[string]interface{} "json:\"context,omitempty\" graphql:\"context\""
+	LicenseKey   *string                "json:\"licenseKey,omitempty\" graphql:\"licenseKey\""
+	AcmeKeyID    *string                "json:\"acmeKeyId,omitempty\" graphql:\"acmeKeyId\""
+	AcmeSecret   *string                "json:\"acmeSecret,omitempty\" graphql:\"acmeSecret\""
+	Repository   *RepositoryFragment    "json:\"repository,omitempty\" graphql:\"repository\""
+	OidcProvider *OIDCProvider          "json:\"oidcProvider,omitempty\" graphql:\"oidcProvider\""
 }
+
+func (t *InstallationFragment) GetID() string {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.ID
+}
+func (t *InstallationFragment) GetContext() map[string]interface{} {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.Context
+}
+func (t *InstallationFragment) GetLicenseKey() *string {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.LicenseKey
+}
+func (t *InstallationFragment) GetAcmeKeyID() *string {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.AcmeKeyID
+}
+func (t *InstallationFragment) GetAcmeSecret() *string {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.AcmeSecret
+}
+func (t *InstallationFragment) GetRepository() *RepositoryFragment {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.Repository
+}
+func (t *InstallationFragment) GetOidcProvider() *OIDCProvider {
+	if t == nil {
+		t = &InstallationFragment{}
+	}
+	return t.OidcProvider
+}
+
 type OIDCProvider struct {
-	ID           string    "json:\"id\" graphql:\"id\""
-	ClientID     string    "json:\"clientId\" graphql:\"clientId\""
-	ClientSecret string    "json:\"clientSecret\" graphql:\"clientSecret\""
-	RedirectUris []*string "json:\"redirectUris\" graphql:\"redirectUris\""
-	Bindings     []*struct {
-		User *struct {
-			ID    string "json:\"id\" graphql:\"id\""
-			Email string "json:\"email\" graphql:\"email\""
-		} "json:\"user\" graphql:\"user\""
-		Group *struct {
-			ID   string "json:\"id\" graphql:\"id\""
-			Name string "json:\"name\" graphql:\"name\""
-		} "json:\"group\" graphql:\"group\""
-	} "json:\"bindings\" graphql:\"bindings\""
-	Configuration *struct {
-		Issuer                *string "json:\"issuer\" graphql:\"issuer\""
-		AuthorizationEndpoint *string "json:\"authorizationEndpoint\" graphql:\"authorizationEndpoint\""
-		TokenEndpoint         *string "json:\"tokenEndpoint\" graphql:\"tokenEndpoint\""
-		JwksURI               *string "json:\"jwksUri\" graphql:\"jwksUri\""
-		UserinfoEndpoint      *string "json:\"userinfoEndpoint\" graphql:\"userinfoEndpoint\""
-	} "json:\"configuration\" graphql:\"configuration\""
+	ID            string                      "json:\"id\" graphql:\"id\""
+	ClientID      string                      "json:\"clientId\" graphql:\"clientId\""
+	ClientSecret  string                      "json:\"clientSecret\" graphql:\"clientSecret\""
+	RedirectUris  []*string                   "json:\"redirectUris,omitempty\" graphql:\"redirectUris\""
+	Bindings      []*OIDCProvider_Bindings    "json:\"bindings,omitempty\" graphql:\"bindings\""
+	Configuration *OIDCProvider_Configuration "json:\"configuration,omitempty\" graphql:\"configuration\""
 }
+
+func (t *OIDCProvider) GetID() string {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.ID
+}
+func (t *OIDCProvider) GetClientID() string {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.ClientID
+}
+func (t *OIDCProvider) GetClientSecret() string {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.ClientSecret
+}
+func (t *OIDCProvider) GetRedirectUris() []*string {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.RedirectUris
+}
+func (t *OIDCProvider) GetBindings() []*OIDCProvider_Bindings {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.Bindings
+}
+func (t *OIDCProvider) GetConfiguration() *OIDCProvider_Configuration {
+	if t == nil {
+		t = &OIDCProvider{}
+	}
+	return t.Configuration
+}
+
 type PublicKeyFragment struct {
-	ID      string       "json:\"id\" graphql:\"id\""
-	Content string       "json:\"content\" graphql:\"content\""
-	User    UserFragment "json:\"user\" graphql:\"user\""
+	ID      string        "json:\"id\" graphql:\"id\""
+	Content string        "json:\"content\" graphql:\"content\""
+	User    *UserFragment "json:\"user\" graphql:\"user\""
 }
+
+func (t *PublicKeyFragment) GetID() string {
+	if t == nil {
+		t = &PublicKeyFragment{}
+	}
+	return t.ID
+}
+func (t *PublicKeyFragment) GetContent() string {
+	if t == nil {
+		t = &PublicKeyFragment{}
+	}
+	return t.Content
+}
+func (t *PublicKeyFragment) GetUser() *UserFragment {
+	if t == nil {
+		t = &PublicKeyFragment{}
+	}
+	return t.User
+}
+
 type UserFragment struct {
 	ID    string "json:\"id\" graphql:\"id\""
 	Name  string "json:\"name\" graphql:\"name\""
 	Email string "json:\"email\" graphql:\"email\""
 }
+
+func (t *UserFragment) GetID() string {
+	if t == nil {
+		t = &UserFragment{}
+	}
+	return t.ID
+}
+func (t *UserFragment) GetName() string {
+	if t == nil {
+		t = &UserFragment{}
+	}
+	return t.Name
+}
+func (t *UserFragment) GetEmail() string {
+	if t == nil {
+		t = &UserFragment{}
+	}
+	return t.Email
+}
+
 type EabCredentialFragment struct {
 	ID       string   "json:\"id\" graphql:\"id\""
 	KeyID    string   "json:\"keyId\" graphql:\"keyId\""
@@ -432,355 +924,8140 @@ type EabCredentialFragment struct {
 	Cluster  string   "json:\"cluster\" graphql:\"cluster\""
 	Provider Provider "json:\"provider\" graphql:\"provider\""
 }
-type TestFragment struct {
-	ID         string     "json:\"id\" graphql:\"id\""
-	Name       *string    "json:\"name\" graphql:\"name\""
-	Status     TestStatus "json:\"status\" graphql:\"status\""
-	PromoteTag string     "json:\"promoteTag\" graphql:\"promoteTag\""
-	Steps      []*struct {
-		ID          string     "json:\"id\" graphql:\"id\""
-		Name        string     "json:\"name\" graphql:\"name\""
-		Description string     "json:\"description\" graphql:\"description\""
-		Status      TestStatus "json:\"status\" graphql:\"status\""
-	} "json:\"steps\" graphql:\"steps\""
+
+func (t *EabCredentialFragment) GetID() string {
+	if t == nil {
+		t = &EabCredentialFragment{}
+	}
+	return t.ID
 }
+func (t *EabCredentialFragment) GetKeyID() string {
+	if t == nil {
+		t = &EabCredentialFragment{}
+	}
+	return t.KeyID
+}
+func (t *EabCredentialFragment) GetHmacKey() string {
+	if t == nil {
+		t = &EabCredentialFragment{}
+	}
+	return t.HmacKey
+}
+func (t *EabCredentialFragment) GetCluster() string {
+	if t == nil {
+		t = &EabCredentialFragment{}
+	}
+	return t.Cluster
+}
+func (t *EabCredentialFragment) GetProvider() *Provider {
+	if t == nil {
+		t = &EabCredentialFragment{}
+	}
+	return &t.Provider
+}
+
+type TestFragment struct {
+	ID         string                "json:\"id\" graphql:\"id\""
+	Name       *string               "json:\"name,omitempty\" graphql:\"name\""
+	Status     TestStatus            "json:\"status\" graphql:\"status\""
+	PromoteTag string                "json:\"promoteTag\" graphql:\"promoteTag\""
+	Steps      []*TestFragment_Steps "json:\"steps,omitempty\" graphql:\"steps\""
+}
+
+func (t *TestFragment) GetID() string {
+	if t == nil {
+		t = &TestFragment{}
+	}
+	return t.ID
+}
+func (t *TestFragment) GetName() *string {
+	if t == nil {
+		t = &TestFragment{}
+	}
+	return t.Name
+}
+func (t *TestFragment) GetStatus() *TestStatus {
+	if t == nil {
+		t = &TestFragment{}
+	}
+	return &t.Status
+}
+func (t *TestFragment) GetPromoteTag() string {
+	if t == nil {
+		t = &TestFragment{}
+	}
+	return t.PromoteTag
+}
+func (t *TestFragment) GetSteps() []*TestFragment_Steps {
+	if t == nil {
+		t = &TestFragment{}
+	}
+	return t.Steps
+}
+
 type StackFragment struct {
 	ID          string            "json:\"id\" graphql:\"id\""
 	Name        string            "json:\"name\" graphql:\"name\""
-	Featured    *bool             "json:\"featured\" graphql:\"featured\""
-	Description *string           "json:\"description\" graphql:\"description\""
-	Bundles     []*RecipeFragment "json:\"bundles\" graphql:\"bundles\""
+	Featured    *bool             "json:\"featured,omitempty\" graphql:\"featured\""
+	Description *string           "json:\"description,omitempty\" graphql:\"description\""
+	Bundles     []*RecipeFragment "json:\"bundles,omitempty\" graphql:\"bundles\""
 }
+
+func (t *StackFragment) GetID() string {
+	if t == nil {
+		t = &StackFragment{}
+	}
+	return t.ID
+}
+func (t *StackFragment) GetName() string {
+	if t == nil {
+		t = &StackFragment{}
+	}
+	return t.Name
+}
+func (t *StackFragment) GetFeatured() *bool {
+	if t == nil {
+		t = &StackFragment{}
+	}
+	return t.Featured
+}
+func (t *StackFragment) GetDescription() *string {
+	if t == nil {
+		t = &StackFragment{}
+	}
+	return t.Description
+}
+func (t *StackFragment) GetBundles() []*RecipeFragment {
+	if t == nil {
+		t = &StackFragment{}
+	}
+	return t.Bundles
+}
+
+type KeyBackupFragment struct {
+	ID           string   "json:\"id\" graphql:\"id\""
+	Name         string   "json:\"name\" graphql:\"name\""
+	Digest       string   "json:\"digest\" graphql:\"digest\""
+	Repositories []string "json:\"repositories,omitempty\" graphql:\"repositories\""
+	InsertedAt   *string  "json:\"insertedAt,omitempty\" graphql:\"insertedAt\""
+}
+
+func (t *KeyBackupFragment) GetID() string {
+	if t == nil {
+		t = &KeyBackupFragment{}
+	}
+	return t.ID
+}
+func (t *KeyBackupFragment) GetName() string {
+	if t == nil {
+		t = &KeyBackupFragment{}
+	}
+	return t.Name
+}
+func (t *KeyBackupFragment) GetDigest() string {
+	if t == nil {
+		t = &KeyBackupFragment{}
+	}
+	return t.Digest
+}
+func (t *KeyBackupFragment) GetRepositories() []string {
+	if t == nil {
+		t = &KeyBackupFragment{}
+	}
+	return t.Repositories
+}
+func (t *KeyBackupFragment) GetInsertedAt() *string {
+	if t == nil {
+		t = &KeyBackupFragment{}
+	}
+	return t.InsertedAt
+}
+
+type ClusterFragment struct {
+	ID       string        "json:\"id\" graphql:\"id\""
+	Name     string        "json:\"name\" graphql:\"name\""
+	Provider Provider      "json:\"provider\" graphql:\"provider\""
+	Source   *Source       "json:\"source,omitempty\" graphql:\"source\""
+	GitURL   *string       "json:\"gitUrl,omitempty\" graphql:\"gitUrl\""
+	Owner    *UserFragment "json:\"owner,omitempty\" graphql:\"owner\""
+}
+
+func (t *ClusterFragment) GetID() string {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return t.ID
+}
+func (t *ClusterFragment) GetName() string {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return t.Name
+}
+func (t *ClusterFragment) GetProvider() *Provider {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return &t.Provider
+}
+func (t *ClusterFragment) GetSource() *Source {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return t.Source
+}
+func (t *ClusterFragment) GetGitURL() *string {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return t.GitURL
+}
+func (t *ClusterFragment) GetOwner() *UserFragment {
+	if t == nil {
+		t = &ClusterFragment{}
+	}
+	return t.Owner
+}
+
+type ChatMessageFragment struct {
+	Role    string  "json:\"role\" graphql:\"role\""
+	Content string  "json:\"content\" graphql:\"content\""
+	Name    *string "json:\"name,omitempty\" graphql:\"name\""
+}
+
+func (t *ChatMessageFragment) GetRole() string {
+	if t == nil {
+		t = &ChatMessageFragment{}
+	}
+	return t.Role
+}
+func (t *ChatMessageFragment) GetContent() string {
+	if t == nil {
+		t = &ChatMessageFragment{}
+	}
+	return t.Content
+}
+func (t *ChatMessageFragment) GetName() *string {
+	if t == nil {
+		t = &ChatMessageFragment{}
+	}
+	return t.Name
+}
+
+type OidcTrustRelationshipFragment struct {
+	ID         string   "json:\"id\" graphql:\"id\""
+	Issuer     string   "json:\"issuer\" graphql:\"issuer\""
+	Trust      string   "json:\"trust\" graphql:\"trust\""
+	Scopes     []string "json:\"scopes,omitempty\" graphql:\"scopes\""
+	InsertedAt *string  "json:\"insertedAt,omitempty\" graphql:\"insertedAt\""
+}
+
+func (t *OidcTrustRelationshipFragment) GetID() string {
+	if t == nil {
+		t = &OidcTrustRelationshipFragment{}
+	}
+	return t.ID
+}
+func (t *OidcTrustRelationshipFragment) GetIssuer() string {
+	if t == nil {
+		t = &OidcTrustRelationshipFragment{}
+	}
+	return t.Issuer
+}
+func (t *OidcTrustRelationshipFragment) GetTrust() string {
+	if t == nil {
+		t = &OidcTrustRelationshipFragment{}
+	}
+	return t.Trust
+}
+func (t *OidcTrustRelationshipFragment) GetScopes() []string {
+	if t == nil {
+		t = &OidcTrustRelationshipFragment{}
+	}
+	return t.Scopes
+}
+func (t *OidcTrustRelationshipFragment) GetInsertedAt() *string {
+	if t == nil {
+		t = &OidcTrustRelationshipFragment{}
+	}
+	return t.InsertedAt
+}
+
+type DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type RecipeFragment_Tests struct {
+	Type    TestType                     "json:\"type\" graphql:\"type\""
+	Name    string                       "json:\"name\" graphql:\"name\""
+	Message *string                      "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *RecipeFragment_Tests) GetArgs() []*RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type ChartInstallationFragment_Chart struct {
+	ID            *string               "json:\"id,omitempty\" graphql:\"id\""
+	Name          string                "json:\"name\" graphql:\"name\""
+	Description   *string               "json:\"description,omitempty\" graphql:\"description\""
+	LatestVersion *string               "json:\"latestVersion,omitempty\" graphql:\"latestVersion\""
+	Dependencies  *DependenciesFragment "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+}
+
+func (t *ChartInstallationFragment_Chart) GetID() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart{}
+	}
+	return t.ID
+}
+func (t *ChartInstallationFragment_Chart) GetName() string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart{}
+	}
+	return t.Name
+}
+func (t *ChartInstallationFragment_Chart) GetDescription() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart{}
+	}
+	return t.Description
+}
+func (t *ChartInstallationFragment_Chart) GetLatestVersion() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart{}
+	}
+	return t.LatestVersion
+}
+func (t *ChartInstallationFragment_Chart) GetDependencies() *DependenciesFragment {
+	if t == nil {
+		t = &ChartInstallationFragment_Chart{}
+	}
+	return t.Dependencies
+}
+
+type ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type InstallationFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *InstallationFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &InstallationFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type InstallationFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *InstallationFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &InstallationFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type InstallationFragment_OidcProvider_OIDCProvider_Bindings_User struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetID() string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.ID
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetEmail() string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.Email
+}
+
+type InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetID() string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.ID
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetName() string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.Name
+}
+
+type InstallationFragment_OidcProvider_OIDCProvider_Bindings struct {
+	User  *InstallationFragment_OidcProvider_OIDCProvider_Bindings_User  "json:\"user,omitempty\" graphql:\"user\""
+	Group *InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group "json:\"group,omitempty\" graphql:\"group\""
+}
+
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetUser() *InstallationFragment_OidcProvider_OIDCProvider_Bindings_User {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.User
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetGroup() *InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.Group
+}
+
+type InstallationFragment_OidcProvider_OIDCProvider_Configuration struct {
+	Issuer                *string "json:\"issuer,omitempty\" graphql:\"issuer\""
+	AuthorizationEndpoint *string "json:\"authorizationEndpoint,omitempty\" graphql:\"authorizationEndpoint\""
+	TokenEndpoint         *string "json:\"tokenEndpoint,omitempty\" graphql:\"tokenEndpoint\""
+	JwksURI               *string "json:\"jwksUri,omitempty\" graphql:\"jwksUri\""
+	UserinfoEndpoint      *string "json:\"userinfoEndpoint,omitempty\" graphql:\"userinfoEndpoint\""
+}
+
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetIssuer() *string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.Issuer
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetAuthorizationEndpoint() *string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.AuthorizationEndpoint
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetTokenEndpoint() *string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.TokenEndpoint
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetJwksURI() *string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.JwksURI
+}
+func (t *InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetUserinfoEndpoint() *string {
+	if t == nil {
+		t = &InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.UserinfoEndpoint
+}
+
+type OIDCProvider_Bindings_User struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+
+func (t *OIDCProvider_Bindings_User) GetID() string {
+	if t == nil {
+		t = &OIDCProvider_Bindings_User{}
+	}
+	return t.ID
+}
+func (t *OIDCProvider_Bindings_User) GetEmail() string {
+	if t == nil {
+		t = &OIDCProvider_Bindings_User{}
+	}
+	return t.Email
+}
+
+type OIDCProvider_Bindings_Group struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *OIDCProvider_Bindings_Group) GetID() string {
+	if t == nil {
+		t = &OIDCProvider_Bindings_Group{}
+	}
+	return t.ID
+}
+func (t *OIDCProvider_Bindings_Group) GetName() string {
+	if t == nil {
+		t = &OIDCProvider_Bindings_Group{}
+	}
+	return t.Name
+}
+
+type OIDCProvider_Bindings struct {
+	User  *OIDCProvider_Bindings_User  "json:\"user,omitempty\" graphql:\"user\""
+	Group *OIDCProvider_Bindings_Group "json:\"group,omitempty\" graphql:\"group\""
+}
+
+func (t *OIDCProvider_Bindings) GetUser() *OIDCProvider_Bindings_User {
+	if t == nil {
+		t = &OIDCProvider_Bindings{}
+	}
+	return t.User
+}
+func (t *OIDCProvider_Bindings) GetGroup() *OIDCProvider_Bindings_Group {
+	if t == nil {
+		t = &OIDCProvider_Bindings{}
+	}
+	return t.Group
+}
+
+type OIDCProvider_Configuration struct {
+	Issuer                *string "json:\"issuer,omitempty\" graphql:\"issuer\""
+	AuthorizationEndpoint *string "json:\"authorizationEndpoint,omitempty\" graphql:\"authorizationEndpoint\""
+	TokenEndpoint         *string "json:\"tokenEndpoint,omitempty\" graphql:\"tokenEndpoint\""
+	JwksURI               *string "json:\"jwksUri,omitempty\" graphql:\"jwksUri\""
+	UserinfoEndpoint      *string "json:\"userinfoEndpoint,omitempty\" graphql:\"userinfoEndpoint\""
+}
+
+func (t *OIDCProvider_Configuration) GetIssuer() *string {
+	if t == nil {
+		t = &OIDCProvider_Configuration{}
+	}
+	return t.Issuer
+}
+func (t *OIDCProvider_Configuration) GetAuthorizationEndpoint() *string {
+	if t == nil {
+		t = &OIDCProvider_Configuration{}
+	}
+	return t.AuthorizationEndpoint
+}
+func (t *OIDCProvider_Configuration) GetTokenEndpoint() *string {
+	if t == nil {
+		t = &OIDCProvider_Configuration{}
+	}
+	return t.TokenEndpoint
+}
+func (t *OIDCProvider_Configuration) GetJwksURI() *string {
+	if t == nil {
+		t = &OIDCProvider_Configuration{}
+	}
+	return t.JwksURI
+}
+func (t *OIDCProvider_Configuration) GetUserinfoEndpoint() *string {
+	if t == nil {
+		t = &OIDCProvider_Configuration{}
+	}
+	return t.UserinfoEndpoint
+}
+
+type TestFragment_Steps struct {
+	ID          string     "json:\"id\" graphql:\"id\""
+	Name        string     "json:\"name\" graphql:\"name\""
+	Description string     "json:\"description\" graphql:\"description\""
+	Status      TestStatus "json:\"status\" graphql:\"status\""
+}
+
+func (t *TestFragment_Steps) GetID() string {
+	if t == nil {
+		t = &TestFragment_Steps{}
+	}
+	return t.ID
+}
+func (t *TestFragment_Steps) GetName() string {
+	if t == nil {
+		t = &TestFragment_Steps{}
+	}
+	return t.Name
+}
+func (t *TestFragment_Steps) GetDescription() string {
+	if t == nil {
+		t = &TestFragment_Steps{}
+	}
+	return t.Description
+}
+func (t *TestFragment_Steps) GetStatus() *TestStatus {
+	if t == nil {
+		t = &TestFragment_Steps{}
+	}
+	return &t.Status
+}
+
+type StackFragment_Bundles_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *StackFragment_Bundles_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *StackFragment_Bundles_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type StackFragment_Bundles_RecipeFragment_Tests struct {
+	Type    TestType                                           "json:\"type\" graphql:\"type\""
+	Name    string                                             "json:\"name\" graphql:\"name\""
+	Message *string                                            "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*StackFragment_Bundles_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *StackFragment_Bundles_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *StackFragment_Bundles_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *StackFragment_Bundles_RecipeFragment_Tests) GetArgs() []*StackFragment_Bundles_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type StackFragment_Bundles_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *StackFragment_Bundles_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type StackFragment_Bundles_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *StackFragment_Bundles_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *StackFragment_Bundles_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *StackFragment_Bundles_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListArtifacts_Repository struct {
+	Artifacts []*ArtifactFragment "json:\"artifacts,omitempty\" graphql:\"artifacts\""
+}
+
+func (t *ListArtifacts_Repository) GetArtifacts() []*ArtifactFragment {
+	if t == nil {
+		t = &ListArtifacts_Repository{}
+	}
+	return t.Artifacts
+}
+
+type GetCharts_Charts_Edges struct {
+	Node *ChartFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetCharts_Charts_Edges) GetNode() *ChartFragment {
+	if t == nil {
+		t = &GetCharts_Charts_Edges{}
+	}
+	return t.Node
+}
+
+type GetCharts_Charts struct {
+	Edges []*GetCharts_Charts_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetCharts_Charts) GetEdges() []*GetCharts_Charts_Edges {
+	if t == nil {
+		t = &GetCharts_Charts{}
+	}
+	return t.Edges
+}
+
+type GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetVersions_Versions_Edges struct {
+	Node *VersionFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetVersions_Versions_Edges) GetNode() *VersionFragment {
+	if t == nil {
+		t = &GetVersions_Versions_Edges{}
+	}
+	return t.Node
+}
+
+type GetVersions_Versions struct {
+	Edges []*GetVersions_Versions_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetVersions_Versions) GetEdges() []*GetVersions_Versions_Edges {
+	if t == nil {
+		t = &GetVersions_Versions{}
+	}
+	return t.Edges
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart struct {
+	ID            *string               "json:\"id,omitempty\" graphql:\"id\""
+	Name          string                "json:\"name\" graphql:\"name\""
+	Description   *string               "json:\"description,omitempty\" graphql:\"description\""
+	LatestVersion *string               "json:\"latestVersion,omitempty\" graphql:\"latestVersion\""
+	Dependencies  *DependenciesFragment "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetID() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.ID
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetName() string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Name
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetDescription() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Description
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetLatestVersion() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.LatestVersion
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetDependencies() *DependenciesFragment {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Dependencies
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetChartInstallations_ChartInstallations_Edges struct {
+	Node *ChartInstallationFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetChartInstallations_ChartInstallations_Edges) GetNode() *ChartInstallationFragment {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations_Edges{}
+	}
+	return t.Node
+}
+
+type GetChartInstallations_ChartInstallations struct {
+	Edges []*GetChartInstallations_ChartInstallations_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetChartInstallations_ChartInstallations) GetEdges() []*GetChartInstallations_ChartInstallations_Edges {
+	if t == nil {
+		t = &GetChartInstallations_ChartInstallations{}
+	}
+	return t.Edges
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart struct {
+	ID            *string               "json:\"id,omitempty\" graphql:\"id\""
+	Name          string                "json:\"name\" graphql:\"name\""
+	Description   *string               "json:\"description,omitempty\" graphql:\"description\""
+	LatestVersion *string               "json:\"latestVersion,omitempty\" graphql:\"latestVersion\""
+	Dependencies  *DependenciesFragment "json:\"dependencies,omitempty\" graphql:\"dependencies\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetID() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.ID
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetName() string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Name
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetDescription() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Description
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetLatestVersion() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.LatestVersion
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart) GetDependencies() *DependenciesFragment {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Chart{}
+	}
+	return t.Dependencies
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges_Node_ChartInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetPackageInstallations_ChartInstallations_Edges struct {
+	Node *ChartInstallationFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations_Edges) GetNode() *ChartInstallationFragment {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations_Edges{}
+	}
+	return t.Node
+}
+
+type GetPackageInstallations_ChartInstallations struct {
+	Edges []*GetPackageInstallations_ChartInstallations_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetPackageInstallations_ChartInstallations) GetEdges() []*GetPackageInstallations_ChartInstallations_Edges {
+	if t == nil {
+		t = &GetPackageInstallations_ChartInstallations{}
+	}
+	return t.Edges
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetPackageInstallations_TerraformInstallations_Edges struct {
+	Node *TerraformInstallationFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations_Edges) GetNode() *TerraformInstallationFragment {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations_Edges{}
+	}
+	return t.Node
+}
+
+type GetPackageInstallations_TerraformInstallations struct {
+	Edges []*GetPackageInstallations_TerraformInstallations_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetPackageInstallations_TerraformInstallations) GetEdges() []*GetPackageInstallations_TerraformInstallations_Edges {
+	if t == nil {
+		t = &GetPackageInstallations_TerraformInstallations{}
+	}
+	return t.Edges
+}
+
+type CreateCrd_CreateCrd struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateCrd_CreateCrd) GetID() string {
+	if t == nil {
+		t = &CreateCrd_CreateCrd{}
+	}
+	return t.ID
+}
+
+type UninstallChart_DeleteChartInstallation struct {
+	ID *string "json:\"id,omitempty\" graphql:\"id\""
+}
+
+func (t *UninstallChart_DeleteChartInstallation) GetID() *string {
+	if t == nil {
+		t = &UninstallChart_DeleteChartInstallation{}
+	}
+	return t.ID
+}
+
+type GetConsoleInstances_ConsoleInstances_Edges struct {
+	Node *ConsoleInstanceFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetConsoleInstances_ConsoleInstances_Edges) GetNode() *ConsoleInstanceFragment {
+	if t == nil {
+		t = &GetConsoleInstances_ConsoleInstances_Edges{}
+	}
+	return t.Node
+}
+
+type GetConsoleInstances_ConsoleInstances struct {
+	Edges []*GetConsoleInstances_ConsoleInstances_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetConsoleInstances_ConsoleInstances) GetEdges() []*GetConsoleInstances_ConsoleInstances_Edges {
+	if t == nil {
+		t = &GetConsoleInstances_ConsoleInstances{}
+	}
+	return t.Edges
+}
+
+type Clusters_Clusters_PageInfo struct {
+	HasNextPage bool    "json:\"hasNextPage\" graphql:\"hasNextPage\""
+	EndCursor   *string "json:\"endCursor,omitempty\" graphql:\"endCursor\""
+}
+
+func (t *Clusters_Clusters_PageInfo) GetHasNextPage() bool {
+	if t == nil {
+		t = &Clusters_Clusters_PageInfo{}
+	}
+	return t.HasNextPage
+}
+func (t *Clusters_Clusters_PageInfo) GetEndCursor() *string {
+	if t == nil {
+		t = &Clusters_Clusters_PageInfo{}
+	}
+	return t.EndCursor
+}
+
+type Clusters_Clusters_Edges struct {
+	Node *ClusterFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *Clusters_Clusters_Edges) GetNode() *ClusterFragment {
+	if t == nil {
+		t = &Clusters_Clusters_Edges{}
+	}
+	return t.Node
+}
+
+type Clusters_Clusters struct {
+	PageInfo Clusters_Clusters_PageInfo "json:\"pageInfo\" graphql:\"pageInfo\""
+	Edges    []*Clusters_Clusters_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *Clusters_Clusters) GetPageInfo() *Clusters_Clusters_PageInfo {
+	if t == nil {
+		t = &Clusters_Clusters{}
+	}
+	return &t.PageInfo
+}
+func (t *Clusters_Clusters) GetEdges() []*Clusters_Clusters_Edges {
+	if t == nil {
+		t = &Clusters_Clusters{}
+	}
+	return t.Edges
+}
+
+type ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &ClusterInfo_Cluster_UpgradeInfo_Installation_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type ClusterInfo_Cluster_UpgradeInfo_Installation struct {
+	Repository *RepositoryFragment "json:\"repository,omitempty\" graphql:\"repository\""
+}
+
+func (t *ClusterInfo_Cluster_UpgradeInfo_Installation) GetRepository() *RepositoryFragment {
+	if t == nil {
+		t = &ClusterInfo_Cluster_UpgradeInfo_Installation{}
+	}
+	return t.Repository
+}
+
+type ClusterInfo_Cluster_UpgradeInfo struct {
+	Installation *ClusterInfo_Cluster_UpgradeInfo_Installation "json:\"installation,omitempty\" graphql:\"installation\""
+	Count        *int64                                        "json:\"count,omitempty\" graphql:\"count\""
+}
+
+func (t *ClusterInfo_Cluster_UpgradeInfo) GetInstallation() *ClusterInfo_Cluster_UpgradeInfo_Installation {
+	if t == nil {
+		t = &ClusterInfo_Cluster_UpgradeInfo{}
+	}
+	return t.Installation
+}
+func (t *ClusterInfo_Cluster_UpgradeInfo) GetCount() *int64 {
+	if t == nil {
+		t = &ClusterInfo_Cluster_UpgradeInfo{}
+	}
+	return t.Count
+}
+
+type ClusterInfo_Cluster struct {
+	ID          string                             "json:\"id\" graphql:\"id\""
+	Name        string                             "json:\"name\" graphql:\"name\""
+	Provider    Provider                           "json:\"provider\" graphql:\"provider\""
+	Source      *Source                            "json:\"source,omitempty\" graphql:\"source\""
+	GitURL      *string                            "json:\"gitUrl,omitempty\" graphql:\"gitUrl\""
+	Owner       *UserFragment                      "json:\"owner,omitempty\" graphql:\"owner\""
+	UpgradeInfo []*ClusterInfo_Cluster_UpgradeInfo "json:\"upgradeInfo,omitempty\" graphql:\"upgradeInfo\""
+}
+
+func (t *ClusterInfo_Cluster) GetID() string {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.ID
+}
+func (t *ClusterInfo_Cluster) GetName() string {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.Name
+}
+func (t *ClusterInfo_Cluster) GetProvider() *Provider {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return &t.Provider
+}
+func (t *ClusterInfo_Cluster) GetSource() *Source {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.Source
+}
+func (t *ClusterInfo_Cluster) GetGitURL() *string {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.GitURL
+}
+func (t *ClusterInfo_Cluster) GetOwner() *UserFragment {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.Owner
+}
+func (t *ClusterInfo_Cluster) GetUpgradeInfo() []*ClusterInfo_Cluster_UpgradeInfo {
+	if t == nil {
+		t = &ClusterInfo_Cluster{}
+	}
+	return t.UpgradeInfo
+}
+
+type CreateDependency_CreateClusterDependency struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateDependency_CreateClusterDependency) GetID() string {
+	if t == nil {
+		t = &CreateDependency_CreateClusterDependency{}
+	}
+	return t.ID
+}
+
+type TransferOwnership_TransferOwnership struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *TransferOwnership_TransferOwnership) GetID() string {
+	if t == nil {
+		t = &TransferOwnership_TransferOwnership{}
+	}
+	return t.ID
+}
+
+type GetDnsRecords_DNSRecords_Edges struct {
+	Node *DNSRecordFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetDnsRecords_DNSRecords_Edges) GetNode() *DNSRecordFragment {
+	if t == nil {
+		t = &GetDnsRecords_DNSRecords_Edges{}
+	}
+	return t.Node
+}
+
+type GetDnsRecords_DNSRecords struct {
+	Edges []*GetDnsRecords_DNSRecords_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetDnsRecords_DNSRecords) GetEdges() []*GetDnsRecords_DNSRecords_Edges {
+	if t == nil {
+		t = &GetDnsRecords_DNSRecords{}
+	}
+	return t.Edges
+}
+
+type GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetID() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.ID
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetEmail() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.Email
+}
+
+type GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetID() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.ID
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetName() string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.Name
+}
+
+type GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings struct {
+	User  *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User  "json:\"user,omitempty\" graphql:\"user\""
+	Group *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group "json:\"group,omitempty\" graphql:\"group\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetUser() *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.User
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetGroup() *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.Group
+}
+
+type GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration struct {
+	Issuer                *string "json:\"issuer,omitempty\" graphql:\"issuer\""
+	AuthorizationEndpoint *string "json:\"authorizationEndpoint,omitempty\" graphql:\"authorizationEndpoint\""
+	TokenEndpoint         *string "json:\"tokenEndpoint,omitempty\" graphql:\"tokenEndpoint\""
+	JwksURI               *string "json:\"jwksUri,omitempty\" graphql:\"jwksUri\""
+	UserinfoEndpoint      *string "json:\"userinfoEndpoint,omitempty\" graphql:\"userinfoEndpoint\""
+}
+
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetIssuer() *string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.Issuer
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetAuthorizationEndpoint() *string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.AuthorizationEndpoint
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetTokenEndpoint() *string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.TokenEndpoint
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetJwksURI() *string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.JwksURI
+}
+func (t *GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetUserinfoEndpoint() *string {
+	if t == nil {
+		t = &GetInstallation_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.UserinfoEndpoint
+}
+
+type GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetID() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.ID
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetEmail() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.Email
+}
+
+type GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetID() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.ID
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetName() string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.Name
+}
+
+type GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings struct {
+	User  *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User  "json:\"user,omitempty\" graphql:\"user\""
+	Group *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group "json:\"group,omitempty\" graphql:\"group\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetUser() *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.User
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetGroup() *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.Group
+}
+
+type GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration struct {
+	Issuer                *string "json:\"issuer,omitempty\" graphql:\"issuer\""
+	AuthorizationEndpoint *string "json:\"authorizationEndpoint,omitempty\" graphql:\"authorizationEndpoint\""
+	TokenEndpoint         *string "json:\"tokenEndpoint,omitempty\" graphql:\"tokenEndpoint\""
+	JwksURI               *string "json:\"jwksUri,omitempty\" graphql:\"jwksUri\""
+	UserinfoEndpoint      *string "json:\"userinfoEndpoint,omitempty\" graphql:\"userinfoEndpoint\""
+}
+
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetIssuer() *string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.Issuer
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetAuthorizationEndpoint() *string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.AuthorizationEndpoint
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetTokenEndpoint() *string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.TokenEndpoint
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetJwksURI() *string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.JwksURI
+}
+func (t *GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetUserinfoEndpoint() *string {
+	if t == nil {
+		t = &GetInstallationById_Installation_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.UserinfoEndpoint
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetID() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.ID
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User) GetEmail() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User{}
+	}
+	return t.Email
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetID() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.ID
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group) GetName() string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group{}
+	}
+	return t.Name
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings struct {
+	User  *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User  "json:\"user,omitempty\" graphql:\"user\""
+	Group *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group "json:\"group,omitempty\" graphql:\"group\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetUser() *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_User {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.User
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings) GetGroup() *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings_Group {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Bindings{}
+	}
+	return t.Group
+}
+
+type GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration struct {
+	Issuer                *string "json:\"issuer,omitempty\" graphql:\"issuer\""
+	AuthorizationEndpoint *string "json:\"authorizationEndpoint,omitempty\" graphql:\"authorizationEndpoint\""
+	TokenEndpoint         *string "json:\"tokenEndpoint,omitempty\" graphql:\"tokenEndpoint\""
+	JwksURI               *string "json:\"jwksUri,omitempty\" graphql:\"jwksUri\""
+	UserinfoEndpoint      *string "json:\"userinfoEndpoint,omitempty\" graphql:\"userinfoEndpoint\""
+}
+
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetIssuer() *string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.Issuer
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetAuthorizationEndpoint() *string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.AuthorizationEndpoint
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetTokenEndpoint() *string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.TokenEndpoint
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetJwksURI() *string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.JwksURI
+}
+func (t *GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration) GetUserinfoEndpoint() *string {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges_Node_InstallationFragment_OidcProvider_OIDCProvider_Configuration{}
+	}
+	return t.UserinfoEndpoint
+}
+
+type GetInstallations_Installations_Edges struct {
+	Node *InstallationFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetInstallations_Installations_Edges) GetNode() *InstallationFragment {
+	if t == nil {
+		t = &GetInstallations_Installations_Edges{}
+	}
+	return t.Node
+}
+
+type GetInstallations_Installations struct {
+	Edges []*GetInstallations_Installations_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetInstallations_Installations) GetEdges() []*GetInstallations_Installations_Edges {
+	if t == nil {
+		t = &GetInstallations_Installations{}
+	}
+	return t.Edges
+}
+
+type UpsertOidcProvider_UpsertOidcProvider struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *UpsertOidcProvider_UpsertOidcProvider) GetID() string {
+	if t == nil {
+		t = &UpsertOidcProvider_UpsertOidcProvider{}
+	}
+	return t.ID
+}
+
+type CreateInstallation_CreateInstallation struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateInstallation_CreateInstallation) GetID() string {
+	if t == nil {
+		t = &CreateInstallation_CreateInstallation{}
+	}
+	return t.ID
+}
+
+type DeleteInstallation_DeleteInstallation struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *DeleteInstallation_DeleteInstallation) GetID() string {
+	if t == nil {
+		t = &DeleteInstallation_DeleteInstallation{}
+	}
+	return t.ID
+}
+
+type GetRecipe_Recipe_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type GetRecipe_Recipe_RecipeFragment_Tests struct {
+	Type    TestType                                      "json:\"type\" graphql:\"type\""
+	Name    string                                        "json:\"name\" graphql:\"name\""
+	Message *string                                       "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*GetRecipe_Recipe_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Tests) GetArgs() []*GetRecipe_Recipe_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type GetRecipe_Recipe_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *GetRecipe_Recipe_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *GetRecipe_Recipe_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *GetRecipe_Recipe_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *GetRecipe_Recipe_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *GetRecipe_Recipe_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests struct {
+	Type    TestType                                                         "json:\"type\" graphql:\"type\""
+	Name    string                                                           "json:\"name\" graphql:\"name\""
+	Message *string                                                          "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests) GetArgs() []*GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipe_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipe_Recipe struct {
+	ID                 string                                        "json:\"id\" graphql:\"id\""
+	Name               string                                        "json:\"name\" graphql:\"name\""
+	Primary            *bool                                         "json:\"primary,omitempty\" graphql:\"primary\""
+	Description        *string                                       "json:\"description,omitempty\" graphql:\"description\""
+	Restricted         *bool                                         "json:\"restricted,omitempty\" graphql:\"restricted\""
+	Provider           *Provider                                     "json:\"provider,omitempty\" graphql:\"provider\""
+	Tests              []*GetRecipe_Recipe_RecipeFragment_Tests      "json:\"tests,omitempty\" graphql:\"tests\""
+	Repository         *GetRecipe_Recipe_RecipeFragment_Repository   "json:\"repository,omitempty\" graphql:\"repository\""
+	OidcSettings       *GetRecipe_Recipe_RecipeFragment_OidcSettings "json:\"oidcSettings,omitempty\" graphql:\"oidcSettings\""
+	RecipeSections     []*RecipeSectionFragment                      "json:\"recipeSections,omitempty\" graphql:\"recipeSections\""
+	RecipeDependencies []*RecipeFragment                             "json:\"recipeDependencies,omitempty\" graphql:\"recipeDependencies\""
+}
+
+func (t *GetRecipe_Recipe) GetID() string {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.ID
+}
+func (t *GetRecipe_Recipe) GetName() string {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Name
+}
+func (t *GetRecipe_Recipe) GetPrimary() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Primary
+}
+func (t *GetRecipe_Recipe) GetDescription() *string {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Description
+}
+func (t *GetRecipe_Recipe) GetRestricted() *bool {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Restricted
+}
+func (t *GetRecipe_Recipe) GetProvider() *Provider {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Provider
+}
+func (t *GetRecipe_Recipe) GetTests() []*GetRecipe_Recipe_RecipeFragment_Tests {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Tests
+}
+func (t *GetRecipe_Recipe) GetRepository() *GetRecipe_Recipe_RecipeFragment_Repository {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.Repository
+}
+func (t *GetRecipe_Recipe) GetOidcSettings() *GetRecipe_Recipe_RecipeFragment_OidcSettings {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.OidcSettings
+}
+func (t *GetRecipe_Recipe) GetRecipeSections() []*RecipeSectionFragment {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.RecipeSections
+}
+func (t *GetRecipe_Recipe) GetRecipeDependencies() []*RecipeFragment {
+	if t == nil {
+		t = &GetRecipe_Recipe{}
+	}
+	return t.RecipeDependencies
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_Tests struct {
+	Type    TestType                                          "json:\"type\" graphql:\"type\""
+	Name    string                                            "json:\"name\" graphql:\"name\""
+	Message *string                                           "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*GetRecipeByID_Recipe_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Tests) GetArgs() []*GetRecipeByID_Recipe_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests struct {
+	Type    TestType                                                             "json:\"type\" graphql:\"type\""
+	Name    string                                                               "json:\"name\" graphql:\"name\""
+	Message *string                                                              "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests) GetArgs() []*GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe_RecipeDependencies_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetRecipeByID_Recipe struct {
+	ID                 string                                            "json:\"id\" graphql:\"id\""
+	Name               string                                            "json:\"name\" graphql:\"name\""
+	Primary            *bool                                             "json:\"primary,omitempty\" graphql:\"primary\""
+	Description        *string                                           "json:\"description,omitempty\" graphql:\"description\""
+	Restricted         *bool                                             "json:\"restricted,omitempty\" graphql:\"restricted\""
+	Provider           *Provider                                         "json:\"provider,omitempty\" graphql:\"provider\""
+	Tests              []*GetRecipeByID_Recipe_RecipeFragment_Tests      "json:\"tests,omitempty\" graphql:\"tests\""
+	Repository         *GetRecipeByID_Recipe_RecipeFragment_Repository   "json:\"repository,omitempty\" graphql:\"repository\""
+	OidcSettings       *GetRecipeByID_Recipe_RecipeFragment_OidcSettings "json:\"oidcSettings,omitempty\" graphql:\"oidcSettings\""
+	RecipeSections     []*RecipeSectionFragment                          "json:\"recipeSections,omitempty\" graphql:\"recipeSections\""
+	RecipeDependencies []*RecipeFragment                                 "json:\"recipeDependencies,omitempty\" graphql:\"recipeDependencies\""
+}
+
+func (t *GetRecipeByID_Recipe) GetID() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.ID
+}
+func (t *GetRecipeByID_Recipe) GetName() string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Name
+}
+func (t *GetRecipeByID_Recipe) GetPrimary() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Primary
+}
+func (t *GetRecipeByID_Recipe) GetDescription() *string {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Description
+}
+func (t *GetRecipeByID_Recipe) GetRestricted() *bool {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Restricted
+}
+func (t *GetRecipeByID_Recipe) GetProvider() *Provider {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Provider
+}
+func (t *GetRecipeByID_Recipe) GetTests() []*GetRecipeByID_Recipe_RecipeFragment_Tests {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Tests
+}
+func (t *GetRecipeByID_Recipe) GetRepository() *GetRecipeByID_Recipe_RecipeFragment_Repository {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.Repository
+}
+func (t *GetRecipeByID_Recipe) GetOidcSettings() *GetRecipeByID_Recipe_RecipeFragment_OidcSettings {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.OidcSettings
+}
+func (t *GetRecipeByID_Recipe) GetRecipeSections() []*RecipeSectionFragment {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.RecipeSections
+}
+func (t *GetRecipeByID_Recipe) GetRecipeDependencies() []*RecipeFragment {
+	if t == nil {
+		t = &GetRecipeByID_Recipe{}
+	}
+	return t.RecipeDependencies
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests struct {
+	Type    TestType                                                    "json:\"type\" graphql:\"type\""
+	Name    string                                                      "json:\"name\" graphql:\"name\""
+	Message *string                                                     "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetArgs() []*ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListRecipes_Recipes_Edges struct {
+	Node *RecipeFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListRecipes_Recipes_Edges) GetNode() *RecipeFragment {
+	if t == nil {
+		t = &ListRecipes_Recipes_Edges{}
+	}
+	return t.Node
+}
+
+type ListRecipes_Recipes struct {
+	Edges []*ListRecipes_Recipes_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListRecipes_Recipes) GetEdges() []*ListRecipes_Recipes_Edges {
+	if t == nil {
+		t = &ListRecipes_Recipes{}
+	}
+	return t.Edges
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests struct {
+	Type    TestType                                                       "json:\"type\" graphql:\"type\""
+	Name    string                                                         "json:\"name\" graphql:\"name\""
+	Message *string                                                        "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests) GetArgs() []*ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges_Node_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListAllRecipes_Recipes_Edges struct {
+	Node *RecipeFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListAllRecipes_Recipes_Edges) GetNode() *RecipeFragment {
+	if t == nil {
+		t = &ListAllRecipes_Recipes_Edges{}
+	}
+	return t.Node
+}
+
+type ListAllRecipes_Recipes struct {
+	Edges []*ListAllRecipes_Recipes_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListAllRecipes_Recipes) GetEdges() []*ListAllRecipes_Recipes_Edges {
+	if t == nil {
+		t = &ListAllRecipes_Recipes{}
+	}
+	return t.Edges
+}
+
+type CreateRecipe_CreateRecipe struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateRecipe_CreateRecipe) GetID() string {
+	if t == nil {
+		t = &CreateRecipe_CreateRecipe{}
+	}
+	return t.ID
+}
+
+type InstallRecipe_InstallRecipe struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *InstallRecipe_InstallRecipe) GetID() string {
+	if t == nil {
+		t = &InstallRecipe_InstallRecipe{}
+	}
+	return t.ID
+}
+
+type CreateStack_CreateStack struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateStack_CreateStack) GetID() string {
+	if t == nil {
+		t = &CreateStack_CreateStack{}
+	}
+	return t.ID
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests struct {
+	Type    TestType                                                          "json:\"type\" graphql:\"type\""
+	Name    string                                                            "json:\"name\" graphql:\"name\""
+	Message *string                                                           "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests) GetArgs() []*GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &GetStack_Stack_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args struct {
+	Name string "json:\"name\" graphql:\"name\""
+	Repo string "json:\"repo\" graphql:\"repo\""
+	Key  string "json:\"key\" graphql:\"key\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args) GetName() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Name
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args) GetRepo() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Repo
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args) GetKey() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args{}
+	}
+	return t.Key
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests struct {
+	Type    TestType                                                                        "json:\"type\" graphql:\"type\""
+	Name    string                                                                          "json:\"name\" graphql:\"name\""
+	Message *string                                                                         "json:\"message,omitempty\" graphql:\"message\""
+	Args    []*ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args "json:\"args,omitempty\" graphql:\"args\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests) GetType() *TestType {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return &t.Type
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests) GetName() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Name
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests) GetMessage() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Message
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests) GetArgs() []*ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests_Args {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Tests{}
+	}
+	return t.Args
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Repository struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Repository) GetID() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.ID
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Repository) GetName() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_Repository{}
+	}
+	return t.Name
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings struct {
+	URIFormat  *string        "json:\"uriFormat,omitempty\" graphql:\"uriFormat\""
+	URIFormats []*string      "json:\"uriFormats,omitempty\" graphql:\"uriFormats\""
+	AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+	DomainKey  *string        "json:\"domainKey,omitempty\" graphql:\"domainKey\""
+	Subdomain  *bool          "json:\"subdomain,omitempty\" graphql:\"subdomain\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormat() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormat
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings) GetURIFormats() []*string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.URIFormats
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings) GetAuthMethod() *OidcAuthMethod {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return &t.AuthMethod
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings) GetDomainKey() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.DomainKey
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings) GetSubdomain() *bool {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_OidcSettings{}
+	}
+	return t.Subdomain
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_RecipeItems_RecipeItemFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition struct {
+	Field     string    "json:\"field\" graphql:\"field\""
+	Operation Operation "json:\"operation\" graphql:\"operation\""
+	Value     *string   "json:\"value,omitempty\" graphql:\"value\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetField() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Field
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetOperation() *Operation {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return &t.Operation
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition) GetValue() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Condition{}
+	}
+	return t.Value
+}
+
+type ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation struct {
+	Type    ValidationType "json:\"type\" graphql:\"type\""
+	Regex   *string        "json:\"regex,omitempty\" graphql:\"regex\""
+	Message string         "json:\"message\" graphql:\"message\""
+}
+
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetType() *ValidationType {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return &t.Type
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetRegex() *string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Regex
+}
+func (t *ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation) GetMessage() string {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges_Node_StackFragment_Bundles_RecipeFragment_RecipeSections_RecipeSectionFragment_Configuration_RecipeConfigurationFragment_Validation{}
+	}
+	return t.Message
+}
+
+type ListStacks_Stacks_Edges struct {
+	Node *StackFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListStacks_Stacks_Edges) GetNode() *StackFragment {
+	if t == nil {
+		t = &ListStacks_Stacks_Edges{}
+	}
+	return t.Node
+}
+
+type ListStacks_Stacks struct {
+	Edges []*ListStacks_Stacks_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListStacks_Stacks) GetEdges() []*ListStacks_Stacks_Edges {
+	if t == nil {
+		t = &ListStacks_Stacks{}
+	}
+	return t.Edges
+}
+
+type GetRepository_Repository_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRepository_Repository_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &GetRepository_Repository_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type GetRepository_Repository_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetRepository_Repository_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &GetRepository_Repository_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type CreateResourceDefinition_UpdateRepository struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateResourceDefinition_UpdateRepository) GetID() string {
+	if t == nil {
+		t = &CreateResourceDefinition_UpdateRepository{}
+	}
+	return t.ID
+}
+
+type CreateIntegration_CreateIntegration struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateIntegration_CreateIntegration) GetID() string {
+	if t == nil {
+		t = &CreateIntegration_CreateIntegration{}
+	}
+	return t.ID
+}
+
+type UpdateRepository_UpdateRepository struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *UpdateRepository_UpdateRepository) GetID() string {
+	if t == nil {
+		t = &UpdateRepository_UpdateRepository{}
+	}
+	return t.ID
+}
+
+type CreateRepository_UpsertRepository struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateRepository_UpsertRepository) GetID() string {
+	if t == nil {
+		t = &CreateRepository_UpsertRepository{}
+	}
+	return t.ID
+}
+
+type ListRepositories_Repositories_Edges_Node_RepositoryFragment_Publisher struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListRepositories_Repositories_Edges_Node_RepositoryFragment_Publisher) GetName() string {
+	if t == nil {
+		t = &ListRepositories_Repositories_Edges_Node_RepositoryFragment_Publisher{}
+	}
+	return t.Name
+}
+
+type ListRepositories_Repositories_Edges_Node_RepositoryFragment_Recipes struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *ListRepositories_Repositories_Edges_Node_RepositoryFragment_Recipes) GetName() string {
+	if t == nil {
+		t = &ListRepositories_Repositories_Edges_Node_RepositoryFragment_Recipes{}
+	}
+	return t.Name
+}
+
+type ListRepositories_Repositories_Edges struct {
+	Node *RepositoryFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListRepositories_Repositories_Edges) GetNode() *RepositoryFragment {
+	if t == nil {
+		t = &ListRepositories_Repositories_Edges{}
+	}
+	return t.Node
+}
+
+type ListRepositories_Repositories struct {
+	Edges []*ListRepositories_Repositories_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListRepositories_Repositories) GetEdges() []*ListRepositories_Repositories_Edges {
+	if t == nil {
+		t = &ListRepositories_Repositories{}
+	}
+	return t.Edges
+}
+
+type Scaffolds_Scaffold struct {
+	Path    *string "json:\"path,omitempty\" graphql:\"path\""
+	Content *string "json:\"content,omitempty\" graphql:\"content\""
+}
+
+func (t *Scaffolds_Scaffold) GetPath() *string {
+	if t == nil {
+		t = &Scaffolds_Scaffold{}
+	}
+	return t.Path
+}
+func (t *Scaffolds_Scaffold) GetContent() *string {
+	if t == nil {
+		t = &Scaffolds_Scaffold{}
+	}
+	return t.Content
+}
+
+type DeleteRepository_DeleteRepository struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *DeleteRepository_DeleteRepository) GetID() string {
+	if t == nil {
+		t = &DeleteRepository_DeleteRepository{}
+	}
+	return t.ID
+}
+
+type GetTfProviderScaffold_TerraformProvider struct {
+	Name    *Provider "json:\"name,omitempty\" graphql:\"name\""
+	Content *string   "json:\"content,omitempty\" graphql:\"content\""
+}
+
+func (t *GetTfProviderScaffold_TerraformProvider) GetName() *Provider {
+	if t == nil {
+		t = &GetTfProviderScaffold_TerraformProvider{}
+	}
+	return t.Name
+}
+func (t *GetTfProviderScaffold_TerraformProvider) GetContent() *string {
+	if t == nil {
+		t = &GetTfProviderScaffold_TerraformProvider{}
+	}
+	return t.Content
+}
+
+type GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges_Node_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetTerraform_Terraform_Edges struct {
+	Node *TerraformFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetTerraform_Terraform_Edges) GetNode() *TerraformFragment {
+	if t == nil {
+		t = &GetTerraform_Terraform_Edges{}
+	}
+	return t.Node
+}
+
+type GetTerraform_Terraform struct {
+	Edges []*GetTerraform_Terraform_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetTerraform_Terraform) GetEdges() []*GetTerraform_Terraform_Edges {
+	if t == nil {
+		t = &GetTerraform_Terraform{}
+	}
+	return t.Edges
+}
+
+type GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges_Node_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetTerraformVersions_Versions_Edges struct {
+	Node *VersionFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetTerraformVersions_Versions_Edges) GetNode() *VersionFragment {
+	if t == nil {
+		t = &GetTerraformVersions_Versions_Edges{}
+	}
+	return t.Node
+}
+
+type GetTerraformVersions_Versions struct {
+	Edges []*GetTerraformVersions_Versions_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetTerraformVersions_Versions) GetEdges() []*GetTerraformVersions_Versions_Edges {
+	if t == nil {
+		t = &GetTerraformVersions_Versions{}
+	}
+	return t.Edges
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Terraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges_Node_TerraformInstallationFragment_Version_VersionFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type GetTerraformInstallations_TerraformInstallations_Edges struct {
+	Node *TerraformInstallationFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations_Edges) GetNode() *TerraformInstallationFragment {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations_Edges{}
+	}
+	return t.Node
+}
+
+type GetTerraformInstallations_TerraformInstallations struct {
+	Edges []*GetTerraformInstallations_TerraformInstallations_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *GetTerraformInstallations_TerraformInstallations) GetEdges() []*GetTerraformInstallations_TerraformInstallations_Edges {
+	if t == nil {
+		t = &GetTerraformInstallations_TerraformInstallations{}
+	}
+	return t.Edges
+}
+
+type UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies struct {
+	Type     *DependencyType "json:\"type,omitempty\" graphql:\"type\""
+	Name     *string         "json:\"name,omitempty\" graphql:\"name\""
+	Repo     *string         "json:\"repo,omitempty\" graphql:\"repo\""
+	Optional *bool           "json:\"optional,omitempty\" graphql:\"optional\""
+	Version  *string         "json:\"version,omitempty\" graphql:\"version\""
+}
+
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetType() *DependencyType {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Type
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetName() *string {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Name
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetRepo() *string {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Repo
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetOptional() *bool {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Optional
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies) GetVersion() *string {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Dependencies{}
+	}
+	return t.Version
+}
+
+type UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions struct {
+	Instructions *string "json:\"instructions,omitempty\" graphql:\"instructions\""
+	Script       *string "json:\"script,omitempty\" graphql:\"script\""
+}
+
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetInstructions() *string {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Instructions
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions) GetScript() *string {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Instructions{}
+	}
+	return t.Script
+}
+
+type UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings struct {
+	Terraform map[string]interface{} "json:\"terraform,omitempty\" graphql:\"terraform\""
+	Helm      map[string]interface{} "json:\"helm,omitempty\" graphql:\"helm\""
+}
+
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetTerraform() map[string]interface{} {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Terraform
+}
+func (t *UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings) GetHelm() map[string]interface{} {
+	if t == nil {
+		t = &UploadTerraform_UploadTerraform_TerraformFragment_Dependencies_DependenciesFragment_Wirings{}
+	}
+	return t.Helm
+}
+
+type UninstallTerraform_UninstallTerraform struct {
+	ID *string "json:\"id,omitempty\" graphql:\"id\""
+}
+
+func (t *UninstallTerraform_UninstallTerraform) GetID() *string {
+	if t == nil {
+		t = &UninstallTerraform_UninstallTerraform{}
+	}
+	return t.ID
+}
+
+type CreateTest_CreateTest_TestFragment_Steps struct {
+	ID          string     "json:\"id\" graphql:\"id\""
+	Name        string     "json:\"name\" graphql:\"name\""
+	Description string     "json:\"description\" graphql:\"description\""
+	Status      TestStatus "json:\"status\" graphql:\"status\""
+}
+
+func (t *CreateTest_CreateTest_TestFragment_Steps) GetID() string {
+	if t == nil {
+		t = &CreateTest_CreateTest_TestFragment_Steps{}
+	}
+	return t.ID
+}
+func (t *CreateTest_CreateTest_TestFragment_Steps) GetName() string {
+	if t == nil {
+		t = &CreateTest_CreateTest_TestFragment_Steps{}
+	}
+	return t.Name
+}
+func (t *CreateTest_CreateTest_TestFragment_Steps) GetDescription() string {
+	if t == nil {
+		t = &CreateTest_CreateTest_TestFragment_Steps{}
+	}
+	return t.Description
+}
+func (t *CreateTest_CreateTest_TestFragment_Steps) GetStatus() *TestStatus {
+	if t == nil {
+		t = &CreateTest_CreateTest_TestFragment_Steps{}
+	}
+	return &t.Status
+}
+
+type UpdateTest_UpdateTest_TestFragment_Steps struct {
+	ID          string     "json:\"id\" graphql:\"id\""
+	Name        string     "json:\"name\" graphql:\"name\""
+	Description string     "json:\"description\" graphql:\"description\""
+	Status      TestStatus "json:\"status\" graphql:\"status\""
+}
+
+func (t *UpdateTest_UpdateTest_TestFragment_Steps) GetID() string {
+	if t == nil {
+		t = &UpdateTest_UpdateTest_TestFragment_Steps{}
+	}
+	return t.ID
+}
+func (t *UpdateTest_UpdateTest_TestFragment_Steps) GetName() string {
+	if t == nil {
+		t = &UpdateTest_UpdateTest_TestFragment_Steps{}
+	}
+	return t.Name
+}
+func (t *UpdateTest_UpdateTest_TestFragment_Steps) GetDescription() string {
+	if t == nil {
+		t = &UpdateTest_UpdateTest_TestFragment_Steps{}
+	}
+	return t.Description
+}
+func (t *UpdateTest_UpdateTest_TestFragment_Steps) GetStatus() *TestStatus {
+	if t == nil {
+		t = &UpdateTest_UpdateTest_TestFragment_Steps{}
+	}
+	return &t.Status
+}
+
+type UpdateStep_UpdateStep struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *UpdateStep_UpdateStep) GetID() string {
+	if t == nil {
+		t = &UpdateStep_UpdateStep{}
+	}
+	return t.ID
+}
+
+type PublishLogs_PublishLogs struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *PublishLogs_PublishLogs) GetID() string {
+	if t == nil {
+		t = &PublishLogs_PublishLogs{}
+	}
+	return t.ID
+}
+
+type CreateUpgrade_CreateUpgrade struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateUpgrade_CreateUpgrade) GetID() string {
+	if t == nil {
+		t = &CreateUpgrade_CreateUpgrade{}
+	}
+	return t.ID
+}
+
+type Me_Me struct {
+	ID                 string                           "json:\"id\" graphql:\"id\""
+	Email              string                           "json:\"email\" graphql:\"email\""
+	Demoing            *bool                            "json:\"demoing,omitempty\" graphql:\"demoing\""
+	TrustRelationships []*OidcTrustRelationshipFragment "json:\"trustRelationships,omitempty\" graphql:\"trustRelationships\""
+}
+
+func (t *Me_Me) GetID() string {
+	if t == nil {
+		t = &Me_Me{}
+	}
+	return t.ID
+}
+func (t *Me_Me) GetEmail() string {
+	if t == nil {
+		t = &Me_Me{}
+	}
+	return t.Email
+}
+func (t *Me_Me) GetDemoing() *bool {
+	if t == nil {
+		t = &Me_Me{}
+	}
+	return t.Demoing
+}
+func (t *Me_Me) GetTrustRelationships() []*OidcTrustRelationshipFragment {
+	if t == nil {
+		t = &Me_Me{}
+	}
+	return t.TrustRelationships
+}
+
+type GetLoginMethod_LoginMethod struct {
+	LoginMethod LoginMethod "json:\"loginMethod\" graphql:\"loginMethod\""
+	Token       *string     "json:\"token,omitempty\" graphql:\"token\""
+}
+
+func (t *GetLoginMethod_LoginMethod) GetLoginMethod() *LoginMethod {
+	if t == nil {
+		t = &GetLoginMethod_LoginMethod{}
+	}
+	return &t.LoginMethod
+}
+func (t *GetLoginMethod_LoginMethod) GetToken() *string {
+	if t == nil {
+		t = &GetLoginMethod_LoginMethod{}
+	}
+	return t.Token
+}
+
+type ListTokens_Tokens_Edges_Node struct {
+	Token *string "json:\"token,omitempty\" graphql:\"token\""
+}
+
+func (t *ListTokens_Tokens_Edges_Node) GetToken() *string {
+	if t == nil {
+		t = &ListTokens_Tokens_Edges_Node{}
+	}
+	return t.Token
+}
+
+type ListTokens_Tokens_Edges struct {
+	Node *ListTokens_Tokens_Edges_Node "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListTokens_Tokens_Edges) GetNode() *ListTokens_Tokens_Edges_Node {
+	if t == nil {
+		t = &ListTokens_Tokens_Edges{}
+	}
+	return t.Node
+}
+
+type ListTokens_Tokens struct {
+	Edges []*ListTokens_Tokens_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListTokens_Tokens) GetEdges() []*ListTokens_Tokens_Edges {
+	if t == nil {
+		t = &ListTokens_Tokens{}
+	}
+	return t.Edges
+}
+
+type ListKeys_PublicKeys_Edges struct {
+	Node *PublicKeyFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *ListKeys_PublicKeys_Edges) GetNode() *PublicKeyFragment {
+	if t == nil {
+		t = &ListKeys_PublicKeys_Edges{}
+	}
+	return t.Node
+}
+
+type ListKeys_PublicKeys struct {
+	Edges []*ListKeys_PublicKeys_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *ListKeys_PublicKeys) GetEdges() []*ListKeys_PublicKeys_Edges {
+	if t == nil {
+		t = &ListKeys_PublicKeys{}
+	}
+	return t.Edges
+}
+
+type PollLoginToken_LoginToken struct {
+	Jwt *string "json:\"jwt,omitempty\" graphql:\"jwt\""
+}
+
+func (t *PollLoginToken_LoginToken) GetJwt() *string {
+	if t == nil {
+		t = &PollLoginToken_LoginToken{}
+	}
+	return t.Jwt
+}
+
+type DevLogin_DeviceLogin struct {
+	LoginURL    string "json:\"loginUrl\" graphql:\"loginUrl\""
+	DeviceToken string "json:\"deviceToken\" graphql:\"deviceToken\""
+}
+
+func (t *DevLogin_DeviceLogin) GetLoginURL() string {
+	if t == nil {
+		t = &DevLogin_DeviceLogin{}
+	}
+	return t.LoginURL
+}
+func (t *DevLogin_DeviceLogin) GetDeviceToken() string {
+	if t == nil {
+		t = &DevLogin_DeviceLogin{}
+	}
+	return t.DeviceToken
+}
+
+type Login_Login struct {
+	Jwt *string "json:\"jwt,omitempty\" graphql:\"jwt\""
+}
+
+func (t *Login_Login) GetJwt() *string {
+	if t == nil {
+		t = &Login_Login{}
+	}
+	return t.Jwt
+}
+
+type ImpersonateServiceAccount_ImpersonateServiceAccount struct {
+	Jwt   *string "json:\"jwt,omitempty\" graphql:\"jwt\""
+	Email string  "json:\"email\" graphql:\"email\""
+}
+
+func (t *ImpersonateServiceAccount_ImpersonateServiceAccount) GetJwt() *string {
+	if t == nil {
+		t = &ImpersonateServiceAccount_ImpersonateServiceAccount{}
+	}
+	return t.Jwt
+}
+func (t *ImpersonateServiceAccount_ImpersonateServiceAccount) GetEmail() string {
+	if t == nil {
+		t = &ImpersonateServiceAccount_ImpersonateServiceAccount{}
+	}
+	return t.Email
+}
+
+type CreateAccessToken_CreateToken struct {
+	Token *string "json:\"token,omitempty\" graphql:\"token\""
+}
+
+func (t *CreateAccessToken_CreateToken) GetToken() *string {
+	if t == nil {
+		t = &CreateAccessToken_CreateToken{}
+	}
+	return t.Token
+}
+
+type CreateKey_CreatePublicKey struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateKey_CreatePublicKey) GetID() string {
+	if t == nil {
+		t = &CreateKey_CreatePublicKey{}
+	}
+	return t.ID
+}
+
+type DeleteEabCredential_DeleteEabKey struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *DeleteEabCredential_DeleteEabKey) GetID() string {
+	if t == nil {
+		t = &DeleteEabCredential_DeleteEabKey{}
+	}
+	return t.ID
+}
+
+type Backups_KeyBackups_Edges struct {
+	Node *KeyBackupFragment "json:\"node,omitempty\" graphql:\"node\""
+}
+
+func (t *Backups_KeyBackups_Edges) GetNode() *KeyBackupFragment {
+	if t == nil {
+		t = &Backups_KeyBackups_Edges{}
+	}
+	return t.Node
+}
+
+type Backups_KeyBackups struct {
+	Edges []*Backups_KeyBackups_Edges "json:\"edges,omitempty\" graphql:\"edges\""
+}
+
+func (t *Backups_KeyBackups) GetEdges() []*Backups_KeyBackups_Edges {
+	if t == nil {
+		t = &Backups_KeyBackups{}
+	}
+	return t.Edges
+}
+
+type Backup_KeyBackup struct {
+	ID           string   "json:\"id\" graphql:\"id\""
+	Name         string   "json:\"name\" graphql:\"name\""
+	Digest       string   "json:\"digest\" graphql:\"digest\""
+	Repositories []string "json:\"repositories,omitempty\" graphql:\"repositories\""
+	InsertedAt   *string  "json:\"insertedAt,omitempty\" graphql:\"insertedAt\""
+	Value        string   "json:\"value\" graphql:\"value\""
+}
+
+func (t *Backup_KeyBackup) GetID() string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.ID
+}
+func (t *Backup_KeyBackup) GetName() string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.Name
+}
+func (t *Backup_KeyBackup) GetDigest() string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.Digest
+}
+func (t *Backup_KeyBackup) GetRepositories() []string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.Repositories
+}
+func (t *Backup_KeyBackup) GetInsertedAt() *string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.InsertedAt
+}
+func (t *Backup_KeyBackup) GetValue() string {
+	if t == nil {
+		t = &Backup_KeyBackup{}
+	}
+	return t.Value
+}
+
+type DeleteTrust_DeleteTrustRelationship struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *DeleteTrust_DeleteTrustRelationship) GetID() string {
+	if t == nil {
+		t = &DeleteTrust_DeleteTrustRelationship{}
+	}
+	return t.ID
+}
+
+type UpdateVersion_UpdateVersion struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *UpdateVersion_UpdateVersion) GetID() string {
+	if t == nil {
+		t = &UpdateVersion_UpdateVersion{}
+	}
+	return t.ID
+}
+
 type ListArtifacts struct {
-	Repository *struct {
-		Artifacts []*ArtifactFragment "json:\"artifacts\" graphql:\"artifacts\""
-	} "json:\"repository\" graphql:\"repository\""
+	Repository *ListArtifacts_Repository "json:\"repository,omitempty\" graphql:\"repository\""
 }
+
+func (t *ListArtifacts) GetRepository() *ListArtifacts_Repository {
+	if t == nil {
+		t = &ListArtifacts{}
+	}
+	return t.Repository
+}
+
 type CreateArtifact struct {
-	CreateArtifact *ArtifactFragment "json:\"createArtifact\" graphql:\"createArtifact\""
+	CreateArtifact *ArtifactFragment "json:\"createArtifact,omitempty\" graphql:\"createArtifact\""
 }
+
+func (t *CreateArtifact) GetCreateArtifact() *ArtifactFragment {
+	if t == nil {
+		t = &CreateArtifact{}
+	}
+	return t.CreateArtifact
+}
+
 type GetCharts struct {
-	Charts *struct {
-		Edges []*struct {
-			Node *ChartFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"charts\" graphql:\"charts\""
+	Charts *GetCharts_Charts "json:\"charts,omitempty\" graphql:\"charts\""
 }
+
+func (t *GetCharts) GetCharts() *GetCharts_Charts {
+	if t == nil {
+		t = &GetCharts{}
+	}
+	return t.Charts
+}
+
 type GetVersions struct {
-	Versions *struct {
-		Edges []*struct {
-			Node *VersionFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"versions\" graphql:\"versions\""
+	Versions *GetVersions_Versions "json:\"versions,omitempty\" graphql:\"versions\""
 }
+
+func (t *GetVersions) GetVersions() *GetVersions_Versions {
+	if t == nil {
+		t = &GetVersions{}
+	}
+	return t.Versions
+}
+
 type GetChartInstallations struct {
-	ChartInstallations *struct {
-		Edges []*struct {
-			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
+	ChartInstallations *GetChartInstallations_ChartInstallations "json:\"chartInstallations,omitempty\" graphql:\"chartInstallations\""
 }
+
+func (t *GetChartInstallations) GetChartInstallations() *GetChartInstallations_ChartInstallations {
+	if t == nil {
+		t = &GetChartInstallations{}
+	}
+	return t.ChartInstallations
+}
+
 type GetPackageInstallations struct {
-	ChartInstallations *struct {
-		Edges []*struct {
-			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
-	TerraformInstallations *struct {
-		Edges []*struct {
-			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
+	ChartInstallations     *GetPackageInstallations_ChartInstallations     "json:\"chartInstallations,omitempty\" graphql:\"chartInstallations\""
+	TerraformInstallations *GetPackageInstallations_TerraformInstallations "json:\"terraformInstallations,omitempty\" graphql:\"terraformInstallations\""
 }
+
+func (t *GetPackageInstallations) GetChartInstallations() *GetPackageInstallations_ChartInstallations {
+	if t == nil {
+		t = &GetPackageInstallations{}
+	}
+	return t.ChartInstallations
+}
+func (t *GetPackageInstallations) GetTerraformInstallations() *GetPackageInstallations_TerraformInstallations {
+	if t == nil {
+		t = &GetPackageInstallations{}
+	}
+	return t.TerraformInstallations
+}
+
 type CreateCrd struct {
-	CreateCrd *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createCrd\" graphql:\"createCrd\""
+	CreateCrd *CreateCrd_CreateCrd "json:\"createCrd,omitempty\" graphql:\"createCrd\""
 }
+
+func (t *CreateCrd) GetCreateCrd() *CreateCrd_CreateCrd {
+	if t == nil {
+		t = &CreateCrd{}
+	}
+	return t.CreateCrd
+}
+
 type UninstallChart struct {
-	DeleteChartInstallation *struct {
-		ID *string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
+	DeleteChartInstallation *UninstallChart_DeleteChartInstallation "json:\"deleteChartInstallation,omitempty\" graphql:\"deleteChartInstallation\""
 }
+
+func (t *UninstallChart) GetDeleteChartInstallation() *UninstallChart_DeleteChartInstallation {
+	if t == nil {
+		t = &UninstallChart{}
+	}
+	return t.DeleteChartInstallation
+}
+
+type GetConsoleInstances struct {
+	ConsoleInstances *GetConsoleInstances_ConsoleInstances "json:\"consoleInstances,omitempty\" graphql:\"consoleInstances\""
+}
+
+func (t *GetConsoleInstances) GetConsoleInstances() *GetConsoleInstances_ConsoleInstances {
+	if t == nil {
+		t = &GetConsoleInstances{}
+	}
+	return t.ConsoleInstances
+}
+
+type UpdateConsoleInstance struct {
+	UpdateConsoleInstance *ConsoleInstanceFragment "json:\"updateConsoleInstance,omitempty\" graphql:\"updateConsoleInstance\""
+}
+
+func (t *UpdateConsoleInstance) GetUpdateConsoleInstance() *ConsoleInstanceFragment {
+	if t == nil {
+		t = &UpdateConsoleInstance{}
+	}
+	return t.UpdateConsoleInstance
+}
+
+type DestroyCluster struct {
+	DestroyCluster *bool "json:\"destroyCluster,omitempty\" graphql:\"destroyCluster\""
+}
+
+func (t *DestroyCluster) GetDestroyCluster() *bool {
+	if t == nil {
+		t = &DestroyCluster{}
+	}
+	return t.DestroyCluster
+}
+
+type Clusters struct {
+	Clusters *Clusters_Clusters "json:\"clusters,omitempty\" graphql:\"clusters\""
+}
+
+func (t *Clusters) GetClusters() *Clusters_Clusters {
+	if t == nil {
+		t = &Clusters{}
+	}
+	return t.Clusters
+}
+
+type ClusterInfo struct {
+	Cluster *ClusterInfo_Cluster "json:\"cluster,omitempty\" graphql:\"cluster\""
+}
+
+func (t *ClusterInfo) GetCluster() *ClusterInfo_Cluster {
+	if t == nil {
+		t = &ClusterInfo{}
+	}
+	return t.Cluster
+}
+
+type CreateDependency struct {
+	CreateClusterDependency *CreateDependency_CreateClusterDependency "json:\"createClusterDependency,omitempty\" graphql:\"createClusterDependency\""
+}
+
+func (t *CreateDependency) GetCreateClusterDependency() *CreateDependency_CreateClusterDependency {
+	if t == nil {
+		t = &CreateDependency{}
+	}
+	return t.CreateClusterDependency
+}
+
+type PromoteCluster struct {
+	Promote *UserFragment "json:\"promote,omitempty\" graphql:\"promote\""
+}
+
+func (t *PromoteCluster) GetPromote() *UserFragment {
+	if t == nil {
+		t = &PromoteCluster{}
+	}
+	return t.Promote
+}
+
+type TransferOwnership struct {
+	TransferOwnership *TransferOwnership_TransferOwnership "json:\"transferOwnership,omitempty\" graphql:\"transferOwnership\""
+}
+
+func (t *TransferOwnership) GetTransferOwnership() *TransferOwnership_TransferOwnership {
+	if t == nil {
+		t = &TransferOwnership{}
+	}
+	return t.TransferOwnership
+}
+
 type GetDNSRecords struct {
-	DNSRecords *struct {
-		Edges []*struct {
-			Node *DNSRecordFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"dnsRecords\" graphql:\"dnsRecords\""
+	DNSRecords *GetDnsRecords_DNSRecords "json:\"dnsRecords,omitempty\" graphql:\"dnsRecords\""
 }
+
+func (t *GetDNSRecords) GetDNSRecords() *GetDnsRecords_DNSRecords {
+	if t == nil {
+		t = &GetDNSRecords{}
+	}
+	return t.DNSRecords
+}
+
 type CreateDNSRecord struct {
-	CreateDNSRecord *DNSRecordFragment "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
+	CreateDNSRecord *DNSRecordFragment "json:\"createDnsRecord,omitempty\" graphql:\"createDnsRecord\""
 }
+
+func (t *CreateDNSRecord) GetCreateDNSRecord() *DNSRecordFragment {
+	if t == nil {
+		t = &CreateDNSRecord{}
+	}
+	return t.CreateDNSRecord
+}
+
 type DeleteDNSRecord struct {
-	DeleteDNSRecord *DNSRecordFragment "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
+	DeleteDNSRecord *DNSRecordFragment "json:\"deleteDnsRecord,omitempty\" graphql:\"deleteDnsRecord\""
 }
+
+func (t *DeleteDNSRecord) GetDeleteDNSRecord() *DNSRecordFragment {
+	if t == nil {
+		t = &DeleteDNSRecord{}
+	}
+	return t.DeleteDNSRecord
+}
+
 type CreateDomain struct {
-	ProvisionDomain *DNSDomainFragment "json:\"provisionDomain\" graphql:\"provisionDomain\""
+	ProvisionDomain *DNSDomainFragment "json:\"provisionDomain,omitempty\" graphql:\"provisionDomain\""
 }
+
+func (t *CreateDomain) GetProvisionDomain() *DNSDomainFragment {
+	if t == nil {
+		t = &CreateDomain{}
+	}
+	return t.ProvisionDomain
+}
+
 type GetInstallation struct {
-	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
+	Installation *InstallationFragment "json:\"installation,omitempty\" graphql:\"installation\""
 }
+
+func (t *GetInstallation) GetInstallation() *InstallationFragment {
+	if t == nil {
+		t = &GetInstallation{}
+	}
+	return t.Installation
+}
+
 type GetInstallationByID struct {
-	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
+	Installation *InstallationFragment "json:\"installation,omitempty\" graphql:\"installation\""
 }
+
+func (t *GetInstallationByID) GetInstallation() *InstallationFragment {
+	if t == nil {
+		t = &GetInstallationByID{}
+	}
+	return t.Installation
+}
+
 type GetInstallations struct {
-	Installations *struct {
-		Edges []*struct {
-			Node *InstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"installations\" graphql:\"installations\""
+	Installations *GetInstallations_Installations "json:\"installations,omitempty\" graphql:\"installations\""
 }
+
+func (t *GetInstallations) GetInstallations() *GetInstallations_Installations {
+	if t == nil {
+		t = &GetInstallations{}
+	}
+	return t.Installations
+}
+
 type UpsertOidcProvider struct {
-	UpsertOidcProvider *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
+	UpsertOidcProvider *UpsertOidcProvider_UpsertOidcProvider "json:\"upsertOidcProvider,omitempty\" graphql:\"upsertOidcProvider\""
 }
+
+func (t *UpsertOidcProvider) GetUpsertOidcProvider() *UpsertOidcProvider_UpsertOidcProvider {
+	if t == nil {
+		t = &UpsertOidcProvider{}
+	}
+	return t.UpsertOidcProvider
+}
+
 type ResetInstallations struct {
-	ResetInstallations *int64 "json:\"resetInstallations\" graphql:\"resetInstallations\""
+	ResetInstallations *int64 "json:\"resetInstallations,omitempty\" graphql:\"resetInstallations\""
 }
+
+func (t *ResetInstallations) GetResetInstallations() *int64 {
+	if t == nil {
+		t = &ResetInstallations{}
+	}
+	return t.ResetInstallations
+}
+
+type CreateInstallation struct {
+	CreateInstallation *CreateInstallation_CreateInstallation "json:\"createInstallation,omitempty\" graphql:\"createInstallation\""
+}
+
+func (t *CreateInstallation) GetCreateInstallation() *CreateInstallation_CreateInstallation {
+	if t == nil {
+		t = &CreateInstallation{}
+	}
+	return t.CreateInstallation
+}
+
+type DeleteInstallation struct {
+	DeleteInstallation *DeleteInstallation_DeleteInstallation "json:\"deleteInstallation,omitempty\" graphql:\"deleteInstallation\""
+}
+
+func (t *DeleteInstallation) GetDeleteInstallation() *DeleteInstallation_DeleteInstallation {
+	if t == nil {
+		t = &DeleteInstallation{}
+	}
+	return t.DeleteInstallation
+}
+
+type MarkSynced struct {
+	Synced *bool "json:\"synced,omitempty\" graphql:\"synced\""
+}
+
+func (t *MarkSynced) GetSynced() *bool {
+	if t == nil {
+		t = &MarkSynced{}
+	}
+	return t.Synced
+}
+
 type GetRecipe struct {
-	Recipe *struct {
-		ID          string    "json:\"id\" graphql:\"id\""
-		Name        string    "json:\"name\" graphql:\"name\""
-		Description *string   "json:\"description\" graphql:\"description\""
-		Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
-		Provider    *Provider "json:\"provider\" graphql:\"provider\""
-		Tests       []*struct {
-			Type    TestType "json:\"type\" graphql:\"type\""
-			Name    string   "json:\"name\" graphql:\"name\""
-			Message *string  "json:\"message\" graphql:\"message\""
-			Args    []*struct {
-				Name string "json:\"name\" graphql:\"name\""
-				Repo string "json:\"repo\" graphql:\"repo\""
-				Key  string "json:\"key\" graphql:\"key\""
-			} "json:\"args\" graphql:\"args\""
-		} "json:\"tests\" graphql:\"tests\""
-		Repository *struct {
-			ID   string "json:\"id\" graphql:\"id\""
-			Name string "json:\"name\" graphql:\"name\""
-		} "json:\"repository\" graphql:\"repository\""
-		OidcSettings *struct {
-			URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
-			URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
-			AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
-			DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
-			Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
-		} "json:\"oidcSettings\" graphql:\"oidcSettings\""
-		RecipeSections     []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
-		RecipeDependencies []*RecipeFragment        "json:\"recipeDependencies\" graphql:\"recipeDependencies\""
-	} "json:\"recipe\" graphql:\"recipe\""
+	Recipe *GetRecipe_Recipe "json:\"recipe,omitempty\" graphql:\"recipe\""
 }
+
+func (t *GetRecipe) GetRecipe() *GetRecipe_Recipe {
+	if t == nil {
+		t = &GetRecipe{}
+	}
+	return t.Recipe
+}
+
+type GetRecipeByID struct {
+	Recipe *GetRecipeByID_Recipe "json:\"recipe,omitempty\" graphql:\"recipe\""
+}
+
+func (t *GetRecipeByID) GetRecipe() *GetRecipeByID_Recipe {
+	if t == nil {
+		t = &GetRecipeByID{}
+	}
+	return t.Recipe
+}
+
 type ListRecipes struct {
-	Recipes *struct {
-		Edges []*struct {
-			Node *RecipeFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"recipes\" graphql:\"recipes\""
+	Recipes *ListRecipes_Recipes "json:\"recipes,omitempty\" graphql:\"recipes\""
 }
+
+func (t *ListRecipes) GetRecipes() *ListRecipes_Recipes {
+	if t == nil {
+		t = &ListRecipes{}
+	}
+	return t.Recipes
+}
+
+type ListAllRecipes struct {
+	Recipes *ListAllRecipes_Recipes "json:\"recipes,omitempty\" graphql:\"recipes\""
+}
+
+func (t *ListAllRecipes) GetRecipes() *ListAllRecipes_Recipes {
+	if t == nil {
+		t = &ListAllRecipes{}
+	}
+	return t.Recipes
+}
+
 type CreateRecipe struct {
-	CreateRecipe *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createRecipe\" graphql:\"createRecipe\""
+	CreateRecipe *CreateRecipe_CreateRecipe "json:\"createRecipe,omitempty\" graphql:\"createRecipe\""
 }
+
+func (t *CreateRecipe) GetCreateRecipe() *CreateRecipe_CreateRecipe {
+	if t == nil {
+		t = &CreateRecipe{}
+	}
+	return t.CreateRecipe
+}
+
 type InstallRecipe struct {
-	InstallRecipe []*struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"installRecipe\" graphql:\"installRecipe\""
+	InstallRecipe []*InstallRecipe_InstallRecipe "json:\"installRecipe,omitempty\" graphql:\"installRecipe\""
 }
+
+func (t *InstallRecipe) GetInstallRecipe() []*InstallRecipe_InstallRecipe {
+	if t == nil {
+		t = &InstallRecipe{}
+	}
+	return t.InstallRecipe
+}
+
 type CreateStack struct {
-	CreateStack *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createStack\" graphql:\"createStack\""
+	CreateStack *CreateStack_CreateStack "json:\"createStack,omitempty\" graphql:\"createStack\""
 }
+
+func (t *CreateStack) GetCreateStack() *CreateStack_CreateStack {
+	if t == nil {
+		t = &CreateStack{}
+	}
+	return t.CreateStack
+}
+
 type GetStack struct {
-	Stack *StackFragment "json:\"stack\" graphql:\"stack\""
+	Stack *StackFragment "json:\"stack,omitempty\" graphql:\"stack\""
 }
+
+func (t *GetStack) GetStack() *StackFragment {
+	if t == nil {
+		t = &GetStack{}
+	}
+	return t.Stack
+}
+
 type ListStacks struct {
-	Stacks *struct {
-		Edges []*struct {
-			Node *StackFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"stacks\" graphql:\"stacks\""
+	Stacks *ListStacks_Stacks "json:\"stacks,omitempty\" graphql:\"stacks\""
 }
+
+func (t *ListStacks) GetStacks() *ListStacks_Stacks {
+	if t == nil {
+		t = &ListStacks{}
+	}
+	return t.Stacks
+}
+
 type GetRepository struct {
-	Repository *RepositoryFragment "json:\"repository\" graphql:\"repository\""
+	Repository *RepositoryFragment "json:\"repository,omitempty\" graphql:\"repository\""
 }
+
+func (t *GetRepository) GetRepository() *RepositoryFragment {
+	if t == nil {
+		t = &GetRepository{}
+	}
+	return t.Repository
+}
+
 type CreateResourceDefinition struct {
-	UpdateRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateRepository\" graphql:\"updateRepository\""
+	UpdateRepository *CreateResourceDefinition_UpdateRepository "json:\"updateRepository,omitempty\" graphql:\"updateRepository\""
 }
+
+func (t *CreateResourceDefinition) GetUpdateRepository() *CreateResourceDefinition_UpdateRepository {
+	if t == nil {
+		t = &CreateResourceDefinition{}
+	}
+	return t.UpdateRepository
+}
+
 type CreateIntegration struct {
-	CreateIntegration *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createIntegration\" graphql:\"createIntegration\""
+	CreateIntegration *CreateIntegration_CreateIntegration "json:\"createIntegration,omitempty\" graphql:\"createIntegration\""
 }
+
+func (t *CreateIntegration) GetCreateIntegration() *CreateIntegration_CreateIntegration {
+	if t == nil {
+		t = &CreateIntegration{}
+	}
+	return t.CreateIntegration
+}
+
 type UpdateRepository struct {
-	UpdateRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateRepository\" graphql:\"updateRepository\""
+	UpdateRepository *UpdateRepository_UpdateRepository "json:\"updateRepository,omitempty\" graphql:\"updateRepository\""
 }
+
+func (t *UpdateRepository) GetUpdateRepository() *UpdateRepository_UpdateRepository {
+	if t == nil {
+		t = &UpdateRepository{}
+	}
+	return t.UpdateRepository
+}
+
 type CreateRepository struct {
-	UpsertRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"upsertRepository\" graphql:\"upsertRepository\""
+	UpsertRepository *CreateRepository_UpsertRepository "json:\"upsertRepository,omitempty\" graphql:\"upsertRepository\""
 }
+
+func (t *CreateRepository) GetUpsertRepository() *CreateRepository_UpsertRepository {
+	if t == nil {
+		t = &CreateRepository{}
+	}
+	return t.UpsertRepository
+}
+
 type AcquireLock struct {
-	AcquireLock *ApplyLockFragment "json:\"acquireLock\" graphql:\"acquireLock\""
+	AcquireLock *ApplyLockFragment "json:\"acquireLock,omitempty\" graphql:\"acquireLock\""
 }
+
+func (t *AcquireLock) GetAcquireLock() *ApplyLockFragment {
+	if t == nil {
+		t = &AcquireLock{}
+	}
+	return t.AcquireLock
+}
+
 type ReleaseLock struct {
-	ReleaseLock *ApplyLockFragment "json:\"releaseLock\" graphql:\"releaseLock\""
+	ReleaseLock *ApplyLockFragment "json:\"releaseLock,omitempty\" graphql:\"releaseLock\""
 }
+
+func (t *ReleaseLock) GetReleaseLock() *ApplyLockFragment {
+	if t == nil {
+		t = &ReleaseLock{}
+	}
+	return t.ReleaseLock
+}
+
 type UnlockRepository struct {
-	UnlockRepository *int64 "json:\"unlockRepository\" graphql:\"unlockRepository\""
+	UnlockRepository *int64 "json:\"unlockRepository,omitempty\" graphql:\"unlockRepository\""
 }
+
+func (t *UnlockRepository) GetUnlockRepository() *int64 {
+	if t == nil {
+		t = &UnlockRepository{}
+	}
+	return t.UnlockRepository
+}
+
 type ListRepositories struct {
-	Repositories *struct {
-		Edges []*struct {
-			Node *RepositoryFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"repositories\" graphql:\"repositories\""
+	Repositories *ListRepositories_Repositories "json:\"repositories,omitempty\" graphql:\"repositories\""
 }
+
+func (t *ListRepositories) GetRepositories() *ListRepositories_Repositories {
+	if t == nil {
+		t = &ListRepositories{}
+	}
+	return t.Repositories
+}
+
 type Scaffolds struct {
-	Scaffold []*struct {
-		Path    *string "json:\"path\" graphql:\"path\""
-		Content *string "json:\"content\" graphql:\"content\""
-	} "json:\"scaffold\" graphql:\"scaffold\""
+	Scaffold []*Scaffolds_Scaffold "json:\"scaffold,omitempty\" graphql:\"scaffold\""
 }
+
+func (t *Scaffolds) GetScaffold() []*Scaffolds_Scaffold {
+	if t == nil {
+		t = &Scaffolds{}
+	}
+	return t.Scaffold
+}
+
 type DeleteRepository struct {
-	DeleteRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteRepository\" graphql:\"deleteRepository\""
+	DeleteRepository *DeleteRepository_DeleteRepository "json:\"deleteRepository,omitempty\" graphql:\"deleteRepository\""
 }
+
+func (t *DeleteRepository) GetDeleteRepository() *DeleteRepository_DeleteRepository {
+	if t == nil {
+		t = &DeleteRepository{}
+	}
+	return t.DeleteRepository
+}
+
+type Release struct {
+	Release *bool "json:\"release,omitempty\" graphql:\"release\""
+}
+
+func (t *Release) GetRelease() *bool {
+	if t == nil {
+		t = &Release{}
+	}
+	return t.Release
+}
+
+type InstallVersion struct {
+	InstallVersion *bool "json:\"installVersion,omitempty\" graphql:\"installVersion\""
+}
+
+func (t *InstallVersion) GetInstallVersion() *bool {
+	if t == nil {
+		t = &InstallVersion{}
+	}
+	return t.InstallVersion
+}
+
 type GetTfProviders struct {
-	TerraformProviders []*Provider "json:\"terraformProviders\" graphql:\"terraformProviders\""
+	TerraformProviders []*Provider "json:\"terraformProviders,omitempty\" graphql:\"terraformProviders\""
 }
+
+func (t *GetTfProviders) GetTerraformProviders() []*Provider {
+	if t == nil {
+		t = &GetTfProviders{}
+	}
+	return t.TerraformProviders
+}
+
 type GetTfProviderScaffold struct {
-	TerraformProvider *struct {
-		Name    *Provider "json:\"name\" graphql:\"name\""
-		Content *string   "json:\"content\" graphql:\"content\""
-	} "json:\"terraformProvider\" graphql:\"terraformProvider\""
+	TerraformProvider *GetTfProviderScaffold_TerraformProvider "json:\"terraformProvider,omitempty\" graphql:\"terraformProvider\""
 }
+
+func (t *GetTfProviderScaffold) GetTerraformProvider() *GetTfProviderScaffold_TerraformProvider {
+	if t == nil {
+		t = &GetTfProviderScaffold{}
+	}
+	return t.TerraformProvider
+}
+
 type GetShell struct {
-	Shell *CloudShellFragment "json:\"shell\" graphql:\"shell\""
+	Shell *CloudShellFragment "json:\"shell,omitempty\" graphql:\"shell\""
 }
+
+func (t *GetShell) GetShell() *CloudShellFragment {
+	if t == nil {
+		t = &GetShell{}
+	}
+	return t.Shell
+}
+
 type DeleteShell struct {
-	DeleteShell *CloudShellFragment "json:\"deleteShell\" graphql:\"deleteShell\""
+	DeleteShell *CloudShellFragment "json:\"deleteShell,omitempty\" graphql:\"deleteShell\""
 }
+
+func (t *DeleteShell) GetDeleteShell() *CloudShellFragment {
+	if t == nil {
+		t = &DeleteShell{}
+	}
+	return t.DeleteShell
+}
+
 type GetTerraform struct {
-	Terraform *struct {
-		Edges []*struct {
-			Node *TerraformFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraform\" graphql:\"terraform\""
+	Terraform *GetTerraform_Terraform "json:\"terraform,omitempty\" graphql:\"terraform\""
 }
+
+func (t *GetTerraform) GetTerraform() *GetTerraform_Terraform {
+	if t == nil {
+		t = &GetTerraform{}
+	}
+	return t.Terraform
+}
+
+type GetTerraformVersions struct {
+	Versions *GetTerraformVersions_Versions "json:\"versions,omitempty\" graphql:\"versions\""
+}
+
+func (t *GetTerraformVersions) GetVersions() *GetTerraformVersions_Versions {
+	if t == nil {
+		t = &GetTerraformVersions{}
+	}
+	return t.Versions
+}
+
 type GetTerraformInstallations struct {
-	TerraformInstallations *struct {
-		Edges []*struct {
-			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
+	TerraformInstallations *GetTerraformInstallations_TerraformInstallations "json:\"terraformInstallations,omitempty\" graphql:\"terraformInstallations\""
 }
+
+func (t *GetTerraformInstallations) GetTerraformInstallations() *GetTerraformInstallations_TerraformInstallations {
+	if t == nil {
+		t = &GetTerraformInstallations{}
+	}
+	return t.TerraformInstallations
+}
+
 type UploadTerraform struct {
-	UploadTerraform *TerraformFragment "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
+	UploadTerraform *TerraformFragment "json:\"uploadTerraform,omitempty\" graphql:\"uploadTerraform\""
 }
+
+func (t *UploadTerraform) GetUploadTerraform() *TerraformFragment {
+	if t == nil {
+		t = &UploadTerraform{}
+	}
+	return t.UploadTerraform
+}
+
 type UninstallTerraform struct {
-	UninstallTerraform *struct {
-		ID *string "json:\"id\" graphql:\"id\""
-	} "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
+	UninstallTerraform *UninstallTerraform_UninstallTerraform "json:\"uninstallTerraform,omitempty\" graphql:\"uninstallTerraform\""
 }
+
+func (t *UninstallTerraform) GetUninstallTerraform() *UninstallTerraform_UninstallTerraform {
+	if t == nil {
+		t = &UninstallTerraform{}
+	}
+	return t.UninstallTerraform
+}
+
 type CreateTest struct {
-	CreateTest *TestFragment "json:\"createTest\" graphql:\"createTest\""
+	CreateTest *TestFragment "json:\"createTest,omitempty\" graphql:\"createTest\""
 }
+
+func (t *CreateTest) GetCreateTest() *TestFragment {
+	if t == nil {
+		t = &CreateTest{}
+	}
+	return t.CreateTest
+}
+
 type UpdateTest struct {
-	UpdateTest *TestFragment "json:\"updateTest\" graphql:\"updateTest\""
+	UpdateTest *TestFragment "json:\"updateTest,omitempty\" graphql:\"updateTest\""
 }
+
+func (t *UpdateTest) GetUpdateTest() *TestFragment {
+	if t == nil {
+		t = &UpdateTest{}
+	}
+	return t.UpdateTest
+}
+
 type UpdateStep struct {
-	UpdateStep *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateStep\" graphql:\"updateStep\""
+	UpdateStep *UpdateStep_UpdateStep "json:\"updateStep,omitempty\" graphql:\"updateStep\""
 }
+
+func (t *UpdateStep) GetUpdateStep() *UpdateStep_UpdateStep {
+	if t == nil {
+		t = &UpdateStep{}
+	}
+	return t.UpdateStep
+}
+
 type PublishLogs struct {
-	PublishLogs *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"publishLogs\" graphql:\"publishLogs\""
+	PublishLogs *PublishLogs_PublishLogs "json:\"publishLogs,omitempty\" graphql:\"publishLogs\""
 }
+
+func (t *PublishLogs) GetPublishLogs() *PublishLogs_PublishLogs {
+	if t == nil {
+		t = &PublishLogs{}
+	}
+	return t.PublishLogs
+}
+
+type CreateUpgrade struct {
+	CreateUpgrade *CreateUpgrade_CreateUpgrade "json:\"createUpgrade,omitempty\" graphql:\"createUpgrade\""
+}
+
+func (t *CreateUpgrade) GetCreateUpgrade() *CreateUpgrade_CreateUpgrade {
+	if t == nil {
+		t = &CreateUpgrade{}
+	}
+	return t.CreateUpgrade
+}
+
 type Me struct {
-	Me *struct {
-		ID    string "json:\"id\" graphql:\"id\""
-		Email string "json:\"email\" graphql:\"email\""
-	} "json:\"me\" graphql:\"me\""
+	Me *Me_Me "json:\"me,omitempty\" graphql:\"me\""
 }
+
+func (t *Me) GetMe() *Me_Me {
+	if t == nil {
+		t = &Me{}
+	}
+	return t.Me
+}
+
 type GetLoginMethod struct {
-	LoginMethod *struct {
-		LoginMethod LoginMethod "json:\"loginMethod\" graphql:\"loginMethod\""
-		Token       *string     "json:\"token\" graphql:\"token\""
-	} "json:\"loginMethod\" graphql:\"loginMethod\""
+	LoginMethod *GetLoginMethod_LoginMethod "json:\"loginMethod,omitempty\" graphql:\"loginMethod\""
 }
+
+func (t *GetLoginMethod) GetLoginMethod() *GetLoginMethod_LoginMethod {
+	if t == nil {
+		t = &GetLoginMethod{}
+	}
+	return t.LoginMethod
+}
+
 type ListTokens struct {
-	Tokens *struct {
-		Edges []*struct {
-			Node *struct {
-				Token *string "json:\"token\" graphql:\"token\""
-			} "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"tokens\" graphql:\"tokens\""
+	Tokens *ListTokens_Tokens "json:\"tokens,omitempty\" graphql:\"tokens\""
 }
+
+func (t *ListTokens) GetTokens() *ListTokens_Tokens {
+	if t == nil {
+		t = &ListTokens{}
+	}
+	return t.Tokens
+}
+
 type ListKeys struct {
-	PublicKeys *struct {
-		Edges []*struct {
-			Node *PublicKeyFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"publicKeys\" graphql:\"publicKeys\""
+	PublicKeys *ListKeys_PublicKeys "json:\"publicKeys,omitempty\" graphql:\"publicKeys\""
 }
+
+func (t *ListKeys) GetPublicKeys() *ListKeys_PublicKeys {
+	if t == nil {
+		t = &ListKeys{}
+	}
+	return t.PublicKeys
+}
+
 type GetEabCredential struct {
-	EabCredential *EabCredentialFragment "json:\"eabCredential\" graphql:\"eabCredential\""
+	EabCredential *EabCredentialFragment "json:\"eabCredential,omitempty\" graphql:\"eabCredential\""
 }
+
+func (t *GetEabCredential) GetEabCredential() *EabCredentialFragment {
+	if t == nil {
+		t = &GetEabCredential{}
+	}
+	return t.EabCredential
+}
+
 type PollLoginToken struct {
-	LoginToken *struct {
-		Jwt *string "json:\"jwt\" graphql:\"jwt\""
-	} "json:\"loginToken\" graphql:\"loginToken\""
+	LoginToken *PollLoginToken_LoginToken "json:\"loginToken,omitempty\" graphql:\"loginToken\""
 }
+
+func (t *PollLoginToken) GetLoginToken() *PollLoginToken_LoginToken {
+	if t == nil {
+		t = &PollLoginToken{}
+	}
+	return t.LoginToken
+}
+
 type DevLogin struct {
-	DeviceLogin *struct {
-		LoginURL    string "json:\"loginUrl\" graphql:\"loginUrl\""
-		DeviceToken string "json:\"deviceToken\" graphql:\"deviceToken\""
-	} "json:\"deviceLogin\" graphql:\"deviceLogin\""
+	DeviceLogin *DevLogin_DeviceLogin "json:\"deviceLogin,omitempty\" graphql:\"deviceLogin\""
 }
+
+func (t *DevLogin) GetDeviceLogin() *DevLogin_DeviceLogin {
+	if t == nil {
+		t = &DevLogin{}
+	}
+	return t.DeviceLogin
+}
+
 type Login struct {
-	Login *struct {
-		Jwt *string "json:\"jwt\" graphql:\"jwt\""
-	} "json:\"login\" graphql:\"login\""
+	Login *Login_Login "json:\"login,omitempty\" graphql:\"login\""
 }
+
+func (t *Login) GetLogin() *Login_Login {
+	if t == nil {
+		t = &Login{}
+	}
+	return t.Login
+}
+
 type ImpersonateServiceAccount struct {
-	ImpersonateServiceAccount *struct {
-		Jwt   *string "json:\"jwt\" graphql:\"jwt\""
-		Email string  "json:\"email\" graphql:\"email\""
-	} "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
+	ImpersonateServiceAccount *ImpersonateServiceAccount_ImpersonateServiceAccount "json:\"impersonateServiceAccount,omitempty\" graphql:\"impersonateServiceAccount\""
 }
+
+func (t *ImpersonateServiceAccount) GetImpersonateServiceAccount() *ImpersonateServiceAccount_ImpersonateServiceAccount {
+	if t == nil {
+		t = &ImpersonateServiceAccount{}
+	}
+	return t.ImpersonateServiceAccount
+}
+
 type CreateAccessToken struct {
-	CreateToken *struct {
-		Token *string "json:\"token\" graphql:\"token\""
-	} "json:\"createToken\" graphql:\"createToken\""
+	CreateToken *CreateAccessToken_CreateToken "json:\"createToken,omitempty\" graphql:\"createToken\""
 }
+
+func (t *CreateAccessToken) GetCreateToken() *CreateAccessToken_CreateToken {
+	if t == nil {
+		t = &CreateAccessToken{}
+	}
+	return t.CreateToken
+}
+
 type CreateKey struct {
-	CreatePublicKey *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createPublicKey\" graphql:\"createPublicKey\""
+	CreatePublicKey *CreateKey_CreatePublicKey "json:\"createPublicKey,omitempty\" graphql:\"createPublicKey\""
 }
+
+func (t *CreateKey) GetCreatePublicKey() *CreateKey_CreatePublicKey {
+	if t == nil {
+		t = &CreateKey{}
+	}
+	return t.CreatePublicKey
+}
+
 type DeleteEabCredential struct {
-	DeleteEabKey *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
+	DeleteEabKey *DeleteEabCredential_DeleteEabKey "json:\"deleteEabKey,omitempty\" graphql:\"deleteEabKey\""
 }
+
+func (t *DeleteEabCredential) GetDeleteEabKey() *DeleteEabCredential_DeleteEabKey {
+	if t == nil {
+		t = &DeleteEabCredential{}
+	}
+	return t.DeleteEabKey
+}
+
 type CreateEvent struct {
-	CreateUserEvent *bool "json:\"createUserEvent\" graphql:\"createUserEvent\""
+	CreateUserEvent *bool "json:\"createUserEvent,omitempty\" graphql:\"createUserEvent\""
 }
+
+func (t *CreateEvent) GetCreateUserEvent() *bool {
+	if t == nil {
+		t = &CreateEvent{}
+	}
+	return t.CreateUserEvent
+}
+
+type CreateBackup struct {
+	CreateKeyBackup *KeyBackupFragment "json:\"createKeyBackup,omitempty\" graphql:\"createKeyBackup\""
+}
+
+func (t *CreateBackup) GetCreateKeyBackup() *KeyBackupFragment {
+	if t == nil {
+		t = &CreateBackup{}
+	}
+	return t.CreateKeyBackup
+}
+
+type Backups struct {
+	KeyBackups *Backups_KeyBackups "json:\"keyBackups,omitempty\" graphql:\"keyBackups\""
+}
+
+func (t *Backups) GetKeyBackups() *Backups_KeyBackups {
+	if t == nil {
+		t = &Backups{}
+	}
+	return t.KeyBackups
+}
+
+type Backup struct {
+	KeyBackup *Backup_KeyBackup "json:\"keyBackup,omitempty\" graphql:\"keyBackup\""
+}
+
+func (t *Backup) GetKeyBackup() *Backup_KeyBackup {
+	if t == nil {
+		t = &Backup{}
+	}
+	return t.KeyBackup
+}
+
+type GetHelp struct {
+	HelpQuestion *string "json:\"helpQuestion,omitempty\" graphql:\"helpQuestion\""
+}
+
+func (t *GetHelp) GetHelpQuestion() *string {
+	if t == nil {
+		t = &GetHelp{}
+	}
+	return t.HelpQuestion
+}
+
+type Chat struct {
+	Chat *ChatMessageFragment "json:\"chat,omitempty\" graphql:\"chat\""
+}
+
+func (t *Chat) GetChat() *ChatMessageFragment {
+	if t == nil {
+		t = &Chat{}
+	}
+	return t.Chat
+}
+
+type CreateTrust struct {
+	CreateTrustRelationship *OidcTrustRelationshipFragment "json:\"createTrustRelationship,omitempty\" graphql:\"createTrustRelationship\""
+}
+
+func (t *CreateTrust) GetCreateTrustRelationship() *OidcTrustRelationshipFragment {
+	if t == nil {
+		t = &CreateTrust{}
+	}
+	return t.CreateTrustRelationship
+}
+
+type DeleteTrust struct {
+	DeleteTrustRelationship *DeleteTrust_DeleteTrustRelationship "json:\"deleteTrustRelationship,omitempty\" graphql:\"deleteTrustRelationship\""
+}
+
+func (t *DeleteTrust) GetDeleteTrustRelationship() *DeleteTrust_DeleteTrustRelationship {
+	if t == nil {
+		t = &DeleteTrust{}
+	}
+	return t.DeleteTrustRelationship
+}
+
+type OidcToken struct {
+	OidcToken *string "json:\"oidcToken,omitempty\" graphql:\"oidcToken\""
+}
+
+func (t *OidcToken) GetOidcToken() *string {
+	if t == nil {
+		t = &OidcToken{}
+	}
+	return t.OidcToken
+}
+
 type UpdateVersion struct {
-	UpdateVersion *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateVersion\" graphql:\"updateVersion\""
+	UpdateVersion *UpdateVersion_UpdateVersion "json:\"updateVersion,omitempty\" graphql:\"updateVersion\""
+}
+
+func (t *UpdateVersion) GetUpdateVersion() *UpdateVersion_UpdateVersion {
+	if t == nil {
+		t = &UpdateVersion{}
+	}
+	return t.UpdateVersion
 }
 
 const ListArtifactsDocument = `query ListArtifacts ($id: ID!) {
@@ -802,13 +9079,17 @@ fragment ArtifactFragment on Artifact {
 }
 `
 
-func (c *Client) ListArtifacts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*ListArtifacts, error) {
-	vars := map[string]interface{}{
+func (c *Client) ListArtifacts(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*ListArtifacts, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res ListArtifacts
-	if err := c.Client.Post(ctx, "ListArtifacts", ListArtifactsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "ListArtifacts", ListArtifactsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -832,8 +9113,8 @@ fragment ArtifactFragment on Artifact {
 }
 `
 
-func (c *Client) CreateArtifact(ctx context.Context, repoName string, name string, readme string, artifactType string, platform string, blob string, arch *string, httpRequestOptions ...client.HTTPRequestOption) (*CreateArtifact, error) {
-	vars := map[string]interface{}{
+func (c *Client) CreateArtifact(ctx context.Context, repoName string, name string, readme string, artifactType string, platform string, blob string, arch *string, interceptors ...clientv2.RequestInterceptor) (*CreateArtifact, error) {
+	vars := map[string]any{
 		"repoName":     repoName,
 		"name":         name,
 		"readme":       readme,
@@ -844,7 +9125,11 @@ func (c *Client) CreateArtifact(ctx context.Context, repoName string, name strin
 	}
 
 	var res CreateArtifact
-	if err := c.Client.Post(ctx, "CreateArtifact", CreateArtifactDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "CreateArtifact", CreateArtifactDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -868,13 +9153,17 @@ fragment ChartFragment on Chart {
 }
 `
 
-func (c *Client) GetCharts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetCharts, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetCharts(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetCharts, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res GetCharts
-	if err := c.Client.Post(ctx, "GetCharts", GetChartsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetCharts", GetChartsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -892,9 +9181,11 @@ const GetVersionsDocument = `query GetVersions ($id: ID!) {
 }
 fragment VersionFragment on Version {
 	id
+	helm
 	readme
 	version
 	valuesTemplate
+	templateType
 	package
 	crds {
 		... CrdFragment
@@ -902,6 +9193,7 @@ fragment VersionFragment on Version {
 	dependencies {
 		... DependenciesFragment
 	}
+	insertedAt
 }
 fragment CrdFragment on Crd {
 	id
@@ -913,6 +9205,13 @@ fragment DependenciesFragment on Dependencies {
 		type
 		name
 		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
 	}
 	wait
 	application
@@ -925,16 +9224,21 @@ fragment DependenciesFragment on Dependencies {
 	providerWirings
 	outputs
 	providerVsn
+	cliVsn
 }
 `
 
-func (c *Client) GetVersions(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetVersions, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetVersions(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetVersions, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res GetVersions
-	if err := c.Client.Post(ctx, "GetVersions", GetVersionsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetVersions", GetVersionsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -949,11 +9253,6 @@ const GetChartInstallationsDocument = `query GetChartInstallations ($id: ID!) {
 			}
 		}
 	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
 }
 fragment ChartInstallationFragment on ChartInstallation {
 	id
@@ -978,6 +9277,13 @@ fragment DependenciesFragment on Dependencies {
 		type
 		name
 		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
 	}
 	wait
 	application
@@ -990,12 +9296,15 @@ fragment DependenciesFragment on Dependencies {
 	providerWirings
 	outputs
 	providerVsn
+	cliVsn
 }
 fragment VersionFragment on Version {
 	id
+	helm
 	readme
 	version
 	valuesTemplate
+	templateType
 	package
 	crds {
 		... CrdFragment
@@ -1003,16 +9312,26 @@ fragment VersionFragment on Version {
 	dependencies {
 		... DependenciesFragment
 	}
+	insertedAt
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
 }
 `
 
-func (c *Client) GetChartInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetChartInstallations, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetChartInstallations(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetChartInstallations, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res GetChartInstallations
-	if err := c.Client.Post(ctx, "GetChartInstallations", GetChartInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetChartInstallations", GetChartInstallationsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -1035,25 +9354,6 @@ const GetPackageInstallationsDocument = `query GetPackageInstallations ($id: ID!
 		}
 	}
 }
-fragment TerraformInstallationFragment on TerraformInstallation {
-	id
-	terraform {
-		... TerraformFragment
-	}
-	version {
-		... VersionFragment
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
 fragment ChartInstallationFragment on ChartInstallation {
 	id
 	chart {
@@ -1077,6 +9377,13 @@ fragment DependenciesFragment on Dependencies {
 		type
 		name
 		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
 	}
 	wait
 	application
@@ -1089,12 +9396,15 @@ fragment DependenciesFragment on Dependencies {
 	providerWirings
 	outputs
 	providerVsn
+	cliVsn
 }
 fragment VersionFragment on Version {
 	id
+	helm
 	readme
 	version
 	valuesTemplate
+	templateType
 	package
 	crds {
 		... CrdFragment
@@ -1102,1513 +9412,7 @@ fragment VersionFragment on Version {
 	dependencies {
 		... DependenciesFragment
 	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
-}
-`
-
-func (c *Client) GetPackageInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetPackageInstallations, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetPackageInstallations
-	if err := c.Client.Post(ctx, "GetPackageInstallations", GetPackageInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateCrdDocument = `mutation CreateCrd ($chartName: ChartName!, $name: String!, $blob: UploadOrUrl!) {
-	createCrd(chartName: $chartName, attributes: {name:$name,blob:$blob}) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateCrd(ctx context.Context, chartName ChartName, name string, blob string, httpRequestOptions ...client.HTTPRequestOption) (*CreateCrd, error) {
-	vars := map[string]interface{}{
-		"chartName": chartName,
-		"name":      name,
-		"blob":      blob,
-	}
-
-	var res CreateCrd
-	if err := c.Client.Post(ctx, "CreateCrd", CreateCrdDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UninstallChartDocument = `mutation UninstallChart ($id: ID!) {
-	deleteChartInstallation(id: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) UninstallChart(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallChart, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res UninstallChart
-	if err := c.Client.Post(ctx, "UninstallChart", UninstallChartDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetDNSRecordsDocument = `query GetDnsRecords ($cluster: String!, $provider: Provider!) {
-	dnsRecords(cluster: $cluster, provider: $provider, first: 500) {
-		edges {
-			node {
-				... DnsRecordFragment
-			}
-		}
-	}
-}
-fragment DnsRecordFragment on DnsRecord {
-	type
-	name
-	records
-}
-`
-
-func (c *Client) GetDNSRecords(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetDNSRecords, error) {
-	vars := map[string]interface{}{
-		"cluster":  cluster,
-		"provider": provider,
-	}
-
-	var res GetDNSRecords
-	if err := c.Client.Post(ctx, "GetDnsRecords", GetDNSRecordsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateDNSRecordDocument = `mutation CreateDnsRecord ($cluster: String!, $provider: Provider!, $attributes: DnsRecordAttributes!) {
-	createDnsRecord(cluster: $cluster, provider: $provider, attributes: $attributes) {
-		... DnsRecordFragment
-	}
-}
-fragment DnsRecordFragment on DnsRecord {
-	type
-	name
-	records
-}
-`
-
-func (c *Client) CreateDNSRecord(ctx context.Context, cluster string, provider Provider, attributes DNSRecordAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateDNSRecord, error) {
-	vars := map[string]interface{}{
-		"cluster":    cluster,
-		"provider":   provider,
-		"attributes": attributes,
-	}
-
-	var res CreateDNSRecord
-	if err := c.Client.Post(ctx, "CreateDnsRecord", CreateDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteDNSRecordDocument = `mutation DeleteDnsRecord ($name: String!, $type: DnsRecordType!) {
-	deleteDnsRecord(name: $name, type: $type) {
-		... DnsRecordFragment
-	}
-}
-fragment DnsRecordFragment on DnsRecord {
-	type
-	name
-	records
-}
-`
-
-func (c *Client) DeleteDNSRecord(ctx context.Context, name string, typeArg DNSRecordType, httpRequestOptions ...client.HTTPRequestOption) (*DeleteDNSRecord, error) {
-	vars := map[string]interface{}{
-		"name": name,
-		"type": typeArg,
-	}
-
-	var res DeleteDNSRecord
-	if err := c.Client.Post(ctx, "DeleteDnsRecord", DeleteDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateDomainDocument = `mutation CreateDomain ($name: String!) {
-	provisionDomain(name: $name) {
-		... DnsDomainFragment
-	}
-}
-fragment DnsDomainFragment on DnsDomain {
-	id
-	name
-}
-`
-
-func (c *Client) CreateDomain(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateDomain, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res CreateDomain
-	if err := c.Client.Post(ctx, "CreateDomain", CreateDomainDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetInstallationDocument = `query GetInstallation ($name: String) {
-	installation(name: $name) {
-		... InstallationFragment
-	}
-}
-fragment InstallationFragment on Installation {
-	id
-	context
-	licenseKey
-	acmeKeyId
-	acmeSecret
-	repository {
-		... RepositoryFragment
-	}
-	oidcProvider {
-		... OIDCProvider
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment OIDCProvider on OidcProvider {
-	id
-	clientId
-	clientSecret
-	redirectUris
-	bindings {
-		user {
-			id
-			email
-		}
-		group {
-			id
-			name
-		}
-	}
-	configuration {
-		issuer
-		authorizationEndpoint
-		tokenEndpoint
-		jwksUri
-		userinfoEndpoint
-	}
-}
-`
-
-func (c *Client) GetInstallation(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallation, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res GetInstallation
-	if err := c.Client.Post(ctx, "GetInstallation", GetInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetInstallationByIDDocument = `query GetInstallationById ($id: ID) {
-	installation(id: $id) {
-		... InstallationFragment
-	}
-}
-fragment InstallationFragment on Installation {
-	id
-	context
-	licenseKey
-	acmeKeyId
-	acmeSecret
-	repository {
-		... RepositoryFragment
-	}
-	oidcProvider {
-		... OIDCProvider
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment OIDCProvider on OidcProvider {
-	id
-	clientId
-	clientSecret
-	redirectUris
-	bindings {
-		user {
-			id
-			email
-		}
-		group {
-			id
-			name
-		}
-	}
-	configuration {
-		issuer
-		authorizationEndpoint
-		tokenEndpoint
-		jwksUri
-		userinfoEndpoint
-	}
-}
-`
-
-func (c *Client) GetInstallationByID(ctx context.Context, id *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallationByID, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetInstallationByID
-	if err := c.Client.Post(ctx, "GetInstallationById", GetInstallationByIDDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetInstallationsDocument = `query GetInstallations {
-	installations(first: 100) {
-		edges {
-			node {
-				... InstallationFragment
-			}
-		}
-	}
-}
-fragment InstallationFragment on Installation {
-	id
-	context
-	licenseKey
-	acmeKeyId
-	acmeSecret
-	repository {
-		... RepositoryFragment
-	}
-	oidcProvider {
-		... OIDCProvider
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment OIDCProvider on OidcProvider {
-	id
-	clientId
-	clientSecret
-	redirectUris
-	bindings {
-		user {
-			id
-			email
-		}
-		group {
-			id
-			name
-		}
-	}
-	configuration {
-		issuer
-		authorizationEndpoint
-		tokenEndpoint
-		jwksUri
-		userinfoEndpoint
-	}
-}
-`
-
-func (c *Client) GetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallations, error) {
-	vars := map[string]interface{}{}
-
-	var res GetInstallations
-	if err := c.Client.Post(ctx, "GetInstallations", GetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpsertOidcProviderDocument = `mutation UpsertOidcProvider ($id: ID!, $attributes: OidcAttributes!) {
-	upsertOidcProvider(installationId: $id, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) UpsertOidcProvider(ctx context.Context, id string, attributes OidcAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpsertOidcProvider, error) {
-	vars := map[string]interface{}{
-		"id":         id,
-		"attributes": attributes,
-	}
-
-	var res UpsertOidcProvider
-	if err := c.Client.Post(ctx, "UpsertOidcProvider", UpsertOidcProviderDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ResetInstallationsDocument = `mutation ResetInstallations {
-	resetInstallations
-}
-`
-
-func (c *Client) ResetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ResetInstallations, error) {
-	vars := map[string]interface{}{}
-
-	var res ResetInstallations
-	if err := c.Client.Post(ctx, "ResetInstallations", ResetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetRecipeDocument = `query GetRecipe ($repo: String, $name: String) {
-	recipe(repo: $repo, name: $name) {
-		... RecipeFragment
-		recipeDependencies {
-			... RecipeFragment
-		}
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-`
-
-func (c *Client) GetRecipe(ctx context.Context, repo *string, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRecipe, error) {
-	vars := map[string]interface{}{
-		"repo": repo,
-		"name": name,
-	}
-
-	var res GetRecipe
-	if err := c.Client.Post(ctx, "GetRecipe", GetRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListRecipesDocument = `query ListRecipes ($repo: String, $provider: Provider) {
-	recipes(repositoryName: $repo, provider: $provider, first: 500) {
-		edges {
-			node {
-				... RecipeFragment
-			}
-		}
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-`
-
-func (c *Client) ListRecipes(ctx context.Context, repo *string, provider *Provider, httpRequestOptions ...client.HTTPRequestOption) (*ListRecipes, error) {
-	vars := map[string]interface{}{
-		"repo":     repo,
-		"provider": provider,
-	}
-
-	var res ListRecipes
-	if err := c.Client.Post(ctx, "ListRecipes", ListRecipesDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateRecipeDocument = `mutation CreateRecipe ($name: String!, $attributes: RecipeAttributes!) {
-	createRecipe(repositoryName: $name, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateRecipe(ctx context.Context, name string, attributes RecipeAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRecipe, error) {
-	vars := map[string]interface{}{
-		"name":       name,
-		"attributes": attributes,
-	}
-
-	var res CreateRecipe
-	if err := c.Client.Post(ctx, "CreateRecipe", CreateRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const InstallRecipeDocument = `mutation InstallRecipe ($id: ID!) {
-	installRecipe(recipeId: $id, context: "{}") {
-		id
-	}
-}
-`
-
-func (c *Client) InstallRecipe(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*InstallRecipe, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res InstallRecipe
-	if err := c.Client.Post(ctx, "InstallRecipe", InstallRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateStackDocument = `mutation CreateStack ($attributes: StackAttributes!) {
-	createStack(attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateStack(ctx context.Context, attributes StackAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateStack, error) {
-	vars := map[string]interface{}{
-		"attributes": attributes,
-	}
-
-	var res CreateStack
-	if err := c.Client.Post(ctx, "CreateStack", CreateStackDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetStackDocument = `query GetStack ($name: String!, $provider: Provider!) {
-	stack(name: $name, provider: $provider) {
-		... StackFragment
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment StackFragment on Stack {
-	id
-	name
-	featured
-	description
-	bundles {
-		... RecipeFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-`
-
-func (c *Client) GetStack(ctx context.Context, name string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetStack, error) {
-	vars := map[string]interface{}{
-		"name":     name,
-		"provider": provider,
-	}
-
-	var res GetStack
-	if err := c.Client.Post(ctx, "GetStack", GetStackDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListStacksDocument = `query ListStacks ($featured: Boolean, $cursor: String) {
-	stacks(first: 100, after: $cursor, featured: $featured) {
-		edges {
-			node {
-				... StackFragment
-			}
-		}
-	}
-}
-fragment StackFragment on Stack {
-	id
-	name
-	featured
-	description
-	bundles {
-		... RecipeFragment
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-`
-
-func (c *Client) ListStacks(ctx context.Context, featured *bool, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*ListStacks, error) {
-	vars := map[string]interface{}{
-		"featured": featured,
-		"cursor":   cursor,
-	}
-
-	var res ListStacks
-	if err := c.Client.Post(ctx, "ListStacks", ListStacksDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetRepositoryDocument = `query GetRepository ($name: String) {
-	repository(name: $name) {
-		... RepositoryFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-`
-
-func (c *Client) GetRepository(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRepository, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res GetRepository
-	if err := c.Client.Post(ctx, "GetRepository", GetRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateResourceDefinitionDocument = `mutation CreateResourceDefinition ($name: String!, $input: ResourceDefinitionAttributes!) {
-	updateRepository(repositoryName: $name, attributes: {integrationResourceDefinition:$input}) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateResourceDefinition(ctx context.Context, name string, input ResourceDefinitionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateResourceDefinition, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"input": input,
-	}
-
-	var res CreateResourceDefinition
-	if err := c.Client.Post(ctx, "CreateResourceDefinition", CreateResourceDefinitionDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateIntegrationDocument = `mutation CreateIntegration ($name: String!, $attrs: IntegrationAttributes!) {
-	createIntegration(repositoryName: $name, attributes: $attrs) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateIntegration(ctx context.Context, name string, attrs IntegrationAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateIntegration, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res CreateIntegration
-	if err := c.Client.Post(ctx, "CreateIntegration", CreateIntegrationDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpdateRepositoryDocument = `mutation UpdateRepository ($name: String!, $attrs: RepositoryAttributes!) {
-	updateRepository(repositoryName: $name, attributes: $attrs) {
-		id
-	}
-}
-`
-
-func (c *Client) UpdateRepository(ctx context.Context, name string, attrs RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateRepository, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res UpdateRepository
-	if err := c.Client.Post(ctx, "UpdateRepository", UpdateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateRepositoryDocument = `mutation CreateRepository ($name: String!, $publisher: String!, $attributes: RepositoryAttributes!) {
-	upsertRepository(name: $name, publisher: $publisher, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateRepository(ctx context.Context, name string, publisher string, attributes RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRepository, error) {
-	vars := map[string]interface{}{
-		"name":       name,
-		"publisher":  publisher,
-		"attributes": attributes,
-	}
-
-	var res CreateRepository
-	if err := c.Client.Post(ctx, "CreateRepository", CreateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const AcquireLockDocument = `mutation AcquireLock ($name: String!) {
-	acquireLock(repository: $name) {
-		... ApplyLockFragment
-	}
-}
-fragment ApplyLockFragment on ApplyLock {
-	id
-	lock
-}
-`
-
-func (c *Client) AcquireLock(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*AcquireLock, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res AcquireLock
-	if err := c.Client.Post(ctx, "AcquireLock", AcquireLockDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ReleaseLockDocument = `mutation ReleaseLock ($name: String!, $attrs: LockAttributes!) {
-	releaseLock(repository: $name, attributes: $attrs) {
-		... ApplyLockFragment
-	}
-}
-fragment ApplyLockFragment on ApplyLock {
-	id
-	lock
-}
-`
-
-func (c *Client) ReleaseLock(ctx context.Context, name string, attrs LockAttributes, httpRequestOptions ...client.HTTPRequestOption) (*ReleaseLock, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res ReleaseLock
-	if err := c.Client.Post(ctx, "ReleaseLock", ReleaseLockDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UnlockRepositoryDocument = `mutation UnlockRepository ($name: String!) {
-	unlockRepository(name: $name)
-}
-`
-
-func (c *Client) UnlockRepository(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*UnlockRepository, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res UnlockRepository
-	if err := c.Client.Post(ctx, "UnlockRepository", UnlockRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListRepositoriesDocument = `query ListRepositories ($q: String) {
-	repositories(q: $q, first: 100) {
-		edges {
-			node {
-				... RepositoryFragment
-			}
-		}
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-`
-
-func (c *Client) ListRepositories(ctx context.Context, q *string, httpRequestOptions ...client.HTTPRequestOption) (*ListRepositories, error) {
-	vars := map[string]interface{}{
-		"q": q,
-	}
-
-	var res ListRepositories
-	if err := c.Client.Post(ctx, "ListRepositories", ListRepositoriesDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ScaffoldsDocument = `query Scaffolds ($app: String!, $pub: String!, $cat: Category!, $ing: Boolean, $pg: Boolean) {
-	scaffold(application: $app, publisher: $pub, category: $cat, ingress: $ing, postgres: $pg) {
-		path
-		content
-	}
-}
-`
-
-func (c *Client) Scaffolds(ctx context.Context, app string, pub string, cat Category, ing *bool, pg *bool, httpRequestOptions ...client.HTTPRequestOption) (*Scaffolds, error) {
-	vars := map[string]interface{}{
-		"app": app,
-		"pub": pub,
-		"cat": cat,
-		"ing": ing,
-		"pg":  pg,
-	}
-
-	var res Scaffolds
-	if err := c.Client.Post(ctx, "Scaffolds", ScaffoldsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteRepositoryDocument = `mutation DeleteRepository ($id: ID!) {
-	deleteRepository(repositoryId: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteRepository(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteRepository, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res DeleteRepository
-	if err := c.Client.Post(ctx, "DeleteRepository", DeleteRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTfProvidersDocument = `query GetTfProviders {
-	terraformProviders
-}
-`
-
-func (c *Client) GetTfProviders(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviders, error) {
-	vars := map[string]interface{}{}
-
-	var res GetTfProviders
-	if err := c.Client.Post(ctx, "GetTfProviders", GetTfProvidersDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTfProviderScaffoldDocument = `query GetTfProviderScaffold ($name: Provider!, $vsn: String) {
-	terraformProvider(name: $name, vsn: $vsn) {
-		name
-		content
-	}
-}
-`
-
-func (c *Client) GetTfProviderScaffold(ctx context.Context, name Provider, vsn *string, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviderScaffold, error) {
-	vars := map[string]interface{}{
-		"name": name,
-		"vsn":  vsn,
-	}
-
-	var res GetTfProviderScaffold
-	if err := c.Client.Post(ctx, "GetTfProviderScaffold", GetTfProviderScaffoldDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetShellDocument = `query GetShell {
-	shell {
-		... CloudShellFragment
-	}
-}
-fragment CloudShellFragment on CloudShell {
-	id
-	aesKey
-	gitUrl
-}
-`
-
-func (c *Client) GetShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetShell, error) {
-	vars := map[string]interface{}{}
-
-	var res GetShell
-	if err := c.Client.Post(ctx, "GetShell", GetShellDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteShellDocument = `mutation DeleteShell {
-	deleteShell {
-		... CloudShellFragment
-	}
-}
-fragment CloudShellFragment on CloudShell {
-	id
-	aesKey
-	gitUrl
-}
-`
-
-func (c *Client) DeleteShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DeleteShell, error) {
-	vars := map[string]interface{}{}
-
-	var res DeleteShell
-	if err := c.Client.Post(ctx, "DeleteShell", DeleteShellDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTerraformDocument = `query GetTerraform ($id: ID!) {
-	terraform(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... TerraformFragment
-			}
-		}
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-`
-
-func (c *Client) GetTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraform, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetTerraform
-	if err := c.Client.Post(ctx, "GetTerraform", GetTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTerraformInstallationsDocument = `query GetTerraformInstallations ($id: ID!) {
-	terraformInstallations(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... TerraformInstallationFragment
-			}
-		}
-	}
-}
-fragment VersionFragment on Version {
-	id
-	readme
-	version
-	valuesTemplate
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
+	insertedAt
 }
 fragment CrdFragment on Crd {
 	id
@@ -2634,1679 +9438,156 @@ fragment TerraformFragment on Terraform {
 	}
 	valuesTemplate
 }
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
 `
 
-func (c *Client) GetTerraformInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraformInstallations, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetPackageInstallations(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetPackageInstallations, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
-	var res GetTerraformInstallations
-	if err := c.Client.Post(ctx, "GetTerraformInstallations", GetTerraformInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res GetPackageInstallations
+	if err := c.Client.Post(ctx, "GetPackageInstallations", GetPackageInstallationsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const UploadTerraformDocument = `mutation UploadTerraform ($repoName: String!, $name: String!, $uploadOrUrl: UploadOrUrl!) {
-	uploadTerraform(repositoryName: $repoName, name: $name, attributes: {name:$name,package:$uploadOrUrl}) {
-		... TerraformFragment
-	}
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-`
-
-func (c *Client) UploadTerraform(ctx context.Context, repoName string, name string, uploadOrURL string, httpRequestOptions ...client.HTTPRequestOption) (*UploadTerraform, error) {
-	vars := map[string]interface{}{
-		"repoName":    repoName,
-		"name":        name,
-		"uploadOrUrl": uploadOrURL,
-	}
-
-	var res UploadTerraform
-	if err := c.Client.Post(ctx, "UploadTerraform", UploadTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UninstallTerraformDocument = `mutation UninstallTerraform ($id: ID!) {
-	uninstallTerraform(id: $id) {
+const CreateCrdDocument = `mutation CreateCrd ($chartName: ChartName!, $name: String!, $blob: UploadOrUrl!) {
+	createCrd(chartName: $chartName, attributes: {name:$name,blob:$blob}) {
 		id
 	}
 }
 `
 
-func (c *Client) UninstallTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallTerraform, error) {
-	vars := map[string]interface{}{
+func (c *Client) CreateCrd(ctx context.Context, chartName ChartName, name string, blob string, interceptors ...clientv2.RequestInterceptor) (*CreateCrd, error) {
+	vars := map[string]any{
+		"chartName": chartName,
+		"name":      name,
+		"blob":      blob,
+	}
+
+	var res CreateCrd
+	if err := c.Client.Post(ctx, "CreateCrd", CreateCrdDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UninstallChartDocument = `mutation UninstallChart ($id: ID!) {
+	deleteChartInstallation(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) UninstallChart(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*UninstallChart, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
-	var res UninstallTerraform
-	if err := c.Client.Post(ctx, "UninstallTerraform", UninstallTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res UninstallChart
+	if err := c.Client.Post(ctx, "UninstallChart", UninstallChartDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const CreateTestDocument = `mutation CreateTest ($name: String!, $attrs: TestAttributes!) {
-	createTest(name: $name, attributes: $attrs) {
-		... TestFragment
-	}
-}
-fragment TestFragment on Test {
-	id
-	name
-	status
-	promoteTag
-	steps {
-		id
-		name
-		description
-		status
-	}
-}
-`
-
-func (c *Client) CreateTest(ctx context.Context, name string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateTest, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res CreateTest
-	if err := c.Client.Post(ctx, "CreateTest", CreateTestDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpdateTestDocument = `mutation UpdateTest ($id: ID!, $attrs: TestAttributes!) {
-	updateTest(id: $id, attributes: $attrs) {
-		... TestFragment
-	}
-}
-fragment TestFragment on Test {
-	id
-	name
-	status
-	promoteTag
-	steps {
-		id
-		name
-		description
-		status
-	}
-}
-`
-
-func (c *Client) UpdateTest(ctx context.Context, id string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateTest, error) {
-	vars := map[string]interface{}{
-		"id":    id,
-		"attrs": attrs,
-	}
-
-	var res UpdateTest
-	if err := c.Client.Post(ctx, "UpdateTest", UpdateTestDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpdateStepDocument = `mutation UpdateStep ($id: ID!, $logs: UploadOrUrl!) {
-	updateStep(id: $id, attributes: {logs:$logs}) {
-		id
-	}
-}
-`
-
-func (c *Client) UpdateStep(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*UpdateStep, error) {
-	vars := map[string]interface{}{
-		"id":   id,
-		"logs": logs,
-	}
-
-	var res UpdateStep
-	if err := c.Client.Post(ctx, "UpdateStep", UpdateStepDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const PublishLogsDocument = `mutation PublishLogs ($id: ID!, $logs: String!) {
-	publishLogs(id: $id, logs: $logs) {
-		id
-	}
-}
-`
-
-func (c *Client) PublishLogs(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*PublishLogs, error) {
-	vars := map[string]interface{}{
-		"id":   id,
-		"logs": logs,
-	}
-
-	var res PublishLogs
-	if err := c.Client.Post(ctx, "PublishLogs", PublishLogsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const MeDocument = `query Me {
-	me {
-		id
-		email
-	}
-}
-`
-
-func (c *Client) Me(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*Me, error) {
-	vars := map[string]interface{}{}
-
-	var res Me
-	if err := c.Client.Post(ctx, "Me", MeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetLoginMethodDocument = `query GetLoginMethod ($email: String!) {
-	loginMethod(email: $email) {
-		loginMethod
-		token
-	}
-}
-`
-
-func (c *Client) GetLoginMethod(ctx context.Context, email string, httpRequestOptions ...client.HTTPRequestOption) (*GetLoginMethod, error) {
-	vars := map[string]interface{}{
-		"email": email,
-	}
-
-	var res GetLoginMethod
-	if err := c.Client.Post(ctx, "GetLoginMethod", GetLoginMethodDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListTokensDocument = `query ListTokens {
-	tokens(first: 3) {
+const GetConsoleInstancesDocument = `query GetConsoleInstances ($first: Int!) {
+	consoleInstances(first: $first) {
 		edges {
 			node {
-				token
+				... ConsoleInstanceFragment
 			}
 		}
 	}
 }
-`
-
-func (c *Client) ListTokens(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ListTokens, error) {
-	vars := map[string]interface{}{}
-
-	var res ListTokens
-	if err := c.Client.Post(ctx, "ListTokens", ListTokensDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListKeysDocument = `query ListKeys ($emails: [String]) {
-	publicKeys(emails: $emails, first: 1000) {
-		edges {
-			node {
-				... PublicKeyFragment
-			}
-		}
-	}
-}
-fragment PublicKeyFragment on PublicKey {
-	id
-	content
-	user {
-		... UserFragment
-	}
-}
-fragment UserFragment on User {
+fragment ConsoleInstanceFragment on ConsoleInstance {
 	id
 	name
-	email
+	url
 }
 `
 
-func (c *Client) ListKeys(ctx context.Context, emails []*string, httpRequestOptions ...client.HTTPRequestOption) (*ListKeys, error) {
-	vars := map[string]interface{}{
-		"emails": emails,
+func (c *Client) GetConsoleInstances(ctx context.Context, first int64, interceptors ...clientv2.RequestInterceptor) (*GetConsoleInstances, error) {
+	vars := map[string]any{
+		"first": first,
 	}
 
-	var res ListKeys
-	if err := c.Client.Post(ctx, "ListKeys", ListKeysDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res GetConsoleInstances
+	if err := c.Client.Post(ctx, "GetConsoleInstances", GetConsoleInstancesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetEabCredentialDocument = `query GetEabCredential ($cluster: String!, $provider: Provider!) {
-	eabCredential(cluster: $cluster, provider: $provider) {
-		... EabCredentialFragment
+const UpdateConsoleInstanceDocument = `mutation UpdateConsoleInstance ($id: ID!, $attributes: ConsoleInstanceUpdateAttributes!) {
+	updateConsoleInstance(id: $id, attributes: $attributes) {
+		... ConsoleInstanceFragment
 	}
 }
-fragment EabCredentialFragment on EabCredential {
+fragment ConsoleInstanceFragment on ConsoleInstance {
 	id
-	keyId
-	hmacKey
-	cluster
-	provider
+	name
+	url
 }
 `
 
-func (c *Client) GetEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetEabCredential, error) {
-	vars := map[string]interface{}{
-		"cluster":  cluster,
-		"provider": provider,
-	}
-
-	var res GetEabCredential
-	if err := c.Client.Post(ctx, "GetEabCredential", GetEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const PollLoginTokenDocument = `mutation PollLoginToken ($token: String!) {
-	loginToken(token: $token) {
-		jwt
-	}
-}
-`
-
-func (c *Client) PollLoginToken(ctx context.Context, token string, httpRequestOptions ...client.HTTPRequestOption) (*PollLoginToken, error) {
-	vars := map[string]interface{}{
-		"token": token,
-	}
-
-	var res PollLoginToken
-	if err := c.Client.Post(ctx, "PollLoginToken", PollLoginTokenDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DevLoginDocument = `mutation DevLogin {
-	deviceLogin {
-		loginUrl
-		deviceToken
-	}
-}
-`
-
-func (c *Client) DevLogin(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DevLogin, error) {
-	vars := map[string]interface{}{}
-
-	var res DevLogin
-	if err := c.Client.Post(ctx, "DevLogin", DevLoginDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const LoginDocument = `mutation Login ($email: String!, $pwd: String!) {
-	login(email: $email, password: $pwd) {
-		jwt
-	}
-}
-`
-
-func (c *Client) Login(ctx context.Context, email string, pwd string, httpRequestOptions ...client.HTTPRequestOption) (*Login, error) {
-	vars := map[string]interface{}{
-		"email": email,
-		"pwd":   pwd,
-	}
-
-	var res Login
-	if err := c.Client.Post(ctx, "Login", LoginDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ImpersonateServiceAccountDocument = `mutation ImpersonateServiceAccount ($email: String) {
-	impersonateServiceAccount(email: $email) {
-		jwt
-		email
-	}
-}
-`
-
-func (c *Client) ImpersonateServiceAccount(ctx context.Context, email *string, httpRequestOptions ...client.HTTPRequestOption) (*ImpersonateServiceAccount, error) {
-	vars := map[string]interface{}{
-		"email": email,
-	}
-
-	var res ImpersonateServiceAccount
-	if err := c.Client.Post(ctx, "ImpersonateServiceAccount", ImpersonateServiceAccountDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateAccessTokenDocument = `mutation CreateAccessToken {
-	createToken {
-		token
-	}
-}
-`
-
-func (c *Client) CreateAccessToken(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*CreateAccessToken, error) {
-	vars := map[string]interface{}{}
-
-	var res CreateAccessToken
-	if err := c.Client.Post(ctx, "CreateAccessToken", CreateAccessTokenDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateKeyDocument = `mutation CreateKey ($key: String!, $name: String!) {
-	createPublicKey(attributes: {content:$key,name:$name}) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateKey(ctx context.Context, key string, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateKey, error) {
-	vars := map[string]interface{}{
-		"key":  key,
-		"name": name,
-	}
-
-	var res CreateKey
-	if err := c.Client.Post(ctx, "CreateKey", CreateKeyDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteEabCredentialDocument = `mutation DeleteEabCredential ($cluster: String!, $provider: Provider!) {
-	deleteEabKey(cluster: $cluster, provider: $provider) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*DeleteEabCredential, error) {
-	vars := map[string]interface{}{
-		"cluster":  cluster,
-		"provider": provider,
-	}
-
-	var res DeleteEabCredential
-	if err := c.Client.Post(ctx, "DeleteEabCredential", DeleteEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateEventDocument = `mutation CreateEvent ($attrs: UserEventAttributes!) {
-	createUserEvent(attributes: $attrs)
-}
-`
-
-func (c *Client) CreateEvent(ctx context.Context, attrs UserEventAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateEvent, error) {
-	vars := map[string]interface{}{
-		"attrs": attrs,
-	}
-
-	var res CreateEvent
-	if err := c.Client.Post(ctx, "CreateEvent", CreateEventDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpdateVersionDocument = `mutation UpdateVersion ($spec: VersionSpec, $attributes: VersionAttributes!) {
-	updateVersion(spec: $spec, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) UpdateVersion(ctx context.Context, spec *VersionSpec, attributes VersionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateVersion, error) {
-	vars := map[string]interface{}{
-		"spec":       spec,
+func (c *Client) UpdateConsoleInstance(ctx context.Context, id string, attributes ConsoleInstanceUpdateAttributes, interceptors ...clientv2.RequestInterceptor) (*UpdateConsoleInstance, error) {
+	vars := map[string]any{
+		"id":         id,
 		"attributes": attributes,
 	}
 
-	var res UpdateVersion
-	if err := c.Client.Post(ctx, "UpdateVersion", UpdateVersionDocument, &res, vars, httpRequestOptions...); err != nil {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	Me                     *User                             "json:\"me\" graphql:\"me\""
-	User                   *User                             "json:\"user\" graphql:\"user\""
-	LoginMethod            *LoginMethodResponse              "json:\"loginMethod\" graphql:\"loginMethod\""
-	ResetToken             *ResetToken                       "json:\"resetToken\" graphql:\"resetToken\""
-	Tokens                 *PersistedTokenConnection         "json:\"tokens\" graphql:\"tokens\""
-	Token                  *PersistedToken                   "json:\"token\" graphql:\"token\""
-	Publisher              *Publisher                        "json:\"publisher\" graphql:\"publisher\""
-	Users                  *UserConnection                   "json:\"users\" graphql:\"users\""
-	SearchUsers            *UserConnection                   "json:\"searchUsers\" graphql:\"searchUsers\""
-	Publishers             *PublisherConnection              "json:\"publishers\" graphql:\"publishers\""
-	Webhooks               *WebhookConnection                "json:\"webhooks\" graphql:\"webhooks\""
-	PublicKeys             *PublicKeyConnection              "json:\"publicKeys\" graphql:\"publicKeys\""
-	EabCredential          *EabCredential                    "json:\"eabCredential\" graphql:\"eabCredential\""
-	EabCredentials         []*EabCredential                  "json:\"eabCredentials\" graphql:\"eabCredentials\""
-	KeyBackups             *KeyBackupConnection              "json:\"keyBackups\" graphql:\"keyBackups\""
-	KeyBackup              *KeyBackup                        "json:\"keyBackup\" graphql:\"keyBackup\""
-	OidcToken              *string                           "json:\"oidcToken\" graphql:\"oidcToken\""
-	RepositorySubscription *RepositorySubscription           "json:\"repositorySubscription\" graphql:\"repositorySubscription\""
-	Subscriptions          *RepositorySubscriptionConnection "json:\"subscriptions\" graphql:\"subscriptions\""
-	PlatformPlans          []*PlatformPlan                   "json:\"platformPlans\" graphql:\"platformPlans\""
-	PlatformSubscription   *PlatformSubscription             "json:\"platformSubscription\" graphql:\"platformSubscription\""
-	Invoices               *InvoiceConnection                "json:\"invoices\" graphql:\"invoices\""
-	Repository             *Repository                       "json:\"repository\" graphql:\"repository\""
-	Installation           *Installation                     "json:\"installation\" graphql:\"installation\""
-	Repositories           *RepositoryConnection             "json:\"repositories\" graphql:\"repositories\""
-	SearchRepositories     *RepositoryConnection             "json:\"searchRepositories\" graphql:\"searchRepositories\""
-	Installations          *InstallationConnection           "json:\"installations\" graphql:\"installations\""
-	Integrations           *IntegrationConnection            "json:\"integrations\" graphql:\"integrations\""
-	Closure                []*ClosureItem                    "json:\"closure\" graphql:\"closure\""
-	Categories             []*CategoryInfo                   "json:\"categories\" graphql:\"categories\""
-	Category               *CategoryInfo                     "json:\"category\" graphql:\"category\""
-	Scaffold               []*ScaffoldFile                   "json:\"scaffold\" graphql:\"scaffold\""
-	Recipe                 *Recipe                           "json:\"recipe\" graphql:\"recipe\""
-	Stack                  *Stack                            "json:\"stack\" graphql:\"stack\""
-	Recipes                *RecipeConnection                 "json:\"recipes\" graphql:\"recipes\""
-	Stacks                 *StackConnection                  "json:\"stacks\" graphql:\"stacks\""
-	Chart                  *Chart                            "json:\"chart\" graphql:\"chart\""
-	Charts                 *ChartConnection                  "json:\"charts\" graphql:\"charts\""
-	ChartInstallations     *ChartInstallationConnection      "json:\"chartInstallations\" graphql:\"chartInstallations\""
-	TerraformModule        *Terraform                        "json:\"terraformModule\" graphql:\"terraformModule\""
-	Terraform              *TerraformConnection              "json:\"terraform\" graphql:\"terraform\""
-	TerraformInstallations *TerraformInstallationConnection  "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
-	DockerRepositories     *DockerRepositoryConnection       "json:\"dockerRepositories\" graphql:\"dockerRepositories\""
-	DockerImages           *DockerImageConnection            "json:\"dockerImages\" graphql:\"dockerImages\""
-	DockerImage            *DockerImage                      "json:\"dockerImage\" graphql:\"dockerImage\""
-	Versions               *VersionConnection                "json:\"versions\" graphql:\"versions\""
-	Account                *Account                          "json:\"account\" graphql:\"account\""
-	Invite                 *Invite                           "json:\"invite\" graphql:\"invite\""
-	Invites                *InviteConnection                 "json:\"invites\" graphql:\"invites\""
-	Groups                 *GroupConnection                  "json:\"groups\" graphql:\"groups\""
-	GroupMembers           *GroupMemberConnection            "json:\"groupMembers\" graphql:\"groupMembers\""
-	Role                   *Role                             "json:\"role\" graphql:\"role\""
-	Roles                  *RoleConnection                   "json:\"roles\" graphql:\"roles\""
-	IntegrationWebhooks    *IntegrationWebhookConnection     "json:\"integrationWebhooks\" graphql:\"integrationWebhooks\""
-	IntegrationWebhook     *IntegrationWebhook               "json:\"integrationWebhook\" graphql:\"integrationWebhook\""
-	OauthIntegrations      []*OauthIntegration               "json:\"oauthIntegrations\" graphql:\"oauthIntegrations\""
-	Incidents              *IncidentConnection               "json:\"incidents\" graphql:\"incidents\""
-	Incident               *Incident                         "json:\"incident\" graphql:\"incident\""
-	Notifications          *NotificationConnection           "json:\"notifications\" graphql:\"notifications\""
-	Audits                 *AuditConnection                  "json:\"audits\" graphql:\"audits\""
-	AuditMetrics           []*GeoMetric                      "json:\"auditMetrics\" graphql:\"auditMetrics\""
-	UpgradeQueues          []*UpgradeQueue                   "json:\"upgradeQueues\" graphql:\"upgradeQueues\""
-	DeferredUpdates        *DeferredUpdateConnection         "json:\"deferredUpdates\" graphql:\"deferredUpdates\""
-	UpgradeQueue           *UpgradeQueue                     "json:\"upgradeQueue\" graphql:\"upgradeQueue\""
-	Rollouts               *RolloutConnection                "json:\"rollouts\" graphql:\"rollouts\""
-	OauthLogin             *Repository                       "json:\"oauthLogin\" graphql:\"oauthLogin\""
-	OauthConsent           *Repository                       "json:\"oauthConsent\" graphql:\"oauthConsent\""
-	OidcLogin              *OidcStepResponse                 "json:\"oidcLogin\" graphql:\"oidcLogin\""
-	OidcConsent            *OidcStepResponse                 "json:\"oidcConsent\" graphql:\"oidcConsent\""
-	OauthUrls              []*OauthInfo                      "json:\"oauthUrls\" graphql:\"oauthUrls\""
-	OidcLogins             *OidcLoginConnection              "json:\"oidcLogins\" graphql:\"oidcLogins\""
-	LoginMetrics           []*GeoMetric                      "json:\"loginMetrics\" graphql:\"loginMetrics\""
-	DNSDomain              *DNSDomain                        "json:\"dnsDomain\" graphql:\"dnsDomain\""
-	DNSDomains             *DNSDomainConnection              "json:\"dnsDomains\" graphql:\"dnsDomains\""
-	DNSRecords             *DNSRecordConnection              "json:\"dnsRecords\" graphql:\"dnsRecords\""
-	Shell                  *CloudShell                       "json:\"shell\" graphql:\"shell\""
-	ShellConfiguration     *ShellConfiguration               "json:\"shellConfiguration\" graphql:\"shellConfiguration\""
-	ShellApplications      []*ApplicationInformation         "json:\"shellApplications\" graphql:\"shellApplications\""
-	ScmAuthorization       []*AuthorizationURL               "json:\"scmAuthorization\" graphql:\"scmAuthorization\""
-	ScmToken               *string                           "json:\"scmToken\" graphql:\"scmToken\""
-	DemoProject            *DemoProject                      "json:\"demoProject\" graphql:\"demoProject\""
-	PlatformMetrics        *PlatformMetrics                  "json:\"platformMetrics\" graphql:\"platformMetrics\""
-	TerraformProviders     []*Provider                       "json:\"terraformProviders\" graphql:\"terraformProviders\""
-	TerraformProvider      *TerraformProvider                "json:\"terraformProvider\" graphql:\"terraformProvider\""
-	Tests                  *TestConnection                   "json:\"tests\" graphql:\"tests\""
-	Test                   *Test                             "json:\"test\" graphql:\"test\""
-	TestLogs               *string                           "json:\"testLogs\" graphql:\"testLogs\""
-	Chat                   *ChatMessage                      "json:\"chat\" graphql:\"chat\""
-	HelpQuestion           *string                           "json:\"helpQuestion\" graphql:\"helpQuestion\""
-	Cluster                *Cluster                          "json:\"cluster\" graphql:\"cluster\""
-	Clusters               *ClusterConnection                "json:\"clusters\" graphql:\"clusters\""
-	Configuration          *PluralConfiguration              "json:\"configuration\" graphql:\"configuration\""
-	Tags                   *GroupedTagConnection             "json:\"tags\" graphql:\"tags\""
-}
-type RootMutationType struct {
-	Login                      *User                   "json:\"login\" graphql:\"login\""
-	DeviceLogin                *DeviceLogin            "json:\"deviceLogin\" graphql:\"deviceLogin\""
-	PasswordlessLogin          *User                   "json:\"passwordlessLogin\" graphql:\"passwordlessLogin\""
-	LoginToken                 *User                   "json:\"loginToken\" graphql:\"loginToken\""
-	ExternalToken              *string                 "json:\"externalToken\" graphql:\"externalToken\""
-	CreateResetToken           *bool                   "json:\"createResetToken\" graphql:\"createResetToken\""
-	RealizeResetToken          *bool                   "json:\"realizeResetToken\" graphql:\"realizeResetToken\""
-	CreateToken                *PersistedToken         "json:\"createToken\" graphql:\"createToken\""
-	DeleteToken                *PersistedToken         "json:\"deleteToken\" graphql:\"deleteToken\""
-	Signup                     *User                   "json:\"signup\" graphql:\"signup\""
-	UpdateUser                 *User                   "json:\"updateUser\" graphql:\"updateUser\""
-	DeleteUser                 *User                   "json:\"deleteUser\" graphql:\"deleteUser\""
-	CreatePublisher            *Publisher              "json:\"createPublisher\" graphql:\"createPublisher\""
-	CreateWebhook              *Webhook                "json:\"createWebhook\" graphql:\"createWebhook\""
-	PingWebhook                *WebhookResponse        "json:\"pingWebhook\" graphql:\"pingWebhook\""
-	UpdatePublisher            *Publisher              "json:\"updatePublisher\" graphql:\"updatePublisher\""
-	CreatePublicKey            *PublicKey              "json:\"createPublicKey\" graphql:\"createPublicKey\""
-	DeletePublicKey            *PublicKey              "json:\"deletePublicKey\" graphql:\"deletePublicKey\""
-	DeleteEabKey               *EabCredential          "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
-	CreateUserEvent            *bool                   "json:\"createUserEvent\" graphql:\"createUserEvent\""
-	DestroyCluster             *bool                   "json:\"destroyCluster\" graphql:\"destroyCluster\""
-	CreateKeyBackup            *KeyBackup              "json:\"createKeyBackup\" graphql:\"createKeyBackup\""
-	DeleteKeyBackup            *KeyBackup              "json:\"deleteKeyBackup\" graphql:\"deleteKeyBackup\""
-	CreateTrustRelationship    *OidcTrustRelationship  "json:\"createTrustRelationship\" graphql:\"createTrustRelationship\""
-	DeleteTrustRelationship    *OidcTrustRelationship  "json:\"deleteTrustRelationship\" graphql:\"deleteTrustRelationship\""
-	CreateCard                 *Account                "json:\"createCard\" graphql:\"createCard\""
-	SetupIntent                *SetupIntent            "json:\"setupIntent\" graphql:\"setupIntent\""
-	DefaultPaymentMethod       *bool                   "json:\"defaultPaymentMethod\" graphql:\"defaultPaymentMethod\""
-	DeleteCard                 *Account                "json:\"deleteCard\" graphql:\"deleteCard\""
-	DeletePaymentMethod        *PaymentMethod          "json:\"deletePaymentMethod\" graphql:\"deletePaymentMethod\""
-	LinkPublisher              *Publisher              "json:\"linkPublisher\" graphql:\"linkPublisher\""
-	CreatePlan                 *Plan                   "json:\"createPlan\" graphql:\"createPlan\""
-	UpdatePlanAttributes       *Plan                   "json:\"updatePlanAttributes\" graphql:\"updatePlanAttributes\""
-	CreateSubscription         *RepositorySubscription "json:\"createSubscription\" graphql:\"createSubscription\""
-	UpdatePlan                 *RepositorySubscription "json:\"updatePlan\" graphql:\"updatePlan\""
-	UpdateLineItem             *RepositorySubscription "json:\"updateLineItem\" graphql:\"updateLineItem\""
-	CreatePlatformSubscription *PlatformSubscription   "json:\"createPlatformSubscription\" graphql:\"createPlatformSubscription\""
-	BeginTrial                 *PlatformSubscription   "json:\"beginTrial\" graphql:\"beginTrial\""
-	DeletePlatformSubscription *Account                "json:\"deletePlatformSubscription\" graphql:\"deletePlatformSubscription\""
-	CancelPlatformSubscription *PlatformSubscription   "json:\"cancelPlatformSubscription\" graphql:\"cancelPlatformSubscription\""
-	UpdatePlatformPlan         *PlatformSubscription   "json:\"updatePlatformPlan\" graphql:\"updatePlatformPlan\""
-	CreateRepository           *Repository             "json:\"createRepository\" graphql:\"createRepository\""
-	UpdateRepository           *Repository             "json:\"updateRepository\" graphql:\"updateRepository\""
-	UpsertRepository           *Repository             "json:\"upsertRepository\" graphql:\"upsertRepository\""
-	DeleteRepository           *Repository             "json:\"deleteRepository\" graphql:\"deleteRepository\""
-	CreateInstallation         *Installation           "json:\"createInstallation\" graphql:\"createInstallation\""
-	UpdateInstallation         *Installation           "json:\"updateInstallation\" graphql:\"updateInstallation\""
-	DeleteInstallation         *Installation           "json:\"deleteInstallation\" graphql:\"deleteInstallation\""
-	ResetInstallations         *int64                  "json:\"resetInstallations\" graphql:\"resetInstallations\""
-	CreateIntegration          *Integration            "json:\"createIntegration\" graphql:\"createIntegration\""
-	CreateArtifact             *Artifact               "json:\"createArtifact\" graphql:\"createArtifact\""
-	CreateOidcProvider         *OidcProvider           "json:\"createOidcProvider\" graphql:\"createOidcProvider\""
-	UpdateOidcProvider         *OidcProvider           "json:\"updateOidcProvider\" graphql:\"updateOidcProvider\""
-	UpsertOidcProvider         *OidcProvider           "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
-	AcquireLock                *ApplyLock              "json:\"acquireLock\" graphql:\"acquireLock\""
-	ReleaseLock                *ApplyLock              "json:\"releaseLock\" graphql:\"releaseLock\""
-	Synced                     *bool                   "json:\"synced\" graphql:\"synced\""
-	CreateRecipe               *Recipe                 "json:\"createRecipe\" graphql:\"createRecipe\""
-	DeleteRecipe               *Recipe                 "json:\"deleteRecipe\" graphql:\"deleteRecipe\""
-	CreateStack                *Stack                  "json:\"createStack\" graphql:\"createStack\""
-	QuickStack                 *Stack                  "json:\"quickStack\" graphql:\"quickStack\""
-	DeleteStack                *Stack                  "json:\"deleteStack\" graphql:\"deleteStack\""
-	InstallRecipe              []*Installation         "json:\"installRecipe\" graphql:\"installRecipe\""
-	InstallStack               []*Recipe               "json:\"installStack\" graphql:\"installStack\""
-	UpdateChart                *Chart                  "json:\"updateChart\" graphql:\"updateChart\""
-	CreateCrd                  *Crd                    "json:\"createCrd\" graphql:\"createCrd\""
-	InstallChart               *ChartInstallation      "json:\"installChart\" graphql:\"installChart\""
-	UpdateChartInstallation    *ChartInstallation      "json:\"updateChartInstallation\" graphql:\"updateChartInstallation\""
-	DeleteChartInstallation    *ChartInstallation      "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
-	CreateTerraform            *Terraform              "json:\"createTerraform\" graphql:\"createTerraform\""
-	UpdateTerraform            *Terraform              "json:\"updateTerraform\" graphql:\"updateTerraform\""
-	DeleteTerraform            *Terraform              "json:\"deleteTerraform\" graphql:\"deleteTerraform\""
-	UploadTerraform            *Terraform              "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
-	InstallTerraform           *TerraformInstallation  "json:\"installTerraform\" graphql:\"installTerraform\""
-	UninstallTerraform         *TerraformInstallation  "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
-	Release                    *bool                   "json:\"release\" graphql:\"release\""
-	UpdateVersion              *Version                "json:\"updateVersion\" graphql:\"updateVersion\""
-	InstallVersion             *bool                   "json:\"installVersion\" graphql:\"installVersion\""
-	CreateServiceAccount       *User                   "json:\"createServiceAccount\" graphql:\"createServiceAccount\""
-	UpdateServiceAccount       *User                   "json:\"updateServiceAccount\" graphql:\"updateServiceAccount\""
-	ImpersonateServiceAccount  *User                   "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
-	UpdateAccount              *Account                "json:\"updateAccount\" graphql:\"updateAccount\""
-	CreateInvite               *Invite                 "json:\"createInvite\" graphql:\"createInvite\""
-	DeleteInvite               *Invite                 "json:\"deleteInvite\" graphql:\"deleteInvite\""
-	RealizeInvite              *User                   "json:\"realizeInvite\" graphql:\"realizeInvite\""
-	CreateGroup                *Group                  "json:\"createGroup\" graphql:\"createGroup\""
-	DeleteGroup                *Group                  "json:\"deleteGroup\" graphql:\"deleteGroup\""
-	UpdateGroup                *Group                  "json:\"updateGroup\" graphql:\"updateGroup\""
-	CreateGroupMember          *GroupMember            "json:\"createGroupMember\" graphql:\"createGroupMember\""
-	DeleteGroupMember          *GroupMember            "json:\"deleteGroupMember\" graphql:\"deleteGroupMember\""
-	CreateRole                 *Role                   "json:\"createRole\" graphql:\"createRole\""
-	UpdateRole                 *Role                   "json:\"updateRole\" graphql:\"updateRole\""
-	DeleteRole                 *Role                   "json:\"deleteRole\" graphql:\"deleteRole\""
-	CreateIntegrationWebhook   *IntegrationWebhook     "json:\"createIntegrationWebhook\" graphql:\"createIntegrationWebhook\""
-	UpdateIntegrationWebhook   *IntegrationWebhook     "json:\"updateIntegrationWebhook\" graphql:\"updateIntegrationWebhook\""
-	DeleteIntegrationWebhook   *IntegrationWebhook     "json:\"deleteIntegrationWebhook\" graphql:\"deleteIntegrationWebhook\""
-	CreateOauthIntegration     *OauthIntegration       "json:\"createOauthIntegration\" graphql:\"createOauthIntegration\""
-	CreateZoom                 *ZoomMeeting            "json:\"createZoom\" graphql:\"createZoom\""
-	CreateIncident             *Incident               "json:\"createIncident\" graphql:\"createIncident\""
-	UpdateIncident             *Incident               "json:\"updateIncident\" graphql:\"updateIncident\""
-	DeleteIncident             *Incident               "json:\"deleteIncident\" graphql:\"deleteIncident\""
-	AcceptIncident             *Incident               "json:\"acceptIncident\" graphql:\"acceptIncident\""
-	CompleteIncident           *Incident               "json:\"completeIncident\" graphql:\"completeIncident\""
-	FollowIncident             *Follower               "json:\"followIncident\" graphql:\"followIncident\""
-	UnfollowIncident           *Follower               "json:\"unfollowIncident\" graphql:\"unfollowIncident\""
-	CreateMessage              *IncidentMessage        "json:\"createMessage\" graphql:\"createMessage\""
-	UpdateMessage              *IncidentMessage        "json:\"updateMessage\" graphql:\"updateMessage\""
-	DeleteMessage              *IncidentMessage        "json:\"deleteMessage\" graphql:\"deleteMessage\""
-	CreateReaction             *IncidentMessage        "json:\"createReaction\" graphql:\"createReaction\""
-	DeleteReaction             *IncidentMessage        "json:\"deleteReaction\" graphql:\"deleteReaction\""
-	ReadNotifications          *int64                  "json:\"readNotifications\" graphql:\"readNotifications\""
-	CreateQueue                *UpgradeQueue           "json:\"createQueue\" graphql:\"createQueue\""
-	CreateUpgrade              *Upgrade                "json:\"createUpgrade\" graphql:\"createUpgrade\""
-	AcceptLogin                *OauthResponse          "json:\"acceptLogin\" graphql:\"acceptLogin\""
-	OauthConsent               *OauthResponse          "json:\"oauthConsent\" graphql:\"oauthConsent\""
-	OauthCallback              *User                   "json:\"oauthCallback\" graphql:\"oauthCallback\""
-	SsoCallback                *User                   "json:\"ssoCallback\" graphql:\"ssoCallback\""
-	UpdateDockerRepository     *DockerRepository       "json:\"updateDockerRepository\" graphql:\"updateDockerRepository\""
-	CreateDomain               *DNSDomain              "json:\"createDomain\" graphql:\"createDomain\""
-	UpdateDomain               *DNSDomain              "json:\"updateDomain\" graphql:\"updateDomain\""
-	DeleteDomain               *DNSDomain              "json:\"deleteDomain\" graphql:\"deleteDomain\""
-	ProvisionDomain            *DNSDomain              "json:\"provisionDomain\" graphql:\"provisionDomain\""
-	CreateDNSRecord            *DNSRecord              "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
-	DeleteDNSRecord            *DNSRecord              "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
-	CreateShell                *CloudShell             "json:\"createShell\" graphql:\"createShell\""
-	SetupShell                 *CloudShell             "json:\"setupShell\" graphql:\"setupShell\""
-	UpdateShell                *CloudShell             "json:\"updateShell\" graphql:\"updateShell\""
-	UpdateShellConfiguration   *bool                   "json:\"updateShellConfiguration\" graphql:\"updateShellConfiguration\""
-	InstallBundle              []*Installation         "json:\"installBundle\" graphql:\"installBundle\""
-	InstallStackShell          []*Recipe               "json:\"installStackShell\" graphql:\"installStackShell\""
-	RebootShell                *CloudShell             "json:\"rebootShell\" graphql:\"rebootShell\""
-	DeleteShell                *CloudShell             "json:\"deleteShell\" graphql:\"deleteShell\""
-	CreateDemoProject          *DemoProject            "json:\"createDemoProject\" graphql:\"createDemoProject\""
-	TransferDemoProject        *DemoProject            "json:\"transferDemoProject\" graphql:\"transferDemoProject\""
-	DeleteDemoProject          *DemoProject            "json:\"deleteDemoProject\" graphql:\"deleteDemoProject\""
-	StopShell                  *bool                   "json:\"stopShell\" graphql:\"stopShell\""
-	RestartShell               *bool                   "json:\"restartShell\" graphql:\"restartShell\""
-	UnlockRepository           *int64                  "json:\"unlockRepository\" graphql:\"unlockRepository\""
-	CreateTest                 *Test                   "json:\"createTest\" graphql:\"createTest\""
-	UpdateTest                 *Test                   "json:\"updateTest\" graphql:\"updateTest\""
-	UpdateStep                 *TestStep               "json:\"updateStep\" graphql:\"updateStep\""
-	PublishLogs                *TestStep               "json:\"publishLogs\" graphql:\"publishLogs\""
-	CreateCluster              *Cluster                "json:\"createCluster\" graphql:\"createCluster\""
-	CreateClusterDependency    *ClusterDependency      "json:\"createClusterDependency\" graphql:\"createClusterDependency\""
-	DeleteClusterDependency    *ClusterDependency      "json:\"deleteClusterDependency\" graphql:\"deleteClusterDependency\""
-	Promote                    *User                   "json:\"promote\" graphql:\"promote\""
-	TransferOwnership          *Cluster                "json:\"transferOwnership\" graphql:\"transferOwnership\""
-	DeleteCluster              *Cluster                "json:\"deleteCluster\" graphql:\"deleteCluster\""
-}
-type ApplyLockFragment struct {
-	ID   string  "json:\"id\" graphql:\"id\""
-	Lock *string "json:\"lock\" graphql:\"lock\""
-}
-type ArtifactFragment struct {
-	ID       *string           "json:\"id\" graphql:\"id\""
-	Name     *string           "json:\"name\" graphql:\"name\""
-	Readme   *string           "json:\"readme\" graphql:\"readme\""
-	Platform *ArtifactPlatform "json:\"platform\" graphql:\"platform\""
-	Arch     *string           "json:\"arch\" graphql:\"arch\""
-	Blob     *string           "json:\"blob\" graphql:\"blob\""
-	Sha      *string           "json:\"sha\" graphql:\"sha\""
-	Filesize *int64            "json:\"filesize\" graphql:\"filesize\""
-}
-type ChartFragment struct {
-	ID            *string "json:\"id\" graphql:\"id\""
-	Name          string  "json:\"name\" graphql:\"name\""
-	Description   *string "json:\"description\" graphql:\"description\""
-	LatestVersion *string "json:\"latestVersion\" graphql:\"latestVersion\""
-}
-type ChartInstallationFragment struct {
-	ID    *string "json:\"id\" graphql:\"id\""
-	Chart *struct {
-		ID            *string               "json:\"id\" graphql:\"id\""
-		Name          string                "json:\"name\" graphql:\"name\""
-		Description   *string               "json:\"description\" graphql:\"description\""
-		LatestVersion *string               "json:\"latestVersion\" graphql:\"latestVersion\""
-		Dependencies  *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
-	} "json:\"chart\" graphql:\"chart\""
-	Version *VersionFragment "json:\"version\" graphql:\"version\""
-}
-type ChatMessageFragment struct {
-	Role    string  "json:\"role\" graphql:\"role\""
-	Content string  "json:\"content\" graphql:\"content\""
-	Name    *string "json:\"name\" graphql:\"name\""
-}
-type CloudShellFragment struct {
-	ID     string "json:\"id\" graphql:\"id\""
-	AesKey string "json:\"aesKey\" graphql:\"aesKey\""
-	GitURL string "json:\"gitUrl\" graphql:\"gitUrl\""
-}
-type ClusterFragment struct {
-	ID       string        "json:\"id\" graphql:\"id\""
-	Name     string        "json:\"name\" graphql:\"name\""
-	Provider Provider      "json:\"provider\" graphql:\"provider\""
-	Source   *Source       "json:\"source\" graphql:\"source\""
-	GitURL   *string       "json:\"gitUrl\" graphql:\"gitUrl\""
-	Owner    *UserFragment "json:\"owner\" graphql:\"owner\""
-}
-type CrdFragment struct {
-	ID   string  "json:\"id\" graphql:\"id\""
-	Name string  "json:\"name\" graphql:\"name\""
-	Blob *string "json:\"blob\" graphql:\"blob\""
-}
-type DependenciesFragment struct {
-	Dependencies []*struct {
-		Type     *DependencyType "json:\"type\" graphql:\"type\""
-		Name     *string         "json:\"name\" graphql:\"name\""
-		Repo     *string         "json:\"repo\" graphql:\"repo\""
-		Optional *bool           "json:\"optional\" graphql:\"optional\""
-		Version  *string         "json:\"version\" graphql:\"version\""
-	} "json:\"dependencies\" graphql:\"dependencies\""
-	Breaking     *bool "json:\"breaking\" graphql:\"breaking\""
-	Instructions *struct {
-		Instructions *string "json:\"instructions\" graphql:\"instructions\""
-		Script       *string "json:\"script\" graphql:\"script\""
-	} "json:\"instructions\" graphql:\"instructions\""
-	Wait        *bool       "json:\"wait\" graphql:\"wait\""
-	Application *bool       "json:\"application\" graphql:\"application\""
-	Providers   []*Provider "json:\"providers\" graphql:\"providers\""
-	Secrets     []*string   "json:\"secrets\" graphql:\"secrets\""
-	Wirings     *struct {
-		Terraform map[string]interface{} "json:\"terraform\" graphql:\"terraform\""
-		Helm      map[string]interface{} "json:\"helm\" graphql:\"helm\""
-	} "json:\"wirings\" graphql:\"wirings\""
-	ProviderWirings map[string]interface{} "json:\"providerWirings\" graphql:\"providerWirings\""
-	Outputs         map[string]interface{} "json:\"outputs\" graphql:\"outputs\""
-	ProviderVsn     *string                "json:\"providerVsn\" graphql:\"providerVsn\""
-	CliVsn          *string                "json:\"cliVsn\" graphql:\"cliVsn\""
-}
-type DNSDomainFragment struct {
-	ID   string "json:\"id\" graphql:\"id\""
-	Name string "json:\"name\" graphql:\"name\""
-}
-type DNSRecordFragment struct {
-	Type    DNSRecordType "json:\"type\" graphql:\"type\""
-	Name    string        "json:\"name\" graphql:\"name\""
-	Records []*string     "json:\"records\" graphql:\"records\""
-}
-type EabCredentialFragment struct {
-	ID       string   "json:\"id\" graphql:\"id\""
-	KeyID    string   "json:\"keyId\" graphql:\"keyId\""
-	HmacKey  string   "json:\"hmacKey\" graphql:\"hmacKey\""
-	Cluster  string   "json:\"cluster\" graphql:\"cluster\""
-	Provider Provider "json:\"provider\" graphql:\"provider\""
-}
-type InstallationFragment struct {
-	ID           string                 "json:\"id\" graphql:\"id\""
-	Context      map[string]interface{} "json:\"context\" graphql:\"context\""
-	LicenseKey   *string                "json:\"licenseKey\" graphql:\"licenseKey\""
-	AcmeKeyID    *string                "json:\"acmeKeyId\" graphql:\"acmeKeyId\""
-	AcmeSecret   *string                "json:\"acmeSecret\" graphql:\"acmeSecret\""
-	Repository   *RepositoryFragment    "json:\"repository\" graphql:\"repository\""
-	OidcProvider *OIDCProvider          "json:\"oidcProvider\" graphql:\"oidcProvider\""
-}
-type KeyBackupFragment struct {
-	ID           string   "json:\"id\" graphql:\"id\""
-	Name         string   "json:\"name\" graphql:\"name\""
-	Digest       string   "json:\"digest\" graphql:\"digest\""
-	Repositories []string "json:\"repositories\" graphql:\"repositories\""
-	InsertedAt   *string  "json:\"insertedAt\" graphql:\"insertedAt\""
-}
-type OIDCProvider struct {
-	ID           string    "json:\"id\" graphql:\"id\""
-	ClientID     string    "json:\"clientId\" graphql:\"clientId\""
-	ClientSecret string    "json:\"clientSecret\" graphql:\"clientSecret\""
-	RedirectUris []*string "json:\"redirectUris\" graphql:\"redirectUris\""
-	Bindings     []*struct {
-		User *struct {
-			ID    string "json:\"id\" graphql:\"id\""
-			Email string "json:\"email\" graphql:\"email\""
-		} "json:\"user\" graphql:\"user\""
-		Group *struct {
-			ID   string "json:\"id\" graphql:\"id\""
-			Name string "json:\"name\" graphql:\"name\""
-		} "json:\"group\" graphql:\"group\""
-	} "json:\"bindings\" graphql:\"bindings\""
-	Configuration *struct {
-		Issuer                *string "json:\"issuer\" graphql:\"issuer\""
-		AuthorizationEndpoint *string "json:\"authorizationEndpoint\" graphql:\"authorizationEndpoint\""
-		TokenEndpoint         *string "json:\"tokenEndpoint\" graphql:\"tokenEndpoint\""
-		JwksURI               *string "json:\"jwksUri\" graphql:\"jwksUri\""
-		UserinfoEndpoint      *string "json:\"userinfoEndpoint\" graphql:\"userinfoEndpoint\""
-	} "json:\"configuration\" graphql:\"configuration\""
-}
-type OidcTrustRelationshipFragment struct {
-	ID         string   "json:\"id\" graphql:\"id\""
-	Issuer     string   "json:\"issuer\" graphql:\"issuer\""
-	Trust      string   "json:\"trust\" graphql:\"trust\""
-	Scopes     []string "json:\"scopes\" graphql:\"scopes\""
-	InsertedAt *string  "json:\"insertedAt\" graphql:\"insertedAt\""
-}
-type PublicKeyFragment struct {
-	ID      string       "json:\"id\" graphql:\"id\""
-	Content string       "json:\"content\" graphql:\"content\""
-	User    UserFragment "json:\"user\" graphql:\"user\""
-}
-type RecipeConfigurationFragment struct {
-	Name          *string   "json:\"name\" graphql:\"name\""
-	Type          *Datatype "json:\"type\" graphql:\"type\""
-	Default       *string   "json:\"default\" graphql:\"default\""
-	Documentation *string   "json:\"documentation\" graphql:\"documentation\""
-	Optional      *bool     "json:\"optional\" graphql:\"optional\""
-	Placeholder   *string   "json:\"placeholder\" graphql:\"placeholder\""
-	FunctionName  *string   "json:\"functionName\" graphql:\"functionName\""
-	Condition     *struct {
-		Field     string    "json:\"field\" graphql:\"field\""
-		Operation Operation "json:\"operation\" graphql:\"operation\""
-		Value     *string   "json:\"value\" graphql:\"value\""
-	} "json:\"condition\" graphql:\"condition\""
-	Validation *struct {
-		Type    ValidationType "json:\"type\" graphql:\"type\""
-		Regex   *string        "json:\"regex\" graphql:\"regex\""
-		Message string         "json:\"message\" graphql:\"message\""
-	} "json:\"validation\" graphql:\"validation\""
-}
-type RecipeFragment struct {
-	ID          string    "json:\"id\" graphql:\"id\""
-	Name        string    "json:\"name\" graphql:\"name\""
-	Primary     *bool     "json:\"primary\" graphql:\"primary\""
-	Description *string   "json:\"description\" graphql:\"description\""
-	Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
-	Provider    *Provider "json:\"provider\" graphql:\"provider\""
-	Tests       []*struct {
-		Type    TestType "json:\"type\" graphql:\"type\""
-		Name    string   "json:\"name\" graphql:\"name\""
-		Message *string  "json:\"message\" graphql:\"message\""
-		Args    []*struct {
-			Name string "json:\"name\" graphql:\"name\""
-			Repo string "json:\"repo\" graphql:\"repo\""
-			Key  string "json:\"key\" graphql:\"key\""
-		} "json:\"args\" graphql:\"args\""
-	} "json:\"tests\" graphql:\"tests\""
-	Repository *struct {
-		ID   string "json:\"id\" graphql:\"id\""
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"repository\" graphql:\"repository\""
-	OidcSettings *struct {
-		URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
-		URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
-		AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
-		DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
-		Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
-	} "json:\"oidcSettings\" graphql:\"oidcSettings\""
-	RecipeSections []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
-}
-type RecipeItemFragment struct {
-	ID            *string                        "json:\"id\" graphql:\"id\""
-	Chart         *ChartFragment                 "json:\"chart\" graphql:\"chart\""
-	Terraform     *TerraformFragment             "json:\"terraform\" graphql:\"terraform\""
-	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
-}
-type RecipeSectionFragment struct {
-	Index         *int64                         "json:\"index\" graphql:\"index\""
-	Repository    *RepositoryFragment            "json:\"repository\" graphql:\"repository\""
-	RecipeItems   []*RecipeItemFragment          "json:\"recipeItems\" graphql:\"recipeItems\""
-	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
-}
-type RepositoryFragment struct {
-	ID          string  "json:\"id\" graphql:\"id\""
-	Name        string  "json:\"name\" graphql:\"name\""
-	Notes       *string "json:\"notes\" graphql:\"notes\""
-	Icon        *string "json:\"icon\" graphql:\"icon\""
-	DarkIcon    *string "json:\"darkIcon\" graphql:\"darkIcon\""
-	Description *string "json:\"description\" graphql:\"description\""
-	Publisher   *struct {
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"publisher\" graphql:\"publisher\""
-	Recipes []*struct {
-		Name string "json:\"name\" graphql:\"name\""
-	} "json:\"recipes\" graphql:\"recipes\""
-}
-type StackFragment struct {
-	ID          string            "json:\"id\" graphql:\"id\""
-	Name        string            "json:\"name\" graphql:\"name\""
-	Featured    *bool             "json:\"featured\" graphql:\"featured\""
-	Description *string           "json:\"description\" graphql:\"description\""
-	Bundles     []*RecipeFragment "json:\"bundles\" graphql:\"bundles\""
-}
-type TerraformFragment struct {
-	ID             *string               "json:\"id\" graphql:\"id\""
-	Name           *string               "json:\"name\" graphql:\"name\""
-	Package        *string               "json:\"package\" graphql:\"package\""
-	Description    *string               "json:\"description\" graphql:\"description\""
-	Dependencies   *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
-	ValuesTemplate *string               "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
-}
-type TerraformInstallationFragment struct {
-	ID        *string            "json:\"id\" graphql:\"id\""
-	Terraform *TerraformFragment "json:\"terraform\" graphql:\"terraform\""
-	Version   *VersionFragment   "json:\"version\" graphql:\"version\""
-}
-type TestFragment struct {
-	ID         string     "json:\"id\" graphql:\"id\""
-	Name       *string    "json:\"name\" graphql:\"name\""
-	Status     TestStatus "json:\"status\" graphql:\"status\""
-	PromoteTag string     "json:\"promoteTag\" graphql:\"promoteTag\""
-	Steps      []*struct {
-		ID          string     "json:\"id\" graphql:\"id\""
-		Name        string     "json:\"name\" graphql:\"name\""
-		Description string     "json:\"description\" graphql:\"description\""
-		Status      TestStatus "json:\"status\" graphql:\"status\""
-	} "json:\"steps\" graphql:\"steps\""
-}
-type UserFragment struct {
-	ID    string "json:\"id\" graphql:\"id\""
-	Name  string "json:\"name\" graphql:\"name\""
-	Email string "json:\"email\" graphql:\"email\""
-}
-type VersionFragment struct {
-	ID             string                 "json:\"id\" graphql:\"id\""
-	Helm           map[string]interface{} "json:\"helm\" graphql:\"helm\""
-	Readme         *string                "json:\"readme\" graphql:\"readme\""
-	Version        string                 "json:\"version\" graphql:\"version\""
-	ValuesTemplate *string                "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
-	TemplateType   *TemplateType          "json:\"templateType\" graphql:\"templateType\""
-	Package        *string                "json:\"package\" graphql:\"package\""
-	Crds           []*CrdFragment         "json:\"crds\" graphql:\"crds\""
-	Dependencies   *DependenciesFragment  "json:\"dependencies\" graphql:\"dependencies\""
-	InsertedAt     *string                "json:\"insertedAt\" graphql:\"insertedAt\""
-}
-type AcquireLock struct {
-	AcquireLock *ApplyLockFragment "json:\"acquireLock\" graphql:\"acquireLock\""
-}
-type Backup struct {
-	KeyBackup *struct {
-		ID           string   "json:\"id\" graphql:\"id\""
-		Name         string   "json:\"name\" graphql:\"name\""
-		Digest       string   "json:\"digest\" graphql:\"digest\""
-		Repositories []string "json:\"repositories\" graphql:\"repositories\""
-		InsertedAt   *string  "json:\"insertedAt\" graphql:\"insertedAt\""
-		Value        string   "json:\"value\" graphql:\"value\""
-	} "json:\"keyBackup\" graphql:\"keyBackup\""
-}
-type Backups struct {
-	KeyBackups *struct {
-		Edges []*struct {
-			Node *KeyBackupFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"keyBackups\" graphql:\"keyBackups\""
-}
-type Chat struct {
-	Chat *ChatMessageFragment "json:\"chat\" graphql:\"chat\""
-}
-type ClusterInfo struct {
-	Cluster *struct {
-		ID          string        "json:\"id\" graphql:\"id\""
-		Name        string        "json:\"name\" graphql:\"name\""
-		Provider    Provider      "json:\"provider\" graphql:\"provider\""
-		Source      *Source       "json:\"source\" graphql:\"source\""
-		GitURL      *string       "json:\"gitUrl\" graphql:\"gitUrl\""
-		Owner       *UserFragment "json:\"owner\" graphql:\"owner\""
-		UpgradeInfo []*struct {
-			Installation *struct {
-				Repository *RepositoryFragment "json:\"repository\" graphql:\"repository\""
-			} "json:\"installation\" graphql:\"installation\""
-			Count *int64 "json:\"count\" graphql:\"count\""
-		} "json:\"upgradeInfo\" graphql:\"upgradeInfo\""
-	} "json:\"cluster\" graphql:\"cluster\""
-}
-type Clusters struct {
-	Clusters *struct {
-		PageInfo struct {
-			HasNextPage bool    "json:\"hasNextPage\" graphql:\"hasNextPage\""
-			EndCursor   *string "json:\"endCursor\" graphql:\"endCursor\""
-		} "json:\"pageInfo\" graphql:\"pageInfo\""
-		Edges []*struct {
-			Node *ClusterFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"clusters\" graphql:\"clusters\""
-}
-type CreateAccessToken struct {
-	CreateToken *struct {
-		Token *string "json:\"token\" graphql:\"token\""
-	} "json:\"createToken\" graphql:\"createToken\""
-}
-type CreateArtifact struct {
-	CreateArtifact *ArtifactFragment "json:\"createArtifact\" graphql:\"createArtifact\""
-}
-type CreateBackup struct {
-	CreateKeyBackup *KeyBackupFragment "json:\"createKeyBackup\" graphql:\"createKeyBackup\""
-}
-type CreateCrd struct {
-	CreateCrd *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createCrd\" graphql:\"createCrd\""
-}
-type CreateDependency struct {
-	CreateClusterDependency *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createClusterDependency\" graphql:\"createClusterDependency\""
-}
-type CreateDNSRecord struct {
-	CreateDNSRecord *DNSRecordFragment "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
-}
-type CreateDomain struct {
-	ProvisionDomain *DNSDomainFragment "json:\"provisionDomain\" graphql:\"provisionDomain\""
-}
-type CreateEvent struct {
-	CreateUserEvent *bool "json:\"createUserEvent\" graphql:\"createUserEvent\""
-}
-type CreateInstallation struct {
-	CreateInstallation *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createInstallation\" graphql:\"createInstallation\""
-}
-type CreateIntegration struct {
-	CreateIntegration *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createIntegration\" graphql:\"createIntegration\""
-}
-type CreateKey struct {
-	CreatePublicKey *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createPublicKey\" graphql:\"createPublicKey\""
-}
-type CreateRecipe struct {
-	CreateRecipe *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createRecipe\" graphql:\"createRecipe\""
-}
-type CreateRepository struct {
-	UpsertRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"upsertRepository\" graphql:\"upsertRepository\""
-}
-type CreateResourceDefinition struct {
-	UpdateRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateRepository\" graphql:\"updateRepository\""
-}
-type CreateStack struct {
-	CreateStack *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createStack\" graphql:\"createStack\""
-}
-type CreateTest struct {
-	CreateTest *TestFragment "json:\"createTest\" graphql:\"createTest\""
-}
-type CreateTrust struct {
-	CreateTrustRelationship *OidcTrustRelationshipFragment "json:\"createTrustRelationship\" graphql:\"createTrustRelationship\""
-}
-type CreateUpgrade struct {
-	CreateUpgrade *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"createUpgrade\" graphql:\"createUpgrade\""
-}
-type DeleteDNSRecord struct {
-	DeleteDNSRecord *DNSRecordFragment "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
-}
-type DeleteEabCredential struct {
-	DeleteEabKey *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
-}
-type DeleteInstallation struct {
-	DeleteInstallation *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteInstallation\" graphql:\"deleteInstallation\""
-}
-type DeleteRepository struct {
-	DeleteRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteRepository\" graphql:\"deleteRepository\""
-}
-type DeleteShell struct {
-	DeleteShell *CloudShellFragment "json:\"deleteShell\" graphql:\"deleteShell\""
-}
-type DeleteTrust struct {
-	DeleteTrustRelationship *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteTrustRelationship\" graphql:\"deleteTrustRelationship\""
-}
-type DestroyCluster struct {
-	DestroyCluster *bool "json:\"destroyCluster\" graphql:\"destroyCluster\""
-}
-type DevLogin struct {
-	DeviceLogin *struct {
-		LoginURL    string "json:\"loginUrl\" graphql:\"loginUrl\""
-		DeviceToken string "json:\"deviceToken\" graphql:\"deviceToken\""
-	} "json:\"deviceLogin\" graphql:\"deviceLogin\""
-}
-type GetChartInstallations struct {
-	ChartInstallations *struct {
-		Edges []*struct {
-			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
-}
-type GetCharts struct {
-	Charts *struct {
-		Edges []*struct {
-			Node *ChartFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"charts\" graphql:\"charts\""
-}
-type GetDNSRecords struct {
-	DNSRecords *struct {
-		Edges []*struct {
-			Node *DNSRecordFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"dnsRecords\" graphql:\"dnsRecords\""
-}
-type GetEabCredential struct {
-	EabCredential *EabCredentialFragment "json:\"eabCredential\" graphql:\"eabCredential\""
-}
-type GetHelp struct {
-	HelpQuestion *string "json:\"helpQuestion\" graphql:\"helpQuestion\""
-}
-type GetInstallation struct {
-	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
-}
-type GetInstallationByID struct {
-	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
-}
-type GetInstallations struct {
-	Installations *struct {
-		Edges []*struct {
-			Node *InstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"installations\" graphql:\"installations\""
-}
-type GetLoginMethod struct {
-	LoginMethod *struct {
-		LoginMethod LoginMethod "json:\"loginMethod\" graphql:\"loginMethod\""
-		Token       *string     "json:\"token\" graphql:\"token\""
-	} "json:\"loginMethod\" graphql:\"loginMethod\""
-}
-type GetPackageInstallations struct {
-	ChartInstallations *struct {
-		Edges []*struct {
-			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
-	TerraformInstallations *struct {
-		Edges []*struct {
-			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
-}
-type GetRecipe struct {
-	Recipe *struct {
-		ID          string    "json:\"id\" graphql:\"id\""
-		Name        string    "json:\"name\" graphql:\"name\""
-		Primary     *bool     "json:\"primary\" graphql:\"primary\""
-		Description *string   "json:\"description\" graphql:\"description\""
-		Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
-		Provider    *Provider "json:\"provider\" graphql:\"provider\""
-		Tests       []*struct {
-			Type    TestType "json:\"type\" graphql:\"type\""
-			Name    string   "json:\"name\" graphql:\"name\""
-			Message *string  "json:\"message\" graphql:\"message\""
-			Args    []*struct {
-				Name string "json:\"name\" graphql:\"name\""
-				Repo string "json:\"repo\" graphql:\"repo\""
-				Key  string "json:\"key\" graphql:\"key\""
-			} "json:\"args\" graphql:\"args\""
-		} "json:\"tests\" graphql:\"tests\""
-		Repository *struct {
-			ID   string "json:\"id\" graphql:\"id\""
-			Name string "json:\"name\" graphql:\"name\""
-		} "json:\"repository\" graphql:\"repository\""
-		OidcSettings *struct {
-			URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
-			URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
-			AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
-			DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
-			Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
-		} "json:\"oidcSettings\" graphql:\"oidcSettings\""
-		RecipeSections     []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
-		RecipeDependencies []*RecipeFragment        "json:\"recipeDependencies\" graphql:\"recipeDependencies\""
-	} "json:\"recipe\" graphql:\"recipe\""
-}
-type GetRecipeByID struct {
-	Recipe *struct {
-		ID          string    "json:\"id\" graphql:\"id\""
-		Name        string    "json:\"name\" graphql:\"name\""
-		Primary     *bool     "json:\"primary\" graphql:\"primary\""
-		Description *string   "json:\"description\" graphql:\"description\""
-		Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
-		Provider    *Provider "json:\"provider\" graphql:\"provider\""
-		Tests       []*struct {
-			Type    TestType "json:\"type\" graphql:\"type\""
-			Name    string   "json:\"name\" graphql:\"name\""
-			Message *string  "json:\"message\" graphql:\"message\""
-			Args    []*struct {
-				Name string "json:\"name\" graphql:\"name\""
-				Repo string "json:\"repo\" graphql:\"repo\""
-				Key  string "json:\"key\" graphql:\"key\""
-			} "json:\"args\" graphql:\"args\""
-		} "json:\"tests\" graphql:\"tests\""
-		Repository *struct {
-			ID   string "json:\"id\" graphql:\"id\""
-			Name string "json:\"name\" graphql:\"name\""
-		} "json:\"repository\" graphql:\"repository\""
-		OidcSettings *struct {
-			URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
-			URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
-			AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
-			DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
-			Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
-		} "json:\"oidcSettings\" graphql:\"oidcSettings\""
-		RecipeSections     []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
-		RecipeDependencies []*RecipeFragment        "json:\"recipeDependencies\" graphql:\"recipeDependencies\""
-	} "json:\"recipe\" graphql:\"recipe\""
-}
-type GetRepository struct {
-	Repository *RepositoryFragment "json:\"repository\" graphql:\"repository\""
-}
-type GetShell struct {
-	Shell *CloudShellFragment "json:\"shell\" graphql:\"shell\""
-}
-type GetStack struct {
-	Stack *StackFragment "json:\"stack\" graphql:\"stack\""
-}
-type GetTerraform struct {
-	Terraform *struct {
-		Edges []*struct {
-			Node *TerraformFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraform\" graphql:\"terraform\""
-}
-type GetTerraformInstallations struct {
-	TerraformInstallations *struct {
-		Edges []*struct {
-			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
-}
-type GetTerraformVersions struct {
-	Versions *struct {
-		Edges []*struct {
-			Node *VersionFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"versions\" graphql:\"versions\""
-}
-type GetTfProviderScaffold struct {
-	TerraformProvider *struct {
-		Name    *Provider "json:\"name\" graphql:\"name\""
-		Content *string   "json:\"content\" graphql:\"content\""
-	} "json:\"terraformProvider\" graphql:\"terraformProvider\""
-}
-type GetTfProviders struct {
-	TerraformProviders []*Provider "json:\"terraformProviders\" graphql:\"terraformProviders\""
-}
-type GetVersions struct {
-	Versions *struct {
-		Edges []*struct {
-			Node *VersionFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"versions\" graphql:\"versions\""
-}
-type ImpersonateServiceAccount struct {
-	ImpersonateServiceAccount *struct {
-		Jwt   *string "json:\"jwt\" graphql:\"jwt\""
-		Email string  "json:\"email\" graphql:\"email\""
-	} "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
-}
-type InstallRecipe struct {
-	InstallRecipe []*struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"installRecipe\" graphql:\"installRecipe\""
-}
-type InstallVersion struct {
-	InstallVersion *bool "json:\"installVersion\" graphql:\"installVersion\""
-}
-type ListAllRecipes struct {
-	Recipes *struct {
-		Edges []*struct {
-			Node *RecipeFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"recipes\" graphql:\"recipes\""
-}
-type ListArtifacts struct {
-	Repository *struct {
-		Artifacts []*ArtifactFragment "json:\"artifacts\" graphql:\"artifacts\""
-	} "json:\"repository\" graphql:\"repository\""
-}
-type ListKeys struct {
-	PublicKeys *struct {
-		Edges []*struct {
-			Node *PublicKeyFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"publicKeys\" graphql:\"publicKeys\""
-}
-type ListRecipes struct {
-	Recipes *struct {
-		Edges []*struct {
-			Node *RecipeFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"recipes\" graphql:\"recipes\""
-}
-type ListRepositories struct {
-	Repositories *struct {
-		Edges []*struct {
-			Node *RepositoryFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"repositories\" graphql:\"repositories\""
-}
-type ListStacks struct {
-	Stacks *struct {
-		Edges []*struct {
-			Node *StackFragment "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"stacks\" graphql:\"stacks\""
-}
-type ListTokens struct {
-	Tokens *struct {
-		Edges []*struct {
-			Node *struct {
-				Token *string "json:\"token\" graphql:\"token\""
-			} "json:\"node\" graphql:\"node\""
-		} "json:\"edges\" graphql:\"edges\""
-	} "json:\"tokens\" graphql:\"tokens\""
-}
-type Login struct {
-	Login *struct {
-		Jwt *string "json:\"jwt\" graphql:\"jwt\""
-	} "json:\"login\" graphql:\"login\""
-}
-type MarkSynced struct {
-	Synced *bool "json:\"synced\" graphql:\"synced\""
-}
-type Me struct {
-	Me *struct {
-		ID                 string                           "json:\"id\" graphql:\"id\""
-		Email              string                           "json:\"email\" graphql:\"email\""
-		Demoing            *bool                            "json:\"demoing\" graphql:\"demoing\""
-		TrustRelationships []*OidcTrustRelationshipFragment "json:\"trustRelationships\" graphql:\"trustRelationships\""
-	} "json:\"me\" graphql:\"me\""
-}
-type OidcToken struct {
-	OidcToken *string "json:\"oidcToken\" graphql:\"oidcToken\""
-}
-type PollLoginToken struct {
-	LoginToken *struct {
-		Jwt *string "json:\"jwt\" graphql:\"jwt\""
-	} "json:\"loginToken\" graphql:\"loginToken\""
-}
-type PromoteCluster struct {
-	Promote *UserFragment "json:\"promote\" graphql:\"promote\""
-}
-type PublishLogs struct {
-	PublishLogs *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"publishLogs\" graphql:\"publishLogs\""
-}
-type Release struct {
-	Release *bool "json:\"release\" graphql:\"release\""
-}
-type ReleaseLock struct {
-	ReleaseLock *ApplyLockFragment "json:\"releaseLock\" graphql:\"releaseLock\""
-}
-type ResetInstallations struct {
-	ResetInstallations *int64 "json:\"resetInstallations\" graphql:\"resetInstallations\""
-}
-type Scaffolds struct {
-	Scaffold []*struct {
-		Path    *string "json:\"path\" graphql:\"path\""
-		Content *string "json:\"content\" graphql:\"content\""
-	} "json:\"scaffold\" graphql:\"scaffold\""
-}
-type TransferOwnership struct {
-	TransferOwnership *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"transferOwnership\" graphql:\"transferOwnership\""
-}
-type UninstallChart struct {
-	DeleteChartInstallation *struct {
-		ID *string "json:\"id\" graphql:\"id\""
-	} "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
-}
-type UninstallTerraform struct {
-	UninstallTerraform *struct {
-		ID *string "json:\"id\" graphql:\"id\""
-	} "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
-}
-type UnlockRepository struct {
-	UnlockRepository *int64 "json:\"unlockRepository\" graphql:\"unlockRepository\""
-}
-type UpdateRepository struct {
-	UpdateRepository *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateRepository\" graphql:\"updateRepository\""
-}
-type UpdateStep struct {
-	UpdateStep *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateStep\" graphql:\"updateStep\""
-}
-type UpdateTest struct {
-	UpdateTest *TestFragment "json:\"updateTest\" graphql:\"updateTest\""
-}
-type UpdateVersion struct {
-	UpdateVersion *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"updateVersion\" graphql:\"updateVersion\""
-}
-type UploadTerraform struct {
-	UploadTerraform *TerraformFragment "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
-}
-type UpsertOidcProvider struct {
-	UpsertOidcProvider *struct {
-		ID string "json:\"id\" graphql:\"id\""
-	} "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
-}
-
-const AcquireLockDocument = `mutation AcquireLock ($name: String!) {
-	acquireLock(repository: $name) {
-		... ApplyLockFragment
-	}
-}
-fragment ApplyLockFragment on ApplyLock {
-	id
-	lock
-}
-`
-
-func (c *Client) AcquireLock(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*AcquireLock, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res AcquireLock
-	if err := c.Client.Post(ctx, "AcquireLock", AcquireLockDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const BackupDocument = `query Backup ($name: String!) {
-	keyBackup(name: $name) {
-		... KeyBackupFragment
-		value
-	}
-}
-fragment KeyBackupFragment on KeyBackup {
-	id
-	name
-	digest
-	repositories
-	insertedAt
-}
-`
-
-func (c *Client) Backup(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*Backup, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res Backup
-	if err := c.Client.Post(ctx, "Backup", BackupDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const BackupsDocument = `query Backups ($cursor: String) {
-	keyBackups(first: 50, after: $cursor) {
-		edges {
-			node {
-				... KeyBackupFragment
-			}
+	var res UpdateConsoleInstance
+	if err := c.Client.Post(ctx, "UpdateConsoleInstance", UpdateConsoleInstanceDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment KeyBackupFragment on KeyBackup {
-	id
-	name
-	digest
-	repositories
-	insertedAt
-}
-`
 
-func (c *Client) Backups(ctx context.Context, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*Backups, error) {
-	vars := map[string]interface{}{
-		"cursor": cursor,
-	}
-
-	var res Backups
-	if err := c.Client.Post(ctx, "Backups", BackupsDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const ChatDocument = `query Chat ($history: [ChatMessageAttributes]) {
-	chat(history: $history) {
-		... ChatMessageFragment
-	}
-}
-fragment ChatMessageFragment on ChatMessage {
-	role
-	content
-	name
+const DestroyClusterDocument = `mutation DestroyCluster ($domain: String!, $name: String!, $provider: Provider!) {
+	destroyCluster(domain: $domain, name: $name, provider: $provider)
 }
 `
 
-func (c *Client) Chat(ctx context.Context, history []*ChatMessageAttributes, httpRequestOptions ...client.HTTPRequestOption) (*Chat, error) {
-	vars := map[string]interface{}{
-		"history": history,
+func (c *Client) DestroyCluster(ctx context.Context, domain string, name string, provider Provider, interceptors ...clientv2.RequestInterceptor) (*DestroyCluster, error) {
+	vars := map[string]any{
+		"domain":   domain,
+		"name":     name,
+		"provider": provider,
 	}
 
-	var res Chat
-	if err := c.Client.Post(ctx, "Chat", ChatDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ClusterInfoDocument = `query ClusterInfo ($id: ID!) {
-	cluster(id: $id) {
-		... ClusterFragment
-		upgradeInfo {
-			installation {
-				repository {
-					... RepositoryFragment
-				}
-			}
-			count
+	var res DestroyCluster
+	if err := c.Client.Post(ctx, "DestroyCluster", DestroyClusterDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment ClusterFragment on Cluster {
-	id
-	name
-	provider
-	source
-	gitUrl
-	owner {
-		... UserFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment UserFragment on User {
-	id
-	name
-	email
-}
-`
 
-func (c *Client) ClusterInfo(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*ClusterInfo, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res ClusterInfo
-	if err := c.Client.Post(ctx, "ClusterInfo", ClusterInfoDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
@@ -4343,116 +9624,78 @@ fragment UserFragment on User {
 }
 `
 
-func (c *Client) Clusters(ctx context.Context, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*Clusters, error) {
-	vars := map[string]interface{}{
+func (c *Client) Clusters(ctx context.Context, cursor *string, interceptors ...clientv2.RequestInterceptor) (*Clusters, error) {
+	vars := map[string]any{
 		"cursor": cursor,
 	}
 
 	var res Clusters
-	if err := c.Client.Post(ctx, "Clusters", ClustersDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "Clusters", ClustersDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const CreateAccessTokenDocument = `mutation CreateAccessToken {
-	createToken {
-		token
+const ClusterInfoDocument = `query ClusterInfo ($id: ID!) {
+	cluster(id: $id) {
+		... ClusterFragment
+		upgradeInfo {
+			installation {
+				repository {
+					... RepositoryFragment
+				}
+			}
+			count
+		}
 	}
 }
-`
-
-func (c *Client) CreateAccessToken(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*CreateAccessToken, error) {
-	vars := map[string]interface{}{}
-
-	var res CreateAccessToken
-	if err := c.Client.Post(ctx, "CreateAccessToken", CreateAccessTokenDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateArtifactDocument = `mutation CreateArtifact ($repoName: String!, $name: String!, $readme: String!, $artifactType: String!, $platform: String!, $blob: UploadOrUrl!, $arch: String) {
-	createArtifact(repositoryName: $repoName, attributes: {name:$name,blob:$blob,readme:$readme,type:$artifactType,platform:$platform,arch:$arch}) {
-		... ArtifactFragment
-	}
-}
-fragment ArtifactFragment on Artifact {
+fragment ClusterFragment on Cluster {
 	id
 	name
-	readme
-	platform
-	arch
-	blob
-	sha
-	filesize
-}
-`
-
-func (c *Client) CreateArtifact(ctx context.Context, repoName string, name string, readme string, artifactType string, platform string, blob string, arch *string, httpRequestOptions ...client.HTTPRequestOption) (*CreateArtifact, error) {
-	vars := map[string]interface{}{
-		"repoName":     repoName,
-		"name":         name,
-		"readme":       readme,
-		"artifactType": artifactType,
-		"platform":     platform,
-		"blob":         blob,
-		"arch":         arch,
-	}
-
-	var res CreateArtifact
-	if err := c.Client.Post(ctx, "CreateArtifact", CreateArtifactDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateBackupDocument = `mutation CreateBackup ($attrs: KeyBackupAttributes!) {
-	createKeyBackup(attributes: $attrs) {
-		... KeyBackupFragment
+	provider
+	source
+	gitUrl
+	owner {
+		... UserFragment
 	}
 }
-fragment KeyBackupFragment on KeyBackup {
+fragment UserFragment on User {
 	id
 	name
-	digest
-	repositories
-	insertedAt
+	email
 }
-`
-
-func (c *Client) CreateBackup(ctx context.Context, attrs KeyBackupAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateBackup, error) {
-	vars := map[string]interface{}{
-		"attrs": attrs,
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
 	}
-
-	var res CreateBackup
-	if err := c.Client.Post(ctx, "CreateBackup", CreateBackupDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateCrdDocument = `mutation CreateCrd ($chartName: ChartName!, $name: String!, $blob: UploadOrUrl!) {
-	createCrd(chartName: $chartName, attributes: {name:$name,blob:$blob}) {
-		id
+	recipes {
+		name
 	}
 }
 `
 
-func (c *Client) CreateCrd(ctx context.Context, chartName ChartName, name string, blob string, httpRequestOptions ...client.HTTPRequestOption) (*CreateCrd, error) {
-	vars := map[string]interface{}{
-		"chartName": chartName,
-		"name":      name,
-		"blob":      blob,
+func (c *Client) ClusterInfo(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*ClusterInfo, error) {
+	vars := map[string]any{
+		"id": id,
 	}
 
-	var res CreateCrd
-	if err := c.Client.Post(ctx, "CreateCrd", CreateCrdDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res ClusterInfo
+	if err := c.Client.Post(ctx, "ClusterInfo", ClusterInfoDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -4466,599 +9709,70 @@ const CreateDependencyDocument = `mutation CreateDependency ($sourceId: ID!, $de
 }
 `
 
-func (c *Client) CreateDependency(ctx context.Context, sourceID string, destID string, httpRequestOptions ...client.HTTPRequestOption) (*CreateDependency, error) {
-	vars := map[string]interface{}{
+func (c *Client) CreateDependency(ctx context.Context, sourceID string, destID string, interceptors ...clientv2.RequestInterceptor) (*CreateDependency, error) {
+	vars := map[string]any{
 		"sourceId": sourceID,
 		"destId":   destID,
 	}
 
 	var res CreateDependency
-	if err := c.Client.Post(ctx, "CreateDependency", CreateDependencyDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateDNSRecordDocument = `mutation CreateDnsRecord ($cluster: String!, $provider: Provider!, $attributes: DnsRecordAttributes!) {
-	createDnsRecord(cluster: $cluster, provider: $provider, attributes: $attributes) {
-		... DnsRecordFragment
-	}
-}
-fragment DnsRecordFragment on DnsRecord {
-	type
-	name
-	records
-}
-`
-
-func (c *Client) CreateDNSRecord(ctx context.Context, cluster string, provider Provider, attributes DNSRecordAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateDNSRecord, error) {
-	vars := map[string]interface{}{
-		"cluster":    cluster,
-		"provider":   provider,
-		"attributes": attributes,
-	}
-
-	var res CreateDNSRecord
-	if err := c.Client.Post(ctx, "CreateDnsRecord", CreateDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateDomainDocument = `mutation CreateDomain ($name: String!) {
-	provisionDomain(name: $name) {
-		... DnsDomainFragment
-	}
-}
-fragment DnsDomainFragment on DnsDomain {
-	id
-	name
-}
-`
-
-func (c *Client) CreateDomain(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateDomain, error) {
-	vars := map[string]interface{}{
-		"name": name,
-	}
-
-	var res CreateDomain
-	if err := c.Client.Post(ctx, "CreateDomain", CreateDomainDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateEventDocument = `mutation CreateEvent ($attrs: UserEventAttributes!) {
-	createUserEvent(attributes: $attrs)
-}
-`
-
-func (c *Client) CreateEvent(ctx context.Context, attrs UserEventAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateEvent, error) {
-	vars := map[string]interface{}{
-		"attrs": attrs,
-	}
-
-	var res CreateEvent
-	if err := c.Client.Post(ctx, "CreateEvent", CreateEventDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateInstallationDocument = `mutation CreateInstallation ($id: ID!) {
-	createInstallation(repositoryId: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateInstallation(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*CreateInstallation, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res CreateInstallation
-	if err := c.Client.Post(ctx, "CreateInstallation", CreateInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateIntegrationDocument = `mutation CreateIntegration ($name: String!, $attrs: IntegrationAttributes!) {
-	createIntegration(repositoryName: $name, attributes: $attrs) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateIntegration(ctx context.Context, name string, attrs IntegrationAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateIntegration, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res CreateIntegration
-	if err := c.Client.Post(ctx, "CreateIntegration", CreateIntegrationDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateKeyDocument = `mutation CreateKey ($key: String!, $name: String!) {
-	createPublicKey(attributes: {content:$key,name:$name}) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateKey(ctx context.Context, key string, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateKey, error) {
-	vars := map[string]interface{}{
-		"key":  key,
-		"name": name,
-	}
-
-	var res CreateKey
-	if err := c.Client.Post(ctx, "CreateKey", CreateKeyDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateRecipeDocument = `mutation CreateRecipe ($name: String!, $attributes: RecipeAttributes!) {
-	createRecipe(repositoryName: $name, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateRecipe(ctx context.Context, name string, attributes RecipeAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRecipe, error) {
-	vars := map[string]interface{}{
-		"name":       name,
-		"attributes": attributes,
-	}
-
-	var res CreateRecipe
-	if err := c.Client.Post(ctx, "CreateRecipe", CreateRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateRepositoryDocument = `mutation CreateRepository ($name: String!, $publisher: String!, $attributes: RepositoryAttributes!) {
-	upsertRepository(name: $name, publisher: $publisher, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateRepository(ctx context.Context, name string, publisher string, attributes RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRepository, error) {
-	vars := map[string]interface{}{
-		"name":       name,
-		"publisher":  publisher,
-		"attributes": attributes,
-	}
-
-	var res CreateRepository
-	if err := c.Client.Post(ctx, "CreateRepository", CreateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateResourceDefinitionDocument = `mutation CreateResourceDefinition ($name: String!, $input: ResourceDefinitionAttributes!) {
-	updateRepository(repositoryName: $name, attributes: {integrationResourceDefinition:$input}) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateResourceDefinition(ctx context.Context, name string, input ResourceDefinitionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateResourceDefinition, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"input": input,
-	}
-
-	var res CreateResourceDefinition
-	if err := c.Client.Post(ctx, "CreateResourceDefinition", CreateResourceDefinitionDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateStackDocument = `mutation CreateStack ($attributes: StackAttributes!) {
-	createStack(attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateStack(ctx context.Context, attributes StackAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateStack, error) {
-	vars := map[string]interface{}{
-		"attributes": attributes,
-	}
-
-	var res CreateStack
-	if err := c.Client.Post(ctx, "CreateStack", CreateStackDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateTestDocument = `mutation CreateTest ($name: String!, $attrs: TestAttributes!) {
-	createTest(name: $name, attributes: $attrs) {
-		... TestFragment
-	}
-}
-fragment TestFragment on Test {
-	id
-	name
-	status
-	promoteTag
-	steps {
-		id
-		name
-		description
-		status
-	}
-}
-`
-
-func (c *Client) CreateTest(ctx context.Context, name string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateTest, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res CreateTest
-	if err := c.Client.Post(ctx, "CreateTest", CreateTestDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateTrustDocument = `mutation CreateTrust ($attributes: TrustRelationshipAttributes!) {
-	createTrustRelationship(attributes: $attributes) {
-		... OidcTrustRelationshipFragment
-	}
-}
-fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
-	id
-	issuer
-	trust
-	scopes
-	insertedAt
-}
-`
-
-func (c *Client) CreateTrust(ctx context.Context, attributes TrustRelationshipAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateTrust, error) {
-	vars := map[string]interface{}{
-		"attributes": attributes,
-	}
-
-	var res CreateTrust
-	if err := c.Client.Post(ctx, "CreateTrust", CreateTrustDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const CreateUpgradeDocument = `mutation CreateUpgrade ($queue: String!, $repository: String!, $attributes: UpgradeAttributes!) {
-	createUpgrade(queue: $queue, repositoryName: $repository, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) CreateUpgrade(ctx context.Context, queue string, repository string, attributes UpgradeAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateUpgrade, error) {
-	vars := map[string]interface{}{
-		"queue":      queue,
-		"repository": repository,
-		"attributes": attributes,
-	}
-
-	var res CreateUpgrade
-	if err := c.Client.Post(ctx, "CreateUpgrade", CreateUpgradeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteDNSRecordDocument = `mutation DeleteDnsRecord ($name: String!, $type: DnsRecordType!) {
-	deleteDnsRecord(name: $name, type: $type) {
-		... DnsRecordFragment
-	}
-}
-fragment DnsRecordFragment on DnsRecord {
-	type
-	name
-	records
-}
-`
-
-func (c *Client) DeleteDNSRecord(ctx context.Context, name string, typeArg DNSRecordType, httpRequestOptions ...client.HTTPRequestOption) (*DeleteDNSRecord, error) {
-	vars := map[string]interface{}{
-		"name": name,
-		"type": typeArg,
-	}
-
-	var res DeleteDNSRecord
-	if err := c.Client.Post(ctx, "DeleteDnsRecord", DeleteDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteEabCredentialDocument = `mutation DeleteEabCredential ($cluster: String!, $provider: Provider!) {
-	deleteEabKey(cluster: $cluster, provider: $provider) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*DeleteEabCredential, error) {
-	vars := map[string]interface{}{
-		"cluster":  cluster,
-		"provider": provider,
-	}
-
-	var res DeleteEabCredential
-	if err := c.Client.Post(ctx, "DeleteEabCredential", DeleteEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteInstallationDocument = `mutation DeleteInstallation ($id: ID!) {
-	deleteInstallation(id: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteInstallation(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteInstallation, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res DeleteInstallation
-	if err := c.Client.Post(ctx, "DeleteInstallation", DeleteInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteRepositoryDocument = `mutation DeleteRepository ($id: ID!) {
-	deleteRepository(repositoryId: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteRepository(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteRepository, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res DeleteRepository
-	if err := c.Client.Post(ctx, "DeleteRepository", DeleteRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteShellDocument = `mutation DeleteShell {
-	deleteShell {
-		... CloudShellFragment
-	}
-}
-fragment CloudShellFragment on CloudShell {
-	id
-	aesKey
-	gitUrl
-}
-`
-
-func (c *Client) DeleteShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DeleteShell, error) {
-	vars := map[string]interface{}{}
-
-	var res DeleteShell
-	if err := c.Client.Post(ctx, "DeleteShell", DeleteShellDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DeleteTrustDocument = `mutation DeleteTrust ($id: ID!) {
-	deleteTrustRelationship(id: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) DeleteTrust(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteTrust, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res DeleteTrust
-	if err := c.Client.Post(ctx, "DeleteTrust", DeleteTrustDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DestroyClusterDocument = `mutation DestroyCluster ($domain: String!, $name: String!, $provider: Provider!) {
-	destroyCluster(domain: $domain, name: $name, provider: $provider)
-}
-`
-
-func (c *Client) DestroyCluster(ctx context.Context, domain string, name string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*DestroyCluster, error) {
-	vars := map[string]interface{}{
-		"domain":   domain,
-		"name":     name,
-		"provider": provider,
-	}
-
-	var res DestroyCluster
-	if err := c.Client.Post(ctx, "DestroyCluster", DestroyClusterDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const DevLoginDocument = `mutation DevLogin {
-	deviceLogin {
-		loginUrl
-		deviceToken
-	}
-}
-`
-
-func (c *Client) DevLogin(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DevLogin, error) {
-	vars := map[string]interface{}{}
-
-	var res DevLogin
-	if err := c.Client.Post(ctx, "DevLogin", DevLoginDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetChartInstallationsDocument = `query GetChartInstallations ($id: ID!) {
-	chartInstallations(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... ChartInstallationFragment
-			}
+	if err := c.Client.Post(ctx, "CreateDependency", CreateDependencyDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment ChartInstallationFragment on ChartInstallation {
-	id
-	chart {
-		... ChartFragment
-		dependencies {
-			... DependenciesFragment
-		}
-	}
-	version {
-		... VersionFragment
-	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment VersionFragment on Version {
-	id
-	helm
-	readme
-	version
-	valuesTemplate
-	templateType
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
-	insertedAt
-}
-`
 
-func (c *Client) GetChartInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetChartInstallations, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetChartInstallations
-	if err := c.Client.Post(ctx, "GetChartInstallations", GetChartInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetChartsDocument = `query GetCharts ($id: ID!) {
-	charts(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... ChartFragment
-			}
-		}
+const PromoteClusterDocument = `mutation PromoteCluster {
+	promote {
+		... UserFragment
 	}
 }
-fragment ChartFragment on Chart {
+fragment UserFragment on User {
 	id
 	name
-	description
-	latestVersion
+	email
 }
 `
 
-func (c *Client) GetCharts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetCharts, error) {
-	vars := map[string]interface{}{
-		"id": id,
+func (c *Client) PromoteCluster(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*PromoteCluster, error) {
+	vars := map[string]any{}
+
+	var res PromoteCluster
+	if err := c.Client.Post(ctx, "PromoteCluster", PromoteClusterDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
 	}
 
-	var res GetCharts
-	if err := c.Client.Post(ctx, "GetCharts", GetChartsDocument, &res, vars, httpRequestOptions...); err != nil {
+	return &res, nil
+}
+
+const TransferOwnershipDocument = `mutation TransferOwnership ($name: String!, $email: String!) {
+	transferOwnership(name: $name, email: $email) {
+		id
+	}
+}
+`
+
+func (c *Client) TransferOwnership(ctx context.Context, name string, email string, interceptors ...clientv2.RequestInterceptor) (*TransferOwnership, error) {
+	vars := map[string]any{
+		"name":  name,
+		"email": email,
+	}
+
+	var res TransferOwnership
+	if err := c.Client.Post(ctx, "TransferOwnership", TransferOwnershipDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5081,60 +9795,107 @@ fragment DnsRecordFragment on DnsRecord {
 }
 `
 
-func (c *Client) GetDNSRecords(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetDNSRecords, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetDNSRecords(ctx context.Context, cluster string, provider Provider, interceptors ...clientv2.RequestInterceptor) (*GetDNSRecords, error) {
+	vars := map[string]any{
 		"cluster":  cluster,
 		"provider": provider,
 	}
 
 	var res GetDNSRecords
-	if err := c.Client.Post(ctx, "GetDnsRecords", GetDNSRecordsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetDnsRecords", GetDNSRecordsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetEabCredentialDocument = `query GetEabCredential ($cluster: String!, $provider: Provider!) {
-	eabCredential(cluster: $cluster, provider: $provider) {
-		... EabCredentialFragment
+const CreateDNSRecordDocument = `mutation CreateDnsRecord ($cluster: String!, $provider: Provider!, $attributes: DnsRecordAttributes!) {
+	createDnsRecord(cluster: $cluster, provider: $provider, attributes: $attributes) {
+		... DnsRecordFragment
 	}
 }
-fragment EabCredentialFragment on EabCredential {
+fragment DnsRecordFragment on DnsRecord {
+	type
+	name
+	records
+}
+`
+
+func (c *Client) CreateDNSRecord(ctx context.Context, cluster string, provider Provider, attributes DNSRecordAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateDNSRecord, error) {
+	vars := map[string]any{
+		"cluster":    cluster,
+		"provider":   provider,
+		"attributes": attributes,
+	}
+
+	var res CreateDNSRecord
+	if err := c.Client.Post(ctx, "CreateDnsRecord", CreateDNSRecordDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteDNSRecordDocument = `mutation DeleteDnsRecord ($name: String!, $type: DnsRecordType!) {
+	deleteDnsRecord(name: $name, type: $type) {
+		... DnsRecordFragment
+	}
+}
+fragment DnsRecordFragment on DnsRecord {
+	type
+	name
+	records
+}
+`
+
+func (c *Client) DeleteDNSRecord(ctx context.Context, name string, typeArg DNSRecordType, interceptors ...clientv2.RequestInterceptor) (*DeleteDNSRecord, error) {
+	vars := map[string]any{
+		"name": name,
+		"type": typeArg,
+	}
+
+	var res DeleteDNSRecord
+	if err := c.Client.Post(ctx, "DeleteDnsRecord", DeleteDNSRecordDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateDomainDocument = `mutation CreateDomain ($name: String!) {
+	provisionDomain(name: $name) {
+		... DnsDomainFragment
+	}
+}
+fragment DnsDomainFragment on DnsDomain {
 	id
-	keyId
-	hmacKey
-	cluster
-	provider
+	name
 }
 `
 
-func (c *Client) GetEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetEabCredential, error) {
-	vars := map[string]interface{}{
-		"cluster":  cluster,
-		"provider": provider,
+func (c *Client) CreateDomain(ctx context.Context, name string, interceptors ...clientv2.RequestInterceptor) (*CreateDomain, error) {
+	vars := map[string]any{
+		"name": name,
 	}
 
-	var res GetEabCredential
-	if err := c.Client.Post(ctx, "GetEabCredential", GetEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
+	var res CreateDomain
+	if err := c.Client.Post(ctx, "CreateDomain", CreateDomainDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
 
-	return &res, nil
-}
-
-const GetHelpDocument = `query GetHelp ($prompt: String!) {
-	helpQuestion(prompt: $prompt)
-}
-`
-
-func (c *Client) GetHelp(ctx context.Context, prompt string, httpRequestOptions ...client.HTTPRequestOption) (*GetHelp, error) {
-	vars := map[string]interface{}{
-		"prompt": prompt,
-	}
-
-	var res GetHelp
-	if err := c.Client.Post(ctx, "GetHelp", GetHelpDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
@@ -5159,6 +9920,20 @@ fragment InstallationFragment on Installation {
 		... OIDCProvider
 	}
 }
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
 fragment OIDCProvider on OidcProvider {
 	id
 	clientId
@@ -5182,29 +9957,19 @@ fragment OIDCProvider on OidcProvider {
 		userinfoEndpoint
 	}
 }
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
 `
 
-func (c *Client) GetInstallation(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallation, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetInstallation(ctx context.Context, name *string, interceptors ...clientv2.RequestInterceptor) (*GetInstallation, error) {
+	vars := map[string]any{
 		"name": name,
 	}
 
 	var res GetInstallation
-	if err := c.Client.Post(ctx, "GetInstallation", GetInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetInstallation", GetInstallationDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5229,6 +9994,20 @@ fragment InstallationFragment on Installation {
 		... OIDCProvider
 	}
 }
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
 fragment OIDCProvider on OidcProvider {
 	id
 	clientId
@@ -5252,29 +10031,19 @@ fragment OIDCProvider on OidcProvider {
 		userinfoEndpoint
 	}
 }
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
 `
 
-func (c *Client) GetInstallationByID(ctx context.Context, id *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallationByID, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetInstallationByID(ctx context.Context, id *string, interceptors ...clientv2.RequestInterceptor) (*GetInstallationByID, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res GetInstallationByID
-	if err := c.Client.Post(ctx, "GetInstallationById", GetInstallationByIDDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetInstallationById", GetInstallationByIDDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5303,6 +10072,20 @@ fragment InstallationFragment on Installation {
 		... OIDCProvider
 	}
 }
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
 fragment OIDCProvider on OidcProvider {
 	id
 	clientId
@@ -5326,163 +10109,132 @@ fragment OIDCProvider on OidcProvider {
 		userinfoEndpoint
 	}
 }
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
 `
 
-func (c *Client) GetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallations, error) {
-	vars := map[string]interface{}{}
+func (c *Client) GetInstallations(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetInstallations, error) {
+	vars := map[string]any{}
 
 	var res GetInstallations
-	if err := c.Client.Post(ctx, "GetInstallations", GetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetInstallations", GetInstallationsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetLoginMethodDocument = `query GetLoginMethod ($email: String!) {
-	loginMethod(email: $email) {
-		loginMethod
-		token
+const UpsertOidcProviderDocument = `mutation UpsertOidcProvider ($id: ID!, $attributes: OidcAttributes!) {
+	upsertOidcProvider(installationId: $id, attributes: $attributes) {
+		id
 	}
 }
 `
 
-func (c *Client) GetLoginMethod(ctx context.Context, email string, httpRequestOptions ...client.HTTPRequestOption) (*GetLoginMethod, error) {
-	vars := map[string]interface{}{
-		"email": email,
+func (c *Client) UpsertOidcProvider(ctx context.Context, id string, attributes OidcAttributes, interceptors ...clientv2.RequestInterceptor) (*UpsertOidcProvider, error) {
+	vars := map[string]any{
+		"id":         id,
+		"attributes": attributes,
 	}
 
-	var res GetLoginMethod
-	if err := c.Client.Post(ctx, "GetLoginMethod", GetLoginMethodDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res UpsertOidcProvider
+	if err := c.Client.Post(ctx, "UpsertOidcProvider", UpsertOidcProviderDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetPackageInstallationsDocument = `query GetPackageInstallations ($id: ID!) {
-	chartInstallations(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... ChartInstallationFragment
-			}
-		}
-	}
-	terraformInstallations(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... TerraformInstallationFragment
-			}
-		}
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment ChartInstallationFragment on ChartInstallation {
-	id
-	chart {
-		... ChartFragment
-		dependencies {
-			... DependenciesFragment
-		}
-	}
-	version {
-		... VersionFragment
-	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment TerraformInstallationFragment on TerraformInstallation {
-	id
-	terraform {
-		... TerraformFragment
-	}
-	version {
-		... VersionFragment
-	}
-}
-fragment VersionFragment on Version {
-	id
-	helm
-	readme
-	version
-	valuesTemplate
-	templateType
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
-	insertedAt
+const ResetInstallationsDocument = `mutation ResetInstallations {
+	resetInstallations
 }
 `
 
-func (c *Client) GetPackageInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetPackageInstallations, error) {
-	vars := map[string]interface{}{
+func (c *Client) ResetInstallations(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*ResetInstallations, error) {
+	vars := map[string]any{}
+
+	var res ResetInstallations
+	if err := c.Client.Post(ctx, "ResetInstallations", ResetInstallationsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateInstallationDocument = `mutation CreateInstallation ($id: ID!) {
+	createInstallation(repositoryId: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateInstallation(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*CreateInstallation, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
-	var res GetPackageInstallations
-	if err := c.Client.Post(ctx, "GetPackageInstallations", GetPackageInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res CreateInstallation
+	if err := c.Client.Post(ctx, "CreateInstallation", CreateInstallationDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteInstallationDocument = `mutation DeleteInstallation ($id: ID!) {
+	deleteInstallation(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteInstallation(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*DeleteInstallation, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res DeleteInstallation
+	if err := c.Client.Post(ctx, "DeleteInstallation", DeleteInstallationDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const MarkSyncedDocument = `mutation MarkSynced ($repository: String!) {
+	synced(repository: $repository)
+}
+`
+
+func (c *Client) MarkSynced(ctx context.Context, repository string, interceptors ...clientv2.RequestInterceptor) (*MarkSynced, error) {
+	vars := map[string]any{
+		"repository": repository,
+	}
+
+	var res MarkSynced
+	if err := c.Client.Post(ctx, "MarkSynced", MarkSyncedDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5497,11 +10249,91 @@ const GetRecipeDocument = `query GetRecipe ($repo: String, $name: String) {
 		}
 	}
 }
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
 fragment ChartFragment on Chart {
 	id
 	name
 	description
 	latestVersion
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
 }
 fragment DependenciesFragment on Dependencies {
 	dependencies {
@@ -5548,96 +10380,20 @@ fragment RecipeConfigurationFragment on RecipeConfiguration {
 		message
 	}
 }
-fragment RecipeFragment on Recipe {
-	id
-	name
-	primary
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
 `
 
-func (c *Client) GetRecipe(ctx context.Context, repo *string, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRecipe, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetRecipe(ctx context.Context, repo *string, name *string, interceptors ...clientv2.RequestInterceptor) (*GetRecipe, error) {
+	vars := map[string]any{
 		"repo": repo,
 		"name": name,
 	}
 
 	var res GetRecipe
-	if err := c.Client.Post(ctx, "GetRecipe", GetRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "GetRecipe", GetRecipeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5652,11 +10408,91 @@ const GetRecipeByIDDocument = `query GetRecipeByID ($id: ID) {
 		}
 	}
 }
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
 fragment ChartFragment on Chart {
 	id
 	name
 	description
 	latestVersion
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
 }
 fragment DependenciesFragment on Dependencies {
 	dependencies {
@@ -5703,6 +10539,34 @@ fragment RecipeConfigurationFragment on RecipeConfiguration {
 		message
 	}
 }
+`
+
+func (c *Client) GetRecipeByID(ctx context.Context, id *string, interceptors ...clientv2.RequestInterceptor) (*GetRecipeByID, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res GetRecipeByID
+	if err := c.Client.Post(ctx, "GetRecipeByID", GetRecipeByIDDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListRecipesDocument = `query ListRecipes ($repo: String, $provider: Provider) {
+	recipes(repositoryName: $repo, provider: $provider, first: 500) {
+		edges {
+			node {
+				... RecipeFragment
+			}
+		}
+	}
+}
 fragment RecipeFragment on Recipe {
 	id
 	name
@@ -5735,6 +10599,32 @@ fragment RecipeFragment on Recipe {
 		... RecipeSectionFragment
 	}
 }
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
 fragment RecipeItemFragment on RecipeItem {
 	id
 	chart {
@@ -5745,6 +10635,128 @@ fragment RecipeItemFragment on RecipeItem {
 	}
 	configuration {
 		... RecipeConfigurationFragment
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+`
+
+func (c *Client) ListRecipes(ctx context.Context, repo *string, provider *Provider, interceptors ...clientv2.RequestInterceptor) (*ListRecipes, error) {
+	vars := map[string]any{
+		"repo":     repo,
+		"provider": provider,
+	}
+
+	var res ListRecipes
+	if err := c.Client.Post(ctx, "ListRecipes", ListRecipesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListAllRecipesDocument = `query ListAllRecipes ($repo: String) {
+	recipes(repositoryName: $repo, first: 500) {
+		edges {
+			node {
+				... RecipeFragment
+			}
+		}
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
 	}
 }
 fragment RecipeSectionFragment on RecipeSection {
@@ -5773,6 +10785,24 @@ fragment RepositoryFragment on Repository {
 		name
 	}
 }
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
 fragment TerraformFragment on Terraform {
 	id
 	name
@@ -5783,15 +10813,471 @@ fragment TerraformFragment on Terraform {
 	}
 	valuesTemplate
 }
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
 `
 
-func (c *Client) GetRecipeByID(ctx context.Context, id *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRecipeByID, error) {
-	vars := map[string]interface{}{
+func (c *Client) ListAllRecipes(ctx context.Context, repo *string, interceptors ...clientv2.RequestInterceptor) (*ListAllRecipes, error) {
+	vars := map[string]any{
+		"repo": repo,
+	}
+
+	var res ListAllRecipes
+	if err := c.Client.Post(ctx, "ListAllRecipes", ListAllRecipesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateRecipeDocument = `mutation CreateRecipe ($name: String!, $attributes: RecipeAttributes!) {
+	createRecipe(repositoryName: $name, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateRecipe(ctx context.Context, name string, attributes RecipeAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateRecipe, error) {
+	vars := map[string]any{
+		"name":       name,
+		"attributes": attributes,
+	}
+
+	var res CreateRecipe
+	if err := c.Client.Post(ctx, "CreateRecipe", CreateRecipeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const InstallRecipeDocument = `mutation InstallRecipe ($id: ID!) {
+	installRecipe(recipeId: $id, context: "{}") {
+		id
+	}
+}
+`
+
+func (c *Client) InstallRecipe(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*InstallRecipe, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
-	var res GetRecipeByID
-	if err := c.Client.Post(ctx, "GetRecipeByID", GetRecipeByIDDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res InstallRecipe
+	if err := c.Client.Post(ctx, "InstallRecipe", InstallRecipeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateStackDocument = `mutation CreateStack ($attributes: StackAttributes!) {
+	createStack(attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateStack(ctx context.Context, attributes StackAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateStack, error) {
+	vars := map[string]any{
+		"attributes": attributes,
+	}
+
+	var res CreateStack
+	if err := c.Client.Post(ctx, "CreateStack", CreateStackDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetStackDocument = `query GetStack ($name: String!, $provider: Provider!) {
+	stack(name: $name, provider: $provider) {
+		... StackFragment
+	}
+}
+fragment StackFragment on Stack {
+	id
+	name
+	featured
+	description
+	bundles {
+		... RecipeFragment
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+`
+
+func (c *Client) GetStack(ctx context.Context, name string, provider Provider, interceptors ...clientv2.RequestInterceptor) (*GetStack, error) {
+	vars := map[string]any{
+		"name":     name,
+		"provider": provider,
+	}
+
+	var res GetStack
+	if err := c.Client.Post(ctx, "GetStack", GetStackDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListStacksDocument = `query ListStacks ($featured: Boolean, $cursor: String) {
+	stacks(first: 100, after: $cursor, featured: $featured) {
+		edges {
+			node {
+				... StackFragment
+			}
+		}
+	}
+}
+fragment StackFragment on Stack {
+	id
+	name
+	featured
+	description
+	bundles {
+		... RecipeFragment
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+`
+
+func (c *Client) ListStacks(ctx context.Context, featured *bool, cursor *string, interceptors ...clientv2.RequestInterceptor) (*ListStacks, error) {
+	vars := map[string]any{
+		"featured": featured,
+		"cursor":   cursor,
+	}
+
+	var res ListStacks
+	if err := c.Client.Post(ctx, "ListStacks", ListStacksDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -5819,968 +11305,197 @@ fragment RepositoryFragment on Repository {
 }
 `
 
-func (c *Client) GetRepository(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRepository, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetRepository(ctx context.Context, name *string, interceptors ...clientv2.RequestInterceptor) (*GetRepository, error) {
+	vars := map[string]any{
 		"name": name,
 	}
 
 	var res GetRepository
-	if err := c.Client.Post(ctx, "GetRepository", GetRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetShellDocument = `query GetShell {
-	shell {
-		... CloudShellFragment
-	}
-}
-fragment CloudShellFragment on CloudShell {
-	id
-	aesKey
-	gitUrl
-}
-`
-
-func (c *Client) GetShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetShell, error) {
-	vars := map[string]interface{}{}
-
-	var res GetShell
-	if err := c.Client.Post(ctx, "GetShell", GetShellDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetStackDocument = `query GetStack ($name: String!, $provider: Provider!) {
-	stack(name: $name, provider: $provider) {
-		... StackFragment
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	primary
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
+	if err := c.Client.Post(ctx, "GetRepository", GetRepositoryDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
+
+		return nil, err
 	}
-	repository {
+
+	return &res, nil
+}
+
+const CreateResourceDefinitionDocument = `mutation CreateResourceDefinition ($name: String!, $input: ResourceDefinitionAttributes!) {
+	updateRepository(repositoryName: $name, attributes: {integrationResourceDefinition:$input}) {
 		id
-		name
 	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment StackFragment on Stack {
-	id
-	name
-	featured
-	description
-	bundles {
-		... RecipeFragment
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
 }
 `
 
-func (c *Client) GetStack(ctx context.Context, name string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetStack, error) {
-	vars := map[string]interface{}{
-		"name":     name,
-		"provider": provider,
+func (c *Client) CreateResourceDefinition(ctx context.Context, name string, input ResourceDefinitionAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateResourceDefinition, error) {
+	vars := map[string]any{
+		"name":  name,
+		"input": input,
 	}
 
-	var res GetStack
-	if err := c.Client.Post(ctx, "GetStack", GetStackDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTerraformDocument = `query GetTerraform ($id: ID!) {
-	terraform(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... TerraformFragment
-			}
+	var res CreateResourceDefinition
+	if err := c.Client.Post(ctx, "CreateResourceDefinition", CreateResourceDefinitionDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-`
 
-func (c *Client) GetTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraform, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetTerraform
-	if err := c.Client.Post(ctx, "GetTerraform", GetTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetTerraformInstallationsDocument = `query GetTerraformInstallations ($id: ID!) {
-	terraformInstallations(repositoryId: $id, first: 100) {
-		edges {
-			node {
-				... TerraformInstallationFragment
-			}
+const CreateIntegrationDocument = `mutation CreateIntegration ($name: String!, $attrs: IntegrationAttributes!) {
+	createIntegration(repositoryName: $name, attributes: $attrs) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateIntegration(ctx context.Context, name string, attrs IntegrationAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateIntegration, error) {
+	vars := map[string]any{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res CreateIntegration
+	if err := c.Client.Post(ctx, "CreateIntegration", CreateIntegrationDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-fragment TerraformInstallationFragment on TerraformInstallation {
-	id
-	terraform {
-		... TerraformFragment
-	}
-	version {
-		... VersionFragment
-	}
-}
-fragment VersionFragment on Version {
-	id
-	helm
-	readme
-	version
-	valuesTemplate
-	templateType
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
-	insertedAt
-}
-`
 
-func (c *Client) GetTerraformInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraformInstallations, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetTerraformInstallations
-	if err := c.Client.Post(ctx, "GetTerraformInstallations", GetTerraformInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetTerraformVersionsDocument = `query GetTerraformVersions ($id: ID!) {
-	versions(terraformId: $id, first: 100) {
-		edges {
-			node {
-				... VersionFragment
-			}
+const UpdateRepositoryDocument = `mutation UpdateRepository ($name: String!, $attrs: RepositoryAttributes!) {
+	updateRepository(repositoryName: $name, attributes: $attrs) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateRepository(ctx context.Context, name string, attrs RepositoryAttributes, interceptors ...clientv2.RequestInterceptor) (*UpdateRepository, error) {
+	vars := map[string]any{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res UpdateRepository
+	if err := c.Client.Post(ctx, "UpdateRepository", UpdateRepositoryDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment CrdFragment on Crd {
-	id
-	name
-	blob
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment VersionFragment on Version {
-	id
-	helm
-	readme
-	version
-	valuesTemplate
-	templateType
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
-	insertedAt
-}
-`
 
-func (c *Client) GetTerraformVersions(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraformVersions, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res GetTerraformVersions
-	if err := c.Client.Post(ctx, "GetTerraformVersions", GetTerraformVersionsDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const GetTfProviderScaffoldDocument = `query GetTfProviderScaffold ($name: Provider!, $vsn: String) {
-	terraformProvider(name: $name, vsn: $vsn) {
-		name
-		content
+const CreateRepositoryDocument = `mutation CreateRepository ($name: String!, $publisher: String!, $attributes: RepositoryAttributes!) {
+	upsertRepository(name: $name, publisher: $publisher, attributes: $attributes) {
+		id
 	}
 }
 `
 
-func (c *Client) GetTfProviderScaffold(ctx context.Context, name Provider, vsn *string, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviderScaffold, error) {
-	vars := map[string]interface{}{
+func (c *Client) CreateRepository(ctx context.Context, name string, publisher string, attributes RepositoryAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateRepository, error) {
+	vars := map[string]any{
+		"name":       name,
+		"publisher":  publisher,
+		"attributes": attributes,
+	}
+
+	var res CreateRepository
+	if err := c.Client.Post(ctx, "CreateRepository", CreateRepositoryDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const AcquireLockDocument = `mutation AcquireLock ($name: String!) {
+	acquireLock(repository: $name) {
+		... ApplyLockFragment
+	}
+}
+fragment ApplyLockFragment on ApplyLock {
+	id
+	lock
+}
+`
+
+func (c *Client) AcquireLock(ctx context.Context, name string, interceptors ...clientv2.RequestInterceptor) (*AcquireLock, error) {
+	vars := map[string]any{
 		"name": name,
-		"vsn":  vsn,
 	}
 
-	var res GetTfProviderScaffold
-	if err := c.Client.Post(ctx, "GetTfProviderScaffold", GetTfProviderScaffoldDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetTfProvidersDocument = `query GetTfProviders {
-	terraformProviders
-}
-`
-
-func (c *Client) GetTfProviders(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviders, error) {
-	vars := map[string]interface{}{}
-
-	var res GetTfProviders
-	if err := c.Client.Post(ctx, "GetTfProviders", GetTfProvidersDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const GetVersionsDocument = `query GetVersions ($id: ID!) {
-	versions(chartId: $id, first: 100) {
-		edges {
-			node {
-				... VersionFragment
-			}
+	var res AcquireLock
+	if err := c.Client.Post(ctx, "AcquireLock", AcquireLockDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ReleaseLockDocument = `mutation ReleaseLock ($name: String!, $attrs: LockAttributes!) {
+	releaseLock(repository: $name, attributes: $attrs) {
+		... ApplyLockFragment
 	}
 }
-fragment CrdFragment on Crd {
+fragment ApplyLockFragment on ApplyLock {
 	id
-	name
-	blob
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment VersionFragment on Version {
-	id
-	helm
-	readme
-	version
-	valuesTemplate
-	templateType
-	package
-	crds {
-		... CrdFragment
-	}
-	dependencies {
-		... DependenciesFragment
-	}
-	insertedAt
+	lock
 }
 `
 
-func (c *Client) GetVersions(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetVersions, error) {
-	vars := map[string]interface{}{
-		"id": id,
+func (c *Client) ReleaseLock(ctx context.Context, name string, attrs LockAttributes, interceptors ...clientv2.RequestInterceptor) (*ReleaseLock, error) {
+	vars := map[string]any{
+		"name":  name,
+		"attrs": attrs,
 	}
 
-	var res GetVersions
-	if err := c.Client.Post(ctx, "GetVersions", GetVersionsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ImpersonateServiceAccountDocument = `mutation ImpersonateServiceAccount ($email: String) {
-	impersonateServiceAccount(email: $email) {
-		jwt
-		email
-	}
-}
-`
-
-func (c *Client) ImpersonateServiceAccount(ctx context.Context, email *string, httpRequestOptions ...client.HTTPRequestOption) (*ImpersonateServiceAccount, error) {
-	vars := map[string]interface{}{
-		"email": email,
-	}
-
-	var res ImpersonateServiceAccount
-	if err := c.Client.Post(ctx, "ImpersonateServiceAccount", ImpersonateServiceAccountDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const InstallRecipeDocument = `mutation InstallRecipe ($id: ID!) {
-	installRecipe(recipeId: $id, context: "{}") {
-		id
-	}
-}
-`
-
-func (c *Client) InstallRecipe(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*InstallRecipe, error) {
-	vars := map[string]interface{}{
-		"id": id,
-	}
-
-	var res InstallRecipe
-	if err := c.Client.Post(ctx, "InstallRecipe", InstallRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const InstallVersionDocument = `mutation InstallVersion ($type: DependencyType!, $repo: String!, $package: String!, $vsn: String!) {
-	installVersion(type: $type, repository: $repo, package: $package, vsn: $vsn)
-}
-`
-
-func (c *Client) InstallVersion(ctx context.Context, typeArg DependencyType, repo string, packageArg string, vsn string, httpRequestOptions ...client.HTTPRequestOption) (*InstallVersion, error) {
-	vars := map[string]interface{}{
-		"type":    typeArg,
-		"repo":    repo,
-		"package": packageArg,
-		"vsn":     vsn,
-	}
-
-	var res InstallVersion
-	if err := c.Client.Post(ctx, "InstallVersion", InstallVersionDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListAllRecipesDocument = `query ListAllRecipes ($repo: String) {
-	recipes(repositoryName: $repo, first: 500) {
-		edges {
-			node {
-				... RecipeFragment
-			}
+	var res ReleaseLock
+	if err := c.Client.Post(ctx, "ReleaseLock", ReleaseLockDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	primary
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-`
 
-func (c *Client) ListAllRecipes(ctx context.Context, repo *string, httpRequestOptions ...client.HTTPRequestOption) (*ListAllRecipes, error) {
-	vars := map[string]interface{}{
-		"repo": repo,
-	}
-
-	var res ListAllRecipes
-	if err := c.Client.Post(ctx, "ListAllRecipes", ListAllRecipesDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const ListArtifactsDocument = `query ListArtifacts ($id: ID!) {
-	repository(id: $id) {
-		artifacts {
-			... ArtifactFragment
-		}
-	}
-}
-fragment ArtifactFragment on Artifact {
-	id
-	name
-	readme
-	platform
-	arch
-	blob
-	sha
-	filesize
+const UnlockRepositoryDocument = `mutation UnlockRepository ($name: String!) {
+	unlockRepository(name: $name)
 }
 `
 
-func (c *Client) ListArtifacts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*ListArtifacts, error) {
-	vars := map[string]interface{}{
-		"id": id,
+func (c *Client) UnlockRepository(ctx context.Context, name string, interceptors ...clientv2.RequestInterceptor) (*UnlockRepository, error) {
+	vars := map[string]any{
+		"name": name,
 	}
 
-	var res ListArtifacts
-	if err := c.Client.Post(ctx, "ListArtifacts", ListArtifactsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListKeysDocument = `query ListKeys ($emails: [String]) {
-	publicKeys(emails: $emails, first: 1000) {
-		edges {
-			node {
-				... PublicKeyFragment
-			}
+	var res UnlockRepository
+	if err := c.Client.Post(ctx, "UnlockRepository", UnlockRepositoryDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
 		}
-	}
-}
-fragment PublicKeyFragment on PublicKey {
-	id
-	content
-	user {
-		... UserFragment
-	}
-}
-fragment UserFragment on User {
-	id
-	name
-	email
-}
-`
 
-func (c *Client) ListKeys(ctx context.Context, emails []*string, httpRequestOptions ...client.HTTPRequestOption) (*ListKeys, error) {
-	vars := map[string]interface{}{
-		"emails": emails,
-	}
-
-	var res ListKeys
-	if err := c.Client.Post(ctx, "ListKeys", ListKeysDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ListRecipesDocument = `query ListRecipes ($repo: String, $provider: Provider) {
-	recipes(repositoryName: $repo, provider: $provider, first: 500) {
-		edges {
-			node {
-				... RecipeFragment
-			}
-		}
-	}
-}
-fragment ChartFragment on Chart {
-	id
-	name
-	description
-	latestVersion
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
-	}
-	validation {
-		type
-		regex
-		message
-	}
-}
-fragment RecipeFragment on Recipe {
-	id
-	name
-	primary
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
-		}
-	}
-	repository {
-		id
-		name
-	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
-	}
-	recipeSections {
-		... RecipeSectionFragment
-	}
-}
-fragment RecipeItemFragment on RecipeItem {
-	id
-	chart {
-		... ChartFragment
-	}
-	terraform {
-		... TerraformFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-`
-
-func (c *Client) ListRecipes(ctx context.Context, repo *string, provider *Provider, httpRequestOptions ...client.HTTPRequestOption) (*ListRecipes, error) {
-	vars := map[string]interface{}{
-		"repo":     repo,
-		"provider": provider,
-	}
-
-	var res ListRecipes
-	if err := c.Client.Post(ctx, "ListRecipes", ListRecipesDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
@@ -6812,33 +11527,242 @@ fragment RepositoryFragment on Repository {
 }
 `
 
-func (c *Client) ListRepositories(ctx context.Context, q *string, httpRequestOptions ...client.HTTPRequestOption) (*ListRepositories, error) {
-	vars := map[string]interface{}{
+func (c *Client) ListRepositories(ctx context.Context, q *string, interceptors ...clientv2.RequestInterceptor) (*ListRepositories, error) {
+	vars := map[string]any{
 		"q": q,
 	}
 
 	var res ListRepositories
-	if err := c.Client.Post(ctx, "ListRepositories", ListRepositoriesDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "ListRepositories", ListRepositoriesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const ListStacksDocument = `query ListStacks ($featured: Boolean, $cursor: String) {
-	stacks(first: 100, after: $cursor, featured: $featured) {
+const ScaffoldsDocument = `query Scaffolds ($app: String!, $pub: String!, $cat: Category!, $ing: Boolean, $pg: Boolean) {
+	scaffold(application: $app, publisher: $pub, category: $cat, ingress: $ing, postgres: $pg) {
+		path
+		content
+	}
+}
+`
+
+func (c *Client) Scaffolds(ctx context.Context, app string, pub string, cat Category, ing *bool, pg *bool, interceptors ...clientv2.RequestInterceptor) (*Scaffolds, error) {
+	vars := map[string]any{
+		"app": app,
+		"pub": pub,
+		"cat": cat,
+		"ing": ing,
+		"pg":  pg,
+	}
+
+	var res Scaffolds
+	if err := c.Client.Post(ctx, "Scaffolds", ScaffoldsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteRepositoryDocument = `mutation DeleteRepository ($id: ID!) {
+	deleteRepository(repositoryId: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteRepository(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*DeleteRepository, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res DeleteRepository
+	if err := c.Client.Post(ctx, "DeleteRepository", DeleteRepositoryDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ReleaseDocument = `mutation Release ($name: String!, $tags: [String!]) {
+	release(repositoryName: $name, tags: $tags)
+}
+`
+
+func (c *Client) Release(ctx context.Context, name string, tags []string, interceptors ...clientv2.RequestInterceptor) (*Release, error) {
+	vars := map[string]any{
+		"name": name,
+		"tags": tags,
+	}
+
+	var res Release
+	if err := c.Client.Post(ctx, "Release", ReleaseDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const InstallVersionDocument = `mutation InstallVersion ($type: DependencyType!, $repo: String!, $package: String!, $vsn: String!) {
+	installVersion(type: $type, repository: $repo, package: $package, vsn: $vsn)
+}
+`
+
+func (c *Client) InstallVersion(ctx context.Context, typeArg DependencyType, repo string, packageArg string, vsn string, interceptors ...clientv2.RequestInterceptor) (*InstallVersion, error) {
+	vars := map[string]any{
+		"type":    typeArg,
+		"repo":    repo,
+		"package": packageArg,
+		"vsn":     vsn,
+	}
+
+	var res InstallVersion
+	if err := c.Client.Post(ctx, "InstallVersion", InstallVersionDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTfProvidersDocument = `query GetTfProviders {
+	terraformProviders
+}
+`
+
+func (c *Client) GetTfProviders(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetTfProviders, error) {
+	vars := map[string]any{}
+
+	var res GetTfProviders
+	if err := c.Client.Post(ctx, "GetTfProviders", GetTfProvidersDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTfProviderScaffoldDocument = `query GetTfProviderScaffold ($name: Provider!, $vsn: String) {
+	terraformProvider(name: $name, vsn: $vsn) {
+		name
+		content
+	}
+}
+`
+
+func (c *Client) GetTfProviderScaffold(ctx context.Context, name Provider, vsn *string, interceptors ...clientv2.RequestInterceptor) (*GetTfProviderScaffold, error) {
+	vars := map[string]any{
+		"name": name,
+		"vsn":  vsn,
+	}
+
+	var res GetTfProviderScaffold
+	if err := c.Client.Post(ctx, "GetTfProviderScaffold", GetTfProviderScaffoldDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetShellDocument = `query GetShell {
+	shell {
+		... CloudShellFragment
+	}
+}
+fragment CloudShellFragment on CloudShell {
+	id
+	aesKey
+	gitUrl
+}
+`
+
+func (c *Client) GetShell(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetShell, error) {
+	vars := map[string]any{}
+
+	var res GetShell
+	if err := c.Client.Post(ctx, "GetShell", GetShellDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteShellDocument = `mutation DeleteShell {
+	deleteShell {
+		... CloudShellFragment
+	}
+}
+fragment CloudShellFragment on CloudShell {
+	id
+	aesKey
+	gitUrl
+}
+`
+
+func (c *Client) DeleteShell(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*DeleteShell, error) {
+	vars := map[string]any{}
+
+	var res DeleteShell
+	if err := c.Client.Post(ctx, "DeleteShell", DeleteShellDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTerraformDocument = `query GetTerraform ($id: ID!) {
+	terraform(repositoryId: $id, first: 100) {
 		edges {
 			node {
-				... StackFragment
+				... TerraformFragment
 			}
 		}
 	}
 }
-fragment ChartFragment on Chart {
+fragment TerraformFragment on Terraform {
 	id
 	name
+	package
 	description
-	latestVersion
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
 }
 fragment DependenciesFragment on Dependencies {
 	dependencies {
@@ -6866,102 +11790,116 @@ fragment DependenciesFragment on Dependencies {
 	providerVsn
 	cliVsn
 }
-fragment RecipeConfigurationFragment on RecipeConfiguration {
-	name
-	type
-	default
-	documentation
-	optional
-	placeholder
-	functionName
-	condition {
-		field
-		operation
-		value
+`
+
+func (c *Client) GetTerraform(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetTerraform, error) {
+	vars := map[string]any{
+		"id": id,
 	}
-	validation {
-		type
-		regex
-		message
+
+	var res GetTerraform
+	if err := c.Client.Post(ctx, "GetTerraform", GetTerraformDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
 	}
+
+	return &res, nil
 }
-fragment RecipeFragment on Recipe {
-	id
-	name
-	primary
-	description
-	restricted
-	provider
-	tests {
-		type
-		name
-		message
-		args {
-			name
-			repo
-			key
+
+const GetTerraformVersionsDocument = `query GetTerraformVersions ($id: ID!) {
+	versions(terraformId: $id, first: 100) {
+		edges {
+			node {
+				... VersionFragment
+			}
 		}
 	}
-	repository {
-		id
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
 		name
+		repo
+		optional
+		version
 	}
-	oidcSettings {
-		uriFormat
-		uriFormats
-		authMethod
-		domainKey
-		subdomain
+	breaking
+	instructions {
+		instructions
+		script
 	}
-	recipeSections {
-		... RecipeSectionFragment
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+`
+
+func (c *Client) GetTerraformVersions(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetTerraformVersions, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res GetTerraformVersions
+	if err := c.Client.Post(ctx, "GetTerraformVersions", GetTerraformVersionsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTerraformInstallationsDocument = `query GetTerraformInstallations ($id: ID!) {
+	terraformInstallations(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... TerraformInstallationFragment
+			}
+		}
 	}
 }
-fragment RecipeItemFragment on RecipeItem {
+fragment TerraformInstallationFragment on TerraformInstallation {
 	id
-	chart {
-		... ChartFragment
-	}
 	terraform {
 		... TerraformFragment
 	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RecipeSectionFragment on RecipeSection {
-	index
-	repository {
-		... RepositoryFragment
-	}
-	recipeItems {
-		... RecipeItemFragment
-	}
-	configuration {
-		... RecipeConfigurationFragment
-	}
-}
-fragment RepositoryFragment on Repository {
-	id
-	name
-	notes
-	icon
-	darkIcon
-	description
-	publisher {
-		name
-	}
-	recipes {
-		name
-	}
-}
-fragment StackFragment on Stack {
-	id
-	name
-	featured
-	description
-	bundles {
-		... RecipeFragment
+	version {
+		... VersionFragment
 	}
 }
 fragment TerraformFragment on Terraform {
@@ -6974,317 +11912,128 @@ fragment TerraformFragment on Terraform {
 	}
 	valuesTemplate
 }
-`
-
-func (c *Client) ListStacks(ctx context.Context, featured *bool, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*ListStacks, error) {
-	vars := map[string]interface{}{
-		"featured": featured,
-		"cursor":   cursor,
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
 	}
-
-	var res ListStacks
-	if err := c.Client.Post(ctx, "ListStacks", ListStacksDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
+	breaking
+	instructions {
+		instructions
+		script
 	}
-
-	return &res, nil
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
 }
-
-const ListTokensDocument = `query ListTokens {
-	tokens(first: 3) {
-		edges {
-			node {
-				token
-			}
-		}
-	}
-}
-`
-
-func (c *Client) ListTokens(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ListTokens, error) {
-	vars := map[string]interface{}{}
-
-	var res ListTokens
-	if err := c.Client.Post(ctx, "ListTokens", ListTokensDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const LoginDocument = `mutation Login ($email: String!, $pwd: String!) {
-	login(email: $email, password: $pwd) {
-		jwt
-	}
-}
-`
-
-func (c *Client) Login(ctx context.Context, email string, pwd string, httpRequestOptions ...client.HTTPRequestOption) (*Login, error) {
-	vars := map[string]interface{}{
-		"email": email,
-		"pwd":   pwd,
-	}
-
-	var res Login
-	if err := c.Client.Post(ctx, "Login", LoginDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const MarkSyncedDocument = `mutation MarkSynced ($repository: String!) {
-	synced(repository: $repository)
-}
-`
-
-func (c *Client) MarkSynced(ctx context.Context, repository string, httpRequestOptions ...client.HTTPRequestOption) (*MarkSynced, error) {
-	vars := map[string]interface{}{
-		"repository": repository,
-	}
-
-	var res MarkSynced
-	if err := c.Client.Post(ctx, "MarkSynced", MarkSyncedDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const MeDocument = `query Me {
-	me {
-		id
-		email
-		demoing
-		trustRelationships {
-			... OidcTrustRelationshipFragment
-		}
-	}
-}
-fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
+fragment VersionFragment on Version {
 	id
-	issuer
-	trust
-	scopes
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
 	insertedAt
 }
-`
-
-func (c *Client) Me(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*Me, error) {
-	vars := map[string]interface{}{}
-
-	var res Me
-	if err := c.Client.Post(ctx, "Me", MeDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const OidcTokenDocument = `query OidcToken ($provider: ExternalOidcProvider!, $token: String!, $email: String!) {
-	oidcToken(provider: $provider, idToken: $token, email: $email)
-}
-`
-
-func (c *Client) OidcToken(ctx context.Context, provider ExternalOidcProvider, token string, email string, httpRequestOptions ...client.HTTPRequestOption) (*OidcToken, error) {
-	vars := map[string]interface{}{
-		"provider": provider,
-		"token":    token,
-		"email":    email,
-	}
-
-	var res OidcToken
-	if err := c.Client.Post(ctx, "OidcToken", OidcTokenDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const PollLoginTokenDocument = `mutation PollLoginToken ($token: String!) {
-	loginToken(token: $token) {
-		jwt
-	}
-}
-`
-
-func (c *Client) PollLoginToken(ctx context.Context, token string, httpRequestOptions ...client.HTTPRequestOption) (*PollLoginToken, error) {
-	vars := map[string]interface{}{
-		"token": token,
-	}
-
-	var res PollLoginToken
-	if err := c.Client.Post(ctx, "PollLoginToken", PollLoginTokenDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const PromoteClusterDocument = `mutation PromoteCluster {
-	promote {
-		... UserFragment
-	}
-}
-fragment UserFragment on User {
+fragment CrdFragment on Crd {
 	id
 	name
-	email
+	blob
 }
 `
 
-func (c *Client) PromoteCluster(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*PromoteCluster, error) {
-	vars := map[string]interface{}{}
-
-	var res PromoteCluster
-	if err := c.Client.Post(ctx, "PromoteCluster", PromoteClusterDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const PublishLogsDocument = `mutation PublishLogs ($id: ID!, $logs: String!) {
-	publishLogs(id: $id, logs: $logs) {
-		id
-	}
-}
-`
-
-func (c *Client) PublishLogs(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*PublishLogs, error) {
-	vars := map[string]interface{}{
-		"id":   id,
-		"logs": logs,
-	}
-
-	var res PublishLogs
-	if err := c.Client.Post(ctx, "PublishLogs", PublishLogsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ReleaseDocument = `mutation Release ($name: String!, $tags: [String!]) {
-	release(repositoryName: $name, tags: $tags)
-}
-`
-
-func (c *Client) Release(ctx context.Context, name string, tags []string, httpRequestOptions ...client.HTTPRequestOption) (*Release, error) {
-	vars := map[string]interface{}{
-		"name": name,
-		"tags": tags,
-	}
-
-	var res Release
-	if err := c.Client.Post(ctx, "Release", ReleaseDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ReleaseLockDocument = `mutation ReleaseLock ($name: String!, $attrs: LockAttributes!) {
-	releaseLock(repository: $name, attributes: $attrs) {
-		... ApplyLockFragment
-	}
-}
-fragment ApplyLockFragment on ApplyLock {
-	id
-	lock
-}
-`
-
-func (c *Client) ReleaseLock(ctx context.Context, name string, attrs LockAttributes, httpRequestOptions ...client.HTTPRequestOption) (*ReleaseLock, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"attrs": attrs,
-	}
-
-	var res ReleaseLock
-	if err := c.Client.Post(ctx, "ReleaseLock", ReleaseLockDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ResetInstallationsDocument = `mutation ResetInstallations {
-	resetInstallations
-}
-`
-
-func (c *Client) ResetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ResetInstallations, error) {
-	vars := map[string]interface{}{}
-
-	var res ResetInstallations
-	if err := c.Client.Post(ctx, "ResetInstallations", ResetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const ScaffoldsDocument = `query Scaffolds ($app: String!, $pub: String!, $cat: Category!, $ing: Boolean, $pg: Boolean) {
-	scaffold(application: $app, publisher: $pub, category: $cat, ingress: $ing, postgres: $pg) {
-		path
-		content
-	}
-}
-`
-
-func (c *Client) Scaffolds(ctx context.Context, app string, pub string, cat Category, ing *bool, pg *bool, httpRequestOptions ...client.HTTPRequestOption) (*Scaffolds, error) {
-	vars := map[string]interface{}{
-		"app": app,
-		"pub": pub,
-		"cat": cat,
-		"ing": ing,
-		"pg":  pg,
-	}
-
-	var res Scaffolds
-	if err := c.Client.Post(ctx, "Scaffolds", ScaffoldsDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const TransferOwnershipDocument = `mutation TransferOwnership ($name: String!, $email: String!) {
-	transferOwnership(name: $name, email: $email) {
-		id
-	}
-}
-`
-
-func (c *Client) TransferOwnership(ctx context.Context, name string, email string, httpRequestOptions ...client.HTTPRequestOption) (*TransferOwnership, error) {
-	vars := map[string]interface{}{
-		"name":  name,
-		"email": email,
-	}
-
-	var res TransferOwnership
-	if err := c.Client.Post(ctx, "TransferOwnership", TransferOwnershipDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UninstallChartDocument = `mutation UninstallChart ($id: ID!) {
-	deleteChartInstallation(id: $id) {
-		id
-	}
-}
-`
-
-func (c *Client) UninstallChart(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallChart, error) {
-	vars := map[string]interface{}{
+func (c *Client) GetTerraformInstallations(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*GetTerraformInstallations, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
-	var res UninstallChart
-	if err := c.Client.Post(ctx, "UninstallChart", UninstallChartDocument, &res, vars, httpRequestOptions...); err != nil {
+	var res GetTerraformInstallations
+	if err := c.Client.Post(ctx, "GetTerraformInstallations", GetTerraformInstallationsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UploadTerraformDocument = `mutation UploadTerraform ($repoName: String!, $name: String!, $uploadOrUrl: UploadOrUrl!) {
+	uploadTerraform(repositoryName: $repoName, name: $name, attributes: {name:$name,package:$uploadOrUrl}) {
+		... TerraformFragment
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+`
+
+func (c *Client) UploadTerraform(ctx context.Context, repoName string, name string, uploadOrURL string, interceptors ...clientv2.RequestInterceptor) (*UploadTerraform, error) {
+	vars := map[string]any{
+		"repoName":    repoName,
+		"name":        name,
+		"uploadOrUrl": uploadOrURL,
+	}
+
+	var res UploadTerraform
+	if err := c.Client.Post(ctx, "UploadTerraform", UploadTerraformDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -7298,73 +12047,54 @@ const UninstallTerraformDocument = `mutation UninstallTerraform ($id: ID!) {
 }
 `
 
-func (c *Client) UninstallTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallTerraform, error) {
-	vars := map[string]interface{}{
+func (c *Client) UninstallTerraform(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*UninstallTerraform, error) {
+	vars := map[string]any{
 		"id": id,
 	}
 
 	var res UninstallTerraform
-	if err := c.Client.Post(ctx, "UninstallTerraform", UninstallTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "UninstallTerraform", UninstallTerraformDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const UnlockRepositoryDocument = `mutation UnlockRepository ($name: String!) {
-	unlockRepository(name: $name)
-}
-`
-
-func (c *Client) UnlockRepository(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*UnlockRepository, error) {
-	vars := map[string]interface{}{
-		"name": name,
+const CreateTestDocument = `mutation CreateTest ($name: String!, $attrs: TestAttributes!) {
+	createTest(name: $name, attributes: $attrs) {
+		... TestFragment
 	}
-
-	var res UnlockRepository
-	if err := c.Client.Post(ctx, "UnlockRepository", UnlockRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
 }
-
-const UpdateRepositoryDocument = `mutation UpdateRepository ($name: String!, $attrs: RepositoryAttributes!) {
-	updateRepository(repositoryName: $name, attributes: $attrs) {
+fragment TestFragment on Test {
+	id
+	name
+	status
+	promoteTag
+	steps {
 		id
+		name
+		description
+		status
 	}
 }
 `
 
-func (c *Client) UpdateRepository(ctx context.Context, name string, attrs RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateRepository, error) {
-	vars := map[string]interface{}{
+func (c *Client) CreateTest(ctx context.Context, name string, attrs TestAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateTest, error) {
+	vars := map[string]any{
 		"name":  name,
 		"attrs": attrs,
 	}
 
-	var res UpdateRepository
-	if err := c.Client.Post(ctx, "UpdateRepository", UpdateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
+	var res CreateTest
+	if err := c.Client.Post(ctx, "CreateTest", CreateTestDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
 
-	return &res, nil
-}
-
-const UpdateStepDocument = `mutation UpdateStep ($id: ID!, $logs: UploadOrUrl!) {
-	updateStep(id: $id, attributes: {logs:$logs}) {
-		id
-	}
-}
-`
-
-func (c *Client) UpdateStep(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*UpdateStep, error) {
-	vars := map[string]interface{}{
-		"id":   id,
-		"logs": logs,
-	}
-
-	var res UpdateStep
-	if err := c.Client.Post(ctx, "UpdateStep", UpdateStepDocument, &res, vars, httpRequestOptions...); err != nil {
 		return nil, err
 	}
 
@@ -7390,14 +12120,670 @@ fragment TestFragment on Test {
 }
 `
 
-func (c *Client) UpdateTest(ctx context.Context, id string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateTest, error) {
-	vars := map[string]interface{}{
+func (c *Client) UpdateTest(ctx context.Context, id string, attrs TestAttributes, interceptors ...clientv2.RequestInterceptor) (*UpdateTest, error) {
+	vars := map[string]any{
 		"id":    id,
 		"attrs": attrs,
 	}
 
 	var res UpdateTest
-	if err := c.Client.Post(ctx, "UpdateTest", UpdateTestDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "UpdateTest", UpdateTestDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateStepDocument = `mutation UpdateStep ($id: ID!, $logs: UploadOrUrl!) {
+	updateStep(id: $id, attributes: {logs:$logs}) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateStep(ctx context.Context, id string, logs string, interceptors ...clientv2.RequestInterceptor) (*UpdateStep, error) {
+	vars := map[string]any{
+		"id":   id,
+		"logs": logs,
+	}
+
+	var res UpdateStep
+	if err := c.Client.Post(ctx, "UpdateStep", UpdateStepDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const PublishLogsDocument = `mutation PublishLogs ($id: ID!, $logs: String!) {
+	publishLogs(id: $id, logs: $logs) {
+		id
+	}
+}
+`
+
+func (c *Client) PublishLogs(ctx context.Context, id string, logs string, interceptors ...clientv2.RequestInterceptor) (*PublishLogs, error) {
+	vars := map[string]any{
+		"id":   id,
+		"logs": logs,
+	}
+
+	var res PublishLogs
+	if err := c.Client.Post(ctx, "PublishLogs", PublishLogsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateUpgradeDocument = `mutation CreateUpgrade ($queue: String!, $repository: String!, $attributes: UpgradeAttributes!) {
+	createUpgrade(queue: $queue, repositoryName: $repository, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateUpgrade(ctx context.Context, queue string, repository string, attributes UpgradeAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateUpgrade, error) {
+	vars := map[string]any{
+		"queue":      queue,
+		"repository": repository,
+		"attributes": attributes,
+	}
+
+	var res CreateUpgrade
+	if err := c.Client.Post(ctx, "CreateUpgrade", CreateUpgradeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const MeDocument = `query Me {
+	me {
+		id
+		email
+		demoing
+		trustRelationships {
+			... OidcTrustRelationshipFragment
+		}
+	}
+}
+fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
+	id
+	issuer
+	trust
+	scopes
+	insertedAt
+}
+`
+
+func (c *Client) Me(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*Me, error) {
+	vars := map[string]any{}
+
+	var res Me
+	if err := c.Client.Post(ctx, "Me", MeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetLoginMethodDocument = `query GetLoginMethod ($email: String!) {
+	loginMethod(email: $email) {
+		loginMethod
+		token
+	}
+}
+`
+
+func (c *Client) GetLoginMethod(ctx context.Context, email string, interceptors ...clientv2.RequestInterceptor) (*GetLoginMethod, error) {
+	vars := map[string]any{
+		"email": email,
+	}
+
+	var res GetLoginMethod
+	if err := c.Client.Post(ctx, "GetLoginMethod", GetLoginMethodDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListTokensDocument = `query ListTokens {
+	tokens(first: 3) {
+		edges {
+			node {
+				token
+			}
+		}
+	}
+}
+`
+
+func (c *Client) ListTokens(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*ListTokens, error) {
+	vars := map[string]any{}
+
+	var res ListTokens
+	if err := c.Client.Post(ctx, "ListTokens", ListTokensDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListKeysDocument = `query ListKeys ($emails: [String]) {
+	publicKeys(emails: $emails, first: 1000) {
+		edges {
+			node {
+				... PublicKeyFragment
+			}
+		}
+	}
+}
+fragment PublicKeyFragment on PublicKey {
+	id
+	content
+	user {
+		... UserFragment
+	}
+}
+fragment UserFragment on User {
+	id
+	name
+	email
+}
+`
+
+func (c *Client) ListKeys(ctx context.Context, emails []*string, interceptors ...clientv2.RequestInterceptor) (*ListKeys, error) {
+	vars := map[string]any{
+		"emails": emails,
+	}
+
+	var res ListKeys
+	if err := c.Client.Post(ctx, "ListKeys", ListKeysDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetEabCredentialDocument = `query GetEabCredential ($cluster: String!, $provider: Provider!) {
+	eabCredential(cluster: $cluster, provider: $provider) {
+		... EabCredentialFragment
+	}
+}
+fragment EabCredentialFragment on EabCredential {
+	id
+	keyId
+	hmacKey
+	cluster
+	provider
+}
+`
+
+func (c *Client) GetEabCredential(ctx context.Context, cluster string, provider Provider, interceptors ...clientv2.RequestInterceptor) (*GetEabCredential, error) {
+	vars := map[string]any{
+		"cluster":  cluster,
+		"provider": provider,
+	}
+
+	var res GetEabCredential
+	if err := c.Client.Post(ctx, "GetEabCredential", GetEabCredentialDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const PollLoginTokenDocument = `mutation PollLoginToken ($token: String!) {
+	loginToken(token: $token) {
+		jwt
+	}
+}
+`
+
+func (c *Client) PollLoginToken(ctx context.Context, token string, interceptors ...clientv2.RequestInterceptor) (*PollLoginToken, error) {
+	vars := map[string]any{
+		"token": token,
+	}
+
+	var res PollLoginToken
+	if err := c.Client.Post(ctx, "PollLoginToken", PollLoginTokenDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DevLoginDocument = `mutation DevLogin {
+	deviceLogin {
+		loginUrl
+		deviceToken
+	}
+}
+`
+
+func (c *Client) DevLogin(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*DevLogin, error) {
+	vars := map[string]any{}
+
+	var res DevLogin
+	if err := c.Client.Post(ctx, "DevLogin", DevLoginDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const LoginDocument = `mutation Login ($email: String!, $pwd: String!) {
+	login(email: $email, password: $pwd) {
+		jwt
+	}
+}
+`
+
+func (c *Client) Login(ctx context.Context, email string, pwd string, interceptors ...clientv2.RequestInterceptor) (*Login, error) {
+	vars := map[string]any{
+		"email": email,
+		"pwd":   pwd,
+	}
+
+	var res Login
+	if err := c.Client.Post(ctx, "Login", LoginDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ImpersonateServiceAccountDocument = `mutation ImpersonateServiceAccount ($email: String) {
+	impersonateServiceAccount(email: $email) {
+		jwt
+		email
+	}
+}
+`
+
+func (c *Client) ImpersonateServiceAccount(ctx context.Context, email *string, interceptors ...clientv2.RequestInterceptor) (*ImpersonateServiceAccount, error) {
+	vars := map[string]any{
+		"email": email,
+	}
+
+	var res ImpersonateServiceAccount
+	if err := c.Client.Post(ctx, "ImpersonateServiceAccount", ImpersonateServiceAccountDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateAccessTokenDocument = `mutation CreateAccessToken {
+	createToken {
+		token
+	}
+}
+`
+
+func (c *Client) CreateAccessToken(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*CreateAccessToken, error) {
+	vars := map[string]any{}
+
+	var res CreateAccessToken
+	if err := c.Client.Post(ctx, "CreateAccessToken", CreateAccessTokenDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateKeyDocument = `mutation CreateKey ($key: String!, $name: String!) {
+	createPublicKey(attributes: {content:$key,name:$name}) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateKey(ctx context.Context, key string, name string, interceptors ...clientv2.RequestInterceptor) (*CreateKey, error) {
+	vars := map[string]any{
+		"key":  key,
+		"name": name,
+	}
+
+	var res CreateKey
+	if err := c.Client.Post(ctx, "CreateKey", CreateKeyDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteEabCredentialDocument = `mutation DeleteEabCredential ($cluster: String!, $provider: Provider!) {
+	deleteEabKey(cluster: $cluster, provider: $provider) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteEabCredential(ctx context.Context, cluster string, provider Provider, interceptors ...clientv2.RequestInterceptor) (*DeleteEabCredential, error) {
+	vars := map[string]any{
+		"cluster":  cluster,
+		"provider": provider,
+	}
+
+	var res DeleteEabCredential
+	if err := c.Client.Post(ctx, "DeleteEabCredential", DeleteEabCredentialDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateEventDocument = `mutation CreateEvent ($attrs: UserEventAttributes!) {
+	createUserEvent(attributes: $attrs)
+}
+`
+
+func (c *Client) CreateEvent(ctx context.Context, attrs UserEventAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateEvent, error) {
+	vars := map[string]any{
+		"attrs": attrs,
+	}
+
+	var res CreateEvent
+	if err := c.Client.Post(ctx, "CreateEvent", CreateEventDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateBackupDocument = `mutation CreateBackup ($attrs: KeyBackupAttributes!) {
+	createKeyBackup(attributes: $attrs) {
+		... KeyBackupFragment
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) CreateBackup(ctx context.Context, attrs KeyBackupAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateBackup, error) {
+	vars := map[string]any{
+		"attrs": attrs,
+	}
+
+	var res CreateBackup
+	if err := c.Client.Post(ctx, "CreateBackup", CreateBackupDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const BackupsDocument = `query Backups ($cursor: String) {
+	keyBackups(first: 50, after: $cursor) {
+		edges {
+			node {
+				... KeyBackupFragment
+			}
+		}
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) Backups(ctx context.Context, cursor *string, interceptors ...clientv2.RequestInterceptor) (*Backups, error) {
+	vars := map[string]any{
+		"cursor": cursor,
+	}
+
+	var res Backups
+	if err := c.Client.Post(ctx, "Backups", BackupsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const BackupDocument = `query Backup ($name: String!) {
+	keyBackup(name: $name) {
+		... KeyBackupFragment
+		value
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) Backup(ctx context.Context, name string, interceptors ...clientv2.RequestInterceptor) (*Backup, error) {
+	vars := map[string]any{
+		"name": name,
+	}
+
+	var res Backup
+	if err := c.Client.Post(ctx, "Backup", BackupDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetHelpDocument = `query GetHelp ($prompt: String!) {
+	helpQuestion(prompt: $prompt)
+}
+`
+
+func (c *Client) GetHelp(ctx context.Context, prompt string, interceptors ...clientv2.RequestInterceptor) (*GetHelp, error) {
+	vars := map[string]any{
+		"prompt": prompt,
+	}
+
+	var res GetHelp
+	if err := c.Client.Post(ctx, "GetHelp", GetHelpDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ChatDocument = `query Chat ($history: [ChatMessageAttributes]) {
+	chat(history: $history) {
+		... ChatMessageFragment
+	}
+}
+fragment ChatMessageFragment on ChatMessage {
+	role
+	content
+	name
+}
+`
+
+func (c *Client) Chat(ctx context.Context, history []*ChatMessageAttributes, interceptors ...clientv2.RequestInterceptor) (*Chat, error) {
+	vars := map[string]any{
+		"history": history,
+	}
+
+	var res Chat
+	if err := c.Client.Post(ctx, "Chat", ChatDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateTrustDocument = `mutation CreateTrust ($attributes: TrustRelationshipAttributes!) {
+	createTrustRelationship(attributes: $attributes) {
+		... OidcTrustRelationshipFragment
+	}
+}
+fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
+	id
+	issuer
+	trust
+	scopes
+	insertedAt
+}
+`
+
+func (c *Client) CreateTrust(ctx context.Context, attributes TrustRelationshipAttributes, interceptors ...clientv2.RequestInterceptor) (*CreateTrust, error) {
+	vars := map[string]any{
+		"attributes": attributes,
+	}
+
+	var res CreateTrust
+	if err := c.Client.Post(ctx, "CreateTrust", CreateTrustDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteTrustDocument = `mutation DeleteTrust ($id: ID!) {
+	deleteTrustRelationship(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteTrust(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*DeleteTrust, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res DeleteTrust
+	if err := c.Client.Post(ctx, "DeleteTrust", DeleteTrustDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const OidcTokenDocument = `query OidcToken ($provider: ExternalOidcProvider!, $token: String!, $email: String!) {
+	oidcToken(provider: $provider, idToken: $token, email: $email)
+}
+`
+
+func (c *Client) OidcToken(ctx context.Context, provider ExternalOidcProvider, token string, email string, interceptors ...clientv2.RequestInterceptor) (*OidcToken, error) {
+	vars := map[string]any{
+		"provider": provider,
+		"token":    token,
+		"email":    email,
+	}
+
+	var res OidcToken
+	if err := c.Client.Post(ctx, "OidcToken", OidcTokenDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
@@ -7411,96 +12797,109 @@ const UpdateVersionDocument = `mutation UpdateVersion ($spec: VersionSpec, $attr
 }
 `
 
-func (c *Client) UpdateVersion(ctx context.Context, spec *VersionSpec, attributes VersionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateVersion, error) {
-	vars := map[string]interface{}{
+func (c *Client) UpdateVersion(ctx context.Context, spec *VersionSpec, attributes VersionAttributes, interceptors ...clientv2.RequestInterceptor) (*UpdateVersion, error) {
+	vars := map[string]any{
 		"spec":       spec,
 		"attributes": attributes,
 	}
 
 	var res UpdateVersion
-	if err := c.Client.Post(ctx, "UpdateVersion", UpdateVersionDocument, &res, vars, httpRequestOptions...); err != nil {
+	if err := c.Client.Post(ctx, "UpdateVersion", UpdateVersionDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-const UploadTerraformDocument = `mutation UploadTerraform ($repoName: String!, $name: String!, $uploadOrUrl: UploadOrUrl!) {
-	uploadTerraform(repositoryName: $repoName, name: $name, attributes: {name:$name,package:$uploadOrUrl}) {
-		... TerraformFragment
-	}
-}
-fragment DependenciesFragment on Dependencies {
-	dependencies {
-		type
-		name
-		repo
-		optional
-		version
-	}
-	breaking
-	instructions {
-		instructions
-		script
-	}
-	wait
-	application
-	providers
-	secrets
-	wirings {
-		terraform
-		helm
-	}
-	providerWirings
-	outputs
-	providerVsn
-	cliVsn
-}
-fragment TerraformFragment on Terraform {
-	id
-	name
-	package
-	description
-	dependencies {
-		... DependenciesFragment
-	}
-	valuesTemplate
-}
-`
-
-func (c *Client) UploadTerraform(ctx context.Context, repoName string, name string, uploadOrURL string, httpRequestOptions ...client.HTTPRequestOption) (*UploadTerraform, error) {
-	vars := map[string]interface{}{
-		"repoName":    repoName,
-		"name":        name,
-		"uploadOrUrl": uploadOrURL,
-	}
-
-	var res UploadTerraform
-	if err := c.Client.Post(ctx, "UploadTerraform", UploadTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-const UpsertOidcProviderDocument = `mutation UpsertOidcProvider ($id: ID!, $attributes: OidcAttributes!) {
-	upsertOidcProvider(installationId: $id, attributes: $attributes) {
-		id
-	}
-}
-`
-
-func (c *Client) UpsertOidcProvider(ctx context.Context, id string, attributes OidcAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpsertOidcProvider, error) {
-	vars := map[string]interface{}{
-		"id":         id,
-		"attributes": attributes,
-	}
-
-	var res UpsertOidcProvider
-	if err := c.Client.Post(ctx, "UpsertOidcProvider", UpsertOidcProviderDocument, &res, vars, httpRequestOptions...); err != nil {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, err
-	}
-
-	return &res, nil
+var DocumentOperationNames = map[string]string{
+	ListArtifactsDocument:             "ListArtifacts",
+	CreateArtifactDocument:            "CreateArtifact",
+	GetChartsDocument:                 "GetCharts",
+	GetVersionsDocument:               "GetVersions",
+	GetChartInstallationsDocument:     "GetChartInstallations",
+	GetPackageInstallationsDocument:   "GetPackageInstallations",
+	CreateCrdDocument:                 "CreateCrd",
+	UninstallChartDocument:            "UninstallChart",
+	GetConsoleInstancesDocument:       "GetConsoleInstances",
+	UpdateConsoleInstanceDocument:     "UpdateConsoleInstance",
+	DestroyClusterDocument:            "DestroyCluster",
+	ClustersDocument:                  "Clusters",
+	ClusterInfoDocument:               "ClusterInfo",
+	CreateDependencyDocument:          "CreateDependency",
+	PromoteClusterDocument:            "PromoteCluster",
+	TransferOwnershipDocument:         "TransferOwnership",
+	GetDNSRecordsDocument:             "GetDnsRecords",
+	CreateDNSRecordDocument:           "CreateDnsRecord",
+	DeleteDNSRecordDocument:           "DeleteDnsRecord",
+	CreateDomainDocument:              "CreateDomain",
+	GetInstallationDocument:           "GetInstallation",
+	GetInstallationByIDDocument:       "GetInstallationById",
+	GetInstallationsDocument:          "GetInstallations",
+	UpsertOidcProviderDocument:        "UpsertOidcProvider",
+	ResetInstallationsDocument:        "ResetInstallations",
+	CreateInstallationDocument:        "CreateInstallation",
+	DeleteInstallationDocument:        "DeleteInstallation",
+	MarkSyncedDocument:                "MarkSynced",
+	GetRecipeDocument:                 "GetRecipe",
+	GetRecipeByIDDocument:             "GetRecipeByID",
+	ListRecipesDocument:               "ListRecipes",
+	ListAllRecipesDocument:            "ListAllRecipes",
+	CreateRecipeDocument:              "CreateRecipe",
+	InstallRecipeDocument:             "InstallRecipe",
+	CreateStackDocument:               "CreateStack",
+	GetStackDocument:                  "GetStack",
+	ListStacksDocument:                "ListStacks",
+	GetRepositoryDocument:             "GetRepository",
+	CreateResourceDefinitionDocument:  "CreateResourceDefinition",
+	CreateIntegrationDocument:         "CreateIntegration",
+	UpdateRepositoryDocument:          "UpdateRepository",
+	CreateRepositoryDocument:          "CreateRepository",
+	AcquireLockDocument:               "AcquireLock",
+	ReleaseLockDocument:               "ReleaseLock",
+	UnlockRepositoryDocument:          "UnlockRepository",
+	ListRepositoriesDocument:          "ListRepositories",
+	ScaffoldsDocument:                 "Scaffolds",
+	DeleteRepositoryDocument:          "DeleteRepository",
+	ReleaseDocument:                   "Release",
+	InstallVersionDocument:            "InstallVersion",
+	GetTfProvidersDocument:            "GetTfProviders",
+	GetTfProviderScaffoldDocument:     "GetTfProviderScaffold",
+	GetShellDocument:                  "GetShell",
+	DeleteShellDocument:               "DeleteShell",
+	GetTerraformDocument:              "GetTerraform",
+	GetTerraformVersionsDocument:      "GetTerraformVersions",
+	GetTerraformInstallationsDocument: "GetTerraformInstallations",
+	UploadTerraformDocument:           "UploadTerraform",
+	UninstallTerraformDocument:        "UninstallTerraform",
+	CreateTestDocument:                "CreateTest",
+	UpdateTestDocument:                "UpdateTest",
+	UpdateStepDocument:                "UpdateStep",
+	PublishLogsDocument:               "PublishLogs",
+	CreateUpgradeDocument:             "CreateUpgrade",
+	MeDocument:                        "Me",
+	GetLoginMethodDocument:            "GetLoginMethod",
+	ListTokensDocument:                "ListTokens",
+	ListKeysDocument:                  "ListKeys",
+	GetEabCredentialDocument:          "GetEabCredential",
+	PollLoginTokenDocument:            "PollLoginToken",
+	DevLoginDocument:                  "DevLogin",
+	LoginDocument:                     "Login",
+	ImpersonateServiceAccountDocument: "ImpersonateServiceAccount",
+	CreateAccessTokenDocument:         "CreateAccessToken",
+	CreateKeyDocument:                 "CreateKey",
+	DeleteEabCredentialDocument:       "DeleteEabCredential",
+	CreateEventDocument:               "CreateEvent",
+	CreateBackupDocument:              "CreateBackup",
+	BackupsDocument:                   "Backups",
+	BackupDocument:                    "Backup",
+	GetHelpDocument:                   "GetHelp",
+	ChatDocument:                      "Chat",
+	CreateTrustDocument:               "CreateTrust",
+	DeleteTrustDocument:               "DeleteTrust",
+	OidcTokenDocument:                 "OidcToken",
+	UpdateVersionDocument:             "UpdateVersion",
 }

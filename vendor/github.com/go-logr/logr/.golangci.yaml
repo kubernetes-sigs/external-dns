@@ -9,31 +9,8 @@ linters:
   enable: # please keep this alphabetized
     - asasalint
     - asciicheck
-<<<<<<< HEAD
-<<<<<<< HEAD
-    - deadcode
-    - errcheck
-    - forcetypeassert
-    - gocritic
-    - gofmt
-    - goimports
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - revive
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unused
-    - varcheck
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-=======
     - copyloopvar
     - dupl
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
     - errcheck
     - forcetypeassert
     - goconst
@@ -45,7 +22,6 @@ linters:
     - revive
     - staticcheck
     - unused
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 issues:
   max-issues-per-linter: 0

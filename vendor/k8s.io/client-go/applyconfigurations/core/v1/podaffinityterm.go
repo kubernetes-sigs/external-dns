@@ -24,71 +24,52 @@ import (
 
 // PodAffinityTermApplyConfiguration represents a declarative configuration of the PodAffinityTerm type for use
 // with apply.
+//
+// Defines a set of pods (namely those matching the labelSelector
+// relative to the given namespace(s)) that this pod should be
+// co-located (affinity) or not co-located (anti-affinity) with,
+// where co-located is defined as running on a node whose value of
+// the label with key <topologyKey> matches that of any node on which
+// a pod of the set of pods is running
 type PodAffinityTermApplyConfiguration struct {
-<<<<<<< HEAD
-	LabelSelector     *v1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
-	Namespaces        []string                            `json:"namespaces,omitempty"`
-	TopologyKey       *string                             `json:"topologyKey,omitempty"`
-	NamespaceSelector *v1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
-<<<<<<< HEAD
-}
-
-// PodAffinityTermApplyConfiguration constructs an declarative configuration of the PodAffinityTerm type for use with
-// apply.
-func PodAffinityTerm() *PodAffinityTermApplyConfiguration {
-	return &PodAffinityTermApplyConfiguration{}
-}
-
-// WithLabelSelector sets the LabelSelector field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the LabelSelector field is set to the value of the last call.
-func (b *PodAffinityTermApplyConfiguration) WithLabelSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
-	b.LabelSelector = value
-	return b
-}
-
-// WithNamespaces adds the given value to the Namespaces field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Namespaces field.
-func (b *PodAffinityTermApplyConfiguration) WithNamespaces(values ...string) *PodAffinityTermApplyConfiguration {
-	for i := range values {
-		b.Namespaces = append(b.Namespaces, values[i])
-	}
-	return b
-}
-
-// WithTopologyKey sets the TopologyKey field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TopologyKey field is set to the value of the last call.
-func (b *PodAffinityTermApplyConfiguration) WithTopologyKey(value string) *PodAffinityTermApplyConfiguration {
-	b.TopologyKey = &value
-	return b
-}
-
-// WithNamespaceSelector sets the NamespaceSelector field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the NamespaceSelector field is set to the value of the last call.
-func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
-	b.NamespaceSelector = value
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	MatchLabelKeys    []string                            `json:"matchLabelKeys,omitempty"`
-	MismatchLabelKeys []string                            `json:"mismatchLabelKeys,omitempty"`
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	LabelSelector     *v1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
-	Namespaces        []string                            `json:"namespaces,omitempty"`
-	TopologyKey       *string                             `json:"topologyKey,omitempty"`
-	NamespaceSelector *v1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
-	MatchLabelKeys    []string                            `json:"matchLabelKeys,omitempty"`
-	MismatchLabelKeys []string                            `json:"mismatchLabelKeys,omitempty"`
-=======
-	LabelSelector     *metav1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
-	Namespaces        []string                                `json:"namespaces,omitempty"`
-	TopologyKey       *string                                 `json:"topologyKey,omitempty"`
+	// A label query over a set of resources, in this case pods.
+	// If it's null, this PodAffinityTerm matches with no Pods.
+	LabelSelector *metav1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
+	// namespaces specifies a static list of namespace names that the term applies to.
+	// The term is applied to the union of the namespaces listed in this field
+	// and the ones selected by namespaceSelector.
+	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
+	Namespaces []string `json:"namespaces,omitempty"`
+	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
+	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
+	// whose value of the label with key topologyKey matches that of any node on which any of the
+	// selected pods is running.
+	// Empty topologyKey is not allowed.
+	TopologyKey *string `json:"topologyKey,omitempty"`
+	// A label query over the set of namespaces that the term applies to.
+	// The term is applied to the union of the namespaces selected by this field
+	// and the ones listed in the namespaces field.
+	// null selector and null or empty namespaces list means "this pod's namespace".
+	// An empty selector ({}) matches all namespaces.
 	NamespaceSelector *metav1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
-	MatchLabelKeys    []string                                `json:"matchLabelKeys,omitempty"`
-	MismatchLabelKeys []string                                `json:"mismatchLabelKeys,omitempty"`
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	// MatchLabelKeys is a set of pod label keys to select which pods will
+	// be taken into consideration. The keys are used to lookup values from the
+	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+	// to select the group of existing pods which pods will be taken into consideration
+	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+	// pod labels will be ignored. The default value is empty.
+	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
+	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
+	// MismatchLabelKeys is a set of pod label keys to select which pods will
+	// be taken into consideration. The keys are used to lookup values from the
+	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+	// to select the group of existing pods which pods will be taken into consideration
+	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+	// pod labels will be ignored. The default value is empty.
+	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
 }
 
 // PodAffinityTermApplyConfiguration constructs a declarative configuration of the PodAffinityTerm type for use with
@@ -148,6 +129,5 @@ func (b *PodAffinityTermApplyConfiguration) WithMismatchLabelKeys(values ...stri
 	for i := range values {
 		b.MismatchLabelKeys = append(b.MismatchLabelKeys, values[i])
 	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

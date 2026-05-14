@@ -92,10 +92,6 @@ func Of64(k Key, v uint64) Label { return Label{key: k, packed: v} }
 // access should be done with the From method of the key.
 func (t Label) Unpack64() uint64 { return t.packed }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 type stringptr unsafe.Pointer
 
 // OfString creates a new label from a key and a string.
@@ -114,93 +110,7 @@ func OfString(k Key, v string) Label {
 // This method is for implementing new key types, for type safety normal
 // access should be done with the From method of the key.
 func (t Label) UnpackString() string {
-<<<<<<< HEAD
-	var v string
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	hdr.Data = uintptr(t.untyped.(stringptr))
-	hdr.Len = int(t.packed)
-	return v
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-type stringptr unsafe.Pointer
-
->>>>>>> 4d7e5ad26 (update vendored files)
-// OfString creates a new label from a key and a string.
-// This method is for implementing new key types, label creation should
-// normally be done with the Of method of the key.
-func OfString(k Key, v string) Label {
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	return Label{
-		key:     k,
-		packed:  uint64(hdr.Len),
-		untyped: stringptr(hdr.Data),
-	}
-}
-
-// UnpackString assumes the label was built using LabelOfString and returns the
-// value that was passed to that constructor.
-// This method is for implementing new key types, for type safety normal
-// access should be done with the From method of the key.
-func (t Label) UnpackString() string {
-	var v string
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	hdr.Data = uintptr(t.untyped.(stringptr))
-	hdr.Len = int(t.packed)
-<<<<<<< HEAD
-	return *(*string)(unsafe.Pointer(hdr))
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	return *(*string)(unsafe.Pointer(hdr))
-=======
-	return v
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-type stringptr unsafe.Pointer
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// OfString creates a new label from a key and a string.
-// This method is for implementing new key types, label creation should
-// normally be done with the Of method of the key.
-func OfString(k Key, v string) Label {
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	return Label{
-		key:     k,
-		packed:  uint64(hdr.Len),
-		untyped: stringptr(hdr.Data),
-	}
-}
-
-// UnpackString assumes the label was built using LabelOfString and returns the
-// value that was passed to that constructor.
-// This method is for implementing new key types, for type safety normal
-// access should be done with the From method of the key.
-func (t Label) UnpackString() string {
-	var v string
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	hdr.Data = uintptr(t.untyped.(stringptr))
-	hdr.Len = int(t.packed)
-<<<<<<< HEAD
-	return *(*string)(unsafe.Pointer(hdr))
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return *(*string)(unsafe.Pointer(hdr))
-=======
-	return v
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-	var v string
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	hdr.Data = uintptr(t.untyped.(stringptr))
-	hdr.Len = int(t.packed)
-	return v
-=======
 	return unsafe.String((*byte)(t.untyped.(stringptr)), int(t.packed))
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 }
 
 // Valid returns true if the Label is a valid one (it has a key).

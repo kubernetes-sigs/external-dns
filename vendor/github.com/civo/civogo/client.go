@@ -201,11 +201,15 @@ func (c *Client) sendRequest(req *http.Request) ([]byte, error) {
 		DisableCompression: false,
 	}
 
-	if req.Method == "GET" || req.Method == "DELETE" {
-		// add the region param
+	// Add the region param for all methods that might require it.
+	// It's generally safe to add as an unused query param if not needed by a specific endpoint.
+	if req.Method == "GET" || req.Method == "DELETE" || req.Method == "POST" || req.Method == "PUT" || req.Method == "PATCH" {
 		param := req.URL.Query()
-		param.Add("region", c.Region)
-		req.URL.RawQuery = param.Encode()
+		// Check if region is already present to avoid duplicates (e.g. if manually added in the path)
+		if param.Get("region") == "" && c.Region != "" {
+			param.Add("region", c.Region)
+			req.URL.RawQuery = param.Encode()
+		}
 	}
 
 	resp, err := c.httpClient.Do(req)

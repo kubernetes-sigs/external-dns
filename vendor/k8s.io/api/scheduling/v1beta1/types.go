@@ -24,232 +24,10 @@ import (
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen:introduced=1.11
 // +k8s:prerelease-lifecycle-gen:deprecated=1.14
 // +k8s:prerelease-lifecycle-gen:removed=1.22
 // +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClass
-
-// DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
-// PriorityClass defines mapping from a priority class name to the priority
-// integer value. The value can be any valid integer.
-type PriorityClass struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// The value of this priority class. This is the actual priority that pods
-	// receive when they have the name of this class in their pod spec.
-	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
-
-	// globalDefault specifies whether this PriorityClass should be considered as
-	// the default priority for pods that do not have any priority class.
-	// Only one PriorityClass can be marked as `globalDefault`. However, if more than
-	// one PriorityClasses exists with their `globalDefault` field set to true,
-	// the smallest value of such global default PriorityClasses will be used as the default priority.
-	// +optional
-	GlobalDefault bool `json:"globalDefault,omitempty" protobuf:"bytes,3,opt,name=globalDefault"`
-
-	// description is an arbitrary string that usually provides guidelines on
-	// when this priority class should be used.
-	// +optional
-	Description string `json:"description,omitempty" protobuf:"bytes,4,opt,name=description"`
-
-	// PreemptionPolicy is the Policy for preempting pods with lower priority.
-	// One of Never, PreemptLowerPriority.
-	// Defaults to PreemptLowerPriority if unset.
-	// +optional
-	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClass
->>>>>>> 5ce8c7613 (update vendored files)
-
-// DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
-// PriorityClass defines mapping from a priority class name to the priority
-// integer value. The value can be any valid integer.
-type PriorityClass struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// The value of this priority class. This is the actual priority that pods
-	// receive when they have the name of this class in their pod spec.
-	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
-
-	// globalDefault specifies whether this PriorityClass should be considered as
-	// the default priority for pods that do not have any priority class.
-	// Only one PriorityClass can be marked as `globalDefault`. However, if more than
-	// one PriorityClasses exists with their `globalDefault` field set to true,
-	// the smallest value of such global default PriorityClasses will be used as the default priority.
-	// +optional
-	GlobalDefault bool `json:"globalDefault,omitempty" protobuf:"bytes,3,opt,name=globalDefault"`
-
-	// description is an arbitrary string that usually provides guidelines on
-	// when this priority class should be used.
-	// +optional
-	Description string `json:"description,omitempty" protobuf:"bytes,4,opt,name=description"`
-
-	// PreemptionPolicy is the Policy for preempting pods with lower priority.
-	// One of Never, PreemptLowerPriority.
-	// Defaults to PreemptLowerPriority if unset.
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-	// +optional
-	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClass
->>>>>>> 6b7ce455e (update vendored files)
-
-// DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
-// PriorityClass defines mapping from a priority class name to the priority
-// integer value. The value can be any valid integer.
-type PriorityClass struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// The value of this priority class. This is the actual priority that pods
-	// receive when they have the name of this class in their pod spec.
-	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
-
-	// globalDefault specifies whether this PriorityClass should be considered as
-	// the default priority for pods that do not have any priority class.
-	// Only one PriorityClass can be marked as `globalDefault`. However, if more than
-	// one PriorityClasses exists with their `globalDefault` field set to true,
-	// the smallest value of such global default PriorityClasses will be used as the default priority.
-	// +optional
-	GlobalDefault bool `json:"globalDefault,omitempty" protobuf:"bytes,3,opt,name=globalDefault"`
-
-	// description is an arbitrary string that usually provides guidelines on
-	// when this priority class should be used.
-	// +optional
-	Description string `json:"description,omitempty" protobuf:"bytes,4,opt,name=description"`
-
-	// PreemptionPolicy is the Policy for preempting pods with lower priority.
-	// One of Never, PreemptLowerPriority.
-	// Defaults to PreemptLowerPriority if unset.
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-	// +optional
-	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClass
->>>>>>> 4d7e5ad26 (update vendored files)
-
-// DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
-// PriorityClass defines mapping from a priority class name to the priority
-// integer value. The value can be any valid integer.
-type PriorityClass struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// The value of this priority class. This is the actual priority that pods
-	// receive when they have the name of this class in their pod spec.
-	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
-
-	// globalDefault specifies whether this PriorityClass should be considered as
-	// the default priority for pods that do not have any priority class.
-	// Only one PriorityClass can be marked as `globalDefault`. However, if more than
-	// one PriorityClasses exists with their `globalDefault` field set to true,
-	// the smallest value of such global default PriorityClasses will be used as the default priority.
-	// +optional
-	GlobalDefault bool `json:"globalDefault,omitempty" protobuf:"bytes,3,opt,name=globalDefault"`
-
-	// description is an arbitrary string that usually provides guidelines on
-	// when this priority class should be used.
-	// +optional
-	Description string `json:"description,omitempty" protobuf:"bytes,4,opt,name=description"`
-
-	// PreemptionPolicy is the Policy for preempting pods with lower priority.
-	// One of Never, PreemptLowerPriority.
-	// Defaults to PreemptLowerPriority if unset.
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-	// +optional
-	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// +k8s:prerelease-lifecycle-gen:introduced=1.11
-// +k8s:prerelease-lifecycle-gen:deprecated=1.14
-// +k8s:prerelease-lifecycle-gen:removed=1.22
-// +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClass
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
 // PriorityClass defines mapping from a priority class name to the priority
@@ -263,6 +41,7 @@ type PriorityClass struct {
 
 	// value represents the integer value of this priority class. This is the actual priority that pods
 	// receive when they have the name of this class in their pod spec.
+	// +optional
 	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
 
 	// globalDefault specifies whether this PriorityClass should be considered as
@@ -286,15 +65,10 @@ type PriorityClass struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // +k8s:prerelease-lifecycle-gen:introduced=1.11
 // +k8s:prerelease-lifecycle-gen:deprecated=1.14
 // +k8s:prerelease-lifecycle-gen:removed=1.22
 // +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // PriorityClassList is a collection of priority classes.
 type PriorityClassList struct {

@@ -3,10 +3,8 @@ package linodego
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -15,8 +13,9 @@ type FirewallDeviceType string
 
 // FirewallDeviceType constants start with FirewallDevice
 const (
-	FirewallDeviceLinode       FirewallDeviceType = "linode"
-	FirewallDeviceNodeBalancer FirewallDeviceType = "nodebalancer"
+	FirewallDeviceLinode          FirewallDeviceType = "linode"
+	FirewallDeviceNodeBalancer    FirewallDeviceType = "nodebalancer"
+	FirewallDeviceLinodeInterface FirewallDeviceType = "linode_interface"
 )
 
 // FirewallDevice represents a device governed by a Firewall
@@ -39,6 +38,7 @@ func (device *FirewallDevice) UnmarshalJSON(b []byte) error {
 
 	p := struct {
 		*Mask
+
 		Created *parseabletime.ParseableTime `json:"created"`
 		Updated *parseabletime.ParseableTime `json:"updated"`
 	}{
@@ -51,411 +51,38 @@ func (device *FirewallDevice) UnmarshalJSON(b []byte) error {
 
 	device.Created = (*time.Time)(p.Created)
 	device.Updated = (*time.Time)(p.Updated)
+
 	return nil
 }
 
 // FirewallDeviceEntity contains information about a device associated with a Firewall
 type FirewallDeviceEntity struct {
-	ID    int                `json:"id"`
-	Type  FirewallDeviceType `json:"type"`
-	Label string             `json:"label"`
-	URL   string             `json:"url"`
-}
-
-// FirewallDevicesPagedResponse represents a Linode API response for FirewallDevices
-type FirewallDevicesPagedResponse struct {
-	*PageOptions
-	Data []FirewallDevice `json:"data"`
-}
-
-<<<<<<< HEAD
-// endpointWithID gets the endpoint URL for FirewallDevices of a given Firewall
-func (FirewallDevicesPagedResponse) endpointWithID(c *Client, id int) string {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	endpoint, err := c.FirewallDevices.endpointWithParams(id)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+	ID           int                   `json:"id"`
+	Type         FirewallDeviceType    `json:"type"`
+	Label        string                `json:"label"`
+	URL          string                `json:"url"`
+	ParentEntity *FirewallDeviceEntity `json:"parent_entity"`
 }
 
 // ListFirewallDevices get devices associated with a given Firewall
 func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
-	response := FirewallDevicesPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, firewallID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[FirewallDevice](ctx, c, formatAPIPath("networking/firewalls/%d/devices", firewallID), opts)
 }
 
 // GetFirewallDevice gets a FirewallDevice given an ID
 func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
+	e := formatAPIPath("networking/firewalls/%d/devices/%d", firewallID, deviceID)
+	return doGETRequest[FirewallDevice](ctx, c, e)
 }
 
-// AddFirewallDevice associates a Device with a given Firewall
-func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	var body string
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// DeleteFirewallDevice disassociates a Device with a given Firewall
-func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-||||||| parent of 5ce8c7613 (update vendored files)
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithParams(id)
->>>>>>> 5ce8c7613 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListFirewallDevices get devices associated with a given Firewall
-func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
-	response := FirewallDevicesPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, firewallID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetFirewallDevice gets a FirewallDevice given an ID
-func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// AddFirewallDevice associates a Device with a given Firewall
-func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	var body string
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// DeleteFirewallDevice disassociates a Device with a given Firewall
-func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
-<<<<<<< HEAD
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
-=======
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-||||||| parent of 6b7ce455e (update vendored files)
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithParams(id)
->>>>>>> 6b7ce455e (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListFirewallDevices get devices associated with a given Firewall
-func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
-	response := FirewallDevicesPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, firewallID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetFirewallDevice gets a FirewallDevice given an ID
-func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// AddFirewallDevice associates a Device with a given Firewall
-func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	var body string
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// DeleteFirewallDevice disassociates a Device with a given Firewall
-func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
-<<<<<<< HEAD
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
-=======
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithParams(id)
->>>>>>> 4d7e5ad26 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListFirewallDevices get devices associated with a given Firewall
-func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
-	response := FirewallDevicesPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, firewallID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetFirewallDevice gets a FirewallDevice given an ID
-func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// AddFirewallDevice associates a Device with a given Firewall
-func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	var body string
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// DeleteFirewallDevice disassociates a Device with a given Firewall
-func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
-<<<<<<< HEAD
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
-=======
-	e, err := c.FirewallDevices.endpointWithParams(firewallID)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// endpointWithID gets the endpoint URL for FirewallDevices of a given Firewall
-func (FirewallDevicesPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.FirewallDevices.endpointWithID(id)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-=======
-// endpoint gets the endpoint URL for FirewallDevices of a given Firewall
-func (FirewallDevicesPagedResponse) endpoint(ids ...any) string {
-	id, _ := ids[0].(int)
-	return fmt.Sprintf("networking/firewalls/%d/devices", id)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-}
-
-func (resp *FirewallDevicesPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(FirewallDevicesPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*FirewallDevicesPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
-}
-
-// ListFirewallDevices get devices associated with a given Firewall
-func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
-	response := FirewallDevicesPagedResponse{}
-	err := c.listHelper(ctx, &response, opts, firewallID)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetFirewallDevice gets a FirewallDevice given an ID
-func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e := fmt.Sprintf("networking/firewalls/%d/devices/%d", firewallID, deviceID)
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
-}
-
-// AddFirewallDevice associates a Device with a given Firewall
+// CreateFirewallDevice associates a Device with a given Firewall
 func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, opts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf("networking/firewalls/%d/devices", firewallID)
-	req := c.R(ctx).SetResult(&FirewallDevice{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*FirewallDevice), nil
+	e := formatAPIPath("networking/firewalls/%d/devices", firewallID)
+	return doPOSTRequest[FirewallDevice](ctx, c, e, opts)
 }
 
 // DeleteFirewallDevice disassociates a Device with a given Firewall
 func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
-<<<<<<< HEAD
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	if err != nil {
-		return err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
-	if err != nil {
-		return err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-=======
-	e := fmt.Sprintf("networking/firewalls/%d/devices/%d", firewallID, deviceID)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return err
+	e := formatAPIPath("networking/firewalls/%d/devices/%d", firewallID, deviceID)
+	return doDELETERequest(ctx, c, e)
 }

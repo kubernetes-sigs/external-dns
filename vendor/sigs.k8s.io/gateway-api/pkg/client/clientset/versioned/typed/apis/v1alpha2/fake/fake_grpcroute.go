@@ -19,171 +19,33 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
-	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/applyconfiguration/apis/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
 	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/applyconfiguration/apis/v1alpha2"
+	typedapisv1alpha2 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1alpha2"
 )
 
-// FakeGRPCRoutes implements GRPCRouteInterface
-type FakeGRPCRoutes struct {
+// fakeGRPCRoutes implements GRPCRouteInterface
+type fakeGRPCRoutes struct {
+	*gentype.FakeClientWithListAndApply[*v1alpha2.GRPCRoute, *v1alpha2.GRPCRouteList, *apisv1alpha2.GRPCRouteApplyConfiguration]
 	Fake *FakeGatewayV1alpha2
-	ns   string
 }
 
-var grpcroutesResource = v1alpha2.SchemeGroupVersion.WithResource("grpcroutes")
-
-var grpcroutesKind = v1alpha2.SchemeGroupVersion.WithKind("GRPCRoute")
-
-// Get takes name of the gRPCRoute, and returns the corresponding gRPCRoute object, and an error if there is any.
-func (c *FakeGRPCRoutes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.GRPCRoute, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(grpcroutesResource, c.ns, name), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
+func newFakeGRPCRoutes(fake *FakeGatewayV1alpha2, namespace string) typedapisv1alpha2.GRPCRouteInterface {
+	return &fakeGRPCRoutes{
+		gentype.NewFakeClientWithListAndApply[*v1alpha2.GRPCRoute, *v1alpha2.GRPCRouteList, *apisv1alpha2.GRPCRouteApplyConfiguration](
+			fake.Fake,
+			namespace,
+			v1alpha2.SchemeGroupVersion.WithResource("grpcroutes"),
+			v1alpha2.SchemeGroupVersion.WithKind("GRPCRoute"),
+			func() *v1alpha2.GRPCRoute { return &v1alpha2.GRPCRoute{} },
+			func() *v1alpha2.GRPCRouteList { return &v1alpha2.GRPCRouteList{} },
+			func(dst, src *v1alpha2.GRPCRouteList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha2.GRPCRouteList) []*v1alpha2.GRPCRoute { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1alpha2.GRPCRouteList, items []*v1alpha2.GRPCRoute) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// List takes label and field selectors, and returns the list of GRPCRoutes that match those selectors.
-func (c *FakeGRPCRoutes) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.GRPCRouteList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(grpcroutesResource, grpcroutesKind, c.ns, opts), &v1alpha2.GRPCRouteList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha2.GRPCRouteList{ListMeta: obj.(*v1alpha2.GRPCRouteList).ListMeta}
-	for _, item := range obj.(*v1alpha2.GRPCRouteList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested gRPCRoutes.
-func (c *FakeGRPCRoutes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(grpcroutesResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a gRPCRoute and creates it.  Returns the server's representation of the gRPCRoute, and an error, if there is any.
-func (c *FakeGRPCRoutes) Create(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.CreateOptions) (result *v1alpha2.GRPCRoute, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(grpcroutesResource, c.ns, gRPCRoute), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// Update takes the representation of a gRPCRoute and updates it. Returns the server's representation of the gRPCRoute, and an error, if there is any.
-func (c *FakeGRPCRoutes) Update(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (result *v1alpha2.GRPCRoute, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(grpcroutesResource, c.ns, gRPCRoute), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeGRPCRoutes) UpdateStatus(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (*v1alpha2.GRPCRoute, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(grpcroutesResource, "status", c.ns, gRPCRoute), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// Delete takes name of the gRPCRoute and deletes it. Returns an error if one occurs.
-func (c *FakeGRPCRoutes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(grpcroutesResource, c.ns, name, opts), &v1alpha2.GRPCRoute{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeGRPCRoutes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(grpcroutesResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha2.GRPCRouteList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched gRPCRoute.
-func (c *FakeGRPCRoutes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.GRPCRoute, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(grpcroutesResource, c.ns, name, pt, data, subresources...), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied gRPCRoute.
-func (c *FakeGRPCRoutes) Apply(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error) {
-	if gRPCRoute == nil {
-		return nil, fmt.Errorf("gRPCRoute provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(gRPCRoute)
-	if err != nil {
-		return nil, err
-	}
-	name := gRPCRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("gRPCRoute.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(grpcroutesResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *FakeGRPCRoutes) ApplyStatus(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error) {
-	if gRPCRoute == nil {
-		return nil, fmt.Errorf("gRPCRoute provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(gRPCRoute)
-	if err != nil {
-		return nil, err
-	}
-	name := gRPCRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("gRPCRoute.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(grpcroutesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1alpha2.GRPCRoute{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.GRPCRoute), err
 }

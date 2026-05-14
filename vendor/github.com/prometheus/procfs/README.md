@@ -6,22 +6,8 @@ metrics from the pseudo-filesystems /proc and /sys.
 *WARNING*: This package is a work in progress. Its API may still break in
 backwards-incompatible ways without warnings. Use it at your own risk.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 [![Go Reference](https://pkg.go.dev/badge/github.com/prometheus/procfs.svg)](https://pkg.go.dev/github.com/prometheus/procfs)
 [![CircleCI](https://circleci.com/gh/prometheus/procfs/tree/master.svg?style=svg)](https://circleci.com/gh/prometheus/procfs/tree/master)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-[![GoDoc](https://godoc.org/github.com/prometheus/procfs?status.png)](https://godoc.org/github.com/prometheus/procfs)
-[![Build Status](https://travis-ci.org/prometheus/procfs.svg?branch=master)](https://travis-ci.org/prometheus/procfs)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-[![GoDoc](https://godoc.org/github.com/prometheus/procfs?status.png)](https://godoc.org/github.com/prometheus/procfs)
-[![Build Status](https://travis-ci.org/prometheus/procfs.svg?branch=master)](https://travis-ci.org/prometheus/procfs)
-=======
-[![Go Reference](https://pkg.go.dev/badge/github.com/prometheus/procfs.svg)](https://pkg.go.dev/github.com/prometheus/procfs)
-[![CircleCI](https://circleci.com/gh/prometheus/procfs/tree/master.svg?style=svg)](https://circleci.com/gh/prometheus/procfs/tree/master)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/prometheus/procfs)](https://goreportcard.com/report/github.com/prometheus/procfs)
 
 ## Usage
@@ -61,15 +47,15 @@ However, most of the API includes unit tests which can be run with `make test`.
 The procfs library includes a set of test fixtures which include many example files from
 the `/proc` and `/sys` filesystems.  These fixtures are included as a [ttar](https://github.com/ideaship/ttar) file
 which is extracted automatically during testing.  To add/update the test fixtures, first
-ensure the `fixtures` directory is up to date by removing the existing directory and then
-extracting the ttar file using `make fixtures/.unpacked` or just `make test`.
+ensure the `testdata/fixtures` directory is up to date by removing the existing directory and then
+extracting the ttar file using `make testdata/fixtures/.unpacked` or just `make test`.
 
 ```bash
 rm -rf testdata/fixtures
 make test
 ```
 
-Next, make the required changes to the extracted files in the `fixtures` directory.  When
+Next, make the required changes to the extracted files in the `testdata/fixtures` directory.  When
 the changes are complete, run `make update_fixtures` to create a new `fixtures.ttar` file
 based on the updated `fixtures` directory.  And finally, verify the changes using
 `git diff testdata/fixtures.ttar`.

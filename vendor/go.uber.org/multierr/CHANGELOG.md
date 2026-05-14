@@ -1,113 +1,6 @@
 Releases
 ========
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-v1.6.0 (2020-09-14)
-===================
-
--   Actually drop library dependency on development-time tooling.
-
-
-v1.5.0 (2020-02-24)
-===================
-
--   Drop library dependency on development-time tooling.
-
-
-v1.4.0 (2019-11-04)
-===================
-
--   Add `AppendInto` function to more ergonomically build errors inside a
-    loop.
-
-
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-v1.6.0 (2020-09-14)
-===================
-
--   Actually drop library dependency on development-time tooling.
-
-
-v1.5.0 (2020-02-24)
-===================
-
--   Drop library dependency on development-time tooling.
-
-
-v1.4.0 (2019-11-04)
-===================
-
--   Add `AppendInto` function to more ergonomically build errors inside a
-    loop.
-
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-v1.6.0 (2020-09-14)
-===================
-
--   Actually drop library dependency on development-time tooling.
-
-
-v1.5.0 (2020-02-24)
-===================
-
--   Drop library dependency on development-time tooling.
-
-
-v1.4.0 (2019-11-04)
-===================
-
--   Add `AppendInto` function to more ergonomically build errors inside a
-    loop.
-
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-v1.6.0 (2020-09-14)
-===================
-
--   Actually drop library dependency on development-time tooling.
-
-
-v1.5.0 (2020-02-24)
-===================
-
--   Drop library dependency on development-time tooling.
-
-
-v1.4.0 (2019-11-04)
-===================
-
--   Add `AppendInto` function to more ergonomically build errors inside a
-    loop.
-
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 v1.11.0 (2023-03-28)
 ====================
 -   `Errors` now supports any error that implements multiple-error
@@ -162,7 +55,6 @@ v1.4.0 (2019-11-04)
     loop.
 
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 v1.3.0 (2019-10-29)
 ===================
 

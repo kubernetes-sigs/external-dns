@@ -28,6 +28,28 @@ func (this *ServicePort) UnmarshalJSON(b []byte) error {
 	return ServiceEntryUnmarshaler.Unmarshal(bytes.NewReader(b), this)
 }
 
+// MarshalJSON is a custom marshaler for ServiceEntryStatus
+func (this *ServiceEntryStatus) MarshalJSON() ([]byte, error) {
+	str, err := ServiceEntryMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for ServiceEntryStatus
+func (this *ServiceEntryStatus) UnmarshalJSON(b []byte) error {
+	return ServiceEntryUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for ServiceEntryAddress
+func (this *ServiceEntryAddress) MarshalJSON() ([]byte, error) {
+	str, err := ServiceEntryMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for ServiceEntryAddress
+func (this *ServiceEntryAddress) UnmarshalJSON(b []byte) error {
+	return ServiceEntryUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
 var (
 	ServiceEntryMarshaler   = &jsonpb.Marshaler{}
 	ServiceEntryUnmarshaler = &jsonpb.Unmarshaler{AllowUnknownFields: true}

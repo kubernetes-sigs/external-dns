@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/util/dump"
+	"k8s.io/utils/dump"
 	"sigs.k8s.io/yaml"
 )
 
@@ -88,19 +88,7 @@ func toYAML(v interface{}) (string, error) {
 // supports JSON merge patch semantics.
 //
 // NOTE: Numbers with different types (e.g. int(0) vs int64(0)) will be detected as conflicts.
-<<<<<<< HEAD
-<<<<<<< HEAD
-//
-//	Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//       Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//       Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
-=======
 // Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func HasConflicts(left, right interface{}) (bool, error) {
 	switch typedLeft := left.(type) {
 	case map[string]interface{}:

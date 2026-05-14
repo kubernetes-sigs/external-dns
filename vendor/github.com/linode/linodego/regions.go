@@ -2,11 +2,66 @@ package linodego
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"time"
+)
 
-	"github.com/go-resty/resty/v2"
+// This is an enumeration of Capabilities Linode offers that can be referenced
+// through the user-facing parts of the application.
+// Defined as strings rather than a custom type to avoid breaking change.
+// Can be changed in the potential v2 version.
+const (
+	CapabilityACLB                             string = "Akamai Cloud Load Balancer"
+	CapabilityACLP                             string = "Akamai Cloud Pulse"
+	CapabilityACLPStreams                      string = "Akamai Cloud Pulse Streams"
+	CapabilityAkamaiRAMProtection              string = "Akamai RAM Protection"
+	CapabilityBackups                          string = "Backups"
+	CapabilityBlockStorage                     string = "Block Storage"
+	CapabilityBlockStorageEncryption           string = "Block Storage Encryption"
+	CapabilityBlockStorageMigrations           string = "Block Storage Migrations"
+	CapabilityBlockStoragePerformanceB1        string = "Block Storage Performance B1"
+	CapabilityBlockStoragePerformanceB1Default string = "Block Storage Performance B1 Default"
+	CapabilityCloudFirewall                    string = "Cloud Firewall"
+	CapabilityCloudFirewallRuleSet             string = "Cloud Firewall Rule Set"
+	CapabilityCloudNAT                         string = "Cloud NAT"
+	CapabilityDBAAS                            string = "Managed Databases"
+	CapabilityDBAASBeta                        string = "Managed Databases Beta"
+	CapabilityDiskEncryption                   string = "Disk Encryption"
+	CapabilityDistributedPlans                 string = "Distributed Plans"
+	CapabilityEdgePlans                        string = "Edge Plans"
+	CapabilityGPU                              string = "GPU Linodes"
+	CapabilityKubernetesEnterprise             string = "Kubernetes Enterprise"
+	CapabilityKubernetesEnterpriseBYOVPC       string = "Kubernetes Enterprise BYO VPC"
+	CapabilityKubernetesEnterpriseDualStack    string = "Kubernetes Enterprise Dual Stack"
+	CapabilityLADiskEncryption                 string = "LA Disk Encryption"
+	CapabilityLinodeInterfaces                 string = "Linode Interfaces"
+	CapabilityLinodes                          string = "Linodes"
+	CapabilityLKE                              string = "Kubernetes"
+	CapabilityLKEControlPlaneACL               string = "LKE Network Access Control List (IP ACL)"
+	CapabilityLkeHaControlPlanes               string = "LKE HA Control Planes"
+	CapabilityMachineImages                    string = "Machine Images"
+	CapabilityMaintenancePolicy                string = "Maintenance Policy"
+	CapabilityMetadata                         string = "Metadata"
+	CapabilityNLB                              string = "Network LoadBalancer"
+	CapabilityNodeBalancers                    string = "NodeBalancers"
+	CapabilityObjectStorage                    string = "Object Storage"
+	CapabilityObjectStorageAccessKeyRegions    string = "Object Storage Access Key Regions"
+	CapabilityObjectStorageEndpointTypes       string = "Object Storage Endpoint Types"
+	CapabilityPlacementGroup                   string = "Placement Group"
+	CapabilityPremiumPlans                     string = "Premium Plans"
+	CapabilityQuadraT1UVPU                     string = "NETINT Quadra T1U"
+	CapabilitySMTPEnabled                      string = "SMTP Enabled"
+	CapabilityStackScripts                     string = "StackScripts"
+	CapabilitySupportTicketSeverity            string = "Support Ticket Severity"
+	CapabilityVlans                            string = "Vlans"
+	CapabilityVPCs                             string = "VPCs"
+	CapabilityVPCDualStack                     string = "VPC Dual Stack"
+	CapabilityVPCIPv6LargePrefixes             string = "VPC IPv6 Large Prefixes"
+	CapabilityVPCIPv6Stack                     string = "VPC IPv6 Stack"
+	CapabilityVPCsExtra                        string = "VPCs Extra"
+
+	// Deprecated: CapabilityObjectStorageRegions constant has been
+	// renamed to `CapabilityObjectStorageAccessKeyRegions`.
+	CapabilityObjectStorageRegions string = CapabilityObjectStorageAccessKeyRegions
 )
 
 // Region-related endpoints have a custom expiry time as the
@@ -15,13 +70,20 @@ var cacheExpiryTime = time.Minute
 
 // Region represents a linode region object
 type Region struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	ID           string          `json:"id"`
-	Country      string          `json:"country"`
-	Capabilities []string        `json:"capabilities"`
-	Status       string          `json:"status"`
-	Resolvers    RegionResolvers `json:"resolvers"`
+	ID      string `json:"id"`
+	Country string `json:"country"`
+
+	// A List of enums from the above constants
+	Capabilities []string `json:"capabilities"`
+
+	Monitors RegionMonitors `json:"monitors"`
+
+	Status   string `json:"status"`
+	Label    string `json:"label"`
+	SiteType string `json:"site_type"`
+
+	Resolvers            RegionResolvers             `json:"resolvers"`
+	PlacementGroupLimits *RegionPlacementGroupLimits `json:"placement_group_limits"`
 }
 
 // RegionResolvers contains the DNS resolvers of a region
@@ -30,115 +92,22 @@ type RegionResolvers struct {
 	IPv6 string `json:"ipv6"`
 }
 
-// RegionsPagedResponse represents a linode API response for listing
-type RegionsPagedResponse struct {
-	*PageOptions
-	Data []Region `json:"data"`
+// RegionMonitors contains the monitoring configuration for a region
+type RegionMonitors struct {
+	Alerts  []string `json:"alerts"`
+	Metrics []string `json:"metrics"`
 }
 
-// endpoint gets the endpoint URL for Region
-func (RegionsPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Regions.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends Regions when processing paginated Region responses
-func (resp *RegionsPagedResponse) appendData(r *RegionsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListRegions lists Regions
-func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, error) {
-	response := RegionsPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ID      string `json:"id"`
-	Country string `json:"country"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ID      string `json:"id"`
-	Country string `json:"country"`
-=======
-	ID           string          `json:"id"`
-	Country      string          `json:"country"`
-	Capabilities []string        `json:"capabilities"`
-	Status       string          `json:"status"`
-	Resolvers    RegionResolvers `json:"resolvers"`
-	Label        string          `json:"label"`
-	SiteType     string          `json:"site_type"`
-}
-
-// RegionResolvers contains the DNS resolvers of a region
-type RegionResolvers struct {
-	IPv4 string `json:"ipv4"`
-	IPv6 string `json:"ipv6"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-}
-
-// RegionsPagedResponse represents a linode API response for listing
-type RegionsPagedResponse struct {
-	*PageOptions
-	Data []Region `json:"data"`
-}
-
-// endpoint gets the endpoint URL for Region
-func (RegionsPagedResponse) endpoint(_ ...any) string {
-	return "regions"
-}
-
-func (resp *RegionsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(RegionsPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*RegionsPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
+// RegionPlacementGroupLimits contains information about the
+// placement group limits for the current user in the current region.
+type RegionPlacementGroupLimits struct {
+	MaximumPGsPerCustomer int `json:"maximum_pgs_per_customer"`
+	MaximumLinodesPerPG   int `json:"maximum_linodes_per_pg"`
 }
 
 // ListRegions lists Regions. This endpoint is cached by default.
 func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, error) {
-	response := RegionsPagedResponse{}
-
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	endpoint, err := generateListCacheURL(response.endpoint(), opts)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	endpoint, err := generateListCacheURL("regions", opts)
 	if err != nil {
 		return nil, err
 	}
@@ -147,32 +116,31 @@ func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, 
 		return result.([]Region), nil
 	}
 
-	err = c.listHelper(ctx, &response, opts)
+	response, err := getPaginatedResults[Region](ctx, c, "regions", opts)
 	if err != nil {
 		return nil, err
 	}
 
-	c.addCachedResponse(endpoint, response.Data, &cacheExpiryTime)
+	c.addCachedResponse(endpoint, response, &cacheExpiryTime)
 
-	return response.Data, nil
+	return response, nil
 }
 
 // GetRegion gets the template with the provided ID. This endpoint is cached by default.
 func (c *Client) GetRegion(ctx context.Context, regionID string) (*Region, error) {
-	e := fmt.Sprintf("regions/%s", url.PathEscape(regionID))
+	e := formatAPIPath("regions/%s", regionID)
 
 	if result := c.getCachedResponse(e); result != nil {
 		result := result.(Region)
 		return &result, nil
 	}
 
-	req := c.R(ctx).SetResult(&Region{})
-	r, err := coupleAPIErrors(req.Get(e))
+	response, err := doGETRequest[Region](ctx, c, e)
 	if err != nil {
 		return nil, err
 	}
 
-	c.addCachedResponse(e, r.Result(), &cacheExpiryTime)
+	c.addCachedResponse(e, response, &cacheExpiryTime)
 
-	return r.Result().(*Region), nil
+	return response, nil
 }

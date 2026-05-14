@@ -21,10 +21,6 @@ import (
 )
 
 // SetZoneRecordStatus invokes the pvtz.SetZoneRecordStatus API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
 	response = CreateSetZoneRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -75,6 +71,7 @@ func (client *Client) SetZoneRecordStatusWithCallback(request *SetZoneRecordStat
 // SetZoneRecordStatusRequest is the request struct for api SetZoneRecordStatus
 type SetZoneRecordStatusRequest struct {
 	*requests.RpcRequest
+	ClientToken  string           `position:"Query" name:"ClientToken"`
 	RecordId     requests.Integer `position:"Query" name:"RecordId"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
 	Lang         string           `position:"Query" name:"Lang"`
@@ -84,9 +81,9 @@ type SetZoneRecordStatusRequest struct {
 // SetZoneRecordStatusResponse is the response struct for api SetZoneRecordStatus
 type SetZoneRecordStatusResponse struct {
 	*responses.BaseResponse
+	Status    string `json:"Status" xml:"Status"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-	Status    string `json:"Status" xml:"Status"`
 }
 
 // CreateSetZoneRecordStatusRequest creates a request to invoke SetZoneRecordStatus API
@@ -96,172 +93,6 @@ func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
-	response = CreateSetZoneRecordStatusResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// SetZoneRecordStatusWithChan invokes the pvtz.SetZoneRecordStatus API asynchronously
-func (client *Client) SetZoneRecordStatusWithChan(request *SetZoneRecordStatusRequest) (<-chan *SetZoneRecordStatusResponse, <-chan error) {
-	responseChan := make(chan *SetZoneRecordStatusResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.SetZoneRecordStatus(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// SetZoneRecordStatusWithCallback invokes the pvtz.SetZoneRecordStatus API asynchronously
-func (client *Client) SetZoneRecordStatusWithCallback(request *SetZoneRecordStatusRequest, callback func(response *SetZoneRecordStatusResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *SetZoneRecordStatusResponse
-		var err error
-		defer close(result)
-		response, err = client.SetZoneRecordStatus(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// SetZoneRecordStatusRequest is the request struct for api SetZoneRecordStatus
-type SetZoneRecordStatusRequest struct {
-	*requests.RpcRequest
-	RecordId     requests.Integer `position:"Query" name:"RecordId"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Status       string           `position:"Query" name:"Status"`
-}
-
-// SetZoneRecordStatusResponse is the response struct for api SetZoneRecordStatus
-type SetZoneRecordStatusResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-	Status    string `json:"Status" xml:"Status"`
-}
-
-// CreateSetZoneRecordStatusRequest creates a request to invoke SetZoneRecordStatus API
-func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
-	request = &SetZoneRecordStatusRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
-	response = CreateSetZoneRecordStatusResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// SetZoneRecordStatusWithChan invokes the pvtz.SetZoneRecordStatus API asynchronously
-func (client *Client) SetZoneRecordStatusWithChan(request *SetZoneRecordStatusRequest) (<-chan *SetZoneRecordStatusResponse, <-chan error) {
-	responseChan := make(chan *SetZoneRecordStatusResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.SetZoneRecordStatus(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// SetZoneRecordStatusWithCallback invokes the pvtz.SetZoneRecordStatus API asynchronously
-func (client *Client) SetZoneRecordStatusWithCallback(request *SetZoneRecordStatusRequest, callback func(response *SetZoneRecordStatusResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *SetZoneRecordStatusResponse
-		var err error
-		defer close(result)
-		response, err = client.SetZoneRecordStatus(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// SetZoneRecordStatusRequest is the request struct for api SetZoneRecordStatus
-type SetZoneRecordStatusRequest struct {
-	*requests.RpcRequest
-	RecordId     requests.Integer `position:"Query" name:"RecordId"`
-	UserClientIp string           `position:"Query" name:"UserClientIp"`
-	Lang         string           `position:"Query" name:"Lang"`
-	Status       string           `position:"Query" name:"Status"`
-}
-
-// SetZoneRecordStatusResponse is the response struct for api SetZoneRecordStatus
-type SetZoneRecordStatusResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int64  `json:"RecordId" xml:"RecordId"`
-	Status    string `json:"Status" xml:"Status"`
-}
-
-// CreateSetZoneRecordStatusRequest creates a request to invoke SetZoneRecordStatus API
-func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
-	request = &SetZoneRecordStatusRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

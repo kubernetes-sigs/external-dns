@@ -37,6 +37,7 @@ type PriorityClass struct {
 
 	// value represents the integer value of this priority class. This is the actual priority that pods
 	// receive when they have the name of this class in their pod spec.
+	// +optional
 	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
 
 	// globalDefault specifies whether this PriorityClass should be considered as
@@ -55,55 +56,6 @@ type PriorityClass struct {
 	// preemptionPolicy is the Policy for preempting pods with lower priority.
 	// One of Never, PreemptLowerPriority.
 	// Defaults to PreemptLowerPriority if unset.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
-=======
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
-=======
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
-=======
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-=======
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// +optional
 	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
 }

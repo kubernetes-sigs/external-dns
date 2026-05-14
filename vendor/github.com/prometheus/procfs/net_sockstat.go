@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -69,154 +69,7 @@ func readSockstat(name string) (*NetSockstat, error) {
 
 	stat, err := parseSockstat(bytes.NewReader(b))
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
-	}
-
-	return stat, nil
-}
-
-// parseSockstat reads the contents of a sockstat file and parses a NetSockstat.
-func parseSockstat(r io.Reader) (*NetSockstat, error) {
-	var stat NetSockstat
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		// Expect a minimum of a protocol and one key/value pair.
-		fields := strings.Split(s.Text(), " ")
-		if len(fields) < 3 {
-			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
-		}
-
-		// The remaining fields are key/value pairs.
-		kvs, err := parseSockstatKVs(fields[1:])
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-
-	return stat, nil
-}
-
-// parseSockstat reads the contents of a sockstat file and parses a NetSockstat.
-func parseSockstat(r io.Reader) (*NetSockstat, error) {
-	var stat NetSockstat
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		// Expect a minimum of a protocol and one key/value pair.
-		fields := strings.Split(s.Text(), " ")
-		if len(fields) < 3 {
-			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
-		}
-
-		// The remaining fields are key/value pairs.
-		kvs, err := parseSockstatKVs(fields[1:])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
-=======
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
->>>>>>> 6b7ce455e (update vendored files)
-	}
-
-	return stat, nil
-}
-
-// parseSockstat reads the contents of a sockstat file and parses a NetSockstat.
-func parseSockstat(r io.Reader) (*NetSockstat, error) {
-	var stat NetSockstat
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		// Expect a minimum of a protocol and one key/value pair.
-		fields := strings.Split(s.Text(), " ")
-		if len(fields) < 3 {
-			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
-		}
-
-		// The remaining fields are key/value pairs.
-		kvs, err := parseSockstatKVs(fields[1:])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
-=======
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	return stat, nil
-}
-
-// parseSockstat reads the contents of a sockstat file and parses a NetSockstat.
-func parseSockstat(r io.Reader) (*NetSockstat, error) {
-	var stat NetSockstat
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		// Expect a minimum of a protocol and one key/value pair.
-		fields := strings.Split(s.Text(), " ")
-		if len(fields) < 3 {
-			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
-		}
-
-		// The remaining fields are key/value pairs.
-		kvs, err := parseSockstatKVs(fields[1:])
-		if err != nil {
-<<<<<<< HEAD
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
-=======
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
-=======
-		return nil, fmt.Errorf("%s: sockstats from %q: %w", ErrFileRead, name, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: sockstats from %q: %w", ErrFileRead, name, err)
-=======
 		return nil, fmt.Errorf("%w: sockstats from %q: %w", ErrFileRead, name, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return stat, nil
@@ -236,20 +89,7 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 		// The remaining fields are key/value pairs.
 		kvs, err := parseSockstatKVs(fields[1:])
 		if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
-=======
-			return nil, fmt.Errorf("%s: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-			return nil, fmt.Errorf("%s: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
-=======
 			return nil, fmt.Errorf("%w: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 
 		// The first field is the protocol. We must trim its colon suffix.
@@ -299,9 +139,6 @@ func parseSockstatKVs(kvs []string) (map[string]int, error) {
 func parseSockstatProtocol(kvs map[string]int) NetSockstatProtocol {
 	var nsp NetSockstatProtocol
 	for k, v := range kvs {
-		// Capture the range variable to ensure we get unique pointers for
-		// each of the optional fields.
-		v := v
 		switch k {
 		case "inuse":
 			nsp.InUse = v

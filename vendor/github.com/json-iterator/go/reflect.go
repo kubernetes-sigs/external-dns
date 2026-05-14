@@ -65,51 +65,7 @@ func (iter *Iterator) ReadVal(obj interface{}) {
 	decoder := iter.cfg.getDecoderFromCache(cacheKey)
 	if decoder == nil {
 		typ := reflect2.TypeOf(obj)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 		if typ == nil || typ.Kind() != reflect.Ptr {
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if typ.Kind() != reflect.Ptr {
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		if typ.Kind() != reflect.Ptr {
-=======
-		if typ == nil || typ.Kind() != reflect.Ptr {
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if typ.Kind() != reflect.Ptr {
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		if typ.Kind() != reflect.Ptr {
-=======
-		if typ == nil || typ.Kind() != reflect.Ptr {
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if typ.Kind() != reflect.Ptr {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		if typ.Kind() != reflect.Ptr {
-=======
-		if typ == nil || typ.Kind() != reflect.Ptr {
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if typ.Kind() != reflect.Ptr {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		if typ.Kind() != reflect.Ptr {
-=======
-		if typ == nil || typ.Kind() != reflect.Ptr {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			iter.ReportError("ReadVal", "can only unmarshal into pointer")
 			return
 		}

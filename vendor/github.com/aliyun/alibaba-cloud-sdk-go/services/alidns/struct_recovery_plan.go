@@ -17,8 +17,6 @@ package alidns
 
 // RecoveryPlan is a nested struct in alidns response
 type RecoveryPlan struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	Status                string `json:"Status" xml:"Status"`
 	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
 	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
@@ -32,51 +30,4 @@ type RecoveryPlan struct {
 	Name                  string `json:"Name" xml:"Name"`
 	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
 	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	RecoveryPlanId        int64  `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
-	Name                  string `json:"Name" xml:"Name"`
-	Remark                string `json:"Remark" xml:"Remark"`
-	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
-	LastExecuteTime       string `json:"LastExecuteTime" xml:"LastExecuteTime"`
-	LastExecuteTimestamp  int64  `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
-	LastRollbackTime      string `json:"LastRollbackTime" xml:"LastRollbackTime"`
-	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
-	CreateTime            string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp       int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	RecoveryPlanId        int64  `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
-	Name                  string `json:"Name" xml:"Name"`
-	Remark                string `json:"Remark" xml:"Remark"`
-	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
-	LastExecuteTime       string `json:"LastExecuteTime" xml:"LastExecuteTime"`
-	LastExecuteTimestamp  int64  `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
-	LastRollbackTime      string `json:"LastRollbackTime" xml:"LastRollbackTime"`
-	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
-	CreateTime            string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp       int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Status                string `json:"Status" xml:"Status"`
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
-	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
-	Remark                string `json:"Remark" xml:"Remark"`
-	CreateTime            string `json:"CreateTime" xml:"CreateTime"`
-	RecoveryPlanId        int64  `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
-	UpdateTimestamp       int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	LastExecuteTimestamp  int64  `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
-	LastExecuteTime       string `json:"LastExecuteTime" xml:"LastExecuteTime"`
-	LastRollbackTime      string `json:"LastRollbackTime" xml:"LastRollbackTime"`
-	Name                  string `json:"Name" xml:"Name"`
-	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
-	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

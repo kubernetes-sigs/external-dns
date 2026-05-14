@@ -11,47 +11,9 @@ import (
 )
 
 const (
-<<<<<<< HEAD:vendor/github.com/oracle/oci-go-sdk/common/version.go
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	major = "24"
-	minor = "3"
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	major = "21"
-	minor = "4"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	major = "21"
-	minor = "4"
-=======
-	major = "24"
-	minor = "3"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	major = "21"
-	minor = "4"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	patch = "0"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/oracle/oci-go-sdk/common/version.go
-	major = "21"
-	minor = "4"
-	patch = "0"
-=======
 	major = "65"
-<<<<<<< HEAD
-	minor = "65"
-	patch = "2"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/oracle/oci-go-sdk/v65/common/version.go
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-	minor = "65"
-	patch = "2"
-=======
-	minor = "111"
-	patch = "0"
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+	minor = "114"
+	patch = "1"
 	tag   = ""
 )
 

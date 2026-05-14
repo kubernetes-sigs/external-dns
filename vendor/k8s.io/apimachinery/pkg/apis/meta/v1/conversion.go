@@ -345,14 +345,6 @@ func Convert_url_Values_To_v1_DeleteOptions(in *url.Values, out *DeleteOptions, 
 	}
 	return nil
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 // Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
 func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
@@ -361,59 +353,3 @@ func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *Resource
 	}
 	return nil
 }
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-
-// Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
-func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
-	if len(*in) > 0 {
-		*out = ResourceVersionMatch((*in)[0])
-	}
-	return nil
-}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-
-// Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
-func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
-	if len(*in) > 0 {
-		*out = ResourceVersionMatch((*in)[0])
-	}
-	return nil
-}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-// Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
-func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
-	if len(*in) > 0 {
-		*out = ResourceVersionMatch((*in)[0])
-	}
-	return nil
-}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-// Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
-func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
-	if len(*in) > 0 {
-		*out = ResourceVersionMatch((*in)[0])
-	}
-	return nil
-}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"net"
 	"net/url"
 	"os"
@@ -15,14 +14,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/text/language"
 
-	"github.com/gabriel-vasile/mimetype"
 	urn "github.com/leodido/go-urn"
 )
 
@@ -34,7 +31,7 @@ type Func func(fl FieldLevel) bool
 // validation needs. The return value should be true when validation succeeds.
 type FuncCtx func(ctx context.Context, fl FieldLevel) bool
 
-// wrapFunc wraps normal Func makes it compatible with FuncCtx
+// wrapFunc wraps noramal Func makes it compatible with FuncCtx
 func wrapFunc(fn Func) FuncCtx {
 	if fn == nil {
 		return nil // be sure not to wrap a bad function.
@@ -51,7 +48,6 @@ var (
 		endKeysTag:        {},
 		structOnlyTag:     {},
 		omitempty:         {},
-		omitnil:           {},
 		skipValidationTag: {},
 		utf8HexComma:      {},
 		utf8Pipe:          {},
@@ -75,13 +71,10 @@ var (
 		"required":                      hasValue,
 		"required_if":                   requiredIf,
 		"required_unless":               requiredUnless,
-		"skip_unless":                   skipUnless,
 		"required_with":                 requiredWith,
 		"required_with_all":             requiredWithAll,
 		"required_without":              requiredWithout,
 		"required_without_all":          requiredWithoutAll,
-		"excluded_if":                   excludedIf,
-		"excluded_unless":               excludedUnless,
 		"excluded_with":                 excludedWith,
 		"excluded_with_all":             excludedWithAll,
 		"excluded_without":              excludedWithout,
@@ -91,9 +84,7 @@ var (
 		"min":                           hasMinOf,
 		"max":                           hasMaxOf,
 		"eq":                            isEq,
-		"eq_ignore_case":                isEqIgnoreCase,
 		"ne":                            isNe,
-		"ne_ignore_case":                isNeIgnoreCase,
 		"lt":                            isLt,
 		"lte":                           isLte,
 		"gt":                            isGt,
@@ -128,14 +119,11 @@ var (
 		"e164":                          isE164,
 		"email":                         isEmail,
 		"url":                           isURL,
-		"http_url":                      isHttpURL,
 		"uri":                           isURI,
 		"urn_rfc2141":                   isUrnRFC2141, // RFC 2141
 		"file":                          isFile,
-		"filepath":                      isFilePath,
 		"base64":                        isBase64,
 		"base64url":                     isBase64URL,
-		"base64rawurl":                  isBase64RawURL,
 		"contains":                      contains,
 		"containsany":                   containsAny,
 		"containsrune":                  containsRune,
@@ -146,13 +134,10 @@ var (
 		"endswith":                      endsWith,
 		"startsnotwith":                 startsNotWith,
 		"endsnotwith":                   endsNotWith,
-		"image":                         isImage,
 		"isbn":                          isISBN,
 		"isbn10":                        isISBN10,
 		"isbn13":                        isISBN13,
-		"issn":                          isISSN,
 		"eth_addr":                      isEthereumAddress,
-		"eth_addr_checksum":             isEthereumAddressChecksum,
 		"btc_addr":                      isBitcoinAddress,
 		"btc_addr_bech32":               isBitcoinBech32Address,
 		"uuid":                          isUUID,
@@ -163,17 +148,6 @@ var (
 		"uuid3_rfc4122":                 isUUID3RFC4122,
 		"uuid4_rfc4122":                 isUUID4RFC4122,
 		"uuid5_rfc4122":                 isUUID5RFC4122,
-		"ulid":                          isULID,
-		"md4":                           isMD4,
-		"md5":                           isMD5,
-		"sha256":                        isSHA256,
-		"sha384":                        isSHA384,
-		"sha512":                        isSHA512,
-		"ripemd128":                     isRIPEMD128,
-		"ripemd160":                     isRIPEMD160,
-		"tiger128":                      isTIGER128,
-		"tiger160":                      isTIGER160,
-		"tiger192":                      isTIGER192,
 		"ascii":                         isASCII,
 		"printascii":                    isPrintableASCII,
 		"multibyte":                     hasMultiByteCharacter,
@@ -207,7 +181,6 @@ var (
 		"html_encoded":                  isHTMLEncoded,
 		"url_encoded":                   isURLEncoded,
 		"dir":                           isDir,
-		"dirpath":                       isDirPath,
 		"json":                          isJSON,
 		"jwt":                           isJWT,
 		"hostname_port":                 isHostnamePort,
@@ -225,21 +198,11 @@ var (
 		"postcode_iso3166_alpha2":       isPostcodeByIso3166Alpha2,
 		"postcode_iso3166_alpha2_field": isPostcodeByIso3166Alpha2Field,
 		"bic":                           isIsoBicFormat,
-		"semver":                        isSemverFormat,
-		"dns_rfc1035_label":             isDnsRFC1035LabelFormat,
-		"credit_card":                   isCreditCard,
-		"cve":                           isCveFormat,
-		"luhn_checksum":                 hasLuhnChecksum,
-		"mongodb":                       isMongoDB,
-		"cron":                          isCron,
-		"spicedb":                       isSpiceDB,
 	}
 )
 
-var (
-	oneofValsCache       = map[string][]string{}
-	oneofValsCacheRWLock = sync.RWMutex{}
-)
+var oneofValsCache = map[string][]string{}
+var oneofValsCacheRWLock = sync.RWMutex{}
 
 func parseOneOfParam2(s string) []string {
 	oneofValsCacheRWLock.RLock()
@@ -295,6 +258,7 @@ func isOneOf(fl FieldLevel) bool {
 
 // isUnique is the validation function for validating if each array|slice|map value is unique
 func isUnique(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 	v := reflect.ValueOf(struct{}{})
@@ -326,48 +290,25 @@ func isUnique(fl FieldLevel) bool {
 		}
 
 		m := reflect.MakeMap(reflect.MapOf(sfTyp, v.Type()))
-		var fieldlen int
 		for i := 0; i < field.Len(); i++ {
-			key := reflect.Indirect(reflect.Indirect(field.Index(i)).FieldByName(param))
-			if key.IsValid() {
-				fieldlen++
-				m.SetMapIndex(key, v)
-			}
+			m.SetMapIndex(reflect.Indirect(reflect.Indirect(field.Index(i)).FieldByName(param)), v)
 		}
-		return fieldlen == m.Len()
+		return field.Len() == m.Len()
 	case reflect.Map:
-		var m reflect.Value
-		if field.Type().Elem().Kind() == reflect.Ptr {
-			m = reflect.MakeMap(reflect.MapOf(field.Type().Elem().Elem(), v.Type()))
-		} else {
-			m = reflect.MakeMap(reflect.MapOf(field.Type().Elem(), v.Type()))
-		}
+		m := reflect.MakeMap(reflect.MapOf(field.Type().Elem(), v.Type()))
 
 		for _, k := range field.MapKeys() {
-			m.SetMapIndex(reflect.Indirect(field.MapIndex(k)), v)
+			m.SetMapIndex(field.MapIndex(k), v)
 		}
-
 		return field.Len() == m.Len()
 	default:
-		if parent := fl.Parent(); parent.Kind() == reflect.Struct {
-			uniqueField := parent.FieldByName(param)
-			if uniqueField == reflect.ValueOf(nil) {
-				panic(fmt.Sprintf("Bad field name provided %s", param))
-			}
-
-			if uniqueField.Kind() != field.Kind() {
-				panic(fmt.Sprintf("Bad field type %T:%T", field.Interface(), uniqueField.Interface()))
-			}
-
-			return field.Interface() != uniqueField.Interface()
-		}
-
 		panic(fmt.Sprintf("Bad field type %T", field.Interface()))
 	}
 }
 
 // isMAC is the validation function for validating if the field's value is a valid MAC address.
 func isMAC(fl FieldLevel) bool {
+
 	_, err := net.ParseMAC(fl.Field().String())
 
 	return err == nil
@@ -375,13 +316,15 @@ func isMAC(fl FieldLevel) bool {
 
 // isCIDRv4 is the validation function for validating if the field's value is a valid v4 CIDR address.
 func isCIDRv4(fl FieldLevel) bool {
-	ip, net, err := net.ParseCIDR(fl.Field().String())
 
-	return err == nil && ip.To4() != nil && net.IP.Equal(ip)
+	ip, _, err := net.ParseCIDR(fl.Field().String())
+
+	return err == nil && ip.To4() != nil
 }
 
 // isCIDRv6 is the validation function for validating if the field's value is a valid v6 CIDR address.
 func isCIDRv6(fl FieldLevel) bool {
+
 	ip, _, err := net.ParseCIDR(fl.Field().String())
 
 	return err == nil && ip.To4() == nil
@@ -389,6 +332,7 @@ func isCIDRv6(fl FieldLevel) bool {
 
 // isCIDR is the validation function for validating if the field's value is a valid v4 or v6 CIDR address.
 func isCIDR(fl FieldLevel) bool {
+
 	_, _, err := net.ParseCIDR(fl.Field().String())
 
 	return err == nil
@@ -396,6 +340,7 @@ func isCIDR(fl FieldLevel) bool {
 
 // isIPv4 is the validation function for validating if a value is a valid v4 IP address.
 func isIPv4(fl FieldLevel) bool {
+
 	ip := net.ParseIP(fl.Field().String())
 
 	return ip != nil && ip.To4() != nil
@@ -403,6 +348,7 @@ func isIPv4(fl FieldLevel) bool {
 
 // isIPv6 is the validation function for validating if the field's value is a valid v6 IP address.
 func isIPv6(fl FieldLevel) bool {
+
 	ip := net.ParseIP(fl.Field().String())
 
 	return ip != nil && ip.To4() == nil
@@ -410,6 +356,7 @@ func isIPv6(fl FieldLevel) bool {
 
 // isIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
 func isIP(fl FieldLevel) bool {
+
 	ip := net.ParseIP(fl.Field().String())
 
 	return ip != nil
@@ -417,6 +364,7 @@ func isIP(fl FieldLevel) bool {
 
 // isSSN is the validation function for validating if the field's value is a valid SSN.
 func isSSN(fl FieldLevel) bool {
+
 	field := fl.Field()
 
 	if field.Len() != 11 {
@@ -474,6 +422,7 @@ func isLatitude(fl FieldLevel) bool {
 
 // isDataURI is the validation function for validating if the field's value is a valid data URI.
 func isDataURI(fl FieldLevel) bool {
+
 	uri := strings.SplitN(fl.Field().String(), ",", 2)
 
 	if len(uri) != 2 {
@@ -489,6 +438,7 @@ func isDataURI(fl FieldLevel) bool {
 
 // hasMultiByteCharacter is the validation function for validating if the field's value has a multi byte character.
 func hasMultiByteCharacter(fl FieldLevel) bool {
+
 	field := fl.Field()
 
 	if field.Len() == 0 {
@@ -510,97 +460,42 @@ func isASCII(fl FieldLevel) bool {
 
 // isUUID5 is the validation function for validating if the field's value is a valid v5 UUID.
 func isUUID5(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID5Regex, fl)
+	return uUID5Regex.MatchString(fl.Field().String())
 }
 
 // isUUID4 is the validation function for validating if the field's value is a valid v4 UUID.
 func isUUID4(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID4Regex, fl)
+	return uUID4Regex.MatchString(fl.Field().String())
 }
 
 // isUUID3 is the validation function for validating if the field's value is a valid v3 UUID.
 func isUUID3(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID3Regex, fl)
+	return uUID3Regex.MatchString(fl.Field().String())
 }
 
 // isUUID is the validation function for validating if the field's value is a valid UUID of any version.
 func isUUID(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUIDRegex, fl)
+	return uUIDRegex.MatchString(fl.Field().String())
 }
 
 // isUUID5RFC4122 is the validation function for validating if the field's value is a valid RFC4122 v5 UUID.
 func isUUID5RFC4122(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID5RFC4122Regex, fl)
+	return uUID5RFC4122Regex.MatchString(fl.Field().String())
 }
 
 // isUUID4RFC4122 is the validation function for validating if the field's value is a valid RFC4122 v4 UUID.
 func isUUID4RFC4122(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID4RFC4122Regex, fl)
+	return uUID4RFC4122Regex.MatchString(fl.Field().String())
 }
 
 // isUUID3RFC4122 is the validation function for validating if the field's value is a valid RFC4122 v3 UUID.
 func isUUID3RFC4122(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUID3RFC4122Regex, fl)
+	return uUID3RFC4122Regex.MatchString(fl.Field().String())
 }
 
 // isUUIDRFC4122 is the validation function for validating if the field's value is a valid RFC4122 UUID of any version.
 func isUUIDRFC4122(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uUIDRFC4122Regex, fl)
-}
-
-// isULID is the validation function for validating if the field's value is a valid ULID.
-func isULID(fl FieldLevel) bool {
-	return fieldMatchesRegexByStringerValOrString(uLIDRegex, fl)
-}
-
-// isMD4 is the validation function for validating if the field's value is a valid MD4.
-func isMD4(fl FieldLevel) bool {
-	return md4Regex.MatchString(fl.Field().String())
-}
-
-// isMD5 is the validation function for validating if the field's value is a valid MD5.
-func isMD5(fl FieldLevel) bool {
-	return md5Regex.MatchString(fl.Field().String())
-}
-
-// isSHA256 is the validation function for validating if the field's value is a valid SHA256.
-func isSHA256(fl FieldLevel) bool {
-	return sha256Regex.MatchString(fl.Field().String())
-}
-
-// isSHA384 is the validation function for validating if the field's value is a valid SHA384.
-func isSHA384(fl FieldLevel) bool {
-	return sha384Regex.MatchString(fl.Field().String())
-}
-
-// isSHA512 is the validation function for validating if the field's value is a valid SHA512.
-func isSHA512(fl FieldLevel) bool {
-	return sha512Regex.MatchString(fl.Field().String())
-}
-
-// isRIPEMD128 is the validation function for validating if the field's value is a valid PIPEMD128.
-func isRIPEMD128(fl FieldLevel) bool {
-	return ripemd128Regex.MatchString(fl.Field().String())
-}
-
-// isRIPEMD160 is the validation function for validating if the field's value is a valid PIPEMD160.
-func isRIPEMD160(fl FieldLevel) bool {
-	return ripemd160Regex.MatchString(fl.Field().String())
-}
-
-// isTIGER128 is the validation function for validating if the field's value is a valid TIGER128.
-func isTIGER128(fl FieldLevel) bool {
-	return tiger128Regex.MatchString(fl.Field().String())
-}
-
-// isTIGER160 is the validation function for validating if the field's value is a valid TIGER160.
-func isTIGER160(fl FieldLevel) bool {
-	return tiger160Regex.MatchString(fl.Field().String())
-}
-
-// isTIGER192 is the validation function for validating if the field's value is a valid isTIGER192.
-func isTIGER192(fl FieldLevel) bool {
-	return tiger192Regex.MatchString(fl.Field().String())
+	return uUIDRFC4122Regex.MatchString(fl.Field().String())
 }
 
 // isISBN is the validation function for validating if the field's value is a valid v10 or v13 ISBN.
@@ -610,6 +505,7 @@ func isISBN(fl FieldLevel) bool {
 
 // isISBN13 is the validation function for validating if the field's value is a valid v13 ISBN.
 func isISBN13(fl FieldLevel) bool {
+
 	s := strings.Replace(strings.Replace(fl.Field().String(), "-", "", 4), " ", "", 4)
 
 	if !iSBN13Regex.MatchString(s) {
@@ -630,6 +526,7 @@ func isISBN13(fl FieldLevel) bool {
 
 // isISBN10 is the validation function for validating if the field's value is a valid v10 ISBN.
 func isISBN10(fl FieldLevel) bool {
+
 	s := strings.Replace(strings.Replace(fl.Field().String(), "-", "", 3), " ", "", 3)
 
 	if !iSBN10Regex.MatchString(s) {
@@ -652,46 +549,18 @@ func isISBN10(fl FieldLevel) bool {
 	return checksum%11 == 0
 }
 
-// isISSN is the validation function for validating if the field's value is a valid ISSN.
-func isISSN(fl FieldLevel) bool {
-	s := fl.Field().String()
-
-	if !iSSNRegex.MatchString(s) {
-		return false
-	}
-	s = strings.ReplaceAll(s, "-", "")
-
-	pos := 8
-	checksum := 0
-
-	for i := 0; i < 7; i++ {
-		checksum += pos * int(s[i]-'0')
-		pos--
-	}
-
-	if s[7] == 'X' {
-		checksum += 10
-	} else {
-		checksum += int(s[7] - '0')
-	}
-
-	return checksum%11 == 0
-}
-
 // isEthereumAddress is the validation function for validating if the field's value is a valid Ethereum address.
 func isEthereumAddress(fl FieldLevel) bool {
-	address := fl.Field().String()
-
-	return ethAddressRegex.MatchString(address)
-}
-
-// isEthereumAddressChecksum is the validation function for validating if the field's value is a valid checksumed Ethereum address.
-func isEthereumAddressChecksum(fl FieldLevel) bool {
 	address := fl.Field().String()
 
 	if !ethAddressRegex.MatchString(address) {
 		return false
 	}
+
+	if ethAddressRegexUpper.MatchString(address) || ethAddressRegexLower.MatchString(address) {
+		return true
+	}
+
 	// Checksum validation. Reference: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md
 	address = address[2:] // Skip "0x" prefix.
 	h := sha3.NewLegacyKeccak256()
@@ -845,6 +714,7 @@ func excludes(fl FieldLevel) bool {
 
 // containsRune is the validation function for validating that the field's value contains the rune specified within the param.
 func containsRune(fl FieldLevel) bool {
+
 	r, _ := utf8.DecodeRuneInString(fl.Param())
 
 	return strings.ContainsRune(fl.Field().String(), r)
@@ -907,6 +777,7 @@ func fieldExcludes(fl FieldLevel) bool {
 
 // isNeField is the validation function for validating if the current field's value is not equal to the field specified by the param's value.
 func isNeField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -937,7 +808,12 @@ func isNeField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
+		// Not Same underlying type i.e. struct and time
+		if fieldType != currentField.Type() {
+			return true
+		}
+
+		if fieldType == timeType {
 
 			t := currentField.Interface().(time.Time)
 			fieldTime := field.Interface().(time.Time)
@@ -945,10 +821,6 @@ func isNeField(fl FieldLevel) bool {
 			return !fieldTime.Equal(t)
 		}
 
-		// Not Same underlying type i.e. struct and time
-		if fieldType != currentField.Type() {
-			return true
-		}
 	}
 
 	// default reflect.String:
@@ -960,14 +832,9 @@ func isNe(fl FieldLevel) bool {
 	return !isEq(fl)
 }
 
-// isNeIgnoreCase is the validation function for validating that the field's string value does not equal the
-// provided param value. The comparison is case-insensitive
-func isNeIgnoreCase(fl FieldLevel) bool {
-	return !isEqIgnoreCase(fl)
-}
-
 // isLteCrossStructField is the validation function for validating if the current field's value is less than or equal to the field, within a separate struct, specified by the param's value.
 func isLteCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -994,17 +861,17 @@ func isLteCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-			topTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Before(topTime) || fieldTime.Equal(topTime)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			fieldTime := field.Interface().(time.Time)
+			topTime := topField.Interface().(time.Time)
+
+			return fieldTime.Before(topTime) || fieldTime.Equal(topTime)
 		}
 	}
 
@@ -1015,6 +882,7 @@ func isLteCrossStructField(fl FieldLevel) bool {
 // isLtCrossStructField is the validation function for validating if the current field's value is less than the field, within a separate struct, specified by the param's value.
 // NOTE: This is exposed for use within your own custom functions and not intended to be called directly.
 func isLtCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1041,17 +909,17 @@ func isLtCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-			topTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Before(topTime)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			fieldTime := field.Interface().(time.Time)
+			topTime := topField.Interface().(time.Time)
+
+			return fieldTime.Before(topTime)
 		}
 	}
 
@@ -1061,6 +929,7 @@ func isLtCrossStructField(fl FieldLevel) bool {
 
 // isGteCrossStructField is the validation function for validating if the current field's value is greater than or equal to the field, within a separate struct, specified by the param's value.
 func isGteCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1087,17 +956,17 @@ func isGteCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-			topTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.After(topTime) || fieldTime.Equal(topTime)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			fieldTime := field.Interface().(time.Time)
+			topTime := topField.Interface().(time.Time)
+
+			return fieldTime.After(topTime) || fieldTime.Equal(topTime)
 		}
 	}
 
@@ -1107,6 +976,7 @@ func isGteCrossStructField(fl FieldLevel) bool {
 
 // isGtCrossStructField is the validation function for validating if the current field's value is greater than the field, within a separate struct, specified by the param's value.
 func isGtCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1133,17 +1003,17 @@ func isGtCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-			topTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.After(topTime)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			fieldTime := field.Interface().(time.Time)
+			topTime := topField.Interface().(time.Time)
+
+			return fieldTime.After(topTime)
 		}
 	}
 
@@ -1153,6 +1023,7 @@ func isGtCrossStructField(fl FieldLevel) bool {
 
 // isNeCrossStructField is the validation function for validating that the current field's value is not equal to the field, within a separate struct, specified by the param's value.
 func isNeCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1182,17 +1053,17 @@ func isNeCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			t := field.Convert(timeType).Interface().(time.Time)
-			fieldTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return !fieldTime.Equal(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return true
+		}
+
+		if fieldType == timeType {
+
+			t := field.Interface().(time.Time)
+			fieldTime := topField.Interface().(time.Time)
+
+			return !fieldTime.Equal(t)
 		}
 	}
 
@@ -1202,6 +1073,7 @@ func isNeCrossStructField(fl FieldLevel) bool {
 
 // isEqCrossStructField is the validation function for validating that the current field's value is equal to the field, within a separate struct, specified by the param's value.
 func isEqCrossStructField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1231,17 +1103,17 @@ func isEqCrossStructField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && topField.Type().ConvertibleTo(timeType) {
-
-			t := field.Convert(timeType).Interface().(time.Time)
-			fieldTime := topField.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Equal(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != topField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			t := field.Interface().(time.Time)
+			fieldTime := topField.Interface().(time.Time)
+
+			return fieldTime.Equal(t)
 		}
 	}
 
@@ -1251,6 +1123,7 @@ func isEqCrossStructField(fl FieldLevel) bool {
 
 // isEqField is the validation function for validating if the current field's value is equal to the field specified by the param's value.
 func isEqField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -1280,18 +1153,19 @@ func isEqField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
-
-			t := currentField.Convert(timeType).Interface().(time.Time)
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Equal(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != currentField.Type() {
 			return false
 		}
+
+		if fieldType == timeType {
+
+			t := currentField.Interface().(time.Time)
+			fieldTime := field.Interface().(time.Time)
+
+			return fieldTime.Equal(t)
+		}
+
 	}
 
 	// default reflect.String:
@@ -1300,6 +1174,7 @@ func isEqField(fl FieldLevel) bool {
 
 // isEq is the validation function for validating if the current field's value is equal to the param's value.
 func isEq(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -1323,13 +1198,8 @@ func isEq(fl FieldLevel) bool {
 
 		return field.Uint() == p
 
-	case reflect.Float32:
-		p := asFloat32(param)
-
-		return field.Float() == p
-
-	case reflect.Float64:
-		p := asFloat64(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() == p
 
@@ -1337,22 +1207,6 @@ func isEq(fl FieldLevel) bool {
 		p := asBool(param)
 
 		return field.Bool() == p
-	}
-
-	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
-}
-
-// isEqIgnoreCase is the validation function for validating if the current field's string value is
-// equal to the param's value.
-// The comparison is case-insensitive.
-func isEqIgnoreCase(fl FieldLevel) bool {
-	field := fl.Field()
-	param := fl.Param()
-
-	switch field.Kind() {
-
-	case reflect.String:
-		return strings.EqualFold(field.String(), param)
 	}
 
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
@@ -1372,7 +1226,7 @@ func isPostcodeByIso3166Alpha2(fl FieldLevel) bool {
 	return reg.MatchString(field.String())
 }
 
-// isPostcodeByIso3166Alpha2Field validates by field which represents for a value of country code in iso 3166 alpha 2
+// isPostcodeByIso3166Alpha2 validates by field which represents for a value of country code in iso 3166 alpha 2
 // example: `postcode_iso3166_alpha2_field=CountryCode`
 func isPostcodeByIso3166Alpha2Field(fl FieldLevel) bool {
 	field := fl.Field()
@@ -1409,16 +1263,13 @@ func isBase64URL(fl FieldLevel) bool {
 	return base64URLRegex.MatchString(fl.Field().String())
 }
 
-// isBase64RawURL is the validation function for validating if the current field's value is a valid base64 URL safe string without '=' padding.
-func isBase64RawURL(fl FieldLevel) bool {
-	return base64RawURLRegex.MatchString(fl.Field().String())
-}
-
 // isURI is the validation function for validating if the current field's value is a valid URI.
 func isURI(fl FieldLevel) bool {
+
 	field := fl.Field()
 
 	switch field.Kind() {
+
 	case reflect.String:
 
 		s := field.String()
@@ -1441,65 +1292,35 @@ func isURI(fl FieldLevel) bool {
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
 }
 
-// isFileURL is the helper function for validating if the `path` valid file URL as per RFC8089
-func isFileURL(path string) bool {
-	if !strings.HasPrefix(path, "file:/") {
-		return false
-	}
-	_, err := url.ParseRequestURI(path)
-	return err == nil
-}
-
 // isURL is the validation function for validating if the current field's value is a valid URL.
 func isURL(fl FieldLevel) bool {
+
 	field := fl.Field()
 
 	switch field.Kind() {
+
 	case reflect.String:
 
-		s := strings.ToLower(field.String())
+		var i int
+		s := field.String()
+
+		// checks needed as of Go 1.6 because of change https://github.com/golang/go/commit/617c93ce740c3c3cc28cdd1a0d712be183d0b328#diff-6c2d018290e298803c0c9419d8739885L195
+		// emulate browser and strip the '#' suffix prior to validation. see issue-#237
+		if i = strings.Index(s, "#"); i > -1 {
+			s = s[:i]
+		}
 
 		if len(s) == 0 {
 			return false
 		}
 
-		if isFileURL(s) {
-			return true
-		}
+		url, err := url.ParseRequestURI(s)
 
-		url, err := url.Parse(s)
 		if err != nil || url.Scheme == "" {
 			return false
 		}
 
-		if url.Host == "" && url.Fragment == "" && url.Opaque == "" {
-			return false
-		}
-
 		return true
-	}
-
-	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
-}
-
-// isHttpURL is the validation function for validating if the current field's value is a valid HTTP(s) URL.
-func isHttpURL(fl FieldLevel) bool {
-	if !isURL(fl) {
-		return false
-	}
-
-	field := fl.Field()
-	switch field.Kind() {
-	case reflect.String:
-
-		s := strings.ToLower(field.String())
-
-		url, err := url.Parse(s)
-		if err != nil || url.Host == "" {
-			return false
-		}
-
-		return url.Scheme == "http" || url.Scheme == "https"
 	}
 
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
@@ -1510,6 +1331,7 @@ func isUrnRFC2141(fl FieldLevel) bool {
 	field := fl.Field()
 
 	switch field.Kind() {
+
 	case reflect.String:
 
 		str := field.String()
@@ -1522,7 +1344,7 @@ func isUrnRFC2141(fl FieldLevel) bool {
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
 }
 
-// isFile is the validation function for validating if the current field's value is a valid existing file path.
+// isFile is the validation function for validating if the current field's value is a valid file path.
 func isFile(fl FieldLevel) bool {
 	field := fl.Field()
 
@@ -1534,122 +1356,6 @@ func isFile(fl FieldLevel) bool {
 		}
 
 		return !fileInfo.IsDir()
-	}
-
-	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
-}
-
-// isImage is the validation function for validating if the current field's value contains the path to a valid image file
-func isImage(fl FieldLevel) bool {
-	mimetypes := map[string]bool{
-		"image/bmp":                true,
-		"image/cis-cod":            true,
-		"image/gif":                true,
-		"image/ief":                true,
-		"image/jpeg":               true,
-		"image/jp2":                true,
-		"image/jpx":                true,
-		"image/jpm":                true,
-		"image/pipeg":              true,
-		"image/png":                true,
-		"image/svg+xml":            true,
-		"image/tiff":               true,
-		"image/webp":               true,
-		"image/x-cmu-raster":       true,
-		"image/x-cmx":              true,
-		"image/x-icon":             true,
-		"image/x-portable-anymap":  true,
-		"image/x-portable-bitmap":  true,
-		"image/x-portable-graymap": true,
-		"image/x-portable-pixmap":  true,
-		"image/x-rgb":              true,
-		"image/x-xbitmap":          true,
-		"image/x-xpixmap":          true,
-		"image/x-xwindowdump":      true,
-	}
-	field := fl.Field()
-
-	switch field.Kind() {
-	case reflect.String:
-		filePath := field.String()
-		fileInfo, err := os.Stat(filePath)
-
-		if err != nil {
-			return false
-		}
-
-		if fileInfo.IsDir() {
-			return false
-		}
-
-		file, err := os.Open(filePath)
-		if err != nil {
-			return false
-		}
-		defer file.Close()
-
-		mime, err := mimetype.DetectReader(file)
-		if err != nil {
-			return false
-		}
-
-		if _, ok := mimetypes[mime.String()]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-// isFilePath is the validation function for validating if the current field's value is a valid file path.
-func isFilePath(fl FieldLevel) bool {
-
-	var exists bool
-	var err error
-
-	field := fl.Field()
-
-	// Not valid if it is a directory.
-	if isDir(fl) {
-		return false
-	}
-	// If it exists, it obviously is valid.
-	// This is done first to avoid code duplication and unnecessary additional logic.
-	if exists = isFile(fl); exists {
-		return true
-	}
-
-	// It does not exist but may still be a valid filepath.
-	switch field.Kind() {
-	case reflect.String:
-		// Every OS allows for whitespace, but none
-		// let you use a file with no filename (to my knowledge).
-		// Unless you're dealing with raw inodes, but I digress.
-		if strings.TrimSpace(field.String()) == "" {
-			return false
-		}
-		// We make sure it isn't a directory.
-		if strings.HasSuffix(field.String(), string(os.PathSeparator)) {
-			return false
-		}
-		if _, err = os.Stat(field.String()); err != nil {
-			switch t := err.(type) {
-			case *fs.PathError:
-				if t.Err == syscall.EINVAL {
-					// It's definitely an invalid character in the filepath.
-					return false
-				}
-				// It could be a permission error, a does-not-exist error, etc.
-				// Out-of-scope for this validation, though.
-				return true
-			default:
-				// Something went *seriously* wrong.
-				/*
-					Per https://pkg.go.dev/os#Stat:
-						"If there is an error, it will be of type *PathError."
-				*/
-				panic(err)
-			}
-		}
 	}
 
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
@@ -1735,15 +1441,10 @@ func isAlphaUnicode(fl FieldLevel) bool {
 	return alphaUnicodeRegex.MatchString(fl.Field().String())
 }
 
-// isBoolean is the validation function for validating if the current field's value is a valid boolean value or can be safely converted to a boolean value.
+// isBoolean is the validation function for validating if the current field's value can be safely converted to a boolean.
 func isBoolean(fl FieldLevel) bool {
-	switch fl.Field().Kind() {
-	case reflect.Bool:
-		return true
-	default:
-		_, err := strconv.ParseBool(fl.Field().String())
-		return err == nil
-	}
+	_, err := strconv.ParseBool(fl.Field().String())
+	return err == nil
 }
 
 // isDefault is the opposite of required aka hasValue
@@ -1761,11 +1462,11 @@ func hasValue(fl FieldLevel) bool {
 		if fl.(*validate).fldIsPointer && field.Interface() != nil {
 			return true
 		}
-		return field.IsValid() && !field.IsZero()
+		return field.IsValid() && field.Interface() != reflect.Zero(field.Type()).Interface()
 	}
 }
 
-// requireCheckFieldKind is a func for check field kind
+// requireCheckField is a func for check field kind
 func requireCheckFieldKind(fl FieldLevel, param string, defaultNotFoundValue bool) bool {
 	field := fl.Field()
 	kind := field.Kind()
@@ -1785,14 +1486,12 @@ func requireCheckFieldKind(fl FieldLevel, param string, defaultNotFoundValue boo
 		if nullable && field.Interface() != nil {
 			return false
 		}
-		return field.IsValid() && field.IsZero()
+		return field.IsValid() && field.Interface() == reflect.Zero(field.Type()).Interface()
 	}
 }
 
 // requireCheckFieldValue is a func for check field value
-func requireCheckFieldValue(
-	fl FieldLevel, param string, value string, defaultNotFoundValue bool,
-) bool {
+func requireCheckFieldValue(fl FieldLevel, param string, value string, defaultNotFoundValue bool) bool {
 	field, kind, _, found := fl.GetStructFieldOKAdvanced2(fl.Parent(), param)
 	if !found {
 		return defaultNotFoundValue
@@ -1806,11 +1505,8 @@ func requireCheckFieldValue(
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		return field.Uint() == asUint(value)
 
-	case reflect.Float32:
-		return field.Float() == asFloat32(value)
-
-	case reflect.Float64:
-		return field.Float() == asFloat64(value)
+	case reflect.Float32, reflect.Float64:
+		return field.Float() == asFloat(value)
 
 	case reflect.Slice, reflect.Map, reflect.Array:
 		return int64(field.Len()) == asInt(value)
@@ -1838,22 +1534,6 @@ func requiredIf(fl FieldLevel) bool {
 	return hasValue(fl)
 }
 
-// excludedIf is the validation function
-// The field under validation must not be present or is empty only if all the other specified fields are equal to the value following with the specified field.
-func excludedIf(fl FieldLevel) bool {
-	params := parseOneOfParam2(fl.Param())
-	if len(params)%2 != 0 {
-		panic(fmt.Sprintf("Bad param number for excluded_if %s", fl.FieldName()))
-	}
-
-	for i := 0; i < len(params); i += 2 {
-		if !requireCheckFieldValue(fl, params[i], params[i+1], false) {
-			return true
-		}
-	}
-	return !hasValue(fl)
-}
-
 // requiredUnless is the validation function
 // The field under validation must be present and not empty only unless all the other specified fields are equal to the value following with the specified field.
 func requiredUnless(fl FieldLevel) bool {
@@ -1868,36 +1548,6 @@ func requiredUnless(fl FieldLevel) bool {
 		}
 	}
 	return hasValue(fl)
-}
-
-// skipUnless is the validation function
-// The field under validation must be present and not empty only unless all the other specified fields are equal to the value following with the specified field.
-func skipUnless(fl FieldLevel) bool {
-	params := parseOneOfParam2(fl.Param())
-	if len(params)%2 != 0 {
-		panic(fmt.Sprintf("Bad param number for skip_unless %s", fl.FieldName()))
-	}
-	for i := 0; i < len(params); i += 2 {
-		if !requireCheckFieldValue(fl, params[i], params[i+1], false) {
-			return true
-		}
-	}
-	return hasValue(fl)
-}
-
-// excludedUnless is the validation function
-// The field under validation must not be present or is empty unless all the other specified fields are equal to the value following with the specified field.
-func excludedUnless(fl FieldLevel) bool {
-	params := parseOneOfParam2(fl.Param())
-	if len(params)%2 != 0 {
-		panic(fmt.Sprintf("Bad param number for excluded_unless %s", fl.FieldName()))
-	}
-	for i := 0; i < len(params); i += 2 {
-		if !requireCheckFieldValue(fl, params[i], params[i+1], false) {
-			return !hasValue(fl)
-		}
-	}
-	return true
 }
 
 // excludedWith is the validation function
@@ -1992,6 +1642,7 @@ func requiredWithoutAll(fl FieldLevel) bool {
 
 // isGteField is the validation function for validating if the current field's value is greater than or equal to the field specified by the param's value.
 func isGteField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -2018,17 +1669,17 @@ func isGteField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
-
-			t := currentField.Convert(timeType).Interface().(time.Time)
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.After(t) || fieldTime.Equal(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != currentField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			t := currentField.Interface().(time.Time)
+			fieldTime := field.Interface().(time.Time)
+
+			return fieldTime.After(t) || fieldTime.Equal(t)
 		}
 	}
 
@@ -2038,6 +1689,7 @@ func isGteField(fl FieldLevel) bool {
 
 // isGtField is the validation function for validating if the current field's value is greater than the field specified by the param's value.
 func isGtField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -2064,17 +1716,17 @@ func isGtField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
-
-			t := currentField.Convert(timeType).Interface().(time.Time)
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.After(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != currentField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			t := currentField.Interface().(time.Time)
+			fieldTime := field.Interface().(time.Time)
+
+			return fieldTime.After(t)
 		}
 	}
 
@@ -2084,6 +1736,7 @@ func isGtField(fl FieldLevel) bool {
 
 // isGte is the validation function for validating if the current field's value is greater than or equal to the param's value.
 func isGte(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -2109,22 +1762,17 @@ func isGte(fl FieldLevel) bool {
 
 		return field.Uint() >= p
 
-	case reflect.Float32:
-		p := asFloat32(param)
-
-		return field.Float() >= p
-
-	case reflect.Float64:
-		p := asFloat64(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() >= p
 
 	case reflect.Struct:
 
-		if field.Type().ConvertibleTo(timeType) {
+		if field.Type() == timeType {
 
 			now := time.Now().UTC()
-			t := field.Convert(timeType).Interface().(time.Time)
+			t := field.Interface().(time.Time)
 
 			return t.After(now) || t.Equal(now)
 		}
@@ -2135,6 +1783,7 @@ func isGte(fl FieldLevel) bool {
 
 // isGt is the validation function for validating if the current field's value is greater than the param's value.
 func isGt(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -2160,21 +1809,15 @@ func isGt(fl FieldLevel) bool {
 
 		return field.Uint() > p
 
-	case reflect.Float32:
-		p := asFloat32(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() > p
-
-	case reflect.Float64:
-		p := asFloat64(param)
-
-		return field.Float() > p
-
 	case reflect.Struct:
 
-		if field.Type().ConvertibleTo(timeType) {
+		if field.Type() == timeType {
 
-			return field.Convert(timeType).Interface().(time.Time).After(time.Now().UTC())
+			return field.Interface().(time.Time).After(time.Now().UTC())
 		}
 	}
 
@@ -2183,6 +1826,7 @@ func isGt(fl FieldLevel) bool {
 
 // hasLengthOf is the validation function for validating if the current field's value is equal to the param's value.
 func hasLengthOf(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -2208,13 +1852,8 @@ func hasLengthOf(fl FieldLevel) bool {
 
 		return field.Uint() == p
 
-	case reflect.Float32:
-		p := asFloat32(param)
-
-		return field.Float() == p
-
-	case reflect.Float64:
-		p := asFloat64(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() == p
 	}
@@ -2229,6 +1868,7 @@ func hasMinOf(fl FieldLevel) bool {
 
 // isLteField is the validation function for validating if the current field's value is less than or equal to the field specified by the param's value.
 func isLteField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -2255,17 +1895,17 @@ func isLteField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
-
-			t := currentField.Convert(timeType).Interface().(time.Time)
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Before(t) || fieldTime.Equal(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != currentField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			t := currentField.Interface().(time.Time)
+			fieldTime := field.Interface().(time.Time)
+
+			return fieldTime.Before(t) || fieldTime.Equal(t)
 		}
 	}
 
@@ -2275,6 +1915,7 @@ func isLteField(fl FieldLevel) bool {
 
 // isLtField is the validation function for validating if the current field's value is less than the field specified by the param's value.
 func isLtField(fl FieldLevel) bool {
+
 	field := fl.Field()
 	kind := field.Kind()
 
@@ -2301,17 +1942,17 @@ func isLtField(fl FieldLevel) bool {
 
 		fieldType := field.Type()
 
-		if fieldType.ConvertibleTo(timeType) && currentField.Type().ConvertibleTo(timeType) {
-
-			t := currentField.Convert(timeType).Interface().(time.Time)
-			fieldTime := field.Convert(timeType).Interface().(time.Time)
-
-			return fieldTime.Before(t)
-		}
-
 		// Not Same underlying type i.e. struct and time
 		if fieldType != currentField.Type() {
 			return false
+		}
+
+		if fieldType == timeType {
+
+			t := currentField.Interface().(time.Time)
+			fieldTime := field.Interface().(time.Time)
+
+			return fieldTime.Before(t)
 		}
 	}
 
@@ -2321,6 +1962,7 @@ func isLtField(fl FieldLevel) bool {
 
 // isLte is the validation function for validating if the current field's value is less than or equal to the param's value.
 func isLte(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -2346,22 +1988,17 @@ func isLte(fl FieldLevel) bool {
 
 		return field.Uint() <= p
 
-	case reflect.Float32:
-		p := asFloat32(param)
-
-		return field.Float() <= p
-
-	case reflect.Float64:
-		p := asFloat64(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() <= p
 
 	case reflect.Struct:
 
-		if field.Type().ConvertibleTo(timeType) {
+		if field.Type() == timeType {
 
 			now := time.Now().UTC()
-			t := field.Convert(timeType).Interface().(time.Time)
+			t := field.Interface().(time.Time)
 
 			return t.Before(now) || t.Equal(now)
 		}
@@ -2372,6 +2009,7 @@ func isLte(fl FieldLevel) bool {
 
 // isLt is the validation function for validating if the current field's value is less than the param's value.
 func isLt(fl FieldLevel) bool {
+
 	field := fl.Field()
 	param := fl.Param()
 
@@ -2397,21 +2035,16 @@ func isLt(fl FieldLevel) bool {
 
 		return field.Uint() < p
 
-	case reflect.Float32:
-		p := asFloat32(param)
-
-		return field.Float() < p
-
-	case reflect.Float64:
-		p := asFloat64(param)
+	case reflect.Float32, reflect.Float64:
+		p := asFloat(param)
 
 		return field.Float() < p
 
 	case reflect.Struct:
 
-		if field.Type().ConvertibleTo(timeType) {
+		if field.Type() == timeType {
 
-			return field.Convert(timeType).Interface().(time.Time).Before(time.Now().UTC())
+			return field.Interface().(time.Time).Before(time.Now().UTC())
 		}
 	}
 
@@ -2425,6 +2058,7 @@ func hasMaxOf(fl FieldLevel) bool {
 
 // isTCP4AddrResolvable is the validation function for validating if the field's value is a resolvable tcp4 address.
 func isTCP4AddrResolvable(fl FieldLevel) bool {
+
 	if !isIP4Addr(fl) {
 		return false
 	}
@@ -2435,6 +2069,7 @@ func isTCP4AddrResolvable(fl FieldLevel) bool {
 
 // isTCP6AddrResolvable is the validation function for validating if the field's value is a resolvable tcp6 address.
 func isTCP6AddrResolvable(fl FieldLevel) bool {
+
 	if !isIP6Addr(fl) {
 		return false
 	}
@@ -2446,6 +2081,7 @@ func isTCP6AddrResolvable(fl FieldLevel) bool {
 
 // isTCPAddrResolvable is the validation function for validating if the field's value is a resolvable tcp address.
 func isTCPAddrResolvable(fl FieldLevel) bool {
+
 	if !isIP4Addr(fl) && !isIP6Addr(fl) {
 		return false
 	}
@@ -2457,6 +2093,7 @@ func isTCPAddrResolvable(fl FieldLevel) bool {
 
 // isUDP4AddrResolvable is the validation function for validating if the field's value is a resolvable udp4 address.
 func isUDP4AddrResolvable(fl FieldLevel) bool {
+
 	if !isIP4Addr(fl) {
 		return false
 	}
@@ -2468,6 +2105,7 @@ func isUDP4AddrResolvable(fl FieldLevel) bool {
 
 // isUDP6AddrResolvable is the validation function for validating if the field's value is a resolvable udp6 address.
 func isUDP6AddrResolvable(fl FieldLevel) bool {
+
 	if !isIP6Addr(fl) {
 		return false
 	}
@@ -2479,6 +2117,7 @@ func isUDP6AddrResolvable(fl FieldLevel) bool {
 
 // isUDPAddrResolvable is the validation function for validating if the field's value is a resolvable udp address.
 func isUDPAddrResolvable(fl FieldLevel) bool {
+
 	if !isIP4Addr(fl) && !isIP6Addr(fl) {
 		return false
 	}
@@ -2490,6 +2129,7 @@ func isUDPAddrResolvable(fl FieldLevel) bool {
 
 // isIP4AddrResolvable is the validation function for validating if the field's value is a resolvable ip4 address.
 func isIP4AddrResolvable(fl FieldLevel) bool {
+
 	if !isIPv4(fl) {
 		return false
 	}
@@ -2501,6 +2141,7 @@ func isIP4AddrResolvable(fl FieldLevel) bool {
 
 // isIP6AddrResolvable is the validation function for validating if the field's value is a resolvable ip6 address.
 func isIP6AddrResolvable(fl FieldLevel) bool {
+
 	if !isIPv6(fl) {
 		return false
 	}
@@ -2512,6 +2153,7 @@ func isIP6AddrResolvable(fl FieldLevel) bool {
 
 // isIPAddrResolvable is the validation function for validating if the field's value is a resolvable ip address.
 func isIPAddrResolvable(fl FieldLevel) bool {
+
 	if !isIP(fl) {
 		return false
 	}
@@ -2523,12 +2165,14 @@ func isIPAddrResolvable(fl FieldLevel) bool {
 
 // isUnixAddrResolvable is the validation function for validating if the field's value is a resolvable unix address.
 func isUnixAddrResolvable(fl FieldLevel) bool {
+
 	_, err := net.ResolveUnixAddr("unix", fl.Field().String())
 
 	return err == nil
 }
 
 func isIP4Addr(fl FieldLevel) bool {
+
 	val := fl.Field().String()
 
 	if idx := strings.LastIndex(val, ":"); idx != -1 {
@@ -2541,6 +2185,7 @@ func isIP4Addr(fl FieldLevel) bool {
 }
 
 func isIP6Addr(fl FieldLevel) bool {
+
 	val := fl.Field().String()
 
 	if idx := strings.LastIndex(val, ":"); idx != -1 {
@@ -2572,7 +2217,7 @@ func isFQDN(fl FieldLevel) bool {
 	return fqdnRegexRFC1123.MatchString(val)
 }
 
-// isDir is the validation function for validating if the current field's value is a valid existing directory.
+// isDir is the validation function for validating if the current field's value is a valid directory.
 func isDir(fl FieldLevel) bool {
 	field := fl.Field()
 
@@ -2588,79 +2233,13 @@ func isDir(fl FieldLevel) bool {
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
 }
 
-// isDirPath is the validation function for validating if the current field's value is a valid directory.
-func isDirPath(fl FieldLevel) bool {
-
-	var exists bool
-	var err error
-
-	field := fl.Field()
-
-	// If it exists, it obviously is valid.
-	// This is done first to avoid code duplication and unnecessary additional logic.
-	if exists = isDir(fl); exists {
-		return true
-	}
-
-	// It does not exist but may still be a valid path.
-	switch field.Kind() {
-	case reflect.String:
-		// Every OS allows for whitespace, but none
-		// let you use a dir with no name (to my knowledge).
-		// Unless you're dealing with raw inodes, but I digress.
-		if strings.TrimSpace(field.String()) == "" {
-			return false
-		}
-		if _, err = os.Stat(field.String()); err != nil {
-			switch t := err.(type) {
-			case *fs.PathError:
-				if t.Err == syscall.EINVAL {
-					// It's definitely an invalid character in the path.
-					return false
-				}
-				// It could be a permission error, a does-not-exist error, etc.
-				// Out-of-scope for this validation, though.
-				// Lastly, we make sure it is a directory.
-				if strings.HasSuffix(field.String(), string(os.PathSeparator)) {
-					return true
-				} else {
-					return false
-				}
-			default:
-				// Something went *seriously* wrong.
-				/*
-					Per https://pkg.go.dev/os#Stat:
-						"If there is an error, it will be of type *PathError."
-				*/
-				panic(err)
-			}
-		}
-		// We repeat the check here to make sure it is an explicit directory in case the above os.Stat didn't trigger an error.
-		if strings.HasSuffix(field.String(), string(os.PathSeparator)) {
-			return true
-		} else {
-			return false
-		}
-	}
-
-	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
-}
-
 // isJSON is the validation function for validating if the current field's value is a valid json string.
 func isJSON(fl FieldLevel) bool {
 	field := fl.Field()
 
-	switch field.Kind() {
-	case reflect.String:
+	if field.Kind() == reflect.String {
 		val := field.String()
 		return json.Valid([]byte(val))
-	case reflect.Slice:
-		fieldType := field.Type()
-
-		if fieldType.ConvertibleTo(byteSliceType) {
-			b := field.Convert(byteSliceType).Interface().([]byte)
-			return json.Valid(b)
-		}
 	}
 
 	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
@@ -2679,9 +2258,7 @@ func isHostnamePort(fl FieldLevel) bool {
 		return false
 	}
 	// Port must be a iny <= 65535.
-	if portNum, err := strconv.ParseInt(
-		port, 10, 32,
-	); err != nil || portNum > 65535 || portNum < 1 {
+	if portNum, err := strconv.ParseInt(port, 10, 32); err != nil || portNum > 65535 || portNum < 1 {
 		return false
 	}
 
@@ -2762,24 +2339,18 @@ func isIso3166Alpha2(fl FieldLevel) bool {
 	return iso3166_1_alpha2[val]
 }
 
-// isIso3166Alpha3 is the validation function for validating if the current field's value is a valid iso3166-1 alpha-3 country code.
+// isIso3166Alpha2 is the validation function for validating if the current field's value is a valid iso3166-1 alpha-3 country code.
 func isIso3166Alpha3(fl FieldLevel) bool {
 	val := fl.Field().String()
 	return iso3166_1_alpha3[val]
 }
 
-// isIso3166AlphaNumeric is the validation function for validating if the current field's value is a valid iso3166-1 alpha-numeric country code.
+// isIso3166Alpha2 is the validation function for validating if the current field's value is a valid iso3166-1 alpha-numeric country code.
 func isIso3166AlphaNumeric(fl FieldLevel) bool {
 	field := fl.Field()
 
 	var code int
 	switch field.Kind() {
-	case reflect.String:
-		i, err := strconv.Atoi(field.String())
-		if err != nil {
-			return false
-		}
-		code = i % 1000
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		code = int(field.Int() % 1000)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -2835,121 +2406,4 @@ func isIsoBicFormat(fl FieldLevel) bool {
 	bicString := fl.Field().String()
 
 	return bicRegex.MatchString(bicString)
-}
-
-// isSemverFormat is the validation function for validating if the current field's value is a valid semver version, defined in Semantic Versioning 2.0.0
-func isSemverFormat(fl FieldLevel) bool {
-	semverString := fl.Field().String()
-
-	return semverRegex.MatchString(semverString)
-}
-
-// isCveFormat is the validation function for validating if the current field's value is a valid cve id, defined in CVE mitre org
-func isCveFormat(fl FieldLevel) bool {
-	cveString := fl.Field().String()
-
-	return cveRegex.MatchString(cveString)
-}
-
-// isDnsRFC1035LabelFormat is the validation function
-// for validating if the current field's value is
-// a valid dns RFC 1035 label, defined in RFC 1035.
-func isDnsRFC1035LabelFormat(fl FieldLevel) bool {
-	val := fl.Field().String()
-	return dnsRegexRFC1035Label.MatchString(val)
-}
-
-// digitsHaveLuhnChecksum returns true if and only if the last element of the given digits slice is the Luhn checksum of the previous elements
-func digitsHaveLuhnChecksum(digits []string) bool {
-	size := len(digits)
-	sum := 0
-	for i, digit := range digits {
-		value, err := strconv.Atoi(digit)
-		if err != nil {
-			return false
-		}
-		if size%2 == 0 && i%2 == 0 || size%2 == 1 && i%2 == 1 {
-			v := value * 2
-			if v >= 10 {
-				sum += 1 + (v % 10)
-			} else {
-				sum += v
-			}
-		} else {
-			sum += value
-		}
-	}
-	return (sum % 10) == 0
-}
-
-// isMongoDB is the validation function for validating if the current field's value is valid mongoDB objectID
-func isMongoDB(fl FieldLevel) bool {
-	val := fl.Field().String()
-	return mongodbRegex.MatchString(val)
-}
-
-// isSpiceDB is the validation function for validating if the current field's value is valid for use with Authzed SpiceDB in the indicated way
-func isSpiceDB(fl FieldLevel) bool {
-	val := fl.Field().String()
-	param := fl.Param()
-
-	switch param {
-	case "permission":
-		return spicedbPermissionRegex.MatchString(val)
-	case "type":
-		return spicedbTypeRegex.MatchString(val)
-	case "id", "":
-		return spicedbIDRegex.MatchString(val)
-	}
-
-	panic("Unrecognized parameter: " + param)
-}
-
-// isCreditCard is the validation function for validating if the current field's value is a valid credit card number
-func isCreditCard(fl FieldLevel) bool {
-	val := fl.Field().String()
-	var creditCard bytes.Buffer
-	segments := strings.Split(val, " ")
-	for _, segment := range segments {
-		if len(segment) < 3 {
-			return false
-		}
-		creditCard.WriteString(segment)
-	}
-
-	ccDigits := strings.Split(creditCard.String(), "")
-	size := len(ccDigits)
-	if size < 12 || size > 19 {
-		return false
-	}
-
-	return digitsHaveLuhnChecksum(ccDigits)
-}
-
-// hasLuhnChecksum is the validation for validating if the current field's value has a valid Luhn checksum
-func hasLuhnChecksum(fl FieldLevel) bool {
-	field := fl.Field()
-	var str string // convert to a string which will then be split into single digits; easier and more readable than shifting/extracting single digits from a number
-	switch field.Kind() {
-	case reflect.String:
-		str = field.String()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		str = strconv.FormatInt(field.Int(), 10)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		str = strconv.FormatUint(field.Uint(), 10)
-	default:
-		panic(fmt.Sprintf("Bad field type %T", field.Interface()))
-	}
-	size := len(str)
-	if size < 2 { // there has to be at least one digit that carries a meaning + the checksum
-		return false
-	}
-	digits := strings.Split(str, "")
-	return digitsHaveLuhnChecksum(digits)
-}
-
-// isCron is the validation function for validating if the current field's value is a valid cron expression
-func isCron(fl FieldLevel) bool {
-	cronString := fl.Field().String()
-	return cronRegex.MatchString(cronString)
 }

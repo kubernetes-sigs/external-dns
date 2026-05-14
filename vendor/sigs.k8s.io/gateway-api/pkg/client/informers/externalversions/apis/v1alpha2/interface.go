@@ -24,63 +24,6 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-<<<<<<< HEAD
-	// Gateways returns a GatewayInformer.
-	Gateways() GatewayInformer
-	// GatewayClasses returns a GatewayClassInformer.
-	GatewayClasses() GatewayClassInformer
-	// HTTPRoutes returns a HTTPRouteInformer.
-	HTTPRoutes() HTTPRouteInformer
-	// ReferenceGrants returns a ReferenceGrantInformer.
-	ReferenceGrants() ReferenceGrantInformer
-	// ReferencePolicies returns a ReferencePolicyInformer.
-	ReferencePolicies() ReferencePolicyInformer
-	// TCPRoutes returns a TCPRouteInformer.
-	TCPRoutes() TCPRouteInformer
-	// TLSRoutes returns a TLSRouteInformer.
-	TLSRoutes() TLSRouteInformer
-	// UDPRoutes returns a UDPRouteInformer.
-	UDPRoutes() UDPRouteInformer
-}
-
-type version struct {
-	factory          internalinterfaces.SharedInformerFactory
-	namespace        string
-	tweakListOptions internalinterfaces.TweakListOptionsFunc
-}
-
-// New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
-	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
-	return &gatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// GatewayClasses returns a GatewayClassInformer.
-func (v *version) GatewayClasses() GatewayClassInformer {
-	return &gatewayClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// HTTPRoutes returns a HTTPRouteInformer.
-func (v *version) HTTPRoutes() HTTPRouteInformer {
-	return &hTTPRouteInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ReferenceGrants returns a ReferenceGrantInformer.
-func (v *version) ReferenceGrants() ReferenceGrantInformer {
-	return &referenceGrantInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ReferencePolicies returns a ReferencePolicyInformer.
-func (v *version) ReferencePolicies() ReferencePolicyInformer {
-	return &referencePolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	// BackendLBPolicies returns a BackendLBPolicyInformer.
-	BackendLBPolicies() BackendLBPolicyInformer
 	// GRPCRoutes returns a GRPCRouteInformer.
 	GRPCRoutes() GRPCRouteInformer
 	// ReferenceGrants returns a ReferenceGrantInformer.
@@ -104,11 +47,6 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// BackendLBPolicies returns a BackendLBPolicyInformer.
-func (v *version) BackendLBPolicies() BackendLBPolicyInformer {
-	return &backendLBPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // GRPCRoutes returns a GRPCRouteInformer.
 func (v *version) GRPCRoutes() GRPCRouteInformer {
 	return &gRPCRouteInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -117,7 +55,6 @@ func (v *version) GRPCRoutes() GRPCRouteInformer {
 // ReferenceGrants returns a ReferenceGrantInformer.
 func (v *version) ReferenceGrants() ReferenceGrantInformer {
 	return &referenceGrantInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // TCPRoutes returns a TCPRouteInformer.

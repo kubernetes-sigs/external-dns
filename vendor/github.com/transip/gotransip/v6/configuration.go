@@ -1,8 +1,6 @@
 package gotransip
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"io"
 	"net/http"
 	"time"
@@ -11,69 +9,7 @@ import (
 )
 
 const (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	libraryVersion  = "6.6.1"
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	libraryVersion  = "6.6.0"
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	libraryVersion  = "6.6.0"
-=======
-	libraryVersion  = "6.6.1"
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	libraryVersion  = "6.6.0"
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	libraryVersion  = "6.6.0"
-=======
-	libraryVersion  = "6.14.0"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	libraryVersion  = "6.6.0"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	libraryVersion  = "6.6.0"
-=======
-	libraryVersion  = "6.14.0"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	libraryVersion  = "6.14.0"
-=======
-	libraryVersion  = "6.17.0"
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"github.com/transip/gotransip/v6/authenticator"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"github.com/transip/gotransip/v6/authenticator"
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"io"
-	"net/http"
-	"time"
-
-	"github.com/transip/gotransip/v6/authenticator"
-)
-
-const (
-<<<<<<< HEAD
-	libraryVersion  = "6.6.0"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	libraryVersion  = "6.6.0"
-=======
-	libraryVersion  = "6.24.0"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	libraryVersion  = "6.27.1"
 	defaultBasePath = "https://api.transip.nl/v6"
 	userAgent       = "go-client-gotransip/" + libraryVersion
 )

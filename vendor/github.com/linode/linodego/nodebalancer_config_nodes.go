@@ -2,10 +2,6 @@ package linodego
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-
-	"github.com/go-resty/resty/v2"
 )
 
 // NodeBalancerNode objects represent a backend that can accept traffic for a NodeBalancer Config
@@ -18,6 +14,7 @@ type NodeBalancerNode struct {
 	Mode           NodeMode `json:"mode"`
 	ConfigID       int      `json:"config_id"`
 	NodeBalancerID int      `json:"nodebalancer_id"`
+	VPCConfigID    int      `json:"vpc_config_id"`
 }
 
 // NodeMode is the mode a NodeBalancer should use when sending traffic to a NodeBalancer Node
@@ -39,18 +36,20 @@ var (
 
 // NodeBalancerNodeCreateOptions fields are those accepted by CreateNodeBalancerNode
 type NodeBalancerNodeCreateOptions struct {
-	Address string   `json:"address"`
-	Label   string   `json:"label"`
-	Weight  int      `json:"weight,omitempty"`
-	Mode    NodeMode `json:"mode,omitempty"`
+	Address  string   `json:"address"`
+	Label    string   `json:"label"`
+	Weight   int      `json:"weight,omitempty"`
+	Mode     NodeMode `json:"mode,omitempty"`
+	SubnetID int      `json:"subnet_id,omitempty"`
 }
 
 // NodeBalancerNodeUpdateOptions fields are those accepted by UpdateNodeBalancerNode
 type NodeBalancerNodeUpdateOptions struct {
-	Address string   `json:"address,omitempty"`
-	Label   string   `json:"label,omitempty"`
-	Weight  int      `json:"weight,omitempty"`
-	Mode    NodeMode `json:"mode,omitempty"`
+	Address  string   `json:"address,omitempty"`
+	Label    string   `json:"label,omitempty"`
+	Weight   int      `json:"weight,omitempty"`
+	Mode     NodeMode `json:"mode,omitempty"`
+	SubnetID int      `json:"subnet_id,omitempty"`
 }
 
 // GetCreateOptions converts a NodeBalancerNode to NodeBalancerNodeCreateOptions for use in CreateNodeBalancerNode
@@ -73,531 +72,37 @@ func (i NodeBalancerNode) GetUpdateOptions() NodeBalancerNodeUpdateOptions {
 	}
 }
 
-// NodeBalancerNodesPagedResponse represents a paginated NodeBalancerNode API response
-type NodeBalancerNodesPagedResponse struct {
-	*PageOptions
-	Data []NodeBalancerNode `json:"data"`
-}
-
-// endpoint gets the endpoint URL for NodeBalancerNode
-<<<<<<< HEAD
-func (NodeBalancerNodesPagedResponse) endpointWithTwoIDs(c *Client, nodebalancerID int, configID int) string {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends NodeBalancerNodes when processing paginated NodeBalancerNode responses
-func (resp *NodeBalancerNodesPagedResponse) appendData(r *NodeBalancerNodesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
 // ListNodeBalancerNodes lists NodeBalancerNodes
 func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
-	response := NodeBalancerNodesPagedResponse{}
-	err := c.listHelperWithTwoIDs(ctx, &response, nodebalancerID, configID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[NodeBalancerNode](ctx, c, formatAPIPath("nodebalancers/%d/configs/%d/nodes", nodebalancerID, configID), opts)
 }
 
 // GetNodeBalancerNode gets the template with the provided ID
 func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerNode{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// CreateNodeBalancerNode creates a NodeBalancerNode
-func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, createOpts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
-func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, updateOpts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
-func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-||||||| parent of 5ce8c7613 (update vendored files)
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 5ce8c7613 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends NodeBalancerNodes when processing paginated NodeBalancerNode responses
-func (resp *NodeBalancerNodesPagedResponse) appendData(r *NodeBalancerNodesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListNodeBalancerNodes lists NodeBalancerNodes
-func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
-	response := NodeBalancerNodesPagedResponse{}
-	err := c.listHelperWithTwoIDs(ctx, &response, nodebalancerID, configID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetNodeBalancerNode gets the template with the provided ID
-func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerNode{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// CreateNodeBalancerNode creates a NodeBalancerNode
-func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, createOpts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
-func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, updateOpts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
-func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
-<<<<<<< HEAD
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-||||||| parent of 6b7ce455e (update vendored files)
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 6b7ce455e (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends NodeBalancerNodes when processing paginated NodeBalancerNode responses
-func (resp *NodeBalancerNodesPagedResponse) appendData(r *NodeBalancerNodesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListNodeBalancerNodes lists NodeBalancerNodes
-func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
-	response := NodeBalancerNodesPagedResponse{}
-	err := c.listHelperWithTwoIDs(ctx, &response, nodebalancerID, configID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetNodeBalancerNode gets the template with the provided ID
-func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerNode{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// CreateNodeBalancerNode creates a NodeBalancerNode
-func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, createOpts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
-func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, updateOpts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
-func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
-<<<<<<< HEAD
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 4d7e5ad26 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-// appendData appends NodeBalancerNodes when processing paginated NodeBalancerNode responses
-func (resp *NodeBalancerNodesPagedResponse) appendData(r *NodeBalancerNodesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
-// ListNodeBalancerNodes lists NodeBalancerNodes
-func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
-	response := NodeBalancerNodesPagedResponse{}
-	err := c.listHelperWithTwoIDs(ctx, &response, nodebalancerID, configID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetNodeBalancerNode gets the template with the provided ID
-func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerNode{}).Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// CreateNodeBalancerNode creates a NodeBalancerNode
-func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, createOpts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
-func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, updateOpts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
-	var body string
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
-}
-
-// DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
-func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
-<<<<<<< HEAD
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-=======
-	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (NodeBalancerNodesPagedResponse) endpointWithTwoIDs(c *Client, nodebalancerID int, configID int) string {
-	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-=======
-func (NodeBalancerNodesPagedResponse) endpoint(ids ...any) string {
-	nodebalancerID := ids[0].(int)
-	configID := ids[1].(int)
-	return fmt.Sprintf("nodebalancers/%d/configs/%d/nodes", nodebalancerID, configID)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-}
-
-func (resp *NodeBalancerNodesPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
-	res, err := coupleAPIErrors(r.SetResult(NodeBalancerNodesPagedResponse{}).Get(e))
-	if err != nil {
-		return 0, 0, err
-	}
-	castedRes := res.Result().(*NodeBalancerNodesPagedResponse)
-	resp.Data = append(resp.Data, castedRes.Data...)
-	return castedRes.Pages, castedRes.Results, nil
-}
-
-// ListNodeBalancerNodes lists NodeBalancerNodes
-func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
-	response := NodeBalancerNodesPagedResponse{}
-	err := c.listHelper(ctx, &response, opts, nodebalancerID, configID)
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
-}
-
-// GetNodeBalancerNode gets the template with the provided ID
-func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e := fmt.Sprintf("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
-	req := c.R(ctx).SetResult(&NodeBalancerNode{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
+	e := formatAPIPath("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
+	return doGETRequest[NodeBalancerNode](ctx, c, e)
 }
 
 // CreateNodeBalancerNode creates a NodeBalancerNode
 func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, opts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf("nodebalancers/%d/configs/%d/nodes", nodebalancerID, configID)
-	req := c.R(ctx).SetResult(&NodeBalancerNode{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
+	e := formatAPIPath("nodebalancers/%d/configs/%d/nodes", nodebalancerID, configID)
+	return doPOSTRequest[NodeBalancerNode](ctx, c, e, opts)
 }
 
 // UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
-func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, opts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
-	req := c.R(ctx).SetResult(&NodeBalancerNode{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*NodeBalancerNode), nil
+func (c *Client) UpdateNodeBalancerNode(
+	ctx context.Context,
+	nodebalancerID int,
+	configID int,
+	nodeID int,
+	opts NodeBalancerNodeUpdateOptions,
+) (*NodeBalancerNode, error) {
+	e := formatAPIPath("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
+	return doPUTRequest[NodeBalancerNode](ctx, c, e, opts)
 }
 
 // DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
 func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
-<<<<<<< HEAD
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, nodeID)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-=======
-	e := fmt.Sprintf("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return err
+	e := formatAPIPath("nodebalancers/%d/configs/%d/nodes/%d", nodebalancerID, configID, nodeID)
+	return doDELETERequest(ctx, c, e)
 }

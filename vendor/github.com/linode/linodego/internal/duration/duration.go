@@ -38,51 +38,7 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 	return nil
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
-=======
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func durationToSeconds(s string) (int, error) {
 	multipliers := [3]int{60 * 60, 60, 1}
 	segs := strings.Split(s, ":")
@@ -95,7 +51,7 @@ func durationToSeconds(s string) (int, error) {
 
 	l := len(segs)
 
-	for i := 0; i < l; i++ {
+	for i := range l {
 		m, err := strconv.Atoi(segs[i])
 		if err != nil {
 			return 0, err

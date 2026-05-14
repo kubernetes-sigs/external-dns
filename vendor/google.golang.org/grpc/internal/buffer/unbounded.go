@@ -37,85 +37,9 @@ import (
 // new type specific implementation of this buffer is preferred. See
 // internal/transport/transport.go for an example of this.
 type Unbounded struct {
-<<<<<<< HEAD
-	c       chan interface{}
-<<<<<<< HEAD
-	closed  bool
-	mu      sync.Mutex
-	backlog []interface{}
-}
-
-// NewUnbounded returns a new instance of Unbounded.
-func NewUnbounded() *Unbounded {
-	return &Unbounded{c: make(chan interface{}, 1)}
-}
-
-// Put adds t to the unbounded buffer.
-func (b *Unbounded) Put(t interface{}) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.closed {
-		return
-	}
-	if len(b.backlog) == 0 {
-		select {
-		case b.c <- t:
-			return
-		default:
-		}
-	}
-	b.backlog = append(b.backlog, t)
-}
-
-// Load sends the earliest buffered data, if any, onto the read channel
-// returned by Get(). Users are expected to call this every time they read a
-// value from the read channel.
-func (b *Unbounded) Load() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.closed {
-		return
-	}
-	if len(b.backlog) > 0 {
-		select {
-		case b.c <- b.backlog[0]:
-			b.backlog[0] = nil
-			b.backlog = b.backlog[1:]
-		default:
-		}
-	}
-}
-
-// Get returns a read channel on which values added to the buffer, via Put(),
-// are sent on.
-//
-// Upon reading a value from this channel, users are expected to call Load() to
-// send the next buffered value onto the channel if there is any.
-//
-// If the unbounded buffer is closed, the read channel returned by this method
-// is closed.
-func (b *Unbounded) Get() <-chan interface{} {
-	return b.c
-}
-
-// Close closes the unbounded buffer.
-func (b *Unbounded) Close() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.closed {
-		return
-	}
-	b.closed = true
-	close(b.c)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	c       chan interface{}
-=======
 	c       chan any
 	closed  bool
 	closing bool
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	mu      sync.Mutex
 	backlog []any
 }
@@ -174,7 +98,6 @@ func (b *Unbounded) Load() {
 // is closed after all data is drained.
 func (b *Unbounded) Get() <-chan any {
 	return b.c
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Close closes the unbounded buffer. No subsequent data may be Put(), and the

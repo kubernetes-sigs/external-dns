@@ -14,8 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-
 // $schema: istio.networking.v1alpha3.Gateway
 // $title: Gateway
 // $description: Configuration affecting edge load balancer.
@@ -36,7 +34,7 @@ import "google/api/field_behavior.proto";
 // external traffic to these ports are allowed into the mesh.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //   name: my-gateway
@@ -104,7 +102,7 @@ import "google/api/field_behavior.proto";
 // gets redirected to `https://uk.bookinfo.com` (i.e. 80 redirects to 443).
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-rule
@@ -147,7 +145,7 @@ import "google/api/field_behavior.proto";
 // reserved name `mesh`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-mongo
@@ -174,7 +172,7 @@ import "google/api/field_behavior.proto";
 // foo.bar.com host in the ns2 namespace to bind to it.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //   name: my-gateway
@@ -194,6 +192,8 @@ import "google/api/field_behavior.proto";
 //
 package istio.networking.v1alpha3;
 
+import "google/api/field_behavior.proto";
+
 option go_package = "istio.io/api/networking/v1alpha3";
 
 // Gateway describes a load balancer operating at the edge of the mesh
@@ -201,7 +201,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //
 // <!-- crd generation tags
 // +cue-gen:Gateway:groupName:networking.istio.io
-// +cue-gen:Gateway:version:v1alpha3
+// +cue-gen:Gateway:versions:v1,v1beta1,v1alpha3
 // +cue-gen:Gateway:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Gateway:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:Gateway:subresource:status
@@ -215,9 +215,6 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
 // -->
 message Gateway {
   // A list of server specifications.
@@ -242,7 +239,7 @@ message Gateway {
 // port. For example,
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //   name: my-ingress
@@ -261,7 +258,7 @@ message Gateway {
 // Another example
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //   name: my-tcp-ingress
@@ -280,7 +277,7 @@ message Gateway {
 // The following is an example of TLS configuration for port 443
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //   name: my-tls-ingress
@@ -369,7 +366,7 @@ message Port {
   uint32 number = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The protocol exposed on the port.
-  // MUST BE one of HTTP|HTTPS|GRPC|GRPC-WEB|HTTP2|MONGO|TCP|TLS.
+  // MUST be one of HTTP|HTTPS|GRPC|GRPC-WEB|HTTP2|MONGO|TCP|TLS.
   // TLS can be either used to terminate non-HTTP based connections on a specific port
   // or to route traffic based on SNI header to the destination without terminating the TLS connection.
   string protocol = 2 [(google.api.field_behavior) = REQUIRED];
@@ -380,9 +377,12 @@ message Port {
   // The port number on the endpoint where the traffic will be
   // received. Applicable only when used with ServiceEntries.
   // $hide_from_docs
-  uint32 target_port = 4 [deprecated=true];
+  uint32 target_port = 4 [deprecated = true];
 }
 
+// +kubebuilder:validation:XValidation:message="only one of credentialNames or tlsCertificates can be set",rule="oneof(self.tlsCertificates, self.credentialNames)"
+// +kubebuilder:validation:XValidation:message="only one of credentialName or credentialNames can be set",rule="oneof(self.credentialName, self.credentialNames)"
+// +kubebuilder:validation:XValidation:message="only one of credentialName or tlsCertificates can be set",rule="oneof(self.credentialNames, self.tlsCertificates)"
 message ServerTLSSettings {
   // If set to true, the load balancer will send a 301 redirect for
   // all http connections, asking the clients to use HTTPS.
@@ -396,12 +396,12 @@ message ServerTLSSettings {
     PASSTHROUGH = 0;
 
     // Secure connections with standard TLS semantics. In this mode
-    // client certificate is not requested during handshake. 
+    // client certificate is not requested during handshake.
     SIMPLE = 1;
 
     // Secure connections to the downstream using mutual TLS by
     // presenting server certificates for authentication.
-    // A client certificate will also be requested during the handshake and 
+    // A client certificate will also be requested during the handshake and
     // at least one valid certificate is required to be sent by the client.
     MUTUAL = 2;
 
@@ -427,13 +427,13 @@ message ServerTLSSettings {
     ISTIO_MUTUAL = 4;
 
     // Similar to MUTUAL mode, except that the client certificate
-    // is optional. Unlike SIMPLE mode, A client certificate will 
-    // still be explicitly requested during handshake, but the client 
-    // is not required to send a certificate. If a client certificate 
+    // is optional. Unlike SIMPLE mode, A client certificate will
+    // still be explicitly requested during handshake, but the client
+    // is not required to send a certificate. If a client certificate
     // is presented, it will be validated. ca_certificates should
     // be specified for validating client certificates.
     OPTIONAL_MUTUAL = 5;
-  };
+  }
 
   // Optional: Indicates whether connections to this port should be
   // secured using TLS. The value of this field determines how TLS is
@@ -474,8 +474,46 @@ message ServerTLSSettings {
   // or credentialName can be specified.
   string credential_name = 10;
 
+  // Same as CredentialName but for multiple certificates. Mainly used for specifying
+  // RSA and ECDSA certificates for the same server.
+  // +kubebuilder:validation:MaxItems=2
+  // +kubebuilder:validation:MinItems=1
+  repeated string credential_names = 14;
+
+  // For mutual TLS, the name of the secret or the configmap that holds CA certificates.
+  // Takes precedence over CA certificates in the Secret referenced with `credentialName(s)`.
+  string ca_cert_credential_name = 16;
+
+  // TLSCertificate describes the server's TLS certificate.
+  message TLSCertificate {
+    // REQUIRED if mode is `SIMPLE` or `MUTUAL`. The path to the file
+    // holding the server-side TLS certificate to use.
+    string server_certificate = 1;
+
+    // REQUIRED if mode is `SIMPLE` or `MUTUAL`. The path to the file
+    // holding the server's private key.
+    string private_key = 2;
+
+    // $hide_from_docs
+    // REQUIRED if mode is `MUTUAL` or `OPTIONAL_MUTUAL`. The path to a file
+    // containing certificate authority certificates to use in verifying a presented
+    // client side certificate.
+    // $hide_from_docs
+    string ca_certificates = 3;
+  }
+
+  // Only one of `server_certificate`, `private_key` or `credential_name`
+  // or `credential_names` or `tls_certificates` should be specified.
+  // This is mainly used for specifying RSA and ECDSA certificates for the same server.
+  // +kubebuilder:validation:MaxItems=2
+  // +kubebuilder:validation:MinItems=1
+  repeated TLSCertificate tls_certificates = 15;
+
   // A list of alternate names to verify the subject identity in the
   // certificate presented by the client.
+  // Requires TLS mode to be set to `MUTUAL`.
+  // When multiple certificates are provided via `credential_names` or `tls_certificates`,
+  // the subject alternate names are validated against the selected certificate.
   repeated string subject_alt_names = 6;
 
   // An optional list of base64-encoded SHA-256 hashes of the SPKIs of

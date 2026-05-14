@@ -37,51 +37,7 @@ func init() {
 	// We only register manually written functions here. The registration of the
 	// generated functions takes place in the generated files. The separation
 	// makes the code compile even when the generated files are missing.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	localSchemeBuilder.Register(addKnownTypes)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	localSchemeBuilder.Register(addKnownTypes)
-=======
-	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	localSchemeBuilder.Register(addKnownTypes)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	localSchemeBuilder.Register(addKnownTypes)
-=======
-	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	localSchemeBuilder.Register(addKnownTypes)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	localSchemeBuilder.Register(addKnownTypes)
-=======
-	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	localSchemeBuilder.Register(addKnownTypes)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	localSchemeBuilder.Register(addKnownTypes)
-=======
-	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {

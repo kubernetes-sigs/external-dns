@@ -62,21 +62,10 @@ type TypedRateLimitingQueueConfig[T comparable] struct {
 
 // NewRateLimitingQueue constructs a new workqueue with rateLimited queuing ability
 // Remember to call Forget!  If you don't, you may end up tracking failures forever.
-<<<<<<< HEAD
-<<<<<<< HEAD
-// NewRateLimitingQueue does not emit metrics. For use with a MetricsProvider, please use
-// NewNamedRateLimitingQueue instead.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // NewRateLimitingQueue does not emit metrics. For use with a MetricsProvider, please use
 // NewRateLimitingQueueWithConfig instead and specify a name.
-<<<<<<< HEAD
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 //
 // Deprecated: Use NewTypedRateLimitingQueue instead.
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 func NewRateLimitingQueue(rateLimiter RateLimiter) RateLimitingInterface {
 	return NewRateLimitingQueueWithConfig(rateLimiter, RateLimitingQueueConfig{})
 }
@@ -135,26 +124,6 @@ func NewRateLimitingQueueWithDelayingInterface(di DelayingInterface, rateLimiter
 	return NewRateLimitingQueueWithConfig(rateLimiter, RateLimitingQueueConfig{
 		DelayingQueue: di,
 	})
-}
-
-func NewRateLimitingQueueWithDelayingInterface(di DelayingInterface, rateLimiter RateLimiter) RateLimitingInterface {
-	return &rateLimitingType{
-		DelayingInterface: di,
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func NewRateLimitingQueue(rateLimiter RateLimiter) RateLimitingInterface {
-	return &rateLimitingType{
-		DelayingInterface: NewDelayingQueue(),
-		rateLimiter:       rateLimiter,
-	}
-}
-
-func NewNamedRateLimitingQueue(rateLimiter RateLimiter, name string) RateLimitingInterface {
-	return &rateLimitingType{
-		DelayingInterface: NewNamedDelayingQueue(name),
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-		rateLimiter:       rateLimiter,
-	}
 }
 
 // rateLimitingType wraps an Interface and provides rateLimited re-enquing

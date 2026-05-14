@@ -21,20 +21,6 @@ import (
 	"sync"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-func readGopackHeader(r *bufio.Reader) (name string, size int64, err error) {
-	// See $GOROOT/include/ar.h.
-	hdr := make([]byte, 16+12+6+6+8+10+2)
-	_, err = io.ReadFull(r, hdr)
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-func readGopackHeader(r *bufio.Reader) (name string, size int64, err error) {
-	// See $GOROOT/include/ar.h.
-	hdr := make([]byte, 16+12+6+6+8+10+2)
-	_, err = io.ReadFull(r, hdr)
-=======
 // FindExportData positions the reader r at the beginning of the
 // export data section of an underlying cmd/compile created archive
 // file by reading from it. The reader must be positioned at the
@@ -46,7 +32,6 @@ func readGopackHeader(r *bufio.Reader) (name string, size int64, err error) {
 // plus tip.
 func FindExportData(r *bufio.Reader) (size int64, err error) {
 	arsize, err := FindPackageDefinition(r)
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 	if err != nil {
 		return
 	}
@@ -213,177 +198,6 @@ func FindPackageDefinition(r *bufio.Reader) (size int, err error) {
 		err = fmt.Errorf("not a package file")
 		return
 	}
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func readGopackHeader(r *bufio.Reader) (name string, size int, err error) {
-||||||| parent of 4d7e5ad26 (update vendored files)
-func readGopackHeader(r *bufio.Reader) (name string, size int, err error) {
-=======
-func readGopackHeader(r *bufio.Reader) (name string, size int64, err error) {
->>>>>>> 4d7e5ad26 (update vendored files)
-	// See $GOROOT/include/ar.h.
-	hdr := make([]byte, 16+12+6+6+8+10+2)
-	_, err = io.ReadFull(r, hdr)
-	if err != nil {
-		return
-	}
-	// leave for debugging
-	if false {
-		fmt.Printf("header: %s", hdr)
-	}
-	s := strings.TrimSpace(string(hdr[16+12+6+6+8:][:10]))
-	length, err := strconv.Atoi(s)
-	size = int64(length)
-	if err != nil || hdr[len(hdr)-2] != '`' || hdr[len(hdr)-1] != '\n' {
-		err = fmt.Errorf("invalid archive header")
-		return
-	}
-	name = strings.TrimSpace(string(hdr[:16]))
-	return
-}
-
-// FindExportData positions the reader r at the beginning of the
-// export data section of an underlying GC-created object/archive
-// file by reading from it. The reader must be positioned at the
-// start of the file before calling this function. The hdr result
-// is the string before the export data, either "$$" or "$$B".
-// The size result is the length of the export data in bytes, or -1 if not known.
-func FindExportData(r *bufio.Reader) (hdr string, size int64, err error) {
-	// Read first line to make sure this is an object file.
-	line, err := r.ReadSlice('\n')
-	if err != nil {
-		err = fmt.Errorf("can't find export data (%v)", err)
-		return
-	}
-
-	if string(line) == "!<arch>\n" {
-		// Archive file. Scan to __.PKGDEF.
-		var name string
-		if name, size, err = readGopackHeader(r); err != nil {
-			return
-		}
-
-		// First entry should be __.PKGDEF.
-		if name != "__.PKGDEF" {
-			err = fmt.Errorf("go archive is missing __.PKGDEF")
-			return
-		}
-
-		// Read first line of __.PKGDEF data, so that line
-		// is once again the first line of the input.
-		if line, err = r.ReadSlice('\n'); err != nil {
-			err = fmt.Errorf("can't find export data (%v)", err)
-			return
-		}
-		size -= int64(len(line))
-	}
-
-	// Now at __.PKGDEF in archive or still at beginning of file.
-	// Either way, line should begin with "go object ".
-	if !strings.HasPrefix(string(line), "go object ") {
-		err = fmt.Errorf("not a Go object file")
-		return
-	}
-
-	// Skip over object header to export data.
-	// Begins after first line starting with $$.
-	for line[0] != '$' {
-		if line, err = r.ReadSlice('\n'); err != nil {
-			err = fmt.Errorf("can't find export data (%v)", err)
-			return
-		}
-		size -= int64(len(line))
-	}
-	hdr = string(line)
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	if size < 0 {
-		size = -1
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-func readGopackHeader(r *bufio.Reader) (name string, size int64, err error) {
-	// See $GOROOT/include/ar.h.
-	hdr := make([]byte, 16+12+6+6+8+10+2)
-	_, err = io.ReadFull(r, hdr)
-	if err != nil {
-		return
-	}
-	// leave for debugging
-	if false {
-		fmt.Printf("header: %s", hdr)
-	}
-	s := strings.TrimSpace(string(hdr[16+12+6+6+8:][:10]))
-	length, err := strconv.Atoi(s)
-	size = int64(length)
-	if err != nil || hdr[len(hdr)-2] != '`' || hdr[len(hdr)-1] != '\n' {
-		err = fmt.Errorf("invalid archive header")
-		return
-	}
-	name = strings.TrimSpace(string(hdr[:16]))
-	return
-}
-
-// FindExportData positions the reader r at the beginning of the
-// export data section of an underlying GC-created object/archive
-// file by reading from it. The reader must be positioned at the
-// start of the file before calling this function. The hdr result
-// is the string before the export data, either "$$" or "$$B".
-// The size result is the length of the export data in bytes, or -1 if not known.
-func FindExportData(r *bufio.Reader) (hdr string, size int64, err error) {
-	// Read first line to make sure this is an object file.
-	line, err := r.ReadSlice('\n')
-	if err != nil {
-		err = fmt.Errorf("can't find export data (%v)", err)
-		return
-	}
-
-	if string(line) == "!<arch>\n" {
-		// Archive file. Scan to __.PKGDEF.
-		var name string
-		if name, size, err = readGopackHeader(r); err != nil {
-			return
-		}
-
-		// First entry should be __.PKGDEF.
-		if name != "__.PKGDEF" {
-			err = fmt.Errorf("go archive is missing __.PKGDEF")
-			return
-		}
-
-		// Read first line of __.PKGDEF data, so that line
-		// is once again the first line of the input.
-		if line, err = r.ReadSlice('\n'); err != nil {
-			err = fmt.Errorf("can't find export data (%v)", err)
-			return
-		}
-		size -= int64(len(line))
-	}
-
-	// Now at __.PKGDEF in archive or still at beginning of file.
-	// Either way, line should begin with "go object ".
-	if !strings.HasPrefix(string(line), "go object ") {
-		err = fmt.Errorf("not a Go object file")
-		return
-	}
-
-	// Skip over object header to export data.
-	// Begins after first line starting with $$.
-	for line[0] != '$' {
-		if line, err = r.ReadSlice('\n'); err != nil {
-			err = fmt.Errorf("can't find export data (%v)", err)
-			return
-		}
-		size -= int64(len(line))
-	}
-	hdr = string(line)
-	if size < 0 {
-		size = -1
-	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return
 }

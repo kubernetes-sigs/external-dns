@@ -1,4 +1,4 @@
-// Copyright 2017 Prometheus Team
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -115,59 +115,7 @@ func (fs FS) NewXfrmStat() (XfrmStat, error) {
 		fields := strings.Fields(s.Text())
 
 		if len(fields) != 2 {
-<<<<<<< HEAD:vendor/github.com/prometheus/procfs/xfrm.go
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
-=======
-			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
-=======
-			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
-=======
-			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/prometheus/procfs/xfrm.go
-			return XfrmStat{}, fmt.Errorf(
-				"couldn't parse %s line %s", file.Name(), s.Text())
-=======
 			return XfrmStat{}, fmt.Errorf("%w: %q line %q", ErrFileParse, file.Name(), s.Text())
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/github.com/prometheus/procfs/net_xfrm.go
 		}
 
 		name := fields[0]

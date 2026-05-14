@@ -19,17 +19,14 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
-	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/applyconfiguration/apis/v1alpha2"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	applyconfigurationapisv1alpha2 "sigs.k8s.io/gateway-api/applyconfiguration/apis/v1alpha2"
 	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
@@ -41,216 +38,37 @@ type GRPCRoutesGetter interface {
 
 // GRPCRouteInterface has methods to work with GRPCRoute resources.
 type GRPCRouteInterface interface {
-	Create(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.CreateOptions) (*v1alpha2.GRPCRoute, error)
-	Update(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (*v1alpha2.GRPCRoute, error)
-	UpdateStatus(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (*v1alpha2.GRPCRoute, error)
+	Create(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRoute, opts v1.CreateOptions) (*apisv1alpha2.GRPCRoute, error)
+	Update(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRoute, opts v1.UpdateOptions) (*apisv1alpha2.GRPCRoute, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRoute, opts v1.UpdateOptions) (*apisv1alpha2.GRPCRoute, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.GRPCRoute, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.GRPCRouteList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*apisv1alpha2.GRPCRoute, error)
+	List(ctx context.Context, opts v1.ListOptions) (*apisv1alpha2.GRPCRouteList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.GRPCRoute, err error)
-	Apply(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error)
-	ApplyStatus(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apisv1alpha2.GRPCRoute, err error)
+	Apply(ctx context.Context, gRPCRoute *applyconfigurationapisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *apisv1alpha2.GRPCRoute, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, gRPCRoute *applyconfigurationapisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *apisv1alpha2.GRPCRoute, err error)
 	GRPCRouteExpansion
 }
 
 // gRPCRoutes implements GRPCRouteInterface
 type gRPCRoutes struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*apisv1alpha2.GRPCRoute, *apisv1alpha2.GRPCRouteList, *applyconfigurationapisv1alpha2.GRPCRouteApplyConfiguration]
 }
 
 // newGRPCRoutes returns a GRPCRoutes
 func newGRPCRoutes(c *GatewayV1alpha2Client, namespace string) *gRPCRoutes {
 	return &gRPCRoutes{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*apisv1alpha2.GRPCRoute, *apisv1alpha2.GRPCRouteList, *applyconfigurationapisv1alpha2.GRPCRouteApplyConfiguration](
+			"grpcroutes",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *apisv1alpha2.GRPCRoute { return &apisv1alpha2.GRPCRoute{} },
+			func() *apisv1alpha2.GRPCRouteList { return &apisv1alpha2.GRPCRouteList{} },
+		),
 	}
-}
-
-// Get takes name of the gRPCRoute, and returns the corresponding gRPCRoute object, and an error if there is any.
-func (c *gRPCRoutes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.GRPCRoute, err error) {
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of GRPCRoutes that match those selectors.
-func (c *gRPCRoutes) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.GRPCRouteList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha2.GRPCRouteList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested gRPCRoutes.
-func (c *gRPCRoutes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a gRPCRoute and creates it.  Returns the server's representation of the gRPCRoute, and an error, if there is any.
-func (c *gRPCRoutes) Create(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.CreateOptions) (result *v1alpha2.GRPCRoute, err error) {
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(gRPCRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a gRPCRoute and updates it. Returns the server's representation of the gRPCRoute, and an error, if there is any.
-func (c *gRPCRoutes) Update(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (result *v1alpha2.GRPCRoute, err error) {
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(gRPCRoute.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(gRPCRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *gRPCRoutes) UpdateStatus(ctx context.Context, gRPCRoute *v1alpha2.GRPCRoute, opts v1.UpdateOptions) (result *v1alpha2.GRPCRoute, err error) {
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(gRPCRoute.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(gRPCRoute).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the gRPCRoute and deletes it. Returns an error if one occurs.
-func (c *gRPCRoutes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *gRPCRoutes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched gRPCRoute.
-func (c *gRPCRoutes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.GRPCRoute, err error) {
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied gRPCRoute.
-func (c *gRPCRoutes) Apply(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error) {
-	if gRPCRoute == nil {
-		return nil, fmt.Errorf("gRPCRoute provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(gRPCRoute)
-	if err != nil {
-		return nil, err
-	}
-	name := gRPCRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("gRPCRoute.Name must be provided to Apply")
-	}
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *gRPCRoutes) ApplyStatus(ctx context.Context, gRPCRoute *apisv1alpha2.GRPCRouteApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.GRPCRoute, err error) {
-	if gRPCRoute == nil {
-		return nil, fmt.Errorf("gRPCRoute provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(gRPCRoute)
-	if err != nil {
-		return nil, err
-	}
-
-	name := gRPCRoute.Name
-	if name == nil {
-		return nil, fmt.Errorf("gRPCRoute.Name must be provided to Apply")
-	}
-
-	result = &v1alpha2.GRPCRoute{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("grpcroutes").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

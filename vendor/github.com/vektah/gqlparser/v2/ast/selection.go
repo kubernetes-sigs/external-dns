@@ -11,9 +11,9 @@ func (*Field) isSelection()          {}
 func (*FragmentSpread) isSelection() {}
 func (*InlineFragment) isSelection() {}
 
-func (s *Field) GetPosition() *Position          { return s.Position }
+func (f *Field) GetPosition() *Position          { return f.Position }
 func (s *FragmentSpread) GetPosition() *Position { return s.Position }
-func (s *InlineFragment) GetPosition() *Position { return s.Position }
+func (f *InlineFragment) GetPosition() *Position { return f.Position }
 
 type Field struct {
 	Alias        string
@@ -21,7 +21,8 @@ type Field struct {
 	Arguments    ArgumentList
 	Directives   DirectiveList
 	SelectionSet SelectionSet
-	Position     *Position `dump:"-"`
+	Position     *Position `dump:"-" json:"-"`
+	Comment      *CommentGroup
 
 	// Require validation
 	Definition       *FieldDefinition
@@ -31,7 +32,8 @@ type Field struct {
 type Argument struct {
 	Name     string
 	Value    *Value
-	Position *Position `dump:"-"`
+	Position *Position `dump:"-" json:"-"`
+	Comment  *CommentGroup
 }
 
 func (f *Field) ArgumentMap(vars map[string]interface{}) map[string]interface{} {

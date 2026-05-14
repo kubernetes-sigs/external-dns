@@ -19,16 +19,17 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"net/http"
+	http "net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
-	"sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
+	apisv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
+	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1alpha3Interface interface {
 	RESTClient() rest.Interface
 	BackendTLSPoliciesGetter
+	TLSRoutesGetter
 }
 
 // GatewayV1alpha3Client is used to interact with features provided by the gateway.networking.k8s.io group.
@@ -40,14 +41,16 @@ func (c *GatewayV1alpha3Client) BackendTLSPolicies(namespace string) BackendTLSP
 	return newBackendTLSPolicies(c, namespace)
 }
 
+func (c *GatewayV1alpha3Client) TLSRoutes(namespace string) TLSRouteInterface {
+	return newTLSRoutes(c, namespace)
+}
+
 // NewForConfig creates a new GatewayV1alpha3Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*GatewayV1alpha3Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -59,9 +62,7 @@ func NewForConfig(c *rest.Config) (*GatewayV1alpha3Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*GatewayV1alpha3Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
@@ -84,17 +85,15 @@ func New(c rest.Interface) *GatewayV1alpha3Client {
 	return &GatewayV1alpha3Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1alpha3.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := apisv1alpha3.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

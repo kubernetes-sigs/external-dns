@@ -108,6 +108,7 @@ type KubernetesCluster struct {
 	CNIPlugin             string                           `json:"cni_plugin,omitempty"`
 	CCMInstalled          string                           `json:"ccm_installed,omitempty"`
 	Conditions            []Condition                      `json:"conditions"`
+	VolumeType            string                           `json:"volume_type,omitempty"`
 }
 
 // RequiredPools returns the required pools for a given Kubernetes cluster
@@ -144,7 +145,9 @@ type KubernetesClusterConfig struct {
 	Applications      string                        `json:"applications,omitempty"`
 	InstanceFirewall  string                        `json:"instance_firewall,omitempty"`
 	FirewallRule      string                        `json:"firewall_rule,omitempty"`
+	FirewallID        string                        `json:"firewall_id,omitempty"`
 	CNIPlugin         string                        `json:"cni_plugin,omitempty"`
+	VolumeType        string                        `json:"volume_type,omitempty"`
 }
 
 // KubernetesClusterPoolConfig is used to create a new cluster pool

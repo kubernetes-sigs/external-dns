@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -48,7 +47,7 @@ type sourceData struct {
 }
 
 func (s *sourceData) ReadCloser() (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewReader(s.data)), nil
+	return io.NopCloser(bytes.NewReader(s.data)), nil
 }
 
 // sourceReadCloser represents an input stream with Close method.
@@ -68,48 +67,8 @@ func parseDataSource(source interface{}) (dataSource, error) {
 		return &sourceData{s}, nil
 	case io.ReadCloser:
 		return &sourceReadCloser{s}, nil
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	case io.Reader:
-		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	case io.Reader:
-		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	case io.Reader:
-		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	case io.Reader:
-		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	case io.Reader:
-		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return &sourceReadCloser{io.NopCloser(s)}, nil
 	default:
 		return nil, fmt.Errorf("error parsing data source: unknown type %q", s)
 	}

@@ -1,4 +1,4 @@
-// Copyright 2014 Prometheus Team
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,39 +31,10 @@
 //			log.Fatalf("could not get process: %s", err)
 //		}
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
-//    	stat, err := p.Stat()
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//    	stat, err := p.NewStat()
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-//    	if err != nil {
-//    		log.Fatalf("could not get process stat: %s", err)
-//    	}
-//
-//    	fmt.Printf("command:  %s\n", stat.Comm)
-//    	fmt.Printf("cpu time: %fs\n", stat.CPUTime())
-//    	fmt.Printf("vsize:    %dB\n", stat.VirtualMemory())
-//    	fmt.Printf("rss:      %dB\n", stat.ResidentMemory())
-//    }
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//    	stat, err := p.NewStat()
-//    	if err != nil {
-//    		log.Fatalf("could not get process stat: %s", err)
-//    	}
-//
-//    	fmt.Printf("command:  %s\n", stat.Comm)
-//    	fmt.Printf("cpu time: %fs\n", stat.CPUTime())
-//    	fmt.Printf("vsize:    %dB\n", stat.VirtualMemory())
-//    	fmt.Printf("rss:      %dB\n", stat.ResidentMemory())
-//    }
-=======
 //		stat, err := p.Stat()
 //		if err != nil {
 //			log.Fatalf("could not get process stat: %s", err)
 //		}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 //		fmt.Printf("command:  %s\n", stat.Comm)
 //		fmt.Printf("cpu time: %fs\n", stat.CPUTime())

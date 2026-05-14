@@ -28,22 +28,10 @@ type FakeNetworkingV1 struct {
 	*testing.Fake
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 func (c *FakeNetworkingV1) IPAddresses() v1.IPAddressInterface {
 	return newFakeIPAddresses(c)
 }
 
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
 	return newFakeIngresses(c, namespace)
 }
@@ -52,62 +40,6 @@ func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
 	return newFakeIngressClasses(c)
 }
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
-	return &FakeIngresses{c, namespace}
-}
-
-func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
-	return &FakeIngressClasses{c}
-}
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
-	return &FakeIngresses{c, namespace}
-}
-
-func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
-	return &FakeIngressClasses{c}
-}
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
-	return &FakeIngresses{c, namespace}
-}
-
-func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
-	return &FakeIngressClasses{c}
-}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
-	return &FakeIngresses{c, namespace}
-}
-
-func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
-	return &FakeIngressClasses{c}
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *FakeNetworkingV1) NetworkPolicies(namespace string) v1.NetworkPolicyInterface {
 	return newFakeNetworkPolicies(c, namespace)
 }

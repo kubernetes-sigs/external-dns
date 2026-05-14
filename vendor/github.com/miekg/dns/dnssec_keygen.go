@@ -3,53 +3,11 @@ package dns
 import (
 	"crypto"
 	"crypto/ecdsa"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"crypto/ed25519"
->>>>>>> 4d7e5ad26 (update vendored files)
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
-	"math/big"
-<<<<<<< HEAD
-
-	"golang.org/x/crypto/ed25519"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-	"golang.org/x/crypto/ed25519"
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"crypto/ed25519"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
-	"math/big"
-<<<<<<< HEAD
-
-	"golang.org/x/crypto/ed25519"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-	"golang.org/x/crypto/ed25519"
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // Generate generates a DNSKEY of the given bit size.

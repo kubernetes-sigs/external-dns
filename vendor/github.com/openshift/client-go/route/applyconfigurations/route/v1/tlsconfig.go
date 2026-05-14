@@ -3,21 +3,22 @@
 package v1
 
 import (
-	v1 "github.com/openshift/api/route/v1"
+	routev1 "github.com/openshift/api/route/v1"
 )
 
-// TLSConfigApplyConfiguration represents an declarative configuration of the TLSConfig type for use
+// TLSConfigApplyConfiguration represents a declarative configuration of the TLSConfig type for use
 // with apply.
 type TLSConfigApplyConfiguration struct {
-	Termination                   *v1.TLSTerminationType                `json:"termination,omitempty"`
-	Certificate                   *string                               `json:"certificate,omitempty"`
-	Key                           *string                               `json:"key,omitempty"`
-	CACertificate                 *string                               `json:"caCertificate,omitempty"`
-	DestinationCACertificate      *string                               `json:"destinationCACertificate,omitempty"`
-	InsecureEdgeTerminationPolicy *v1.InsecureEdgeTerminationPolicyType `json:"insecureEdgeTerminationPolicy,omitempty"`
+	Termination                   *routev1.TLSTerminationType                `json:"termination,omitempty"`
+	Certificate                   *string                                    `json:"certificate,omitempty"`
+	Key                           *string                                    `json:"key,omitempty"`
+	CACertificate                 *string                                    `json:"caCertificate,omitempty"`
+	DestinationCACertificate      *string                                    `json:"destinationCACertificate,omitempty"`
+	InsecureEdgeTerminationPolicy *routev1.InsecureEdgeTerminationPolicyType `json:"insecureEdgeTerminationPolicy,omitempty"`
+	ExternalCertificate           *LocalObjectReferenceApplyConfiguration    `json:"externalCertificate,omitempty"`
 }
 
-// TLSConfigApplyConfiguration constructs an declarative configuration of the TLSConfig type for use with
+// TLSConfigApplyConfiguration constructs a declarative configuration of the TLSConfig type for use with
 // apply.
 func TLSConfig() *TLSConfigApplyConfiguration {
 	return &TLSConfigApplyConfiguration{}
@@ -26,7 +27,7 @@ func TLSConfig() *TLSConfigApplyConfiguration {
 // WithTermination sets the Termination field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Termination field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithTermination(value v1.TLSTerminationType) *TLSConfigApplyConfiguration {
+func (b *TLSConfigApplyConfiguration) WithTermination(value routev1.TLSTerminationType) *TLSConfigApplyConfiguration {
 	b.Termination = &value
 	return b
 }
@@ -66,7 +67,15 @@ func (b *TLSConfigApplyConfiguration) WithDestinationCACertificate(value string)
 // WithInsecureEdgeTerminationPolicy sets the InsecureEdgeTerminationPolicy field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the InsecureEdgeTerminationPolicy field is set to the value of the last call.
-func (b *TLSConfigApplyConfiguration) WithInsecureEdgeTerminationPolicy(value v1.InsecureEdgeTerminationPolicyType) *TLSConfigApplyConfiguration {
+func (b *TLSConfigApplyConfiguration) WithInsecureEdgeTerminationPolicy(value routev1.InsecureEdgeTerminationPolicyType) *TLSConfigApplyConfiguration {
 	b.InsecureEdgeTerminationPolicy = &value
+	return b
+}
+
+// WithExternalCertificate sets the ExternalCertificate field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExternalCertificate field is set to the value of the last call.
+func (b *TLSConfigApplyConfiguration) WithExternalCertificate(value *LocalObjectReferenceApplyConfiguration) *TLSConfigApplyConfiguration {
+	b.ExternalCertificate = value
 	return b
 }

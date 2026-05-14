@@ -14,7 +14,8 @@ type OperationDefinition struct {
 	VariableDefinitions VariableDefinitionList
 	Directives          DirectiveList
 	SelectionSet        SelectionSet
-	Position            *Position `dump:"-"`
+	Position            *Position `dump:"-" json:"-"`
+	Comment             *CommentGroup
 }
 
 type VariableDefinition struct {
@@ -22,7 +23,8 @@ type VariableDefinition struct {
 	Type         *Type
 	DefaultValue *Value
 	Directives   DirectiveList
-	Position     *Position `dump:"-"`
+	Position     *Position `dump:"-" json:"-"`
+	Comment      *CommentGroup
 
 	// Requires validation
 	Definition *Definition

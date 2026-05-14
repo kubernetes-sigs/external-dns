@@ -28,149 +28,6 @@ func (r descsByName) initEnumDeclarations(eds []*descriptorpb.EnumDescriptorProt
 			opts = proto.Clone(opts).(*descriptorpb.EnumOptions)
 			e.L2.Options = func() protoreflect.ProtoMessage { return opts }
 		}
-<<<<<<< HEAD
-		for _, s := range ed.GetReservedName() {
-			e.L2.ReservedNames.List = append(e.L2.ReservedNames.List, protoreflect.Name(s))
-		}
-		for _, rr := range ed.GetReservedRange() {
-			e.L2.ReservedRanges.List = append(e.L2.ReservedRanges.List, [2]protoreflect.EnumNumber{
-				protoreflect.EnumNumber(rr.GetStart()),
-				protoreflect.EnumNumber(rr.GetEnd()),
-			})
-		}
-		if e.L2.Values.List, err = r.initEnumValuesFromDescriptorProto(ed.GetValue(), e, sb); err != nil {
-			return nil, err
-		}
-	}
-	return es, nil
-}
-
-func (r descsByName) initEnumValuesFromDescriptorProto(vds []*descriptorpb.EnumValueDescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (vs []filedesc.EnumValue, err error) {
-	vs = make([]filedesc.EnumValue, len(vds)) // allocate up-front to ensure stable pointers
-	for i, vd := range vds {
-		v := &vs[i]
-		if v.L0, err = r.makeBase(v, parent, vd.GetName(), i, sb); err != nil {
-			return nil, err
-		}
-		if opts := vd.GetOptions(); opts != nil {
-			opts = proto.Clone(opts).(*descriptorpb.EnumValueOptions)
-			v.L1.Options = func() protoreflect.ProtoMessage { return opts }
-		}
-		v.L1.Number = protoreflect.EnumNumber(vd.GetNumber())
-	}
-	return vs, nil
-}
-
-func (r descsByName) initMessagesDeclarations(mds []*descriptorpb.DescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (ms []filedesc.Message, err error) {
-	ms = make([]filedesc.Message, len(mds)) // allocate up-front to ensure stable pointers
-	for i, md := range mds {
-		m := &ms[i]
-		m.L2 = new(filedesc.MessageL2)
-		if m.L0, err = r.makeBase(m, parent, md.GetName(), i, sb); err != nil {
-			return nil, err
-		}
-		if opts := md.GetOptions(); opts != nil {
-			opts = proto.Clone(opts).(*descriptorpb.MessageOptions)
-			m.L2.Options = func() protoreflect.ProtoMessage { return opts }
-			m.L1.IsMapEntry = opts.GetMapEntry()
-			m.L1.IsMessageSet = opts.GetMessageSetWireFormat()
-		}
-		for _, s := range md.GetReservedName() {
-			m.L2.ReservedNames.List = append(m.L2.ReservedNames.List, protoreflect.Name(s))
-		}
-		for _, rr := range md.GetReservedRange() {
-			m.L2.ReservedRanges.List = append(m.L2.ReservedRanges.List, [2]protoreflect.FieldNumber{
-				protoreflect.FieldNumber(rr.GetStart()),
-				protoreflect.FieldNumber(rr.GetEnd()),
-			})
-		}
-		for _, xr := range md.GetExtensionRange() {
-			m.L2.ExtensionRanges.List = append(m.L2.ExtensionRanges.List, [2]protoreflect.FieldNumber{
-				protoreflect.FieldNumber(xr.GetStart()),
-				protoreflect.FieldNumber(xr.GetEnd()),
-			})
-			var optsFunc func() protoreflect.ProtoMessage
-			if opts := xr.GetOptions(); opts != nil {
-				opts = proto.Clone(opts).(*descriptorpb.ExtensionRangeOptions)
-				optsFunc = func() protoreflect.ProtoMessage { return opts }
-			}
-			m.L2.ExtensionRangeOptions = append(m.L2.ExtensionRangeOptions, optsFunc)
-		}
-		if m.L2.Fields.List, err = r.initFieldsFromDescriptorProto(md.GetField(), m, sb); err != nil {
-			return nil, err
-		}
-		if m.L2.Oneofs.List, err = r.initOneofsFromDescriptorProto(md.GetOneofDecl(), m, sb); err != nil {
-			return nil, err
-		}
-		if m.L1.Enums.List, err = r.initEnumDeclarations(md.GetEnumType(), m, sb); err != nil {
-			return nil, err
-		}
-		if m.L1.Messages.List, err = r.initMessagesDeclarations(md.GetNestedType(), m, sb); err != nil {
-			return nil, err
-		}
-		if m.L1.Extensions.List, err = r.initExtensionDeclarations(md.GetExtension(), m, sb); err != nil {
-			return nil, err
-		}
-	}
-	return ms, nil
-}
-
-func (r descsByName) initFieldsFromDescriptorProto(fds []*descriptorpb.FieldDescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (fs []filedesc.Field, err error) {
-	fs = make([]filedesc.Field, len(fds)) // allocate up-front to ensure stable pointers
-	for i, fd := range fds {
-		f := &fs[i]
-		if f.L0, err = r.makeBase(f, parent, fd.GetName(), i, sb); err != nil {
-			return nil, err
-		}
-		f.L1.IsProto3Optional = fd.GetProto3Optional()
-		if opts := fd.GetOptions(); opts != nil {
-			opts = proto.Clone(opts).(*descriptorpb.FieldOptions)
-			f.L1.Options = func() protoreflect.ProtoMessage { return opts }
-			f.L1.IsWeak = opts.GetWeak()
-			f.L1.HasPacked = opts.Packed != nil
-			f.L1.IsPacked = opts.GetPacked()
-		}
-		f.L1.Number = protoreflect.FieldNumber(fd.GetNumber())
-		f.L1.Cardinality = protoreflect.Cardinality(fd.GetLabel())
-		if fd.Type != nil {
-			f.L1.Kind = protoreflect.Kind(fd.GetType())
-		}
-		if fd.JsonName != nil {
-			f.L1.StringName.InitJSON(fd.GetJsonName())
-		}
-	}
-	return fs, nil
-}
-
-func (r descsByName) initOneofsFromDescriptorProto(ods []*descriptorpb.OneofDescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (os []filedesc.Oneof, err error) {
-	os = make([]filedesc.Oneof, len(ods)) // allocate up-front to ensure stable pointers
-	for i, od := range ods {
-		o := &os[i]
-		if o.L0, err = r.makeBase(o, parent, od.GetName(), i, sb); err != nil {
-			return nil, err
-		}
-		if opts := od.GetOptions(); opts != nil {
-			opts = proto.Clone(opts).(*descriptorpb.OneofOptions)
-			o.L1.Options = func() protoreflect.ProtoMessage { return opts }
-		}
-	}
-	return os, nil
-}
-
-func (r descsByName) initExtensionDeclarations(xds []*descriptorpb.FieldDescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (xs []filedesc.Extension, err error) {
-	xs = make([]filedesc.Extension, len(xds)) // allocate up-front to ensure stable pointers
-	for i, xd := range xds {
-		x := &xs[i]
-		x.L2 = new(filedesc.ExtensionL2)
-		if x.L0, err = r.makeBase(x, parent, xd.GetName(), i, sb); err != nil {
-			return nil, err
-		}
-		if opts := xd.GetOptions(); opts != nil {
-			opts = proto.Clone(opts).(*descriptorpb.FieldOptions)
-			x.L2.Options = func() protoreflect.ProtoMessage { return opts }
-			x.L2.IsPacked = opts.GetPacked()
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		e.L1.EditionFeatures = mergeEditionFeatures(parent, ed.GetOptions().GetFeatures())
 		e.L1.Visibility = int32(ed.GetVisibility())
 		for _, s := range ed.GetReservedName() {
@@ -344,13 +201,13 @@ func (r descsByName) initExtensionDeclarations(xds []*descriptorpb.FieldDescript
 			return nil, err
 		}
 		x.L1.EditionFeatures = mergeEditionFeatures(parent, xd.GetOptions().GetFeatures())
+		x.L2.IsProto3Optional = xd.GetProto3Optional()
 		if opts := xd.GetOptions(); opts != nil {
 			opts = proto.Clone(opts).(*descriptorpb.FieldOptions)
 			x.L2.Options = func() protoreflect.ProtoMessage { return opts }
 			if opts.Packed != nil {
 				x.L1.EditionFeatures.IsPacked = opts.GetPacked()
 			}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 		x.L1.Number = protoreflect.FieldNumber(xd.GetNumber())
 		x.L1.Cardinality = protoreflect.Cardinality(xd.GetLabel())

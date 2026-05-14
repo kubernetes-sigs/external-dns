@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,7 @@ package procfs
 import (
 	"bytes"
 	"math/bits"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -76,271 +76,10 @@ type ProcStatus struct {
 	// Number of involuntary context switches.
 	NonVoluntaryCtxtSwitches uint64
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
 	UIDs [4]uint64
 	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
-<<<<<<< HEAD
-	GIDs [4]string
-}
-
-// NewStatus returns the current status information of the process.
-func (p Proc) NewStatus() (ProcStatus, error) {
-	data, err := util.ReadFileNoStat(p.path("status"))
-	if err != nil {
-		return ProcStatus{}, err
-	}
-
-	s := ProcStatus{PID: p.PID}
-
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if !bytes.Contains([]byte(line), []byte(":")) {
-			continue
-		}
-
-		kv := strings.SplitN(line, ":", 2)
-
-		// removes spaces
-		k := string(strings.TrimSpace(kv[0]))
-		v := string(strings.TrimSpace(kv[1]))
-		// removes "kB"
-		v = string(bytes.Trim([]byte(v), " kB"))
-
-		// value to int when possible
-		// we can skip error check here, 'cause vKBytes is not used when value is a string
-		vKBytes, _ := strconv.ParseUint(v, 10, 64)
-		// convert kB to B
-		vBytes := vKBytes * 1024
-
-		s.fillStatus(k, v, vKBytes, vBytes)
-	}
-
-	return s, nil
-}
-
-func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
-	switch k {
-	case "Tgid":
-		s.TGID = int(vUint)
-	case "Name":
-		s.Name = vString
-	case "Uid":
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-	case "Gid":
-		copy(s.GIDs[:], strings.Split(vString, "\t"))
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-||||||| parent of 5ce8c7613 (update vendored files)
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
->>>>>>> 5ce8c7613 (update vendored files)
-	UIDs [4]string
-	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
-	GIDs [4]string
-}
-
-// NewStatus returns the current status information of the process.
-func (p Proc) NewStatus() (ProcStatus, error) {
-	data, err := util.ReadFileNoStat(p.path("status"))
-	if err != nil {
-		return ProcStatus{}, err
-	}
-
-	s := ProcStatus{PID: p.PID}
-
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if !bytes.Contains([]byte(line), []byte(":")) {
-			continue
-		}
-
-		kv := strings.SplitN(line, ":", 2)
-
-		// removes spaces
-		k := string(strings.TrimSpace(kv[0]))
-		v := string(strings.TrimSpace(kv[1]))
-		// removes "kB"
-		v = string(bytes.Trim([]byte(v), " kB"))
-
-		// value to int when possible
-		// we can skip error check here, 'cause vKBytes is not used when value is a string
-		vKBytes, _ := strconv.ParseUint(v, 10, 64)
-		// convert kB to B
-		vBytes := vKBytes * 1024
-
-		s.fillStatus(k, v, vKBytes, vBytes)
-	}
-
-	return s, nil
-}
-
-func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
-	switch k {
-	case "Tgid":
-		s.TGID = int(vUint)
-	case "Name":
-		s.Name = vString
-	case "Uid":
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	case "Gid":
-		copy(s.GIDs[:], strings.Split(vString, "\t"))
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-||||||| parent of 6b7ce455e (update vendored files)
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
->>>>>>> 6b7ce455e (update vendored files)
-	UIDs [4]string
-	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
-	GIDs [4]string
-}
-
-// NewStatus returns the current status information of the process.
-func (p Proc) NewStatus() (ProcStatus, error) {
-	data, err := util.ReadFileNoStat(p.path("status"))
-	if err != nil {
-		return ProcStatus{}, err
-	}
-
-	s := ProcStatus{PID: p.PID}
-
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if !bytes.Contains([]byte(line), []byte(":")) {
-			continue
-		}
-
-		kv := strings.SplitN(line, ":", 2)
-
-		// removes spaces
-		k := string(strings.TrimSpace(kv[0]))
-		v := string(strings.TrimSpace(kv[1]))
-		// removes "kB"
-		v = string(bytes.Trim([]byte(v), " kB"))
-
-		// value to int when possible
-		// we can skip error check here, 'cause vKBytes is not used when value is a string
-		vKBytes, _ := strconv.ParseUint(v, 10, 64)
-		// convert kB to B
-		vBytes := vKBytes * 1024
-
-		s.fillStatus(k, v, vKBytes, vBytes)
-	}
-
-	return s, nil
-}
-
-func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
-	switch k {
-	case "Tgid":
-		s.TGID = int(vUint)
-	case "Name":
-		s.Name = vString
-	case "Uid":
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	case "Gid":
-		copy(s.GIDs[:], strings.Split(vString, "\t"))
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
->>>>>>> 4d7e5ad26 (update vendored files)
-	UIDs [4]string
-	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
-	GIDs [4]string
-}
-
-// NewStatus returns the current status information of the process.
-func (p Proc) NewStatus() (ProcStatus, error) {
-	data, err := util.ReadFileNoStat(p.path("status"))
-	if err != nil {
-		return ProcStatus{}, err
-	}
-
-	s := ProcStatus{PID: p.PID}
-
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if !bytes.Contains([]byte(line), []byte(":")) {
-			continue
-		}
-
-		kv := strings.SplitN(line, ":", 2)
-
-		// removes spaces
-		k := string(strings.TrimSpace(kv[0]))
-		v := string(strings.TrimSpace(kv[1]))
-		// removes "kB"
-		v = string(bytes.Trim([]byte(v), " kB"))
-
-		// value to int when possible
-		// we can skip error check here, 'cause vKBytes is not used when value is a string
-		vKBytes, _ := strconv.ParseUint(v, 10, 64)
-		// convert kB to B
-		vBytes := vKBytes * 1024
-
-		s.fillStatus(k, v, vKBytes, vBytes)
-	}
-
-	return s, nil
-}
-
-func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
-	switch k {
-	case "Tgid":
-		s.TGID = int(vUint)
-	case "Name":
-		s.Name = vString
-	case "Uid":
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	case "Gid":
-		copy(s.GIDs[:], strings.Split(vString, "\t"))
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
-=======
-	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	UIDs [4]string
-	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
-	GIDs [4]string
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	GIDs [4]string
-=======
 	GIDs [4]uint64
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	// CpusAllowedList: List of cpu cores processes are allowed to run on.
 	CpusAllowedList []uint64
@@ -355,8 +94,7 @@ func (p Proc) NewStatus() (ProcStatus, error) {
 
 	s := ProcStatus{PID: p.PID}
 
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		if !bytes.Contains([]byte(line), []byte(":")) {
 			continue
 		}
@@ -391,15 +129,6 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 	case "Name":
 		s.Name = vString
 	case "Uid":
-<<<<<<< HEAD
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		copy(s.UIDs[:], strings.Split(vString, "\t"))
-=======
 		var err error
 		for i, v := range strings.Split(vString, "\t") {
 			s.UIDs[i], err = strconv.ParseUint(v, 10, bits.UintSize)
@@ -407,7 +136,6 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 				return err
 			}
 		}
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	case "Gid":
 		var err error
 		for i, v := range strings.Split(vString, "\t") {
@@ -417,8 +145,11 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 			}
 		}
 	case "NSpid":
-		s.NSpids = calcNSPidsList(vString)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		nspids, err := calcNSPidsList(vString)
+		if err != nil {
+			return err
+		}
+		s.NSpids = nspids
 	case "VmPeak":
 		s.VmPeak = vUintBytes
 	case "VmSize":
@@ -490,21 +221,21 @@ func calcCpusAllowedList(cpuString string) []uint64 {
 
 	}
 
-	sort.Slice(g, func(i, j int) bool { return g[i] < g[j] })
+	slices.Sort(g)
 	return g
 }
 
-func calcNSPidsList(nspidsString string) []uint64 {
-	s := strings.Split(nspidsString, " ")
+func calcNSPidsList(nspidsString string) ([]uint64, error) {
+	s := strings.Split(nspidsString, "\t")
 	var nspids []uint64
 
 	for _, nspid := range s {
-		nspid, _ := strconv.ParseUint(nspid, 10, 64)
-		if nspid == 0 {
-			continue
+		nspid, err := strconv.ParseUint(nspid, 10, 64)
+		if err != nil {
+			return nil, err
 		}
 		nspids = append(nspids, nspid)
 	}
 
-	return nspids
+	return nspids, nil
 }

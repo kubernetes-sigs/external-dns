@@ -6,16 +6,53 @@
 
 package util
 
-// TernRune returns a if cond is true, b otherwise.
-func TernRune(cond bool, a, b rune) rune {
-	if cond {
-		return a
+import (
+	"fmt"
+	"reflect"
+	"strings"
+)
+
+// BadParam returns a string noticing a misuse of a function parameter.
+//
+// If kind and param's kind name ≠ param's type name:
+//
+//	but received {param type} ({param kind}) as {pos}th parameter
+//
+// else
+//
+//	but received {param type} as {pos}th parameter
+func BadParam(param any, pos int, kind bool) string {
+	var b strings.Builder
+	b.WriteString("but received ")
+
+	if param == nil {
+		b.WriteString("nil")
+	} else {
+		t := reflect.TypeOf(param)
+		if kind && t.String() != t.Kind().String() {
+			fmt.Fprintf(&b, "%s (%s)", t, t.Kind())
+		} else {
+			b.WriteString(t.String())
+		}
 	}
-	return b
+
+	b.WriteString(" as ")
+	switch pos {
+	case 1:
+		b.WriteString("1st")
+	case 2:
+		b.WriteString("2nd")
+	case 3:
+		b.WriteString("3rd")
+	default:
+		fmt.Fprintf(&b, "%dth", pos)
+	}
+	b.WriteString(" parameter")
+	return b.String()
 }
 
-// TernStr returns a if cond is true, b otherwise.
-func TernStr(cond bool, a, b string) string {
+// TernRune returns a if cond is true, b otherwise.
+func TernRune(cond bool, a, b rune) rune {
 	if cond {
 		return a
 	}

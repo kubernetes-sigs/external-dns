@@ -6,7 +6,7 @@ layout: protoc-gen-docs
 generator: protoc-gen-docs
 schema: istio.networking.v1alpha3.WorkloadGroup
 aliases: [/docs/reference/config/networking/v1alpha3/workload-group]
-number_of_entries: 7
+number_of_entries: 8
 ---
 <p><code>WorkloadGroup</code> describes a collection of workload instances.
 It provides a specification that the workload instances can use to bootstrap
@@ -20,7 +20,7 @@ of workloads that will be registered under <code>reviews</code> in namespace
 instance during the bootstrap process, and the ports 3550 and 8080
 will be associated with the workload group and use service account <code>default</code>.
 <code>app.kubernetes.io/version</code> is just an arbitrary example of a label.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: WorkloadGroup
 metadata:
   name: reviews
@@ -63,27 +63,25 @@ and as such doesn&rsquo;t configure host name for these workloads.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="WorkloadGroup-metadata">
-<td><code>metadata</code></td>
-<td><code><a href="#WorkloadGroup-ObjectMeta">ObjectMeta</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadGroup-metadata">metadata</a></code></div>
+<div class="type"><a href="#WorkloadGroup-ObjectMeta">ObjectMeta</a></div>
+</div></td>
 <td>
 <p>Metadata that will be used for all corresponding <code>WorkloadEntries</code>.
 User labels for a workload group should be set here in <code>metadata</code> rather than in <code>template</code>.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="WorkloadGroup-template">
-<td><code>template</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/networking/workload-entry.html#WorkloadEntry">WorkloadEntry</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadGroup-template">template</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/networking/workload-entry.html#WorkloadEntry">WorkloadEntry</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Template to be used for the generation of <code>WorkloadEntry</code> resources that belong to this <code>WorkloadGroup</code>.
 Please note that <code>address</code> and <code>labels</code> fields should not be set in the template, and an empty <code>serviceAccount</code>
@@ -92,20 +90,49 @@ specified service account&rsquo;s token. Workload entries in this group will be 
 workload group, and inherit the labels and annotations from the above <code>metadata</code> field.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="WorkloadGroup-probe">
-<td><code>probe</code></td>
-<td><code><a href="#ReadinessProbe">ReadinessProbe</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadGroup-probe">probe</a></code></div>
+<div class="type"><a href="#ReadinessProbe">ReadinessProbe</a></div>
+</div></td>
 <td>
 <p><code>ReadinessProbe</code> describes the configuration the user must provide for healthchecking on their workload.
 This configuration mirrors K8S in both syntax and logic for the most part.</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="WorkloadGroup-ObjectMeta">ObjectMeta</h3>
+<section>
+<p><code>ObjectMeta</code> describes metadata that will be attached to a <code>WorkloadEntry</code>.
+It is a subset of the supported Kubernetes metadata.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="WorkloadGroup-ObjectMeta-labels">
+<td><div class="field"><div class="name"><code><a href="#WorkloadGroup-ObjectMeta-labels">labels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
-No
+<p>Labels to attach</p>
+
+</td>
+</tr>
+<tr id="WorkloadGroup-ObjectMeta-annotations">
+<td><div class="field"><div class="name"><code><a href="#WorkloadGroup-ObjectMeta-annotations">annotations</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
+<td>
+<p>Annotations to attach</p>
+
 </td>
 </tr>
 </tbody>
@@ -117,103 +144,94 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="ReadinessProbe-initial_delay_seconds">
-<td><code>initialDelaySeconds</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-initial_delay_seconds">initialDelaySeconds</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Number of seconds after the container has started before readiness probes are initiated.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-timeout_seconds">
-<td><code>timeoutSeconds</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-timeout_seconds">timeoutSeconds</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Number of seconds after which the probe times out.
 Defaults to 1 second. Minimum value is 1 second.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-period_seconds">
-<td><code>periodSeconds</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-period_seconds">periodSeconds</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>How often (in seconds) to perform the probe.
 Default to 10 seconds. Minimum value is 1 second.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-success_threshold">
-<td><code>successThreshold</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-success_threshold">successThreshold</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Minimum consecutive successes for the probe to be considered successful after having failed.
 Defaults to 1 second.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-failure_threshold">
-<td><code>failureThreshold</code></td>
-<td><code>int32</code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-failure_threshold">failureThreshold</a></code></div>
+<div class="type">int32</div>
+</div></td>
 <td>
 <p>Minimum consecutive failures for the probe to be considered failed after having succeeded.
 Defaults to 3 seconds.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-http_get" class="oneof oneof-start">
-<td><code>httpGet</code></td>
-<td><code><a href="#HTTPHealthCheckConfig">HTTPHealthCheckConfig (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-http_get">httpGet</a></code></div>
+<div class="type"><a href="#HTTPHealthCheckConfig">HTTPHealthCheckConfig (oneof)</a></div>
+</div></td>
 <td>
 <p><code>httpGet</code> is performed to a given endpoint
 and the status/able to connect determines health.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-tcp_socket" class="oneof">
-<td><code>tcpSocket</code></td>
-<td><code><a href="#TCPHealthCheckConfig">TCPHealthCheckConfig (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-tcp_socket">tcpSocket</a></code></div>
+<div class="type"><a href="#TCPHealthCheckConfig">TCPHealthCheckConfig (oneof)</a></div>
+</div></td>
 <td>
 <p>Health is determined by if the proxy is able to connect.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ReadinessProbe-exec" class="oneof">
-<td><code>exec</code></td>
-<td><code><a href="#ExecHealthCheckConfig">ExecHealthCheckConfig (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-exec">exec</a></code></div>
+<div class="type"><a href="#ExecHealthCheckConfig">ExecHealthCheckConfig (oneof)</a></div>
+</div></td>
 <td>
 <p>Health is determined by how the command that is executed exited.</p>
 
 </td>
+</tr>
+<tr id="ReadinessProbe-grpc" class="oneof">
+<td><div class="field"><div class="name"><code><a href="#ReadinessProbe-grpc">grpc</a></code></div>
+<div class="type"><a href="#GrpcHealthCheckConfig">GrpcHealthCheckConfig (oneof)</a></div>
+</div></td>
 <td>
-No
+<p>GRPC call is made and response/error is used to determine health.</p>
+
 </td>
 </tr>
 </tbody>
@@ -225,67 +243,87 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPHealthCheckConfig-path">
-<td><code>path</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHealthCheckConfig-path">path</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Path to access on the HTTP server.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPHealthCheckConfig-port">
-<td><code>port</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHealthCheckConfig-port">port</a></code></div>
+<div class="type">uint32</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Port on which the endpoint lives.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="HTTPHealthCheckConfig-host">
-<td><code>host</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHealthCheckConfig-host">host</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Host name to connect to, defaults to the pod IP. You probably want to set
 &ldquo;Host&rdquo; in httpHeaders instead.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPHealthCheckConfig-scheme">
-<td><code>scheme</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHealthCheckConfig-scheme">scheme</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>HTTP or HTTPS, defaults to HTTP</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPHealthCheckConfig-http_headers">
-<td><code>httpHeaders</code></td>
-<td><code><a href="#HTTPHeader">HTTPHeader[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHealthCheckConfig-http_headers">httpHeaders</a></code></div>
+<div class="type"><a href="#HTTPHeader">HTTPHeader[]</a></div>
+</div></td>
 <td>
 <p>Headers the proxy will pass on to make the request.
 Allows repeated headers.</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="GrpcHealthCheckConfig">GrpcHealthCheckConfig</h2>
+<section>
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="GrpcHealthCheckConfig-port">
+<td><div class="field"><div class="name"><code><a href="#GrpcHealthCheckConfig-port">port</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
-No
+<p>Port on which the endpoint lives.</p>
+
+</td>
+</tr>
+<tr id="GrpcHealthCheckConfig-service">
+<td><div class="field"><div class="name"><code><a href="#GrpcHealthCheckConfig-service">service</a></code></div>
+<div class="type">string</div>
+</div></td>
+<td>
+<p>Service is the fully qualified name of the service to send the grpc health check request</p>
+
 </td>
 </tr>
 </tbody>
@@ -297,32 +335,26 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="HTTPHeader-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHeader-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The header field name</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="HTTPHeader-value">
-<td><code>value</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#HTTPHeader-value">value</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The header field value</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -334,32 +366,27 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="TCPHealthCheckConfig-host">
-<td><code>host</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#TCPHealthCheckConfig-host">host</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Host to connect to, defaults to localhost</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="TCPHealthCheckConfig-port">
-<td><code>port</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#TCPHealthCheckConfig-port">port</a></code></div>
+<div class="type">uint32</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Port of host</p>
 
-</td>
-<td>
-Yes
 </td>
 </tr>
 </tbody>
@@ -371,61 +398,18 @@ Yes
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="ExecHealthCheckConfig-command">
-<td><code>command</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#ExecHealthCheckConfig-command">command</a></code></div>
+<div class="type">string[]</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>Command to run. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</p>
 
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="WorkloadGroup-ObjectMeta">WorkloadGroup.ObjectMeta</h2>
-<section>
-<p><code>ObjectMeta</code> describes metadata that will be attached to a <code>WorkloadEntry</code>.
-It is a subset of the supported Kubernetes metadata.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="WorkloadGroup-ObjectMeta-labels">
-<td><code>labels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
-<td>
-<p>Labels to attach</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="WorkloadGroup-ObjectMeta-annotations">
-<td><code>annotations</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
-<td>
-<p>Annotations to attach</p>
-
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>

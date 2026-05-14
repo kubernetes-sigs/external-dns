@@ -48,7 +48,7 @@ func NewRecordSetsClient(subscriptionID string, credential azcore.TokenCredentia
 // CreateOrUpdate - Creates or updates a record set within a Private DNS zone.
 // If the operation fails it returns an *azcore.ResponseError type.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - recordType - The type of DNS record in this record set. Record sets of type SOA can be updated but not created (they are
@@ -104,15 +104,15 @@ func (client *RecordSetsClient) createOrUpdateCreateRequest(ctx context.Context,
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	reqQP.Set("api-version", "2020-06-01")
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
+	req.Raw().Header["Accept"] = []string{"application/json"}
 	if options != nil && options.IfMatch != nil {
 		req.Raw().Header["If-Match"] = []string{*options.IfMatch}
 	}
 	if options != nil && options.IfNoneMatch != nil {
 		req.Raw().Header["If-None-Match"] = []string{*options.IfNoneMatch}
 	}
-	req.Raw().Header["Accept"] = []string{"application/json"}
 	if err := runtime.MarshalAsJSON(req, parameters); err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (client *RecordSetsClient) createOrUpdateHandleResponse(resp *http.Response
 // Delete - Deletes a record set from a Private DNS zone. This operation cannot be undone.
 // If the operation fails it returns an *azcore.ResponseError type.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - recordType - The type of DNS record in this record set. Record sets of type SOA cannot be deleted (they are deleted when
@@ -184,19 +184,19 @@ func (client *RecordSetsClient) deleteCreateRequest(ctx context.Context, resourc
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	reqQP.Set("api-version", "2020-06-01")
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
+	req.Raw().Header["Accept"] = []string{"application/json"}
 	if options != nil && options.IfMatch != nil {
 		req.Raw().Header["If-Match"] = []string{*options.IfMatch}
 	}
-	req.Raw().Header["Accept"] = []string{"application/json"}
 	return req, nil
 }
 
 // Get - Gets a record set.
 // If the operation fails it returns an *azcore.ResponseError type.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - recordType - The type of DNS record in this record set.
@@ -249,7 +249,7 @@ func (client *RecordSetsClient) getCreateRequest(ctx context.Context, resourceGr
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	reqQP.Set("api-version", "2020-06-01")
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header["Accept"] = []string{"application/json"}
 	return req, nil
@@ -266,7 +266,7 @@ func (client *RecordSetsClient) getHandleResponse(resp *http.Response) (RecordSe
 
 // NewListPager - Lists all record sets in a Private DNS zone.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - options - RecordSetsClientListOptions contains the optional parameters for the RecordSetsClient.NewListPager method.
@@ -313,13 +313,13 @@ func (client *RecordSetsClient) listCreateRequest(ctx context.Context, resourceG
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	if options != nil && options.Top != nil {
-		reqQP.Set("$top", strconv.FormatInt(int64(*options.Top), 10))
-	}
 	if options != nil && options.Recordsetnamesuffix != nil {
 		reqQP.Set("$recordsetnamesuffix", *options.Recordsetnamesuffix)
 	}
-	reqQP.Set("api-version", "2020-06-01")
+	if options != nil && options.Top != nil {
+		reqQP.Set("$top", strconv.FormatInt(int64(*options.Top), 10))
+	}
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header["Accept"] = []string{"application/json"}
 	return req, nil
@@ -336,7 +336,7 @@ func (client *RecordSetsClient) listHandleResponse(resp *http.Response) (RecordS
 
 // NewListByTypePager - Lists the record sets of a specified type in a Private DNS zone.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - recordType - The type of record sets to enumerate.
@@ -389,13 +389,13 @@ func (client *RecordSetsClient) listByTypeCreateRequest(ctx context.Context, res
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	if options != nil && options.Top != nil {
-		reqQP.Set("$top", strconv.FormatInt(int64(*options.Top), 10))
-	}
 	if options != nil && options.Recordsetnamesuffix != nil {
 		reqQP.Set("$recordsetnamesuffix", *options.Recordsetnamesuffix)
 	}
-	reqQP.Set("api-version", "2020-06-01")
+	if options != nil && options.Top != nil {
+		reqQP.Set("$top", strconv.FormatInt(int64(*options.Top), 10))
+	}
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header["Accept"] = []string{"application/json"}
 	return req, nil
@@ -413,7 +413,7 @@ func (client *RecordSetsClient) listByTypeHandleResponse(resp *http.Response) (R
 // Update - Updates a record set within a Private DNS zone.
 // If the operation fails it returns an *azcore.ResponseError type.
 //
-// Generated from API version 2020-06-01
+// Generated from API version 2024-06-01
 //   - resourceGroupName - The name of the resource group.
 //   - privateZoneName - The name of the Private DNS zone (without a terminating dot).
 //   - recordType - The type of DNS record in this record set.
@@ -467,12 +467,12 @@ func (client *RecordSetsClient) updateCreateRequest(ctx context.Context, resourc
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
-	reqQP.Set("api-version", "2020-06-01")
+	reqQP.Set("api-version", "2024-06-01")
 	req.Raw().URL.RawQuery = reqQP.Encode()
+	req.Raw().Header["Accept"] = []string{"application/json"}
 	if options != nil && options.IfMatch != nil {
 		req.Raw().Header["If-Match"] = []string{*options.IfMatch}
 	}
-	req.Raw().Header["Accept"] = []string{"application/json"}
 	if err := runtime.MarshalAsJSON(req, parameters); err != nil {
 		return nil, err
 	}

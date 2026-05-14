@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	apisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // HTTPRouteLister helps list HTTPRoutes.
@@ -30,7 +30,7 @@ import (
 type HTTPRouteLister interface {
 	// List lists all HTTPRoutes in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.HTTPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1beta1.HTTPRoute, err error)
 	// HTTPRoutes returns an object that can list and get HTTPRoutes.
 	HTTPRoutes(namespace string) HTTPRouteNamespaceLister
 	HTTPRouteListerExpansion
@@ -38,25 +38,17 @@ type HTTPRouteLister interface {
 
 // hTTPRouteLister implements the HTTPRouteLister interface.
 type hTTPRouteLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*apisv1beta1.HTTPRoute]
 }
 
 // NewHTTPRouteLister returns a new HTTPRouteLister.
 func NewHTTPRouteLister(indexer cache.Indexer) HTTPRouteLister {
-	return &hTTPRouteLister{indexer: indexer}
-}
-
-// List lists all HTTPRoutes in the indexer.
-func (s *hTTPRouteLister) List(selector labels.Selector) (ret []*v1beta1.HTTPRoute, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.HTTPRoute))
-	})
-	return ret, err
+	return &hTTPRouteLister{listers.New[*apisv1beta1.HTTPRoute](indexer, apisv1beta1.Resource("httproute"))}
 }
 
 // HTTPRoutes returns an object that can list and get HTTPRoutes.
 func (s *hTTPRouteLister) HTTPRoutes(namespace string) HTTPRouteNamespaceLister {
-	return hTTPRouteNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return hTTPRouteNamespaceLister{listers.NewNamespaced[*apisv1beta1.HTTPRoute](s.ResourceIndexer, namespace)}
 }
 
 // HTTPRouteNamespaceLister helps list and get HTTPRoutes.
@@ -64,36 +56,15 @@ func (s *hTTPRouteLister) HTTPRoutes(namespace string) HTTPRouteNamespaceLister 
 type HTTPRouteNamespaceLister interface {
 	// List lists all HTTPRoutes in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.HTTPRoute, err error)
+	List(selector labels.Selector) (ret []*apisv1beta1.HTTPRoute, err error)
 	// Get retrieves the HTTPRoute from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.HTTPRoute, error)
+	Get(name string) (*apisv1beta1.HTTPRoute, error)
 	HTTPRouteNamespaceListerExpansion
 }
 
 // hTTPRouteNamespaceLister implements the HTTPRouteNamespaceLister
 // interface.
 type hTTPRouteNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all HTTPRoutes in the indexer for a given namespace.
-func (s hTTPRouteNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.HTTPRoute, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.HTTPRoute))
-	})
-	return ret, err
-}
-
-// Get retrieves the HTTPRoute from the indexer for a given namespace and name.
-func (s hTTPRouteNamespaceLister) Get(name string) (*v1beta1.HTTPRoute, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("httproute"), name)
-	}
-	return obj.(*v1beta1.HTTPRoute), nil
+	listers.ResourceIndexer[*apisv1beta1.HTTPRoute]
 }

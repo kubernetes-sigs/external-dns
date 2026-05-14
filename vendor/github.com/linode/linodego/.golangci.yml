@@ -1,211 +1,85 @@
+version: "2"
 run:
   tests: false
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    check-shadowing: true
-
-    enable:
-      - atomicalign
-    enable-all: false
-    disable:
-      - shadow
-    disable-all: false
-  golint:
-    min-confidence: 0.8
-  gocyclo:
-    min-complexity: 30
-  gocognit:
-    min-complexity: 30
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 100
-
 linters:
-  enable-all: true
+  default: all
   disable:
-    - vetshadow
-    - errname
-    - forcetypeassert
-    - gocyclo
-    - unparam
-    - nakedret
-    - lll
-    - golint
-    - maligned
-    - scopelint
-    - dupl
-    - gosec
-    - gochecknoinits
-    - gochecknoglobals
-    - exhaustruct
-    - nonamedreturns
-    - errcheck
-    - staticcheck
-    - stylecheck
-    - wsl
-    - interfacer
-    - varnamelen
-    - tagliatelle
-    - gomnd
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    - nlreturn
-    - wrapcheck
-    - wastedassign
-    - goerr113
-    - exhaustivestruct
-    - durationcheck
-    - errorlint
-    - cyclop
-    - godot
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-    - nlreturn
-    - wrapcheck
-    - wastedassign
-    - goerr113
-    - exhaustivestruct
-    - durationcheck
-    - errorlint
-    - cyclop
-    - godot
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-    - nlreturn
-    - wrapcheck
-    - wastedassign
-    - goerr113
-    - exhaustivestruct
-    - durationcheck
-    - errorlint
-    - cyclop
-    - godot
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-    - nlreturn
-    - wrapcheck
-    - wastedassign
-    - goerr113
-    - exhaustivestruct
-    - durationcheck
-    - errorlint
-    - cyclop
-    - godot
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-  
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-  
-=======
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    enable:
-      - atomicalign
-      - shadow
-    enable-all: false
-    disable-all: false
-  gocyclo:
-    min-complexity: 30
-  gocognit:
-    min-complexity: 30
-  dupl:
-    threshold: 100
-
-linters:
-  enable-all: true
-  disable:
-    # deprecated linters
-    - deadcode
-    - ifshort
-    - varcheck
-    - nosnakecase
-    ####################
-
-    # conflicted with go fmt
-    - nolintlint
-
-    # workaround to avoid linter failures of getting malformed json
-    - musttag
-
     - bodyclose
-    - contextcheck
-    - nilerr
-    - noctx
-    - rowserrcheck
-    - sqlclosecheck
-    - structcheck
-    - tparallel
-    - vetshadow
-    - errname
-    - forcetypeassert
-    - gocyclo
-    - unparam
-    - nakedret
-    - lll
-    - golint
-    - maligned
-    - scopelint
-    - dupl
-    - gosec
-    - gochecknoinits
-    - gochecknoglobals
-    - exhaustruct
-    - nonamedreturns
-    - errcheck
-    - staticcheck
-    - stylecheck
-    - wsl
-    - interfacer
-    - varnamelen
-    - tagliatelle
-    - gomnd
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-    - nlreturn
-    - wrapcheck
-    - wastedassign
-    - goerr113
-    - exhaustivestruct
-    - durationcheck
-    - errorlint
     - cyclop
-    - godot
-    - exhaustive
     - depguard
-    - tagalign
+    - dupl
+    - err113
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - forcetypeassert
+    - gochecknoglobals
+    - gochecknoinits
+    - godot
+    - godox
     - inamedparam
+    - lll
+    - musttag
+    - nilerr
+    - nlreturn
+    - noinlineerr
+    - nolintlint
+    - nonamedreturns
     - perfsprint
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-  fast: false
+    - recvcheck
+    - staticcheck
+    - tagliatelle
+    - varnamelen
+    - wrapcheck
+    - wsl
+  settings:
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    gocognit:
+      min-complexity: 30
+    gocyclo:
+      min-complexity: 30
+    govet:
+      enable:
+        - atomicalign
+        - shadow
+      enable-all: false
+      disable-all: false
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gosec
+        # "matches secret pattern" linodego necessarily serializes and
+        # deserializes API structs that contain secrets
+        text: G117
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  settings:
+    golines:
+      max-len: 160
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

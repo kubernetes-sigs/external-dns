@@ -59,8 +59,6 @@ type Object interface {
 	SetFinalizers(finalizers []string)
 	GetOwnerReferences() []OwnerReference
 	SetOwnerReferences([]OwnerReference)
-<<<<<<< HEAD
-<<<<<<< HEAD
 	GetManagedFields() []ManagedFieldsEntry
 	SetManagedFields(managedFields []ManagedFieldsEntry)
 }
@@ -96,163 +94,11 @@ type ListInterface interface {
 	SetRemainingItemCount(c *int64)
 }
 
-// Type exposes the type and APIVersion of versioned or internal API objects.
-// TODO: move this, and TypeMeta and ListMeta, to a different package
-type Type interface {
-	GetAPIVersion() string
-	SetAPIVersion(version string)
-	GetKind() string
-	SetKind(kind string)
-}
-
-var _ ListInterface = &ListMeta{}
-
-func (meta *ListMeta) GetResourceVersion() string        { return meta.ResourceVersion }
-func (meta *ListMeta) SetResourceVersion(version string) { meta.ResourceVersion = version }
-func (meta *ListMeta) GetSelfLink() string               { return meta.SelfLink }
-func (meta *ListMeta) SetSelfLink(selfLink string)       { meta.SelfLink = selfLink }
-func (meta *ListMeta) GetContinue() string               { return meta.Continue }
-func (meta *ListMeta) SetContinue(c string)              { meta.Continue = c }
-func (meta *ListMeta) GetRemainingItemCount() *int64     { return meta.RemainingItemCount }
-func (meta *ListMeta) SetRemainingItemCount(c *int64)    { meta.RemainingItemCount = c }
-
-func (obj *TypeMeta) GetObjectKind() schema.ObjectKind { return obj }
-
-// SetGroupVersionKind satisfies the ObjectKind interface for all objects that embed TypeMeta
-func (obj *TypeMeta) SetGroupVersionKind(gvk schema.GroupVersionKind) {
-	obj.APIVersion, obj.Kind = gvk.ToAPIVersionAndKind()
-}
-
-// GroupVersionKind satisfies the ObjectKind interface for all objects that embed TypeMeta
-func (obj *TypeMeta) GroupVersionKind() schema.GroupVersionKind {
-	return schema.FromAPIVersionAndKind(obj.APIVersion, obj.Kind)
-}
-
-func (obj *ListMeta) GetListMeta() ListInterface { return obj }
-
-func (obj *ObjectMeta) GetObjectMeta() Object { return obj }
-
-// Namespace implements metav1.Object for any object with an ObjectMeta typed field. Allows
-// fast, direct access to metadata fields for API objects.
-func (meta *ObjectMeta) GetNamespace() string                { return meta.Namespace }
-func (meta *ObjectMeta) SetNamespace(namespace string)       { meta.Namespace = namespace }
-func (meta *ObjectMeta) GetName() string                     { return meta.Name }
-func (meta *ObjectMeta) SetName(name string)                 { meta.Name = name }
-func (meta *ObjectMeta) GetGenerateName() string             { return meta.GenerateName }
-func (meta *ObjectMeta) SetGenerateName(generateName string) { meta.GenerateName = generateName }
-func (meta *ObjectMeta) GetUID() types.UID                   { return meta.UID }
-func (meta *ObjectMeta) SetUID(uid types.UID)                { meta.UID = uid }
-func (meta *ObjectMeta) GetResourceVersion() string          { return meta.ResourceVersion }
-func (meta *ObjectMeta) SetResourceVersion(version string)   { meta.ResourceVersion = version }
-func (meta *ObjectMeta) GetGeneration() int64                { return meta.Generation }
-func (meta *ObjectMeta) SetGeneration(generation int64)      { meta.Generation = generation }
-func (meta *ObjectMeta) GetSelfLink() string                 { return meta.SelfLink }
-func (meta *ObjectMeta) SetSelfLink(selfLink string)         { meta.SelfLink = selfLink }
-func (meta *ObjectMeta) GetCreationTimestamp() Time          { return meta.CreationTimestamp }
-func (meta *ObjectMeta) SetCreationTimestamp(creationTimestamp Time) {
-	meta.CreationTimestamp = creationTimestamp
-}
-func (meta *ObjectMeta) GetDeletionTimestamp() *Time { return meta.DeletionTimestamp }
-func (meta *ObjectMeta) SetDeletionTimestamp(deletionTimestamp *Time) {
-	meta.DeletionTimestamp = deletionTimestamp
-}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
-	return meta.DeletionGracePeriodSeconds
-}
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
-	return meta.DeletionGracePeriodSeconds
-}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
-	return meta.DeletionGracePeriodSeconds
-}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
-=======
-func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
-	return meta.DeletionGracePeriodSeconds
-}
->>>>>>> 4d7e5ad26 (update vendored files)
-func (meta *ObjectMeta) SetDeletionGracePeriodSeconds(deletionGracePeriodSeconds *int64) {
-	meta.DeletionGracePeriodSeconds = deletionGracePeriodSeconds
-}
-func (meta *ObjectMeta) GetLabels() map[string]string                 { return meta.Labels }
-func (meta *ObjectMeta) SetLabels(labels map[string]string)           { meta.Labels = labels }
-func (meta *ObjectMeta) GetAnnotations() map[string]string            { return meta.Annotations }
-func (meta *ObjectMeta) SetAnnotations(annotations map[string]string) { meta.Annotations = annotations }
-func (meta *ObjectMeta) GetFinalizers() []string                      { return meta.Finalizers }
-func (meta *ObjectMeta) SetFinalizers(finalizers []string)            { meta.Finalizers = finalizers }
-func (meta *ObjectMeta) GetOwnerReferences() []OwnerReference         { return meta.OwnerReferences }
-func (meta *ObjectMeta) SetOwnerReferences(references []OwnerReference) {
-	meta.OwnerReferences = references
-}
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	GetClusterName() string
-	SetClusterName(clusterName string)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	GetClusterName() string
-	SetClusterName(clusterName string)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	GetManagedFields() []ManagedFieldsEntry
-	SetManagedFields(managedFields []ManagedFieldsEntry)
-}
-
-// ListMetaAccessor retrieves the list interface from an object
-type ListMetaAccessor interface {
-	GetListMeta() ListInterface
-}
-
-// Common lets you work with core metadata from any of the versioned or
-// internal API objects. Attempting to set or retrieve a field on an object that does
-// not support that field will be a no-op and return a default value.
-// TODO: move this, and TypeMeta and ListMeta, to a different package
-type Common interface {
-	GetResourceVersion() string
-	SetResourceVersion(version string)
-	GetSelfLink() string
-	SetSelfLink(selfLink string)
-}
-
-// ListInterface lets you work with list metadata from any of the versioned or
-// internal API objects. Attempting to set or retrieve a field on an object that does
-// not support that field will be a no-op and return a default value.
-// TODO: move this, and TypeMeta and ListMeta, to a different package
-type ListInterface interface {
-	GetResourceVersion() string
-	SetResourceVersion(version string)
-	GetSelfLink() string
-	SetSelfLink(selfLink string)
-	GetContinue() string
-	SetContinue(c string)
-	GetRemainingItemCount() *int64
-	SetRemainingItemCount(c *int64)
+// ShardedListInterface can be implemented by list types to indicate that they
+// represent a sharded subset of the full collection rather than the complete list.
+type ShardedListInterface interface {
+	GetShardInfo() *ShardInfo
+	SetShardInfo(*ShardInfo)
 }
 
 // Type exposes the type and APIVersion of versioned or internal API objects.
@@ -274,6 +120,8 @@ func (meta *ListMeta) GetContinue() string               { return meta.Continue 
 func (meta *ListMeta) SetContinue(c string)              { meta.Continue = c }
 func (meta *ListMeta) GetRemainingItemCount() *int64     { return meta.RemainingItemCount }
 func (meta *ListMeta) SetRemainingItemCount(c *int64)    { meta.RemainingItemCount = c }
+func (meta *ListMeta) GetShardInfo() *ShardInfo          { return meta.ShardInfo }
+func (meta *ListMeta) SetShardInfo(s *ShardInfo)         { meta.ShardInfo = s }
 
 func (obj *TypeMeta) GetObjectKind() schema.ObjectKind { return obj }
 
@@ -331,15 +179,6 @@ func (meta *ObjectMeta) GetOwnerReferences() []OwnerReference         { return m
 func (meta *ObjectMeta) SetOwnerReferences(references []OwnerReference) {
 	meta.OwnerReferences = references
 }
-<<<<<<< HEAD
-func (meta *ObjectMeta) GetClusterName() string                 { return meta.ClusterName }
-func (meta *ObjectMeta) SetClusterName(clusterName string)      { meta.ClusterName = clusterName }
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (meta *ObjectMeta) GetClusterName() string                 { return meta.ClusterName }
-func (meta *ObjectMeta) SetClusterName(clusterName string)      { meta.ClusterName = clusterName }
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (meta *ObjectMeta) GetManagedFields() []ManagedFieldsEntry { return meta.ManagedFields }
 func (meta *ObjectMeta) SetManagedFields(managedFields []ManagedFieldsEntry) {
 	meta.ManagedFields = managedFields

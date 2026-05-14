@@ -159,118 +159,6 @@ func (t *translator) AddCardinal(key interface{}, text string, rule locales.Plur
 		}
 
 	} else {
-<<<<<<< HEAD
-		tarr = make([]*transText, 7, 7)
-		t.cardinalTanslations[key] = tarr
-	}
-
-	trans := &transText{
-		text:    text,
-		indexes: make([]int, 2, 2),
-	}
-
-	tarr[rule] = trans
-
-	idx := strings.Index(text, paramZero)
-	if idx == -1 {
-		tarr[rule] = nil
-		return &ErrCardinalTranslation{text: fmt.Sprintf("error: parameter '%s' not found, may want to use 'Add' instead of 'AddCardinal'. locale: '%s' key: '%v' text: '%s'", paramZero, t.Locale(), key, text)}
-	}
-
-	trans.indexes[0] = idx
-	trans.indexes[1] = idx + len(paramZero)
-
-	return nil
-}
-
-// AddOrdinal adds an ordinal plural translation for a particular language/locale
-// {0} is the only replacement type accepted and only one variable is accepted as
-// multiple cannot be used for a plural rule determination, unless it is a range;
-// see AddRange below.
-// eg. in locale 'en' one: '{0}st day of spring' other: '{0}nd day of spring' - 1st, 2nd, 3rd...
-func (t *translator) AddOrdinal(key interface{}, text string, rule locales.PluralRule, override bool) error {
-
-	var verified bool
-
-	// verify plural rule exists for locale
-	for _, pr := range t.PluralsOrdinal() {
-		if pr == rule {
-			verified = true
-			break
-		}
-	}
-
-	if !verified {
-		return &ErrOrdinalTranslation{text: fmt.Sprintf("error: ordinal plural rule '%s' does not exist for locale '%s' key: '%v' text: '%s'", rule, t.Locale(), key, text)}
-	}
-
-	tarr, ok := t.ordinalTanslations[key]
-	if ok {
-		// verify not adding a conflicting record
-		if len(tarr) > 0 && tarr[rule] != nil && !override {
-			return &ErrConflictingTranslation{locale: t.Locale(), key: key, rule: rule, text: text}
-		}
-
-	} else {
-		tarr = make([]*transText, 7, 7)
-		t.ordinalTanslations[key] = tarr
-	}
-
-	trans := &transText{
-		text:    text,
-		indexes: make([]int, 2, 2),
-	}
-
-	tarr[rule] = trans
-
-	idx := strings.Index(text, paramZero)
-	if idx == -1 {
-		tarr[rule] = nil
-		return &ErrOrdinalTranslation{text: fmt.Sprintf("error: parameter '%s' not found, may want to use 'Add' instead of 'AddOrdinal'. locale: '%s' key: '%v' text: '%s'", paramZero, t.Locale(), key, text)}
-	}
-
-	trans.indexes[0] = idx
-	trans.indexes[1] = idx + len(paramZero)
-
-	return nil
-}
-
-// AddRange adds a range plural translation for a particular language/locale
-// {0} and {1} are the only replacement types accepted and only these are accepted.
-// eg. in locale 'nl' one: '{0}-{1} day left' other: '{0}-{1} days left'
-func (t *translator) AddRange(key interface{}, text string, rule locales.PluralRule, override bool) error {
-
-	var verified bool
-
-	// verify plural rule exists for locale
-	for _, pr := range t.PluralsRange() {
-		if pr == rule {
-			verified = true
-			break
-		}
-	}
-
-	if !verified {
-		return &ErrRangeTranslation{text: fmt.Sprintf("error: range plural rule '%s' does not exist for locale '%s' key: '%v' text: '%s'", rule, t.Locale(), key, text)}
-	}
-
-	tarr, ok := t.rangeTanslations[key]
-	if ok {
-		// verify not adding a conflicting record
-		if len(tarr) > 0 && tarr[rule] != nil && !override {
-			return &ErrConflictingTranslation{locale: t.Locale(), key: key, rule: rule, text: text}
-		}
-
-	} else {
-		tarr = make([]*transText, 7, 7)
-		t.rangeTanslations[key] = tarr
-	}
-
-	trans := &transText{
-		text:    text,
-		indexes: make([]int, 4, 4),
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		tarr = make([]*transText, 7)
 		t.cardinalTanslations[key] = tarr
 	}
@@ -380,7 +268,6 @@ func (t *translator) AddRange(key interface{}, text string, rule locales.PluralR
 	trans := &transText{
 		text:    text,
 		indexes: make([]int, 4),
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	tarr[rule] = trans

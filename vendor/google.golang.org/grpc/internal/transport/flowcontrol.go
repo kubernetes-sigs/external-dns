@@ -134,50 +134,10 @@ type inFlow struct {
 
 // newLimit updates the inflow window to a new value n.
 // It assumes that n is always greater than the old limit.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (f *inFlow) newLimit(n uint32) {
 	f.mu.Lock()
 	f.limit = n
 	f.mu.Unlock()
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (f *inFlow) newLimit(n uint32) uint32 {
-||||||| parent of 4d7e5ad26 (update vendored files)
-func (f *inFlow) newLimit(n uint32) uint32 {
-=======
-func (f *inFlow) newLimit(n uint32) {
->>>>>>> 4d7e5ad26 (update vendored files)
-	f.mu.Lock()
-	f.limit = n
-	f.mu.Unlock()
-<<<<<<< HEAD
-	return d
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	return d
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-func (f *inFlow) newLimit(n uint32) uint32 {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (f *inFlow) newLimit(n uint32) uint32 {
-=======
-func (f *inFlow) newLimit(n uint32) {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	f.mu.Lock()
-	f.limit = n
-	f.mu.Unlock()
-<<<<<<< HEAD
-	return d
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return d
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (f *inFlow) maybeAdjust(n uint32) uint32 {

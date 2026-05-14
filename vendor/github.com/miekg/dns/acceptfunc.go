@@ -10,62 +10,7 @@ type MsgAcceptFunc func(dh Header) MsgAcceptAction
 //
 // * opcode isn't OpcodeQuery or OpcodeNotify
 //
-<<<<<<< HEAD
-// * Zero bit isn't zero
-//
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // * does not have exactly 1 question in the question section
-//
-// * has more than 1 RR in the Answer section
-//
-// * has more than 0 RRs in the Authority section
-//
-// * has more than 2 RRs in the Additional section
-//
-var DefaultMsgAcceptFunc MsgAcceptFunc = defaultMsgAcceptFunc
-
-// MsgAcceptAction represents the action to be taken.
-type MsgAcceptAction int
-
-// Allowed returned values from a MsgAcceptFunc.
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// * has more than 1 question in the question section
-||||||| parent of 4d7e5ad26 (update vendored files)
-// * has more than 1 question in the question section
-=======
-// * does not have exactly 1 question in the question section
->>>>>>> 4d7e5ad26 (update vendored files)
-//
-// * has more than 1 RR in the Answer section
-//
-// * has more than 0 RRs in the Authority section
-//
-// * has more than 2 RRs in the Additional section
-//
-var DefaultMsgAcceptFunc MsgAcceptFunc = defaultMsgAcceptFunc
-
-// MsgAcceptAction represents the action to be taken.
-type MsgAcceptAction int
-
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// Allowed returned values from a MsgAcceptFunc.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// * has more than 1 question in the question section
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// * Zero bit isn't zero
-//
-// * has more than 1 question in the question section
-=======
-// * does not have exactly 1 question in the question section
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // * has more than 1 RR in the Answer section
 //
@@ -77,12 +22,7 @@ var DefaultMsgAcceptFunc MsgAcceptFunc = defaultMsgAcceptFunc
 // MsgAcceptAction represents the action to be taken.
 type MsgAcceptAction int
 
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // Allowed returned values from a MsgAcceptFunc.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 const (
 	MsgAccept               MsgAcceptAction = iota // Accept the message
 	MsgReject                                      // Reject the message with a RcodeFormatError

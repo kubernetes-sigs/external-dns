@@ -47,231 +47,10 @@ const (
 // PolicyRule holds information that describes a policy rule, but does not contain information
 // about who the rule applies to or which namespace the rule applies to.
 type PolicyRule struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule. '*' represents all verbs.
-	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
-
-	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
-	// the enumerated resources in any API group will be allowed. "" represents the core API group and "*" represents all API groups.
-	// +optional
-	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
-	// Resources is a list of resources this rule applies to. '*' represents all resources.
-	// +optional
-	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
-	// ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
-	// +optional
-	ResourceNames []string `json:"resourceNames,omitempty" protobuf:"bytes,4,rep,name=resourceNames"`
-
-	// NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full, final step in the path
-	// Since non-resource URLs are not namespaced, this field is only applicable for ClusterRoles referenced from a ClusterRoleBinding.
-	// Rules can either apply to API resources (such as "pods" or "secrets") or non-resource URL paths (such as "/api"),  but not both.
-	// +optional
-	NonResourceURLs []string `json:"nonResourceURLs,omitempty" protobuf:"bytes,5,rep,name=nonResourceURLs"`
-}
-
-// Subject contains a reference to the object or user identities a role binding applies to.  This can either hold a direct API object reference,
-// or a value for non-objects such as user and group names.
-// +structType=atomic
-type Subject struct {
-	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
-	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
-	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
-	// APIGroup holds the API group of the referenced subject.
-	// Defaults to "" for ServiceAccount subjects.
-	// Defaults to "rbac.authorization.k8s.io" for User and Group subjects.
-	// +optional
-	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt.name=apiGroup"`
-	// Name of the object being referenced.
-	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
-	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
-	// the Authorizer should report an error.
-	// +optional
-	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
-}
-
-// RoleRef contains information that points to the role being used
-// +structType=atomic
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-||||||| parent of 5ce8c7613 (update vendored files)
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule. '*' represents all verbs.
->>>>>>> 5ce8c7613 (update vendored files)
-	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
-
-	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
-	// the enumerated resources in any API group will be allowed.
-	// +optional
-	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
-	// Resources is a list of resources this rule applies to. '*' represents all resources.
-	// +optional
-	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
-	// ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
-	// +optional
-	ResourceNames []string `json:"resourceNames,omitempty" protobuf:"bytes,4,rep,name=resourceNames"`
-
-	// NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full, final step in the path
-	// Since non-resource URLs are not namespaced, this field is only applicable for ClusterRoles referenced from a ClusterRoleBinding.
-	// Rules can either apply to API resources (such as "pods" or "secrets") or non-resource URL paths (such as "/api"),  but not both.
-	// +optional
-	NonResourceURLs []string `json:"nonResourceURLs,omitempty" protobuf:"bytes,5,rep,name=nonResourceURLs"`
-}
-
-// Subject contains a reference to the object or user identities a role binding applies to.  This can either hold a direct API object reference,
-// or a value for non-objects such as user and group names.
-// +structType=atomic
-type Subject struct {
-	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
-	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
-	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
-	// APIGroup holds the API group of the referenced subject.
-	// Defaults to "" for ServiceAccount subjects.
-	// Defaults to "rbac.authorization.k8s.io" for User and Group subjects.
-	// +optional
-	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt.name=apiGroup"`
-	// Name of the object being referenced.
-	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
-	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
-	// the Authorizer should report an error.
-	// +optional
-	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
-}
-
-// RoleRef contains information that points to the role being used
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// +structType=atomic
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-||||||| parent of 6b7ce455e (update vendored files)
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds contained in this rule. '*' represents all verbs.
->>>>>>> 6b7ce455e (update vendored files)
-	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
-
-	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
-	// the enumerated resources in any API group will be allowed.
-	// +optional
-	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
-	// Resources is a list of resources this rule applies to. '*' represents all resources.
-	// +optional
-	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
-	// ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
-	// +optional
-	ResourceNames []string `json:"resourceNames,omitempty" protobuf:"bytes,4,rep,name=resourceNames"`
-
-	// NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full, final step in the path
-	// Since non-resource URLs are not namespaced, this field is only applicable for ClusterRoles referenced from a ClusterRoleBinding.
-	// Rules can either apply to API resources (such as "pods" or "secrets") or non-resource URL paths (such as "/api"),  but not both.
-	// +optional
-	NonResourceURLs []string `json:"nonResourceURLs,omitempty" protobuf:"bytes,5,rep,name=nonResourceURLs"`
-}
-
-// Subject contains a reference to the object or user identities a role binding applies to.  This can either hold a direct API object reference,
-// or a value for non-objects such as user and group names.
-// +structType=atomic
-type Subject struct {
-	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
-	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
-	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
-	// APIGroup holds the API group of the referenced subject.
-	// Defaults to "" for ServiceAccount subjects.
-	// Defaults to "rbac.authorization.k8s.io" for User and Group subjects.
-	// +optional
-	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt.name=apiGroup"`
-	// Name of the object being referenced.
-	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
-	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
-	// the Authorizer should report an error.
-	// +optional
-	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
-}
-
-// RoleRef contains information that points to the role being used
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// +structType=atomic
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds contained in this rule. '*' represents all verbs.
->>>>>>> 4d7e5ad26 (update vendored files)
-	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
-
-	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
-	// the enumerated resources in any API group will be allowed.
-	// +optional
-	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
-	// Resources is a list of resources this rule applies to. '*' represents all resources.
-	// +optional
-	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
-	// ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
-	// +optional
-	ResourceNames []string `json:"resourceNames,omitempty" protobuf:"bytes,4,rep,name=resourceNames"`
-
-	// NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full, final step in the path
-	// Since non-resource URLs are not namespaced, this field is only applicable for ClusterRoles referenced from a ClusterRoleBinding.
-	// Rules can either apply to API resources (such as "pods" or "secrets") or non-resource URL paths (such as "/api"),  but not both.
-	// +optional
-	NonResourceURLs []string `json:"nonResourceURLs,omitempty" protobuf:"bytes,5,rep,name=nonResourceURLs"`
-}
-
-// Subject contains a reference to the object or user identities a role binding applies to.  This can either hold a direct API object reference,
-// or a value for non-objects such as user and group names.
-// +structType=atomic
-type Subject struct {
-	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
-	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
-	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
-	// APIGroup holds the API group of the referenced subject.
-	// Defaults to "" for ServiceAccount subjects.
-	// Defaults to "rbac.authorization.k8s.io" for User and Group subjects.
-	// +optional
-	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt.name=apiGroup"`
-	// Name of the object being referenced.
-	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
-	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
-	// the Authorizer should report an error.
-	// +optional
-	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
-}
-
-// RoleRef contains information that points to the role being used
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// +structType=atomic
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
-=======
 	// Verbs is a list of Verbs that apply to ALL the ResourceKinds contained in this rule. '*' represents all verbs.
 	// +listType=atomic
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
 
 	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
@@ -302,6 +81,7 @@ type Subject struct {
 type Subject struct {
 	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
 	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
+	// +required
 	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
 	// APIGroup holds the API group of the referenced subject.
 	// Defaults to "" for ServiceAccount subjects.
@@ -309,6 +89,8 @@ type Subject struct {
 	// +optional
 	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt,name=apiGroup"`
 	// Name of the object being referenced.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
 	// the Authorizer should report an error.
@@ -317,18 +99,17 @@ type Subject struct {
 }
 
 // RoleRef contains information that points to the role being used
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // +structType=atomic
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type RoleRef struct {
 	// APIGroup is the group for the resource being referenced
+	// +optional
 	APIGroup string `json:"apiGroup" protobuf:"bytes,1,opt,name=apiGroup"`
 	// Kind is the type of resource being referenced
+	// +required
 	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
 	// Name is the name of resource being referenced
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 }
 
@@ -346,6 +127,7 @@ type Role struct {
 	// Rules holds all the PolicyRules for this Role
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Rules []PolicyRule `json:"rules" protobuf:"bytes,2,rep,name=rules"`
 }
 
@@ -365,11 +147,13 @@ type RoleBinding struct {
 	// Subjects holds references to the objects the role applies to.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Subjects []Subject `json:"subjects,omitempty" protobuf:"bytes,2,rep,name=subjects"`
 
 	// RoleRef can reference a Role in the current namespace or a ClusterRole in the global namespace.
 	// If the RoleRef cannot be resolved, the Authorizer must return an error.
 	// This field is immutable.
+	// +required
 	RoleRef RoleRef `json:"roleRef" protobuf:"bytes,3,opt,name=roleRef"`
 }
 
@@ -416,6 +200,7 @@ type ClusterRole struct {
 	// Rules holds all the PolicyRules for this ClusterRole
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Rules []PolicyRule `json:"rules" protobuf:"bytes,2,rep,name=rules"`
 
 	// AggregationRule is an optional field that describes how to build the Rules for this ClusterRole.
@@ -450,11 +235,13 @@ type ClusterRoleBinding struct {
 	// Subjects holds references to the objects the role applies to.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Subjects []Subject `json:"subjects,omitempty" protobuf:"bytes,2,rep,name=subjects"`
 
 	// RoleRef can only reference a ClusterRole in the global namespace.
 	// If the RoleRef cannot be resolved, the Authorizer must return an error.
 	// This field is immutable.
+	// +required
 	RoleRef RoleRef `json:"roleRef" protobuf:"bytes,3,opt,name=roleRef"`
 }
 

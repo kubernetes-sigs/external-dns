@@ -45,29 +45,6 @@ The returned response object is an `*http.Response`, the same thing you would
 usually get from `net/http`. Had the request failed one or more times, the above
 call would block and retry with exponential backoff.
 
-<<<<<<< HEAD
-## Retrying cases that fail after a seeming success
-
-It's possible for a request to succeed in the sense that the expected response headers are received, but then to encounter network-level errors while reading the response body. In go-retryablehttp's most basic usage, this error would not be retryable, due to the out-of-band handling of the response body. In some cases it may be desirable to handle the response body as part of the retryable operation.
-
-A toy example (which will retry the full request and succeed on the second attempt) is shown below:
-
-```go
-c := retryablehttp.NewClient()
-r := retryablehttp.NewRequest("GET", "://foo", nil)
-handlerShouldRetry := true
-r.SetResponseHandler(func(*http.Response) error {
-    if !handlerShouldRetry {
-        return nil
-    }
-    handlerShouldRetry = false
-    return errors.New("retryable error")
-})
-```
-
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ## Getting a stdlib `*http.Client` with retries
 
 It's possible to convert a `*retryablehttp.Client` directly to a `*http.Client`.
@@ -82,4 +59,4 @@ standardClient := retryClient.StandardClient() // *http.Client
 ```
 
 For more usage and examples see the
-[godoc](http://godoc.org/github.com/hashicorp/go-retryablehttp).
+[pkg.go.dev](https://pkg.go.dev/github.com/hashicorp/go-retryablehttp).

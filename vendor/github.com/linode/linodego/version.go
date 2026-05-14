@@ -24,7 +24,9 @@ func init() {
 				if dep.Replace != nil {
 					Version = dep.Replace.Version
 				}
+
 				Version = dep.Version
+
 				break
 			}
 		}

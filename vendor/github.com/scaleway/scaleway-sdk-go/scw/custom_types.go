@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scaleway/scaleway-sdk-go/internal/errors"
+	"github.com/scaleway/scaleway-sdk-go/errors"
 	"github.com/scaleway/scaleway-sdk-go/logger"
 )
 
@@ -112,7 +112,7 @@ type Money struct {
 // - (value = 1.123456789, precision = 9) => Money{Units = 1, Nanos = 123456789}
 func NewMoneyFromFloat(value float64, currencyCode string, precision int) *Money {
 	if precision > 9 {
-		panic(fmt.Errorf("max precision is 9"))
+		panic(errors.New("max precision is 9"))
 	}
 
 	strValue := strconv.FormatFloat(value, 'f', precision, 64)
@@ -137,7 +137,7 @@ func (m Money) String() string {
 
 	currencySign, currencySignFound := currencySignsByCodes[m.CurrencyCode]
 	if !currencySignFound {
-		logger.Debugf("%s currency code is not supported", m.CurrencyCode)
+		logger.Debugf("%s currency code is not supported\n", m.CurrencyCode)
 		currencySign = m.CurrencyCode
 	}
 
@@ -198,7 +198,7 @@ func (tsp TimeSeriesPoint) MarshalJSON() ([]byte, error) {
 }
 
 func (tsp *TimeSeriesPoint) UnmarshalJSON(b []byte) error {
-	point := [2]interface{}{}
+	point := [2]any{}
 
 	err := json.Unmarshal(b, &point)
 	if err != nil {
@@ -206,7 +206,7 @@ func (tsp *TimeSeriesPoint) UnmarshalJSON(b []byte) error {
 	}
 
 	if len(point) != 2 {
-		return fmt.Errorf("invalid point array")
+		return errors.New("invalid point array")
 	}
 
 	strTimestamp, isStrTimestamp := point[0].(string)
@@ -381,7 +381,7 @@ func splitFloatString(input string) (units int64, nanos int32, err error) {
 //		"Foo": "Bar",
 //	}
 //	values["Baz"] = "Qux"
-type JSONObject map[string]interface{}
+type JSONObject map[string]any
 
 // EscapeMode is the mode that should be use for escaping a value
 type EscapeMode uint
@@ -447,4 +447,37 @@ func EncodeJSONObject(v JSONObject, escape EscapeMode) (string, error) {
 	}
 
 	panic(fmt.Sprintf("EncodeJSONObject called with unknown EscapeMode, %v", escape))
+}
+
+// Decimal is a representation of a decimal value, such as 2.5.
+// Comparable to language-native decimal formats, such as Java's BigDecimal or
+// Python's decimal.Decimal.
+// Lookup protobuf google.type.Decimal for details.
+type Decimal string
+
+var _ fmt.Stringer = (*Decimal)(nil)
+
+func (d Decimal) String() string {
+	return string(d)
+}
+
+func (d Decimal) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"value": d.String(),
+	})
+}
+
+func (d *Decimal) UnmarshalJSON(b []byte) error {
+	m := struct {
+		Value string `json:"value"`
+	}{}
+
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		return err
+	}
+
+	*d = Decimal(m.Value)
+
+	return nil
 }

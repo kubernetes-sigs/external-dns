@@ -45,123 +45,10 @@ client.Client from an authcfg.Info.
 
 Example:
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	import (
 	    "pkg/client"
 	    "pkg/client/auth"
 	)
-
-	info, err := auth.LoadFromFile(filename)
-	if err != nil {
-	  // handle error
-	}
-	clientConfig = client.Config{}
-	clientConfig.Host = "example.com:4901"
-	clientConfig = info.MergeWithConfig()
-	client := client.New(clientConfig)
-	client.Pods(ns).List()
-*/
-package auth
-
-// TODO: need a way to rotate Tokens.  Therefore, need a way for client object to be reset when the authcfg is updated.
-import (
-	"encoding/json"
-	"io/ioutil"
-	"os"
-
-	restclient "k8s.io/client-go/rest"
-)
-
-// Info holds Kubernetes API authorization config.  It is intended
-// to be read/written from a file as a JSON object.
-type Info struct {
-	User        string
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Password    string `datapolicy:"password"`
-	CAFile      string
-	CertFile    string
-	KeyFile     string
-	BearerToken string `datapolicy:"token"`
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Password    string
-||||||| parent of 5ce8c7613 (update vendored files)
-	Password    string
-=======
-	Password    string `datapolicy:"password"`
->>>>>>> 5ce8c7613 (update vendored files)
-	CAFile      string
-	CertFile    string
-	KeyFile     string
-<<<<<<< HEAD
-	BearerToken string
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	BearerToken string
-=======
-	BearerToken string `datapolicy:"token"`
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Password    string
-||||||| parent of 6b7ce455e (update vendored files)
-	Password    string
-=======
-	Password    string `datapolicy:"password"`
->>>>>>> 6b7ce455e (update vendored files)
-	CAFile      string
-	CertFile    string
-	KeyFile     string
-<<<<<<< HEAD
-	BearerToken string
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	BearerToken string
-=======
-	BearerToken string `datapolicy:"token"`
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Password    string
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Password    string
-=======
-	Password    string `datapolicy:"password"`
->>>>>>> 4d7e5ad26 (update vendored files)
-	CAFile      string
-	CertFile    string
-	KeyFile     string
-<<<<<<< HEAD
-	BearerToken string
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	BearerToken string
-=======
-	BearerToken string `datapolicy:"token"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-    import (
-        "pkg/client"
-        "pkg/client/auth"
-    )
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-    import (
-        "pkg/client"
-        "pkg/client/auth"
-    )
-=======
-	import (
-	    "pkg/client"
-	    "pkg/client/auth"
-	)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	info, err := auth.LoadFromFile(filename)
 	if err != nil {
@@ -191,14 +78,7 @@ type Info struct {
 	CAFile      string
 	CertFile    string
 	KeyFile     string
-<<<<<<< HEAD
-	BearerToken string
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	BearerToken string
-=======
 	BearerToken string `datapolicy:"token"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Insecure    *bool
 }
 

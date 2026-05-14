@@ -19,17 +19,7 @@ limitations under the License.
 package v1
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"net/http"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	"net/http"
-=======
 	http "net/http"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	batchv1 "k8s.io/api/batch/v1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,96 +28,6 @@ import (
 
 type BatchV1Interface interface {
 	RESTClient() rest.Interface
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-	CronJobsGetter
-	JobsGetter
-}
-
-// BatchV1Client is used to interact with features provided by the batch group.
-type BatchV1Client struct {
-	restClient rest.Interface
-}
-
-func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
-	return newCronJobs(c, namespace)
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	JobsGetter
-}
-
-// BatchV1Client is used to interact with features provided by the batch group.
-type BatchV1Client struct {
-	restClient rest.Interface
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	JobsGetter
-}
-
-// BatchV1Client is used to interact with features provided by the batch group.
-type BatchV1Client struct {
-	restClient rest.Interface
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-}
-
-func (c *BatchV1Client) Jobs(namespace string) JobInterface {
-	return newJobs(c, namespace)
-}
-
-// NewForConfig creates a new BatchV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*BatchV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new BatchV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"net/http"
-
->>>>>>> 4d7e5ad26 (update vendored files)
-	v1 "k8s.io/api/batch/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type BatchV1Interface interface {
-	RESTClient() rest.Interface
 	CronJobsGetter
 	JobsGetter
 }
@@ -150,23 +50,7 @@ func (c *BatchV1Client) Jobs(namespace string) JobInterface {
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*BatchV1Client, error) {
 	config := *c
-<<<<<<< HEAD
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-<<<<<<< HEAD
-	client, err := rest.RESTClientFor(&config)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	client, err := rest.RESTClientFor(&config)
-=======
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-=======
 	setConfigDefaults(&config)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -180,68 +64,6 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, erro
 	config := *c
 	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"net/http"
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	v1 "k8s.io/api/batch/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type BatchV1Interface interface {
-	RESTClient() rest.Interface
-	CronJobsGetter
-	JobsGetter
-}
-
-// BatchV1Client is used to interact with features provided by the batch group.
-type BatchV1Client struct {
-	restClient rest.Interface
-}
-
-func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
-	return newCronJobs(c, namespace)
-}
-
-func (c *BatchV1Client) Jobs(namespace string) JobInterface {
-	return newJobs(c, namespace)
-}
-
-// NewForConfig creates a new BatchV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*BatchV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-<<<<<<< HEAD
-	client, err := rest.RESTClientFor(&config)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	client, err := rest.RESTClientFor(&config)
-=======
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new BatchV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

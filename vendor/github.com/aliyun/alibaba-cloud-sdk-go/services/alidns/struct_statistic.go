@@ -17,63 +17,6 @@ package alidns
 
 // Statistic is a nested struct in alidns response
 type Statistic struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
-	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
-	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
-	DomainType   string `json:"DomainType" xml:"DomainType"`
-	DomainName   string `json:"DomainName" xml:"DomainName"`
-	V6HttpCount  int64  `json:"V6HttpCount" xml:"V6HttpCount"`
-	SubDomain    string `json:"SubDomain" xml:"SubDomain"`
-	V4HttpCount  int64  `json:"V4HttpCount" xml:"V4HttpCount"`
-	V6HttpsCount int64  `json:"V6HttpsCount" xml:"V6HttpsCount"`
-	IpCount      int64  `json:"IpCount" xml:"IpCount"`
-	HttpsCount   int64  `json:"HttpsCount" xml:"HttpsCount"`
-	Count        int64  `json:"Count" xml:"Count"`
-	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
-	Count      int64  `json:"Count" xml:"Count"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
-	Count      int64  `json:"Count" xml:"Count"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
-=======
-	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
-	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
-	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
-	DomainType   string `json:"DomainType" xml:"DomainType"`
-	DomainName   string `json:"DomainName" xml:"DomainName"`
-	V6HttpCount  int64  `json:"V6HttpCount" xml:"V6HttpCount"`
-	SubDomain    string `json:"SubDomain" xml:"SubDomain"`
-	V4HttpCount  int64  `json:"V4HttpCount" xml:"V4HttpCount"`
-	V6HttpsCount int64  `json:"V6HttpsCount" xml:"V6HttpsCount"`
-	IpCount      int64  `json:"IpCount" xml:"IpCount"`
-	HttpsCount   int64  `json:"HttpsCount" xml:"HttpsCount"`
-	Count        int64  `json:"Count" xml:"Count"`
-	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
-	Count      int64  `json:"Count" xml:"Count"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
-	Count      int64  `json:"Count" xml:"Count"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
-=======
 	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
 	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
@@ -87,5 +30,4 @@ type Statistic struct {
 	HttpsCount   int64  `json:"HttpsCount" xml:"HttpsCount"`
 	Count        string `json:"Count" xml:"Count"`
 	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

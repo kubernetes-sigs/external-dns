@@ -2,6 +2,7 @@ package dns
 
 // NameUsed sets the RRs in the prereq section to
 // "Name is in use" RRs. RFC 2136 section 2.4.4.
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) NameUsed(rr []RR) {
 	if u.Answer == nil {
 		u.Answer = make([]RR, 0, len(rr))
@@ -32,41 +33,16 @@ func (u *Msg) Used(rr []RR) {
 		u.Answer = make([]RR, 0, len(rr))
 	}
 	for _, r := range rr {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 		hdr := r.Header()
 		hdr.Class = u.Question[0].Qclass
 		hdr.Ttl = 0
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		r.Header().Class = u.Question[0].Qclass
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		r.Header().Class = u.Question[0].Qclass
-=======
-		hdr := r.Header()
-		hdr.Class = u.Question[0].Qclass
-		hdr.Ttl = 0
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		r.Header().Class = u.Question[0].Qclass
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		r.Header().Class = u.Question[0].Qclass
-=======
-		hdr := r.Header()
-		hdr.Class = u.Question[0].Qclass
-		hdr.Ttl = 0
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		u.Answer = append(u.Answer, r)
 	}
 }
 
 // RRsetUsed sets the RRs in the prereq section to
 // "RRset exists (value independent -- no rdata)" RRs. RFC 2136 section 2.4.1.
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) RRsetUsed(rr []RR) {
 	if u.Answer == nil {
 		u.Answer = make([]RR, 0, len(rr))
@@ -79,6 +55,7 @@ func (u *Msg) RRsetUsed(rr []RR) {
 
 // RRsetNotUsed sets the RRs in the prereq section to
 // "RRset does not exist" RRs. RFC 2136 section 2.4.3.
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) RRsetNotUsed(rr []RR) {
 	if u.Answer == nil {
 		u.Answer = make([]RR, 0, len(rr))
@@ -90,6 +67,7 @@ func (u *Msg) RRsetNotUsed(rr []RR) {
 }
 
 // Insert creates a dynamic update packet that adds an complete RRset, see RFC 2136 section 2.5.1.
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) Insert(rr []RR) {
 	if len(u.Question) == 0 {
 		panic("dns: empty question section")
@@ -104,6 +82,7 @@ func (u *Msg) Insert(rr []RR) {
 }
 
 // RemoveRRset creates a dynamic update packet that deletes an RRset, see RFC 2136 section 2.5.2.
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) RemoveRRset(rr []RR) {
 	if u.Ns == nil {
 		u.Ns = make([]RR, 0, len(rr))
@@ -115,6 +94,7 @@ func (u *Msg) RemoveRRset(rr []RR) {
 }
 
 // RemoveName creates a dynamic update packet that deletes all RRsets of a name, see RFC 2136 section 2.5.3
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) RemoveName(rr []RR) {
 	if u.Ns == nil {
 		u.Ns = make([]RR, 0, len(rr))
@@ -125,6 +105,7 @@ func (u *Msg) RemoveName(rr []RR) {
 }
 
 // Remove creates a dynamic update packet deletes RR from a RRSset, see RFC 2136 section 2.5.4
+// See [ANY] on how to make RRs without rdata.
 func (u *Msg) Remove(rr []RR) {
 	if u.Ns == nil {
 		u.Ns = make([]RR, 0, len(rr))

@@ -18,25 +18,13 @@ import (
 	"context"
 	"sync"
 
-	pb "go.etcd.io/etcd/api/v3/etcdserverpb"
-
 	"google.golang.org/grpc"
+
+	pb "go.etcd.io/etcd/api/v3/etcdserverpb"
 )
 
 // Txn is the interface that wraps mini-transactions.
 //
-<<<<<<< HEAD
-//	 Txn(context.TODO()).If(
-//	  Compare(Value(k1), ">", v1),
-//	  Compare(Version(k1), "=", 2)
-//	 ).Then(
-//	  OpPut(k2,v2), OpPut(k3,v3)
-//	 ).Else(
-//	  OpPut(k4,v4), OpPut(k5,v5)
-//	 ).Commit()
-//
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //	Txn(context.TODO()).If(
 //	 Compare(Value(k1), ">", v1),
 //	 Compare(Version(k1), "=", 2)
@@ -45,7 +33,6 @@ import (
 //	).Else(
 //	 OpPut(k4,v4), OpPut(k5,v5)
 //	).Commit()
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type Txn interface {
 	// If takes a list of comparison. If all comparisons passed in succeed,
 	// the operations passed into Then() will be executed. Or the operations

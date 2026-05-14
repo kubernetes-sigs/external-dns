@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
@@ -15,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"net/textproto"
 	"net/url"
 	"path"
@@ -24,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/internal/shared"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/internal/uuid"
 )
 
 // Base64Encoding is usesd to specify which base-64 encoder/decoder to use when
@@ -42,6 +41,11 @@ const (
 // The endpoint MUST be properly encoded before calling this function.
 func NewRequest(ctx context.Context, httpMethod string, endpoint string) (*policy.Request, error) {
 	return exported.NewRequest(ctx, httpMethod, endpoint)
+}
+
+// NewRequestFromRequest creates a new policy.Request with an existing *http.Request
+func NewRequestFromRequest(req *http.Request) (*policy.Request, error) {
+	return exported.NewRequestFromRequest(req)
 }
 
 // EncodeQueryParams will parse and encode any query parameters in the specified URL.
@@ -86,12 +90,16 @@ func JoinPaths(root string, paths ...string) string {
 	}
 
 	if qps != "" {
-		p = p + "?" + qps
+		if strings.Contains(p, "?") {
+			p = p + "&" + qps
+		} else {
+			p = p + "?" + qps
+		}
 	}
 
 	if strings.HasSuffix(root, "/") && strings.HasPrefix(p, "/") {
 		root = root[:len(root)-1]
-	} else if !strings.HasSuffix(root, "/") && !strings.HasPrefix(p, "/") {
+	} else if !strings.HasSuffix(root, "/") && !strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "?") {
 		p = "/" + p
 	}
 	return root + p
@@ -263,3 +271,12 @@ func SkipBodyDownload(req *policy.Request) {
 
 // CtxAPINameKey is used as a context key for adding/retrieving the API name.
 type CtxAPINameKey = shared.CtxAPINameKey
+
+// NewUUID returns a new UUID using the RFC4122 algorithm.
+func NewUUID() (string, error) {
+	u, err := uuid.New()
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
+}

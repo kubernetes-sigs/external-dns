@@ -20,8 +20,6 @@
 // name without scheme back to gRPC as resolved address.
 package passthrough
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 import (
 	"errors"
 
@@ -55,53 +53,6 @@ type passthroughResolver struct {
 
 func (r *passthroughResolver) start() {
 	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint()}}})
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-import "google.golang.org/grpc/resolver"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-import "google.golang.org/grpc/resolver"
-=======
-import (
-	"errors"
-
-	"google.golang.org/grpc/resolver"
-)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-const scheme = "passthrough"
-
-type passthroughBuilder struct{}
-
-func (*passthroughBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-	if target.Endpoint() == "" && opts.Dialer == nil {
-		return nil, errors.New("passthrough: received empty target in Build()")
-	}
-	r := &passthroughResolver{
-		target: target,
-		cc:     cc,
-	}
-	r.start()
-	return r, nil
-}
-
-func (*passthroughBuilder) Scheme() string {
-	return scheme
-}
-
-type passthroughResolver struct {
-	target resolver.Target
-	cc     resolver.ClientConn
-}
-
-func (r *passthroughResolver) start() {
-<<<<<<< HEAD
-	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint}}})
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint}}})
-=======
-	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint()}}})
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (*passthroughResolver) ResolveNow(resolver.ResolveNowOptions) {}

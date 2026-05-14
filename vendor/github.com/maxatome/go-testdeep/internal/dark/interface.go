@@ -8,15 +8,20 @@ package dark
 
 import (
 	"reflect"
+
+	"github.com/maxatome/go-testdeep/internal/or"
+	"github.com/maxatome/go-testdeep/internal/spew"
 )
+
+// UnsafeDisabled is a build-time constant which specifies whether or
+// not access to the unsafe package is available.
+const UnsafeDisabled = spew.UnsafeDisabled
 
 // GetInterface does its best to return the data behind val. If force
 // is true, it tries to bypass golang protections using the unsafe
 // package.
 //
 // It returns (nil, false) if the data behind val can not be retrieved
-<<<<<<< HEAD
-<<<<<<< HEAD
 // as an any interface (aka struct private + non-copyable field).
 var GetInterface = func(val reflect.Value, force bool) (any, bool) {
 	if !val.IsValid() {
@@ -28,7 +33,7 @@ var GetInterface = func(val reflect.Value, force bool) (any, bool) {
 	}
 
 	if force {
-		val = unsafeReflectValue(val)
+		val = spew.UnsafeReflectValue(val)
 		if val.CanInterface() {
 			return val.Interface(), true
 		}
@@ -48,57 +53,8 @@ var GetInterface = func(val reflect.Value, force bool) (any, bool) {
 // MustGetInterface does its best to return the data behind val. If it
 // fails (struct private + non-copyable field), it panics.
 func MustGetInterface(val reflect.Value) any {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// as an interface{} (aka struct private + non-copyable field).
-var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// as an interface{} (aka struct private + non-copyable field).
-var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
-=======
-// as an any interface (aka struct private + non-copyable field).
-var GetInterface = func(val reflect.Value, force bool) (any, bool) {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if !val.IsValid() {
-		return nil, true
-	}
-
-	if val.CanInterface() {
-		return val.Interface(), true
-	}
-
-	if force {
-		val = unsafeReflectValue(val)
-		if val.CanInterface() {
-			return val.Interface(), true
-		}
-	}
-
-	// For some types, we can copy them in new visitable reflect.Value instances
-	copyVal, ok := CopyValue(val)
-	if ok && copyVal.CanInterface() {
-		return copyVal.Interface(), true
-	}
-
-	// For others, in environments where "unsafe" package is not
-	// available, we cannot go further
-	return nil, false
-}
-
-// MustGetInterface does its best to return the data behind val. If it
-// fails (struct private + non-copyable field), it panics.
-<<<<<<< HEAD
-func MustGetInterface(val reflect.Value) interface{} {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func MustGetInterface(val reflect.Value) interface{} {
-=======
-func MustGetInterface(val reflect.Value) any {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	ret, ok := GetInterface(val, true)
-	if ok {
-		return ret
-	}
-	panic("dark.GetInterface() does not handle private " +
-		val.Kind().String() + " kind")
+	or.Panic(ok,
+		"dark.GetInterface() does not handle private ", val.Kind(), " kind")
+	return ret
 }

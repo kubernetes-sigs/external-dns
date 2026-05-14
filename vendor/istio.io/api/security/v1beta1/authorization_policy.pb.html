@@ -25,8 +25,7 @@ AUDIT policies do not affect whether requests are allowed or denied to the workl
 Requests will be allowed or denied based solely on CUSTOM, DENY and ALLOW actions.</p>
 <p>A request will be internally marked that it should be audited if there is an AUDIT policy on the workload that matches the request.
 A separate plugin must be configured and enabled to actually fulfill the audit decision and complete the audit behavior.
-The request will not be audited if there are no such supporting plugins enabled.
-Currently, the only supported plugin is the <a href="https://istio.io/latest/docs/reference/config/proxy_extensions/stackdriver/">Stackdriver</a> plugin.</p>
+The request will not be audited if there are no such supporting plugins enabled.</p>
 <p>Here is an example of Istio Authorization Policy:</p>
 <p>It sets the <code>action</code> to <code>ALLOW</code> to create an allow policy. The default action is <code>ALLOW</code>
 but it is useful to be explicit in the policy.</p>
@@ -203,37 +202,37 @@ spec:
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="AuthorizationPolicy-selector">
-<td><code>selector</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-selector">selector</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></div>
+</div></td>
 <td>
-<p>Optional. The selector decides where to apply the authorization policy. The selector will match with workloads
+<p>The selector decides where to apply the authorization policy. The selector will match with workloads
 in the same namespace as the authorization policy. If the authorization policy is in the root namespace, the selector
 will additionally match with workloads in all namespaces.</p>
 <p>If the selector and the targetRef are not set, the selector will match all workloads.</p>
 <p>At most one of <code>selector</code> or <code>targetRefs</code> can be set for a given policy.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="AuthorizationPolicy-targetRefs">
-<td><code>targetRefs</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#PolicyTargetReference">PolicyTargetReference[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-targetRefs">targetRefs</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/type/workload-selector.html#PolicyTargetReference">PolicyTargetReference[]</a></div>
+</div></td>
 <td>
-<p>Optional. The targetRef specifies the gateway the policy should be
-applied to. The targeted resource specified will determine which
-workloads the policy applies to.</p>
+<p>The targetRefs specifies a list of resources the policy should be
+applied to. The targeted resources specified will determine which workloads
+the policy applies to.</p>
 <p>Currently, the following resource attachment types are supported:</p>
 <ul>
 <li><code>kind: Gateway</code> with <code>group: gateway.networking.k8s.io</code> in the same namespace.</li>
+<li><code>kind: GatewayClass</code> with <code>group: gateway.networking.k8s.io</code> in the root namespace.</li>
+<li><code>kind: Service</code> with <code>group: &quot;&quot;</code> or <code>group: &quot;core&quot;</code> in the same namespace. This type is only supported for waypoints.</li>
+<li><code>kind: ServiceEntry</code> with <code>group: networking.istio.io</code> in the same namespace.</li>
 </ul>
 <p>If not set, the policy is applied as defined by the selector.
 At most one of the selector and targetRefs can be set.</p>
@@ -244,43 +243,126 @@ from misinterpreting the policy as namespace-wide during the upgrade process.</p
 <p>NOTE: Waypoint proxies are required to use this field for policies to apply; <code>selector</code> policies will be ignored.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="AuthorizationPolicy-rules">
-<td><code>rules</code></td>
-<td><code><a href="#Rule">Rule[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-rules">rules</a></code></div>
+<div class="type"><a href="#Rule">Rule[]</a></div>
+</div></td>
 <td>
-<p>Optional. A list of rules to match the request. A match occurs when at least one rule matches the request.</p>
+<p>A list of rules to match the request. A match occurs when at least one rule matches the request.</p>
 <p>If not set, the match will never occur. This is equivalent to setting a default of deny for the target workloads if
 the action is ALLOW.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="AuthorizationPolicy-action">
-<td><code>action</code></td>
-<td><code><a href="#AuthorizationPolicy-Action">Action</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-action">action</a></code></div>
+<div class="type"><a href="#AuthorizationPolicy-Action">Action</a></div>
+</div></td>
 <td>
-<p>Optional. The action to take if the request is matched with the rules. Default is ALLOW if not specified.</p>
+<p>The action to take if the request is matched with the rules. Default is ALLOW if not specified.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="AuthorizationPolicy-provider" class="oneof oneof-start">
-<td><code>provider</code></td>
-<td><code><a href="#AuthorizationPolicy-ExtensionProvider">ExtensionProvider (oneof)</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-provider">provider</a></code></div>
+<div class="type"><a href="#AuthorizationPolicy-ExtensionProvider">ExtensionProvider (oneof)</a></div>
+</div></td>
 <td>
 <p>Specifies detailed configuration of the CUSTOM action. Must be used only with CUSTOM action.</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="AuthorizationPolicy-ExtensionProvider">ExtensionProvider</h3>
+<section>
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-ExtensionProvider-name">
+<td><div class="field"><div class="name"><code><a href="#AuthorizationPolicy-ExtensionProvider-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
-No
+<p>Specifies the name of the extension provider. The list of available providers is defined in the MeshConfig.
+Note, currently at most 1 extension provider is allowed per workload. Different workloads can use different extension provider.</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="AuthorizationPolicy-Action">Action</h3>
+<section>
+<p>Action specifies the operation to take.</p>
+
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-Action-ALLOW">
+<td><code><a href="#AuthorizationPolicy-Action-ALLOW">ALLOW</a></code></td>
+<td>
+<p>Allow a request only if it matches the rules. This is the default type.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-DENY">
+<td><code><a href="#AuthorizationPolicy-Action-DENY">DENY</a></code></td>
+<td>
+<p>Deny a request if it matches any of the rules.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-AUDIT">
+<td><code><a href="#AuthorizationPolicy-Action-AUDIT">AUDIT</a></code></td>
+<td>
+<p>Audit a request if it matches any of the rules.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-CUSTOM">
+<td><code><a href="#AuthorizationPolicy-Action-CUSTOM">CUSTOM</a></code></td>
+<td>
+<p>The CUSTOM action allows an extension to handle the user request if the matching rules evaluate to true.
+The extension is evaluated independently and before the native ALLOW and DENY actions. When used together, A request
+is allowed if and only if all the actions return allow, in other words, the extension cannot bypass the
+authorization decision made by ALLOW and DENY action.
+Extension behavior is defined by the named providers declared in MeshConfig. The authorization policy refers to
+the extension by specifying the name of the provider.
+One example use case of the extension is to integrate with a custom external authorization system to delegate
+the authorization decision to it.</p>
+<p>The following authorization policy applies to an ingress gateway and delegates the authorization check to a named extension
+<code>my-custom-authz</code> if the request path has prefix <code>/admin/</code>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ext-authz
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istio-ingressgateway
+  action: CUSTOM
+  provider:
+    name: &quot;my-custom-authz&quot;
+  rules:
+  - to:
+    - operation:
+        paths: [&quot;/admin/*&quot;]
+</code></pre>
+
 </td>
 </tr>
 </tbody>
@@ -303,46 +385,86 @@ matches the request. An empty rule is always matched.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Rule-from">
-<td><code>from</code></td>
-<td><code><a href="#Rule-From">From[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Rule-from">from</a></code></div>
+<div class="type"><a href="#Rule-From">From[]</a></div>
+</div></td>
 <td>
-<p>Optional. <code>from</code> specifies the source of a request.</p>
+<p><code>from</code> specifies the source of a request.</p>
 <p>If not set, any source is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Rule-to">
-<td><code>to</code></td>
-<td><code><a href="#Rule-To">To[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Rule-to">to</a></code></div>
+<div class="type"><a href="#Rule-To">To[]</a></div>
+</div></td>
 <td>
-<p>Optional. <code>to</code> specifies the operation of a request.</p>
+<p><code>to</code> specifies the operation of a request.</p>
 <p>If not set, any operation is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Rule-when">
-<td><code>when</code></td>
-<td><code><a href="#Condition">Condition[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Rule-when">when</a></code></div>
+<div class="type"><a href="#Condition">Condition[]</a></div>
+</div></td>
 <td>
-<p>Optional. <code>when</code> specifies a list of additional conditions of a request.</p>
+<p><code>when</code> specifies a list of additional conditions of a request.</p>
 <p>If not set, any condition is allowed.</p>
 
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="Rule-From">From</h3>
+<section>
+<p>From includes a list of sources.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-From-source">
+<td><div class="field"><div class="name"><code><a href="#Rule-From-source">source</a></code></div>
+<div class="type"><a href="#Source">Source</a></div>
+</div></td>
 <td>
-No
+<p>Source specifies the source of a request.</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="Rule-To">To</h3>
+<section>
+<p>To includes a list of operations.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-To-operation">
+<td><div class="field"><div class="name"><code><a href="#Rule-To-operation">operation</a></code></div>
+<div class="type"><a href="#Operation">Operation</a></div>
+</div></td>
+<td>
+<p>Operation specifies the operation of a request.</p>
+
 </td>
 </tr>
 </tbody>
@@ -363,115 +485,126 @@ notIpBlocks: [&quot;203.0.113.4&quot;]
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Source-principals">
-<td><code>principals</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-principals">principals</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of peer identities derived from the peer certificate. The peer identity is in the format of
+<p>A list of peer identities derived from the peer certificate. The peer identity is in the format of
 <code>&quot;&lt;TRUST_DOMAIN&gt;/ns/&lt;NAMESPACE&gt;/sa/&lt;SERVICE_ACCOUNT&gt;&quot;</code>, for example, <code>&quot;cluster.local/ns/default/sa/productpage&quot;</code>.
 This field requires mTLS enabled and is the same as the <code>source.principal</code> attribute.</p>
+<p>Usage of <code>serviceAccounts</code> is typically simpler and offers the same functionality.</p>
 <p>If not set, any principal is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Source-not_principals">
-<td><code>notPrincipals</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-not_principals">notPrincipals</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of peer identities.</p>
+<p>A list of negative match of peer identities.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Source-request_principals">
-<td><code>requestPrincipals</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-request_principals">requestPrincipals</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of request identities derived from the JWT. The request identity is in the format of
+<p>A list of request identities derived from the JWT. The request identity is in the format of
 <code>&quot;&lt;ISS&gt;/&lt;SUB&gt;&quot;</code>, for example, <code>&quot;example.com/sub-1&quot;</code>. This field requires request authentication enabled and is the
 same as the <code>request.auth.principal</code> attribute.</p>
 <p>If not set, any request principal is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Source-not_request_principals">
-<td><code>notRequestPrincipals</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-not_request_principals">notRequestPrincipals</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of request identities.</p>
+<p>A list of negative match of request identities.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Source-namespaces">
-<td><code>namespaces</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-namespaces">namespaces</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of namespaces derived from the peer certificate.
+<p>A list of namespaces derived from the peer certificate.
 This field requires mTLS enabled and is the same as the <code>source.namespace</code> attribute.</p>
 <p>If not set, any namespace is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Source-not_namespaces">
-<td><code>notNamespaces</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-not_namespaces">notNamespaces</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of namespaces.</p>
+<p>A list of negative match of namespaces.</p>
 
 </td>
+</tr>
+<tr id="Source-service_accounts">
+<td><div class="field"><div class="name"><code><a href="#Source-service_accounts">serviceAccounts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-No
+<p>A list of Kubernetes service accounts derived from the peer certificate.
+This field requires mTLS enabled and is the same as the <code>source.serviceaccount</code> attribute.</p>
+<p>This takes the format <code>&lt;namespace&gt;/&lt;serviceaccount&gt;</code>.
+<code>&lt;serviceaccount&gt;</code> may also be used to use the same namespace as the <code>AuthorizationPolicy</code>.</p>
+<p>If not set, any service account is allowed.</p>
+<p>No form of wildcard (<code>*</code>) is allowed.
+Cannot be set with <code>principals</code> or <code>namespaces</code>.</p>
+
+</td>
+</tr>
+<tr id="Source-not_service_accounts">
+<td><div class="field"><div class="name"><code><a href="#Source-not_service_accounts">notServiceAccounts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
+<td>
+<p>A list of negative match of Kubernetes service accounts.</p>
+<p>This takes the format <code>&lt;namespace&gt;/&lt;serviceaccount&gt;</code>.
+<code>&lt;serviceaccount&gt;</code> may also be used to use the same namespace as the <code>AuthorizationPolicy</code>.</p>
+<p>No form of wildcard (<code>*</code>) is allowed.</p>
+
 </td>
 </tr>
 <tr id="Source-ip_blocks">
-<td><code>ipBlocks</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-ip_blocks">ipBlocks</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of IP blocks, populated from the source address of the IP packet. Single IP (e.g. <code>203.0.113.4</code>) and
+<p>A list of IP blocks, populated from the source address of the IP packet. Single IP (e.g. <code>203.0.113.4</code>) and
 CIDR (e.g. <code>203.0.113.0/24</code>) are supported. This is the same as the <code>source.ip</code> attribute.</p>
 <p>If not set, any IP is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Source-not_ip_blocks">
-<td><code>notIpBlocks</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-not_ip_blocks">notIpBlocks</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of IP blocks.</p>
+<p>A list of negative match of IP blocks.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Source-remote_ip_blocks">
-<td><code>remoteIpBlocks</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-remote_ip_blocks">remoteIpBlocks</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of IP blocks, populated from <code>X-Forwarded-For</code> header or proxy protocol.
+<p>A list of IP blocks, populated from <code>X-Forwarded-For</code> header or proxy protocol.
 To make use of this field, you must configure the <code>numTrustedProxies</code> field of the <code>gatewayTopology</code> under the <code>meshConfig</code>
 when you install Istio or using an annotation on the ingress gateway.  See the documentation here:
 <a href="https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/">Configuring Gateway Network Topology</a>.
@@ -480,19 +613,14 @@ This is the same as the <code>remote.ip</code> attribute.</p>
 <p>If not set, any IP is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Source-not_remote_ip_blocks">
-<td><code>notRemoteIpBlocks</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Source-not_remote_ip_blocks">notRemoteIpBlocks</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of remote IP blocks.</p>
+<p>A list of negative match of remote IP blocks.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -513,89 +641,76 @@ notPaths: [&quot;/admin*&quot;]
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Operation-hosts">
-<td><code>hosts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-hosts">hosts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of hosts as specified in the HTTP request. The match is case-insensitive.
+<p>A list of hosts as specified in the HTTP request. The match is case-insensitive.
 See the <a href="https://istio.io/latest/docs/ops/best-practices/security/#writing-host-match-policies">security best practices</a> for
 recommended usage of this field.</p>
 <p>If not set, any host is allowed. Must be used only with HTTP.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Operation-not_hosts">
-<td><code>notHosts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-not_hosts">notHosts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of hosts as specified in the HTTP request. The match is case-insensitive.</p>
+<p>A list of negative match of hosts as specified in the HTTP request. The match is case-insensitive.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Operation-ports">
-<td><code>ports</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-ports">ports</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of ports as specified in the connection.</p>
+<p>A list of ports as specified in the connection.</p>
 <p>If not set, any port is allowed.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Operation-not_ports">
-<td><code>notPorts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-not_ports">notPorts</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of ports as specified in the connection.</p>
+<p>A list of negative match of ports as specified in the connection.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Operation-methods">
-<td><code>methods</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-methods">methods</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of methods as specified in the HTTP request.
+<p>A list of methods as specified in the HTTP request.
 For gRPC service, this will always be <code>POST</code>.</p>
 <p>If not set, any method is allowed. Must be used only with HTTP.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Operation-not_methods">
-<td><code>notMethods</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-not_methods">notMethods</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of methods as specified in the HTTP request.</p>
+<p>A list of negative match of methods as specified in the HTTP request.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Operation-paths">
-<td><code>paths</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-paths">paths</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of paths as specified in the HTTP request. See the <a href="https://istio.io/latest/docs/reference/config/security/normalization/">Authorization Policy Normalization</a>
+<p>A list of paths as specified in the HTTP request. See the <a href="https://istio.io/latest/docs/reference/config/security/normalization/">Authorization Policy Normalization</a>
 for details of the path normalization.
 For gRPC service, this will be the fully-qualified name in the form of <code>/package.service/method</code>.</p>
 <p>If a path in the list contains the <code>{*}</code> or <code>{**}</code> path template operator, it will be interpreted as an <a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/path/match/uri_template/v3/uri_template_match.proto">Envoy Uri Template</a>.
@@ -609,27 +724,22 @@ To be a valid path template, the path must not contain <code>*</code>, <code>{</
 <li><code>/foo/{*}</code> matches <code>/foo/bar</code> but not <code>/foo/bar/baz</code></li>
 <li><code>/foo/{**}/</code> matches <code>/foo/bar/</code>, <code>/foo/bar/baz.txt</code>, and <code>/foo//</code> but not <code>/foo/bar</code></li>
 <li><code>/foo/{*}/bar/{**}</code> matches <code>/foo/buzz/bar/</code> and <code>/foo/buzz/bar/baz</code></li>
-<li><code>/*/baz/{*}`` is not a valid path template since it includes </code>*` outside of a supported operator</li>
-<li><code>/**/baz/{*}`` is not a valid path template since it includes </code>**` outside of a supported operator</li>
+<li><code>/*/baz/{*}</code> is not a valid path template since it includes <code>*</code> outside of a supported operator</li>
+<li><code>/**/baz/{*}</code> is not a valid path template since it includes <code>**</code> outside of a supported operator</li>
 <li><code>/{**}/foo/{*}</code> is not a valid path template since <code>{**}</code> is not the last operator</li>
 <li><code>/foo/{*}.txt</code> is invalid since there are characters other than <code>{*}</code> in the path segment</li>
 </ul>
 <p>If not set, any path is allowed. Must be used only with HTTP.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Operation-not_paths">
-<td><code>notPaths</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Operation-not_paths">notPaths</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of paths.</p>
+<p>A list of negative match of paths.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -643,197 +753,38 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Condition-key">
-<td><code>key</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#Condition-key">key</a></code></div>
+<div class="type">string</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>The name of an Istio attribute.
 See the <a href="https://istio.io/docs/reference/config/security/conditions/">full list of supported attributes</a>.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="Condition-values">
-<td><code>values</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Condition-values">values</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of allowed values for the attribute.
+<p>A list of allowed values for the attribute.
 Note: at least one of <code>values</code> or <code>notValues</code> must be set.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Condition-not_values">
-<td><code>notValues</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#Condition-not_values">notValues</a></code></div>
+<div class="type">string[]</div>
+</div></td>
 <td>
-<p>Optional. A list of negative match of values for the attribute.
+<p>A list of negative match of values for the attribute.
 Note: at least one of <code>values</code> or <code>notValues</code> must be set.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="AuthorizationPolicy-ExtensionProvider">AuthorizationPolicy.ExtensionProvider</h2>
-<section>
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="AuthorizationPolicy-ExtensionProvider-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
-<td>
-<p>Specifies the name of the extension provider. The list of available providers is defined in the MeshConfig.
-Note, currently at most 1 extension provider is allowed per workload. Different workloads can use different extension provider.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Rule-From">Rule.From</h2>
-<section>
-<p>From includes a list of sources.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Rule-From-source">
-<td><code>source</code></td>
-<td><code><a href="#Source">Source</a></code></td>
-<td>
-<p>Source specifies the source of a request.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Rule-To">Rule.To</h2>
-<section>
-<p>To includes a list of operations.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Rule-To-operation">
-<td><code>operation</code></td>
-<td><code><a href="#Operation">Operation</a></code></td>
-<td>
-<p>Operation specifies the operation of a request.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="AuthorizationPolicy-Action">AuthorizationPolicy.Action</h2>
-<section>
-<p>Action specifies the operation to take.</p>
-
-<table class="enum-values">
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr id="AuthorizationPolicy-Action-ALLOW">
-<td><code>ALLOW</code></td>
-<td>
-<p>Allow a request only if it matches the rules. This is the default type.</p>
-
-</td>
-</tr>
-<tr id="AuthorizationPolicy-Action-DENY">
-<td><code>DENY</code></td>
-<td>
-<p>Deny a request if it matches any of the rules.</p>
-
-</td>
-</tr>
-<tr id="AuthorizationPolicy-Action-AUDIT">
-<td><code>AUDIT</code></td>
-<td>
-<p>Audit a request if it matches any of the rules.</p>
-
-</td>
-</tr>
-<tr id="AuthorizationPolicy-Action-CUSTOM">
-<td><code>CUSTOM</code></td>
-<td>
-<p>The CUSTOM action allows an extension to handle the user request if the matching rules evaluate to true.
-The extension is evaluated independently and before the native ALLOW and DENY actions. When used together, A request
-is allowed if and only if all the actions return allow, in other words, the extension cannot bypass the
-authorization decision made by ALLOW and DENY action.
-Extension behavior is defined by the named providers declared in MeshConfig. The authorization policy refers to
-the extension by specifying the name of the provider.
-One example use case of the extension is to integrate with a custom external authorization system to delegate
-the authorization decision to it.</p>
-<p>The following authorization policy applies to an ingress gateway and delegates the authorization check to a named extension
-<code>my-custom-authz</code> if the request path has prefix <code>/admin/</code>.</p>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: ext-authz
-  namespace: istio-system
-spec:
-  selector:
-    matchLabels:
-      app: istio-ingressgateway
-  action: CUSTOM
-  provider:
-    name: &quot;my-custom-authz&quot;
-  rules:
-  - to:
-    - operation:
-        paths: [&quot;/admin/*&quot;]
-</code></pre>
 
 </td>
 </tr>

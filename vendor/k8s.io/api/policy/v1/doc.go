@@ -18,13 +18,9 @@ limitations under the License.
 // +k8s:protobuf-gen=package
 // +k8s:openapi-gen=true
 // +k8s:prerelease-lifecycle-gen=true
+// +k8s:openapi-model-package=io.k8s.api.policy.v1
 
 // Package policy is for any kind of policy object.  Suitable examples, even if
-<<<<<<< HEAD
-// they aren't all here, are PodDisruptionBudget, PodSecurityPolicy,
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // they aren't all here, are PodDisruptionBudget,
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // NetworkPolicy, etc.
 package v1

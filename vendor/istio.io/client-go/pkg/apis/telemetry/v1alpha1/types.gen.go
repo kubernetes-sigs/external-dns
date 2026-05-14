@@ -27,7 +27,7 @@ import (
 
 // <!-- crd generation tags
 // +cue-gen:Telemetry:groupName:telemetry.istio.io
-// +cue-gen:Telemetry:version:v1alpha1
+// +cue-gen:Telemetry:versions:v1alpha1,v1
 // +cue-gen:Telemetry:storageVersion
 // +cue-gen:Telemetry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Telemetry:labels:app=istio-pilot,chart=istio,istio=telemetry,heritage=Tiller,release=istio
@@ -49,9 +49,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 type Telemetry struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
@@ -61,7 +59,7 @@ type Telemetry struct {
 	// +optional
 	Spec telemetryv1alpha1.Telemetry `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status metav1alpha1.IstioStatus `json:"status"`
+	Status metav1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

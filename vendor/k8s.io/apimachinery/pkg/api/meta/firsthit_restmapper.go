@@ -23,16 +23,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 var (
 	_ ResettableRESTMapper = &FirstHitRESTMapper{}
 )
@@ -91,120 +81,6 @@ func (m FirstHitRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string)
 
 func (m FirstHitRESTMapper) Reset() {
 	m.MultiRESTMapper.Reset()
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// FirstHitRESTMapper is a wrapper for multiple RESTMappers which returns the
-// first successful result for the singular requests
-type FirstHitRESTMapper struct {
-	MultiRESTMapper
-}
-
-func (m FirstHitRESTMapper) String() string {
-	return fmt.Sprintf("FirstHitRESTMapper{\n\t%v\n}", m.MultiRESTMapper)
-}
-
-func (m FirstHitRESTMapper) ResourceFor(resource schema.GroupVersionResource) (schema.GroupVersionResource, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.ResourceFor(resource)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return schema.GroupVersionResource{}, collapseAggregateErrors(errors)
-}
-
-func (m FirstHitRESTMapper) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.KindFor(resource)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return schema.GroupVersionKind{}, collapseAggregateErrors(errors)
-}
-
-// RESTMapping provides the REST mapping for the resource based on the
-// kind and version. This implementation supports multiple REST schemas and
-// return the first match.
-func (m FirstHitRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string) (*RESTMapping, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.RESTMapping(gk, versions...)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return nil, collapseAggregateErrors(errors)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// FirstHitRESTMapper is a wrapper for multiple RESTMappers which returns the
-// first successful result for the singular requests
-type FirstHitRESTMapper struct {
-	MultiRESTMapper
-}
-
-func (m FirstHitRESTMapper) String() string {
-	return fmt.Sprintf("FirstHitRESTMapper{\n\t%v\n}", m.MultiRESTMapper)
-}
-
-func (m FirstHitRESTMapper) ResourceFor(resource schema.GroupVersionResource) (schema.GroupVersionResource, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.ResourceFor(resource)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return schema.GroupVersionResource{}, collapseAggregateErrors(errors)
-}
-
-func (m FirstHitRESTMapper) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.KindFor(resource)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return schema.GroupVersionKind{}, collapseAggregateErrors(errors)
-}
-
-// RESTMapping provides the REST mapping for the resource based on the
-// kind and version. This implementation supports multiple REST schemas and
-// return the first match.
-func (m FirstHitRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string) (*RESTMapping, error) {
-	errors := []error{}
-	for _, t := range m.MultiRESTMapper {
-		ret, err := t.RESTMapping(gk, versions...)
-		if err == nil {
-			return ret, nil
-		}
-		errors = append(errors, err)
-	}
-
-	return nil, collapseAggregateErrors(errors)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // collapseAggregateErrors returns the minimal errors.  it handles empty as nil, handles one item in a list

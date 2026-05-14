@@ -21,7 +21,7 @@ package istio.type.v1beta1;
 
 import "google/api/field_behavior.proto";
 
-option go_package="istio.io/api/type/v1beta1";
+option go_package = "istio.io/api/type/v1beta1";
 
 // WorkloadSelector specifies the criteria used to determine if a policy can be applied
 // to a proxy. The matching criteria includes the metadata associated with a proxy,
@@ -33,16 +33,21 @@ message WorkloadSelector {
   // One or more labels that indicate a specific set of pods/VMs
   // on which a policy should be applied. The scope of label search is restricted to
   // the configuration namespace in which the resource is present.
+  // +kubebuilder:validation:XValidation:message="wildcard not allowed in label key match",rule="self.all(key, !key.contains('*'))"
+  // +kubebuilder:validation:XValidation:message="key must not be empty",rule="self.all(key, key.size() != 0)"
+  // +protoc-gen-crd:map-value-validation:XValidation:message="wildcard not allowed in label value match",rule="!self.contains('*')"
+  // +protoc-gen-crd:map-value-validation:MaxLength=63
+  // +kubebuilder:validation:MaxProperties=4096
   map<string, string> match_labels = 1;
 }
 
-// PortSelector is the criteria for specifying if a policy can be applied to 
+// PortSelector is the criteria for specifying if a policy can be applied to
 // a listener having a specific port.
 message PortSelector {
   // Port number
   // +kubebuilder:validation:Minimum=1
   // +kubebuilder:validation:Maximum=65535
-  uint32 number = 1  [(google.api.field_behavior) = REQUIRED];
+  uint32 number = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // WorkloadMode allows selection of the role of the underlying workload in
@@ -56,7 +61,7 @@ enum WorkloadMode {
   UNDEFINED = 0;
 
   // Selects for scenarios when the workload is the
-  // source of the network traffic. In addition, 
+  // source of the network traffic. In addition,
   // if the workload is a gateway, selects this.
   CLIENT = 1;
 
@@ -69,16 +74,16 @@ enum WorkloadMode {
   CLIENT_AND_SERVER = 3;
 }
 
-// PolicyTargetReference format as defined by [GEP-713](https://gateway-api.sigs.k8s.io/geps/gep-713/#policy-targetref-api).
+// PolicyTargetReference format as defined by [GEP-2648](https://gateway-api.sigs.k8s.io/geps/gep-2648/#direct-policy-design-rules).
 //
-// PolicyTargetReferences specifies the targeted resource which the policy
-// can be applied to. It must only target a single resource at a time, but it
+// PolicyTargetReference specifies the targeted resource which the policy
+// should be applied to. It must only target a single resource at a time, but it
 // can be used to target larger resources such as Gateways that may apply to
 // multiple child resources. The PolicyTargetReference will be used instead of
 // a WorkloadSelector in the RequestAuthentication, AuthorizationPolicy,
 // Telemetry, and WasmPlugin CRDs to target a Kubernetes Gateway.
 //
-// The following is an example of an AuthorizationPolicy bound to a waypoint proxy using 
+// The following is an example of an AuthorizationPolicy bound to a waypoint proxy using
 // a PolicyTargetReference. The example sets `action` to `DENY` to create a deny policy.
 // It denies all the requests with `POST` method on port `8080` directed through the
 // `waypoint` Gateway in the `foo` namespace.
@@ -90,8 +95,8 @@ enum WorkloadMode {
 //   name: httpbin
 //   namespace: foo
 // spec:
-//   targetRef:
-//     name: waypoint
+//   targetRefs:
+//   - name: waypoint
 //     kind: Gateway
 //     group: gateway.networking.k8s.io
 //   action: DENY
@@ -101,17 +106,27 @@ enum WorkloadMode {
 //         methods: ["POST"]
 //         ports: ["8080"]
 // ```
+//
+// When binding to a GatewayClass resource using PolicyTargetReference, your policy must be in the root namespace.
 message PolicyTargetReference {
   // group is the group of the target resource.
+  // +kubebuilder:validation:MaxLength=253
+  // +kubebuilder:validation:Pattern=`^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
   string group = 1;
 
   // kind is kind of the target resource.
-  string kind = 2;
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:MaxLength=63
+  // +kubebuilder:validation:Pattern=`^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$`
+  string kind = 2 [(google.api.field_behavior) = REQUIRED];
 
   // name is the name of the target resource.
-  string name = 3;
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:MaxLength=253
+  string name = 3 [(google.api.field_behavior) = REQUIRED];
 
   // namespace is the namespace of the referent. When unspecified, the local
   // namespace is inferred.
+  // +kubebuilder:validation:XValidation:message="cross namespace referencing is not currently supported",rule="self.size() == 0"
   string namespace = 4;
 }

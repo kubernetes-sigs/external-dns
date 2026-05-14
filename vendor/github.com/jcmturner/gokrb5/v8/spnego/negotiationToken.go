@@ -29,10 +29,6 @@ type NegState int
 // NegTokenInit implements Negotiation Token of type Init.
 type NegTokenInit struct {
 	MechTypes      []asn1.ObjectIdentifier
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	ReqFlags       asn1.BitString
 	MechTokenBytes []byte
 	MechListMIC    []byte
@@ -43,54 +39,6 @@ type NegTokenInit struct {
 type marshalNegTokenInit struct {
 	MechTypes      []asn1.ObjectIdentifier `asn1:"explicit,tag:0"`
 	ReqFlags       asn1.BitString          `asn1:"explicit,optional,tag:1"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ReqFlags       gssapi.ContextFlags
-||||||| parent of 4d7e5ad26 (update vendored files)
-	ReqFlags       gssapi.ContextFlags
-=======
-	ReqFlags       asn1.BitString
->>>>>>> 4d7e5ad26 (update vendored files)
-	MechTokenBytes []byte
-	MechListMIC    []byte
-	mechToken      gssapi.ContextToken
-	settings       *service.Settings
-}
-
-type marshalNegTokenInit struct {
-	MechTypes      []asn1.ObjectIdentifier `asn1:"explicit,tag:0"`
-<<<<<<< HEAD
-	ReqFlags       gssapi.ContextFlags     `asn1:"explicit,optional,tag:1"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	ReqFlags       gssapi.ContextFlags     `asn1:"explicit,optional,tag:1"`
-=======
-	ReqFlags       asn1.BitString          `asn1:"explicit,optional,tag:1"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ReqFlags       gssapi.ContextFlags
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ReqFlags       gssapi.ContextFlags
-=======
-	ReqFlags       asn1.BitString
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	MechTokenBytes []byte
-	MechListMIC    []byte
-	mechToken      gssapi.ContextToken
-	settings       *service.Settings
-}
-
-type marshalNegTokenInit struct {
-	MechTypes      []asn1.ObjectIdentifier `asn1:"explicit,tag:0"`
-<<<<<<< HEAD
-	ReqFlags       gssapi.ContextFlags     `asn1:"explicit,optional,tag:1"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ReqFlags       gssapi.ContextFlags     `asn1:"explicit,optional,tag:1"`
-=======
-	ReqFlags       asn1.BitString          `asn1:"explicit,optional,tag:1"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	MechTokenBytes []byte                  `asn1:"explicit,optional,omitempty,tag:2"`
 	MechListMIC    []byte                  `asn1:"explicit,optional,omitempty,tag:3"` // This field is not used when negotiating Kerberos tokens
 }

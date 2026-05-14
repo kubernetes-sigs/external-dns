@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -162,7 +162,7 @@ type Fscacheinfo struct {
 	ReleaseRequestsAgainstPagesStoredByTimeLockGranted uint64
 	// Number of release reqs ignored due to in-progress store
 	ReleaseRequestsIgnoredDueToInProgressStore uint64
-	// Number of page stores cancelled due to release req
+	// Number of page stores canceled due to release req
 	PageStoresCancelledByReleaseRequests uint64
 	VmscanWaiting                        uint64
 	// Number of times async ops added to pending queues
@@ -171,11 +171,11 @@ type Fscacheinfo struct {
 	OpsRunning uint64
 	// Number of times async ops queued for processing
 	OpsEnqueued uint64
-	// Number of async ops cancelled
+	// Number of async ops canceled
 	OpsCancelled uint64
 	// Number of async ops rejected due to object lookup/create failure
 	OpsRejected uint64
-	// Number of async ops initialised
+	// Number of async ops initialized
 	OpsInitialised uint64
 	// Number of async ops queued for deferred release
 	OpsDeferred uint64
@@ -236,57 +236,7 @@ func (fs FS) Fscacheinfo() (Fscacheinfo, error) {
 
 	m, err := parseFscacheinfo(bytes.NewReader(b))
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
-=======
-		return Fscacheinfo{}, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, m, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return Fscacheinfo{}, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, m, err)
-=======
 		return Fscacheinfo{}, fmt.Errorf("%w: Cannot parse %v: %w", ErrFileParse, m, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return *m, nil
@@ -438,20 +388,21 @@ func parseFscacheinfo(r io.Reader) (*Fscacheinfo, error) {
 				}
 			}
 		case "CacheOp:":
-			if strings.Split(fields[1], "=")[0] == "alo" {
+			switch strings.Split(fields[1], "=")[0] {
+			case "alo":
 				err := setFSCacheFields(fields[1:], &m.CacheopAllocationsinProgress, &m.CacheopLookupObjectInProgress,
 					&m.CacheopLookupCompleteInPorgress, &m.CacheopGrabObjectInProgress)
 				if err != nil {
 					return &m, err
 				}
-			} else if strings.Split(fields[1], "=")[0] == "inv" {
+			case "inv":
 				err := setFSCacheFields(fields[1:], &m.CacheopInvalidations, &m.CacheopUpdateObjectInProgress,
 					&m.CacheopDropObjectInProgress, &m.CacheopPutObjectInProgress, &m.CacheopAttributeChangeInProgress,
 					&m.CacheopSyncCacheInProgress)
 				if err != nil {
 					return &m, err
 				}
-			} else {
+			default:
 				err := setFSCacheFields(fields[1:], &m.CacheopReadOrAllocPageInProgress, &m.CacheopReadOrAllocPagesInProgress,
 					&m.CacheopAllocatePageInProgress, &m.CacheopAllocatePagesInProgress, &m.CacheopWritePagesInProgress,
 					&m.CacheopUncachePagesInProgress, &m.CacheopDissociatePagesInProgress)

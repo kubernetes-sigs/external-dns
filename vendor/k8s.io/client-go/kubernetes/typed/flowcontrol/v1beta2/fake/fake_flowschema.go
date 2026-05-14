@@ -20,36 +20,6 @@ package fake
 
 import (
 	v1beta2 "k8s.io/api/flowcontrol/v1beta2"
-<<<<<<< HEAD
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-<<<<<<< HEAD
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	flowcontrolv1beta2 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta2"
-	testing "k8s.io/client-go/testing"
-)
-
-// FakeFlowSchemas implements FlowSchemaInterface
-type FakeFlowSchemas struct {
-	Fake *FakeFlowcontrolV1beta2
-}
-
-var flowschemasResource = schema.GroupVersionResource{Group: "flowcontrol.apiserver.k8s.io", Version: "v1beta2", Resource: "flowschemas"}
-
-var flowschemasKind = schema.GroupVersionKind{Group: "flowcontrol.apiserver.k8s.io", Version: "v1beta2", Kind: "FlowSchema"}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-=======
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	flowcontrolv1beta2 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta2"
 	gentype "k8s.io/client-go/gentype"
 	typedflowcontrolv1beta2 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
@@ -61,30 +31,6 @@ type fakeFlowSchemas struct {
 	Fake *FakeFlowcontrolV1beta2
 }
 
-<<<<<<< HEAD
-var flowschemasResource = v1beta2.SchemeGroupVersion.WithResource("flowschemas")
-
-var flowschemasKind = v1beta2.SchemeGroupVersion.WithKind("FlowSchema")
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-// Get takes name of the flowSchema, and returns the corresponding flowSchema object, and an error if there is any.
-func (c *FakeFlowSchemas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.FlowSchema, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(flowschemasResource, name), &v1beta2.FlowSchema{})
-	if obj == nil {
-		return nil, err
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-var flowschemasResource = v1beta2.SchemeGroupVersion.WithResource("flowschemas")
-
-var flowschemasKind = v1beta2.SchemeGroupVersion.WithKind("FlowSchema")
-
-// Get takes name of the flowSchema, and returns the corresponding flowSchema object, and an error if there is any.
-func (c *FakeFlowSchemas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.FlowSchema, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(flowschemasResource, name), &v1beta2.FlowSchema{})
-	if obj == nil {
-		return nil, err
-=======
 func newFakeFlowSchemas(fake *FakeFlowcontrolV1beta2) typedflowcontrolv1beta2.FlowSchemaInterface {
 	return &fakeFlowSchemas{
 		gentype.NewFakeClientWithListAndApply[*v1beta2.FlowSchema, *v1beta2.FlowSchemaList, *flowcontrolv1beta2.FlowSchemaApplyConfiguration](
@@ -101,6 +47,5 @@ func newFakeFlowSchemas(fake *FakeFlowcontrolV1beta2) typedflowcontrolv1beta2.Fl
 			},
 		),
 		fake,
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 }

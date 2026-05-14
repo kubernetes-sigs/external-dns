@@ -20,48 +20,7 @@ import (
 	"sync"
 	"time"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"k8s.io/apimachinery/pkg/util/clock"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"k8s.io/klog/v2"
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	"k8s.io/apimachinery/pkg/util/clock"
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-	"k8s.io/klog"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/apimachinery/pkg/util/clock"
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
-	"k8s.io/utils/clock"
->>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 // ExpirationCache implements the store interface
@@ -73,46 +32,6 @@ import (
 //     *any* item in the cache.
 //  3. Time-stamps are stripped off unexpired entries before return
 //
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-	"k8s.io/klog"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/apimachinery/pkg/util/clock"
-	"k8s.io/klog"
-=======
-	"k8s.io/utils/clock"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-)
-
-// ExpirationCache implements the store interface
-<<<<<<< HEAD
-//	1. All entries are automatically time stamped on insert
-//		a. The key is computed based off the original item/keyFunc
-//		b. The value inserted under that key is the timestamped item
-//	2. Expiration happens lazily on read based on the expiration policy
-//      a. No item can be inserted into the store while we're expiring
-//		   *any* item in the cache.
-//	3. Time-stamps are stripped off unexpired entries before return
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//	1. All entries are automatically time stamped on insert
-//		a. The key is computed based off the original item/keyFunc
-//		b. The value inserted under that key is the timestamped item
-//	2. Expiration happens lazily on read based on the expiration policy
-//      a. No item can be inserted into the store while we're expiring
-//		   *any* item in the cache.
-//	3. Time-stamps are stripped off unexpired entries before return
-=======
-//  1. All entries are automatically time stamped on insert
-//     a. The key is computed based off the original item/keyFunc
-//     b. The value inserted under that key is the timestamped item
-//  2. Expiration happens lazily on read based on the expiration policy
-//     a. No item can be inserted into the store while we're expiring
-//     *any* item in the cache.
-//  3. Time-stamps are stripped off unexpired entries before return
-//
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Note that the ExpirationCache is inherently slower than a normal
 // threadSafeStore because it takes a write lock every time it checks if
 // an item has expired.
@@ -218,6 +137,16 @@ func (c *ExpirationCache) List() []interface{} {
 	return list
 }
 
+// LastStoreSyncResourceVersion returns the latest resource version that the cache has seen.
+func (c *ExpirationCache) LastStoreSyncResourceVersion() string {
+	return c.cacheStorage.LastStoreSyncResourceVersion()
+}
+
+// Bookmark observes a new resource version in the cache.
+func (c *ExpirationCache) Bookmark(rv string) {
+	c.cacheStorage.Bookmark(rv)
+}
+
 // ListKeys returns a list of all keys in the expiration cache.
 func (c *ExpirationCache) ListKeys() []string {
 	return c.cacheStorage.ListKeys()
@@ -251,7 +180,7 @@ func (c *ExpirationCache) Delete(obj interface{}) error {
 	}
 	c.expirationLock.Lock()
 	defer c.expirationLock.Unlock()
-	c.cacheStorage.Delete(key)
+	c.cacheStorage.DeleteWithObject(key, obj)
 	return nil
 }
 

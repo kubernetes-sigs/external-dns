@@ -25,56 +25,8 @@ const (
 	// same cluster. It is highly recommended to configure this label for all
 	// EndpointSlices.
 	LabelManagedBy = "endpointslice.kubernetes.io/managed-by"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
 	// that the EndpointSliceMirroring controller should not mirror this
 	// resource with EndpointSlices.
 	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
-	// that the EndpointSliceMirroring controller should not mirror this
-	// resource with EndpointSlices.
-	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
-	// that the EndpointSliceMirroring controller should not mirror this
-	// resource with EndpointSlices.
-	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
-	// that the EndpointSliceMirroring controller should not mirror this
-	// resource with EndpointSlices.
-	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
-	// that the EndpointSliceMirroring controller should not mirror this
-	// resource with EndpointSlices.
-	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

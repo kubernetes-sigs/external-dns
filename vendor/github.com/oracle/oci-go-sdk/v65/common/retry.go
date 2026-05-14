@@ -185,10 +185,20 @@ var GlobalRetry *RetryPolicy = nil
 // RetryPolicyOption is the type of the options for NewRetryPolicy.
 type RetryPolicyOption func(rp *RetryPolicy)
 
-// String Converts retry policy to human-readable string representation
-func (rp RetryPolicy) String() string {
+// String converts retry policy to human-readable string representation
+// Safe to call on a nil *RetryPolicy
+func (rp *RetryPolicy) String() string {
+	if rp == nil {
+		return "<nil>"
+	}
+
+	nonECPolicy := "<nil>"
+	if rp.NonEventuallyConsistentPolicy != nil {
+		nonECPolicy = rp.NonEventuallyConsistentPolicy.String()
+	}
+
 	return fmt.Sprintf("{MaximumNumberAttempts=%v, MinSleepBetween=%v, MaxSleepBetween=%v, ExponentialBackoffBase=%v, NonEventuallyConsistentPolicy=%v}",
-		rp.MaximumNumberAttempts, rp.MinSleepBetween, rp.MaxSleepBetween, rp.ExponentialBackoffBase, rp.NonEventuallyConsistentPolicy)
+		rp.MaximumNumberAttempts, rp.MinSleepBetween, rp.MaxSleepBetween, rp.ExponentialBackoffBase, nonECPolicy)
 }
 
 // Validate returns true if the RetryPolicy is valid; if not, it also returns an error.

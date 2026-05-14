@@ -15,9 +15,14 @@ necessary configuration required to reach every workload instance in the mesh, a
 well as accept traffic on all the ports associated with the
 workload. The <code>Sidecar</code> configuration provides a way to fine tune the set of
 ports, protocols that the proxy will accept when forwarding traffic to
-and from the workload. In addition, it is possible to restrict the set
-of services that the proxy can reach when forwarding outbound traffic
-from workload instances.</p>
+and from the workload.</p>
+<p>One the common usages of <code>Sidecar</code> is to limit the set of configuration for outbound traffic.
+This configuration scoping, among <a href="/docs/ops/configuration/mesh/configuration-scoping/">other options</a>, is useful to prune
+out unneeded configuration, to improve scalability of the mesh.
+A common misunderstanding is that restricting the configuration amounts to <em>blocking</em> the traffic.
+If requests are sent to destinations not included in the scoping, the traffic will be treated as
+<a href="/docs/ops/configuration/traffic-management/traffic-routing/#unmatched-traffic">unmatched traffic</a>, which is often still allowed.
+The sidecar is not able to enforce an outbound traffic restriction (see <a href="/docs/tasks/traffic-management/egress/egress-gateway/">Egress Gateways</a> for how to achieve this).</p>
 <p>Services and configuration in a mesh are organized into one or more
 namespaces (e.g., a Kubernetes namespace or a CF org/space). A <code>Sidecar</code>
 configuration in a namespace will apply to one or more workload instances in the same
@@ -43,10 +48,10 @@ any <code>workloadSelector</code>.</p>
 <p><strong>NOTE 3</strong>: <em><em>A <code>Sidecar</code> is not applicable to gateways, even though gateways are istio-proxies</em></em>.</p>
 <p>The example below declares a global default <code>Sidecar</code> configuration
 in the root namespace called <code>istio-config</code>, that configures
-sidecars in all namespaces to allow egress traffic only to other
+sidecars in all namespaces to configure egress traffic only to other
 workloads in the same namespace as well as to services in the
 <code>istio-system</code> namespace.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: default
@@ -59,10 +64,10 @@ spec:
 </code></pre>
 <p>The example below declares a <code>Sidecar</code> configuration in the
 <code>prod-us1</code> namespace that overrides the global default defined
-above, and configures the sidecars in the namespace to allow egress
+above, and configures the sidecars in the namespace to configure egress
 traffic to public services in the <code>prod-us1</code>, <code>prod-apis</code>, and the
 <code>istio-system</code> namespaces.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: default
@@ -82,7 +87,7 @@ the attached workload instance listening on a Unix domain
 socket. In the egress direction, in addition to the <code>istio-system</code>
 namespace, the sidecar proxies only HTTP traffic bound for port
 9080 for services in the <code>prod-us1</code> namespace.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: ratings
@@ -121,7 +126,7 @@ it to the application listening on <code>127.0.0.1:8080</code>. It also allows
 the application to communicate with a backing MySQL database on
 <code>127.0.0.1:3306</code>, that then gets proxied to the externally hosted
 MySQL service at <code>mysql.foo.com:3306</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: no-ip-tables
@@ -148,7 +153,7 @@ spec:
     - &quot;*/mysql.foo.com&quot;
 </code></pre>
 <p>And the associated service entry for routing to <code>mysql.foo.com:3306</code></p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: external-svc-mysql
@@ -174,7 +179,7 @@ listener on <code>172.16.1.32:80</code> (the VM&rsquo;s IP) for traffic arriving
 <p><strong>NOTE</strong>: The <code>ISTIO_META_INTERCEPTION_MODE</code> metadata on the
 proxy in the VM should contain <code>REDIRECT</code> or <code>TPROXY</code> as its value,
 implying that IP tables based traffic capture is active.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: partial-ip-tables
@@ -212,7 +217,7 @@ in order to set mTLS mode to &ldquo;DISABLE&rdquo; on specific
 ports.
 In this example, the mTLS mode is disabled on PORT 80.
 This feature is currently experimental.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: ratings
@@ -247,7 +252,7 @@ spec:
   selector:
     app: ratings
 ---
-apiVersion: security.istio.io/v1beta1
+apiVersion: security.istio.io/v1
 kind: PeerAuthentication
 metadata:
   name: ratings-peer-auth
@@ -269,7 +274,7 @@ connections to the service) as well as servers (for inbound connections to a ser
 instance). Using the <code>InboundConnectionPool</code> and per-port <code>ConnectionPool</code> settings
 in a <code>Sidecar</code> allow you to control those connection pools for the server separately
 from the settings pushed to all clients.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
 kind: Sidecar
 metadata:
   name: connection-pool-settings
@@ -309,28 +314,25 @@ attached.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="Sidecar-workload_selector">
-<td><code>workloadSelector</code></td>
-<td><code><a href="#WorkloadSelector">WorkloadSelector</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Sidecar-workload_selector">workloadSelector</a></code></div>
+<div class="type"><a href="#WorkloadSelector">WorkloadSelector</a></div>
+</div></td>
 <td>
 <p>Criteria used to select the specific set of pods/VMs on which this
 <code>Sidecar</code> configuration should be applied. If omitted, the <code>Sidecar</code>
 configuration will be applied to all workload instances in the same namespace.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Sidecar-ingress">
-<td><code>ingress</code></td>
-<td><code><a href="#IstioIngressListener">IstioIngressListener[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Sidecar-ingress">ingress</a></code></div>
+<div class="type"><a href="#IstioIngressListener">IstioIngressListener[]</a></div>
+</div></td>
 <td>
 <p>Ingress specifies the configuration of the sidecar for processing
 inbound traffic to the attached workload instance. If omitted, Istio will
@@ -340,13 +342,11 @@ etc.). If specified, inbound ports are configured if and only if the
 workload instance is associated with a service.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Sidecar-egress">
-<td><code>egress</code></td>
-<td><code><a href="#IstioEgressListener">IstioEgressListener[]</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Sidecar-egress">egress</a></code></div>
+<div class="type"><a href="#IstioEgressListener">IstioEgressListener[]</a></div>
+</div></td>
 <td>
 <p>Egress specifies the configuration of the sidecar for processing
 outbound traffic from the attached workload instance to other
@@ -354,13 +354,11 @@ services in the mesh. If not specified, inherits the system
 detected defaults from the namespace-wide or the global default Sidecar.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="Sidecar-inbound_connection_pool">
-<td><code>inboundConnectionPool</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/networking/destination-rule.html#ConnectionPoolSettings">ConnectionPoolSettings</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Sidecar-inbound_connection_pool">inboundConnectionPool</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/networking/destination-rule.html#ConnectionPoolSettings">ConnectionPoolSettings</a></div>
+</div></td>
 <td>
 <p>Settings controlling the volume of connections Envoy will accept from the network.
 This default will apply for all inbound listeners and can be overridden per-port
@@ -384,28 +382,19 @@ following precedence, highest to lowest:</p>
 <li>top level <code>TrafficPolicy.ConnectionPool</code> from the <code>DestinationRule</code></li>
 <li>default connection pool settings (essentially unlimited)</li>
 </ul>
-<p>In every case, the connection pool settings are overriden, not merged.</p>
+<p>In every case, the connection pool settings are overridden, not merged.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 <tr id="Sidecar-outbound_traffic_policy">
-<td><code>outboundTrafficPolicy</code></td>
-<td><code><a href="#OutboundTrafficPolicy">OutboundTrafficPolicy</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#Sidecar-outbound_traffic_policy">outboundTrafficPolicy</a></code></div>
+<div class="type"><a href="#OutboundTrafficPolicy">OutboundTrafficPolicy</a></div>
+</div></td>
 <td>
-<p>Configuration for the outbound traffic policy.  If your
-application uses one or more external services that are not known
-apriori, setting the policy to <code>ALLOW_ANY</code> will cause the
-sidecars to route any unknown traffic originating from the
-application to its requested destination. If not specified,
-inherits the system detected defaults from the namespace-wide or
-the global default Sidecar.</p>
+<p>Set the default behavior of the sidecar for handling outbound
+traffic from the application.</p>
+<p>Default mode is <code>ALLOW_ANY</code>, which means outbound traffic to unknown destinations will be allowed.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -420,26 +409,24 @@ traffic listener on the sidecar proxy attached to a workload instance.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="IstioIngressListener-port">
-<td><code>port</code></td>
-<td><code><a href="#SidecarPort">SidecarPort</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-port">port</a></code></div>
+<div class="type"><a href="#SidecarPort">SidecarPort</a></div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>The port associated with the listener.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 <tr id="IstioIngressListener-bind">
-<td><code>bind</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-bind">bind</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The IP(IPv4 or IPv6) to which the listener should be bound.
 Unix domain socket addresses are not allowed in
@@ -449,25 +436,21 @@ and the workload instances to which this configuration is applied
 to.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioIngressListener-capture_mode">
-<td><code>captureMode</code></td>
-<td><code><a href="#CaptureMode">CaptureMode</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-capture_mode">captureMode</a></code></div>
+<div class="type"><a href="#CaptureMode">CaptureMode</a></div>
+</div></td>
 <td>
 <p>The captureMode option dictates how traffic to the listener is
 expected to be captured (or not).</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioIngressListener-default_endpoint">
-<td><code>defaultEndpoint</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-default_endpoint">defaultEndpoint</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The IP endpoint or Unix domain socket to which
 traffic should be forwarded to. This configuration can be used to
@@ -479,26 +462,22 @@ connections. Arbitrary IPs are not supported. Format should be one of
 or <code>unix:///path/to/socket</code> (forward to Unix domain socket).</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioIngressListener-tls">
-<td><code>tls</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/networking/gateway.html#ServerTLSSettings">ServerTLSSettings</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-tls">tls</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/networking/gateway.html#ServerTLSSettings">ServerTLSSettings</a></div>
+</div></td>
 <td>
 <p>Set of TLS related options that will enable TLS termination on the
 sidecar for requests originating from outside the mesh.
 Currently supports only SIMPLE and MUTUAL TLS modes.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioIngressListener-connection_pool">
-<td><code>connectionPool</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/networking/destination-rule.html#ConnectionPoolSettings">ConnectionPoolSettings</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioIngressListener-connection_pool">connectionPool</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/networking/destination-rule.html#ConnectionPoolSettings">ConnectionPoolSettings</a></div>
+</div></td>
 <td>
 <p>Settings controlling the volume of connections Envoy will accept from the network.
 This setting overrides the top-level default <code>inboundConnectionPool</code> to configure
@@ -508,9 +487,6 @@ This port level connection pool has the highest precedence in configuration,
 overriding both the <code>Sidecar</code>&rsquo;s top level <code>InboundConnectionPool</code> as well as any
 connection pooling settings from the <code>DestinationRule</code>.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -525,15 +501,14 @@ listener on the sidecar proxy attached to a workload instance.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="IstioEgressListener-port">
-<td><code>port</code></td>
-<td><code><a href="#SidecarPort">SidecarPort</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioEgressListener-port">port</a></code></div>
+<div class="type"><a href="#SidecarPort">SidecarPort</a></div>
+</div></td>
 <td>
 <p>The port associated with the listener. If using Unix domain socket,
 use 0 as the port number, with a valid protocol. The port if
@@ -546,13 +521,11 @@ listener port will be based on the listener with the most specific
 port.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioEgressListener-bind">
-<td><code>bind</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioEgressListener-bind">bind</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The IP(IPv4 or IPv6) or the Unix domain socket to which the listener should be bound
 to. Port MUST be specified if bind is not empty. Format: IPv4 or IPv6 address formats or
@@ -563,26 +536,23 @@ the captureMode. If captureMode is <code>NONE</code>, bind will default to
 127.0.0.1.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioEgressListener-capture_mode">
-<td><code>captureMode</code></td>
-<td><code><a href="#CaptureMode">CaptureMode</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioEgressListener-capture_mode">captureMode</a></code></div>
+<div class="type"><a href="#CaptureMode">CaptureMode</a></div>
+</div></td>
 <td>
 <p>When the bind address is an IP, the captureMode option dictates
 how traffic to the listener is expected to be captured (or not).
 captureMode must be DEFAULT or <code>NONE</code> for Unix domain socket binds.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="IstioEgressListener-hosts">
-<td><code>hosts</code></td>
-<td><code>string[]</code></td>
+<td><div class="field"><div class="name"><code><a href="#IstioEgressListener-hosts">hosts</a></code></div>
+<div class="type">string[]</div>
+<div class="required">Required</div>
+</div></td>
 <td>
 <p>One or more service hosts exposed by the listener
 in <code>namespace/dnsName</code> format. Services in the specified namespace
@@ -610,9 +580,6 @@ not be available. Refer to the <code>exportTo</code> setting in <code>VirtualSer
 <code>DestinationRule</code>, and <code>ServiceEntry</code> configurations for details.</p>
 
 </td>
-<td>
-Yes
-</td>
 </tr>
 </tbody>
 </table>
@@ -633,24 +600,20 @@ label based selection mechanism is supported.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="WorkloadSelector-labels">
-<td><code>labels</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#WorkloadSelector-labels">labels</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>One or more labels that indicate a specific set of pods/VMs
 on which the configuration should be applied. The scope of
 label search is restricted to the configuration namespace in which the
 the resource is present.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -659,32 +622,55 @@ No
 <h2 id="OutboundTrafficPolicy">OutboundTrafficPolicy</h2>
 <section>
 <p><code>OutboundTrafficPolicy</code> sets the default behavior of the sidecar for
-handling outbound traffic from the application.
-If your application uses one or more external
-services that are not known apriori, setting the policy to <code>ALLOW_ANY</code>
-will cause the sidecars to route any unknown traffic originating from
-the application to its requested destination.  Users are strongly
-encouraged to use <code>ServiceEntry</code> configurations to explicitly declare any external
-dependencies, instead of using <code>ALLOW_ANY</code>, so that traffic to these
-services can be monitored.</p>
+handling unknown outbound traffic from the application.</p>
 
 <table class="message-fields">
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="OutboundTrafficPolicy-mode">
-<td><code>mode</code></td>
-<td><code><a href="#OutboundTrafficPolicy-Mode">Mode</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#OutboundTrafficPolicy-mode">mode</a></code></div>
+<div class="type"><a href="#OutboundTrafficPolicy-Mode">Mode</a></div>
+</div></td>
 <td>
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="OutboundTrafficPolicy-Mode">Mode</h3>
+<section>
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="OutboundTrafficPolicy-Mode-REGISTRY_ONLY">
+<td><code><a href="#OutboundTrafficPolicy-Mode-REGISTRY_ONLY">REGISTRY_ONLY</a></code></td>
 <td>
-No
+<p>In <code>REGISTRY_ONLY</code> mode, unknown outbound traffic will be dropped.
+Traffic destinations must be explicitly declared into the service registry through <code>ServiceEntry</code> configurations.</p>
+<p>Note: Istio <a href="https://istio.io/latest/docs/ops/best-practices/security/#understand-traffic-capture-limitations">does not offer an outbound traffic security policy</a>.
+This option does not act as one, or as any form of an outbound firewall.
+Instead, this option exists primarily to offer users a way to detect missing <code>ServiceEntry</code> configurations by explicitly failing.</p>
+
+</td>
+</tr>
+<tr id="OutboundTrafficPolicy-Mode-ALLOW_ANY">
+<td><code><a href="#OutboundTrafficPolicy-Mode-ALLOW_ANY">ALLOW_ANY</a></code></td>
+<td>
+<p>In <code>ALLOW_ANY</code> mode, any traffic to unknown destinations will be allowed.
+Unknown destination traffic will have limited functionality, however, such as reduced observability.
+This mode allows users that do not have all possible egress destinations registered through <code>ServiceEntry</code> configurations to still connect
+to arbitrary destinations.</p>
+
 </td>
 </tr>
 </tbody>
@@ -698,74 +684,37 @@ No
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="SidecarPort-number">
-<td><code>number</code></td>
-<td><code>uint32</code></td>
+<td><div class="field"><div class="name"><code><a href="#SidecarPort-number">number</a></code></div>
+<div class="type">uint32</div>
+</div></td>
 <td>
 <p>A valid non-negative integer port number.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="SidecarPort-protocol">
-<td><code>protocol</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#SidecarPort-protocol">protocol</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The protocol exposed on the port.
-MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
+MUST be one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
 TLS can be either used to terminate non-HTTP based connections on a specific port
 or to route traffic based on SNI header to the destination without terminating the TLS connection.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="SidecarPort-name">
-<td><code>name</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#SidecarPort-name">name</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>Label assigned to the port.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="OutboundTrafficPolicy-Mode">OutboundTrafficPolicy.Mode</h2>
-<section>
-<table class="enum-values">
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr id="OutboundTrafficPolicy-Mode-REGISTRY_ONLY">
-<td><code>REGISTRY_ONLY</code></td>
-<td>
-<p>Outbound traffic will be restricted to services defined in the
-service registry as well as those defined through <code>ServiceEntry</code> configurations.</p>
-
-</td>
-</tr>
-<tr id="OutboundTrafficPolicy-Mode-ALLOW_ANY">
-<td><code>ALLOW_ANY</code></td>
-<td>
-<p>Outbound traffic to unknown destinations will be allowed, in case
-there are no services or <code>ServiceEntry</code> configurations for the destination port.</p>
 
 </td>
 </tr>
@@ -786,21 +735,21 @@ captured. Applicable only when the listener is bound to an IP.</p>
 </thead>
 <tbody>
 <tr id="CaptureMode-DEFAULT">
-<td><code>DEFAULT</code></td>
+<td><code><a href="#CaptureMode-DEFAULT">DEFAULT</a></code></td>
 <td>
 <p>The default capture mode defined by the environment.</p>
 
 </td>
 </tr>
 <tr id="CaptureMode-IPTABLES">
-<td><code>IPTABLES</code></td>
+<td><code><a href="#CaptureMode-IPTABLES">IPTABLES</a></code></td>
 <td>
 <p>Capture traffic using IPtables redirection.</p>
 
 </td>
 </tr>
 <tr id="CaptureMode-NONE">
-<td><code>NONE</code></td>
+<td><code><a href="#CaptureMode-NONE">NONE</a></code></td>
 <td>
 <p>No traffic capture. When used in an egress listener, the application is
 expected to explicitly communicate with the listener port or Unix

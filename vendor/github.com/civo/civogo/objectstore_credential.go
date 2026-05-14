@@ -44,8 +44,13 @@ type UpdateObjectStoreCredentialRequest struct {
 }
 
 // ListObjectStoreCredentials returns all object store credentials in that specific region
-func (c *Client) ListObjectStoreCredentials() (*PaginatedObjectStoreCredentials, error) {
-	resp, err := c.SendGetRequest("/v2/objectstore/credentials")
+func (c *Client) ListObjectStoreCredentials(page, perPage int) (*PaginatedObjectStoreCredentials, error) {
+	url := "/v2/objectstore/credentials"
+	if page != 0 && perPage != 0 {
+		url = url + fmt.Sprintf("?page=%d&per_page=%d", page, perPage)
+	}
+
+	resp, err := c.SendGetRequest(url)
 	if err != nil {
 		return nil, decodeError(err)
 	}
@@ -75,7 +80,7 @@ func (c *Client) GetObjectStoreCredential(id string) (*ObjectStoreCredential, er
 
 // FindObjectStoreCredential finds an objectstore credential by name or by accesskeyID
 func (c *Client) FindObjectStoreCredential(search string) (*ObjectStoreCredential, error) {
-	creds, err := c.ListObjectStoreCredentials()
+	creds, err := c.ListObjectStoreCredentials(1, 10000)
 	if err != nil {
 		return nil, decodeError(err)
 	}

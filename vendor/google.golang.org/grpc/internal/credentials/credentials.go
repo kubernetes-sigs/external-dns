@@ -20,61 +20,6 @@ import (
 	"context"
 )
 
-<<<<<<< HEAD
-// requestInfoKey is a struct to be used as the key to store RequestInfo in a
-// context.
-type requestInfoKey struct{}
-
-// NewRequestInfoContext creates a context with ri.
-<<<<<<< HEAD
-func NewRequestInfoContext(ctx context.Context, ri interface{}) context.Context {
-	return context.WithValue(ctx, requestInfoKey{}, ri)
-}
-
-// RequestInfoFromContext extracts the RequestInfo from ctx.
-func RequestInfoFromContext(ctx context.Context) interface{} {
-	return ctx.Value(requestInfoKey{})
-}
-
-// clientHandshakeInfoKey is a struct used as the key to store
-// ClientHandshakeInfo in a context.
-type clientHandshakeInfoKey struct{}
-
-// ClientHandshakeInfoFromContext extracts the ClientHandshakeInfo from ctx.
-func ClientHandshakeInfoFromContext(ctx context.Context) interface{} {
-	return ctx.Value(clientHandshakeInfoKey{})
-}
-
-// NewClientHandshakeInfoContext creates a context with chi.
-func NewClientHandshakeInfoContext(ctx context.Context, chi interface{}) context.Context {
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-func NewRequestInfoContext(ctx context.Context, ri any) context.Context {
-	return context.WithValue(ctx, requestInfoKey{}, ri)
-}
-
-// RequestInfoFromContext extracts the RequestInfo from ctx.
-func RequestInfoFromContext(ctx context.Context) any {
-	return ctx.Value(requestInfoKey{})
-}
-
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-// requestInfoKey is a struct to be used as the key to store RequestInfo in a
-// context.
-type requestInfoKey struct{}
-
-// NewRequestInfoContext creates a context with ri.
-func NewRequestInfoContext(ctx context.Context, ri any) context.Context {
-	return context.WithValue(ctx, requestInfoKey{}, ri)
-}
-
-// RequestInfoFromContext extracts the RequestInfo from ctx.
-func RequestInfoFromContext(ctx context.Context) any {
-	return ctx.Value(requestInfoKey{})
-}
-
-=======
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 // clientHandshakeInfoKey is a struct used as the key to store
 // ClientHandshakeInfo in a context.
 type clientHandshakeInfoKey struct{}
@@ -86,6 +31,5 @@ func ClientHandshakeInfoFromContext(ctx context.Context) any {
 
 // NewClientHandshakeInfoContext creates a context with chi.
 func NewClientHandshakeInfoContext(ctx context.Context, chi any) context.Context {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return context.WithValue(ctx, clientHandshakeInfoKey{}, chi)
 }

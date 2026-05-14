@@ -64,12 +64,7 @@ func newAtomicBased(rate int, opts ...Option) *atomicLimiter {
 }
 
 // Take blocks to ensure that the time spent between multiple
-<<<<<<< HEAD
-// Take calls is on average time.Second/rate.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // Take calls is on average per/rate.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (t *atomicLimiter) Take() time.Time {
 	var (
 		newState state

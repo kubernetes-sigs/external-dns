@@ -1,7 +1,0 @@
-builds:
-- skip: true
-
-release:
-  github:
-    owner: exoscale
-    name: egoscale

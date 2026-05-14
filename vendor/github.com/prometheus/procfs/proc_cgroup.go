@@ -1,4 +1,4 @@
-// Copyright 2020 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,7 +24,7 @@ import (
 )
 
 // Cgroup models one line from /proc/[pid]/cgroup. Each Cgroup struct describes the placement of a PID inside a
-// specific control hierarchy. The kernel has two cgroup APIs, v1 and v2. v1 has one hierarchy per available resource
+// specific control hierarchy. The kernel has two cgroup APIs, v1 and v2. The v1 has one hierarchy per available resource
 // controller, while v2 has one unified hierarchy shared by all controllers. Regardless of v1 or v2, all hierarchies
 // contain all running processes, so the question answerable with a Cgroup struct is 'where is this process in
 // this hierarchy' (where==what path on the specific cgroupfs). By prefixing this path with the mount point of
@@ -49,91 +49,7 @@ type Cgroup struct {
 func parseCgroupString(cgroupStr string) (*Cgroup, error) {
 	var err error
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	fields := strings.SplitN(cgroupStr, ":", 3)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	fields := strings.Split(cgroupStr, ":")
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	fields := strings.Split(cgroupStr, ":")
-=======
-	fields := strings.SplitN(cgroupStr, ":", 3)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	fields := strings.Split(cgroupStr, ":")
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	fields := strings.Split(cgroupStr, ":")
-=======
-	fields := strings.SplitN(cgroupStr, ":", 3)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	fields := strings.Split(cgroupStr, ":")
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	fields := strings.Split(cgroupStr, ":")
-=======
-	fields := strings.SplitN(cgroupStr, ":", 3)
->>>>>>> 4d7e5ad26 (update vendored files)
-	if len(fields) < 3 {
-		return nil, fmt.Errorf("at least 3 fields required, found %d fields in cgroup string: %s", len(fields), cgroupStr)
-	}
-
-	cgroup := &Cgroup{
-		Path:        fields[2],
-		Controllers: nil,
-	}
-	cgroup.HierarchyID, err = strconv.Atoi(fields[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse hierarchy ID")
-	}
-	if fields[1] != "" {
-		ssNames := strings.Split(fields[1], ",")
-		cgroup.Controllers = append(cgroup.Controllers, ssNames...)
-	}
-	return cgroup, nil
-}
-
-// parseCgroups reads each line of the /proc/[pid]/cgroup file
-func parseCgroups(data []byte) ([]Cgroup, error) {
-	var cgroups []Cgroup
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	for scanner.Scan() {
-		mountString := scanner.Text()
-		parsedMounts, err := parseCgroupString(mountString)
-		if err != nil {
-			return nil, err
-		}
-		cgroups = append(cgroups, *parsedMounts)
-	}
-
-	err := scanner.Err()
-	return cgroups, err
-}
-
-// Cgroups reads from /proc/<pid>/cgroups and returns a []*Cgroup struct locating this PID in each process
-// control hierarchy running on this system. On every system (v1 and v2), all hierarchies contain all processes,
-// so the len of the returned struct is equal to the number of active hierarchies on this system
-func (p Proc) Cgroups() ([]Cgroup, error) {
-	data, err := util.ReadFileNoStat(p.path("cgroup"))
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	fields := strings.Split(cgroupStr, ":")
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	fields := strings.Split(cgroupStr, ":")
-=======
-	fields := strings.SplitN(cgroupStr, ":", 3)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if len(fields) < 3 {
 		return nil, fmt.Errorf("%w: 3+ fields required, found %d fields in cgroup string: %s", ErrFileParse, len(fields), cgroupStr)
 	}
@@ -174,14 +90,7 @@ func parseCgroups(data []byte) ([]Cgroup, error) {
 // control hierarchy running on this system. On every system (v1 and v2), all hierarchies contain all processes,
 // so the len of the returned struct is equal to the number of active hierarchies on this system.
 func (p Proc) Cgroups() ([]Cgroup, error) {
-<<<<<<< HEAD
-	data, err := util.ReadFileNoStat(fmt.Sprintf("/proc/%d/cgroup", p.PID))
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	data, err := util.ReadFileNoStat(fmt.Sprintf("/proc/%d/cgroup", p.PID))
-=======
 	data, err := util.ReadFileNoStat(p.path("cgroup"))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

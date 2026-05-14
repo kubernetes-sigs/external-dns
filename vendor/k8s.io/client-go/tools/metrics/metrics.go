@@ -19,493 +19,7 @@ limitations under the License.
 package metrics
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"context"
-	"net/url"
-	"sync"
-	"time"
-)
-
-var registerMetrics sync.Once
-
-// DurationMetric is a measurement of some amount of time.
-type DurationMetric interface {
-	Observe(duration time.Duration)
-}
-
-// ExpiryMetric sets some time of expiry. If nil, assume not relevant.
-type ExpiryMetric interface {
-	Set(expiry *time.Time)
-}
-
-// LatencyMetric observes client latency partitioned by verb and url.
-type LatencyMetric interface {
-	Observe(ctx context.Context, verb string, u url.URL, latency time.Duration)
-}
-
-// SizeMetric observes client response size partitioned by verb and host.
-type SizeMetric interface {
-	Observe(ctx context.Context, verb string, host string, size float64)
-}
-
-// ResultMetric counts response codes partitioned by method and host.
-type ResultMetric interface {
-	Increment(ctx context.Context, code string, method string, host string)
-}
-
-// CallsMetric counts calls that take place for a specific exec plugin.
-type CallsMetric interface {
-	// Increment increments a counter per exitCode and callStatus.
-	Increment(exitCode int, callStatus string)
-}
-
-var (
-	// ClientCertExpiry is the expiry time of a client certificate
-	ClientCertExpiry ExpiryMetric = noopExpiry{}
-	// ClientCertRotationAge is the age of a certificate that has just been rotated.
-	ClientCertRotationAge DurationMetric = noopDuration{}
-	// RequestLatency is the latency metric that rest clients will update.
-	RequestLatency LatencyMetric = noopLatency{}
-	// RequestSize is the request size metric that rest clients will update.
-	RequestSize SizeMetric = noopSize{}
-	// ResponseSize is the response size metric that rest clients will update.
-	ResponseSize SizeMetric = noopSize{}
-	// RateLimiterLatency is the client side rate limiter latency metric.
-	RateLimiterLatency LatencyMetric = noopLatency{}
-	// RequestResult is the result metric that rest clients will update.
-	RequestResult ResultMetric = noopResult{}
-	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
-	// exit code and call status.
-	ExecPluginCalls CallsMetric = noopCalls{}
-)
-
-// RegisterOpts contains all the metrics to register. Metrics may be nil.
-type RegisterOpts struct {
-	ClientCertExpiry      ExpiryMetric
-	ClientCertRotationAge DurationMetric
-	RequestLatency        LatencyMetric
-	RequestSize           SizeMetric
-	ResponseSize          SizeMetric
-	RateLimiterLatency    LatencyMetric
-	RequestResult         ResultMetric
-	ExecPluginCalls       CallsMetric
-}
-
-// Register registers metrics for the rest client to use. This can
-// only be called once.
-func Register(opts RegisterOpts) {
-	registerMetrics.Do(func() {
-		if opts.ClientCertExpiry != nil {
-			ClientCertExpiry = opts.ClientCertExpiry
-		}
-		if opts.ClientCertRotationAge != nil {
-			ClientCertRotationAge = opts.ClientCertRotationAge
-		}
-		if opts.RequestLatency != nil {
-			RequestLatency = opts.RequestLatency
-		}
-		if opts.RequestSize != nil {
-			RequestSize = opts.RequestSize
-		}
-		if opts.ResponseSize != nil {
-			ResponseSize = opts.ResponseSize
-		}
-		if opts.RateLimiterLatency != nil {
-			RateLimiterLatency = opts.RateLimiterLatency
-		}
-		if opts.RequestResult != nil {
-			RequestResult = opts.RequestResult
-		}
-		if opts.ExecPluginCalls != nil {
-			ExecPluginCalls = opts.ExecPluginCalls
-		}
-	})
-}
-
-type noopDuration struct{}
-
-func (noopDuration) Observe(time.Duration) {}
-
-type noopExpiry struct{}
-
-func (noopExpiry) Set(*time.Time) {}
-
-type noopLatency struct{}
-
-func (noopLatency) Observe(context.Context, string, url.URL, time.Duration) {}
-
-type noopSize struct{}
-
-func (noopSize) Observe(context.Context, string, string, float64) {}
-
-type noopResult struct{}
-
-func (noopResult) Increment(context.Context, string, string, string) {}
-
-type noopCalls struct{}
-
-func (noopCalls) Increment(int, string) {}
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	"context"
->>>>>>> 5ce8c7613 (update vendored files)
-	"net/url"
-	"sync"
-	"time"
-)
-
-var registerMetrics sync.Once
-
-// DurationMetric is a measurement of some amount of time.
-type DurationMetric interface {
-	Observe(duration time.Duration)
-}
-
-// ExpiryMetric sets some time of expiry. If nil, assume not relevant.
-type ExpiryMetric interface {
-	Set(expiry *time.Time)
-}
-
-// LatencyMetric observes client latency partitioned by verb and url.
-type LatencyMetric interface {
-	Observe(ctx context.Context, verb string, u url.URL, latency time.Duration)
-}
-
-// ResultMetric counts response codes partitioned by method and host.
-type ResultMetric interface {
-	Increment(ctx context.Context, code string, method string, host string)
-}
-
-// CallsMetric counts calls that take place for a specific exec plugin.
-type CallsMetric interface {
-	// Increment increments a counter per exitCode and callStatus.
-	Increment(exitCode int, callStatus string)
-}
-
-var (
-	// ClientCertExpiry is the expiry time of a client certificate
-	ClientCertExpiry ExpiryMetric = noopExpiry{}
-	// ClientCertRotationAge is the age of a certificate that has just been rotated.
-	ClientCertRotationAge DurationMetric = noopDuration{}
-	// RequestLatency is the latency metric that rest clients will update.
-	RequestLatency LatencyMetric = noopLatency{}
-	// RateLimiterLatency is the client side rate limiter latency metric.
-	RateLimiterLatency LatencyMetric = noopLatency{}
-	// RequestResult is the result metric that rest clients will update.
-	RequestResult ResultMetric = noopResult{}
-	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
-	// exit code and call status.
-	ExecPluginCalls CallsMetric = noopCalls{}
-)
-
-// RegisterOpts contains all the metrics to register. Metrics may be nil.
-type RegisterOpts struct {
-	ClientCertExpiry      ExpiryMetric
-	ClientCertRotationAge DurationMetric
-	RequestLatency        LatencyMetric
-	RateLimiterLatency    LatencyMetric
-	RequestResult         ResultMetric
-	ExecPluginCalls       CallsMetric
-}
-
-// Register registers metrics for the rest client to use. This can
-// only be called once.
-func Register(opts RegisterOpts) {
-	registerMetrics.Do(func() {
-		if opts.ClientCertExpiry != nil {
-			ClientCertExpiry = opts.ClientCertExpiry
-		}
-		if opts.ClientCertRotationAge != nil {
-			ClientCertRotationAge = opts.ClientCertRotationAge
-		}
-		if opts.RequestLatency != nil {
-			RequestLatency = opts.RequestLatency
-		}
-		if opts.RateLimiterLatency != nil {
-			RateLimiterLatency = opts.RateLimiterLatency
-		}
-		if opts.RequestResult != nil {
-			RequestResult = opts.RequestResult
-		}
-		if opts.ExecPluginCalls != nil {
-			ExecPluginCalls = opts.ExecPluginCalls
-		}
-	})
-}
-
-type noopDuration struct{}
-
-func (noopDuration) Observe(time.Duration) {}
-
-type noopExpiry struct{}
-
-func (noopExpiry) Set(*time.Time) {}
-
-type noopLatency struct{}
-
-func (noopLatency) Observe(context.Context, string, url.URL, time.Duration) {}
-
-type noopResult struct{}
-
-<<<<<<< HEAD
-func (noopResult) Increment(string, string, string) {}
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-func (noopResult) Increment(string, string, string) {}
-=======
-func (noopResult) Increment(context.Context, string, string, string) {}
-
-type noopCalls struct{}
-
-func (noopCalls) Increment(int, string) {}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	"context"
->>>>>>> 6b7ce455e (update vendored files)
-	"net/url"
-	"sync"
-	"time"
-)
-
-var registerMetrics sync.Once
-
-// DurationMetric is a measurement of some amount of time.
-type DurationMetric interface {
-	Observe(duration time.Duration)
-}
-
-// ExpiryMetric sets some time of expiry. If nil, assume not relevant.
-type ExpiryMetric interface {
-	Set(expiry *time.Time)
-}
-
-// LatencyMetric observes client latency partitioned by verb and url.
-type LatencyMetric interface {
-	Observe(ctx context.Context, verb string, u url.URL, latency time.Duration)
-}
-
-// ResultMetric counts response codes partitioned by method and host.
-type ResultMetric interface {
-	Increment(ctx context.Context, code string, method string, host string)
-}
-
-// CallsMetric counts calls that take place for a specific exec plugin.
-type CallsMetric interface {
-	// Increment increments a counter per exitCode and callStatus.
-	Increment(exitCode int, callStatus string)
-}
-
-var (
-	// ClientCertExpiry is the expiry time of a client certificate
-	ClientCertExpiry ExpiryMetric = noopExpiry{}
-	// ClientCertRotationAge is the age of a certificate that has just been rotated.
-	ClientCertRotationAge DurationMetric = noopDuration{}
-	// RequestLatency is the latency metric that rest clients will update.
-	RequestLatency LatencyMetric = noopLatency{}
-	// RateLimiterLatency is the client side rate limiter latency metric.
-	RateLimiterLatency LatencyMetric = noopLatency{}
-	// RequestResult is the result metric that rest clients will update.
-	RequestResult ResultMetric = noopResult{}
-	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
-	// exit code and call status.
-	ExecPluginCalls CallsMetric = noopCalls{}
-)
-
-// RegisterOpts contains all the metrics to register. Metrics may be nil.
-type RegisterOpts struct {
-	ClientCertExpiry      ExpiryMetric
-	ClientCertRotationAge DurationMetric
-	RequestLatency        LatencyMetric
-	RateLimiterLatency    LatencyMetric
-	RequestResult         ResultMetric
-	ExecPluginCalls       CallsMetric
-}
-
-// Register registers metrics for the rest client to use. This can
-// only be called once.
-func Register(opts RegisterOpts) {
-	registerMetrics.Do(func() {
-		if opts.ClientCertExpiry != nil {
-			ClientCertExpiry = opts.ClientCertExpiry
-		}
-		if opts.ClientCertRotationAge != nil {
-			ClientCertRotationAge = opts.ClientCertRotationAge
-		}
-		if opts.RequestLatency != nil {
-			RequestLatency = opts.RequestLatency
-		}
-		if opts.RateLimiterLatency != nil {
-			RateLimiterLatency = opts.RateLimiterLatency
-		}
-		if opts.RequestResult != nil {
-			RequestResult = opts.RequestResult
-		}
-		if opts.ExecPluginCalls != nil {
-			ExecPluginCalls = opts.ExecPluginCalls
-		}
-	})
-}
-
-type noopDuration struct{}
-
-func (noopDuration) Observe(time.Duration) {}
-
-type noopExpiry struct{}
-
-func (noopExpiry) Set(*time.Time) {}
-
-type noopLatency struct{}
-
-func (noopLatency) Observe(context.Context, string, url.URL, time.Duration) {}
-
-type noopResult struct{}
-
-<<<<<<< HEAD
-func (noopResult) Increment(string, string, string) {}
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-func (noopResult) Increment(string, string, string) {}
-=======
-func (noopResult) Increment(context.Context, string, string, string) {}
-
-type noopCalls struct{}
-
-func (noopCalls) Increment(int, string) {}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"context"
->>>>>>> 4d7e5ad26 (update vendored files)
-	"net/url"
-	"sync"
-	"time"
-)
-
-var registerMetrics sync.Once
-
-// DurationMetric is a measurement of some amount of time.
-type DurationMetric interface {
-	Observe(duration time.Duration)
-}
-
-// ExpiryMetric sets some time of expiry. If nil, assume not relevant.
-type ExpiryMetric interface {
-	Set(expiry *time.Time)
-}
-
-// LatencyMetric observes client latency partitioned by verb and url.
-type LatencyMetric interface {
-	Observe(ctx context.Context, verb string, u url.URL, latency time.Duration)
-}
-
-// ResultMetric counts response codes partitioned by method and host.
-type ResultMetric interface {
-	Increment(ctx context.Context, code string, method string, host string)
-}
-
-// CallsMetric counts calls that take place for a specific exec plugin.
-type CallsMetric interface {
-	// Increment increments a counter per exitCode and callStatus.
-	Increment(exitCode int, callStatus string)
-}
-
-var (
-	// ClientCertExpiry is the expiry time of a client certificate
-	ClientCertExpiry ExpiryMetric = noopExpiry{}
-	// ClientCertRotationAge is the age of a certificate that has just been rotated.
-	ClientCertRotationAge DurationMetric = noopDuration{}
-	// RequestLatency is the latency metric that rest clients will update.
-	RequestLatency LatencyMetric = noopLatency{}
-	// RateLimiterLatency is the client side rate limiter latency metric.
-	RateLimiterLatency LatencyMetric = noopLatency{}
-	// RequestResult is the result metric that rest clients will update.
-	RequestResult ResultMetric = noopResult{}
-	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
-	// exit code and call status.
-	ExecPluginCalls CallsMetric = noopCalls{}
-)
-
-// RegisterOpts contains all the metrics to register. Metrics may be nil.
-type RegisterOpts struct {
-	ClientCertExpiry      ExpiryMetric
-	ClientCertRotationAge DurationMetric
-	RequestLatency        LatencyMetric
-	RateLimiterLatency    LatencyMetric
-	RequestResult         ResultMetric
-	ExecPluginCalls       CallsMetric
-}
-
-// Register registers metrics for the rest client to use. This can
-// only be called once.
-func Register(opts RegisterOpts) {
-	registerMetrics.Do(func() {
-		if opts.ClientCertExpiry != nil {
-			ClientCertExpiry = opts.ClientCertExpiry
-		}
-		if opts.ClientCertRotationAge != nil {
-			ClientCertRotationAge = opts.ClientCertRotationAge
-		}
-		if opts.RequestLatency != nil {
-			RequestLatency = opts.RequestLatency
-		}
-		if opts.RateLimiterLatency != nil {
-			RateLimiterLatency = opts.RateLimiterLatency
-		}
-		if opts.RequestResult != nil {
-			RequestResult = opts.RequestResult
-		}
-		if opts.ExecPluginCalls != nil {
-			ExecPluginCalls = opts.ExecPluginCalls
-		}
-	})
-}
-
-type noopDuration struct{}
-
-func (noopDuration) Observe(time.Duration) {}
-
-type noopExpiry struct{}
-
-func (noopExpiry) Set(*time.Time) {}
-
-type noopLatency struct{}
-
-func (noopLatency) Observe(context.Context, string, url.URL, time.Duration) {}
-
-type noopResult struct{}
-
-<<<<<<< HEAD
-func (noopResult) Increment(string, string, string) {}
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-func (noopResult) Increment(string, string, string) {}
-=======
-func (noopResult) Increment(context.Context, string, string, string) {}
-
-type noopCalls struct{}
-
-func (noopCalls) Increment(int, string) {}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"context"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net/url"
 	"sync"
 	"time"
@@ -548,6 +62,12 @@ type CallsMetric interface {
 	Increment(exitCode int, callStatus string)
 }
 
+// CallsMetric counts the success or failure of execution for exec plugins.
+type PolicyCallsMetric interface {
+	// Increment increments a counter per status { "allowed", "denied" }
+	Increment(status string)
+}
+
 // RetryMetric counts the number of retries sent to the server
 // partitioned by code, method, and host.
 type RetryMetric interface {
@@ -560,8 +80,26 @@ type TransportCacheMetric interface {
 }
 
 // TransportCreateCallsMetric counts the number of times a transport is created
-// partitioned by the result of the cache: hit, miss, uncacheable
+// partitioned by the result of the cache: hit, miss, miss-gc, uncacheable
 type TransportCreateCallsMetric interface {
+	Increment(result string)
+}
+
+// TransportCAReloadsMetric counts the number of times a CA reload is attempted,
+// partitioned by the result and reason.
+type TransportCAReloadsMetric interface {
+	Increment(result, reason string)
+}
+
+// TransportCertRotationGCCallsMetric counts the number of times a cert rotation
+// goroutine cancel func is called via GC cleanup.
+type TransportCertRotationGCCallsMetric interface {
+	Increment()
+}
+
+// TransportCacheGCCallsMetric counts the number of times a GC cleanup
+// attempts to delete a cache entry, partitioned by the result: deleted, skipped.
+type TransportCacheGCCallsMetric interface {
 	Increment(result string)
 }
 
@@ -585,6 +123,9 @@ var (
 	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
 	// exit code and call status.
 	ExecPluginCalls CallsMetric = noopCalls{}
+	// ExecPluginPolicyCalls is the number of plugin policy check calls, partitioned
+	// by {"allowed", "denied"}
+	ExecPluginPolicyCalls PolicyCallsMetric = noopPolicy{}
 	// RequestRetry is the retry metric that tracks the number of
 	// retries sent to the server.
 	RequestRetry RetryMetric = noopRetry{}
@@ -594,22 +135,34 @@ var (
 	// TransportCreateCalls is the metric that counts the number of times a new transport
 	// is created
 	TransportCreateCalls TransportCreateCallsMetric = noopTransportCreateCalls{}
+	// TransportCAReloads is the metric that counts the number of times a CA reload is attempted
+	TransportCAReloads TransportCAReloadsMetric = noopTransportCAReloads{}
+	// TransportCertRotationGCCalls counts the number of times a cert rotation goroutine
+	// cancel func is called via GC cleanup
+	TransportCertRotationGCCalls TransportCertRotationGCCallsMetric = noopTransportCertRotationGCCalls{}
+	// TransportCacheGCCalls counts the number of times a GC cleanup attempts
+	// to delete a transport cache entry, partitioned by result: deleted, skipped.
+	TransportCacheGCCalls TransportCacheGCCallsMetric = noopTransportCacheGCCalls{}
 )
 
 // RegisterOpts contains all the metrics to register. Metrics may be nil.
 type RegisterOpts struct {
-	ClientCertExpiry      ExpiryMetric
-	ClientCertRotationAge DurationMetric
-	RequestLatency        LatencyMetric
-	ResolverLatency       ResolverLatencyMetric
-	RequestSize           SizeMetric
-	ResponseSize          SizeMetric
-	RateLimiterLatency    LatencyMetric
-	RequestResult         ResultMetric
-	ExecPluginCalls       CallsMetric
-	RequestRetry          RetryMetric
-	TransportCacheEntries TransportCacheMetric
-	TransportCreateCalls  TransportCreateCallsMetric
+	ClientCertExpiry             ExpiryMetric
+	ClientCertRotationAge        DurationMetric
+	RequestLatency               LatencyMetric
+	ResolverLatency              ResolverLatencyMetric
+	RequestSize                  SizeMetric
+	ResponseSize                 SizeMetric
+	RateLimiterLatency           LatencyMetric
+	RequestResult                ResultMetric
+	ExecPluginCalls              CallsMetric
+	ExecPluginPolicyCalls        PolicyCallsMetric
+	RequestRetry                 RetryMetric
+	TransportCacheEntries        TransportCacheMetric
+	TransportCreateCalls         TransportCreateCallsMetric
+	TransportCAReloads           TransportCAReloadsMetric
+	TransportCertRotationGCCalls TransportCertRotationGCCallsMetric
+	TransportCacheGCCalls        TransportCacheGCCallsMetric
 }
 
 // Register registers metrics for the rest client to use. This can
@@ -643,6 +196,9 @@ func Register(opts RegisterOpts) {
 		if opts.ExecPluginCalls != nil {
 			ExecPluginCalls = opts.ExecPluginCalls
 		}
+		if opts.ExecPluginPolicyCalls != nil {
+			ExecPluginCalls = opts.ExecPluginCalls
+		}
 		if opts.RequestRetry != nil {
 			RequestRetry = opts.RequestRetry
 		}
@@ -651,6 +207,15 @@ func Register(opts RegisterOpts) {
 		}
 		if opts.TransportCreateCalls != nil {
 			TransportCreateCalls = opts.TransportCreateCalls
+		}
+		if opts.TransportCAReloads != nil {
+			TransportCAReloads = opts.TransportCAReloads
+		}
+		if opts.TransportCertRotationGCCalls != nil {
+			TransportCertRotationGCCalls = opts.TransportCertRotationGCCalls
+		}
+		if opts.TransportCacheGCCalls != nil {
+			TransportCacheGCCalls = opts.TransportCacheGCCalls
 		}
 	})
 }
@@ -678,17 +243,15 @@ func (noopSize) Observe(context.Context, string, string, float64) {}
 
 type noopResult struct{}
 
-<<<<<<< HEAD
-func (noopResult) Increment(string, string, string) {}
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (noopResult) Increment(string, string, string) {}
-=======
 func (noopResult) Increment(context.Context, string, string, string) {}
 
 type noopCalls struct{}
 
 func (noopCalls) Increment(int, string) {}
+
+type noopPolicy struct{}
+
+func (noopPolicy) Increment(string) {}
 
 type noopRetry struct{}
 
@@ -701,4 +264,15 @@ func (noopTransportCache) Observe(int) {}
 type noopTransportCreateCalls struct{}
 
 func (noopTransportCreateCalls) Increment(string) {}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+type noopTransportCAReloads struct{}
+
+func (noopTransportCAReloads) Increment(result, reason string) {}
+
+type noopTransportCertRotationGCCalls struct{}
+
+func (noopTransportCertRotationGCCalls) Increment() {}
+
+type noopTransportCacheGCCalls struct{}
+
+func (noopTransportCacheGCCalls) Increment(string) {}

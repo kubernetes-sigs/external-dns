@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -45,11 +45,11 @@ const (
 	fieldTransport11TCPLen = 13
 	fieldTransport11UDPLen = 10
 
-	// kernel version >= 4.14 MaxLen
+	// Kernel version >= 4.14 MaxLen
 	// See: https://elixir.bootlin.com/linux/v6.4.8/source/net/sunrpc/xprtrdma/xprt_rdma.h#L393
 	fieldTransport11RDMAMaxLen = 28
 
-	// kernel version <= 4.2 MinLen
+	// Kernel version <= 4.2 MinLen
 	// See: https://elixir.bootlin.com/linux/v4.2.8/source/net/sunrpc/xprtrdma/xprt_rdma.h#L331
 	fieldTransport11RDMAMinLen = 20
 )
@@ -374,241 +374,6 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 		if len(ss) == 0 {
 			break
 		}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-		switch ss[0] {
-		case fieldOpts:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			if stats.Opts == nil {
-				stats.Opts = map[string]string{}
-			}
-			for _, opt := range strings.Split(ss[1], ",") {
-				split := strings.Split(opt, "=")
-				if len(split) == 2 {
-					stats.Opts[split[0]] = split[1]
-				} else {
-					stats.Opts[opt] = ""
-				}
-			}
-		case fieldAge:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			// Age integer is in seconds
-			d, err := time.ParseDuration(ss[1] + "s")
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Age = d
-		case fieldBytes:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			bstats, err := parseNFSBytesStats(ss[1:])
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Bytes = *bstats
-		case fieldEvents:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-||||||| parent of 5ce8c7613 (update vendored files)
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-
-		switch ss[0] {
-		case fieldOpts:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			if stats.Opts == nil {
-				stats.Opts = map[string]string{}
-			}
-			for _, opt := range strings.Split(ss[1], ",") {
-				split := strings.Split(opt, "=")
-				if len(split) == 2 {
-					stats.Opts[split[0]] = split[1]
-				} else {
-					stats.Opts[opt] = ""
-				}
-			}
-		case fieldAge:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			// Age integer is in seconds
-			d, err := time.ParseDuration(ss[1] + "s")
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Age = d
-		case fieldBytes:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			bstats, err := parseNFSBytesStats(ss[1:])
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Bytes = *bstats
-		case fieldEvents:
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-||||||| parent of 6b7ce455e (update vendored files)
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-=======
->>>>>>> 6b7ce455e (update vendored files)
-
-		switch ss[0] {
-		case fieldOpts:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			if stats.Opts == nil {
-				stats.Opts = map[string]string{}
-			}
-			for _, opt := range strings.Split(ss[1], ",") {
-				split := strings.Split(opt, "=")
-				if len(split) == 2 {
-					stats.Opts[split[0]] = split[1]
-				} else {
-					stats.Opts[opt] = ""
-				}
-			}
-		case fieldAge:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			// Age integer is in seconds
-			d, err := time.ParseDuration(ss[1] + "s")
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Age = d
-		case fieldBytes:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			bstats, err := parseNFSBytesStats(ss[1:])
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Bytes = *bstats
-		case fieldEvents:
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-||||||| parent of 4d7e5ad26 (update vendored files)
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-
-		switch ss[0] {
-		case fieldOpts:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			if stats.Opts == nil {
-				stats.Opts = map[string]string{}
-			}
-			for _, opt := range strings.Split(ss[1], ",") {
-				split := strings.Split(opt, "=")
-				if len(split) == 2 {
-					stats.Opts[split[0]] = split[1]
-				} else {
-					stats.Opts[opt] = ""
-				}
-			}
-		case fieldAge:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			// Age integer is in seconds
-			d, err := time.ParseDuration(ss[1] + "s")
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Age = d
-		case fieldBytes:
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
-			bstats, err := parseNFSBytesStats(ss[1:])
-			if err != nil {
-				return nil, err
-			}
-
-			stats.Bytes = *bstats
-		case fieldEvents:
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-			if len(ss) < 2 {
-				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-			}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		if len(ss) < 2 {
-			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
-		}
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 		switch ss[0] {
 		case fieldOpts:
@@ -618,7 +383,7 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 			if stats.Opts == nil {
 				stats.Opts = map[string]string{}
 			}
-			for _, opt := range strings.Split(ss[1], ",") {
+			for opt := range strings.SplitSeq(ss[1], ",") {
 				split := strings.Split(opt, "=")
 				if len(split) == 2 {
 					stats.Opts[split[0]] = split[1]
@@ -648,14 +413,9 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 
 			stats.Bytes = *bstats
 		case fieldEvents:
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 			if len(ss) < 2 {
 				return nil, fmt.Errorf("%w: Incomplete information for NFS events: %v", ErrFileParse, ss)
 			}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			estats, err := parseNFSEventsStats(ss[1:])
 			if err != nil {
 				return nil, err
@@ -841,11 +601,12 @@ func parseNFSTransportStats(ss []string, statVersion string) (*NFSTransportStats
 	switch statVersion {
 	case statVersion10:
 		var expectedLength int
-		if protocol == "tcp" {
+		switch protocol {
+		case "tcp":
 			expectedLength = fieldTransport10TCPLen
-		} else if protocol == "udp" {
+		case "udp":
 			expectedLength = fieldTransport10UDPLen
-		} else {
+		default:
 			return nil, fmt.Errorf("%w: Invalid NFS protocol \"%s\" in stats 1.0 statement: %v", ErrFileParse, protocol, ss)
 		}
 		if len(ss) != expectedLength {
@@ -853,13 +614,14 @@ func parseNFSTransportStats(ss []string, statVersion string) (*NFSTransportStats
 		}
 	case statVersion11:
 		var expectedLength int
-		if protocol == "tcp" {
+		switch protocol {
+		case "tcp":
 			expectedLength = fieldTransport11TCPLen
-		} else if protocol == "udp" {
+		case "udp":
 			expectedLength = fieldTransport11UDPLen
-		} else if protocol == "rdma" {
+		case "rdma":
 			expectedLength = fieldTransport11RDMAMinLen
-		} else {
+		default:
 			return nil, fmt.Errorf("%w: invalid NFS protocol \"%s\" in stats 1.1 statement: %v", ErrFileParse, protocol, ss)
 		}
 		if (len(ss) != expectedLength && (protocol == "tcp" || protocol == "udp")) ||
@@ -895,11 +657,12 @@ func parseNFSTransportStats(ss []string, statVersion string) (*NFSTransportStats
 	// For the udp RPC transport there is no connection count, connect idle time,
 	// or idle time (fields #3, #4, and #5); all other fields are the same. So
 	// we set them to 0 here.
-	if protocol == "udp" {
+	switch protocol {
+	case "udp":
 		ns = append(ns[:2], append(make([]uint64, 3), ns[2:]...)...)
-	} else if protocol == "tcp" {
+	case "tcp":
 		ns = append(ns[:fieldTransport11TCPLen], make([]uint64, fieldTransport11RDMAMaxLen-fieldTransport11TCPLen+3)...)
-	} else if protocol == "rdma" {
+	case "rdma":
 		ns = append(ns[:fieldTransport10TCPLen], append(make([]uint64, 3), ns[fieldTransport10TCPLen:]...)...)
 	}
 

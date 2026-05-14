@@ -41,6 +41,84 @@ func (objMgr *ObjectManager) AllocateNetwork(
 	return
 }
 
+func (objMgr *ObjectManager) AllocateNextAvailableIp(
+	name string,
+	objectType string,
+	objectParams map[string]string,
+	params map[string][]string,
+	useEaInheritance bool,
+	ea EA,
+	comment string,
+	disable bool,
+	n *int, ipAddrType string,
+	enableDns bool, enableDhcp bool,
+	macAddr string, duid string,
+	networkView string, dnsView string,
+	useTtl bool, ttl uint32, aliases []string) (interface{}, error) {
+
+	networkIp := NewIpNextAvailable(name, objectType, objectParams, params, useEaInheritance, ea, comment, disable, n, ipAddrType,
+		enableDns, enableDhcp, macAddr, duid, networkView, dnsView, useTtl, ttl, aliases)
+
+	ref, err := objMgr.connector.CreateObject(networkIp)
+	if err != nil {
+		return nil, err
+	}
+
+	switch objectType {
+	case "record:a":
+		return objMgr.GetARecordByRef(ref)
+	case "record:aaaa":
+		return objMgr.GetAAAARecordByRef(ref)
+	case "record:host":
+		return objMgr.GetHostRecordByRef(ref)
+	}
+
+	return nil, err
+}
+
+func (objMgr *ObjectManager) AllocateNetworkByEA(
+	netview string, isIPv6 bool, comment string, eas EA, eaMap map[string]string, prefixLen uint, object string) (network *Network, err error) {
+
+	var (
+		containerObject string
+		objectType      string
+	)
+
+	objectType = getNetworkObjectType(isIPv6, "network", "ipv6network")
+
+	if object == "network" {
+		containerObject = getNetworkObjectType(isIPv6, "network", "ipv6network")
+	} else {
+		containerObject = getNetworkObjectType(isIPv6, "networkcontainer", "ipv6networkcontainer")
+	}
+
+	nextAvailableNetworkInfo := NetworkContainerNextAvailableInfo{
+		Function:     "next_available_network",
+		ResultField:  "networks",
+		Object:       containerObject,
+		ObjectParams: eaMap,
+		Params:       map[string]uint{"cidr": prefixLen},
+	}
+
+	nextAvailableNetwork := NetworkContainerNextAvailable{
+		Network:     &nextAvailableNetworkInfo,
+		objectType:  objectType,
+		Comment:     comment,
+		Ea:          eas,
+		NetviewName: netview,
+	}
+
+	ref, err := objMgr.connector.CreateObject(&nextAvailableNetwork)
+	if err == nil {
+		if isIPv6 {
+			network, err = BuildIPv6NetworkFromRef(ref)
+		} else {
+			network, err = BuildNetworkFromRef(ref)
+		}
+	}
+	return
+}
+
 func (objMgr *ObjectManager) GetNetwork(netview string, cidr string, isIPv6 bool, ea EA) (*Network, error) {
 	if netview != "" && cidr != "" {
 		var res []Network
@@ -108,15 +186,6 @@ func (objMgr *ObjectManager) UpdateNetwork(
 	nw.Ea = setEas
 	nw.Comment = comment
 
-<<<<<<< HEAD
-	newRef, err := objMgr.connector.UpdateObject(nw, ref)
-	if err != nil {
-		return nil, err
-	}
-
-	nw.Ref = newRef
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	// Network view is not allowed to be updated,
 	// thus making its name empty (will not appear among data which we update).
 	netViewSaved := nw.NetviewName
@@ -130,7 +199,6 @@ func (objMgr *ObjectManager) UpdateNetwork(
 	nw.Ref = newRef
 	nw.NetviewName = netViewSaved
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return nw, nil
 }
 

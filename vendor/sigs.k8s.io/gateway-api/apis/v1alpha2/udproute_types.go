@@ -31,13 +31,16 @@ import (
 // listener, it can be used to forward traffic on the port specified by the
 // listener to a set of backends specified by the UDPRoute.
 type UDPRoute struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec defines the desired state of UDPRoute.
+	// +required
 	Spec UDPRouteSpec `json:"spec"`
 
 	// Status defines the current state of UDPRoute.
+	// +optional
 	Status UDPRouteStatus `json:"status,omitempty"`
 }
 
@@ -47,8 +50,11 @@ type UDPRouteSpec struct {
 
 	// Rules are a list of UDP matchers and actions.
 	//
+	// +required
+	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
+	// <gateway:experimental:validation:XValidation:message="Rule name must be unique within the route",rule="self.all(l1, !has(l1.name) || self.exists_one(l2, has(l2.name) && l1.name == l2.name))">
 	Rules []UDPRouteRule `json:"rules"`
 }
 
@@ -59,26 +65,29 @@ type UDPRouteStatus struct {
 
 // UDPRouteRule is the configuration for a given rule.
 type UDPRouteRule struct {
+	// Name is the name of the route rule. This name MUST be unique within a Route if it is set.
+	//
+	// Support: Extended
+	// +optional
+	Name *SectionName `json:"name,omitempty"`
+
 	// BackendRefs defines the backend(s) where matching requests should be
-	// sent. If unspecified or invalid (refers to a non-existent resource or a
+	// sent. If unspecified or invalid (refers to a nonexistent resource or a
 	// Service with no endpoints), the underlying implementation MUST actively
 	// reject connection attempts to this backend. Packet drops must
 	// respect weight; if an invalid backend is requested to have 80% of
 	// the packets, then 80% of packets must be dropped instead.
 	//
 	// Support: Core for Kubernetes Service
-<<<<<<< HEAD
-	// Support: Custom for any other resource
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	//
 	// Support: Extended for Kubernetes ServiceImport
 	//
 	// Support: Implementation-specific for any other resource
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	//
 	// Support for weight: Extended
 	//
+	// +required
+	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	BackendRefs []BackendRef `json:"backendRefs,omitempty"`

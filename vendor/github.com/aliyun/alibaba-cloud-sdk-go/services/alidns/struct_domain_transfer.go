@@ -17,34 +17,10 @@ package alidns
 
 // DomainTransfer is a nested struct in alidns response
 type DomainTransfer struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	FromUserId      int64  `json:"FromUserId" xml:"FromUserId"`
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
 	TargetUserId    int64  `json:"TargetUserId" xml:"TargetUserId"`
 	DomainName      string `json:"DomainName" xml:"DomainName"`
 	Id              int64  `json:"Id" xml:"Id"`
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	DomainName      string `json:"DomainName" xml:"DomainName"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	DomainName      string `json:"DomainName" xml:"DomainName"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	FromUserId      int64  `json:"FromUserId" xml:"FromUserId"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	TargetUserId    int64  `json:"TargetUserId" xml:"TargetUserId"`
-	DomainName      string `json:"DomainName" xml:"DomainName"`
-	Id              int64  `json:"Id" xml:"Id"`
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

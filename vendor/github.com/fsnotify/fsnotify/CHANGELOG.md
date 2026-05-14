@@ -1,50 +1,69 @@
 # Changelog
 
-<<<<<<< HEAD
-All notable changes to this project will be documented in this file.
+1.9.0 2024-04-04
+----------------
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### Changes and fixes
 
-## [Unreleased]
+- all: make BufferedWatcher buffered again ([#657])
 
-## [1.5.4] - 2022-04-25
+- inotify: fix race when adding/removing watches while a watched path is being
+  deleted ([#678], [#686])
 
-* Windows: add missing defer to `Watcher.WatchList` [#447](https://github.com/fsnotify/fsnotify/pull/447)
-* go.mod: use latest x/sys [#444](https://github.com/fsnotify/fsnotify/pull/444)
-* Fix compilation for OpenBSD [#443](https://github.com/fsnotify/fsnotify/pull/443)
+- inotify: don't send empty event if a watched path is unmounted ([#655])
 
-## [1.5.3] - 2022-04-22
+- inotify: don't register duplicate watches when watching both a symlink and its
+  target; previously that would get "half-added" and removing the second would
+  panic ([#679])
 
-* This version is retracted. An incorrect branch is published accidentally [#445](https://github.com/fsnotify/fsnotify/issues/445)
+- kqueue: fix watching relative symlinks ([#681])
 
-## [1.5.2] - 2022-04-21
+- kqueue: correctly mark pre-existing entries when watching a link to a dir on
+  kqueue ([#682])
 
-* Add a feature to return the directories and files that are being monitored [#374](https://github.com/fsnotify/fsnotify/pull/374)
-* Fix potential crash on windows if `raw.FileNameLength` exceeds `syscall.MAX_PATH` [#361](https://github.com/fsnotify/fsnotify/pull/361)
-* Allow build on unsupported GOOS [#424](https://github.com/fsnotify/fsnotify/pull/424)
-* Don't set `poller.fd` twice in `newFdPoller` [#406](https://github.com/fsnotify/fsnotify/pull/406)
-* fix go vet warnings: call to `(*T).Fatalf` from a non-test goroutine [#416](https://github.com/fsnotify/fsnotify/pull/416)
+- illumos: don't send error if changed file is deleted while processing the
+  event ([#678])
 
-## [1.5.1] - 2021-08-24
 
-* Revert Add AddRaw to not follow symlinks [#394](https://github.com/fsnotify/fsnotify/pull/394)
+[#657]: https://github.com/fsnotify/fsnotify/pull/657
+[#678]: https://github.com/fsnotify/fsnotify/pull/678
+[#686]: https://github.com/fsnotify/fsnotify/pull/686
+[#655]: https://github.com/fsnotify/fsnotify/pull/655
+[#681]: https://github.com/fsnotify/fsnotify/pull/681
+[#679]: https://github.com/fsnotify/fsnotify/pull/679
+[#682]: https://github.com/fsnotify/fsnotify/pull/682
 
-## [1.5.0] - 2021-08-20
+1.8.0 2024-10-31
+----------------
 
-* Go: Increase minimum required version to Go 1.12 [#381](https://github.com/fsnotify/fsnotify/pull/381)
-* Feature: Add AddRaw method which does not follow symlinks when adding a watch [#289](https://github.com/fsnotify/fsnotify/pull/298)
-* Windows: Follow symlinks by default like on all other systems [#289](https://github.com/fsnotify/fsnotify/pull/289)
-* CI: Use GitHub Actions for CI and cover go 1.12-1.17
-   [#378](https://github.com/fsnotify/fsnotify/pull/378)
-   [#381](https://github.com/fsnotify/fsnotify/pull/381)
-   [#385](https://github.com/fsnotify/fsnotify/pull/385)
-* Go 1.14+: Fix unsafe pointer conversion [#325](https://github.com/fsnotify/fsnotify/pull/325)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-Unreleased
-----------
-Nothing yet.
+### Additions
+
+- all: add `FSNOTIFY_DEBUG` to print debug logs to stderr ([#619])
+
+### Changes and fixes
+
+- windows: fix behaviour of `WatchList()` to be consistent with other platforms ([#610])
+
+- kqueue: ignore events with Ident=0 ([#590])
+
+- kqueue: set O_CLOEXEC to prevent passing file descriptors to children ([#617])
+
+- kqueue: emit events as "/path/dir/file" instead of "path/link/file" when watching a symlink ([#625])
+
+- inotify: don't send event for IN_DELETE_SELF when also watching the parent ([#620])
+
+- inotify: fix panic when calling Remove() in a goroutine ([#650])
+
+- fen: allow watching subdirectories of watched directories ([#621])
+
+[#590]: https://github.com/fsnotify/fsnotify/pull/590
+[#610]: https://github.com/fsnotify/fsnotify/pull/610
+[#617]: https://github.com/fsnotify/fsnotify/pull/617
+[#619]: https://github.com/fsnotify/fsnotify/pull/619
+[#620]: https://github.com/fsnotify/fsnotify/pull/620
+[#621]: https://github.com/fsnotify/fsnotify/pull/621
+[#625]: https://github.com/fsnotify/fsnotify/pull/625
+[#650]: https://github.com/fsnotify/fsnotify/pull/650
 
 1.7.0 - 2023-10-22
 ------------------
@@ -265,7 +284,6 @@ but not documented). It also increases the minimum Linux version to 2.6.32.
 * Project: Update copyright for 2019 (@nathany #309)
 * CI: Drop go1.8 from CI matrix (@nathany #309)
 * Docs: Updating the FAQ section for supportability with NFS & FUSE filesystems (@Pratik32 4bf2d1fec78374803a39307bfb8d340688f4f28e )
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 ## [1.4.7] - 2018-01-09
 

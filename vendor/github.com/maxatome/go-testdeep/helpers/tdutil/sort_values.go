@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Maxime Soulé
+// Copyright (c) 2019-2025, Maxime Soulé
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -10,11 +10,9 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/maxatome/go-testdeep/internal/visited"
+	tdsort "github.com/maxatome/go-testdeep/internal/sort"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // SortableValues is used to allow the sorting of a [][reflect.Value]
 // slice. It is used with the standard sort package:
 //
@@ -24,35 +22,14 @@ import (
 //
 // Replace [sort.Sort] by [sort.Stable] for a stable sort. See [sort]
 // documentation.
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// SortableValues is used to allow the sorting of a []reflect.Value
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// SortableValues is used to allow the sorting of a []reflect.Value
-=======
-// SortableValues is used to allow the sorting of a [][reflect.Value]
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// slice. It is used with the standard sort package:
-//
-//	vals := []reflect.Value{a, b, c, d}
-//	sort.Sort(SortableValues(vals))
-//	// vals contents now sorted
-//
-<<<<<<< HEAD
-// Replace sort.Sort by sort.Stable for a stable sort. See sort documentation.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// Replace sort.Sort by sort.Stable for a stable sort. See sort documentation.
-=======
-// Replace [sort.Sort] by [sort.Stable] for a stable sort. See [sort]
-// documentation.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Sorting rules are as follows:
+//   - invalid value is always lower
 //   - nil is always lower
 //   - different types are sorted by their name
+//   - if method TYPE.Compare(TYPE) int exits, calls it
 //   - false is lesser than true
-//   - float and int numbers are sorted by their value
+//   - float and int numbers are sorted by their value, NaN is always lower
 //   - complex numbers are sorted by their real, then by their imaginary parts
 //   - strings are sorted by their value
 //   - map: shorter length is lesser, then sorted by address
@@ -64,29 +41,26 @@ import (
 //   - interface: comparison is spread to the value
 //
 // Cyclic references are correctly handled.
+//
+// See also [CmpValuesFunc].
 func SortableValues(s []reflect.Value) sort.Interface {
-	r := &rValues{
-		Slice: s,
-	}
-	if len(s) > 1 {
-		r.Visited = visited.NewVisited()
-	}
-	return r
+	return tdsort.Values(s)
 }
 
-type rValues struct {
-	Visited visited.Visited
-	Slice   []reflect.Value
-}
-
-func (v *rValues) Len() int {
-	return len(v.Slice)
-}
-
-func (v *rValues) Less(i, j int) bool {
-	return cmp(v.Visited, v.Slice[i], v.Slice[j]) < 0
-}
-
-func (v *rValues) Swap(i, j int) {
-	v.Slice[i], v.Slice[j] = v.Slice[j], v.Slice[i]
+// CmpValuesFunc returns a function able to compare 2 [reflect.Value] values.
+//
+// The sorting rules are listed in [SortableValues] documentation.
+//
+//	values := s := []reflect.Value{
+//	  reflect.ValueOf(4),
+//	  reflect.ValueOf(3),
+//	  reflect.ValueOf(1),
+//	}
+//	slices.SortFunc(s, tdutil.CmpValuesFunc())
+//
+// Cyclic references are correctly handled.
+//
+// See also [SortableValues].
+func CmpValuesFunc() func(a, b reflect.Value) int {
+	return tdsort.Func()
 }

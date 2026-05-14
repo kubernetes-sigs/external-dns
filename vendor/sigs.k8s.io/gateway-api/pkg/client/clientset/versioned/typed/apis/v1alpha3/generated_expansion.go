@@ -19,3 +19,5 @@ limitations under the License.
 package v1alpha3
 
 type BackendTLSPolicyExpansion interface{}
+
+type TLSRouteExpansion interface{}

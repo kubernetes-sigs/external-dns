@@ -17,22 +17,17 @@ limitations under the License.
 package runtime
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/textlogger"
 )
 
 var (
@@ -63,7 +58,6 @@ func HandleCrash(additionalHandlers ...func(interface{})) {
 	if r := recover(); r != nil {
 		additionalHandlersWithContext := make([]func(context.Context, interface{}), len(additionalHandlers))
 		for i, handler := range additionalHandlers {
-			handler := handler // capture loop variable
 			additionalHandlersWithContext[i] = func(_ context.Context, r interface{}) {
 				handler(r)
 			}
@@ -157,18 +151,42 @@ func logPanic(ctx context.Context, r interface{}) {
 // should be packaged up into a testable and reusable object.
 var ErrorHandlers = []ErrorHandler{
 	logError,
-	func(_ context.Context, _ error, _ string, _ ...interface{}) {
-		(&rudimentaryErrorBackoff{
-			lastErrorTime: time.Now(),
-			// 1ms was the number folks were able to stomach as a global rate limit.
-			// If you need to log errors more than 1000 times a second you
-			// should probably consider fixing your code instead. :)
-			minPeriod: time.Millisecond,
-		}).OnError()
-	},
+	// 1ms was the number folks were able to stomach as a global rate limit.
+	// If you need to log errors more than 1000 times a second, you
+	// should probably consider fixing your code instead. :)
+	backoffError(1 * time.Millisecond),
 }
 
+// ErrorHandler is called indirectly through [HandleError], [HandleErrorWithContext] or [HandleErrorWithLogger].
+// It is passed the same parameters that a structured logging backend needs to log a problem.
+// It follows the semantic described for [HandleErrorWithContext] and [logr.Logger.Error]:
+// - err is optional and may be nil
+// - msg is string that describes the problem
+// - keysAndValues contains additional information that varies between different occurrences of the problem
+//
+// [ErrorToString] can be used to convert these parameters into a single string, using the klog text output.
 type ErrorHandler func(ctx context.Context, err error, msg string, keysAndValues ...interface{})
+
+// ErrorToString takes the parameters passed to [ErrorHandler] and
+// formats them as a string using the klog text output.
+//
+// If any of the values is a multi-line string, then the resulting
+// string also uses line breaks and indention for the sake of readability.
+// Does not include a trailing newline.
+//
+// Use errors.New if an error instead of a string is needed.
+func ErrorToString(err error, msg string, keysAndValues ...interface{}) string {
+	var buffer bytes.Buffer
+	config := textlogger.NewConfig(
+		textlogger.Output(&buffer),
+		textlogger.WithHeader(false),
+	)
+	logger := textlogger.NewLogger(config)
+	logger.Error(err, msg, keysAndValues...)
+	result := buffer.String()
+	result = strings.TrimSpace(result)
+	return result
+}
 
 // HandlerError is a method to invoke when a non-user facing piece of code cannot
 // return an error and needs to indicate it has been ignored. Invoking this method
@@ -234,6 +252,18 @@ func logError(ctx context.Context, err error, msg string, keysAndValues ...inter
 	logger.Error(err, msg, keysAndValues...) //nolint:logcheck // logcheck complains about unknown key/value pairs.
 }
 
+// backoffError blocks if it is called more often than the minPeriod.
+func backoffError(minPeriod time.Duration) ErrorHandler {
+	r := &rudimentaryErrorBackoff{
+		lastErrorTime: time.Now(),
+		minPeriod:     minPeriod,
+	}
+
+	return func(ctx context.Context, err error, msg string, keysAndValues ...interface{}) {
+		r.OnError()
+	}
+}
+
 type rudimentaryErrorBackoff struct {
 	minPeriod time.Duration // immutable
 	// TODO(lavalamp): use the clock for testability. Need to move that
@@ -289,638 +319,6 @@ func RecoverFromPanic(err *error) {
 }
 
 // Must panics on non-nil errors. Useful to handling programmer level errors.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 5ce8c7613 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 5ce8c7613 (update vendored files)
-)
-
-var (
-	// ReallyCrash controls the behavior of HandleCrash and now defaults
-	// true. It's still exposed so components can optionally set to false
-	// to restore prior behavior.
-	ReallyCrash = true
-)
-
-// PanicHandlers is a list of functions which will be invoked when a panic happens.
-var PanicHandlers = []func(interface{}){logPanic}
-
-// HandleCrash simply catches a crash and logs an error. Meant to be called via
-// defer.  Additional context-specific handlers can be provided, and will be
-// called in case of panic.  HandleCrash actually crashes, after calling the
-// handlers and logging the panic message.
-//
-// E.g., you can provide one or more additional handlers for something like shutting down go routines gracefully.
-func HandleCrash(additionalHandlers ...func(interface{})) {
-	if r := recover(); r != nil {
-		for _, fn := range PanicHandlers {
-			fn(r)
-		}
-		for _, fn := range additionalHandlers {
-			fn(r)
-		}
-		if ReallyCrash {
-			// Actually proceed to panic.
-			panic(r)
-		}
-	}
-}
-
-// logPanic logs the caller tree when a panic occurs (except in the special case of http.ErrAbortHandler).
-func logPanic(r interface{}) {
-	if r == http.ErrAbortHandler {
-		// honor the http.ErrAbortHandler sentinel panic value:
-		//   ErrAbortHandler is a sentinel panic value to abort a handler.
-		//   While any panic from ServeHTTP aborts the response to the client,
-		//   panicking with ErrAbortHandler also suppresses logging of a stack trace to the server's error log.
-		return
-	}
-
-	// Same as stdlib http server code. Manually allocate stack trace buffer size
-	// to prevent excessively large logs
-	const size = 64 << 10
-	stacktrace := make([]byte, size)
-	stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-	if _, ok := r.(string); ok {
-		klog.Errorf("Observed a panic: %s\n%s", r, stacktrace)
-	} else {
-		klog.Errorf("Observed a panic: %#v (%v)\n%s", r, r, stacktrace)
-	}
-}
-
-// ErrorHandlers is a list of functions which will be invoked when a nonreturnable
-// error occurs.
-// TODO(lavalamp): for testability, this and the below HandleError function
-// should be packaged up into a testable and reusable object.
-var ErrorHandlers = []func(error){
-	logError,
-	(&rudimentaryErrorBackoff{
-		lastErrorTime: time.Now(),
-		// 1ms was the number folks were able to stomach as a global rate limit.
-		// If you need to log errors more than 1000 times a second you
-		// should probably consider fixing your code instead. :)
-		minPeriod: time.Millisecond,
-	}).OnError,
-}
-
-// HandlerError is a method to invoke when a non-user facing piece of code cannot
-// return an error and needs to indicate it has been ignored. Invoking this method
-// is preferable to logging the error - the default behavior is to log but the
-// errors may be sent to a remote server for analysis.
-func HandleError(err error) {
-	// this is sometimes called with a nil error.  We probably shouldn't fail and should do nothing instead
-	if err == nil {
-		return
-	}
-
-	for _, fn := range ErrorHandlers {
-		fn(err)
-	}
-}
-
-// logError prints an error with the call stack of the location it was reported
-func logError(err error) {
-	klog.ErrorDepth(2, err)
-}
-
-type rudimentaryErrorBackoff struct {
-	minPeriod time.Duration // immutable
-	// TODO(lavalamp): use the clock for testability. Need to move that
-	// package for that to be accessible here.
-	lastErrorTimeLock sync.Mutex
-	lastErrorTime     time.Time
-}
-
-// OnError will block if it is called more often than the embedded period time.
-// This will prevent overly tight hot error loops.
-func (r *rudimentaryErrorBackoff) OnError(error) {
-	r.lastErrorTimeLock.Lock()
-	defer r.lastErrorTimeLock.Unlock()
-	d := time.Since(r.lastErrorTime)
-	if d < r.minPeriod {
-		// If the time moves backwards for any reason, do nothing
-		time.Sleep(r.minPeriod - d)
-	}
-	r.lastErrorTime = time.Now()
-}
-
-// GetCaller returns the caller of the function that calls it.
-func GetCaller() string {
-	var pc [1]uintptr
-	runtime.Callers(3, pc[:])
-	f := runtime.FuncForPC(pc[0])
-	if f == nil {
-		return fmt.Sprintf("Unable to find caller")
-	}
-	return f.Name()
-}
-
-// RecoverFromPanic replaces the specified error with an error containing the
-// original error, and  the call tree when a panic occurs. This enables error
-// handlers to handle errors and panics the same way.
-func RecoverFromPanic(err *error) {
-	if r := recover(); r != nil {
-		// Same as stdlib http server code. Manually allocate stack trace buffer size
-		// to prevent excessively large logs
-		const size = 64 << 10
-		stacktrace := make([]byte, size)
-		stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-
-		*err = fmt.Errorf(
-			"recovered from panic %q. (err=%v) Call stack:\n%s",
-			r,
-			*err,
-			stacktrace)
-	}
-}
-
-<<<<<<< HEAD
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
-=======
-// Must panics on non-nil errors. Useful to handling programmer level errors.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 6b7ce455e (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 6b7ce455e (update vendored files)
-)
-
-var (
-	// ReallyCrash controls the behavior of HandleCrash and now defaults
-	// true. It's still exposed so components can optionally set to false
-	// to restore prior behavior.
-	ReallyCrash = true
-)
-
-// PanicHandlers is a list of functions which will be invoked when a panic happens.
-var PanicHandlers = []func(interface{}){logPanic}
-
-// HandleCrash simply catches a crash and logs an error. Meant to be called via
-// defer.  Additional context-specific handlers can be provided, and will be
-// called in case of panic.  HandleCrash actually crashes, after calling the
-// handlers and logging the panic message.
-//
-// E.g., you can provide one or more additional handlers for something like shutting down go routines gracefully.
-func HandleCrash(additionalHandlers ...func(interface{})) {
-	if r := recover(); r != nil {
-		for _, fn := range PanicHandlers {
-			fn(r)
-		}
-		for _, fn := range additionalHandlers {
-			fn(r)
-		}
-		if ReallyCrash {
-			// Actually proceed to panic.
-			panic(r)
-		}
-	}
-}
-
-// logPanic logs the caller tree when a panic occurs (except in the special case of http.ErrAbortHandler).
-func logPanic(r interface{}) {
-	if r == http.ErrAbortHandler {
-		// honor the http.ErrAbortHandler sentinel panic value:
-		//   ErrAbortHandler is a sentinel panic value to abort a handler.
-		//   While any panic from ServeHTTP aborts the response to the client,
-		//   panicking with ErrAbortHandler also suppresses logging of a stack trace to the server's error log.
-		return
-	}
-
-	// Same as stdlib http server code. Manually allocate stack trace buffer size
-	// to prevent excessively large logs
-	const size = 64 << 10
-	stacktrace := make([]byte, size)
-	stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-	if _, ok := r.(string); ok {
-		klog.Errorf("Observed a panic: %s\n%s", r, stacktrace)
-	} else {
-		klog.Errorf("Observed a panic: %#v (%v)\n%s", r, r, stacktrace)
-	}
-}
-
-// ErrorHandlers is a list of functions which will be invoked when a nonreturnable
-// error occurs.
-// TODO(lavalamp): for testability, this and the below HandleError function
-// should be packaged up into a testable and reusable object.
-var ErrorHandlers = []func(error){
-	logError,
-	(&rudimentaryErrorBackoff{
-		lastErrorTime: time.Now(),
-		// 1ms was the number folks were able to stomach as a global rate limit.
-		// If you need to log errors more than 1000 times a second you
-		// should probably consider fixing your code instead. :)
-		minPeriod: time.Millisecond,
-	}).OnError,
-}
-
-// HandlerError is a method to invoke when a non-user facing piece of code cannot
-// return an error and needs to indicate it has been ignored. Invoking this method
-// is preferable to logging the error - the default behavior is to log but the
-// errors may be sent to a remote server for analysis.
-func HandleError(err error) {
-	// this is sometimes called with a nil error.  We probably shouldn't fail and should do nothing instead
-	if err == nil {
-		return
-	}
-
-	for _, fn := range ErrorHandlers {
-		fn(err)
-	}
-}
-
-// logError prints an error with the call stack of the location it was reported
-func logError(err error) {
-	klog.ErrorDepth(2, err)
-}
-
-type rudimentaryErrorBackoff struct {
-	minPeriod time.Duration // immutable
-	// TODO(lavalamp): use the clock for testability. Need to move that
-	// package for that to be accessible here.
-	lastErrorTimeLock sync.Mutex
-	lastErrorTime     time.Time
-}
-
-// OnError will block if it is called more often than the embedded period time.
-// This will prevent overly tight hot error loops.
-func (r *rudimentaryErrorBackoff) OnError(error) {
-	r.lastErrorTimeLock.Lock()
-	defer r.lastErrorTimeLock.Unlock()
-	d := time.Since(r.lastErrorTime)
-	if d < r.minPeriod {
-		// If the time moves backwards for any reason, do nothing
-		time.Sleep(r.minPeriod - d)
-	}
-	r.lastErrorTime = time.Now()
-}
-
-// GetCaller returns the caller of the function that calls it.
-func GetCaller() string {
-	var pc [1]uintptr
-	runtime.Callers(3, pc[:])
-	f := runtime.FuncForPC(pc[0])
-	if f == nil {
-		return fmt.Sprintf("Unable to find caller")
-	}
-	return f.Name()
-}
-
-// RecoverFromPanic replaces the specified error with an error containing the
-// original error, and  the call tree when a panic occurs. This enables error
-// handlers to handle errors and panics the same way.
-func RecoverFromPanic(err *error) {
-	if r := recover(); r != nil {
-		// Same as stdlib http server code. Manually allocate stack trace buffer size
-		// to prevent excessively large logs
-		const size = 64 << 10
-		stacktrace := make([]byte, size)
-		stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-
-		*err = fmt.Errorf(
-			"recovered from panic %q. (err=%v) Call stack:\n%s",
-			r,
-			*err,
-			stacktrace)
-	}
-}
-
-<<<<<<< HEAD
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
-=======
-// Must panics on non-nil errors. Useful to handling programmer level errors.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 4d7e5ad26 (update vendored files)
-)
-
-var (
-	// ReallyCrash controls the behavior of HandleCrash and now defaults
-	// true. It's still exposed so components can optionally set to false
-	// to restore prior behavior.
-	ReallyCrash = true
-)
-
-// PanicHandlers is a list of functions which will be invoked when a panic happens.
-var PanicHandlers = []func(interface{}){logPanic}
-
-// HandleCrash simply catches a crash and logs an error. Meant to be called via
-// defer.  Additional context-specific handlers can be provided, and will be
-// called in case of panic.  HandleCrash actually crashes, after calling the
-// handlers and logging the panic message.
-//
-// E.g., you can provide one or more additional handlers for something like shutting down go routines gracefully.
-func HandleCrash(additionalHandlers ...func(interface{})) {
-	if r := recover(); r != nil {
-		for _, fn := range PanicHandlers {
-			fn(r)
-		}
-		for _, fn := range additionalHandlers {
-			fn(r)
-		}
-		if ReallyCrash {
-			// Actually proceed to panic.
-			panic(r)
-		}
-	}
-}
-
-// logPanic logs the caller tree when a panic occurs (except in the special case of http.ErrAbortHandler).
-func logPanic(r interface{}) {
-	if r == http.ErrAbortHandler {
-		// honor the http.ErrAbortHandler sentinel panic value:
-		//   ErrAbortHandler is a sentinel panic value to abort a handler.
-		//   While any panic from ServeHTTP aborts the response to the client,
-		//   panicking with ErrAbortHandler also suppresses logging of a stack trace to the server's error log.
-		return
-	}
-
-	// Same as stdlib http server code. Manually allocate stack trace buffer size
-	// to prevent excessively large logs
-	const size = 64 << 10
-	stacktrace := make([]byte, size)
-	stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-	if _, ok := r.(string); ok {
-		klog.Errorf("Observed a panic: %s\n%s", r, stacktrace)
-	} else {
-		klog.Errorf("Observed a panic: %#v (%v)\n%s", r, r, stacktrace)
-	}
-}
-
-// ErrorHandlers is a list of functions which will be invoked when a nonreturnable
-// error occurs.
-// TODO(lavalamp): for testability, this and the below HandleError function
-// should be packaged up into a testable and reusable object.
-var ErrorHandlers = []func(error){
-	logError,
-	(&rudimentaryErrorBackoff{
-		lastErrorTime: time.Now(),
-		// 1ms was the number folks were able to stomach as a global rate limit.
-		// If you need to log errors more than 1000 times a second you
-		// should probably consider fixing your code instead. :)
-		minPeriod: time.Millisecond,
-	}).OnError,
-}
-
-// HandlerError is a method to invoke when a non-user facing piece of code cannot
-// return an error and needs to indicate it has been ignored. Invoking this method
-// is preferable to logging the error - the default behavior is to log but the
-// errors may be sent to a remote server for analysis.
-func HandleError(err error) {
-	// this is sometimes called with a nil error.  We probably shouldn't fail and should do nothing instead
-	if err == nil {
-		return
-	}
-
-	for _, fn := range ErrorHandlers {
-		fn(err)
-	}
-}
-
-// logError prints an error with the call stack of the location it was reported
-func logError(err error) {
-	klog.ErrorDepth(2, err)
-}
-
-type rudimentaryErrorBackoff struct {
-	minPeriod time.Duration // immutable
-	// TODO(lavalamp): use the clock for testability. Need to move that
-	// package for that to be accessible here.
-	lastErrorTimeLock sync.Mutex
-	lastErrorTime     time.Time
-}
-
-// OnError will block if it is called more often than the embedded period time.
-// This will prevent overly tight hot error loops.
-func (r *rudimentaryErrorBackoff) OnError(error) {
-	r.lastErrorTimeLock.Lock()
-	defer r.lastErrorTimeLock.Unlock()
-	d := time.Since(r.lastErrorTime)
-	if d < r.minPeriod {
-		// If the time moves backwards for any reason, do nothing
-		time.Sleep(r.minPeriod - d)
-	}
-	r.lastErrorTime = time.Now()
-}
-
-// GetCaller returns the caller of the function that calls it.
-func GetCaller() string {
-	var pc [1]uintptr
-	runtime.Callers(3, pc[:])
-	f := runtime.FuncForPC(pc[0])
-	if f == nil {
-		return fmt.Sprintf("Unable to find caller")
-	}
-	return f.Name()
-}
-
-// RecoverFromPanic replaces the specified error with an error containing the
-// original error, and  the call tree when a panic occurs. This enables error
-// handlers to handle errors and panics the same way.
-func RecoverFromPanic(err *error) {
-	if r := recover(); r != nil {
-		// Same as stdlib http server code. Manually allocate stack trace buffer size
-		// to prevent excessively large logs
-		const size = 64 << 10
-		stacktrace := make([]byte, size)
-		stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-
-		*err = fmt.Errorf(
-			"recovered from panic %q. (err=%v) Call stack:\n%s",
-			r,
-			*err,
-			stacktrace)
-	}
-}
-
-<<<<<<< HEAD
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
-=======
-// Must panics on non-nil errors. Useful to handling programmer level errors.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-)
-
-var (
-	// ReallyCrash controls the behavior of HandleCrash and defaults to
-	// true. It's exposed so components can optionally set to false
-	// to restore prior behavior. This flag is mostly used for tests to validate
-	// crash conditions.
-	ReallyCrash = true
-)
-
-// PanicHandlers is a list of functions which will be invoked when a panic happens.
-var PanicHandlers = []func(interface{}){logPanic}
-
-// HandleCrash simply catches a crash and logs an error. Meant to be called via
-// defer.  Additional context-specific handlers can be provided, and will be
-// called in case of panic.  HandleCrash actually crashes, after calling the
-// handlers and logging the panic message.
-//
-// E.g., you can provide one or more additional handlers for something like shutting down go routines gracefully.
-func HandleCrash(additionalHandlers ...func(interface{})) {
-	if r := recover(); r != nil {
-		for _, fn := range PanicHandlers {
-			fn(r)
-		}
-		for _, fn := range additionalHandlers {
-			fn(r)
-		}
-		if ReallyCrash {
-			// Actually proceed to panic.
-			panic(r)
-		}
-	}
-}
-
-// logPanic logs the caller tree when a panic occurs (except in the special case of http.ErrAbortHandler).
-func logPanic(r interface{}) {
-	if r == http.ErrAbortHandler {
-		// honor the http.ErrAbortHandler sentinel panic value:
-		//   ErrAbortHandler is a sentinel panic value to abort a handler.
-		//   While any panic from ServeHTTP aborts the response to the client,
-		//   panicking with ErrAbortHandler also suppresses logging of a stack trace to the server's error log.
-		return
-	}
-
-	// Same as stdlib http server code. Manually allocate stack trace buffer size
-	// to prevent excessively large logs
-	const size = 64 << 10
-	stacktrace := make([]byte, size)
-	stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-	if _, ok := r.(string); ok {
-		klog.Errorf("Observed a panic: %s\n%s", r, stacktrace)
-	} else {
-		klog.Errorf("Observed a panic: %#v (%v)\n%s", r, r, stacktrace)
-	}
-}
-
-// ErrorHandlers is a list of functions which will be invoked when a nonreturnable
-// error occurs.
-// TODO(lavalamp): for testability, this and the below HandleError function
-// should be packaged up into a testable and reusable object.
-var ErrorHandlers = []func(error){
-	logError,
-	(&rudimentaryErrorBackoff{
-		lastErrorTime: time.Now(),
-		// 1ms was the number folks were able to stomach as a global rate limit.
-		// If you need to log errors more than 1000 times a second you
-		// should probably consider fixing your code instead. :)
-		minPeriod: time.Millisecond,
-	}).OnError,
-}
-
-// HandlerError is a method to invoke when a non-user facing piece of code cannot
-// return an error and needs to indicate it has been ignored. Invoking this method
-// is preferable to logging the error - the default behavior is to log but the
-// errors may be sent to a remote server for analysis.
-func HandleError(err error) {
-	// this is sometimes called with a nil error.  We probably shouldn't fail and should do nothing instead
-	if err == nil {
-		return
-	}
-
-	for _, fn := range ErrorHandlers {
-		fn(err)
-	}
-}
-
-// logError prints an error with the call stack of the location it was reported
-func logError(err error) {
-	klog.ErrorDepth(2, err)
-}
-
-type rudimentaryErrorBackoff struct {
-	minPeriod time.Duration // immutable
-	// TODO(lavalamp): use the clock for testability. Need to move that
-	// package for that to be accessible here.
-	lastErrorTimeLock sync.Mutex
-	lastErrorTime     time.Time
-}
-
-// OnError will block if it is called more often than the embedded period time.
-// This will prevent overly tight hot error loops.
-func (r *rudimentaryErrorBackoff) OnError(error) {
-	now := time.Now() // start the timer before acquiring the lock
-	r.lastErrorTimeLock.Lock()
-	d := now.Sub(r.lastErrorTime)
-	r.lastErrorTime = time.Now()
-	r.lastErrorTimeLock.Unlock()
-
-	// Do not sleep with the lock held because that causes all callers of HandleError to block.
-	// We only want the current goroutine to block.
-	// A negative or zero duration causes time.Sleep to return immediately.
-	// If the time moves backwards for any reason, do nothing.
-	time.Sleep(r.minPeriod - d)
-}
-
-// GetCaller returns the caller of the function that calls it.
-func GetCaller() string {
-	var pc [1]uintptr
-	runtime.Callers(3, pc[:])
-	f := runtime.FuncForPC(pc[0])
-	if f == nil {
-		return "Unable to find caller"
-	}
-	return f.Name()
-}
-
-// RecoverFromPanic replaces the specified error with an error containing the
-// original error, and  the call tree when a panic occurs. This enables error
-// handlers to handle errors and panics the same way.
-func RecoverFromPanic(err *error) {
-	if r := recover(); r != nil {
-		// Same as stdlib http server code. Manually allocate stack trace buffer size
-		// to prevent excessively large logs
-		const size = 64 << 10
-		stacktrace := make([]byte, size)
-		stacktrace = stacktrace[:runtime.Stack(stacktrace, false)]
-
-		*err = fmt.Errorf(
-			"recovered from panic %q. (err=%v) Call stack:\n%s",
-			r,
-			*err,
-			stacktrace)
-	}
-}
-
-<<<<<<< HEAD
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// Must panics on non-nil errors.  Useful to handling programmer level errors.
-=======
-// Must panics on non-nil errors. Useful to handling programmer level errors.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func Must(err error) {
 	if err != nil {
 		panic(err)

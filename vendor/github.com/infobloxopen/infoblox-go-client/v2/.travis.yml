@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.15
+  - 1.25.8
 
 env:
   - GO111MODULE=auto

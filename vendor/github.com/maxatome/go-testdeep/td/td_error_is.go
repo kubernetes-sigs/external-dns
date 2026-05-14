@@ -57,8 +57,8 @@ func errorToRawString(err error) types.RawString {
 //	)))
 //
 // Behind the scene it uses [errors.Is] function if expectedError is
-// an [error] and [errors.As] function if expectedError is a
-// [TestDeep] operator.
+// an error and [errors.As] function if expectedError is a [TestDeep]
+// operator.
 //
 // Note that like [errors.Is], expectedError can be nil: in this case
 // the comparison succeeds only when got is nil too.

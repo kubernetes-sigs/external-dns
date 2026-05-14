@@ -13,7 +13,7 @@ type FakeRouteV1 struct {
 }
 
 func (c *FakeRouteV1) Routes(namespace string) v1.RouteInterface {
-	return &FakeRoutes{c, namespace}
+	return newFakeRoutes(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

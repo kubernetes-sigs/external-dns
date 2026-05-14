@@ -29,7 +29,7 @@ You will need both an API key and a region code to create a new client.
 
 Your API key is listed within the [Civo control panel's security page](https://www.civo.com/account/security). You can also reset the token there, for example, if accidentally put it in source code and found it had been leaked.
 
-For the region code, use any region you know exists, e.g. `LON1`. See the [API documentation](https://github.com/civo/civogo.git) for details.
+For the region code, use any region you know exists, e.g. `LON1`. See the [API documentation](https://www.civo.com/api) for details.
 
 ```go
 package main

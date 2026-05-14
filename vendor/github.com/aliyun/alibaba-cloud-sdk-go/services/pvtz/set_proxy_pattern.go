@@ -21,10 +21,6 @@ import (
 )
 
 // SetProxyPattern invokes the pvtz.SetProxyPattern API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response *SetProxyPatternResponse, err error) {
 	response = CreateSetProxyPatternResponse()
 	err = client.DoAction(request, response)
@@ -76,16 +72,18 @@ func (client *Client) SetProxyPatternWithCallback(request *SetProxyPatternReques
 type SetProxyPatternRequest struct {
 	*requests.RpcRequest
 	ProxyPattern string `position:"Query" name:"ProxyPattern"`
+	ClientToken  string `position:"Query" name:"ClientToken"`
 	UserClientIp string `position:"Query" name:"UserClientIp"`
 	ZoneId       string `position:"Query" name:"ZoneId"`
 	Lang         string `position:"Query" name:"Lang"`
+	RemoteType   string `position:"Query" name:"RemoteType"`
 }
 
 // SetProxyPatternResponse is the response struct for api SetProxyPattern
 type SetProxyPatternResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateSetProxyPatternRequest creates a request to invoke SetProxyPattern API
@@ -95,170 +93,6 @@ func CreateSetProxyPatternRequest() (request *SetProxyPatternRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "SetProxyPattern", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response *SetProxyPatternResponse, err error) {
-	response = CreateSetProxyPatternResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// SetProxyPatternWithChan invokes the pvtz.SetProxyPattern API asynchronously
-func (client *Client) SetProxyPatternWithChan(request *SetProxyPatternRequest) (<-chan *SetProxyPatternResponse, <-chan error) {
-	responseChan := make(chan *SetProxyPatternResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.SetProxyPattern(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// SetProxyPatternWithCallback invokes the pvtz.SetProxyPattern API asynchronously
-func (client *Client) SetProxyPatternWithCallback(request *SetProxyPatternRequest, callback func(response *SetProxyPatternResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *SetProxyPatternResponse
-		var err error
-		defer close(result)
-		response, err = client.SetProxyPattern(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// SetProxyPatternRequest is the request struct for api SetProxyPattern
-type SetProxyPatternRequest struct {
-	*requests.RpcRequest
-	ProxyPattern string `position:"Query" name:"ProxyPattern"`
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	ZoneId       string `position:"Query" name:"ZoneId"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// SetProxyPatternResponse is the response struct for api SetProxyPattern
-type SetProxyPatternResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-}
-
-// CreateSetProxyPatternRequest creates a request to invoke SetProxyPattern API
-func CreateSetProxyPatternRequest() (request *SetProxyPatternRequest) {
-	request = &SetProxyPatternRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "SetProxyPattern", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response *SetProxyPatternResponse, err error) {
-	response = CreateSetProxyPatternResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// SetProxyPatternWithChan invokes the pvtz.SetProxyPattern API asynchronously
-func (client *Client) SetProxyPatternWithChan(request *SetProxyPatternRequest) (<-chan *SetProxyPatternResponse, <-chan error) {
-	responseChan := make(chan *SetProxyPatternResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.SetProxyPattern(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// SetProxyPatternWithCallback invokes the pvtz.SetProxyPattern API asynchronously
-func (client *Client) SetProxyPatternWithCallback(request *SetProxyPatternRequest, callback func(response *SetProxyPatternResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *SetProxyPatternResponse
-		var err error
-		defer close(result)
-		response, err = client.SetProxyPattern(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// SetProxyPatternRequest is the request struct for api SetProxyPattern
-type SetProxyPatternRequest struct {
-	*requests.RpcRequest
-	ProxyPattern string `position:"Query" name:"ProxyPattern"`
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	ZoneId       string `position:"Query" name:"ZoneId"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// SetProxyPatternResponse is the response struct for api SetProxyPattern
-type SetProxyPatternResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-}
-
-// CreateSetProxyPatternRequest creates a request to invoke SetProxyPattern API
-func CreateSetProxyPatternRequest() (request *SetProxyPatternRequest) {
-	request = &SetProxyPatternRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "SetProxyPattern", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

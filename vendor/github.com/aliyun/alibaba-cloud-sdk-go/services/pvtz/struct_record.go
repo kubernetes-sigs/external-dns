@@ -17,13 +17,20 @@ package pvtz
 
 // Record is a nested struct in pvtz response
 type Record struct {
-	RecordId int64  `json:"RecordId" xml:"RecordId"`
-	Rr       string `json:"Rr" xml:"Rr"`
-	Type     string `json:"Type" xml:"Type"`
-	Ttl      int    `json:"Ttl" xml:"Ttl"`
-	Priority int    `json:"Priority" xml:"Priority"`
-	Value    string `json:"Value" xml:"Value"`
-	Status   string `json:"Status" xml:"Status"`
-	RegionId string `json:"RegionId" xml:"RegionId"`
-	Remark   string `json:"Remark" xml:"Remark"`
+	Status          string `json:"Status" xml:"Status"`
+	Type            string `json:"Type" xml:"Type"`
+	Value           string `json:"Value" xml:"Value"`
+	Ttl             int    `json:"Ttl" xml:"Ttl"`
+	Remark          string `json:"Remark" xml:"Remark"`
+	RecordId        int64  `json:"RecordId" xml:"RecordId"`
+	Rr              string `json:"Rr" xml:"Rr"`
+	Priority        int    `json:"Priority" xml:"Priority"`
+	RegionId        string `json:"RegionId" xml:"RegionId"`
+	Line            string `json:"Line" xml:"Line"`
+	Weight          int    `json:"Weight" xml:"Weight"`
+	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
+	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
 }

@@ -1,9 +1,9 @@
 # Infoblox Go Client
 
 An Infoblox NIOS WAPI client library in Golang.
-The library enables us to do a CRUD oprations on NIOS Objects.
+The library enables us to do CRUD operations on NIOS Objects.
 
-This library is compatible with Go 1.2+
+This library is compatible with Go 1.25.8 or later.
 
 - [Prerequisites](#Prerequisites)
 - [Installation](#Installation)
@@ -14,121 +14,13 @@ This library is compatible with Go 1.2+
 
 
 ## Prerequisites
-   * Infoblox GRID with 2.5 or above WAPI support
-   * Go 1.2 or above
+   * Infoblox GRID with 2.9 or above WAPI support
+   * Go 1.25.8 or above
+   
+    * Note: DNS resource record types HTTPS and SVCB Records (Compatible with NIOS 9.0.7 using WAPI v2.13.7).
 
 ## Installation
-<<<<<<< HEAD
-   To get the latest released version [v2.1.0](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v2.1.0) of Go Client use below command.
-   
-   `go get github.com/infobloxopen/infoblox-go-client/v2`
-
-   To get the previous major version [v1.1.1](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v1.1.1) use below command.
-   
-   `go get github.com/infobloxopen/infoblox-go-client`
-
-   Note: Go client version v2.0.0 and above have breaking changes and are not backward compatible.
-
-## Usage
-
-   The following is a very simple example for the client usage:
-
-       package main
-       import (
-   	    "fmt"
-   	    ibclient "github.com/infobloxopen/infoblox-go-client"
-       )
-
-       func main() {
-   	    hostConfig := ibclient.HostConfig{
-   		    Host:     "<NIOS grid IP>",
-   		    Version:  "<WAPI version>",
-   		    Port:     "PORT",
-   		    Username: "username",
-   		    Password: "password",
-   	    }
-   	    transportConfig := ibclient.NewTransportConfig("false", 20, 10)
-   	    requestBuilder := &ibclient.WapiRequestBuilder{}
-   	    requestor := &ibclient.WapiHttpRequestor{}
-   	    conn, err := ibclient.NewConnector(hostConfig, transportConfig, requestBuilder, requestor)
-   	    if err != nil {
-   		    fmt.Println(err)
-   	    }
-   	    defer conn.Logout()
-   	    objMgr := ibclient.NewObjectManager(conn, "myclient", "")
-   	    //Fetches grid information
-   	    fmt.Println(objMgr.GetLicense())
-       }
-
-## Supported NIOS operations
-
-   * AllocateIP
-   * AllocateNetwork
-   * CreateARecord
-   * CreateAAAARecord
-   * CreateZoneAuth
-   * CreateCNAMERecord
-   * CreateDefaultNetviews
-   * CreateEADefinition
-   * CreateHostRecord
-   * CreateNetwork
-   * CreateNetworkContainer
-   * CreateNetworkView
-   * CreatePTRRecord
-   * CreateTXTRecord
-   * CreateZoneDelegated
-   * DeleteARecord
-   * DeleteAAAARecord
-   * DeleteZoneAuth
-   * DeleteCNAMERecord
-   * DeleteFixedAddress
-   * DeleteHostRecord
-   * DeleteNetwork
-   * DeleteNetworkView
-   * DeletePTRRecord
-   * DeleteTXTRecord
-   * DeleteZoneDelegated
-   * GetAllMembers
-   * GetARecordByRef
-   * GetARecord
-   * GetAAAARecordByRef
-   * GetAAAARecord
-   * GetCapacityReport
-   * GetCNAMERecordByRef
-   * GetCNAMERecord
-   * GetEADefinition
-   * GetFixedAddress
-   * GetFixedAddressByRef
-   * GetHostRecord
-   * GetHostRecordByRef
-   * SearchHostRecordByAltId
-   * GetIpAddressFromHostRecord
-   * GetNetwork
-   * GetNetworkByRef
-   * GetNetworkContainer
-   * GetNetworkContainerByRef
-   * GetNetworkView
-   * GetNetworkViewByRef
-   * GetPTRRecordByRef
-   * GetPTRRecord
-   * GetZoneAuthByRef
-   * GetZoneDelegated
-   * GetUpgradeStatus (2.7 or above)
-   * GetAllMembers
-   * GetGridInfo
-   * GetGridLicense
-   * ReleaseIP
-   * UpdateAAAARecord
-   * UpdateCNAMERecord
-   * UpdateFixedAddress
-   * UpdateHostRecord
-   * UpdateNetwork
-   * UpdateNetworkContainer
-   * UpdateNetworkView
-   * UpdatePTRRecord
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-   To get the latest released version [v2.6.0](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v2.6.0) of Go Client use below command.
+   To get the latest released version [v2.12.0](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v2.12.0) of Go Client use below command.
    
    `go get github.com/infobloxopen/infoblox-go-client/v2`
 
@@ -177,13 +69,17 @@ This library is compatible with Go 1.2+
 ## Supported NIOS operations
 
    * AllocateIP
+   * AllocateNextAvailableIp
    * AllocateNetwork
+   * AllocateNetworkByEA
+   * AllocateNetworkContainerByEA
    * AllocateNetworkContainer
    * CreateARecord
    * CreateAAAARecord
    * CreateZoneAuth
    * CreateCNAMERecord
    * CreateDefaultNetviews
+   * CreateZoneForward
    * CreateEADefinition
    * CreateHostRecord
    * CreateNetwork
@@ -195,6 +91,7 @@ This library is compatible with Go 1.2+
    * DeleteARecord
    * DeleteAAAARecord
    * DeleteZoneAuth
+   * DeleteZoneForward
    * DeleteCNAMERecord
    * DeleteFixedAddress
    * DeleteHostRecord
@@ -235,6 +132,8 @@ This library is compatible with Go 1.2+
    * GetZoneDelegated
    * GetUpgradeStatus (2.7 or above)
    * GetAllMembers
+   * GetZoneForwardByRef
+   * GetZoneForwardFilters
    * GetGridInfo
    * GetGridLicense
    * ReleaseIP
@@ -249,8 +148,50 @@ This library is compatible with Go 1.2+
    * UpdateNetworkView
    * UpdatePTRRecord
    * UpdateTXTRecord
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
    * UpdateARecord
    * UpdateZoneDelegated
-
-
+   * UpdateZoneForward
+   * CreateDtcLbdn
+   * CreateDtcPool
+   * CreateDtcServer
+   * DeleteDtcLbdn
+   * DeleteDtcPool
+   * DeleteDtcServer
+   * GetAllDtcPool
+   * GetDtcPool
+   * GetDtcPoolByRef
+   * GetAllDtcServer
+   * GetDtcServer
+   * GetDtcServerByRef
+   * GetAllDtcLbdn
+   * GetDtcLbdn
+   * GetDtcLbdnByRef
+   * UpdateDtcPool
+   * UpdateDtcServer
+   * UpdateDtcLbdn
+   * CreateAliasRecord
+   * CreateNSRecord
+   * CreateIpv4SharedNetwork
+   * CreateNetworkRange
+   * CreateRangeTemplate
+   * DeleteAliasRecord
+   * DeleteNSRecord
+   * DeleteIpv4SharedNetwork
+   * DeleteNetworkRange
+   * DeleteRangeTemplate
+   * GetAllAliasRecord
+   * GetAllRecordNS
+   * GetAllIpv4SharedNetwork
+   * GetAllFixedAddress
+   * GetNetworkRange
+   * GetAllRangeTemplate
+   * GetAliasRecordByRef
+   * GetNSRecordByRef
+   * GetIpv4SharedNetworkByRef
+   * GetNetworkRangeByRef
+   * GetRangeTemplateByRef
+   * UpdateAliasRecord
+   * UpdateNSRecord
+   * UpdateIpv4SharedNetwork
+   * UpdateNetworkRange
+   * UpdateRangeTemplate

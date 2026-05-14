@@ -2,8 +2,9 @@ package rest
 
 import (
 	"fmt"
-	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
 	"net/http"
+
+	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
 )
 
 // VersionsService handles 'zones/ZONE/versions' related endpoints.

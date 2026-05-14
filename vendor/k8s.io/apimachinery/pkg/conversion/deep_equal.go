@@ -34,8 +34,6 @@ func EqualitiesOrDie(funcs ...interface{}) Equalities {
 	}
 	return e
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 // Performs a shallow copy of the equalities map
 func (e Equalities) Copy() Equalities {
@@ -47,20 +45,3 @@ func (e Equalities) Copy() Equalities {
 
 	return result
 }
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-// Performs a shallow copy of the equalities map
-func (e Equalities) Copy() Equalities {
-	result := Equalities{reflect.Equalities{}}
-
-	for key, value := range e.Equalities {
-		result.Equalities[key] = value
-	}
-
-	return result
-}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

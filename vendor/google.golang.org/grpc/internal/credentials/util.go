@@ -18,28 +18,9 @@
 
 package credentials
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-import "crypto/tls"
-||||||| parent of 6b7ce455e (update vendored files)
-=======
 import (
 	"crypto/tls"
 )
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-import (
-	"crypto/tls"
-)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-import (
-	"crypto/tls"
-)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 const alpnProtoStrH2 = "h2"
 

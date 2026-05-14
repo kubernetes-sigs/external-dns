@@ -1,6 +1,7 @@
 package ibclient
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -189,8 +190,8 @@ func (l *NetworkViewLock) Lock() error {
 	nw, err := l.ObjMgr.GetNetworkView(l.Name)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get the network view object for %s : %s\n", l.Name, err)
-		logrus.Debugf(msg)
-		return fmt.Errorf(msg)
+		logrus.Debug(msg)
+		return errors.New(msg)
 	}
 
 	if _, ok := nw.Ea[l.LockEA]; !ok {
@@ -232,8 +233,8 @@ func (l *NetworkViewLock) UnLock(force bool) error {
 
 	if err != nil {
 		msg := fmt.Sprintf("Failed to release lock from Network View %s: %s\n", l.Name, err)
-		logrus.Errorf(msg)
-		return fmt.Errorf(msg)
+		logrus.Error(msg)
+		return errors.New(msg)
 	}
 
 	dockerID := res[0]["DOCKER-ID"]
@@ -243,6 +244,6 @@ func (l *NetworkViewLock) UnLock(force bool) error {
 	}
 
 	msg := fmt.Sprintf("Failed to release lock from Network View %s\n", l.Name)
-	logrus.Errorf(msg)
-	return fmt.Errorf(msg)
+	logrus.Error(msg)
+	return errors.New(msg)
 }

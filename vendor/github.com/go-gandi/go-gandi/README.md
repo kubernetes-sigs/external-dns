@@ -7,9 +7,6 @@
 This library interacts with [Gandi's API](https://api.gandi.net/docs/), to manage Gandi services. This API returns some data as HTTP headers, please note those are ignored by this library.
 
 A simple CLI is also shipped with this library. It returns responses to the requests in JSON. Build it with `go build -o gandi ./cmd`.
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 ### Linting
 
@@ -26,4 +23,3 @@ Then in the repo root dir
 ```bash
 pre-commit install
 ```
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

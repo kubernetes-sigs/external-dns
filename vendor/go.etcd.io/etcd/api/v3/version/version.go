@@ -26,38 +26,27 @@ import (
 var (
 	// MinClusterVersion is the min cluster version this etcd binary is compatible with.
 	MinClusterVersion = "3.0.0"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Version           = "3.5.0"
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	Version           = "3.5.2"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	Version           = "3.5.2"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	Version           = "3.5.2"
-=======
-	Version           = "3.5.4"
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	Version           = "3.5.13"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	Version           = "3.5.13"
-=======
-	Version           = "3.5.21"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Version           = "3.6.11"
 	APIVersion        = "unknown"
 
 	// Git SHA Value will be set during build
 	GitSHA = "Not provided (use ./build instead of go build)"
+)
+
+// Get all constant versions defined in a centralized place.
+var (
+	V3_0 = semver.Version{Major: 3, Minor: 0}
+	V3_1 = semver.Version{Major: 3, Minor: 1}
+	V3_2 = semver.Version{Major: 3, Minor: 2}
+	V3_3 = semver.Version{Major: 3, Minor: 3}
+	V3_4 = semver.Version{Major: 3, Minor: 4}
+	V3_5 = semver.Version{Major: 3, Minor: 5}
+	V3_6 = semver.Version{Major: 3, Minor: 6}
+	V3_7 = semver.Version{Major: 3, Minor: 7}
+	V4_0 = semver.Version{Major: 4, Minor: 0}
+
+	// AllVersions keeps all the versions in ascending order.
+	AllVersions = []semver.Version{V3_0, V3_1, V3_2, V3_3, V3_4, V3_5, V3_6, V3_7, V4_0}
 )
 
 func init() {
@@ -70,6 +59,7 @@ func init() {
 type Versions struct {
 	Server  string `json:"etcdserver"`
 	Cluster string `json:"etcdcluster"`
+	Storage string `json:"storage"`
 	// TODO: raft state machine version
 }
 
@@ -80,4 +70,16 @@ func Cluster(v string) string {
 		return v
 	}
 	return fmt.Sprintf("%s.%s", vs[0], vs[1])
+}
+
+func Compare(ver1, ver2 semver.Version) int {
+	return ver1.Compare(ver2)
+}
+
+func LessThan(ver1, ver2 semver.Version) bool {
+	return ver1.LessThan(ver2)
+}
+
+func Equal(ver1, ver2 semver.Version) bool {
+	return ver1.Equal(ver2)
 }

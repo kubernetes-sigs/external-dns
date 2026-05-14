@@ -35,8 +35,10 @@ type Zone struct {
 
 	// Networks contains the network ids the zone is available. Most zones
 	// will be in the NSONE Global Network(which is id 0).
-	NetworkIDs []int         `json:"networks,omitempty"`
-	Records    []*ZoneRecord `json:"records,omitempty"`
+	NetworkIDs []int `json:"-"`
+	// Networks is an Auxiliary field to help with JSON marshalling/unmarshalling of NetworkIDs for internal use only
+	Networks *[]int        `json:"networks,omitempty"`
+	Records  []*ZoneRecord `json:"records,omitempty"`
 
 	// Primary contains info to enable slaving of the zone by third party dns servers.
 	Primary *ZonePrimary `json:"primary,omitempty"`
@@ -49,6 +51,44 @@ type Zone struct {
 
 	// Contains the key/value tag information associated to the zone
 	Tags map[string]string `json:"tags,omitempty"` // Only relevant for DDI
+}
+
+func (z Zone) MarshalJSON() ([]byte, error) {
+	type Alias Zone
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(&z),
+	}
+
+	if z.NetworkIDs != nil {
+		aux.Networks = &z.NetworkIDs
+	} else {
+		aux.Networks = nil
+	}
+
+	return json.Marshal(aux)
+}
+
+func (z *Zone) UnmarshalJSON(data []byte) error {
+	type Alias Zone
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(z),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if aux.Networks != nil {
+		z.NetworkIDs = *aux.Networks
+	} else {
+		z.NetworkIDs = nil
+	}
+
+	return nil
 }
 
 func (z Zone) String() string {
@@ -98,13 +138,15 @@ type ZoneSecondary struct {
 	Status  string  `json:"status,omitempty"`
 	Error   *string `json:"error"`
 
-	PrimaryIP   string `json:"primary_ip,omitempty"`
-	PrimaryPort int    `json:"primary_port,omitempty"`
-	Enabled     bool   `json:"enabled"`
+	PrimaryIP      string `json:"primary_ip,omitempty"`
+	PrimaryPort    int    `json:"primary_port,omitempty"`
+	PrimaryNetwork int    `json:"primary_network"`
+	Enabled        bool   `json:"enabled"`
 
-	OtherIPs      []string `json:"other_ips,omitempty"`
-	OtherPorts    []int    `json:"other_ports,omitempty"`
-	OtherNetworks []int    `json:"other_networks,omitempty"`
+	OtherIPs        []string `json:"other_ips,omitempty"`
+	OtherPorts      []int    `json:"other_ports,omitempty"`
+	OtherNetworks   []int    `json:"other_networks,omitempty"`
+	OtherNotifyOnly []bool   `json:"other_notify_only,omitempty"`
 
 	TSIG *TSIG `json:"tsig,omitempty"`
 }
@@ -120,6 +162,8 @@ type TSIG struct {
 	Hash string `json:"hash,omitempty"`
 	// Name of the TSIG key
 	Name string `json:"name,omitempty"`
+	// Whether TSIG notifies are signed
+	SignedNotifies bool `json:"signed_notifies,omitempty"`
 }
 
 // NewZone takes a zone domain name and creates a new zone.
@@ -178,4 +222,16 @@ func (z *Zone) LinkTo(to string) {
 	z.Secondary = nil
 	z.Link = &to
 	z.DNSSEC = nil
+}
+
+// ZoneFileExportStatus wraps the response from the zone file export endpoint
+type ZoneFileExportStatus struct {
+	// Status of the export operation (e.g., "GENERATING", "COMPLETED", "ERROR")
+	Status string `json:"status"`
+
+	// Message provides additional information about the export status
+	Message string `json:"message,omitempty"`
+
+	// GeneratedAt timestamp when the export was generated
+	GeneratedAt string `json:"generated_at,omitempty"`
 }

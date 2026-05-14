@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //go:build tools
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // +build tools
 
 // We include our tool dependencies for `go generate` here to ensure they're

@@ -1,4 +1,4 @@
-# Copyright 2018 The Prometheus Authors
+# Copyright The Prometheus Authors
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,18 +18,8 @@ include Makefile.common
 	./ttar -C $(dir $*) -x -f $*.ttar
 	touch $@
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-fixtures: fixtures/.unpacked
-
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 fixtures: testdata/fixtures/.unpacked
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 update_fixtures:
 	rm -vf testdata/fixtures/.unpacked
 	./ttar -c -f testdata/fixtures.ttar -C testdata/ fixtures/

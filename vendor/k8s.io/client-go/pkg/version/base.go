@@ -24,15 +24,9 @@ package version
 // information from git.
 //
 // If you are looking at these fields in the git tree, they look
-// strange. They are modified on the fly by the build process. The
+// strange. They are set by the build process with ldflags -X. The
 // in-tree values are dummy values used for "git archive", which also
 // works for GitHub tar downloads.
-//
-// When releasing a new Kubernetes version, this file is updated by
-// build/mark_new_version.sh to reflect the new version, and then a
-// git annotated tag (using format vX.Y where X == Major version and Y
-// == Minor version) is created to point to the commit that updates
-// pkg/version/base.go
 var (
 	// TODO: Deprecate gitMajor and gitMinor, use only gitVersion
 	// instead. First step in deprecation, keep the fields but make
@@ -56,51 +50,7 @@ var (
 	// NOTE: The $Format strings are replaced during 'git archive' thanks to the
 	// companion .gitattributes file containing 'export-subst' in this same
 	// directory.  See also https://git-scm.com/docs/gitattributes
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	gitVersion   string = "v0.0.0-master+$Format:%H$"
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%H$"
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%H$"
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%H$"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
-=======
-	gitVersion   string = "v0.0.0-master+$Format:%H$"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	gitCommit    string = "$Format:%H$" // sha1 from git, output of $(git rev-parse HEAD)
 	gitTreeState string = ""            // state of git tree, either "clean" or "dirty"
 

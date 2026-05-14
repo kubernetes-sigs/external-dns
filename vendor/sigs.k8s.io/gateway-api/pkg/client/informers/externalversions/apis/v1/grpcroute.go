@@ -19,24 +19,24 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	apisv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayapiapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	versioned "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
+	apisv1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 )
 
 // GRPCRouteInformer provides access to a shared informer and lister for
 // GRPCRoutes.
 type GRPCRouteInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.GRPCRouteLister
+	Lister() apisv1.GRPCRouteLister
 }
 
 type gRPCRouteInformer struct {
@@ -57,21 +57,33 @@ func NewGRPCRouteInformer(client versioned.Interface, namespace string, resyncPe
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredGRPCRouteInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GatewayV1().GRPCRoutes(namespace).List(context.TODO(), options)
+				return client.GatewayV1().GRPCRoutes(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GatewayV1().GRPCRoutes(namespace).Watch(context.TODO(), options)
+				return client.GatewayV1().GRPCRoutes(namespace).Watch(context.Background(), options)
 			},
-		},
-		&apisv1.GRPCRoute{},
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.GatewayV1().GRPCRoutes(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.GatewayV1().GRPCRoutes(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&gatewayapiapisv1.GRPCRoute{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *gRPCRouteInformer) defaultInformer(client versioned.Interface, resyncPe
 }
 
 func (f *gRPCRouteInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisv1.GRPCRoute{}, f.defaultInformer)
+	return f.factory.InformerFor(&gatewayapiapisv1.GRPCRoute{}, f.defaultInformer)
 }
 
-func (f *gRPCRouteInformer) Lister() v1.GRPCRouteLister {
-	return v1.NewGRPCRouteLister(f.Informer().GetIndexer())
+func (f *gRPCRouteInformer) Lister() apisv1.GRPCRouteLister {
+	return apisv1.NewGRPCRouteLister(f.Informer().GetIndexer())
 }

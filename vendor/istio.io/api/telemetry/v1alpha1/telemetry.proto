@@ -14,20 +14,23 @@
 
 syntax = "proto3";
 
-import "type/v1beta1/selector.proto";
-import "google/api/field_behavior.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/wrappers.proto";
-
 // $schema: istio.telemetry.v1alpha1.Telemetry
 // $title: Telemetry
 // $description: Telemetry configuration for workloads.
 // $location: https://istio.io/docs/reference/config/telemetry.html
 // $aliases: [/docs/reference/config/telemetry/v1alpha1/telemetry]
+// $weight: 45
 
-// Telemetry defines how the telemetry is generated for workloads within a mesh.
+// `Telemetry` defines how telemetry (metrics, logs and traces)
+// is generated for workloads within a mesh.
 //
-// For mesh level configuration, put the resource in root configuration
+// The hierarchy of Telemetry configuration is as follows:
+//
+// 1. Workload-specific configuration
+// 2. Namespace-specific configuration
+// 3. Root namespace configuration
+//
+// For mesh level configuration, put a resource in the root configuration
 // namespace for your Istio installation *without* a workload selector.
 //
 // For any namespace, including the root configuration namespace, it is only
@@ -36,16 +39,14 @@ import "google/protobuf/wrappers.proto";
 // For resources with a workload selector, it is only valid to have one resource
 // selecting any given workload.
 //
-// The hierarchy of Telemetry configuration is as follows:
+// Gateways and waypoints are targeted for telemetry configuration
+// using the `targetRefs` field.
 //
-// 1. Workload-specific configuration
-// 2. Namespace-specific configuration
-// 3. Root namespace configuration
+// Examples:
 //
-// ## Examples
-// Policy to enable random sampling for 10% of traffic:
+// Enable random sampling for 10% of traffic:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: mesh-default
@@ -56,10 +57,10 @@ import "google/protobuf/wrappers.proto";
 //   - randomSamplingPercentage: 10.00
 // ```
 //
-// Policy to disable trace reporting for the `foo` workload (note: tracing
-// context will still be propagated):
+// Disable trace reporting for the `foo` workload
+// (note: tracing context will still be propagated):
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: foo-tracing
@@ -72,9 +73,9 @@ import "google/protobuf/wrappers.proto";
 //   - disableSpanReporting: true
 // ```
 //
-// Policy to select the alternate zipkin provider for trace reporting:
+// Select a named tracing provider for trace reporting:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: foo-tracing-alternate
@@ -89,9 +90,9 @@ import "google/protobuf/wrappers.proto";
 //     randomSamplingPercentage: 10.00
 // ```
 //
-// Policy to tailor the zipkin provider to sample traces from Client workloads only:
+// Tailor the "zipkin" provider to sample traces from client workloads only:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: mesh-default
@@ -99,14 +100,15 @@ import "google/protobuf/wrappers.proto";
 // spec:
 //   # no selector specified, applies to all workloads
 //   tracing:
-//   - match: CLIENT
-//   - providers:
+//   - match:
+//       mode: CLIENT
+//     providers:
 //     - name: "zipkin"
 // ```
 //
-// Policy to add a custom tag from a literal value:
+// Add a custom tag from a literal value:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: mesh-default
@@ -121,9 +123,9 @@ import "google/protobuf/wrappers.proto";
 //           value: "foo"
 // ```
 //
-// Policy to disable server-side metrics for Prometheus for an entire mesh:
+// Disable server-side metrics for Prometheus for an entire mesh:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: mesh-default
@@ -140,9 +142,9 @@ import "google/protobuf/wrappers.proto";
 //       disabled: true
 // ```
 //
-// Policy to add dimensions to all Prometheus metrics for the `foo` namespace:
+// Add dimensions to all Prometheus metrics for the `foo` namespace:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: namespace-metrics
@@ -161,10 +163,10 @@ import "google/protobuf/wrappers.proto";
 //           value: "request.host"
 // ```
 //
-// Policy to remove the `response_code` dimension on some Prometheus metrics for
+// Remove the `response_code` dimension on some Prometheus metrics for
 // the `bar.foo` workload:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: remove-response-code
@@ -199,9 +201,9 @@ import "google/protobuf/wrappers.proto";
 //           operation: REMOVE
 // ```
 //
-// Policy to enable access logging for the entire mesh:
+// Enable access logging for the entire mesh:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: mesh-default
@@ -217,9 +219,9 @@ import "google/protobuf/wrappers.proto";
 //     # those cases, `disabled: false` must be set explicitly to override.
 // ```
 //
-// Policy to disable access logging for the `foo` namespace:
+// Disable access logging for the `foo` namespace:
 // ```yaml
-// apiVersion: telemetry.istio.io/v1alpha1
+// apiVersion: telemetry.istio.io/v1
 // kind: Telemetry
 // metadata:
 //   name: namespace-no-log
@@ -232,11 +234,16 @@ import "google/protobuf/wrappers.proto";
 //
 package istio.telemetry.v1alpha1;
 
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "type/v1beta1/selector.proto";
+
 option go_package = "istio.io/api/telemetry/v1alpha1";
 
 // <!-- crd generation tags
 // +cue-gen:Telemetry:groupName:telemetry.istio.io
-// +cue-gen:Telemetry:version:v1alpha1
+// +cue-gen:Telemetry:versions:v1alpha1,v1
 // +cue-gen:Telemetry:storageVersion
 // +cue-gen:Telemetry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Telemetry:labels:app=istio-pilot,chart=istio,istio=telemetry,heritage=Tiller,release=istio
@@ -258,9 +265,7 @@ option go_package = "istio.io/api/telemetry/v1alpha1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 message Telemetry {
   // Optional. The selector decides where to apply the policy.
   // If not set, the policy will be applied to all workloads in the
@@ -272,12 +277,15 @@ message Telemetry {
   // $hide_from_docs
   istio.type.v1beta1.PolicyTargetReference targetRef = 5;
 
-  // Optional. The targetRef specifies the gateway the policy should be
-  // applied to. The targeted resource specified will determine which
-  // workloads the policy applies to.
+  // Optional. The targetRefs specifies a list of resources the policy should be
+  // applied to. The targeted resources specified will determine which workloads
+  // the policy applies to.
   //
   // Currently, the following resource attachment types are supported:
   // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  // * `kind: GatewayClass` with `group: gateway.networking.k8s.io` in the root namespace.
+  // * `kind: Service` with `group: ""` or `group: "core"` in the same namespace. This type is only supported for waypoints.
+  // * `kind: ServiceEntry` with `group: networking.istio.io` in the same namespace.
   //
   // If not set, the policy is applied as defined by the selector.
   // At most one of the selector and targetRefs can be set.
@@ -288,6 +296,7 @@ message Telemetry {
   // from misinterpreting the policy as namespace-wide during the upgrade process.
   //
   // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  // +kubebuilder:validation:MaxItems=16
   repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 6;
 
   // Optional. Tracing configures the tracing behavior for all
@@ -313,7 +322,6 @@ message Telemetry {
 // from parent resources. However, when specified, `custom_tags` will
 // fully replace any values provided by parent configuration.
 message Tracing {
-
   // TracingSelector provides a coarse-grained ability to configure tracing
   // behavior based on certain traffic metadata (such as traffic direction).
   message TracingSelector {
@@ -366,6 +374,9 @@ message Tracing {
       // RequestHeader adds the value of an header from the request to each
       // span.
       RequestHeader header = 3;
+      // Formatter adds the value of access logging substitution formatter.
+      Formatter formatter = 4;
+
       // TODO: add support for Metadata tags
     }
   }
@@ -394,6 +405,15 @@ message Tracing {
     string default_value = 2;
   }
 
+  message Formatter {
+    // The formatter tag value to use, same formatter as HTTP access logging
+    // (e.g. %REQUESTED_SERVER_NAME%). Unknown specifier values are replaced
+    // with the empty string.
+    //
+    // +kubebuilder:validation:MinLength=1
+    string value = 1 [(google.api.field_behavior) = REQUIRED];
+  }
+
   // Optional. Configures additional custom tags to the generated trace spans.
   map<string, CustomTag> custom_tags = 5;
 
@@ -410,6 +430,13 @@ message Tracing {
   // $hide_from_docs
   // +cue-gen:Telemetry:releaseChannel:extended
   google.protobuf.BoolValue use_request_id_for_trace_sampling = 6;
+
+  // Determines whether or not trace spans generated by Envoy will include Istio specific tags.
+  // By default Istio specific tags are included in the trace spans.
+  google.protobuf.BoolValue enable_istio_tags = 8;
+
+  // $hide_from_docs
+  // Next available field number: 9
 }
 
 // Used to bind Telemetry configuration to specific providers for
@@ -444,7 +471,7 @@ message Metrics {
   // a best practice to list any universal overrides first, with tailored
   // overrides following them.
   repeated MetricsOverrides overrides = 2;
-  
+
   // Optional. Reporting interval allows configuration of the time between calls out to for metrics reporting.
   // This currently only supports TCP metrics but we may use this for long duration HTTP streams in the future.
   // The default duration is `5s`.
@@ -604,7 +631,6 @@ message MetricSelector {
 // MetricsOverrides defines custom metric generation behavior for an individual
 // metric or the set of all standard metrics.
 message MetricsOverrides {
-
   // Match allows providing the scope of the override. It can be used to select
   // individual metrics, as well as the workload modes (server, client, or both)
   // in which the metrics will be generated.
@@ -622,8 +648,8 @@ message MetricsOverrides {
   // TagOverride specifies an operation to perform on a metric dimension (also
   // known as a `label`). Tags may be added, removed, or have their default
   // values overridden.
-  // +kubebuilder:validation:XValidation:message="value must be set when operation is UPSERT",rule="((has(self.operation) ? self.operation : '') == 'UPSERT') ? self.value != '' : true"
-  // +kubebuilder:validation:XValidation:message="value must not be set when operation is REMOVE",rule="((has(self.operation) ? self.operation : '') == 'REMOVE') ? !has(self.value) : true"
+  // +kubebuilder:validation:XValidation:message="value must be set when operation is UPSERT",rule="default(self.operation, '') == 'UPSERT' ? self.value != '' : true"
+  // +kubebuilder:validation:XValidation:message="value must not be set when operation is REMOVE",rule="default(self.operation, '') == 'REMOVE' ? !has(self.value) : true"
   message TagOverride {
     enum Operation {
       // Insert or Update the tag with the provided value expression. The
@@ -662,7 +688,6 @@ message MetricsOverrides {
 // generation. It can be used to select provider or enable/disable access log
 // generation for a workload.
 message AccessLogging {
-
   // LogSelector provides a coarse-grained ability to configure logging behavior
   // based on certain traffic metadata (such as traffic direction). LogSelector
   // applies to traffic metadata which is not represented in the attribute set

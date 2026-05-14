@@ -19,48 +19,6 @@ package spec3
 import (
 	"encoding/json"
 
-<<<<<<< HEAD
-	"k8s.io/kube-openapi/pkg/validation/spec"
-	"github.com/go-openapi/swag"
-)
-
-// Example https://swagger.io/specification/#example-object
-
-type Example struct {
-	spec.Refable
-	ExampleProps
-	spec.VendorExtensible
-}
-
-// MarshalJSON is a custom marshal function that knows how to encode RequestBody as JSON
-func (e *Example) MarshalJSON() ([]byte, error) {
-	b1, err := json.Marshal(e.Refable)
-	if err != nil {
-		return nil, err
-	}
-	b2, err := json.Marshal(e.ExampleProps)
-	if err != nil {
-		return nil, err
-	}
-	b3, err := json.Marshal(e.VendorExtensible)
-	if err != nil {
-		return nil, err
-	}
-	return swag.ConcatJSON(b1, b2, b3), nil
-}
-
-func (e *Example) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &e.Refable); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(data, &e.ExampleProps); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(data, &e.VendorExtensible); err != nil {
-		return err
-	}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"github.com/go-openapi/swag"
 	"k8s.io/kube-openapi/pkg/internal"
 	jsonv2 "k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json"
@@ -137,7 +95,6 @@ func (e *Example) UnmarshalNextJSON(opts jsonv2.UnmarshalOptions, dec *jsonv2.De
 	e.Extensions = internal.SanitizeExtensions(x.Extensions)
 	e.ExampleProps = x.ExampleProps
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return nil
 }
 

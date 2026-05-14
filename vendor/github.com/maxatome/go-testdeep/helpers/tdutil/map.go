@@ -10,78 +10,27 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/maxatome/go-testdeep/internal/visited"
+	tdsort "github.com/maxatome/go-testdeep/internal/sort"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // MapSortedKeys returns a slice of all sorted keys of map m. It
 // panics if m's [reflect.Kind] is not [reflect.Map].
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// MapSortedKeys returns a slice of all sorted keys of map "m". It
-// panics if "m"'s reflect.Kind is not reflect.Map.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// MapSortedKeys returns a slice of all sorted keys of map "m". It
-// panics if "m"'s reflect.Kind is not reflect.Map.
-=======
-// MapSortedKeys returns a slice of all sorted keys of map m. It
-// panics if m's [reflect.Kind] is not [reflect.Map].
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func MapSortedKeys(m reflect.Value) []reflect.Value {
 	ks := m.MapKeys()
-	sort.Sort(SortableValues(ks))
+	sort.Sort(tdsort.Values(ks))
 	return ks
 }
 
-type kv struct {
-	key   reflect.Value
-	value reflect.Value
-}
-
-type kvSlice struct {
-	v visited.Visited
-	s []kv
-}
-
-func newKvSlice(l int) *kvSlice {
-	s := kvSlice{}
-	if l > 0 {
-		s.s = make([]kv, 0, l)
-		if l > 1 {
-			s.v = visited.NewVisited()
-		}
-	}
-	return &s
-}
-
-func (s *kvSlice) Len() int { return len(s.s) }
-func (s *kvSlice) Less(i, j int) bool {
-	return cmp(s.v, s.s[i].key, s.s[j].key) < 0
-}
-func (s *kvSlice) Swap(i, j int) { s.s[i], s.s[j] = s.s[j], s.s[i] }
-
 // MapEach calls fn for each key/value pair of map m. If fn
 // returns false, it will not be called again.
+// MapEach returns false if fn returned false.
 func MapEach(m reflect.Value, fn func(k, v reflect.Value) bool) bool {
-	kvs := newKvSlice(m.Len())
-	iter := m.MapRange()
-	for iter.Next() {
-		kvs.s = append(kvs.s, kv{key: iter.Key(), value: iter.Value()})
-	}
-	sort.Sort(kvs)
-
-	for _, kv := range kvs.s {
-		if !fn(kv.key, kv.value) {
-			return false
-		}
-	}
-	return true
+	return tdsort.MapEach(m, fn)
 }
 
 // MapEachValue calls fn for each value of map m. If fn returns
 // false, it will not be called again.
+// MapEachValue returns false if fn returned false.
 func MapEachValue(m reflect.Value, fn func(k reflect.Value) bool) bool {
 	iter := m.MapRange()
 	for iter.Next() {
@@ -100,6 +49,6 @@ func MapSortedValues(m reflect.Value) []reflect.Value {
 	for iter.Next() {
 		vs = append(vs, iter.Value())
 	}
-	sort.Sort(SortableValues(vs))
+	sort.Sort(tdsort.Values(vs))
 	return vs
 }

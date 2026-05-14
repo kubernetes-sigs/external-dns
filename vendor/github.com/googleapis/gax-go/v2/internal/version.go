@@ -17,15 +17,4 @@
 package internal
 
 // Version is the current tagged release of the library.
-<<<<<<< HEAD
-<<<<<<< HEAD
-const Version = "2.7.1"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-const Version = "2.12.4"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-const Version = "2.12.4"
-=======
-const Version = "2.21.0"
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
+const Version = "2.22.0"

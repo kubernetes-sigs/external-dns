@@ -23,6 +23,7 @@ type Database struct {
 	Software         string             `json:"software"`
 	SoftwareVersion  string             `json:"software_version"`
 	PublicIPv4       string             `json:"public_ipv4"`
+	PrivateIPv4      string             `json:"private_ipv4"`
 	NetworkID        string             `json:"network_id"`
 	FirewallID       string             `json:"firewall_id"`
 	Port             int                `json:"port"`

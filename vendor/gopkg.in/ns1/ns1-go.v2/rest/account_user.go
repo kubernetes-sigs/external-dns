@@ -64,18 +64,9 @@ func (s *UsersService) Create(u *account.User) (*http.Response, error) {
 		err error
 	)
 
-	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
-	if s.client.DDI && u != nil {
-		ddiUser := userToDDIUser(u)
-		req, err = s.client.NewRequest("PUT", "account/users", ddiUser)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		req, err = s.client.NewRequest("PUT", "account/users", u)
-		if err != nil {
-			return nil, err
-		}
+	req, err = s.client.NewRequest("PUT", "account/users", u)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update user fields with data from api(ensure consistent)
@@ -104,18 +95,9 @@ func (s *UsersService) Update(u *account.User) (*http.Response, error) {
 		err error
 	)
 
-	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
-	if s.client.DDI && u != nil {
-		ddiUser := userToDDIUser(u)
-		req, err = s.client.NewRequest("POST", path, ddiUser)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		req, err = s.client.NewRequest("POST", path, u)
-		if err != nil {
-			return nil, err
-		}
+	req, err = s.client.NewRequest("POST", path, u)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update user fields with data from api(ensure consistent)
@@ -164,41 +146,3 @@ var (
 	// ErrUserMissing bundles GET/POST/DELETE error.
 	ErrUserMissing = errors.New("user does not exist")
 )
-
-func userToDDIUser(u *account.User) *ddiUser {
-	ddiUser := &ddiUser{
-		LastAccess:        u.LastAccess,
-		Name:              u.Name,
-		Username:          u.Username,
-		Email:             u.Email,
-		TeamIDs:           u.TeamIDs,
-		Notify:            u.Notify,
-		IPWhitelist:       u.IPWhitelist,
-		IPWhitelistStrict: u.IPWhitelistStrict,
-		Permissions: ddiPermissionsMap{
-			DNS:  u.Permissions.DNS,
-			Data: u.Permissions.Data,
-			Account: permissionsDDIAccount{
-				ManageUsers:           u.Permissions.Account.ManageUsers,
-				ManageTeams:           u.Permissions.Account.ManageTeams,
-				ManageApikeys:         u.Permissions.Account.ManageApikeys,
-				ManageAccountSettings: u.Permissions.Account.ManageAccountSettings,
-				ViewActivityLog:       u.Permissions.Account.ViewActivityLog,
-			},
-		},
-	}
-
-	if u.Permissions.Security != nil {
-		ddiUser.Permissions.Security = permissionsDDISecurity(*u.Permissions.Security)
-	}
-
-	if u.Permissions.DHCP != nil {
-		ddiUser.Permissions.DHCP = *u.Permissions.DHCP
-	}
-
-	if u.Permissions.IPAM != nil {
-		ddiUser.Permissions.IPAM = *u.Permissions.IPAM
-	}
-
-	return ddiUser
-}

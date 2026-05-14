@@ -31,8 +31,8 @@ func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r}
 }
 
-// UseNumber causes the Decoder to unmarshal a number into an interface{} as a
-// [Number] instead of as a float64.
+// UseNumber causes the Decoder to unmarshal a number into an
+// interface value as a [Number] instead of as a float64.
 func (dec *Decoder) UseNumber() { dec.d.useNumber = true }
 
 // DisallowUnknownFields causes the Decoder to return an error when the destination
@@ -282,33 +282,12 @@ var _ Unmarshaler = (*RawMessage)(nil)
 /*
 // A Token holds a value of one of these types:
 //
-<<<<<<< HEAD
-//	Delim, for the four JSON delimiters [ ] { }
-//	bool, for JSON booleans
-//	float64, for JSON numbers
-//	Number, for JSON numbers
-//	string, for JSON string literals
-//	nil, for JSON null
-<<<<<<< HEAD
-//
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-//	Delim, for the four JSON delimiters [ ] { }
-//	bool, for JSON booleans
-//	float64, for JSON numbers
-//	Number, for JSON numbers
-//	string, for JSON string literals
-//	nil, for JSON null
-=======
 //   - [Delim], for the four JSON delimiters [ ] { }
 //   - bool, for JSON booleans
 //   - float64, for JSON numbers
 //   - [Number], for JSON numbers
 //   - string, for JSON string literals
 //   - nil, for JSON null
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 type Token any
 */
 

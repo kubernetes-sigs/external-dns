@@ -76,20 +76,9 @@ uninterpreted to Load, so that it can interpret them
 according to the conventions of the underlying build system.
 
 See the Example function for typical usage.
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-=======
 See also [golang.org/x/tools/go/packages/internal/linecount]
 for an example application.
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 # The driver protocol
 
 Load may be used to load Go packages even in Go projects that use
@@ -110,10 +99,6 @@ JSON-encoded [DriverRequest] message providing additional information
 is written to the driver's standard input. The driver must write a
 JSON-encoded [DriverResponse] message to its standard output. (This
 message differs from the JSON schema produced by 'go list'.)
-<<<<<<< HEAD
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 
 The value of the PWD environment variable seen by the driver process
 is the preferred name of its working directory. (The working directory
@@ -123,7 +108,6 @@ When the driver process emits in its response the name of a file
 that is a descendant of this directory, it must use an absolute path
 that has the value of PWD as a prefix, to ensure that the returned
 filenames satisfy the original query.
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 */
 package packages // import "golang.org/x/tools/go/packages"
 

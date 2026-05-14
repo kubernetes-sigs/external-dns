@@ -1,4 +1,4 @@
-// Copyright 2019 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -55,115 +55,13 @@ func (fs FS) Crypto() ([]Crypto, error) {
 	path := fs.proc.Path("crypto")
 	b, err := util.ReadFileNoStat(path)
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: Cannot read file %v: %w", ErrFileRead, b, err)
-
-=======
 		return nil, fmt.Errorf("%w: Cannot read file %v: %w", ErrFileRead, b, err)
 
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	crypto, err := parseCrypto(bytes.NewReader(b))
 	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
->>>>>>> 5ce8c7613 (update vendored files)
-	}
-
-	crypto, err := parseCrypto(bytes.NewReader(b))
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
->>>>>>> 6b7ce455e (update vendored files)
-	}
-
-	crypto, err := parseCrypto(bytes.NewReader(b))
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	crypto, err := parseCrypto(bytes.NewReader(b))
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("%s: Cannot read file %v: %w", ErrFileRead, b, err)
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	}
-
-	crypto, err := parseCrypto(bytes.NewReader(b))
-	if err != nil {
-<<<<<<< HEAD
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
-=======
-		return nil, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, crypto, err)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-		return nil, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, crypto, err)
-=======
 		return nil, fmt.Errorf("%w: Cannot parse %v: %w", ErrFileParse, crypto, err)
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return crypto, nil

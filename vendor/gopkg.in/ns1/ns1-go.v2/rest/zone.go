@@ -1,8 +1,11 @@
 package rest
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
@@ -185,6 +188,111 @@ func (s *ZonesService) nextRecords(v *interface{}, uri string) (*http.Response, 
 	// paginated response.
 	zone.Records = append(zone.Records, tmpZone.Records...)
 	return resp, nil
+}
+
+// ExportZonefile initiates the export of a zone file (BIND / RFC-1035 format) for the specified zone
+// or returns the current status. This operation is idempotent; calling it repeatedly returns the
+// current status if no zone updates have been made.
+func (s *ZonesService) ExportZonefile(zone string) (*dns.ZoneFileExportStatus, *http.Response, error) {
+	path := fmt.Sprintf("export/zonefile/%s", zone)
+
+	req, err := s.client.NewRequest("PUT", path, map[string]interface{}{})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var status dns.ZoneFileExportStatus
+	resp, err := s.client.Do(req, &status)
+	if err != nil {
+		var e *Error
+		if errors.As(err, &e) && e.Message == "zone not found" {
+			return nil, resp, ErrZoneMissing
+		}
+		return nil, resp, err
+	}
+
+	return &status, resp, nil
+}
+
+// GetExportZonefileStatus returns the current status of the zone file export for the specified zone.
+// This endpoint does not initiate a new export.
+func (s *ZonesService) GetExportZonefileStatus(zone string) (*dns.ZoneFileExportStatus, *http.Response, error) {
+	path := fmt.Sprintf("export/zonefile/%s/status", zone)
+
+	req, err := s.client.NewRequest("GET", path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var status dns.ZoneFileExportStatus
+	resp, err := s.client.Do(req, &status)
+	if err != nil {
+		var e *Error
+		if errors.As(err, &e) && e.Message == "zone not found" {
+			return nil, resp, ErrZoneMissing
+		}
+		return nil, resp, err
+	}
+
+	return &status, resp, nil
+}
+
+// DownloadZonefile downloads the generated zone file for the specified zone. Returns a bytes.Buffer containing the zone file contents.
+// The filename can be retrieved from the 'Content-Disposition' header in the http.Response.
+func (s *ZonesService) DownloadZonefile(zone string) (*bytes.Buffer, *http.Response, error) {
+	var buf bytes.Buffer
+	resp, err := s.DownloadZonefileWriter(zone, &buf)
+	if err != nil {
+		return nil, resp, err
+	}
+	return &buf, resp, nil
+}
+
+// DownloadZonefileWriter downloads the generated zone file for the specified zone, and streams it directly to the provided io.Writer.
+// This is more memory-efficient for large zone files as it doesn't buffer the entire content.
+// The filename can be retrieved from the 'Content-Disposition' header in the http.Response.
+func (s *ZonesService) DownloadZonefileWriter(zone string, w io.Writer) (*http.Response, error) {
+	path := fmt.Sprintf("export/zonefile/%s", zone)
+
+	req, err := s.client.NewRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(req, w)
+	if err != nil {
+		var e *Error
+		if errors.As(err, &e) && e.Message == "zone not found" {
+			return resp, ErrZoneMissing
+		}
+		return resp, err
+	}
+
+	return resp, nil
+}
+
+// DownloadZonefileReader downloads the generated zone file for the specified zone and returns a buffered reader for line-by-line processing.
+// The caller is responsible for closing the http.Response.Body when done.
+// The filename can be retrieved from the 'Content-Disposition' header in the http.Response.
+func (s *ZonesService) DownloadZonefileReader(zone string) (*bufio.Reader, *http.Response, error) {
+	path := fmt.Sprintf("export/zonefile/%s", zone)
+
+	req, err := s.client.NewRequest("GET", path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var reader *bufio.Reader
+	resp, err := s.client.Do(req, &reader)
+	if err != nil {
+		var e *Error
+		if errors.As(err, &e) && e.Message == "zone not found" {
+			return nil, resp, ErrZoneMissing
+		}
+		return nil, resp, err
+	}
+
+	return reader, resp, nil
 }
 
 var (

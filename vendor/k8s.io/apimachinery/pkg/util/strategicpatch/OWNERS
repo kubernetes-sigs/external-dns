@@ -1,34 +1,9 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-<<<<<<< HEAD
-<<<<<<< HEAD
+  - apelisse
   - pwittrock
 reviewers:
   - apelisse
 emeritus_approvers:
   - mengqiy
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-- pwittrock
-- mengqiy
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-- pwittrock
-- mengqiy
-=======
-  - apelisse
-  - pwittrock
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-reviewers:
-<<<<<<< HEAD
-- mengqiy
-- apelisse
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-- mengqiy
-- apelisse
-=======
-  - apelisse
-emeritus_approvers:
-  - mengqiy
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

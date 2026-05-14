@@ -27,137 +27,7 @@ const (
 	TaintNodeUnreachable = "node.kubernetes.io/unreachable"
 
 	// TaintNodeUnschedulable will be added when node becomes unschedulable
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// and removed when node becomes schedulable.
-	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
-
-	// TaintNodeMemoryPressure will be added when node has memory pressure
-	// and removed when node has enough memory.
-	TaintNodeMemoryPressure = "node.kubernetes.io/memory-pressure"
-
-	// TaintNodeDiskPressure will be added when node has disk pressure
-	// and removed when node has enough disk.
-	TaintNodeDiskPressure = "node.kubernetes.io/disk-pressure"
-
-	// TaintNodeNetworkUnavailable will be added when node's network is unavailable
-	// and removed when network becomes ready.
-	TaintNodeNetworkUnavailable = "node.kubernetes.io/network-unavailable"
-
-	// TaintNodePIDPressure will be added when node has pid pressure
-	// and removed when node has enough pid.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// and removed when node becomes scheduable.
-||||||| parent of 5ce8c7613 (update vendored files)
-	// and removed when node becomes scheduable.
-=======
-	// and removed when node becomes schedulable.
->>>>>>> 5ce8c7613 (update vendored files)
-	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
-
-	// TaintNodeMemoryPressure will be added when node has memory pressure
-	// and removed when node has enough memory.
-	TaintNodeMemoryPressure = "node.kubernetes.io/memory-pressure"
-
-	// TaintNodeDiskPressure will be added when node has disk pressure
-	// and removed when node has enough disk.
-	TaintNodeDiskPressure = "node.kubernetes.io/disk-pressure"
-
-	// TaintNodeNetworkUnavailable will be added when node's network is unavailable
-	// and removed when network becomes ready.
-	TaintNodeNetworkUnavailable = "node.kubernetes.io/network-unavailable"
-
-	// TaintNodePIDPressure will be added when node has pid pressure
-<<<<<<< HEAD
-	// and removed when node has enough disk.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	// and removed when node has enough disk.
-=======
-	// and removed when node has enough pid.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// and removed when node becomes scheduable.
-||||||| parent of 6b7ce455e (update vendored files)
-	// and removed when node becomes scheduable.
-=======
-	// and removed when node becomes schedulable.
->>>>>>> 6b7ce455e (update vendored files)
-	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
-
-	// TaintNodeMemoryPressure will be added when node has memory pressure
-	// and removed when node has enough memory.
-	TaintNodeMemoryPressure = "node.kubernetes.io/memory-pressure"
-
-	// TaintNodeDiskPressure will be added when node has disk pressure
-	// and removed when node has enough disk.
-	TaintNodeDiskPressure = "node.kubernetes.io/disk-pressure"
-
-	// TaintNodeNetworkUnavailable will be added when node's network is unavailable
-	// and removed when network becomes ready.
-	TaintNodeNetworkUnavailable = "node.kubernetes.io/network-unavailable"
-
-	// TaintNodePIDPressure will be added when node has pid pressure
-<<<<<<< HEAD
-	// and removed when node has enough disk.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	// and removed when node has enough disk.
-=======
-	// and removed when node has enough pid.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// and removed when node becomes scheduable.
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// and removed when node becomes scheduable.
-=======
-	// and removed when node becomes schedulable.
->>>>>>> 4d7e5ad26 (update vendored files)
-	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
-
-	// TaintNodeMemoryPressure will be added when node has memory pressure
-	// and removed when node has enough memory.
-	TaintNodeMemoryPressure = "node.kubernetes.io/memory-pressure"
-
-	// TaintNodeDiskPressure will be added when node has disk pressure
-	// and removed when node has enough disk.
-	TaintNodeDiskPressure = "node.kubernetes.io/disk-pressure"
-
-	// TaintNodeNetworkUnavailable will be added when node's network is unavailable
-	// and removed when network becomes ready.
-	TaintNodeNetworkUnavailable = "node.kubernetes.io/network-unavailable"
-
-	// TaintNodePIDPressure will be added when node has pid pressure
-<<<<<<< HEAD
-	// and removed when node has enough disk.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// and removed when node has enough disk.
-=======
-	// and removed when node has enough pid.
->>>>>>> 4d7e5ad26 (update vendored files)
-	TaintNodePIDPressure = "node.kubernetes.io/pid-pressure"
-
-	// TaintNodeOutOfService can be added when node is out of service in case of
-	// a non-graceful shutdown
-	TaintNodeOutOfService = "node.kubernetes.io/out-of-service"
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// and removed when node becomes scheduable.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// and removed when node becomes scheduable.
-=======
-	// and removed when node becomes schedulable.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
 
 	// TaintNodeMemoryPressure will be added when node has memory pressure
@@ -175,13 +45,8 @@ const (
 	// TaintNodePIDPressure will be added when node has pid pressure
 	// and removed when node has enough pid.
 	TaintNodePIDPressure = "node.kubernetes.io/pid-pressure"
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 	// TaintNodeOutOfService can be added when node is out of service in case of
 	// a non-graceful shutdown
 	TaintNodeOutOfService = "node.kubernetes.io/out-of-service"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

@@ -19,52 +19,15 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"net/http"
+	http "net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	"sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1alpha2Interface interface {
 	RESTClient() rest.Interface
-<<<<<<< HEAD
-	GatewaysGetter
-	GatewayClassesGetter
-	HTTPRoutesGetter
-	ReferenceGrantsGetter
-	ReferencePoliciesGetter
-	TCPRoutesGetter
-	TLSRoutesGetter
-	UDPRoutesGetter
-}
-
-// GatewayV1alpha2Client is used to interact with features provided by the gateway.networking.k8s.io group.
-type GatewayV1alpha2Client struct {
-	restClient rest.Interface
-}
-
-func (c *GatewayV1alpha2Client) Gateways(namespace string) GatewayInterface {
-	return newGateways(c, namespace)
-}
-
-func (c *GatewayV1alpha2Client) GatewayClasses() GatewayClassInterface {
-	return newGatewayClasses(c)
-}
-
-func (c *GatewayV1alpha2Client) HTTPRoutes(namespace string) HTTPRouteInterface {
-	return newHTTPRoutes(c, namespace)
-}
-
-func (c *GatewayV1alpha2Client) ReferenceGrants(namespace string) ReferenceGrantInterface {
-	return newReferenceGrants(c, namespace)
-}
-
-func (c *GatewayV1alpha2Client) ReferencePolicies(namespace string) ReferencePolicyInterface {
-	return newReferencePolicies(c, namespace)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	BackendLBPoliciesGetter
 	GRPCRoutesGetter
 	ReferenceGrantsGetter
 	TCPRoutesGetter
@@ -77,17 +40,12 @@ type GatewayV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *GatewayV1alpha2Client) BackendLBPolicies(namespace string) BackendLBPolicyInterface {
-	return newBackendLBPolicies(c, namespace)
-}
-
 func (c *GatewayV1alpha2Client) GRPCRoutes(namespace string) GRPCRouteInterface {
 	return newGRPCRoutes(c, namespace)
 }
 
 func (c *GatewayV1alpha2Client) ReferenceGrants(namespace string) ReferenceGrantInterface {
 	return newReferenceGrants(c, namespace)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (c *GatewayV1alpha2Client) TCPRoutes(namespace string) TCPRouteInterface {
@@ -107,9 +65,7 @@ func (c *GatewayV1alpha2Client) UDPRoutes(namespace string) UDPRouteInterface {
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*GatewayV1alpha2Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -121,9 +77,7 @@ func NewForConfig(c *rest.Config) (*GatewayV1alpha2Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*GatewayV1alpha2Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
@@ -146,17 +100,15 @@ func New(c rest.Interface) *GatewayV1alpha2Client {
 	return &GatewayV1alpha2Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1alpha2.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := apisv1alpha2.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

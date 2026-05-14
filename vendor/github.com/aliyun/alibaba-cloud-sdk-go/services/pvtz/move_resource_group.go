@@ -72,6 +72,7 @@ func (client *Client) MoveResourceGroupWithCallback(request *MoveResourceGroupRe
 type MoveResourceGroupRequest struct {
 	*requests.RpcRequest
 	ResourceId         string `position:"Query" name:"ResourceId"`
+	ClientToken        string `position:"Query" name:"ClientToken"`
 	NewResourceGroupId string `position:"Query" name:"NewResourceGroupId"`
 	UserClientIp       string `position:"Query" name:"UserClientIp"`
 	Lang               string `position:"Query" name:"Lang"`

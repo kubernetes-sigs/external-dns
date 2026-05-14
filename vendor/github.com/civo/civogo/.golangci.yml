@@ -1,0 +1,46 @@
+# golangci-lint v2 configuration
+# See https://golangci-lint.run/docs/configuration/ for full options
+
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - misspell
+    - revive
+
+  settings:
+    errcheck:
+      # Don't check error returns for these functions
+      exclude-functions:
+        - (*net/http.Response.Body).Close
+        - (net/http.ResponseWriter).Write
+
+    revive:
+      rules:
+        # Disable overly strict rules
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: unexported-return
+          disabled: true
+
+  exclusions:
+    # Enable predefined exclusion presets
+    presets:
+      - std-error-handling
+      - common-false-positives
+
+    # Custom exclusion rules
+    rules:
+      # Exclude errcheck for deferred Close() calls
+      - linters:
+          - errcheck
+        text: Error return value of.*\.Close.* is not checked
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

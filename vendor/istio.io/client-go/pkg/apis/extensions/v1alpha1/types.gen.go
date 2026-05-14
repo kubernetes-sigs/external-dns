@@ -25,18 +25,19 @@ import (
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// WasmPlugins provides a mechanism to extend the functionality provided by
+// WasmPlugin provides a mechanism to extend the functionality provided by
 // the Istio proxy through WebAssembly filters.
 //
 // <!-- crd generation tags
 // +cue-gen:WasmPlugin:groupName:extensions.istio.io
-// +cue-gen:WasmPlugin:version:v1alpha1
+// +cue-gen:WasmPlugin:versions:v1alpha1
 // +cue-gen:WasmPlugin:storageVersion
 // +cue-gen:WasmPlugin:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WasmPlugin:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WasmPlugin:subresource:status
 // +cue-gen:WasmPlugin:spec:required
 // +cue-gen:WasmPlugin:scope:Namespaced
+// +cue-gen:WasmPlugin:releaseChannel:extended
 // +cue-gen:WasmPlugin:resource:categories=istio-io,extensions-istio-io
 // +cue-gen:WasmPlugin:preserveUnknownFields:pluginConfig
 // +cue-gen:WasmPlugin:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
@@ -51,6 +52,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 type WasmPlugin struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
@@ -60,7 +62,7 @@ type WasmPlugin struct {
 	// +optional
 	Spec extensionsv1alpha1.WasmPlugin `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status metav1alpha1.IstioStatus `json:"status"`
+	Status metav1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

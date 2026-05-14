@@ -21,10 +21,6 @@ import (
 )
 
 // DescribeRegions invokes the pvtz.DescribeRegions API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) DescribeRegions(request *DescribeRegionsRequest) (response *DescribeRegionsResponse, err error) {
 	response = CreateDescribeRegionsResponse()
 	err = client.DoAction(request, response)
@@ -75,6 +71,8 @@ func (client *Client) DescribeRegionsWithCallback(request *DescribeRegionsReques
 // DescribeRegionsRequest is the request struct for api DescribeRegions
 type DescribeRegionsRequest struct {
 	*requests.RpcRequest
+	VpcType          string           `position:"Query" name:"VpcType"`
+	Scene            string           `position:"Query" name:"Scene"`
 	AuthorizedUserId requests.Integer `position:"Query" name:"AuthorizedUserId"`
 	UserClientIp     string           `position:"Query" name:"UserClientIp"`
 	AcceptLanguage   string           `position:"Query" name:"AcceptLanguage"`
@@ -95,170 +93,6 @@ func CreateDescribeRegionsRequest() (request *DescribeRegionsRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRegions", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describeregions.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/describeregions.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) DescribeRegions(request *DescribeRegionsRequest) (response *DescribeRegionsResponse, err error) {
-	response = CreateDescribeRegionsResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeRegionsWithChan invokes the pvtz.DescribeRegions API asynchronously
-func (client *Client) DescribeRegionsWithChan(request *DescribeRegionsRequest) (<-chan *DescribeRegionsResponse, <-chan error) {
-	responseChan := make(chan *DescribeRegionsResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeRegions(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeRegionsWithCallback invokes the pvtz.DescribeRegions API asynchronously
-func (client *Client) DescribeRegionsWithCallback(request *DescribeRegionsRequest, callback func(response *DescribeRegionsResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeRegionsResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeRegions(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeRegionsRequest is the request struct for api DescribeRegions
-type DescribeRegionsRequest struct {
-	*requests.RpcRequest
-	AuthorizedUserId requests.Integer `position:"Query" name:"AuthorizedUserId"`
-	UserClientIp     string           `position:"Query" name:"UserClientIp"`
-	AcceptLanguage   string           `position:"Query" name:"AcceptLanguage"`
-	Lang             string           `position:"Query" name:"Lang"`
-}
-
-// DescribeRegionsResponse is the response struct for api DescribeRegions
-type DescribeRegionsResponse struct {
-	*responses.BaseResponse
-	RequestId string                   `json:"RequestId" xml:"RequestId"`
-	Regions   RegionsInDescribeRegions `json:"Regions" xml:"Regions"`
-}
-
-// CreateDescribeRegionsRequest creates a request to invoke DescribeRegions API
-func CreateDescribeRegionsRequest() (request *DescribeRegionsRequest) {
-	request = &DescribeRegionsRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRegions", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/describeregions.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/describeregions.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) DescribeRegions(request *DescribeRegionsRequest) (response *DescribeRegionsResponse, err error) {
-	response = CreateDescribeRegionsResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// DescribeRegionsWithChan invokes the pvtz.DescribeRegions API asynchronously
-func (client *Client) DescribeRegionsWithChan(request *DescribeRegionsRequest) (<-chan *DescribeRegionsResponse, <-chan error) {
-	responseChan := make(chan *DescribeRegionsResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.DescribeRegions(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// DescribeRegionsWithCallback invokes the pvtz.DescribeRegions API asynchronously
-func (client *Client) DescribeRegionsWithCallback(request *DescribeRegionsRequest, callback func(response *DescribeRegionsResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *DescribeRegionsResponse
-		var err error
-		defer close(result)
-		response, err = client.DescribeRegions(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// DescribeRegionsRequest is the request struct for api DescribeRegions
-type DescribeRegionsRequest struct {
-	*requests.RpcRequest
-	AuthorizedUserId requests.Integer `position:"Query" name:"AuthorizedUserId"`
-	UserClientIp     string           `position:"Query" name:"UserClientIp"`
-	AcceptLanguage   string           `position:"Query" name:"AcceptLanguage"`
-	Lang             string           `position:"Query" name:"Lang"`
-}
-
-// DescribeRegionsResponse is the response struct for api DescribeRegions
-type DescribeRegionsResponse struct {
-	*responses.BaseResponse
-	RequestId string                   `json:"RequestId" xml:"RequestId"`
-	Regions   RegionsInDescribeRegions `json:"Regions" xml:"Regions"`
-}
-
-// CreateDescribeRegionsRequest creates a request to invoke DescribeRegions API
-func CreateDescribeRegionsRequest() (request *DescribeRegionsRequest) {
-	request = &DescribeRegionsRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRegions", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

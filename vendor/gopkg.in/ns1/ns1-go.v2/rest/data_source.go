@@ -72,6 +72,8 @@ func (s *DataSourcesService) Create(ds *data.Source) (*http.Response, error) {
 // NS1 API docs: https://ns1.com/api/#sources-post
 func (s *DataSourcesService) Update(ds *data.Source) (*http.Response, error) {
 	path := fmt.Sprintf("data/sources/%s", ds.ID)
+	// must be omitted from the body
+	ds.ID = ""
 
 	req, err := s.client.NewRequest("POST", path, &ds)
 	if err != nil {

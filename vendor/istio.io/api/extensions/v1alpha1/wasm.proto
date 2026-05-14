@@ -14,11 +14,6 @@
 
 syntax = "proto3";
 
-import "google/protobuf/wrappers.proto";
-import "google/protobuf/struct.proto";
-import "type/v1beta1/selector.proto";
-import "google/api/field_behavior.proto";
-
 // $schema: istio.extensions.v1alpha1.WasmPlugin
 // $title: Wasm Plugin
 // $description: Extend the functionality provided by the Istio proxy through WebAssembly filters.
@@ -28,7 +23,7 @@ import "google/api/field_behavior.proto";
 // WasmPlugins provides a mechanism to extend the functionality provided by
 // the Istio proxy through WebAssembly filters.
 //
-// Order of execution (as part of Envoy's filter chain) is determined by
+// The order of execution (as part of Envoy's filter chain) is determined by
 // phase and priority settings, allowing the configuration of complex
 // interactions between user-supplied WasmPlugins and Istio's internal
 // filters.
@@ -207,20 +202,26 @@ import "google/api/field_behavior.proto";
 //
 package istio.extensions.v1alpha1;
 
-option go_package="istio.io/api/extensions/v1alpha1";
+import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "type/v1beta1/selector.proto";
 
-// WasmPlugins provides a mechanism to extend the functionality provided by
+option go_package = "istio.io/api/extensions/v1alpha1";
+
+// WasmPlugin provides a mechanism to extend the functionality provided by
 // the Istio proxy through WebAssembly filters.
 //
 // <!-- crd generation tags
 // +cue-gen:WasmPlugin:groupName:extensions.istio.io
-// +cue-gen:WasmPlugin:version:v1alpha1
+// +cue-gen:WasmPlugin:versions:v1alpha1
 // +cue-gen:WasmPlugin:storageVersion
 // +cue-gen:WasmPlugin:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WasmPlugin:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WasmPlugin:subresource:status
 // +cue-gen:WasmPlugin:spec:required
 // +cue-gen:WasmPlugin:scope:Namespaced
+// +cue-gen:WasmPlugin:releaseChannel:extended
 // +cue-gen:WasmPlugin:resource:categories=istio-io,extensions-istio-io
 // +cue-gen:WasmPlugin:preserveUnknownFields:pluginConfig
 // +cue-gen:WasmPlugin:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
@@ -235,6 +236,7 @@ option go_package="istio.io/api/extensions/v1alpha1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 message WasmPlugin {
   // Criteria used to select the specific set of pods/VMs on which
   // this plugin configuration should be applied. If omitted, this
@@ -249,12 +251,15 @@ message WasmPlugin {
   // $hide_from_docs
   istio.type.v1beta1.PolicyTargetReference targetRef = 15;
 
-  // Optional. The targetRef specifies the gateway the policy should be
-  // applied to. The targeted resource specified will determine which
-  // workloads the policy applies to.
+  // Optional. The targetRefs specifies a list of resources the policy should be
+  // applied to. The targeted resources specified will determine which workloads
+  // the policy applies to.
   //
   // Currently, the following resource attachment types are supported:
   // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  // * `kind: GatewayClass` with `group: gateway.networking.k8s.io` in the root namespace.
+  // * `kind: Service` with `group: ""` or `group: "core"` in the same namespace. This type is only supported for waypoints.
+  // * `kind: ServiceEntry` with `group: networking.istio.io` in the same namespace.
   //
   // If not set, the policy is applied as defined by the selector.
   // At most one of the selector and targetRefs can be set.
@@ -265,6 +270,7 @@ message WasmPlugin {
   // from misinterpreting the policy as namespace-wide during the upgrade process.
   //
   // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  // +kubebuilder:validation:MaxItems=16
   repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 16;
 
   // URL of a Wasm module or OCI container. If no scheme is present,
@@ -383,7 +389,6 @@ message WasmPlugin {
   PluginType type = 14;
 }
 
-
 // PluginType indicates the type of Wasm extension to be used.
 // There are two types of extensions: `HTTP` and `NETWORK`.
 //
@@ -404,7 +409,7 @@ enum PluginType {
 
   // Use HTTP Wasm Extension.
   HTTP = 1;
-  
+
   // Use Network Wasm Extension.
   NETWORK = 2;
 }
@@ -458,7 +463,7 @@ message VmConfig {
   repeated EnvVar env = 1;
 }
 
-// +kubebuilder:validation:XValidation:message="value may only be set when valueFrom is INLINE",rule="(has(self.valueFrom) ? self.valueFrom : '') != 'HOST' || !has(self.value)"
+// +kubebuilder:validation:XValidation:message="value may only be set when valueFrom is INLINE",rule="default(self.valueFrom, '') != 'HOST' || !has(self.value)"
 message EnvVar {
   // Name of the environment variable.
   // Must be a C_IDENTIFIER.
@@ -480,7 +485,7 @@ enum EnvValueSource {
   // Explicitly given key-value pairs to be injected to this VM
   INLINE = 0;
 
-  // *Istio-proxy's* environment variables exposed to this VM.
+  // Proxy environment variables exposed to this VM.
   HOST = 1;
 }
 
@@ -494,4 +499,9 @@ enum FailStrategy {
   // binary, an exception, or abort() on the VM. This flag is not recommended
   // for the authentication or the authorization plugins.
   FAIL_OPEN = 1;
+
+  // New plugin instance will be created for the new request if the Wasm plugin
+  // has failed. This only applies for ``proxy_wasm::FailState::RuntimeError``.
+  // For all other error types this will fallback to ``FAIL_CLOSED``.
+  FAIL_RELOAD = 2;
 }

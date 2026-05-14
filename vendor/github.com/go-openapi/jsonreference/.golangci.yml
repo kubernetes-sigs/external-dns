@@ -1,100 +1,66 @@
-linters-settings:
-  govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
-  gocyclo:
-<<<<<<< HEAD
-    min-complexity: 30
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 4
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-    - maligned
-    - lll
-    - gochecknoglobals
-    - godox
-    - gocognit
-    - whitespace
-    - wsl
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - scopelint
-    - wrapcheck
-    - exhaustivestruct
-    - exhaustive
-    - nlreturn
-    - testpackage
-    - gci
-    - gofumpt
-    - goerr113
-    - gomnd
-    - tparallel
-    - nestif
-    - godot
-    - errorlint
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-    min-complexity: 45
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 200
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-
-linters:
-  enable-all: true
-  disable:
-    - maligned
-    - unparam
-    - lll
-    - gochecknoinits
-    - gochecknoglobals
-    - funlen
-    - godox
-    - gocognit
-    - whitespace
-    - wsl
-    - wrapcheck
-    - testpackage
-    - nlreturn
-    - gomnd
-    - exhaustivestruct
-    - goerr113
-    - errorlint
-    - nestif
-    - godot
-    - gofumpt
-    - paralleltest
-    - tparallel
-    - thelper
-    - ifshort
-    - exhaustruct
-    - varnamelen
-    - gci
     - depguard
-    - errchkjson
-    - inamedparam
+    - funlen
+    - godox
+    - exhaustruct
+    - nlreturn
     - nonamedreturns
-    - musttag
-    - ireturn
-    - forcetypeassert
-    - cyclop
-    # deprecated linters
-    - deadcode
-    - interfacer
-    - scopelint
-    - varcheck
-    - structcheck
-    - golint
-    - nosnakecase
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+    - noinlineerr
+    - paralleltest
+    - recvcheck
+    - testpackage
+    - tparallel
+    - varnamelen
+    - whitespace
+    - wrapcheck
+    - wsl
+    - wsl_v5
+  settings:
+    dupl:
+      threshold: 200
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    cyclop:
+      max-complexity: 20
+    gocyclo:
+      min-complexity: 20
+    exhaustive:
+      default-signifies-exhaustive: true
+      default-case-required: true
+    lll:
+      line-length: 180
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 0

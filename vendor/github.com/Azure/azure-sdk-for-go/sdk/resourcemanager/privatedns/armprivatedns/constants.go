@@ -10,7 +10,7 @@ package armprivatedns
 
 const (
 	moduleName    = "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
-	moduleVersion = "v1.2.0"
+	moduleVersion = "v1.3.0"
 )
 
 // ProvisioningState - The provisioning state of the resource. This is a read-only property and any attempt to set this value
@@ -62,6 +62,24 @@ func PossibleRecordTypeValues() []RecordType {
 		RecordTypeSOA,
 		RecordTypeSRV,
 		RecordTypeTXT,
+	}
+}
+
+// ResolutionPolicy - The resolution policy on the virtual network link. Only applicable for virtual network links to privatelink
+// zones, and for A,AAAA,CNAME queries. When set to 'NxDomainRedirect', Azure DNS resolver
+// falls back to public resolution if private dns query resolution results in non-existent domain response.
+type ResolutionPolicy string
+
+const (
+	ResolutionPolicyDefault          ResolutionPolicy = "Default"
+	ResolutionPolicyNxDomainRedirect ResolutionPolicy = "NxDomainRedirect"
+)
+
+// PossibleResolutionPolicyValues returns the possible values for the ResolutionPolicy const type.
+func PossibleResolutionPolicyValues() []ResolutionPolicy {
+	return []ResolutionPolicy{
+		ResolutionPolicyDefault,
+		ResolutionPolicyNxDomainRedirect,
 	}
 }
 

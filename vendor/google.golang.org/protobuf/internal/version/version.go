@@ -12,119 +12,6 @@ import (
 
 // These constants determine the current version of this module.
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
-// For our release process, we enforce the following rules:
-//   - Tagged releases use a tag that is identical to String.
-//   - Tagged releases never reference a commit where the String
-//     contains "devel".
-//   - The set of all commits in this repository where String
-//     does not contain "devel" must have a unique String.
-//
-// Steps for tagging a new release:
-//
-//  1. Create a new CL.
-//
-//  2. Update Minor, Patch, and/or PreRelease as necessary.
-//     PreRelease must not contain the string "devel".
-//
-//  3. Since the last released minor version, have there been any changes to
-//     generator that relies on new functionality in the runtime?
-//     If yes, then increment RequiredGenerated.
-//
-//  4. Since the last released minor version, have there been any changes to
-//     the runtime that removes support for old .pb.go source code?
-//     If yes, then increment SupportMinimum.
-//
-//  5. Send out the CL for review and submit it.
-//     Note that the next CL in step 8 must be submitted after this CL
-//     without any other CLs in-between.
-//
-//  6. Tag a new version, where the tag is is the current String.
-//
-//  7. Write release notes for all notable changes
-//     between this release and the last release.
-//
-//  8. Create a new CL.
-//
-//  9. Update PreRelease to include the string "devel".
-//     For example: "" -> "devel" or "rc.1" -> "rc.1.devel"
-//
-//  10. Send out the CL for review and submit it.
-const (
-	Major      = 1
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Minor      = 27
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	Minor      = 27
-=======
-	Minor      = 28
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	Patch      = 1
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Minor      = 23
-	Patch      = 0
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	Minor      = 23
-	Patch      = 0
-=======
-	Minor      = 27
-	Patch      = 1
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Minor      = 23
-	Patch      = 0
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	Minor      = 23
-	Patch      = 0
-=======
-	Minor      = 27
-	Patch      = 1
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Minor      = 23
-	Patch      = 0
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Minor      = 23
-	Patch      = 0
-=======
-	Minor      = 27
-	Patch      = 1
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
-	Minor      = 28
-	Patch      = 1
-=======
-	Minor      = 30
-	Patch      = 0
->>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
-	PreRelease = ""
-)
-
-// String formats the version string for this module in semver format.
-//
-// Examples:
-//
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // For our release process, we enforce the following rules:
 //   - Tagged releases use a tag that is identical to String.
 //   - Tagged releases never reference a commit where the String
@@ -166,18 +53,13 @@ const (
 	Major      = 1
 	Minor      = 36
 	Patch      = 11
-	PreRelease = ""
+	PreRelease = "devel"
 )
 
 // String formats the version string for this module in semver format.
 //
 // Examples:
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //	v1.20.1
 //	v1.21.0-rc.1
 func String() string {

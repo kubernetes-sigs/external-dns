@@ -17,411 +17,17 @@ limitations under the License.
 package fake
 
 import (
+	"bytes"
 	"context"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
-
-	v1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	restclient "k8s.io/client-go/rest"
-	fakerest "k8s.io/client-go/rest/fake"
-	core "k8s.io/client-go/testing"
-)
-
-func (c *FakePods) Bind(ctx context.Context, binding *v1.Binding, opts metav1.CreateOptions) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = binding.Namespace
-	action.Resource = podsResource
-	action.Subresource = "binding"
-	action.Object = binding
-
-	_, err := c.Fake.Invokes(action, binding)
-	return err
-}
-
-func (c *FakePods) GetBinding(name string) (result *v1.Binding, err error) {
-	obj, err := c.Fake.
-		Invokes(core.NewGetSubresourceAction(podsResource, c.ns, "binding", name), &v1.Binding{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.Binding), err
-}
-
-func (c *FakePods) GetLogs(name string, opts *v1.PodLogOptions) *restclient.Request {
-	action := core.GenericActionImpl{}
-	action.Verb = "get"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "log"
-	action.Value = opts
-
-	_, _ = c.Fake.Invokes(action, &v1.Pod{})
-	fakeClient := &fakerest.RESTClient{
-		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
-			resp := &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("fake logs")),
-			}
-			return resp, nil
-		}),
-		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
-		GroupVersion:         podsKind.GroupVersion(),
-		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", c.ns, name),
-	}
-	return fakeClient.Request()
-}
-
-func (c *FakePods) Evict(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	return c.EvictV1beta1(ctx, eviction)
-}
-
-func (c *FakePods) EvictV1(ctx context.Context, eviction *policyv1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
-}
-
-func (c *FakePods) EvictV1beta1(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
-}
-
-func (c *FakePods) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
-	return c.Fake.InvokesProxy(core.NewProxyGetAction(podsResource, c.ns, scheme, name, port, path, params))
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
->>>>>>> 5ce8c7613 (update vendored files)
-
-	v1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	restclient "k8s.io/client-go/rest"
-	fakerest "k8s.io/client-go/rest/fake"
-	core "k8s.io/client-go/testing"
-)
-
-func (c *FakePods) Bind(ctx context.Context, binding *v1.Binding, opts metav1.CreateOptions) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = binding.Namespace
-	action.Resource = podsResource
-	action.Subresource = "binding"
-	action.Object = binding
-
-	_, err := c.Fake.Invokes(action, binding)
-	return err
-}
-
-func (c *FakePods) GetBinding(name string) (result *v1.Binding, err error) {
-	obj, err := c.Fake.
-		Invokes(core.NewGetSubresourceAction(podsResource, c.ns, "binding", name), &v1.Binding{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.Binding), err
-}
-
-func (c *FakePods) GetLogs(name string, opts *v1.PodLogOptions) *restclient.Request {
-	action := core.GenericActionImpl{}
-	action.Verb = "get"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "log"
-	action.Value = opts
-
-	_, _ = c.Fake.Invokes(action, &v1.Pod{})
-	fakeClient := &fakerest.RESTClient{
-		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
-			resp := &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("fake logs")),
-			}
-			return resp, nil
-		}),
-		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
-		GroupVersion:         podsKind.GroupVersion(),
-		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", c.ns, name),
-	}
-	return fakeClient.Request()
-}
-
-func (c *FakePods) Evict(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	return c.EvictV1beta1(ctx, eviction)
-}
-
-func (c *FakePods) EvictV1(ctx context.Context, eviction *policyv1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func (c *FakePods) EvictV1beta1(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
-}
-
-func (c *FakePods) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
-	return c.Fake.InvokesProxy(core.NewProxyGetAction(podsResource, c.ns, scheme, name, port, path, params))
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
->>>>>>> 6b7ce455e (update vendored files)
-
-	v1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	restclient "k8s.io/client-go/rest"
-	fakerest "k8s.io/client-go/rest/fake"
-	core "k8s.io/client-go/testing"
-)
-
-func (c *FakePods) Bind(ctx context.Context, binding *v1.Binding, opts metav1.CreateOptions) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = binding.Namespace
-	action.Resource = podsResource
-	action.Subresource = "binding"
-	action.Object = binding
-
-	_, err := c.Fake.Invokes(action, binding)
-	return err
-}
-
-func (c *FakePods) GetBinding(name string) (result *v1.Binding, err error) {
-	obj, err := c.Fake.
-		Invokes(core.NewGetSubresourceAction(podsResource, c.ns, "binding", name), &v1.Binding{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.Binding), err
-}
-
-func (c *FakePods) GetLogs(name string, opts *v1.PodLogOptions) *restclient.Request {
-	action := core.GenericActionImpl{}
-	action.Verb = "get"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "log"
-	action.Value = opts
-
-	_, _ = c.Fake.Invokes(action, &v1.Pod{})
-	fakeClient := &fakerest.RESTClient{
-		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
-			resp := &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("fake logs")),
-			}
-			return resp, nil
-		}),
-		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
-		GroupVersion:         podsKind.GroupVersion(),
-		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", c.ns, name),
-	}
-	return fakeClient.Request()
-}
-
-func (c *FakePods) Evict(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	return c.EvictV1beta1(ctx, eviction)
-}
-
-func (c *FakePods) EvictV1(ctx context.Context, eviction *policyv1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func (c *FakePods) EvictV1beta1(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
-}
-
-func (c *FakePods) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
-	return c.Fake.InvokesProxy(core.NewProxyGetAction(podsResource, c.ns, scheme, name, port, path, params))
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
->>>>>>> 4d7e5ad26 (update vendored files)
-
-	v1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	restclient "k8s.io/client-go/rest"
-	fakerest "k8s.io/client-go/rest/fake"
-	core "k8s.io/client-go/testing"
-)
-
-func (c *FakePods) Bind(ctx context.Context, binding *v1.Binding, opts metav1.CreateOptions) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = binding.Namespace
-	action.Resource = podsResource
-	action.Subresource = "binding"
-	action.Object = binding
-
-	_, err := c.Fake.Invokes(action, binding)
-	return err
-}
-
-func (c *FakePods) GetBinding(name string) (result *v1.Binding, err error) {
-	obj, err := c.Fake.
-		Invokes(core.NewGetSubresourceAction(podsResource, c.ns, "binding", name), &v1.Binding{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.Binding), err
-}
-
-func (c *FakePods) GetLogs(name string, opts *v1.PodLogOptions) *restclient.Request {
-	action := core.GenericActionImpl{}
-	action.Verb = "get"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "log"
-	action.Value = opts
-
-	_, _ = c.Fake.Invokes(action, &v1.Pod{})
-	fakeClient := &fakerest.RESTClient{
-		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
-			resp := &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("fake logs")),
-			}
-			return resp, nil
-		}),
-		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
-		GroupVersion:         podsKind.GroupVersion(),
-		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", c.ns, name),
-	}
-	return fakeClient.Request()
-}
-
-func (c *FakePods) Evict(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	return c.EvictV1beta1(ctx, eviction)
-}
-
-func (c *FakePods) EvictV1(ctx context.Context, eviction *policyv1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-}
-
-func (c *FakePods) EvictV1beta1(ctx context.Context, eviction *policyv1beta1.Eviction) error {
-	action := core.CreateActionImpl{}
-	action.Verb = "create"
-	action.Namespace = c.ns
-	action.Resource = podsResource
-	action.Subresource = "eviction"
-	action.Object = eviction
-
-	_, err := c.Fake.Invokes(action, eviction)
-	return err
-}
-
-func (c *FakePods) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
-	return c.Fake.InvokesProxy(core.NewProxyGetAction(podsResource, c.ns, scheme, name, port, path, params))
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	fakerest "k8s.io/client-go/rest/fake"
@@ -458,12 +64,26 @@ func (c *fakePods) GetLogs(name string, opts *v1.PodLogOptions) *restclient.Requ
 	action.Subresource = "log"
 	action.Value = opts
 
-	_, _ = c.Fake.Invokes(action, &v1.Pod{})
+	defaultLogResponse := &runtime.Unknown{Raw: []byte("fake logs")}
+	obj, err := c.Fake.Invokes(action, defaultLogResponse)
+	logs := defaultLogResponse.Raw
+	if err == nil {
+		unknown, ok := obj.(*runtime.Unknown)
+		if !ok || unknown == nil {
+			err = fmt.Errorf("fake Pods.GetLogs expected reactor to return *runtime.Unknown, got %T", obj)
+		} else {
+			logs = unknown.Raw
+		}
+	}
+
 	fakeClient := &fakerest.RESTClient{
 		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
+			if err != nil {
+				return nil, err
+			}
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader("fake logs")),
+				Body:       io.NopCloser(bytes.NewReader(logs)),
 			}
 			return resp, nil
 		}),
@@ -488,7 +108,6 @@ func (c *fakePods) EvictV1(ctx context.Context, eviction *policyv1.Eviction) err
 
 	_, err := c.Fake.Invokes(action, eviction)
 	return err
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *fakePods) EvictV1beta1(ctx context.Context, eviction *policyv1beta1.Eviction) error {

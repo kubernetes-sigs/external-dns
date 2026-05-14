@@ -26,112 +26,7 @@ type Byte map[byte]Empty
 
 // NewByte creates a Byte from a list of values.
 func NewByte(items ...byte) Byte {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	ss := make(Byte, len(items))
-	ss.Insert(items...)
-	return ss
-}
-
-// ByteKeySet creates a Byte from a keys of a map[byte](? extends interface{}).
-// If the value passed in is not actually a map, this will panic.
-func ByteKeySet(theMap interface{}) Byte {
-	v := reflect.ValueOf(theMap)
-	ret := Byte{}
-
-	for _, keyValue := range v.MapKeys() {
-		ret.Insert(keyValue.Interface().(byte))
-	}
-	return ret
-}
-
-// Insert adds items to the set.
-func (s Byte) Insert(items ...byte) Byte {
-	for _, item := range items {
-		s[item] = Empty{}
-	}
-	return s
-}
-
-// Delete removes all items from the set.
-func (s Byte) Delete(items ...byte) Byte {
-	for _, item := range items {
-		delete(s, item)
-	}
-	return s
-}
-
-// Has returns true if and only if item is contained in the set.
-func (s Byte) Has(item byte) bool {
-	_, contained := s[item]
-	return contained
-}
-
-// HasAll returns true if and only if all items are contained in the set.
-func (s Byte) HasAll(items ...byte) bool {
-	for _, item := range items {
-		if !s.Has(item) {
-			return false
-		}
-	}
-	return true
-}
-
-// HasAny returns true if any items are contained in the set.
-func (s Byte) HasAny(items ...byte) bool {
-	for _, item := range items {
-		if s.Has(item) {
-			return true
-		}
-	}
-	return false
-}
-
-// Clone returns a new set which is a copy of the current set.
-func (s Byte) Clone() Byte {
-	result := make(Byte, len(s))
-	for key := range s {
-		result.Insert(key)
-	}
-	return result
-}
-
-// Difference returns a set of objects that are not in s2
-// For example:
-// s1 = {a1, a2, a3}
-// s2 = {a1, a2, a4, a5}
-// s1.Difference(s2) = {a3}
-// s2.Difference(s1) = {a4, a5}
-func (s Byte) Difference(s2 Byte) Byte {
-	result := NewByte()
-	for key := range s {
-		if !s2.Has(key) {
-			result.Insert(key)
-		}
-	}
-	return result
-}
-
-// Union returns a new set which includes items in either s1 or s2.
-// For example:
-// s1 = {a1, a2}
-// s2 = {a3, a4}
-// s1.Union(s2) = {a1, a2, a3, a4}
-// s2.Union(s1) = {a1, a2, a3, a4}
-func (s1 Byte) Union(s2 Byte) Byte {
-	result := s1.Clone()
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ss := Byte{}
-	ss.Insert(items...)
-	return ss
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ss := Byte{}
-	ss.Insert(items...)
-	return ss
-=======
 	return Byte(New[byte](items...))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ByteKeySet creates a Byte from a keys of a map[byte](? extends interface{}).
@@ -197,28 +92,7 @@ func (s1 Byte) SymmetricDifference(s2 Byte) Byte {
 // s1.Union(s2) = {a1, a2, a3, a4}
 // s2.Union(s1) = {a1, a2, a3, a4}
 func (s1 Byte) Union(s2 Byte) Byte {
-<<<<<<< HEAD
-	result := NewByte()
-	for key := range s1 {
-		result.Insert(key)
-	}
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	for key := range s2 {
-		result.Insert(key)
-	}
-	return result
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	result := NewByte()
-	for key := range s1 {
-		result.Insert(key)
-	}
-	for key := range s2 {
-		result.Insert(key)
-	}
-	return result
-=======
 	return Byte(cast(s1).Union(cast(s2)))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Intersection returns a new set which includes the item in BOTH s1 and s2

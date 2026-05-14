@@ -20,298 +20,7 @@ import (
 	"io"
 	"sync"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"k8s.io/klog/v2"
-
-	restclient "k8s.io/client-go/rest"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-)
-
-// DeferredLoadingClientConfig is a ClientConfig interface that is backed by a client config loader.
-// It is used in cases where the loading rules may change after you've instantiated them and you want to be sure that
-// the most recent rules are used.  This is useful in cases where you bind flags to loading rule parameters before
-// the parse happens and you want your calling code to be ignorant of how the values are being mutated to avoid
-// passing extraneous information down a call stack
-type DeferredLoadingClientConfig struct {
-	loader         ClientConfigLoader
-	overrides      *ConfigOverrides
-	fallbackReader io.Reader
-
-	clientConfig ClientConfig
-	loadingLock  sync.Mutex
-
-	// provided for testing
-	icc InClusterConfig
-}
-
-// InClusterConfig abstracts details of whether the client is running in a cluster for testing.
-type InClusterConfig interface {
-	ClientConfig
-	Possible() bool
-}
-
-// NewNonInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name
-func NewNonInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}}
-}
-
-// NewInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name and the fallback auth reader
-func NewInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides, fallbackReader io.Reader) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}, fallbackReader: fallbackReader}
-}
-
-func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, error) {
-	config.loadingLock.Lock()
-	defer config.loadingLock.Unlock()
-
-	if config.clientConfig != nil {
-		return config.clientConfig, nil
-	}
-	mergedConfig, err := config.loader.Load()
-	if err != nil {
-		return nil, err
-	}
-
-	var currentContext string
-	if config.overrides != nil {
-		currentContext = config.overrides.CurrentContext
-	}
-	if config.fallbackReader != nil {
-		config.clientConfig = NewInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.fallbackReader, config.loader)
-	} else {
-		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
-	}
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 5ce8c7613 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 5ce8c7613 (update vendored files)
-
-	restclient "k8s.io/client-go/rest"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-)
-
-// DeferredLoadingClientConfig is a ClientConfig interface that is backed by a client config loader.
-// It is used in cases where the loading rules may change after you've instantiated them and you want to be sure that
-// the most recent rules are used.  This is useful in cases where you bind flags to loading rule parameters before
-// the parse happens and you want your calling code to be ignorant of how the values are being mutated to avoid
-// passing extraneous information down a call stack
-type DeferredLoadingClientConfig struct {
-	loader         ClientConfigLoader
-	overrides      *ConfigOverrides
-	fallbackReader io.Reader
-
-	clientConfig ClientConfig
-	loadingLock  sync.Mutex
-
-	// provided for testing
-	icc InClusterConfig
-}
-
-// InClusterConfig abstracts details of whether the client is running in a cluster for testing.
-type InClusterConfig interface {
-	ClientConfig
-	Possible() bool
-}
-
-// NewNonInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name
-func NewNonInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}}
-}
-
-// NewInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name and the fallback auth reader
-func NewInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides, fallbackReader io.Reader) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}, fallbackReader: fallbackReader}
-}
-
-func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, error) {
-	config.loadingLock.Lock()
-	defer config.loadingLock.Unlock()
-
-	if config.clientConfig != nil {
-		return config.clientConfig, nil
-	}
-	mergedConfig, err := config.loader.Load()
-	if err != nil {
-		return nil, err
-	}
-
-<<<<<<< HEAD
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-	var currentContext string
-	if config.overrides != nil {
-		currentContext = config.overrides.CurrentContext
-	}
-	if config.fallbackReader != nil {
-		config.clientConfig = NewInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.fallbackReader, config.loader)
-	} else {
-		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
-	}
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 6b7ce455e (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 6b7ce455e (update vendored files)
-
-	restclient "k8s.io/client-go/rest"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-)
-
-// DeferredLoadingClientConfig is a ClientConfig interface that is backed by a client config loader.
-// It is used in cases where the loading rules may change after you've instantiated them and you want to be sure that
-// the most recent rules are used.  This is useful in cases where you bind flags to loading rule parameters before
-// the parse happens and you want your calling code to be ignorant of how the values are being mutated to avoid
-// passing extraneous information down a call stack
-type DeferredLoadingClientConfig struct {
-	loader         ClientConfigLoader
-	overrides      *ConfigOverrides
-	fallbackReader io.Reader
-
-	clientConfig ClientConfig
-	loadingLock  sync.Mutex
-
-	// provided for testing
-	icc InClusterConfig
-}
-
-// InClusterConfig abstracts details of whether the client is running in a cluster for testing.
-type InClusterConfig interface {
-	ClientConfig
-	Possible() bool
-}
-
-// NewNonInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name
-func NewNonInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}}
-}
-
-// NewInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name and the fallback auth reader
-func NewInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides, fallbackReader io.Reader) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}, fallbackReader: fallbackReader}
-}
-
-func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, error) {
-	config.loadingLock.Lock()
-	defer config.loadingLock.Unlock()
-
-	if config.clientConfig != nil {
-		return config.clientConfig, nil
-	}
-	mergedConfig, err := config.loader.Load()
-	if err != nil {
-		return nil, err
-	}
-
-<<<<<<< HEAD
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	var currentContext string
-	if config.overrides != nil {
-		currentContext = config.overrides.CurrentContext
-	}
-	if config.fallbackReader != nil {
-		config.clientConfig = NewInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.fallbackReader, config.loader)
-	} else {
-		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
-	}
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> 4d7e5ad26 (update vendored files)
-
-	restclient "k8s.io/client-go/rest"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-)
-
-// DeferredLoadingClientConfig is a ClientConfig interface that is backed by a client config loader.
-// It is used in cases where the loading rules may change after you've instantiated them and you want to be sure that
-// the most recent rules are used.  This is useful in cases where you bind flags to loading rule parameters before
-// the parse happens and you want your calling code to be ignorant of how the values are being mutated to avoid
-// passing extraneous information down a call stack
-type DeferredLoadingClientConfig struct {
-	loader         ClientConfigLoader
-	overrides      *ConfigOverrides
-	fallbackReader io.Reader
-
-	clientConfig ClientConfig
-	loadingLock  sync.Mutex
-
-	// provided for testing
-	icc InClusterConfig
-}
-
-// InClusterConfig abstracts details of whether the client is running in a cluster for testing.
-type InClusterConfig interface {
-	ClientConfig
-	Possible() bool
-}
-
-// NewNonInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name
-func NewNonInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}}
-}
-
-// NewInteractiveDeferredLoadingClientConfig creates a ConfigClientClientConfig using the passed context name and the fallback auth reader
-func NewInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides, fallbackReader io.Reader) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}, fallbackReader: fallbackReader}
-}
-
-func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, error) {
-	config.loadingLock.Lock()
-	defer config.loadingLock.Unlock()
-
-	if config.clientConfig != nil {
-		return config.clientConfig, nil
-	}
-	mergedConfig, err := config.loader.Load()
-	if err != nil {
-		return nil, err
-	}
-
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	var currentContext string
-	if config.overrides != nil {
-		currentContext = config.overrides.CurrentContext
-	}
-	if config.fallbackReader != nil {
-		config.clientConfig = NewInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.fallbackReader, config.loader)
-	} else {
-		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/klog"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/klog"
-=======
-	"k8s.io/klog/v2"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -362,10 +71,6 @@ func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, e
 		return nil, err
 	}
 
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	var currentContext string
 	if config.overrides != nil {
 		currentContext = config.overrides.CurrentContext
@@ -375,7 +80,6 @@ func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, e
 	} else {
 		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
 	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return config.clientConfig, nil
 }
 
@@ -414,6 +118,7 @@ func (config *DeferredLoadingClientConfig) ClientConfig() (*restclient.Config, e
 
 	// check for in-cluster configuration and use it
 	if config.icc.Possible() {
+		//nolint:logcheck // A helper function like this should not log. But this is probably part of the the established client-go API and not worth changing.
 		klog.V(4).Infof("Using in-cluster configuration")
 		return config.icc.ClientConfig()
 	}
@@ -456,6 +161,7 @@ func (config *DeferredLoadingClientConfig) Namespace() (string, bool, error) {
 		}
 	}
 
+	//nolint:logcheck // A helper function like this should not log. But this is probably part of the the established client-go API and not worth changing.
 	klog.V(4).Infof("Using in-cluster namespace")
 
 	// allow the namespace from the service account token directory to be used.

@@ -52,7 +52,7 @@ spec:
     imageType: debug
 </code></pre>
 <p>If a <code>ProxyConfig</code> CR is defined that matches a workload it will merge with its <code>proxy.istio.io/config</code> annotation if present,
-with the CR taking precedence over the annotation for overlapping fields. Similarly, if a mesh wide <code>ProxyConfig</code> CR is defined and
+with the CR taking precedence over the annotation for overlapping fields. Similarly, if a mesh-wide <code>ProxyConfig</code> CR is defined and
 <code>meshConfig.DefaultConfig</code> is set, the two resources will be merged with the CR taking precedence for overlapping fields.</p>
 
 <h2 id="ProxyConfig">ProxyConfig</h2>
@@ -63,58 +63,48 @@ with the CR taking precedence over the annotation for overlapping fields. Simila
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="ProxyConfig-selector">
-<td><code>selector</code></td>
-<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ProxyConfig-selector">selector</a></code></div>
+<div class="type"><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></div>
+</div></td>
 <td>
-<p>Optional. Selectors specify the set of pods/VMs on which this <code>ProxyConfig</code> resource should be applied.
+<p>Selectors specify the set of pods/VMs on which this <code>ProxyConfig</code> resource should be applied.
 If not set, the <code>ProxyConfig</code> resource will be applied to all workloads in the namespace where this resource is defined.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ProxyConfig-concurrency">
-<td><code>concurrency</code></td>
-<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#int32value">Int32Value</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ProxyConfig-concurrency">concurrency</a></code></div>
+<div class="type"><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#int32value">Int32Value</a></div>
+</div></td>
 <td>
 <p>The number of worker threads to run.
-If unset, this will be automatically determined based on CPU requests/limits.
+If unset, this will be automatically determined based on CPU limits.
 If set to 0, all cores on the machine will be used.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ProxyConfig-environment_variables">
-<td><code>environmentVariables</code></td>
-<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td><div class="field"><div class="name"><code><a href="#ProxyConfig-environment_variables">environmentVariables</a></code></div>
+<div class="type">map&lt;string,&nbsp;string&gt;</div>
+</div></td>
 <td>
 <p>Additional environment variables for the proxy.
 Names starting with <code>ISTIO_META_</code> will be included in the generated bootstrap configuration and sent to the XDS server.</p>
 
 </td>
-<td>
-No
-</td>
 </tr>
 <tr id="ProxyConfig-image">
-<td><code>image</code></td>
-<td><code><a href="#ProxyImage">ProxyImage</a></code></td>
+<td><div class="field"><div class="name"><code><a href="#ProxyConfig-image">image</a></code></div>
+<div class="type"><a href="#ProxyImage">ProxyImage</a></div>
+</div></td>
 <td>
 <p>Specifies the details of the proxy image.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>
@@ -131,24 +121,20 @@ This information was previously part of the Values API.</p>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
 <th>Description</th>
-<th>Required</th>
 </tr>
 </thead>
 <tbody>
 <tr id="ProxyImage-image_type">
-<td><code>imageType</code></td>
-<td><code>string</code></td>
+<td><div class="field"><div class="name"><code><a href="#ProxyImage-image_type">imageType</a></code></div>
+<div class="type">string</div>
+</div></td>
 <td>
 <p>The image type of the image.
 Istio publishes default, debug, and distroless images.
 Other values are allowed if those image types (example: centos) are published to the specified hub.
 supported values: default, debug, distroless.</p>
 
-</td>
-<td>
-No
 </td>
 </tr>
 </tbody>

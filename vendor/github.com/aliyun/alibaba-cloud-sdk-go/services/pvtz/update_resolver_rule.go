@@ -71,11 +71,12 @@ func (client *Client) UpdateResolverRuleWithCallback(request *UpdateResolverRule
 // UpdateResolverRuleRequest is the request struct for api UpdateResolverRule
 type UpdateResolverRuleRequest struct {
 	*requests.RpcRequest
+	EndpointId   string                         `position:"Query" name:"EndpointId"`
 	ForwardIp    *[]UpdateResolverRuleForwardIp `position:"Query" name:"ForwardIp"  type:"Repeated"`
 	UserClientIp string                         `position:"Query" name:"UserClientIp"`
 	Name         string                         `position:"Query" name:"Name"`
-	Lang         string                         `position:"Query" name:"Lang"`
 	RuleId       string                         `position:"Query" name:"RuleId"`
+	Lang         string                         `position:"Query" name:"Lang"`
 }
 
 // UpdateResolverRuleForwardIp is a repeated param struct in UpdateResolverRuleRequest

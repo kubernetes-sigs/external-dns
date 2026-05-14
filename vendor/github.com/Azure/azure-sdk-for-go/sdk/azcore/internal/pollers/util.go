@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
@@ -159,13 +156,16 @@ func PollHelper(ctx context.Context, endpoint string, pl azexported.Pipeline, up
 // ResultHelper processes the response as success or failure.
 // In the success case, it unmarshals the payload into either a new instance of T or out.
 // In the failure case, it creates an *azcore.Response error from the response.
-func ResultHelper[T any](resp *http.Response, failed bool, out *T) error {
+func ResultHelper[T any](resp *http.Response, failed bool, jsonPath string, out *T) error {
 	// short-circuit the simple success case with no response body to unmarshal
 	if resp.StatusCode == http.StatusNoContent {
 		return nil
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	if !poller.StatusCodeValid(resp) || failed {
 		// the LRO failed.  unmarshall the error and update state
 		return azexported.NewResponseError(resp)
@@ -176,6 +176,18 @@ func ResultHelper[T any](resp *http.Response, failed bool, out *T) error {
 	if err != nil {
 		return err
 	}
+
+	if jsonPath != "" && len(payload) > 0 {
+		// extract the payload from the specified JSON path.
+		// do this before the zero-length check in case there
+		// is no payload.
+		jsonBody := map[string]json.RawMessage{}
+		if err = json.Unmarshal(payload, &jsonBody); err != nil {
+			return err
+		}
+		payload = jsonBody[jsonPath]
+	}
+
 	if len(payload) == 0 {
 		return nil
 	}

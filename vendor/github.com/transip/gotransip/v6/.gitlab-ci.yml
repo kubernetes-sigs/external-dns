@@ -11,35 +11,16 @@ stages:
 
 analyze:lint:
   stage: analyze
-<<<<<<< HEAD
-<<<<<<< HEAD
-  image: golangci/golangci-lint:v1.45
-  script:
-    - golangci-lint run -v
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-  image: golangci/golangci-lint:v1.19
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-  image: golangci/golangci-lint:v1.19
-=======
   image: golangci/golangci-lint:v1.57
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   script:
-<<<<<<< HEAD
-    - golangci-lint run
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-    - golangci-lint run
-=======
     - golangci-lint run -v
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   tags:
     - k8s-tbk
 
-lint:golint:
+lint:gofmt:
   stage: lint
   script:
-    - ci/lint.sh
+    - ci/gofmt.sh
   tags:
     - k8s-tbk
 

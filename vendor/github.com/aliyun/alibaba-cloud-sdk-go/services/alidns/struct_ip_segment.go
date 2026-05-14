@@ -17,16 +17,6 @@ package alidns
 
 // IpSegment is a nested struct in alidns response
 type IpSegment struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Name       string `json:"Name" xml:"Name"`
-||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
-	Name       string `json:"Name" xml:"Name"`
-=======
->>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	EndIp      string `json:"EndIp" xml:"EndIp"`
 	Name       string `json:"Name" xml:"Name"`
 	CreateDate string `json:"CreateDate" xml:"CreateDate"`
@@ -35,44 +25,4 @@ type IpSegment struct {
 	UpdateDate string `json:"UpdateDate" xml:"UpdateDate"`
 	Mask       int64  `json:"Mask" xml:"Mask"`
 	StartIp    string `json:"StartIp" xml:"StartIp"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Name    string `json:"Name" xml:"Name"`
-	EndIp   string `json:"EndIp" xml:"EndIp"`
-	StartIp string `json:"StartIp" xml:"StartIp"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	Name    string `json:"Name" xml:"Name"`
-	EndIp   string `json:"EndIp" xml:"EndIp"`
-	StartIp string `json:"StartIp" xml:"StartIp"`
-=======
-	Name       string `json:"Name" xml:"Name"`
-	EndIp      string `json:"EndIp" xml:"EndIp"`
-	CreateDate string `json:"CreateDate" xml:"CreateDate"`
-	State      string `json:"State" xml:"State"`
-	Ip         string `json:"Ip" xml:"Ip"`
-	UpdateDate string `json:"UpdateDate" xml:"UpdateDate"`
-	Mask       int64  `json:"Mask" xml:"Mask"`
-	StartIp    string `json:"StartIp" xml:"StartIp"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	Name    string `json:"Name" xml:"Name"`
-	EndIp   string `json:"EndIp" xml:"EndIp"`
-	StartIp string `json:"StartIp" xml:"StartIp"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	Name    string `json:"Name" xml:"Name"`
-	EndIp   string `json:"EndIp" xml:"EndIp"`
-	StartIp string `json:"StartIp" xml:"StartIp"`
-=======
-	EndIp      string `json:"EndIp" xml:"EndIp"`
-	Name       string `json:"Name" xml:"Name"`
-	CreateDate string `json:"CreateDate" xml:"CreateDate"`
-	State      string `json:"State" xml:"State"`
-	Ip         string `json:"Ip" xml:"Ip"`
-	UpdateDate string `json:"UpdateDate" xml:"UpdateDate"`
-	Mask       int64  `json:"Mask" xml:"Mask"`
-	StartIp    string `json:"StartIp" xml:"StartIp"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

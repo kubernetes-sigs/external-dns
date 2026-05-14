@@ -20,37 +20,6 @@ package fake
 
 import (
 	v2 "k8s.io/api/autoscaling/v2"
-<<<<<<< HEAD
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-<<<<<<< HEAD
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	autoscalingv2 "k8s.io/client-go/applyconfigurations/autoscaling/v2"
-	testing "k8s.io/client-go/testing"
-)
-
-// FakeHorizontalPodAutoscalers implements HorizontalPodAutoscalerInterface
-type FakeHorizontalPodAutoscalers struct {
-	Fake *FakeAutoscalingV2
-	ns   string
-}
-
-var horizontalpodautoscalersResource = schema.GroupVersionResource{Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers"}
-
-var horizontalpodautoscalersKind = schema.GroupVersionKind{Group: "autoscaling", Version: "v2", Kind: "HorizontalPodAutoscaler"}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-=======
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	autoscalingv2 "k8s.io/client-go/applyconfigurations/autoscaling/v2"
 	gentype "k8s.io/client-go/gentype"
 	typedautoscalingv2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2"
@@ -62,32 +31,6 @@ type fakeHorizontalPodAutoscalers struct {
 	Fake *FakeAutoscalingV2
 }
 
-<<<<<<< HEAD
-var horizontalpodautoscalersResource = v2.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
-
-var horizontalpodautoscalersKind = v2.SchemeGroupVersion.WithKind("HorizontalPodAutoscaler")
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-// Get takes name of the horizontalPodAutoscaler, and returns the corresponding horizontalPodAutoscaler object, and an error if there is any.
-func (c *FakeHorizontalPodAutoscalers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2.HorizontalPodAutoscaler, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(horizontalpodautoscalersResource, c.ns, name), &v2.HorizontalPodAutoscaler{})
-
-	if obj == nil {
-		return nil, err
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-var horizontalpodautoscalersResource = v2.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
-
-var horizontalpodautoscalersKind = v2.SchemeGroupVersion.WithKind("HorizontalPodAutoscaler")
-
-// Get takes name of the horizontalPodAutoscaler, and returns the corresponding horizontalPodAutoscaler object, and an error if there is any.
-func (c *FakeHorizontalPodAutoscalers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2.HorizontalPodAutoscaler, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(horizontalpodautoscalersResource, c.ns, name), &v2.HorizontalPodAutoscaler{})
-
-	if obj == nil {
-		return nil, err
-=======
 func newFakeHorizontalPodAutoscalers(fake *FakeAutoscalingV2, namespace string) typedautoscalingv2.HorizontalPodAutoscalerInterface {
 	return &fakeHorizontalPodAutoscalers{
 		gentype.NewFakeClientWithListAndApply[*v2.HorizontalPodAutoscaler, *v2.HorizontalPodAutoscalerList, *autoscalingv2.HorizontalPodAutoscalerApplyConfiguration](
@@ -106,6 +49,5 @@ func newFakeHorizontalPodAutoscalers(fake *FakeAutoscalingV2, namespace string) 
 			},
 		),
 		fake,
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 }

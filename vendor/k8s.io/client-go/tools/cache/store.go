@@ -17,6 +17,7 @@ limitations under the License.
 package cache
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -54,6 +55,15 @@ type Store interface {
 	// ListKeys returns a list of all the keys currently associated with non-empty accumulators
 	ListKeys() []string
 
+	// LastStoreSyncResourceVersion returns the latest resource version that the store has seen.
+	// This is used to determine the latest resource version the store has seen from objects
+	// observed being written to the store.
+	LastStoreSyncResourceVersion() string
+
+	// Bookmark observes a new resource version passed into it and
+	// will be used to get the latest resource version of the store.
+	Bookmark(rv string)
+
 	// Get returns the accumulator associated with the given object's key
 	Get(obj interface{}) (item interface{}, exists bool, err error)
 
@@ -71,6 +81,42 @@ type Store interface {
 	Resync() error
 }
 
+// TransactionType defines the type of a transaction operation. It is used to indicate whether
+// an object is being added, updated, or deleted.
+type TransactionType string
+
+const (
+	TransactionTypeAdd    TransactionType = "Add"
+	TransactionTypeUpdate TransactionType = "Update"
+	TransactionTypeDelete TransactionType = "Delete"
+)
+
+// Transaction represents a single operation or event in a process. It holds a generic Object
+// associated with the transaction and a Type indicating the kind of transaction being performed.
+type Transaction struct {
+	Object interface{}
+	Type   TransactionType
+}
+
+type TransactionStore interface {
+	// Transaction allows multiple operations to occur within a single lock acquisition to
+	// ensure progress can be made when there is contention.
+	Transaction(txns ...Transaction) *TransactionError
+}
+
+var _ error = &TransactionError{}
+
+type TransactionError struct {
+	SuccessfulIndices []int
+	TotalTransactions int
+	Errors            []error
+}
+
+func (t *TransactionError) Error() string {
+	return fmt.Sprintf("failed to execute (%d/%d) transactions failed due to: %v",
+		t.TotalTransactions-len(t.SuccessfulIndices), t.TotalTransactions, t.Errors)
+}
+
 // KeyFunc knows how to make a key from an object. Implementations should be deterministic.
 type KeyFunc func(obj interface{}) (string, error)
 
@@ -86,187 +132,11 @@ func (k KeyError) Error() string {
 	return fmt.Sprintf("couldn't create key for object %+v: %v", k.Obj, k.Err)
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Unwrap implements errors.Unwrap
 func (k KeyError) Unwrap() error {
 	return k.Err
 }
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// Unwrap implements errors.Unwrap
-func (k KeyError) Unwrap() error {
-	return k.Err
-}
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// Unwrap implements errors.Unwrap
-func (k KeyError) Unwrap() error {
-	return k.Err
-}
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// Unwrap implements errors.Unwrap
-func (k KeyError) Unwrap() error {
-	return k.Err
-}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-// ExplicitKey can be passed to MetaNamespaceKeyFunc if you have the key for
-// the object but not the object itself.
-type ExplicitKey string
-
-// MetaNamespaceKeyFunc is a convenient default KeyFunc which knows how to make
-// keys for API objects which implement meta.Interface.
-// The key uses the format <namespace>/<name> unless <namespace> is empty, then
-// it's just <name>.
-//
-// TODO: replace key-as-string with a key-as-struct so that this
-// packing/unpacking won't be necessary.
-func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
-	if key, ok := obj.(ExplicitKey); ok {
-		return string(key), nil
-	}
-	meta, err := meta.Accessor(obj)
-	if err != nil {
-		return "", fmt.Errorf("object has no meta: %v", err)
-	}
-	if len(meta.GetNamespace()) > 0 {
-		return meta.GetNamespace() + "/" + meta.GetName(), nil
-	}
-	return meta.GetName(), nil
-}
-
-// SplitMetaNamespaceKey returns the namespace and name that
-// MetaNamespaceKeyFunc encoded into key.
-//
-// TODO: replace key-as-string with a key-as-struct so that this
-// packing/unpacking won't be necessary.
-func SplitMetaNamespaceKey(key string) (namespace, name string, err error) {
-	parts := strings.Split(key, "/")
-	switch len(parts) {
-	case 1:
-		// name only, no namespace
-		return "", parts[0], nil
-	case 2:
-		// namespace and name
-		return parts[0], parts[1], nil
-	}
-
-	return "", "", fmt.Errorf("unexpected key format: %q", key)
-}
-
-// `*cache` implements Indexer in terms of a ThreadSafeStore and an
-// associated KeyFunc.
-type cache struct {
-	// cacheStorage bears the burden of thread safety for the cache
-	cacheStorage ThreadSafeStore
-	// keyFunc is used to make the key for objects stored in and retrieved from items, and
-	// should be deterministic.
-	keyFunc KeyFunc
-}
-
-var _ Store = &cache{}
-
-// Add inserts an item into the cache.
-func (c *cache) Add(obj interface{}) error {
-	key, err := c.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	c.cacheStorage.Add(key, obj)
-	return nil
-}
-
-// Update sets an item in the cache to its updated state.
-func (c *cache) Update(obj interface{}) error {
-	key, err := c.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	c.cacheStorage.Update(key, obj)
-	return nil
-}
-
-// Delete removes an item from the cache.
-func (c *cache) Delete(obj interface{}) error {
-	key, err := c.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	c.cacheStorage.Delete(key)
-	return nil
-}
-
-// List returns a list of all the items.
-// List is completely threadsafe as long as you treat all items as immutable.
-func (c *cache) List() []interface{} {
-	return c.cacheStorage.List()
-}
-
-// ListKeys returns a list of all the keys of the objects currently
-// in the cache.
-func (c *cache) ListKeys() []string {
-	return c.cacheStorage.ListKeys()
-}
-
-// GetIndexers returns the indexers of cache
-func (c *cache) GetIndexers() Indexers {
-	return c.cacheStorage.GetIndexers()
-}
-
-// Index returns a list of items that match on the index function
-// Index is thread-safe so long as you treat all items as immutable
-func (c *cache) Index(indexName string, obj interface{}) ([]interface{}, error) {
-	return c.cacheStorage.Index(indexName, obj)
-}
-
-// IndexKeys returns the storage keys of the stored objects whose set of
-// indexed values for the named index includes the given indexed value.
-// The returned keys are suitable to pass to GetByKey().
-func (c *cache) IndexKeys(indexName, indexedValue string) ([]string, error) {
-	return c.cacheStorage.IndexKeys(indexName, indexedValue)
-}
-
-// ListIndexFuncValues returns the list of generated values of an Index func
-func (c *cache) ListIndexFuncValues(indexName string) []string {
-	return c.cacheStorage.ListIndexFuncValues(indexName)
-}
-
-// ByIndex returns the stored objects whose set of indexed values
-// for the named index includes the given indexed value.
-func (c *cache) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
-	return c.cacheStorage.ByIndex(indexName, indexedValue)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// Unwrap implements errors.Unwrap
-func (k KeyError) Unwrap() error {
-	return k.Err
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // ExplicitKey can be passed to MetaNamespaceKeyFunc if you have the key for
 // the object but not the object itself.
 type ExplicitKey string
@@ -337,15 +207,61 @@ type cache struct {
 	// keyFunc is used to make the key for objects stored in and retrieved from items, and
 	// should be deterministic.
 	keyFunc KeyFunc
+	// Called with every object put in the cache.
+	transformer TransformFunc
+	// identifier is used to identify the store for metrics.
+	identifier InformerNameAndResource
+	// metrics is the metrics provider for the store.
+	metrics InformerMetricsProvider
 }
 
 var _ Store = &cache{}
+
+func (c *cache) Transaction(txns ...Transaction) *TransactionError {
+	txnStore, ok := c.cacheStorage.(ThreadSafeStoreWithTransaction)
+	if !ok {
+		return &TransactionError{
+			TotalTransactions: len(txns),
+			Errors: []error{
+				errors.New("transaction not supported"),
+			},
+		}
+	}
+	keyedTxns := make([]ThreadSafeStoreTransaction, 0, len(txns))
+	successfulIndices := make([]int, 0, len(txns))
+	errs := make([]error, 0)
+	for i := range txns {
+		txn := txns[i]
+		key, err := c.keyFunc(txn.Object)
+		if err != nil {
+			errs = append(errs, KeyError{txn.Object, err})
+			continue
+		}
+		successfulIndices = append(successfulIndices, i)
+		keyedTxns = append(keyedTxns, ThreadSafeStoreTransaction{txn, key})
+	}
+	txnStore.Transaction(keyedTxns...)
+	if len(errs) > 0 {
+		return &TransactionError{
+			SuccessfulIndices: successfulIndices,
+			TotalTransactions: len(txns),
+			Errors:            errs,
+		}
+	}
+	return nil
+}
 
 // Add inserts an item into the cache.
 func (c *cache) Add(obj interface{}) error {
 	key, err := c.keyFunc(obj)
 	if err != nil {
 		return KeyError{obj, err}
+	}
+	if c.transformer != nil {
+		obj, err = c.transformer(obj)
+		if err != nil {
+			return fmt.Errorf("transforming: %w", err)
+		}
 	}
 	c.cacheStorage.Add(key, obj)
 	return nil
@@ -357,6 +273,12 @@ func (c *cache) Update(obj interface{}) error {
 	if err != nil {
 		return KeyError{obj, err}
 	}
+	if c.transformer != nil {
+		obj, err = c.transformer(obj)
+		if err != nil {
+			return fmt.Errorf("transforming: %w", err)
+		}
+	}
 	c.cacheStorage.Update(key, obj)
 	return nil
 }
@@ -367,7 +289,7 @@ func (c *cache) Delete(obj interface{}) error {
 	if err != nil {
 		return KeyError{obj, err}
 	}
-	c.cacheStorage.Delete(key)
+	c.cacheStorage.DeleteWithObject(key, obj)
 	return nil
 }
 
@@ -381,6 +303,14 @@ func (c *cache) List() []interface{} {
 // in the cache.
 func (c *cache) ListKeys() []string {
 	return c.cacheStorage.ListKeys()
+}
+
+func (c *cache) LastStoreSyncResourceVersion() string {
+	return c.cacheStorage.LastStoreSyncResourceVersion()
+}
+
+func (c *cache) Bookmark(rv string) {
+	c.cacheStorage.Bookmark(rv)
 }
 
 // GetIndexers returns the indexers of cache
@@ -406,19 +336,10 @@ func (c *cache) ListIndexFuncValues(indexName string) []string {
 	return c.cacheStorage.ListIndexFuncValues(indexName)
 }
 
-<<<<<<< HEAD
-func (c *cache) ByIndex(indexName, indexKey string) ([]interface{}, error) {
-	return c.cacheStorage.ByIndex(indexName, indexKey)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (c *cache) ByIndex(indexName, indexKey string) ([]interface{}, error) {
-	return c.cacheStorage.ByIndex(indexName, indexKey)
-=======
 // ByIndex returns the stored objects whose set of indexed values
 // for the named index includes the given indexed value.
 func (c *cache) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
 	return c.cacheStorage.ByIndex(indexName, indexedValue)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (c *cache) AddIndexers(newIndexers Indexers) error {
@@ -452,6 +373,13 @@ func (c *cache) Replace(list []interface{}, resourceVersion string) error {
 		if err != nil {
 			return KeyError{item, err}
 		}
+
+		if c.transformer != nil {
+			item, err = c.transformer(item)
+			if err != nil {
+				return fmt.Errorf("transforming: %w", err)
+			}
+		}
 		items[key] = item
 	}
 	c.cacheStorage.Replace(items, resourceVersion)
@@ -463,18 +391,49 @@ func (c *cache) Resync() error {
 	return nil
 }
 
-// NewStore returns a Store implemented simply with a map and a lock.
-func NewStore(keyFunc KeyFunc) Store {
-	return &cache{
-		cacheStorage: NewThreadSafeStore(Indexers{}, Indices{}),
-		keyFunc:      keyFunc,
+type StoreOption = func(*cache)
+
+func WithTransformer(transformer TransformFunc) StoreOption {
+	return func(c *cache) {
+		c.transformer = transformer
 	}
 }
 
-// NewIndexer returns an Indexer implemented simply with a map and a lock.
-func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
-	return &cache{
-		cacheStorage: NewThreadSafeStore(indexers, Indices{}),
-		keyFunc:      keyFunc,
+func WithStoreMetrics(identifier InformerNameAndResource, metrics InformerMetricsProvider) StoreOption {
+	return func(c *cache) {
+		c.identifier = identifier
+		c.metrics = metrics
 	}
+}
+
+// NewStore returns a Store implemented simply with a map and a lock.
+func NewStore(keyFunc KeyFunc, opts ...StoreOption) Store {
+	c := &cache{
+		keyFunc: keyFunc,
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	threadSafeOpts := []ThreadSafeStoreOption{}
+	if c.metrics != nil {
+		threadSafeOpts = append(threadSafeOpts, WithThreadSafeStoreMetrics(c.identifier, c.metrics))
+	}
+	c.cacheStorage = NewThreadSafeStore(Indexers{}, Indices{}, threadSafeOpts...)
+	return c
+}
+
+// NewIndexer returns an Indexer implemented simply with a map and a lock.
+func NewIndexer(keyFunc KeyFunc, indexers Indexers, opts ...StoreOption) Indexer {
+	c := &cache{
+		keyFunc: keyFunc,
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	threadSafeOpts := []ThreadSafeStoreOption{}
+	if c.metrics != nil {
+		threadSafeOpts = append(threadSafeOpts, WithThreadSafeStoreMetrics(c.identifier, c.metrics))
+	}
+	c.cacheStorage = NewThreadSafeStore(indexers, Indices{}, threadSafeOpts...)
+	return c
 }

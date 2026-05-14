@@ -9,8 +9,6 @@ import (
 	"reflect"
 
 	"google.golang.org/protobuf/proto"
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/runtime/protoiface"
 )
@@ -106,182 +104,6 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 		}
 	}
 	if mi.unknownOffset.IsValid() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		su := mi.getUnknownBytes(src)
-		if su != nil && len(*su) > 0 {
-			du := mi.mutableUnknownBytes(dst)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
-=======
-		su := mi.getUnknownBytes(src)
-		if su != nil && len(*su) > 0 {
-			du := mi.mutableUnknownBytes(dst)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
-=======
-		su := mi.getUnknownBytes(src)
-		if su != nil && len(*su) > 0 {
-			du := mi.mutableUnknownBytes(dst)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
-=======
-		su := mi.getUnknownBytes(src)
-		if su != nil && len(*su) > 0 {
-			du := mi.mutableUnknownBytes(dst)
->>>>>>> 4d7e5ad26 (update vendored files)
-			*du = append(*du, *su...)
-		}
-	}
-}
-
-func mergeScalarValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-	return src
-}
-
-func mergeBytesValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-	return protoreflect.ValueOfBytes(append(emptyBuf[:], src.Bytes()...))
-}
-
-func mergeListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-	dstl := dst.List()
-	srcl := src.List()
-	for i, llen := 0, srcl.Len(); i < llen; i++ {
-		dstl.Append(srcl.Get(i))
-	}
-	return dst
-}
-
-func mergeBytesListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-	dstl := dst.List()
-	srcl := src.List()
-	for i, llen := 0, srcl.Len(); i < llen; i++ {
-		sb := srcl.Get(i).Bytes()
-		db := append(emptyBuf[:], sb...)
-		dstl.Append(protoreflect.ValueOfBytes(db))
-	}
-	return dst
-}
-
-func mergeMessageListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-	dstl := dst.List()
-	srcl := src.List()
-	for i, llen := 0, srcl.Len(); i < llen; i++ {
-		sm := srcl.Get(i).Message()
-		dm := proto.Clone(sm.Interface()).ProtoReflect()
-		dstl.Append(protoreflect.ValueOfMessage(dm))
-	}
-	return dst
-}
-
-func mergeMessageValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	pref "google.golang.org/protobuf/reflect/protoreflect"
-	piface "google.golang.org/protobuf/runtime/protoiface"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	pref "google.golang.org/protobuf/reflect/protoreflect"
-	piface "google.golang.org/protobuf/runtime/protoiface"
-=======
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/runtime/protoiface"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-)
-
-type mergeOptions struct{}
-
-func (o mergeOptions) Merge(dst, src proto.Message) {
-	proto.Merge(dst, src)
-}
-
-// merge is protoreflect.Methods.Merge.
-func (mi *MessageInfo) merge(in protoiface.MergeInput) protoiface.MergeOutput {
-	dp, ok := mi.getPointer(in.Destination)
-	if !ok {
-		return protoiface.MergeOutput{}
-	}
-	sp, ok := mi.getPointer(in.Source)
-	if !ok {
-		return protoiface.MergeOutput{}
-	}
-	mi.mergePointer(dp, sp, mergeOptions{})
-	return protoiface.MergeOutput{Flags: protoiface.MergeComplete}
-}
-
-func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
-	mi.init()
-	if dst.IsNil() {
-		panic(fmt.Sprintf("invalid value: merging into nil message"))
-	}
-	if src.IsNil() {
-		return
-	}
-	for _, f := range mi.orderedCoderFields {
-		if f.funcs.merge == nil {
-			continue
-		}
-		sfptr := src.Apply(f.offset)
-		if f.isPointer && sfptr.Elem().IsNil() {
-			continue
-		}
-		f.funcs.merge(dst.Apply(f.offset), sfptr, f, opts)
-	}
-	if mi.extensionOffset.IsValid() {
-		sext := src.Apply(mi.extensionOffset).Extensions()
-		dext := dst.Apply(mi.extensionOffset).Extensions()
-		if *dext == nil {
-			*dext = make(map[int32]ExtensionField)
-		}
-		for num, sx := range *sext {
-			xt := sx.Type()
-			xi := getExtensionFieldInfo(xt)
-			if xi.funcs.merge == nil {
-				continue
-			}
-			dx := (*dext)[num]
-			var dv protoreflect.Value
-			if dx.Type() == sx.Type() {
-				dv = dx.Value()
-			}
-			if !dv.IsValid() && xi.unmarshalNeedsValue {
-				dv = xt.New()
-			}
-			dv = xi.funcs.merge(dv, sx.Value(), opts)
-			dx.Set(sx.Type(), dv)
-			(*dext)[num] = dx
-		}
-	}
-	if mi.unknownOffset.IsValid() {
 		su := mi.getUnknownBytes(src)
 		if su != nil && len(*su) > 0 {
 			du := mi.mutableUnknownBytes(dst)
@@ -329,14 +151,7 @@ func mergeMessageListValue(dst, src protoreflect.Value, opts mergeOptions) proto
 	return dst
 }
 
-<<<<<<< HEAD
-func mergeMessageValue(dst, src pref.Value, opts mergeOptions) pref.Value {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func mergeMessageValue(dst, src pref.Value, opts mergeOptions) pref.Value {
-=======
 func mergeMessageValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	opts.Merge(dst.Message().Interface(), src.Message().Interface())
 	return dst
 }

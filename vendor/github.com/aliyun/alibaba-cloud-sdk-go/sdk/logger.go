@@ -2,10 +2,6 @@ package sdk
 
 import (
 	"encoding/json"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"io"
 	"log"
 	"os"
@@ -13,48 +9,9 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-	"io"
-	"log"
-	"os"
-	"strings"
-	"time"
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"io"
-	"log"
-	"os"
-	"strings"
-	"time"
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 var logChannel string
-var defaultChannel = "AlibabaCloud"
 
 type Logger struct {
 	*log.Logger
@@ -152,7 +109,7 @@ func (client *Client) printLog(fieldMap map[string]string, err error) {
 			logMsg = strings.Replace(logMsg, key, value, -1)
 		}
 		client.logger.lastLogMsg = logMsg
-		if client.logger.isOpen == true {
+		if client.logger.isOpen {
 			client.logger.Output(2, logMsg)
 		}
 	}

@@ -17,9 +17,10 @@ package pvtz
 
 // VpcRequestTop is a nested struct in pvtz response
 type VpcRequestTop struct {
-	RegionId     string `json:"RegionId" xml:"RegionId"`
 	VpcId        string `json:"VpcId" xml:"VpcId"`
+	VpcType      string `json:"VpcType" xml:"VpcType"`
+	RegionName   string `json:"RegionName" xml:"RegionName"`
 	TunnelId     string `json:"TunnelId" xml:"TunnelId"`
 	RequestCount int64  `json:"RequestCount" xml:"RequestCount"`
-	RegionName   string `json:"RegionName" xml:"RegionName"`
+	RegionId     string `json:"RegionId" xml:"RegionId"`
 }

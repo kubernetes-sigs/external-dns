@@ -26,7 +26,5 @@ _testmain.go
 *.test
 *.out
 *.txt
-/**/*.DS_Store
 cover.html
 README.html
-.idea

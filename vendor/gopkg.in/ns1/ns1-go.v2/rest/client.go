@@ -1,11 +1,11 @@
 package rest
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	clientVersion = "2.10.0"
+	clientVersion = "2.17.2"
 
-	defaultEndpoint               = "https://api.nsone.net/v1/"
+	defaultBase                   = "https://api.nsone.net"
+	defaultEndpoint               = defaultBase + "/v1/"
 	defaultShouldFollowPagination = true
 	defaultUserAgent              = "go-ns1/" + clientVersion
 
@@ -55,43 +56,40 @@ type Client struct {
 	// Whether the client should handle paginated responses automatically.
 	FollowPagination bool
 
-	// Enables permissions compatibility with the DDI API.
-	DDI bool
-
 	// From the excellent github-go client.
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for communicating with different components of the NS1 API.
-	APIKeys           *APIKeysService
-	DataFeeds         *DataFeedsService
-	DataSources       *DataSourcesService
-	Jobs              *JobsService
-	MonitorRegions    *MonitorRegionsService
-	PulsarJobs        *PulsarJobsService
-	Notifications     *NotificationsService
-	Records           *RecordsService
-	Applications      *ApplicationsService
-	RecordSearch      *RecordSearchService
-	ZoneSearch        *ZoneSearchService
-	Settings          *SettingsService
-	Stats             *StatsService
-	Teams             *TeamsService
-	Users             *UsersService
-	Warnings          *WarningsService
-	Zones             *ZonesService
-	Versions          *VersionsService
-	DNSSEC            *DNSSECService
-	IPAM              *IPAMService
-	ScopeGroup        *ScopeGroupService
-	Scope             *ScopeService
-	Reservation       *ReservationService
-	OptionDef         *OptionDefService
-	TSIG              *TsigService
-	View              *DNSViewService
-	Network           *NetworkService
-	GlobalIPWhitelist *GlobalIPWhitelistService
-	Datasets          *DatasetsService
-	Activity          *ActivityService
+	APIKeys              *APIKeysService
+	DataFeeds            *DataFeedsService
+	DataSources          *DataSourcesService
+	Jobs                 *JobsService
+	MonitorRegions       *MonitorRegionsService
+	PulsarJobs           *PulsarJobsService
+	PulsarDecisions      *PulsarDecisionsService
+	Notifications        *NotificationsService
+	Records              *RecordsService
+	Applications         *ApplicationsService
+	RecordSearch         *RecordSearchService
+	ZoneSearch           *ZoneSearchService
+	Settings             *SettingsService
+	Stats                *StatsService
+	Teams                *TeamsService
+	Users                *UsersService
+	Warnings             *WarningsService
+	Zones                *ZonesService
+	Versions             *VersionsService
+	DNSSEC               *DNSSECService
+	TSIG                 *TsigService
+	View                 *DNSViewService
+	Network              *NetworkService
+	GlobalIPWhitelist    *GlobalIPWhitelistService
+	Datasets             *DatasetsService
+	Activity             *ActivityService
+	Redirects            *RedirectService
+	RedirectCertificates *RedirectCertificateService
+	Alerts               *AlertsService
+	BillingUsage         *BillingUsageService
 }
 
 // NewClient constructs and returns a reference to an instantiated Client.
@@ -117,6 +115,7 @@ func NewClient(httpClient Doer, options ...func(*Client)) *Client {
 	c.Jobs = (*JobsService)(&c.common)
 	c.MonitorRegions = (*MonitorRegionsService)(&c.common)
 	c.PulsarJobs = (*PulsarJobsService)(&c.common)
+	c.PulsarDecisions = (*PulsarDecisionsService)(&c.common)
 	c.Notifications = (*NotificationsService)(&c.common)
 	c.Records = (*RecordsService)(&c.common)
 	c.Applications = (*ApplicationsService)(&c.common)
@@ -130,17 +129,16 @@ func NewClient(httpClient Doer, options ...func(*Client)) *Client {
 	c.Zones = (*ZonesService)(&c.common)
 	c.Versions = (*VersionsService)(&c.common)
 	c.DNSSEC = (*DNSSECService)(&c.common)
-	c.IPAM = (*IPAMService)(&c.common)
-	c.ScopeGroup = (*ScopeGroupService)(&c.common)
-	c.Scope = (*ScopeService)(&c.common)
-	c.Reservation = (*ReservationService)(&c.common)
-	c.OptionDef = (*OptionDefService)(&c.common)
 	c.TSIG = (*TsigService)(&c.common)
 	c.View = (*DNSViewService)(&c.common)
 	c.Network = (*NetworkService)(&c.common)
 	c.GlobalIPWhitelist = (*GlobalIPWhitelistService)(&c.common)
 	c.Datasets = (*DatasetsService)(&c.common)
 	c.Activity = (*ActivityService)(&c.common)
+	c.Redirects = (*RedirectService)(&c.common)
+	c.RedirectCertificates = (*RedirectCertificateService)(&c.common)
+	c.Alerts = (*AlertsService)(&c.common)
+	c.BillingUsage = (*BillingUsageService)(&c.common)
 
 	for _, option := range options {
 		option(c)
@@ -182,12 +180,7 @@ func SetFollowPagination(shouldFollow bool) func(*Client) {
 	return func(c *Client) { c.FollowPagination = shouldFollow }
 }
 
-// SetDDIAPI configures the client to use permissions compatible with the DDI API.
-func SetDDIAPI() func(*Client) {
-	return func(c *Client) { c.DDI = true }
-}
-
-// Param is a container struct which holds a `Key` and `Value` field corresponding to the values of a URL parameter. 
+// Param is a container struct which holds a `Key` and `Value` field corresponding to the values of a URL parameter.
 type Param struct {
 	Key, Value string
 }
@@ -207,7 +200,11 @@ func (c Client) Do(req *http.Request, v interface{}, params ...Param) (*http.Res
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	// Check if caller wants a bufio.Reader - if so, don't close the body as they need to read from it incrementally
+	if _, ok := v.(**bufio.Reader); !ok {
+		defer resp.Body.Close()
+	}
 
 	rl := parseRate(resp)
 	c.RateLimitFunc(rl)
@@ -218,9 +215,23 @@ func (c Client) Do(req *http.Request, v interface{}, params ...Param) (*http.Res
 	}
 
 	if v != nil {
-		// For non-JSON responses, the desired destination might be a bytes buffer
+		// Support bufio.Reader for chunking, caller must close resp.Body when done reading
+		if reader, ok := v.(**bufio.Reader); ok {
+			*reader = bufio.NewReader(resp.Body)
+			return resp, nil
+		}
+
+		// For non-JSON responses, the desired destination might be a bytes buffer or io.Writer
 		if buf, ok := v.(*bytes.Buffer); ok {
 			if _, err := io.Copy(buf, resp.Body); err != nil {
+				return nil, err
+			}
+			return resp, err
+		}
+
+		// Support any io.Writer for streaming responses
+		if w, ok := v.(io.Writer); ok {
+			if _, err := io.Copy(w, resp.Body); err != nil {
 				return nil, err
 			}
 			return resp, err
@@ -316,7 +327,7 @@ func CheckResponse(resp *http.Response) error {
 
 	restErr := &Error{Resp: resp}
 
-	msgBody, err := ioutil.ReadAll(resp.Body)
+	msgBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

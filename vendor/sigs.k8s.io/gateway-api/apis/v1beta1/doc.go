@@ -16,12 +16,8 @@ limitations under the License.
 
 // Package v1beta1 contains API Schema definitions for the
 // gateway.networking.k8s.io API group.
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 //
 // +k8s:openapi-gen=true
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // +kubebuilder:object:generate=true
 // +groupName=gateway.networking.k8s.io
 package v1beta1

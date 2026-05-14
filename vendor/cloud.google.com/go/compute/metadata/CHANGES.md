@@ -1,14 +1,5 @@
 # Changes
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
-=======
 ## [0.9.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.8.4...compute/metadata/v0.9.0) (2025-09-24)
 
 
@@ -79,7 +70,6 @@
 
 * **compute/metadata:** Check error chain for retryable error ([#10840](https://github.com/googleapis/google-cloud-go/issues/10840)) ([2bdedef](https://github.com/googleapis/google-cloud-go/commit/2bdedeff621b223d63cebc4355fcf83bc68412cd))
 
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0)
 ## [0.5.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.4.0...compute/metadata/v0.5.0) (2024-07-10)
 
 
@@ -99,7 +89,6 @@
 
 * **compute/metadata:** Update OnGCE description ([#10408](https://github.com/googleapis/google-cloud-go/issues/10408)) ([6a46dca](https://github.com/googleapis/google-cloud-go/commit/6a46dca4eae4f88ec6f88822e01e5bf8aeca787f))
 
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 ## [0.3.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.2.3...compute/metadata/v0.3.0) (2024-04-15)
 
 
@@ -107,7 +96,6 @@
 
 * **compute/metadata:** Add context aware functions  ([#9733](https://github.com/googleapis/google-cloud-go/issues/9733)) ([e4eb5b4](https://github.com/googleapis/google-cloud-go/commit/e4eb5b46ee2aec9d2fc18300bfd66015e25a0510))
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 ## [0.2.3](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.2.2...compute/metadata/v0.2.3) (2022-12-15)
 
 

@@ -17,109 +17,24 @@ package pvtz
 
 // Zone is a nested struct in pvtz response
 type Zone struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string       `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64        `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int          `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string       `json:"CreateTime" xml:"CreateTime"`
-	UpdateTimestamp int64        `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	ZoneId          string       `json:"ZoneId" xml:"ZoneId"`
-	ResourceGroupId string       `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneTag         string       `json:"ZoneTag" xml:"ZoneTag"`
-	ZoneName        string       `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool         `json:"IsPtr" xml:"IsPtr"`
-	ZoneType        string       `json:"ZoneType" xml:"ZoneType"`
-	ResourceTags    ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
-	Vpcs            Vpcs         `json:"Vpcs" xml:"Vpcs"`
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
-	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
-	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
-	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
-	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
-=======
-	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string       `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64        `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int          `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string       `json:"CreateTime" xml:"CreateTime"`
-	UpdateTimestamp int64        `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	ZoneId          string       `json:"ZoneId" xml:"ZoneId"`
-	ResourceGroupId string       `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneTag         string       `json:"ZoneTag" xml:"ZoneTag"`
-	ZoneName        string       `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool         `json:"IsPtr" xml:"IsPtr"`
-	ZoneType        string       `json:"ZoneType" xml:"ZoneType"`
-	ResourceTags    ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
-	Vpcs            Vpcs         `json:"Vpcs" xml:"Vpcs"`
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
-	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
-	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
-	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
-	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
-=======
-	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
-	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
-	Remark          string       `json:"Remark" xml:"Remark"`
-	CreateTimestamp int64        `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	RecordCount     int          `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string       `json:"CreateTime" xml:"CreateTime"`
-	UpdateTimestamp int64        `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	ZoneId          string       `json:"ZoneId" xml:"ZoneId"`
-	ResourceGroupId string       `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	ZoneTag         string       `json:"ZoneTag" xml:"ZoneTag"`
-	ZoneName        string       `json:"ZoneName" xml:"ZoneName"`
-	IsPtr           bool         `json:"IsPtr" xml:"IsPtr"`
-	ZoneType        string       `json:"ZoneType" xml:"ZoneType"`
-	ResourceTags    ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
-	Vpcs            Vpcs         `json:"Vpcs" xml:"Vpcs"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	UpdateTime       string       `json:"UpdateTime" xml:"UpdateTime"`
+	ProxyPattern     string       `json:"ProxyPattern" xml:"ProxyPattern"`
+	Remark           string       `json:"Remark" xml:"Remark"`
+	CreateTimestamp  int64        `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	DnsGroup         string       `json:"DnsGroup" xml:"DnsGroup"`
+	CreatorType      string       `json:"CreatorType" xml:"CreatorType"`
+	CreateTime       string       `json:"CreateTime" xml:"CreateTime"`
+	RecordCount      int          `json:"RecordCount" xml:"RecordCount"`
+	CreatorSubType   string       `json:"CreatorSubType" xml:"CreatorSubType"`
+	UpdateTimestamp  int64        `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	DnsGroupChanging bool         `json:"DnsGroupChanging" xml:"DnsGroupChanging"`
+	ResourceGroupId  string       `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	ZoneId           string       `json:"ZoneId" xml:"ZoneId"`
+	ZoneTag          string       `json:"ZoneTag" xml:"ZoneTag"`
+	Creator          string       `json:"Creator" xml:"Creator"`
+	ZoneName         string       `json:"ZoneName" xml:"ZoneName"`
+	IsPtr            bool         `json:"IsPtr" xml:"IsPtr"`
+	ZoneType         string       `json:"ZoneType" xml:"ZoneType"`
+	Vpcs             Vpcs         `json:"Vpcs" xml:"Vpcs"`
+	ResourceTags     ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
 }

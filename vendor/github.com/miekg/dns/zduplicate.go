@@ -886,6 +886,15 @@ func (r1 *NULL) isDuplicate(_r2 RR) bool {
 	return true
 }
 
+func (r1 *NXNAME) isDuplicate(_r2 RR) bool {
+	r2, ok := _r2.(*NXNAME)
+	if !ok {
+		return false
+	}
+	_ = r2
+	return true
+}
+
 func (r1 *NXT) isDuplicate(_r2 RR) bool {
 	r2, ok := _r2.(*NXT)
 	if !ok {
@@ -944,6 +953,23 @@ func (r1 *PX) isDuplicate(_r2 RR) bool {
 	}
 	if !isDuplicateName(r1.Mapx400, r2.Mapx400) {
 		return false
+	}
+	return true
+}
+
+func (r1 *RESINFO) isDuplicate(_r2 RR) bool {
+	r2, ok := _r2.(*RESINFO)
+	if !ok {
+		return false
+	}
+	_ = r2
+	if len(r1.Txt) != len(r2.Txt) {
+		return false
+	}
+	for i := 0; i < len(r1.Txt); i++ {
+		if r1.Txt[i] != r2.Txt[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -1410,10 +1436,6 @@ func (r1 *X25) isDuplicate(_r2 RR) bool {
 	}
 	return true
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
 	r2, ok := _r2.(*ZONEMD)
@@ -1435,57 +1457,3 @@ func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
 	}
 	return true
 }
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
-	r2, ok := _r2.(*ZONEMD)
-	if !ok {
-		return false
-	}
-	_ = r2
-	if r1.Serial != r2.Serial {
-		return false
-	}
-	if r1.Scheme != r2.Scheme {
-		return false
-	}
-	if r1.Hash != r2.Hash {
-		return false
-	}
-	if r1.Digest != r2.Digest {
-		return false
-	}
-	return true
-}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
-	r2, ok := _r2.(*ZONEMD)
-	if !ok {
-		return false
-	}
-	_ = r2
-	if r1.Serial != r2.Serial {
-		return false
-	}
-	if r1.Scheme != r2.Scheme {
-		return false
-	}
-	if r1.Hash != r2.Hash {
-		return false
-	}
-	if r1.Digest != r2.Digest {
-		return false
-	}
-	return true
-}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

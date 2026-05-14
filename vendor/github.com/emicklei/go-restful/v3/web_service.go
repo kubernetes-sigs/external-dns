@@ -165,9 +165,6 @@ func FormParameter(name, description string) *Parameter {
 	return p
 }
 
-<<<<<<< HEAD
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // MultiPartFormParameter creates a new Parameter of kind Form (using multipart/form-data) for documentation purposes.
 // It is initialized as required with string as its DataType.
 func (w *WebService) MultiPartFormParameter(name, description string) *Parameter {
@@ -180,7 +177,6 @@ func MultiPartFormParameter(name, description string) *Parameter {
 	return p
 }
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Route creates a new Route using the RouteBuilder and add to the ordered list of Routes.
 func (w *WebService) Route(builder *RouteBuilder) *WebService {
 	w.routesLock.Lock()

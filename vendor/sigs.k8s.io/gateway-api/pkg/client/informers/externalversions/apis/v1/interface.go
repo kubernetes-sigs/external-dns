@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// BackendTLSPolicies returns a BackendTLSPolicyInformer.
+	BackendTLSPolicies() BackendTLSPolicyInformer
 	// GRPCRoutes returns a GRPCRouteInformer.
 	GRPCRoutes() GRPCRouteInformer
 	// Gateways returns a GatewayInformer.
@@ -32,6 +34,12 @@ type Interface interface {
 	GatewayClasses() GatewayClassInformer
 	// HTTPRoutes returns a HTTPRouteInformer.
 	HTTPRoutes() HTTPRouteInformer
+	// ListenerSets returns a ListenerSetInformer.
+	ListenerSets() ListenerSetInformer
+	// ReferenceGrants returns a ReferenceGrantInformer.
+	ReferenceGrants() ReferenceGrantInformer
+	// TLSRoutes returns a TLSRouteInformer.
+	TLSRoutes() TLSRouteInformer
 }
 
 type version struct {
@@ -43,6 +51,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// BackendTLSPolicies returns a BackendTLSPolicyInformer.
+func (v *version) BackendTLSPolicies() BackendTLSPolicyInformer {
+	return &backendTLSPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // GRPCRoutes returns a GRPCRouteInformer.
@@ -63,4 +76,19 @@ func (v *version) GatewayClasses() GatewayClassInformer {
 // HTTPRoutes returns a HTTPRouteInformer.
 func (v *version) HTTPRoutes() HTTPRouteInformer {
 	return &hTTPRouteInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ListenerSets returns a ListenerSetInformer.
+func (v *version) ListenerSets() ListenerSetInformer {
+	return &listenerSetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ReferenceGrants returns a ReferenceGrantInformer.
+func (v *version) ReferenceGrants() ReferenceGrantInformer {
+	return &referenceGrantInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// TLSRoutes returns a TLSRouteInformer.
+func (v *version) TLSRoutes() TLSRouteInformer {
+	return &tLSRouteInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

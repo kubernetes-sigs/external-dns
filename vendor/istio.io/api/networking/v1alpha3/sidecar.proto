@@ -14,11 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-import "networking/v1alpha3/destination_rule.proto";
-import "networking/v1alpha3/gateway.proto";
-import "networking/v1alpha3/virtual_service.proto";
-
 // $schema: istio.networking.v1alpha3.Sidecar
 // $title: Sidecar
 // $description: Configuration affecting network reachability of a sidecar.
@@ -32,9 +27,15 @@ import "networking/v1alpha3/virtual_service.proto";
 // well as accept traffic on all the ports associated with the
 // workload. The `Sidecar` configuration provides a way to fine tune the set of
 // ports, protocols that the proxy will accept when forwarding traffic to
-// and from the workload. In addition, it is possible to restrict the set
-// of services that the proxy can reach when forwarding outbound traffic
-// from workload instances.
+// and from the workload.
+//
+// One the common usages of `Sidecar` is to limit the set of configuration for outbound traffic.
+// This configuration scoping, among [other options](/docs/ops/configuration/mesh/configuration-scoping/), is useful to prune
+// out unneeded configuration, to improve scalability of the mesh.
+// A common misunderstanding is that restricting the configuration amounts to *blocking* the traffic.
+// If requests are sent to destinations not included in the scoping, the traffic will be treated as
+// [unmatched traffic](/docs/ops/configuration/traffic-management/traffic-routing/#unmatched-traffic), which is often still allowed.
+// The sidecar is not able to enforce an outbound traffic restriction (see [Egress Gateways](/docs/tasks/traffic-management/egress/egress-gateway/) for how to achieve this).
 //
 // Services and configuration in a mesh are organized into one or more
 // namespaces (e.g., a Kubernetes namespace or a CF org/space). A `Sidecar`
@@ -65,12 +66,12 @@ import "networking/v1alpha3/virtual_service.proto";
 //
 // The example below declares a global default `Sidecar` configuration
 // in the root namespace called `istio-config`, that configures
-// sidecars in all namespaces to allow egress traffic only to other
+// sidecars in all namespaces to configure egress traffic only to other
 // workloads in the same namespace as well as to services in the
 // `istio-system` namespace.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: default
@@ -84,12 +85,12 @@ import "networking/v1alpha3/virtual_service.proto";
 //
 // The example below declares a `Sidecar` configuration in the
 // `prod-us1` namespace that overrides the global default defined
-// above, and configures the sidecars in the namespace to allow egress
+// above, and configures the sidecars in the namespace to configure egress
 // traffic to public services in the `prod-us1`, `prod-apis`, and the
 // `istio-system` namespaces.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: default
@@ -112,7 +113,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // 9080 for services in the `prod-us1` namespace.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: ratings
@@ -154,7 +155,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // MySQL service at `mysql.foo.com:3306`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: no-ip-tables
@@ -184,7 +185,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // And the associated service entry for routing to `mysql.foo.com:3306`
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-mysql
@@ -214,7 +215,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // implying that IP tables based traffic capture is active.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: partial-ip-tables
@@ -255,7 +256,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // This feature is currently experimental.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: ratings
@@ -290,7 +291,7 @@ import "networking/v1alpha3/virtual_service.proto";
 //   selector:
 //     app: ratings
 // ---
-// apiVersion: security.istio.io/v1beta1
+// apiVersion: security.istio.io/v1
 // kind: PeerAuthentication
 // metadata:
 //   name: ratings-peer-auth
@@ -315,7 +316,7 @@ import "networking/v1alpha3/virtual_service.proto";
 // from the settings pushed to all clients.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Sidecar
 // metadata:
 //   name: connection-pool-settings
@@ -346,6 +347,11 @@ import "networking/v1alpha3/virtual_service.proto";
 // ```
 package istio.networking.v1alpha3;
 
+import "google/api/field_behavior.proto";
+import "networking/v1alpha3/destination_rule.proto";
+import "networking/v1alpha3/gateway.proto";
+import "networking/v1alpha3/virtual_service.proto";
+
 option go_package = "istio.io/api/networking/v1alpha3";
 
 // `Sidecar` describes the configuration of the sidecar proxy that mediates
@@ -354,7 +360,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //
 // <!-- crd generation tags
 // +cue-gen:Sidecar:groupName:networking.istio.io
-// +cue-gen:Sidecar:version:v1alpha3
+// +cue-gen:Sidecar:versions:v1,v1beta1,v1alpha3
 // +cue-gen:Sidecar:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Sidecar:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:Sidecar:subresource:status
@@ -368,9 +374,6 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
 // -->
 message Sidecar {
   // Criteria used to select the specific set of pods/VMs on which this
@@ -415,16 +418,13 @@ message Sidecar {
   // - top level `TrafficPolicy.ConnectionPool` from the `DestinationRule`
   // - default connection pool settings (essentially unlimited)
   //
-  // In every case, the connection pool settings are overriden, not merged.
+  // In every case, the connection pool settings are overridden, not merged.
   ConnectionPoolSettings inbound_connection_pool = 7;
 
-  // Configuration for the outbound traffic policy.  If your
-  // application uses one or more external services that are not known
-  // apriori, setting the policy to `ALLOW_ANY` will cause the
-  // sidecars to route any unknown traffic originating from the
-  // application to its requested destination. If not specified,
-  // inherits the system detected defaults from the namespace-wide or
-  // the global default Sidecar.
+  // Set the default behavior of the sidecar for handling outbound
+  // traffic from the application.
+  //
+  // Default mode is `ALLOW_ANY`, which means outbound traffic to unknown destinations will be allowed.
   OutboundTrafficPolicy outbound_traffic_policy = 4;
 
   reserved "localhost";
@@ -552,30 +552,32 @@ message WorkloadSelector {
   // on which the configuration should be applied. The scope of
   // label search is restricted to the configuration namespace in which the
   // the resource is present.
+  // +kubebuilder:validation:MaxProperties=256
+  // +protoc-gen-crd:map-value-validation:MaxLength=63
+  // +protoc-gen-crd:map-value-validation:XValidation:message="wildcard is not supported in selector",rule="!self.contains('*')"
   map<string, string> labels = 1;
 
   // $hide_from_docs
   // other forms of identification supplied by the proxy
-  // when connecting to Pilot, such as X509 fields, tenant IDs, JWT,
+  // when connecting to istiod, such as X509 fields, tenant IDs, JWT,
   // etc. This has nothing to do with the request level authN etc.
 }
 
 // `OutboundTrafficPolicy` sets the default behavior of the sidecar for
-// handling outbound traffic from the application.
-// If your application uses one or more external
-// services that are not known apriori, setting the policy to `ALLOW_ANY`
-// will cause the sidecars to route any unknown traffic originating from
-// the application to its requested destination.  Users are strongly
-// encouraged to use `ServiceEntry` configurations to explicitly declare any external
-// dependencies, instead of using `ALLOW_ANY`, so that traffic to these
-// services can be monitored.
+// handling unknown outbound traffic from the application.
 message OutboundTrafficPolicy {
   enum Mode {
-    // Outbound traffic will be restricted to services defined in the
-    // service registry as well as those defined through `ServiceEntry` configurations.
+    // In `REGISTRY_ONLY` mode, unknown outbound traffic will be dropped.
+    // Traffic destinations must be explicitly declared into the service registry through `ServiceEntry` configurations.
+    //
+    // Note: Istio [does not offer an outbound traffic security policy](https://istio.io/latest/docs/ops/best-practices/security/#understand-traffic-capture-limitations).
+    // This option does not act as one, or as any form of an outbound firewall.
+    // Instead, this option exists primarily to offer users a way to detect missing `ServiceEntry` configurations by explicitly failing.
     REGISTRY_ONLY = 0;
-    // Outbound traffic to unknown destinations will be allowed, in case
-    // there are no services or `ServiceEntry` configurations for the destination port.
+    // In `ALLOW_ANY` mode, any traffic to unknown destinations will be allowed.
+    // Unknown destination traffic will have limited functionality, however, such as reduced observability.
+    // This mode allows users that do not have all possible egress destinations registered through `ServiceEntry` configurations to still connect
+    // to arbitrary destinations.
     ALLOW_ANY = 1;
   }
   Mode mode = 1;
@@ -596,7 +598,6 @@ message OutboundTrafficPolicy {
   // $hide_from_docs
   Destination egress_proxy = 2;
 }
-
 
 // `CaptureMode` describes how traffic to a listener is expected to be
 // captured. Applicable only when the listener is bound to an IP.
@@ -621,7 +622,7 @@ message SidecarPort {
   uint32 number = 1;
 
   // The protocol exposed on the port.
-  // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
+  // MUST be one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
   // TLS can be either used to terminate non-HTTP based connections on a specific port
   // or to route traffic based on SNI header to the destination without terminating the TLS connection.
   string protocol = 2;
@@ -632,5 +633,5 @@ message SidecarPort {
   // Has no effect, only for backwards compatibility
   // received. Applicable only when used with ServiceEntries.
   // $hide_from_docs
-  uint32 target_port = 4 [deprecated=true];
+  uint32 target_port = 4 [deprecated = true];
 }

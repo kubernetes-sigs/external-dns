@@ -92,87 +92,6 @@ type ClientStream interface {
 	// calling RecvMsg on the same stream at the same time, but it is not safe
 	// to call SendMsg on the same stream in different goroutines. It is also
 	// not safe to call CloseSend concurrently with SendMsg.
-<<<<<<< HEAD
-	SendMsg(m interface{}) error
-	// RecvMsg blocks until it receives a message into m or the stream is
-	// done. It returns io.EOF when the stream completes successfully. On
-	// any other error, the stream is aborted and the error contains the RPC
-	// status.
-	//
-	// It is safe to have a goroutine calling SendMsg and another goroutine
-	// calling RecvMsg on the same stream at the same time, but it is not
-	// safe to call RecvMsg on the same stream in different goroutines.
-	RecvMsg(m interface{}) error
-}
-
-// ClientInterceptor is an interceptor for gRPC client streams.
-type ClientInterceptor interface {
-	// NewStream produces a ClientStream for an RPC which may optionally use
-	// the provided function to produce a stream for delegation.  Note:
-	// RPCInfo.Context should not be used (will be nil).
-	//
-	// done is invoked when the RPC is finished using its connection, or could
-	// not be assigned a connection.  RPC operations may still occur on
-	// ClientStream after done is called, since the interceptor is invoked by
-	// application-layer operations.  done must never be nil when called.
-	NewStream(ctx context.Context, ri RPCInfo, done func(), newStream func(ctx context.Context, done func()) (ClientStream, error)) (ClientStream, error)
-}
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-// ServerInterceptor is unimplementable; do not use.
-type ServerInterceptor interface {
-	notDefined()
-}
-
-type csKeyType string
-
-const csKey = csKeyType("grpc.internal.resolver.configSelector")
-
-// SetConfigSelector sets the config selector in state and returns the new
-// state.
-func SetConfigSelector(state resolver.State, cs ConfigSelector) resolver.State {
-	state.Attributes = state.Attributes.WithValues(csKey, cs)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// ServerInterceptor is an interceptor for incoming RPC's on gRPC server side.
-type ServerInterceptor interface {
-	// AllowRPC checks if an incoming RPC is allowed to proceed based on
-	// information about connection RPC was received on, and HTTP Headers. This
-	// information will be piped into context.
-	AllowRPC(ctx context.Context) error // TODO: Make this a real interceptor for filters such as rate limiting.
-}
-
-type csKeyType string
-
-const csKey = csKeyType("grpc.internal.resolver.configSelector")
-
-// SetConfigSelector sets the config selector in state and returns the new
-// state.
-func SetConfigSelector(state resolver.State, cs ConfigSelector) resolver.State {
-	state.Attributes = state.Attributes.WithValue(csKey, cs)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// ServerInterceptor is an interceptor for incoming RPC's on gRPC server side.
-type ServerInterceptor interface {
-	// AllowRPC checks if an incoming RPC is allowed to proceed based on
-	// information about connection RPC was received on, and HTTP Headers. This
-	// information will be piped into context.
-	AllowRPC(ctx context.Context) error // TODO: Make this a real interceptor for filters such as rate limiting.
-}
-
-type csKeyType string
-
-const csKey = csKeyType("grpc.internal.resolver.configSelector")
-
-// SetConfigSelector sets the config selector in state and returns the new
-// state.
-func SetConfigSelector(state resolver.State, cs ConfigSelector) resolver.State {
-	state.Attributes = state.Attributes.WithValue(csKey, cs)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	SendMsg(m any) error
 	// RecvMsg blocks until it receives a message into m or the stream is
 	// done. It returns io.EOF when the stream completes successfully. On
@@ -214,7 +133,6 @@ const csKey = csKeyType("grpc.internal.resolver.configSelector")
 // state.
 func SetConfigSelector(state resolver.State, cs ConfigSelector) resolver.State {
 	state.Attributes = state.Attributes.WithValue(csKey, cs)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return state
 }
 

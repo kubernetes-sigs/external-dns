@@ -26,14 +26,6 @@ func Bool() bool {
 	return randSeed%2 == 1
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Intn returns a deterministically random integer between 0 and n-1, inclusive.
 func Intn(n int) int {
 	if n <= 0 {
@@ -42,62 +34,6 @@ func Intn(n int) int {
 	return int(randSeed % uint64(n))
 }
 
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-// Intn returns a deterministically random integer between 0 and n-1, inclusive.
-func Intn(n int) int {
-	if n <= 0 {
-		panic("must be positive")
-	}
-	return int(randSeed % uint64(n))
-}
-
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-// Intn returns a deterministically random integer between 0 and n-1, inclusive.
-func Intn(n int) int {
-	if n <= 0 {
-		panic("must be positive")
-	}
-	return int(randSeed % uint64(n))
-}
-
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// Intn returns a deterministically random integer between 0 and n-1, inclusive.
-func Intn(n int) int {
-	if n <= 0 {
-		panic("must be positive")
-	}
-	return int(randSeed % uint64(n))
-}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// Intn returns a deterministically random integer between 0 and n-1, inclusive.
-func Intn(n int) int {
-	if n <= 0 {
-		panic("must be positive")
-	}
-	return int(randSeed % uint64(n))
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // randSeed is a best-effort at an approximate hash of the Go binary.
 var randSeed = binaryHash()
 

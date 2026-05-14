@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Maxime Soulé
+// Copyright (c) 2020-2025, Maxime Soulé
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -14,7 +14,7 @@ import (
 
 var sliceType = reflect.TypeOf(Slice{})
 
-// Slice allows to flatten any slice, array or map.
+// Slice allows to flatten any slice, array, map or int range.
 type Slice struct {
 	Slice any
 }
@@ -40,7 +40,8 @@ func (f Slice) len() int {
 	fv := reflect.ValueOf(f.Slice)
 	l := 0
 
-	if fv.Kind() == reflect.Map {
+	switch fv.Kind() {
+	case reflect.Map:
 		if f.isFlat() {
 			return fv.Len() * 2
 		}
@@ -48,15 +49,21 @@ func (f Slice) len() int {
 			l += 1 + subLen(v)
 			return true
 		})
-		return l
-	}
 
-	fvLen := fv.Len()
-	if f.isFlat() {
-		return fvLen
-	}
-	for i := 0; i < fvLen; i++ {
-		l += subLen(fv.Index(i))
+	case reflect.Array, reflect.Slice:
+		fvLen := fv.Len()
+		if f.isFlat() {
+			return fvLen
+		}
+		for i := 0; i < fvLen; i++ {
+			l += subLen(fv.Index(i))
+		}
+
+	default: // reflect.Int
+		l = int(fv.Int())
+		if l <= 0 {
+			return 0
+		}
 	}
 	return l
 }
@@ -74,35 +81,41 @@ func subAppendValuesTo(sv []reflect.Value, v reflect.Value) []reflect.Value {
 func (f Slice) appendValuesTo(sv []reflect.Value) []reflect.Value {
 	fv := reflect.ValueOf(f.Slice)
 
-	if fv.Kind() == reflect.Map {
+	switch fv.Kind() {
+	case reflect.Map:
 		if f.isFlat() {
 			tdutil.MapEach(fv, func(k, v reflect.Value) bool {
 				sv = append(sv, k, v)
 				return true
 			})
-			return sv
+			break
 		}
-
 		tdutil.MapEach(fv, func(k, v reflect.Value) bool {
 			sv = append(sv, k)
 			sv = subAppendValuesTo(sv, v)
 			return true
 		})
-		return sv
-	}
 
-	fvLen := fv.Len()
-
-	if f.isFlat() {
-		for i := 0; i < fvLen; i++ {
-			sv = append(sv, fv.Index(i))
+	case reflect.Array, reflect.Slice:
+		fvLen := fv.Len()
+		if f.isFlat() {
+			for i := 0; i < fvLen; i++ {
+				sv = append(sv, fv.Index(i))
+			}
+			break
 		}
-		return sv
+		for i := 0; i < fvLen; i++ {
+			sv = subAppendValuesTo(sv, fv.Index(i))
+		}
+
+	default: // reflect.Int
+		if l := int(fv.Int()); l > 0 {
+			for i := 0; i < l; i++ {
+				sv = append(sv, reflect.ValueOf(i))
+			}
+		}
 	}
 
-	for i := 0; i < fvLen; i++ {
-		sv = subAppendValuesTo(sv, fv.Index(i))
-	}
 	return sv
 }
 
@@ -120,41 +133,48 @@ func subAppendTo(si []any, v reflect.Value) []any {
 func (f Slice) appendTo(si []any) []any {
 	fv := reflect.ValueOf(f.Slice)
 
-	if fv.Kind() == reflect.Map {
+	switch fv.Kind() {
+	case reflect.Map:
 		if f.isFlat() {
 			tdutil.MapEach(fv, func(k, v reflect.Value) bool {
 				si = append(si, k.Interface(), v.Interface())
 				return true
 			})
-			return si
+			break
 		}
-
 		tdutil.MapEach(fv, func(k, v reflect.Value) bool {
 			si = append(si, k.Interface())
 			si = subAppendTo(si, v)
 			return true
 		})
-		return si
-	}
 
-	fvLen := fv.Len()
-
-	if f.isFlat() {
-		for i := 0; i < fvLen; i++ {
-			si = append(si, fv.Index(i).Interface())
+	case reflect.Array, reflect.Slice:
+		fvLen := fv.Len()
+		if f.isFlat() {
+			for i := 0; i < fvLen; i++ {
+				si = append(si, fv.Index(i).Interface())
+			}
+			break
 		}
-		return si
+		for i := 0; i < fvLen; i++ {
+			si = subAppendTo(si, fv.Index(i))
+		}
+
+	default: // reflect.Int
+		if l := int(fv.Int()); l > 0 {
+			for i := 0; i < l; i++ {
+				si = append(si, i)
+			}
+		}
 	}
 
-	for i := 0; i < fvLen; i++ {
-		si = subAppendTo(si, fv.Index(i))
-	}
 	return si
 }
 
 // Len returns the number of items contained in items. Nested Slice
-// items are counted as if they are flattened. It returns true if at
-// least one [Slice] item is found, false otherwise.
+// items are counted as if they are flattened. It returns false if at
+// least one [Slice] item is found, true otherwise meaning the slice
+// is already flattened.
 func Len(items []any) (int, bool) {
 	l := len(items)
 	flattened := true

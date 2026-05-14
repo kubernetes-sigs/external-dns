@@ -2,8 +2,8 @@ package tsig
 
 import (
 	"crypto/hmac"
-	"crypto/md5"
-	"crypto/sha1"
+	"crypto/md5"  //nolint:gosec
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -23,6 +23,7 @@ func fromBase64(s []byte) (buf []byte, err error) {
 	buf = make([]byte, buflen)
 	n, err := base64.StdEncoding.Decode(buf, s)
 	buf = buf[:n]
+
 	return
 }
 
@@ -31,6 +32,7 @@ func fromBase64(s []byte) (buf []byte, err error) {
 // It returns the bytes for the TSIG MAC and any error that occurred.
 func (h HMAC) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
 	var f func() hash.Hash
+
 	switch dns.CanonicalName(t.Algorithm) {
 	case dns.HmacMD5:
 		f = md5.New
@@ -47,16 +49,20 @@ func (h HMAC) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
 	default:
 		return nil, dns.ErrKeyAlg
 	}
+
 	secret, ok := h[t.Hdr.Name]
 	if !ok {
 		return nil, dns.ErrSecret
 	}
+
 	rawsecret, err := fromBase64([]byte(secret))
 	if err != nil {
 		return nil, err
 	}
+
 	m := hmac.New(f, rawsecret)
 	m.Write(msg)
+
 	return m.Sum(nil), nil
 }
 
@@ -68,12 +74,15 @@ func (h HMAC) Verify(msg []byte, t *dns.TSIG) error {
 	if err != nil {
 		return err
 	}
+
 	mac, err := hex.DecodeString(t.MAC)
 	if err != nil {
 		return err
 	}
+
 	if !hmac.Equal(b, mac) {
 		return dns.ErrSig
 	}
+
 	return nil
 }

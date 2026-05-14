@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strconv"
+	"reflect"
 )
 
 // paginatedResponse represents a single response from a paginated
@@ -17,20 +17,18 @@ type paginatedResponse[T any] struct {
 	Data    []T `json:"data"`
 }
 
-// getPaginatedResults aggregates results from the given
-// paginated endpoint using the provided ListOptions.
+// handlePaginatedResults aggregates results from the given
+// paginated endpoint using the provided ListOptions and HTTP method.
 // nolint:funlen
-func getPaginatedResults[T any](
+func handlePaginatedResults[T any, O any](
 	ctx context.Context,
 	client *Client,
 	endpoint string,
 	opts *ListOptions,
+	method string,
+	options ...O,
 ) ([]T, error) {
-	var resultType paginatedResponse[T]
-
 	result := make([]T, 0)
-
-	req := client.R(ctx).SetResult(resultType)
 
 	if opts == nil {
 		opts = &ListOptions{PageOptions: &PageOptions{Page: 0}}
@@ -40,32 +38,83 @@ func getPaginatedResults[T any](
 		opts.PageOptions = &PageOptions{Page: 0}
 	}
 
-	// Apply all user-provided list options to the base request
-	if err := applyListOptionsToRequest(opts, req); err != nil {
-		return nil, err
+	// Validate options
+	numOpts := len(options)
+	if numOpts > 1 {
+		return nil, fmt.Errorf("invalid number of options: expected 0 or 1, got %d", numOpts)
 	}
 
-	// Makes a request to a particular page and
-	// appends the response to the result
-	handlePage := func(page int) error {
-		req.SetQueryParam("page", strconv.Itoa(page))
+	// Prepare request body if options are provided
+	var reqBody string
 
-		res, err := coupleAPIErrors(req.Get(endpoint))
+	if numOpts > 0 && !isNil(options[0]) {
+		body, err := json.Marshal(options[0])
 		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+
+		reqBody = string(body)
+	}
+
+	// Makes a request to a particular page and appends the response to the result
+	handlePage := func(page int) error {
+		var resultType paginatedResponse[T]
+
+		// Override the page to be applied in applyListOptionsToRequest(...)
+		opts.Page = page
+
+		// This request object cannot be reused for each page request
+		// because it can lead to possible data corruption
+		req := client.R(ctx).SetResult(&resultType)
+
+		// Apply all user-provided list options to the request
+		if err := applyListOptionsToRequest(opts, req); err != nil {
 			return err
 		}
 
-		response := res.Result().(*paginatedResponse[T])
+		// Set request body if provided
+		if reqBody != "" {
+			req.SetBody(reqBody)
+		}
 
+		var response *paginatedResponse[T]
+		// Execute the appropriate HTTP method
+		switch method {
+		case "GET":
+			res, err := coupleAPIErrors(req.Get(endpoint))
+			if err != nil {
+				return err
+			}
+
+			response = res.Result().(*paginatedResponse[T])
+		case "PUT":
+			res, err := coupleAPIErrors(req.Put(endpoint))
+			if err != nil {
+				return err
+			}
+
+			response = res.Result().(*paginatedResponse[T])
+		case "POST":
+			res, err := coupleAPIErrors(req.Post(endpoint))
+			if err != nil {
+				return err
+			}
+
+			response = res.Result().(*paginatedResponse[T])
+		default:
+			return fmt.Errorf("unsupported HTTP method: %s", method)
+		}
+
+		// Update pagination metadata
 		opts.Page = page
 		opts.Pages = response.Pages
 		opts.Results = response.Results
-
 		result = append(result, response.Data...)
+
 		return nil
 	}
 
-	// This helps simplify the logic below
+	// Determine starting page
 	startingPage := 1
 	pageDefined := opts.Page > 0
 
@@ -94,6 +143,41 @@ func getPaginatedResults[T any](
 	return result, nil
 }
 
+// getPaginatedResults aggregates results from the given
+// paginated endpoint using the provided ListOptions.
+func getPaginatedResults[T any](
+	ctx context.Context,
+	client *Client,
+	endpoint string,
+	opts *ListOptions,
+) ([]T, error) {
+	return handlePaginatedResults[T, any](ctx, client, endpoint, opts, "GET")
+}
+
+// putPaginatedResults sends a PUT request and aggregates the results from the given
+// paginated endpoint using the provided ListOptions.
+func putPaginatedResults[T, O any](
+	ctx context.Context,
+	client *Client,
+	endpoint string,
+	opts *ListOptions,
+	options ...O,
+) ([]T, error) {
+	return handlePaginatedResults[T, O](ctx, client, endpoint, opts, "PUT", options...)
+}
+
+// postPaginatedResults sends a POST request and aggregates the results from the given
+// paginated endpoint using the provided ListOptions.
+func postPaginatedResults[T, O any](
+	ctx context.Context,
+	client *Client,
+	endpoint string,
+	opts *ListOptions,
+	options ...O,
+) ([]T, error) {
+	return handlePaginatedResults[T, O](ctx, client, endpoint, opts, "POST", options...)
+}
+
 // doGETRequest runs a GET request using the given client and API endpoint,
 // and returns the result
 func doGETRequest[T any](
@@ -104,6 +188,7 @@ func doGETRequest[T any](
 	var resultType T
 
 	req := client.R(ctx).SetResult(&resultType)
+
 	r, err := coupleAPIErrors(req.Get(endpoint))
 	if err != nil {
 		return nil, err
@@ -130,7 +215,7 @@ func doPOSTRequest[T, O any](
 
 	req := client.R(ctx).SetResult(&resultType)
 
-	if numOpts > 0 {
+	if numOpts > 0 && !isNil(options[0]) {
 		body, err := json.Marshal(options[0])
 		if err != nil {
 			return nil, err
@@ -145,6 +230,28 @@ func doPOSTRequest[T, O any](
 	}
 
 	return r.Result().(*T), nil
+}
+
+// doPOSTRequestNoResponseBody runs a POST request using the given client, API endpoint,
+// and options/body. It expects only empty response from the endpoint.
+func doPOSTRequestNoResponseBody[T any](
+	ctx context.Context,
+	client *Client,
+	endpoint string,
+	options ...T,
+) error {
+	_, err := doPOSTRequest[any, T](ctx, client, endpoint, options...)
+	return err
+}
+
+// doPOSTRequestNoRequestResponseBody runs a POST request where no request body is needed and no response body
+// is expected from the endpoints.
+func doPOSTRequestNoRequestResponseBody(
+	ctx context.Context,
+	client *Client,
+	endpoint string,
+) error {
+	return doPOSTRequestNoResponseBody(ctx, client, endpoint, struct{}{})
 }
 
 // doPUTRequest runs a PUT request using the given client, API endpoint,
@@ -165,7 +272,7 @@ func doPUTRequest[T, O any](
 
 	req := client.R(ctx).SetResult(&resultType)
 
-	if numOpts > 0 {
+	if numOpts > 0 && !isNil(options[0]) {
 		body, err := json.Marshal(options[0])
 		if err != nil {
 			return nil, err
@@ -191,6 +298,7 @@ func doDELETERequest(
 ) error {
 	req := client.R(ctx)
 	_, err := coupleAPIErrors(req.Delete(endpoint))
+
 	return err
 }
 
@@ -206,4 +314,15 @@ func formatAPIPath(format string, args ...any) string {
 	}
 
 	return fmt.Sprintf(format, escapedArgs...)
+}
+
+func isNil(i any) bool {
+	if i == nil {
+		return true
+	}
+
+	// Check for nil pointers
+	v := reflect.ValueOf(i)
+
+	return v.Kind() == reflect.Pointer && v.IsNil()
 }

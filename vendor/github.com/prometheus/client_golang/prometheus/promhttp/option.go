@@ -13,24 +13,6 @@
 
 package promhttp
 
-<<<<<<< HEAD
-// Option are used to configure a middleware or round tripper..
-type Option func(*option)
-
-type option struct {
-	extraMethods []string
-}
-
-// WithExtraMethods adds additional HTTP methods to the list of allowed methods.
-// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods for the default list.
-//
-// See the example for ExampleInstrumentHandlerWithExtraMethods for example usage.
-func WithExtraMethods(methods ...string) Option {
-	return func(o *option) {
-		o.extraMethods = methods
-	}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 import (
 	"context"
 
@@ -99,5 +81,4 @@ func WithLabelFromCtx(name string, valueFn LabelValueFromCtx) Option {
 	return optionApplyFunc(func(o *options) {
 		o.extraLabelsFromCtx[name] = valueFn
 	})
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

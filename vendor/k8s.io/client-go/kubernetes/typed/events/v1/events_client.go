@@ -19,44 +19,7 @@ limitations under the License.
 package v1
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	v1 "k8s.io/api/events/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type EventsV1Interface interface {
-	RESTClient() rest.Interface
-	EventsGetter
-}
-
-// EventsV1Client is used to interact with features provided by the events.k8s.io group.
-type EventsV1Client struct {
-	restClient rest.Interface
-}
-
-func (c *EventsV1Client) Events(namespace string) EventInterface {
-	return newEvents(c, namespace)
-}
-
-// NewForConfig creates a new EventsV1Client for the given config.
-func NewForConfig(c *rest.Config) (*EventsV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientFor(&config)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-	"net/http"
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-	"net/http"
-=======
 	http "net/http"
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	eventsv1 "k8s.io/api/events/v1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
@@ -96,101 +59,6 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*EventsV1Client, err
 	config := *c
 	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"net/http"
-
-	v1 "k8s.io/api/events/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type EventsV1Interface interface {
-	RESTClient() rest.Interface
-	EventsGetter
-}
-
-// EventsV1Client is used to interact with features provided by the events.k8s.io group.
-type EventsV1Client struct {
-	restClient rest.Interface
-}
-
-func (c *EventsV1Client) Events(namespace string) EventInterface {
-	return newEvents(c, namespace)
-}
-
-// NewForConfig creates a new EventsV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*EventsV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new EventsV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*EventsV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"net/http"
-
-	v1 "k8s.io/api/events/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	rest "k8s.io/client-go/rest"
-)
-
-type EventsV1Interface interface {
-	RESTClient() rest.Interface
-	EventsGetter
-}
-
-// EventsV1Client is used to interact with features provided by the events.k8s.io group.
-type EventsV1Client struct {
-	restClient rest.Interface
-}
-
-func (c *EventsV1Client) Events(namespace string) EventInterface {
-	return newEvents(c, namespace)
-}
-
-// NewForConfig creates a new EventsV1Client for the given config.
-// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
-// where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*EventsV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(&config)
-	if err != nil {
-		return nil, err
-	}
-	return NewForConfigAndClient(&config, httpClient)
-}
-
-// NewForConfigAndClient creates a new EventsV1Client for the given config and http client.
-// Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*EventsV1Client, error) {
-	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
-	client, err := rest.RESTClientForConfigAndClient(&config, h)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

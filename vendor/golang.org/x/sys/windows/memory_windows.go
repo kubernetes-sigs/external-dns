@@ -35,10 +35,6 @@ const (
 	QUOTA_LIMITS_HARDWS_MAX_DISABLE = 0x00000008
 	QUOTA_LIMITS_HARDWS_MAX_ENABLE  = 0x00000004
 )
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 type MemoryBasicInformation struct {
 	BaseAddress       uintptr
@@ -50,37 +46,3 @@ type MemoryBasicInformation struct {
 	Protect           uint32
 	Type              uint32
 }
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-
-type MemoryBasicInformation struct {
-	BaseAddress       uintptr
-	AllocationBase    uintptr
-	AllocationProtect uint32
-	PartitionId       uint16
-	RegionSize        uintptr
-	State             uint32
-	Protect           uint32
-	Type              uint32
-}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-
-type MemoryBasicInformation struct {
-	BaseAddress       uintptr
-	AllocationBase    uintptr
-	AllocationProtect uint32
-	PartitionId       uint16
-	RegionSize        uintptr
-	State             uint32
-	Protect           uint32
-	Type              uint32
-}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

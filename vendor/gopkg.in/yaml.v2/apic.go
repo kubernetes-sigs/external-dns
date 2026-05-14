@@ -79,14 +79,6 @@ func yaml_parser_set_encoding(parser *yaml_parser_t, encoding yaml_encoding_t) {
 	parser.encoding = encoding
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 var disableLineWrapping = false
 
 // Create a new emitter object.
@@ -99,102 +91,6 @@ func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 	}
 	if disableLineWrapping {
 		emitter.best_width = -1
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-var disableLineWrapping = false
-
->>>>>>> 5ce8c7613 (update vendored files)
-// Create a new emitter object.
-func yaml_emitter_initialize(emitter *yaml_emitter_t) {
-	*emitter = yaml_emitter_t{
-		buffer:     make([]byte, output_buffer_size),
-		raw_buffer: make([]byte, 0, output_raw_buffer_size),
-		states:     make([]yaml_emitter_state_t, 0, initial_stack_size),
-		events:     make([]yaml_event_t, 0, initial_queue_size),
-<<<<<<< HEAD
-		best_width: -1,
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		best_width: -1,
-=======
-	}
-	if disableLineWrapping {
-		emitter.best_width = -1
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-var disableLineWrapping = false
-
->>>>>>> 6b7ce455e (update vendored files)
-// Create a new emitter object.
-func yaml_emitter_initialize(emitter *yaml_emitter_t) {
-	*emitter = yaml_emitter_t{
-		buffer:     make([]byte, output_buffer_size),
-		raw_buffer: make([]byte, 0, output_raw_buffer_size),
-		states:     make([]yaml_emitter_state_t, 0, initial_stack_size),
-		events:     make([]yaml_event_t, 0, initial_queue_size),
-<<<<<<< HEAD
-		best_width: -1,
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		best_width: -1,
-=======
-	}
-	if disableLineWrapping {
-		emitter.best_width = -1
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-var disableLineWrapping = false
-
->>>>>>> 4d7e5ad26 (update vendored files)
-// Create a new emitter object.
-func yaml_emitter_initialize(emitter *yaml_emitter_t) {
-	*emitter = yaml_emitter_t{
-		buffer:     make([]byte, output_buffer_size),
-		raw_buffer: make([]byte, 0, output_raw_buffer_size),
-		states:     make([]yaml_emitter_state_t, 0, initial_stack_size),
-		events:     make([]yaml_event_t, 0, initial_queue_size),
-<<<<<<< HEAD
-		best_width: -1,
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		best_width: -1,
-=======
-	}
-	if disableLineWrapping {
-		emitter.best_width = -1
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-var disableLineWrapping = false
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// Create a new emitter object.
-func yaml_emitter_initialize(emitter *yaml_emitter_t) {
-	*emitter = yaml_emitter_t{
-		buffer:     make([]byte, output_buffer_size),
-		raw_buffer: make([]byte, 0, output_raw_buffer_size),
-		states:     make([]yaml_emitter_state_t, 0, initial_stack_size),
-		events:     make([]yaml_event_t, 0, initial_queue_size),
-<<<<<<< HEAD
-		best_width: -1,
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		best_width: -1,
-=======
-	}
-	if disableLineWrapping {
-		emitter.best_width = -1
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }
 

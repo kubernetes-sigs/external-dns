@@ -47,37 +47,48 @@ type Queue interface {
 	// may return an ErrRequeue{inner} and in this case Pop will (a)
 	// return that (key, accumulator) association to the Queue as part
 	// of the atomic processing and (b) return the inner error from
-	// Pop.
+	// Pop. It is expected that the caller of Pop will be a single
+	// threaded consumer since otherwise it is possible for multiple
+	// PopProcessFuncs to be running simultaneously.
 	Pop(PopProcessFunc) (interface{}, error)
 
 	// HasSynced returns true if the first batch of keys have all been
 	// popped.  The first batch of keys are those of the first Replace
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// operation if that happened before any Add, AddIfNotPresent,
 	// Update, or Delete; otherwise the first batch is empty.
 	HasSynced() bool
+
+	// HasSyncedChecker is done once the first batch of keys have all been
+	// popped.  The first batch of keys are those of the first Replace
+	// operation if that happened before any Add, AddIfNotPresent,
+	// Update, or Delete; otherwise the first batch is empty.
+	HasSyncedChecker() DoneChecker
 
 	// Close the queue
 	Close()
 }
 
-// Pop is helper function for popping from Queue.
-// WARNING: Do NOT use this function in non-test code to avoid races
-// unless you really really really really know what you are doing.
-func Pop(queue Queue) interface{} {
-	var result interface{}
-	queue.Pop(func(obj interface{}) error {
-		result = obj
-		return nil
-	})
-	return result
+// QueueWithBatch extends the Queue interface with support for batch processing.
+//
+// In addition to the standard single-item Pop method, QueueWithBatch provides
+// PopBatch, which allows multiple items to be popped and processed together as
+// a batch. This can be used to improve processing efficiency when it is
+// beneficial to handle multiple queued keys or accumulators in a single
+// operation.
+// TODO: Consider merging this interface into Queue after feature gate GA
+type QueueWithBatch interface {
+	Queue
+
+	// PopBatch behaves similarly to Queue#Pop, but processes multiple keys
+	// as a batch. The implementation determines the batching strategy,
+	// such as the number of keys to include per batch. The ProcessBatchFunc
+	// is called when a batch is ready to be processed. The PopProcessFunc
+	// is called when a singleton item is ready to be processed. The
+	// ProcessBatchFunc and PopProcessFunc must do the same processing to
+	// ensure consistent behavior. It is expected that the caller of PopBatch
+	// will be a single threaded consumer since otherwise it is possible for
+	// multiple ProcessBatchFuncs/PopProcessFuncs to be running simultaneously.
+	PopBatch(processBatch ProcessBatchFunc, processSingle PopProcessFunc) error
 }
 
 // FIFO is a Queue in which (a) each accumulator is simply the most
@@ -105,450 +116,10 @@ type FIFO struct {
 	items map[string]interface{}
 	queue []string
 
-	// populated is true if the first batch of items inserted by Replace() has been populated
-	// or Delete/Add/Update was called first.
-	populated bool
-	// initialPopulationCount is the number of items inserted by the first call of Replace()
-	initialPopulationCount int
-
-	// keyFunc is used to make the key used for queued item insertion and retrieval, and
-	// should be deterministic.
-	keyFunc KeyFunc
-
-	// Indication the queue is closed.
-	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRED operations.
-	closed bool
-}
-
-var (
-	_ = Queue(&FIFO{}) // FIFO is a Queue
-)
-
-// Close the queue.
-func (f *FIFO) Close() {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.closed = true
-	f.cond.Broadcast()
-}
-
-// HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or the first batch of items inserted by Replace() has been popped.
-func (f *FIFO) HasSynced() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.populated && f.initialPopulationCount == 0
-}
-
-// Add inserts an item, and puts it in the queue. The item is only enqueued
-// if it doesn't already exist in the set.
-func (f *FIFO) Add(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	if _, exists := f.items[id]; !exists {
-		f.queue = append(f.queue, id)
-	}
-	f.items[id] = obj
-	f.cond.Broadcast()
-	return nil
-}
-
-// AddIfNotPresent inserts an item, and puts it in the queue. If the item is already
-// present in the set, it is neither enqueued nor added to the set.
-//
-// This is useful in a single producer/consumer scenario so that the consumer can
-// safely retry items without contending with the producer and potentially enqueueing
-// stale items.
-func (f *FIFO) AddIfNotPresent(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.addIfNotPresent(id, obj)
-	return nil
-}
-
-// addIfNotPresent assumes the fifo lock is already held and adds the provided
-// item to the queue under id if it does not already exist.
-func (f *FIFO) addIfNotPresent(id string, obj interface{}) {
-	f.populated = true
-	if _, exists := f.items[id]; exists {
-		return
-	}
-
-	f.queue = append(f.queue, id)
-	f.items[id] = obj
-	f.cond.Broadcast()
-}
-
-// Update is the same as Add in this implementation.
-func (f *FIFO) Update(obj interface{}) error {
-	return f.Add(obj)
-}
-
-// Delete removes an item. It doesn't add it to the queue, because
-// this implementation assumes the consumer only cares about the objects,
-// not the order in which they were created/added.
-func (f *FIFO) Delete(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	delete(f.items, id)
-	return err
-}
-
-// List returns a list of all the items.
-func (f *FIFO) List() []interface{} {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]interface{}, 0, len(f.items))
-	for _, item := range f.items {
-		list = append(list, item)
-	}
-	return list
-}
-
-// ListKeys returns a list of all the keys of the objects currently
-// in the FIFO.
-func (f *FIFO) ListKeys() []string {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]string, 0, len(f.items))
-	for key := range f.items {
-		list = append(list, key)
-	}
-	return list
-}
-
-// Get returns the requested item, or sets exists=false.
-func (f *FIFO) Get(obj interface{}) (item interface{}, exists bool, err error) {
-	key, err := f.keyFunc(obj)
-	if err != nil {
-		return nil, false, KeyError{obj, err}
-	}
-	return f.GetByKey(key)
-}
-
-// GetByKey returns the requested item, or sets exists=false.
-func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	item, exists = f.items[key]
-	return item, exists, nil
-}
-
-// IsClosed checks if the queue is closed
-func (f *FIFO) IsClosed() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.closed
-}
-
-// Pop waits until an item is ready and processes it. If multiple items are
-// ready, they are returned in the order in which they were added/updated.
-// The item is removed from the queue (and the store) before it is processed,
-// so if you don't successfully process it, it should be added back with
-// AddIfNotPresent(). process function is called under lock, so it is safe
-// update data structures in it that need to be in sync with the queue.
-func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	for {
-		for len(f.queue) == 0 {
-			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
-			// When Close() is called, the f.closed is set and the condition is broadcasted.
-			// Which causes this loop to continue and return from the Pop().
-			if f.closed {
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-||||||| parent of 5ce8c7613 (update vendored files)
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-=======
-	// operation if that happened before any Add, AddIfNotPresent,
-	// Update, or Delete; otherwise the first batch is empty.
->>>>>>> 5ce8c7613 (update vendored files)
-	HasSynced() bool
-
-	// Close the queue
-	Close()
-}
-
-// Pop is helper function for popping from Queue.
-// WARNING: Do NOT use this function in non-test code to avoid races
-// unless you really really really really know what you are doing.
-func Pop(queue Queue) interface{} {
-	var result interface{}
-	queue.Pop(func(obj interface{}) error {
-		result = obj
-		return nil
-	})
-	return result
-}
-
-// FIFO is a Queue in which (a) each accumulator is simply the most
-// recently provided object and (b) the collection of keys to process
-// is a FIFO.  The accumulators all start out empty, and deleting an
-// object from its accumulator empties the accumulator.  The Resync
-// operation is a no-op.
-//
-// Thus: if multiple adds/updates of a single object happen while that
-// object's key is in the queue before it has been processed then it
-// will only be processed once, and when it is processed the most
-// recent version will be processed. This can't be done with a channel
-//
-// FIFO solves this use case:
-//  * You want to process every object (exactly) once.
-//  * You want to process the most recent version of the object when you process it.
-//  * You do not want to process deleted objects, they should be removed from the queue.
-//  * You do not want to periodically reprocess objects.
-// Compare with DeltaFIFO for other use cases.
-type FIFO struct {
-	lock sync.RWMutex
-	cond sync.Cond
-	// We depend on the property that every key in `items` is also in `queue`
-	items map[string]interface{}
-	queue []string
-
-	// populated is true if the first batch of items inserted by Replace() has been populated
-	// or Delete/Add/Update was called first.
-	populated bool
-	// initialPopulationCount is the number of items inserted by the first call of Replace()
-	initialPopulationCount int
-
-	// keyFunc is used to make the key used for queued item insertion and retrieval, and
-	// should be deterministic.
-	keyFunc KeyFunc
-
-	// Indication the queue is closed.
-	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRED operations.
-	closed bool
-}
-
-var (
-	_ = Queue(&FIFO{}) // FIFO is a Queue
-)
-
-// Close the queue.
-func (f *FIFO) Close() {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.closed = true
-	f.cond.Broadcast()
-}
-
-// HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or the first batch of items inserted by Replace() has been popped.
-func (f *FIFO) HasSynced() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.populated && f.initialPopulationCount == 0
-}
-
-// Add inserts an item, and puts it in the queue. The item is only enqueued
-// if it doesn't already exist in the set.
-func (f *FIFO) Add(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	if _, exists := f.items[id]; !exists {
-		f.queue = append(f.queue, id)
-	}
-	f.items[id] = obj
-	f.cond.Broadcast()
-	return nil
-}
-
-// AddIfNotPresent inserts an item, and puts it in the queue. If the item is already
-// present in the set, it is neither enqueued nor added to the set.
-//
-// This is useful in a single producer/consumer scenario so that the consumer can
-// safely retry items without contending with the producer and potentially enqueueing
-// stale items.
-func (f *FIFO) AddIfNotPresent(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.addIfNotPresent(id, obj)
-	return nil
-}
-
-// addIfNotPresent assumes the fifo lock is already held and adds the provided
-// item to the queue under id if it does not already exist.
-func (f *FIFO) addIfNotPresent(id string, obj interface{}) {
-	f.populated = true
-	if _, exists := f.items[id]; exists {
-		return
-	}
-
-	f.queue = append(f.queue, id)
-	f.items[id] = obj
-	f.cond.Broadcast()
-}
-
-// Update is the same as Add in this implementation.
-func (f *FIFO) Update(obj interface{}) error {
-	return f.Add(obj)
-}
-
-// Delete removes an item. It doesn't add it to the queue, because
-// this implementation assumes the consumer only cares about the objects,
-// not the order in which they were created/added.
-func (f *FIFO) Delete(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	delete(f.items, id)
-	return err
-}
-
-// List returns a list of all the items.
-func (f *FIFO) List() []interface{} {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]interface{}, 0, len(f.items))
-	for _, item := range f.items {
-		list = append(list, item)
-	}
-	return list
-}
-
-// ListKeys returns a list of all the keys of the objects currently
-// in the FIFO.
-func (f *FIFO) ListKeys() []string {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]string, 0, len(f.items))
-	for key := range f.items {
-		list = append(list, key)
-	}
-	return list
-}
-
-// Get returns the requested item, or sets exists=false.
-func (f *FIFO) Get(obj interface{}) (item interface{}, exists bool, err error) {
-	key, err := f.keyFunc(obj)
-	if err != nil {
-		return nil, false, KeyError{obj, err}
-	}
-	return f.GetByKey(key)
-}
-
-// GetByKey returns the requested item, or sets exists=false.
-func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	item, exists = f.items[key]
-	return item, exists, nil
-}
-
-// IsClosed checks if the queue is closed
-func (f *FIFO) IsClosed() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.closed
-}
-
-// Pop waits until an item is ready and processes it. If multiple items are
-// ready, they are returned in the order in which they were added/updated.
-// The item is removed from the queue (and the store) before it is processed,
-// so if you don't successfully process it, it should be added back with
-// AddIfNotPresent(). process function is called under lock, so it is safe
-// update data structures in it that need to be in sync with the queue.
-func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	for {
-		for len(f.queue) == 0 {
-			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
-			// When Close() is called, the f.closed is set and the condition is broadcasted.
-			// Which causes this loop to continue and return from the Pop().
-<<<<<<< HEAD
-			if f.IsClosed() {
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-			if f.IsClosed() {
-=======
-			if f.closed {
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-||||||| parent of 6b7ce455e (update vendored files)
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-=======
-	// operation if that happened before any Add, AddIfNotPresent,
-	// Update, or Delete; otherwise the first batch is empty.
->>>>>>> 6b7ce455e (update vendored files)
-	HasSynced() bool
-
-	// Close the queue
-	Close()
-}
-
-// Pop is helper function for popping from Queue.
-// WARNING: Do NOT use this function in non-test code to avoid races
-// unless you really really really really know what you are doing.
-func Pop(queue Queue) interface{} {
-	var result interface{}
-	queue.Pop(func(obj interface{}) error {
-		result = obj
-		return nil
-	})
-	return result
-}
-
-// FIFO is a Queue in which (a) each accumulator is simply the most
-// recently provided object and (b) the collection of keys to process
-// is a FIFO.  The accumulators all start out empty, and deleting an
-// object from its accumulator empties the accumulator.  The Resync
-// operation is a no-op.
-//
-// Thus: if multiple adds/updates of a single object happen while that
-// object's key is in the queue before it has been processed then it
-// will only be processed once, and when it is processed the most
-// recent version will be processed. This can't be done with a channel
-//
-// FIFO solves this use case:
-//  * You want to process every object (exactly) once.
-//  * You want to process the most recent version of the object when you process it.
-//  * You do not want to process deleted objects, they should be removed from the queue.
-//  * You do not want to periodically reprocess objects.
-// Compare with DeltaFIFO for other use cases.
-type FIFO struct {
-	lock sync.RWMutex
-	cond sync.Cond
-	// We depend on the property that every key in `items` is also in `queue`
-	items map[string]interface{}
-	queue []string
+	// synced is initially an open channel. It gets closed (once!) by checkSynced
+	// as soon as the initial sync is considered complete.
+	synced       chan struct{}
+	syncedClosed bool
 
 	// populated is true if the first batch of items inserted by Replace() has been populated
 	// or Delete/Add/Update was called first.
@@ -567,463 +138,8 @@ type FIFO struct {
 }
 
 var (
-	_ = Queue(&FIFO{}) // FIFO is a Queue
-)
-
-// Close the queue.
-func (f *FIFO) Close() {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.closed = true
-	f.cond.Broadcast()
-}
-
-// HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or the first batch of items inserted by Replace() has been popped.
-func (f *FIFO) HasSynced() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.populated && f.initialPopulationCount == 0
-}
-
-// Add inserts an item, and puts it in the queue. The item is only enqueued
-// if it doesn't already exist in the set.
-func (f *FIFO) Add(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	if _, exists := f.items[id]; !exists {
-		f.queue = append(f.queue, id)
-	}
-	f.items[id] = obj
-	f.cond.Broadcast()
-	return nil
-}
-
-// AddIfNotPresent inserts an item, and puts it in the queue. If the item is already
-// present in the set, it is neither enqueued nor added to the set.
-//
-// This is useful in a single producer/consumer scenario so that the consumer can
-// safely retry items without contending with the producer and potentially enqueueing
-// stale items.
-func (f *FIFO) AddIfNotPresent(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.addIfNotPresent(id, obj)
-	return nil
-}
-
-// addIfNotPresent assumes the fifo lock is already held and adds the provided
-// item to the queue under id if it does not already exist.
-func (f *FIFO) addIfNotPresent(id string, obj interface{}) {
-	f.populated = true
-	if _, exists := f.items[id]; exists {
-		return
-	}
-
-	f.queue = append(f.queue, id)
-	f.items[id] = obj
-	f.cond.Broadcast()
-}
-
-// Update is the same as Add in this implementation.
-func (f *FIFO) Update(obj interface{}) error {
-	return f.Add(obj)
-}
-
-// Delete removes an item. It doesn't add it to the queue, because
-// this implementation assumes the consumer only cares about the objects,
-// not the order in which they were created/added.
-func (f *FIFO) Delete(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	delete(f.items, id)
-	return err
-}
-
-// List returns a list of all the items.
-func (f *FIFO) List() []interface{} {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]interface{}, 0, len(f.items))
-	for _, item := range f.items {
-		list = append(list, item)
-	}
-	return list
-}
-
-// ListKeys returns a list of all the keys of the objects currently
-// in the FIFO.
-func (f *FIFO) ListKeys() []string {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]string, 0, len(f.items))
-	for key := range f.items {
-		list = append(list, key)
-	}
-	return list
-}
-
-// Get returns the requested item, or sets exists=false.
-func (f *FIFO) Get(obj interface{}) (item interface{}, exists bool, err error) {
-	key, err := f.keyFunc(obj)
-	if err != nil {
-		return nil, false, KeyError{obj, err}
-	}
-	return f.GetByKey(key)
-}
-
-// GetByKey returns the requested item, or sets exists=false.
-func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	item, exists = f.items[key]
-	return item, exists, nil
-}
-
-// IsClosed checks if the queue is closed
-func (f *FIFO) IsClosed() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.closed
-}
-
-// Pop waits until an item is ready and processes it. If multiple items are
-// ready, they are returned in the order in which they were added/updated.
-// The item is removed from the queue (and the store) before it is processed,
-// so if you don't successfully process it, it should be added back with
-// AddIfNotPresent(). process function is called under lock, so it is safe
-// update data structures in it that need to be in sync with the queue.
-func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	for {
-		for len(f.queue) == 0 {
-			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
-			// When Close() is called, the f.closed is set and the condition is broadcasted.
-			// Which causes this loop to continue and return from the Pop().
-<<<<<<< HEAD
-			if f.IsClosed() {
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-			if f.IsClosed() {
-=======
-			if f.closed {
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-||||||| parent of 4d7e5ad26 (update vendored files)
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-=======
-	// operation if that happened before any Add, AddIfNotPresent,
-	// Update, or Delete; otherwise the first batch is empty.
->>>>>>> 4d7e5ad26 (update vendored files)
-	HasSynced() bool
-
-	// Close the queue
-	Close()
-}
-
-// Pop is helper function for popping from Queue.
-// WARNING: Do NOT use this function in non-test code to avoid races
-// unless you really really really really know what you are doing.
-func Pop(queue Queue) interface{} {
-	var result interface{}
-	queue.Pop(func(obj interface{}) error {
-		result = obj
-		return nil
-	})
-	return result
-}
-
-// FIFO is a Queue in which (a) each accumulator is simply the most
-// recently provided object and (b) the collection of keys to process
-// is a FIFO.  The accumulators all start out empty, and deleting an
-// object from its accumulator empties the accumulator.  The Resync
-// operation is a no-op.
-//
-// Thus: if multiple adds/updates of a single object happen while that
-// object's key is in the queue before it has been processed then it
-// will only be processed once, and when it is processed the most
-// recent version will be processed. This can't be done with a channel
-//
-// FIFO solves this use case:
-//  * You want to process every object (exactly) once.
-//  * You want to process the most recent version of the object when you process it.
-//  * You do not want to process deleted objects, they should be removed from the queue.
-//  * You do not want to periodically reprocess objects.
-// Compare with DeltaFIFO for other use cases.
-type FIFO struct {
-	lock sync.RWMutex
-	cond sync.Cond
-	// We depend on the property that every key in `items` is also in `queue`
-	items map[string]interface{}
-	queue []string
-
-	// populated is true if the first batch of items inserted by Replace() has been populated
-	// or Delete/Add/Update was called first.
-	populated bool
-	// initialPopulationCount is the number of items inserted by the first call of Replace()
-	initialPopulationCount int
-
-	// keyFunc is used to make the key used for queued item insertion and retrieval, and
-	// should be deterministic.
-	keyFunc KeyFunc
-
-	// Indication the queue is closed.
-	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRUD operations.
-	closed bool
-}
-
-var (
-	_ = Queue(&FIFO{}) // FIFO is a Queue
-)
-
-// Close the queue.
-func (f *FIFO) Close() {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.closed = true
-	f.cond.Broadcast()
-}
-
-// HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or the first batch of items inserted by Replace() has been popped.
-func (f *FIFO) HasSynced() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.populated && f.initialPopulationCount == 0
-}
-
-// Add inserts an item, and puts it in the queue. The item is only enqueued
-// if it doesn't already exist in the set.
-func (f *FIFO) Add(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	if _, exists := f.items[id]; !exists {
-		f.queue = append(f.queue, id)
-	}
-	f.items[id] = obj
-	f.cond.Broadcast()
-	return nil
-}
-
-// AddIfNotPresent inserts an item, and puts it in the queue. If the item is already
-// present in the set, it is neither enqueued nor added to the set.
-//
-// This is useful in a single producer/consumer scenario so that the consumer can
-// safely retry items without contending with the producer and potentially enqueueing
-// stale items.
-func (f *FIFO) AddIfNotPresent(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.addIfNotPresent(id, obj)
-	return nil
-}
-
-// addIfNotPresent assumes the fifo lock is already held and adds the provided
-// item to the queue under id if it does not already exist.
-func (f *FIFO) addIfNotPresent(id string, obj interface{}) {
-	f.populated = true
-	if _, exists := f.items[id]; exists {
-		return
-	}
-
-	f.queue = append(f.queue, id)
-	f.items[id] = obj
-	f.cond.Broadcast()
-}
-
-// Update is the same as Add in this implementation.
-func (f *FIFO) Update(obj interface{}) error {
-	return f.Add(obj)
-}
-
-// Delete removes an item. It doesn't add it to the queue, because
-// this implementation assumes the consumer only cares about the objects,
-// not the order in which they were created/added.
-func (f *FIFO) Delete(obj interface{}) error {
-	id, err := f.keyFunc(obj)
-	if err != nil {
-		return KeyError{obj, err}
-	}
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	f.populated = true
-	delete(f.items, id)
-	return err
-}
-
-// List returns a list of all the items.
-func (f *FIFO) List() []interface{} {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]interface{}, 0, len(f.items))
-	for _, item := range f.items {
-		list = append(list, item)
-	}
-	return list
-}
-
-// ListKeys returns a list of all the keys of the objects currently
-// in the FIFO.
-func (f *FIFO) ListKeys() []string {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	list := make([]string, 0, len(f.items))
-	for key := range f.items {
-		list = append(list, key)
-	}
-	return list
-}
-
-// Get returns the requested item, or sets exists=false.
-func (f *FIFO) Get(obj interface{}) (item interface{}, exists bool, err error) {
-	key, err := f.keyFunc(obj)
-	if err != nil {
-		return nil, false, KeyError{obj, err}
-	}
-	return f.GetByKey(key)
-}
-
-// GetByKey returns the requested item, or sets exists=false.
-func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
-	item, exists = f.items[key]
-	return item, exists, nil
-}
-
-// IsClosed checks if the queue is closed
-func (f *FIFO) IsClosed() bool {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.closed
-}
-
-// Pop waits until an item is ready and processes it. If multiple items are
-// ready, they are returned in the order in which they were added/updated.
-// The item is removed from the queue (and the store) before it is processed,
-// so if you don't successfully process it, it should be added back with
-// AddIfNotPresent(). process function is called under lock, so it is safe
-// update data structures in it that need to be in sync with the queue.
-func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	for {
-		for len(f.queue) == 0 {
-			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
-			// When Close() is called, the f.closed is set and the condition is broadcasted.
-			// Which causes this loop to continue and return from the Pop().
-<<<<<<< HEAD
-			if f.IsClosed() {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-			if f.IsClosed() {
-=======
-			if f.closed {
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// operation if that happened before any Add, Update, or Delete;
-	// otherwise the first batch is empty.
-=======
-	// operation if that happened before any Add, AddIfNotPresent,
-	// Update, or Delete; otherwise the first batch is empty.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	HasSynced() bool
-
-	// Close the queue
-	Close()
-}
-
-// Pop is helper function for popping from Queue.
-// WARNING: Do NOT use this function in non-test code to avoid races
-// unless you really really really really know what you are doing.
-//
-// NOTE: This function is deprecated and may be removed in the future without
-// additional warning.
-func Pop(queue Queue) interface{} {
-	var result interface{}
-	queue.Pop(func(obj interface{}, isInInitialList bool) error {
-		result = obj
-		return nil
-	})
-	return result
-}
-
-// FIFO is a Queue in which (a) each accumulator is simply the most
-// recently provided object and (b) the collection of keys to process
-// is a FIFO.  The accumulators all start out empty, and deleting an
-// object from its accumulator empties the accumulator.  The Resync
-// operation is a no-op.
-//
-// Thus: if multiple adds/updates of a single object happen while that
-// object's key is in the queue before it has been processed then it
-// will only be processed once, and when it is processed the most
-// recent version will be processed. This can't be done with a channel
-//
-// FIFO solves this use case:
-//   - You want to process every object (exactly) once.
-//   - You want to process the most recent version of the object when you process it.
-//   - You do not want to process deleted objects, they should be removed from the queue.
-//   - You do not want to periodically reprocess objects.
-//
-// Compare with DeltaFIFO for other use cases.
-type FIFO struct {
-	lock sync.RWMutex
-	cond sync.Cond
-	// We depend on the property that every key in `items` is also in `queue`
-	items map[string]interface{}
-	queue []string
-
-	// populated is true if the first batch of items inserted by Replace() has been populated
-	// or Delete/Add/Update was called first.
-	populated bool
-	// initialPopulationCount is the number of items inserted by the first call of Replace()
-	initialPopulationCount int
-
-	// keyFunc is used to make the key used for queued item insertion and retrieval, and
-	// should be deterministic.
-	keyFunc KeyFunc
-
-	// Indication the queue is closed.
-	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRUD operations.
-	closed bool
-}
-
-var (
-	_ = Queue(&FIFO{}) // FIFO is a Queue
+	_ = Queue(&FIFO{})       // FIFO is a Queue
+	_ = DoneChecker(&FIFO{}) // ... and implements DoneChecker.
 )
 
 // Close the queue.
@@ -1042,8 +158,36 @@ func (f *FIFO) HasSynced() bool {
 	return f.hasSynced_locked()
 }
 
+// HasSyncedChecker is done if an Add/Update/Delete/AddIfNotPresent are called first,
+// or the first batch of items inserted by Replace() has been popped.
+func (f *FIFO) HasSyncedChecker() DoneChecker {
+	return f
+}
+
+// Name implements [DoneChecker.Name]
+func (f *FIFO) Name() string {
+	return "FIFO" // FIFO doesn't seem to be used outside of a few tests, so changing the NewFIFO API to pass in a name doesn't seem worth it.
+}
+
+// Done implements [DoneChecker.Done]
+func (f *FIFO) Done() <-chan struct{} {
+	return f.synced
+}
+
+// hasSynced_locked returns the result of a prior checkSynced call.
 func (f *FIFO) hasSynced_locked() bool {
-	return f.populated && f.initialPopulationCount == 0
+	return f.syncedClosed
+}
+
+// checkSynced checks whether the initial sync is completed.
+// It must be called whenever populated or initialPopulationCount change
+// while the mutex is still locked.
+func (f *FIFO) checkSynced() {
+	synced := f.populated && f.initialPopulationCount == 0
+	if synced && !f.syncedClosed {
+		f.syncedClosed = true
+		close(f.synced)
+	}
 }
 
 // Add inserts an item, and puts it in the queue. The item is only enqueued
@@ -1056,6 +200,7 @@ func (f *FIFO) Add(obj interface{}) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.populated = true
+	f.checkSynced()
 	if _, exists := f.items[id]; !exists {
 		f.queue = append(f.queue, id)
 	}
@@ -1080,6 +225,7 @@ func (f *FIFO) Delete(obj interface{}) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.populated = true
+	f.checkSynced()
 	delete(f.items, id)
 	return err
 }
@@ -1105,14 +251,7 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
 			// When Close() is called, the f.closed is set and the condition is broadcasted.
 			// Which causes this loop to continue and return from the Pop().
-<<<<<<< HEAD
-			if f.IsClosed() {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			if f.IsClosed() {
-=======
 			if f.closed {
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				return nil, ErrFIFOClosed
 			}
 
@@ -1123,6 +262,8 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 		f.queue = f.queue[1:]
 		if f.initialPopulationCount > 0 {
 			f.initialPopulationCount--
+			// Must be done *after* process has completed.
+			defer f.checkSynced()
 		}
 		item, ok := f.items[id]
 		if !ok {
@@ -1155,6 +296,7 @@ func (f *FIFO) Replace(list []interface{}, resourceVersion string) error {
 	if !f.populated {
 		f.populated = true
 		f.initialPopulationCount = len(items)
+		f.checkSynced()
 	}
 
 	f.items = items
@@ -1193,6 +335,7 @@ func (f *FIFO) Resync() error {
 // process.
 func NewFIFO(keyFunc KeyFunc) *FIFO {
 	f := &FIFO{
+		synced:  make(chan struct{}),
 		items:   map[string]interface{}{},
 		queue:   []string{},
 		keyFunc: keyFunc,

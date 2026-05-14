@@ -18,26 +18,6 @@ package clientcmd
 
 import (
 	"fmt"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net/url"
 	"strconv"
 	"time"
@@ -67,88 +47,4 @@ func parseProxyURL(proxyURL string) (*url.URL, error) {
 		return nil, fmt.Errorf("unsupported scheme %q, must be http, https, or socks5", u.Scheme)
 	}
 	return u, nil
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"strconv"
-	"time"
-)
-
-// ParseTimeout returns a parsed duration from a string
-// A duration string value must be a positive integer, optionally followed by a corresponding time unit (s|m|h).
-func ParseTimeout(duration string) (time.Duration, error) {
-	if i, err := strconv.ParseInt(duration, 10, 64); err == nil && i >= 0 {
-		return (time.Duration(i) * time.Second), nil
-	}
-	if requestTimeout, err := time.ParseDuration(duration); err == nil {
-		return requestTimeout, nil
-	}
-	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"strconv"
-	"time"
-)
-
-// ParseTimeout returns a parsed duration from a string
-// A duration string value must be a positive integer, optionally followed by a corresponding time unit (s|m|h).
-func ParseTimeout(duration string) (time.Duration, error) {
-	if i, err := strconv.ParseInt(duration, 10, 64); err == nil && i >= 0 {
-		return (time.Duration(i) * time.Second), nil
-	}
-	if requestTimeout, err := time.ParseDuration(duration); err == nil {
-		return requestTimeout, nil
-	}
-	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"strconv"
-	"time"
-)
-
-// ParseTimeout returns a parsed duration from a string
-// A duration string value must be a positive integer, optionally followed by a corresponding time unit (s|m|h).
-func ParseTimeout(duration string) (time.Duration, error) {
-	if i, err := strconv.ParseInt(duration, 10, 64); err == nil && i >= 0 {
-		return (time.Duration(i) * time.Second), nil
-	}
-	if requestTimeout, err := time.ParseDuration(duration); err == nil {
-		return requestTimeout, nil
-	}
-	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"strconv"
-	"time"
-)
-
-// ParseTimeout returns a parsed duration from a string
-// A duration string value must be a positive integer, optionally followed by a corresponding time unit (s|m|h).
-func ParseTimeout(duration string) (time.Duration, error) {
-	if i, err := strconv.ParseInt(duration, 10, 64); err == nil && i >= 0 {
-		return (time.Duration(i) * time.Second), nil
-	}
-	if requestTimeout, err := time.ParseDuration(duration); err == nil {
-		return requestTimeout, nil
-	}
-	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -22,18 +22,19 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // GroupName specifies the group name used to register the objects.
 const GroupName = "gateway.networking.k8s.io"
 
 // GroupVersion specifies the group and the version used to register the objects.
-var GroupVersion = v1.GroupVersion{Group: GroupName, Version: "v1"}
+var GroupVersion = metav1.GroupVersion{Group: GroupName, Version: "v1"}
 
 // SchemeGroupVersion is group version used to register these objects
+//
 // Deprecated: use GroupVersion instead.
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
 
@@ -61,6 +62,8 @@ func init() {
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&BackendTLSPolicy{},
+		&BackendTLSPolicyList{},
 		&GRPCRoute{},
 		&GRPCRouteList{},
 		&Gateway{},
@@ -69,8 +72,14 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&GatewayList{},
 		&HTTPRoute{},
 		&HTTPRouteList{},
+		&ListenerSet{},
+		&ListenerSetList{},
+		&ReferenceGrant{},
+		&ReferenceGrantList{},
+		&TLSRoute{},
+		&TLSRouteList{},
 	)
 	// AddToGroupVersion allows the serialization of client types like ListOptions.
-	v1.AddToGroupVersion(scheme, SchemeGroupVersion)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

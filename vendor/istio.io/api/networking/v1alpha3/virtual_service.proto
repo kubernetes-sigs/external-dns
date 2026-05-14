@@ -14,10 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/wrappers.proto";
-
 // $schema: istio.networking.v1alpha3.VirtualService
 // $title: Virtual Service
 // $description: Configuration affecting label/content routing, sni routing, etc.
@@ -68,7 +64,7 @@ import "google/protobuf/wrappers.proto";
 //
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews-route
@@ -100,7 +96,7 @@ import "google/protobuf/wrappers.proto";
 // `DestinationRule`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: DestinationRule
 // metadata:
 //   name: reviews-destination
@@ -117,13 +113,17 @@ import "google/protobuf/wrappers.proto";
 //
 package istio.networking.v1alpha3;
 
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
 option go_package = "istio.io/api/networking/v1alpha3";
 
 // Configuration affecting traffic routing.
 //
 // <!-- crd generation tags
 // +cue-gen:VirtualService:groupName:networking.istio.io
-// +cue-gen:VirtualService:version:v1alpha3
+// +cue-gen:VirtualService:versions:v1,v1beta1,v1alpha3
 // +cue-gen:VirtualService:annotations:helm.sh/resource-policy=keep
 // +cue-gen:VirtualService:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:VirtualService:subresource:status
@@ -144,9 +144,6 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
 // -->
 message VirtualService {
   // The destination hosts to which traffic is being sent. Could
@@ -244,7 +241,7 @@ message VirtualService {
 // *Note for Kubernetes users*: When short names are used (e.g. "reviews"
 // instead of "reviews.default.svc.cluster.local"), Istio will interpret
 // the short name based on the namespace of the rule, not the service. A
-// rule in the "default" namespace containing a host "reviews will be
+// rule in the "default" namespace containing a host "reviews" will be
 // interpreted as "reviews.default.svc.cluster.local", irrespective of the
 // actual namespace associated with the reviews service. _To avoid potential
 // misconfigurations, it is recommended to always use fully qualified
@@ -255,7 +252,7 @@ message VirtualService {
 // some to subset v2, in a Kubernetes environment.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews-route
@@ -284,7 +281,7 @@ message VirtualService {
 // And the associated DestinationRule
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: DestinationRule
 // metadata:
 //   name: reviews-destination
@@ -311,7 +308,7 @@ message VirtualService {
 // not have an impact in resolving the name of the productpage service.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: my-productpage-rule
@@ -333,7 +330,7 @@ message VirtualService {
 // Service for wikipedia.org and set a timeout of 5s for HTTP requests.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-wikipedia
@@ -347,7 +344,7 @@ message VirtualService {
 //     protocol: HTTP
 //   resolution: DNS
 // ---
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: my-wiki-rule
@@ -371,7 +368,7 @@ message Destination {
   // *Note for Kubernetes users*: When short names are used (e.g. "reviews"
   // instead of "reviews.default.svc.cluster.local"), Istio will interpret
   // the short name based on the namespace of the rule, not the service. A
-  // rule in the "default" namespace containing a host "reviews will be
+  // rule in the "default" namespace containing a host "reviews" will be
   // interpreted as "reviews.default.svc.cluster.local", irrespective of
   // the actual namespace associated with the reviews service. To avoid
   // potential misconfiguration, it is recommended to always use fully
@@ -448,6 +445,15 @@ message HTTPRoute {
   google.protobuf.Duration timeout = 6;
 
   // Retry policy for HTTP requests.
+  //
+  // Note: the default cluster-wide retry policy, if not specified, is:
+  //
+  // ```yaml
+  // attempts: 2
+  // retryOn: "connect-failure,refused-stream,unavailable,cancelled"
+  // ```
+  //
+  // This can be customized in [`Mesh Config` `defaultHttpRetryPolicy`](https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig).
   HTTPRetry retries = 7;
 
   // Fault injection policy to apply on HTTP traffic at the client side.
@@ -476,7 +482,7 @@ message HTTPRoute {
   // double `mirror_percentage` field instead
   // $hide_from_docs
   // +kubebuilder:altName=mirror_percent
-  google.protobuf.UInt32Value mirror_percent = 18 [deprecated=true];
+  google.protobuf.UInt32Value mirror_percent = 18 [deprecated = true];
 
   // Percentage of the traffic to be mirrored by the `mirror` field.
   // If this field is absent, all the traffic (100%) will be mirrored.
@@ -489,7 +495,7 @@ message HTTPRoute {
   CorsPolicy cors_policy = 10;
 
   reserved 11 to 15;
-  reserved "append_headers", "remove_response_headers", "append_response_headers","remove_request_headers", "append_request_headers";
+  reserved "append_headers", "remove_response_headers", "append_response_headers", "remove_request_headers", "append_request_headers";
 
   // Header manipulation rules
   Headers headers = 16;
@@ -498,13 +504,12 @@ message HTTPRoute {
   // Next available field number: 23
 }
 
-
 // Describes the delegate VirtualService.
 // The following routing rules forward the traffic to `/productpage` by a delegate VirtualService named `productpage`,
 // forward the traffic to `/reviews` by a delegate VirtualService named `reviews`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1alpha3
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: bookinfo
@@ -529,7 +534,7 @@ message HTTPRoute {
 // ```
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1alpha3
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: productpage
@@ -548,7 +553,7 @@ message HTTPRoute {
 // ```
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1alpha3
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews
@@ -567,7 +572,6 @@ message Delegate {
   string namespace = 2;
 }
 
-
 // Message headers can be manipulated when Envoy forwards requests to,
 // or responses from, a destination service. Header manipulation rules can
 // be specified for a specific route destination or for all destinations.
@@ -577,7 +581,7 @@ message Delegate {
 // coming from the `v1` subset (version) of the `reviews` service.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews-route
@@ -629,7 +633,7 @@ message Headers {
 // services in the mesh based on the SNI value.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-sni
@@ -670,7 +674,7 @@ message TLSRoute {
 // mongo.prod.svc.cluster.local to another Mongo server on port 5555.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: bookinfo-mongo
@@ -697,14 +701,14 @@ message TCPRoute {
   repeated RouteDestination route = 2;
 }
 
-// HttpMatchRequest specifies a set of criterion to be met in order for the
+// HttpMatchRequest specifies a set of criteria to be met in order for the
 // rule to be applied to the HTTP request. For example, the following
 // restricts the rule to match only requests where the URL path
 // starts with /ratings/v2/ and the request contains a custom `end-user` header
 // with value `jason`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -741,7 +745,7 @@ message HTTPMatchRequest {
   //
   // - `prefix: "value"` for prefix-based match
   //
-  // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // - `regex: "value"` for [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   //
   // **Note:** Case-insensitive matching could be enabled via the
   // `ignoreUriCase` flag.
@@ -754,7 +758,7 @@ message HTTPMatchRequest {
   //
   // - `prefix: "value"` for prefix-based match
   //
-  // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // - `regex: "value"` for [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   //
   StringMatch scheme = 2;
 
@@ -765,7 +769,7 @@ message HTTPMatchRequest {
   //
   // - `prefix: "value"` for prefix-based match
   //
-  // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // - `regex: "value"` for [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   //
   StringMatch method = 3;
 
@@ -776,7 +780,7 @@ message HTTPMatchRequest {
   //
   // - `prefix: "value"` for prefix-based match
   //
-  // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // - `regex: "value"` for [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   //
   StringMatch authority = 4;
 
@@ -789,7 +793,7 @@ message HTTPMatchRequest {
   //
   // - `prefix: "value"` for prefix-based match
   //
-  // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // - `regex: "value"` for [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   //
   // If the value is empty and only the name of header is specified, presence of the header is checked.
   // To provide an empty value, use `{}`, for example:
@@ -811,6 +815,9 @@ message HTTPMatchRequest {
   // with the given labels. If the VirtualService has a list of gateways specified
   // in the top-level `gateways` field, it must include the reserved gateway
   // `mesh` for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   map<string, string> source_labels = 7;
 
   // Names of gateways where the rule should be applied. Gateway names
@@ -849,6 +856,9 @@ message HTTPMatchRequest {
   // Source namespace constraining the applicability of a rule to workloads in that namespace.
   // If the VirtualService has a list of gateways specified in the top-level `gateways` field,
   // it must include the reserved gateway `mesh` for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   string source_namespace = 13;
 
   // The human readable prefix to use when emitting statistics for this route.
@@ -868,7 +878,7 @@ message HTTPMatchRequest {
 // "v1".
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews-route
@@ -890,7 +900,7 @@ message HTTPMatchRequest {
 // And the associated DestinationRule
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: DestinationRule
 // metadata:
 //   name: reviews-destination
@@ -910,7 +920,7 @@ message HTTPMatchRequest {
 // traffic to reviews.com to dev.reviews.com
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: reviews-route-two-domains
@@ -977,6 +987,9 @@ message L4MatchAttributes {
   // workloads with the given labels. If the VirtualService has a list of
   // gateways specified in the top-level `gateways` field, it should include the reserved gateway
   // `mesh` in order for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   map<string, string> source_labels = 4;
 
   // Names of gateways where the rule should be applied. Gateway names
@@ -987,6 +1000,9 @@ message L4MatchAttributes {
   // Source namespace constraining the applicability of a rule to workloads in that namespace.
   // If the VirtualService has a list of gateways specified in the top-level `gateways` field,
   // it must include the reserved gateway `mesh` for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   string source_namespace = 6;
 }
 
@@ -1015,6 +1031,9 @@ message TLSMatchAttributes {
   // workloads with the given labels. If the VirtualService has a list of
   // gateways specified in the top-level `gateways` field, it should include the reserved gateway
   // `mesh` in order for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   map<string, string> source_labels = 5;
 
   // Names of gateways where the rule should be applied. Gateway names
@@ -1025,6 +1044,9 @@ message TLSMatchAttributes {
   // Source namespace constraining the applicability of a rule to workloads in that namespace.
   // If the VirtualService has a list of gateways specified in the top-level `gateways` field,
   // it must include the reserved gateway `mesh` for this field to be applicable.
+  //
+  // **Note:** This is not a runtime match, but is a selector; it filters which workloads the
+  // VirtualService applies to.
   string source_namespace = 7;
 }
 
@@ -1035,7 +1057,7 @@ message TLSMatchAttributes {
 // /v1/bookRatings provided by the bookratings service.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1091,7 +1113,7 @@ message HTTPRedirect {
 // to requests for /v1/getProductRatings API.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1113,7 +1135,7 @@ message HTTPRedirect {
 // This is mostly useful for non text-based protocols such as gRPC.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1136,7 +1158,7 @@ message HTTPRedirect {
 // the returned Content-Type.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1184,7 +1206,7 @@ message HTTPBody {
 // ratings service before making the actual API call.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1217,7 +1239,7 @@ message HTTPRewrite {
 }
 
 message RegexRewrite {
-  // RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+  // [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
   string match = 1;
 
   // The string that should replace into matching portions of original URI.
@@ -1234,18 +1256,19 @@ message RegexRewrite {
   string rewrite = 2;
 }
 
-// Describes how to match a given string in HTTP headers. Match is
-// case-sensitive.
+// Describes how to match a given string in HTTP headers. `exact` and `prefix` matching is
+// case-sensitive. `regex` matching supports case-insensitive matches.
 message StringMatch {
   oneof match_type {
-
     // exact string match
     string exact = 1;
 
     // prefix-based match
     string prefix = 2;
 
-    // RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
+    // [RE2 style regex-based match](https://github.com/google/re2/wiki/Syntax).
+    //
+    // Example: `(?i)^aaa$` can be used to case-insensitive match a string consisting of three a's.
     string regex = 3;
   }
 }
@@ -1257,7 +1280,7 @@ message StringMatch {
 // or when the upstream server responds with Service Unavailable(503).
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1274,17 +1297,16 @@ message StringMatch {
 //       perTryTimeout: 2s
 //       retryOn: gateway-error,connect-failure,refused-stream
 // ```
-//
 message HTTPRetry {
   // Number of retries to be allowed for a given request. The interval
   // between retries will be determined automatically (25ms+). When request
   // `timeout` of the [HTTP route](https://istio.io/docs/reference/config/networking/virtual-service/#HTTPRoute)
   // or `per_try_timeout` is configured, the actual number of retries attempted also depends on
-  // the specified request `timeout` and `per_try_timeout` values. MUST BE >= 0. If `0`, retries will be disabled.
+  // the specified request `timeout` and `per_try_timeout` values. MUST be >= 0. If `0`, retries will be disabled.
   // The maximum possible number of requests made will be 1 + `attempts`.
   int32 attempts = 1;
 
-  // Timeout per attempt for a given request, including the initial call and any retries. Format: 1h/1m/1s/1ms. MUST BE >=1ms.
+  // Timeout per attempt for a given request, including the initial call and any retries. Format: 1h/1m/1s/1ms. MUST be >=1ms.
   // Default is same value as request
   // `timeout` of the [HTTP route](https://istio.io/docs/reference/config/networking/virtual-service/#HTTPRoute),
   // which means no timeout.
@@ -1292,14 +1314,31 @@ message HTTPRetry {
 
   // Specifies the conditions under which retry takes place.
   // One or more policies can be specified using a ‘,’ delimited list.
-  // If `retry_on` specifies a valid HTTP status, it will be added to retriable_status_codes retry policy.
   // See the [retry policies](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-on)
   // and [gRPC retry policies](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-grpc-on) for more details.
+  //
+  // In addition to the policies specified above, a list of HTTP status codes can be passed, such as `retryOn: "503,reset"`.
+  // Note these status codes refer to the actual responses received from the destination.
+  // For example, if a connection is reset, Istio will translate this to 503 for it's response.
+  // However, the destination did not return a 503 error, so this would not match `"503"` (it would, however, match `"reset"`).
+  //
+  // If not specified, this defaults to `connect-failure,refused-stream,unavailable,cancelled`.
   string retry_on = 3;
 
   // Flag to specify whether the retries should retry to other localities.
   // See the [retry plugin configuration](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_connection_management#retry-plugin-configuration) for more details.
   google.protobuf.BoolValue retry_remote_localities = 4;
+
+  // Flag to specify whether the retries should ignore previously tried hosts during retry.
+  // Defaults to true.
+  google.protobuf.BoolValue retry_ignore_previous_hosts = 5;
+
+  // Specifies the minimum duration between retry attempts.
+  // If unset, default minimum duration of 25ms is used as base interval for exponetial backoff.
+  // This has an impact on the total number of retries that will be attempted based on the `attempts` field
+  // and route timeout. For example, with attempts is set to 3, backoff to 2s and timeout to 3s, the request will
+  // be retried only once.
+  google.protobuf.Duration backoff = 6;
 }
 
 // Describes the Cross-Origin Resource Sharing (CORS) policy, for a given
@@ -1311,7 +1350,7 @@ message HTTPRetry {
 // exposes `X-Foo-bar` header and sets an expiry period of 1 day.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: ratings-route
@@ -1340,7 +1379,7 @@ message CorsPolicy {
   // content will be serialized into the Access-Control-Allow-Origin
   // header. Wildcard * will allow all origins.
   // $hide_from_docs
-  repeated string allow_origin = 1 [deprecated=true];
+  repeated string allow_origin = 1 [deprecated = true];
 
   // String patterns that match allowed origins.
   // An origin is allowed if any of the string matchers match.
@@ -1367,6 +1406,22 @@ message CorsPolicy {
   // (not the preflight) using credentials. Translates to
   // `Access-Control-Allow-Credentials` header.
   google.protobuf.BoolValue allow_credentials = 6;
+
+  // Indicates whether preflight requests not matching the configured
+  // allowed origin shouldn't be forwarded to the upstream.
+  // Default is forward to upstream.
+  UnmatchedPreflights unmatched_preflights = 8;
+
+  enum UnmatchedPreflights {
+    // Default to FORWARD
+    UNSPECIFIED = 0;
+    // Preflight requests not matching the configured allowed origin
+    // will be forwarded to the upstream.
+    FORWARD = 1;
+    // Preflight requests not matching the configured allowed origin
+    // will not be forwarded to the upstream.
+    IGNORE = 2;
+  }
 }
 
 // HTTPFaultInjection can be used to specify one or more faults to inject
@@ -1392,7 +1447,7 @@ message HTTPFaultInjection {
   // service from all pods with label env: prod
   //
   // ```yaml
-  // apiVersion: networking.istio.io/v1beta1
+  // apiVersion: networking.istio.io/v1
   // kind: VirtualService
   // metadata:
   //   name: reviews-route
@@ -1421,7 +1476,7 @@ message HTTPFaultInjection {
     // Percentage of requests on which the delay will be injected (0-100).
     // Use of integer `percent` value is deprecated. Use the double `percentage`
     // field instead.
-    int32 percent = 1 [deprecated=true];
+    int32 percent = 1 [deprecated = true];
 
     oneof http_delay_type {
       // Add a fixed delay before forwarding the request. Format:
@@ -1429,7 +1484,7 @@ message HTTPFaultInjection {
       google.protobuf.Duration fixed_delay = 2;
 
       // $hide_from_docs
-      google.protobuf.Duration exponential_delay = 3 ;
+      google.protobuf.Duration exponential_delay = 3;
     }
 
     // Percentage of requests on which the delay will be injected.
@@ -1442,7 +1497,7 @@ message HTTPFaultInjection {
   // error code for 1 out of every 1000 requests to the "ratings" service "v1".
   //
   // ```yaml
-  // apiVersion: networking.istio.io/v1beta1
+  // apiVersion: networking.istio.io/v1
   // kind: VirtualService
   // metadata:
   //   name: ratings-route

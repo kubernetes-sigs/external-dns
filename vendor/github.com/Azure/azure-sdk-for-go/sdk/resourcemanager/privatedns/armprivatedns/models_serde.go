@@ -780,6 +780,7 @@ func (v VirtualNetworkLinkProperties) MarshalJSON() ([]byte, error) {
 	objectMap := make(map[string]any)
 	populate(objectMap, "provisioningState", v.ProvisioningState)
 	populate(objectMap, "registrationEnabled", v.RegistrationEnabled)
+	populate(objectMap, "resolutionPolicy", v.ResolutionPolicy)
 	populate(objectMap, "virtualNetwork", v.VirtualNetwork)
 	populate(objectMap, "virtualNetworkLinkState", v.VirtualNetworkLinkState)
 	return json.Marshal(objectMap)
@@ -799,6 +800,9 @@ func (v *VirtualNetworkLinkProperties) UnmarshalJSON(data []byte) error {
 			delete(rawMsg, key)
 		case "registrationEnabled":
 			err = unpopulate(val, "RegistrationEnabled", &v.RegistrationEnabled)
+			delete(rawMsg, key)
+		case "resolutionPolicy":
+			err = unpopulate(val, "ResolutionPolicy", &v.ResolutionPolicy)
 			delete(rawMsg, key)
 		case "virtualNetwork":
 			err = unpopulate(val, "VirtualNetwork", &v.VirtualNetwork)
@@ -825,7 +829,7 @@ func populate(m map[string]any, k string, v any) {
 }
 
 func unpopulate(data json.RawMessage, fn string, v any) error {
-	if data == nil {
+	if data == nil || string(data) == "null" {
 		return nil
 	}
 	if err := json.Unmarshal(data, v); err != nil {

@@ -17,40 +17,8 @@ limitations under the License.
 package cache
 
 import (
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-||||||| parent of 4d7e5ad26 (update vendored files)
-	"k8s.io/apimachinery/pkg/util/clock"
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-	"k8s.io/apimachinery/pkg/util/sets"
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"k8s.io/utils/clock"
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	"k8s.io/apimachinery/pkg/util/clock"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/apimachinery/pkg/util/clock"
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"k8s.io/apimachinery/pkg/util/sets"
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"k8s.io/utils/clock"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 type fakeThreadSafeMap struct {
@@ -67,7 +35,7 @@ func (c *fakeThreadSafeMap) Delete(key string) {
 
 // FakeExpirationPolicy keeps the list for keys which never expires.
 type FakeExpirationPolicy struct {
-	NeverExpire     sets.String
+	NeverExpire     sets.Set[string]
 	RetrieveKeyFunc KeyFunc
 }
 

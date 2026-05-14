@@ -129,15 +129,10 @@ func (m *marshaler) marshal(v any) error {
 		}
 		repl := bytes.Repeat([]byte(" "), 1+m.indent)
 		repl[0] = '\n'
-<<<<<<< HEAD
-		m.buf.Write(bytes.Replace(b, []byte("\n"), repl, -1)) //nolint: gocritic
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		m.buf.Write(bytes.ReplaceAll(b, []byte("\n"), repl))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	default:
-		return fmt.Errorf("Cannot marshal %T", vt)
+		return fmt.Errorf("cannot marshal %T", vt)
 	}
 
 	return nil

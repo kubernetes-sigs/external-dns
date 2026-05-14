@@ -2,33 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-<<<<<<< HEAD:vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe_go120.go
-<<<<<<< HEAD
-<<<<<<< HEAD:vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe.go
-<<<<<<< HEAD
-//go:build !purego && !appengine
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-// +build !purego,!appengine
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe.go
-// +build !purego,!appengine
-=======
-//go:build !purego && !appengine && !go1.21
-// +build !purego,!appengine,!go1.21
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe_go120.go
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-//go:build !purego && !appengine && !go1.21
-// +build !purego,!appengine,!go1.21
-=======
-//go:build !go1.21
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-
-||||||| parent of 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0):vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe_go120.go
-//go:build !go1.21
-
-=======
->>>>>>> 53ef3ded0 (UPSTREAM: 6362: OCPBUGS-79591: Bump deps to get google.golang.org/grpc v1.80.0):vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe.go
 package protoreflect
 
 import (

@@ -14,10 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-import "networking/v1alpha3/sidecar.proto";
-import "networking/v1alpha3/workload_entry.proto";
-
 // $schema: istio.networking.v1alpha3.ServiceEntry
 // $title: Service Entry
 // $description: Configuration affecting service registry.
@@ -45,7 +41,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // ClientHello message to route to the appropriate external service.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-https
@@ -68,7 +64,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // to initiate mTLS connections to the database instances.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-mongocluster
@@ -91,7 +87,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // and the associated DestinationRule
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: DestinationRule
 // metadata:
 //   name: mtls-mongocluster
@@ -110,7 +106,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // an internal egress firewall.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-redirect
@@ -129,7 +125,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // And the associated VirtualService to route based on the SNI value.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: tls-routing
@@ -160,11 +156,11 @@ import "networking/v1alpha3/workload_entry.proto";
 // namespaces.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-httpbin
-//   namespace : egress
+//   namespace: egress
 // spec:
 //   hosts:
 //   - example.com
@@ -181,7 +177,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // Define a gateway to handle all egress traffic.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: Gateway
 // metadata:
 //  name: istio-egressgateway
@@ -206,7 +202,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // a managed middle proxy like this is a common practice.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: VirtualService
 // metadata:
 //   name: gateway-routing
@@ -242,7 +238,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // to connect to a specific IP), the resolution mode must be set to `NONE`.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-wildcard-example
@@ -262,7 +258,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // set to STATIC to use Unix address endpoints.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: unix-domain-socket-example
@@ -288,7 +284,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // uk.foo.bar.com:9080, and in.foo.bar.com:7080
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: external-svc-dns
@@ -323,11 +319,11 @@ import "networking/v1alpha3/workload_entry.proto";
 // whose format conforms to the [SPIFFE standard](https://github.com/spiffe/spiffe/blob/master/standards/SPIFFE-ID.md):
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: httpbin
-//   namespace : httpbin-ns
+//   namespace: httpbin-ns
 // spec:
 //   hosts:
 //   - example.com
@@ -353,7 +349,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // VMs and Kubernetes.
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadEntry
 // metadata:
 //   name: details-vm-1
@@ -364,7 +360,7 @@ import "networking/v1alpha3/workload_entry.proto";
 //     app: details
 //     instance-id: vm1
 // ---
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: WorkloadEntry
 // metadata:
 //   name: details-vm-2
@@ -382,7 +378,7 @@ import "networking/v1alpha3/workload_entry.proto";
 // Kubernetes:
 //
 // ```yaml
-// apiVersion: networking.istio.io/v1beta1
+// apiVersion: networking.istio.io/v1
 // kind: ServiceEntry
 // metadata:
 //   name: details-svc
@@ -401,6 +397,12 @@ import "networking/v1alpha3/workload_entry.proto";
 // ```
 package istio.networking.v1alpha3;
 
+import "analysis/v1alpha1/message.proto";
+import "google/api/field_behavior.proto";
+import "meta/v1alpha1/status.proto";
+import "networking/v1alpha3/sidecar.proto";
+import "networking/v1alpha3/workload_entry.proto";
+
 option go_package = "istio.io/api/networking/v1alpha3";
 
 // ServiceEntry enables adding additional entries into Istio's internal
@@ -408,7 +410,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 //
 // <!-- crd generation tags
 // +cue-gen:ServiceEntry:groupName:networking.istio.io
-// +cue-gen:ServiceEntry:version:v1alpha3
+// +cue-gen:ServiceEntry:versions:v1,v1beta1,v1alpha3
 // +cue-gen:ServiceEntry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:ServiceEntry:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:ServiceEntry:subresource:status
@@ -424,6 +426,7 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // Clients may not set this value. It is represented in RFC3339 form and is in UTC.
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:ServiceEntry:preserveUnknownFields:false
+// +cue-gen:ServiceEntry:spec:required
 // -->
 //
 // <!-- go code generation tags
@@ -431,10 +434,12 @@ option go_package = "istio.io/api/networking/v1alpha3";
 // +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
+// istiostatus-override: ServiceEntryStatus: istio.io/api/networking/v1alpha3
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="only one of WorkloadSelector or Endpoints can be set",rule="oneof(self.workloadSelector, self.endpoints)"
+// +kubebuilder:validation:XValidation:message="CIDR addresses are allowed only for NONE/STATIC resolution types",rule="!(default(self.addresses, []).exists(k, k.contains('/')) && !(default(self.resolution, 'NONE') in ['STATIC', 'NONE']))"
+// +kubebuilder:validation:XValidation:message="NONE mode cannot set endpoints",rule="default(self.resolution, 'NONE') == 'NONE' ? !has(self.endpoints) : true"
+// +kubebuilder:validation:XValidation:message="DNS_ROUND_ROBIN mode cannot have multiple endpoints",rule="default(self.resolution, '') == 'DNS_ROUND_ROBIN' ? default(self.endpoints, []).size() <= 1 : true"
 message ServiceEntry {
   // The hosts associated with the ServiceEntry. Could be a DNS
   // name with wildcard prefix.
@@ -460,6 +465,11 @@ message ServiceEntry {
   //    service accounts associated with the pods of the service, the
   //    SANs specified here will also be verified.
   //
+  // **NOTE 3:** Ztunnel and Waypoint proxies do not support wildcard hosts.
+  //
+  // +kubebuilder:validation:MinItems=1
+  // +kubebuilder:validation:MaxItems=256
+  // +protoc-gen-crd:list-value-validation:XValidation:message="hostname cannot be wildcard",rule="self != '*'"
   repeated string hosts = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The virtual IP addresses associated with the service. Could be CIDR
@@ -475,20 +485,26 @@ message ServiceEntry {
   // service in the mesh. In other words, the sidecar will behave as a
   // simple TCP proxy, forwarding incoming traffic on a specified port to
   // the specified destination endpoint IP/host. Unix domain socket
-  // addresses are not supported in this field.
+  // addresses are not supported in this field. Although the API allows
+  // specifying addresses in a list, multiple addresses will not be used by a single host.
+  // This means manual specification of dual-stack addressing is not supported.
+  // +kubebuilder:validation:MaxItems=256
+  // +protoc-gen-crd:list-value-validation:MaxLength=64
   repeated string addresses = 2;
 
   // The ports associated with the external service. If the
   // Endpoints are Unix domain socket addresses, there must be exactly one
   // port.
+  // +listType=map
+  // +listMapKey=name
+  // +kubebuilder:validation:MaxItems=256
+  // +kubebuilder:validation:XValidation:message="port number cannot be duplicated",rule="self.all(l1, self.exists_one(l2, l1.number == l2.number))"
   repeated ServicePort ports = 3;
 
   // Location specifies whether the service is part of Istio mesh or
   // outside the mesh.  Location determines the behavior of several
   // features, such as service-to-service mTLS authentication, policy
-  // enforcement, etc. When communicating with services outside the mesh,
-  // Istio's mTLS authentication is disabled, and policy enforcement is
-  // performed on the client-side as opposed to server-side.
+  // enforcement, etc.
   enum Location {
     // Signifies that the service is external to the mesh. Typically used
     // to indicate external services consumed through APIs.
@@ -499,7 +515,7 @@ message ServiceEntry {
     // mesh to include unmanaged infrastructure (e.g., VMs added to a
     // Kubernetes based service mesh).
     MESH_INTERNAL = 1;
-  };
+  }
 
   // Specify whether the service should be considered external to the mesh
   // or part of the mesh.
@@ -547,7 +563,24 @@ message ServiceEntry {
     // specified in the hosts field, if wildcards are not used. DNS resolution
     // cannot be used with Unix domain socket endpoints.
     DNS_ROUND_ROBIN = 3;
-  };
+
+    // DYNAMIC_DNS will attempt to resolve the host name specified in
+    // the Host header or SNI to an IP address when handling traffic. This
+    // allows multiple DNS addresses to be represented by a single wildcard
+    // `host` entry without having to explicitly enumerate all possible
+    // endpoints. During DNS proxying, ztunnel will resolve all subdomains
+    // matching the wildcard host name to a VIP which isn't used for routing
+    // outside the mesh. `DYNAMIC_DNS` will provide configuration to a
+    // waypoint proxy to recover the original host name using information
+    // from SNI or a Host header in an HTTP Request. This original host name
+    // will then be resolved so that traffic can be routed to the intended
+    // IP address. This method of handling wildcard traffic is not
+    // compatible with raw TCP traffic where the original host cannot
+    // be recovered. `DYNAMIC_DNS` is only supported for wildcard hosts,
+    // `MESH_EXTERNAL` location and in ambient mode. The ServiceEntry must
+    // be bound to a waypoint. Specified endpoints will be ignored.
+    DYNAMIC_DNS = 4;
+  }
 
   // Service resolution mode for the hosts. Care must be taken
   // when setting the resolution mode to NONE for a TCP port without
@@ -557,6 +590,7 @@ message ServiceEntry {
 
   // One or more endpoints associated with the service. Only one of
   // `endpoints` or `workloadSelector` can be specified.
+  // +kubebuilder:validation:MaxItems=4096
   repeated WorkloadEntry endpoints = 6;
 
   // Applicable only for MESH_INTERNAL services. Only one of
@@ -583,6 +617,8 @@ message ServiceEntry {
   // For a Kubernetes Service, the equivalent effect can be achieved by setting
   // the annotation "networking.istio.io/exportTo" to a comma-separated list
   // of namespace names.
+  //
+  // **Note:** Ztunnel and Waypoint proxies not support this field and will read it at "*".
   repeated string export_to = 7;
 
   // If specified, the proxy will verify that the server certificate's
@@ -598,18 +634,58 @@ message ServiceEntry {
 // ServicePort describes the properties of a specific port of a service.
 message ServicePort {
   // A valid non-negative integer port number.
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
   uint32 number = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The protocol exposed on the port.
-  // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
+  // MUST be one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
   // TLS implies the connection will be routed based on the SNI header to
   // the destination without terminating the TLS connection.
+  // +kubebuilder:validation:MaxLength=256
   string protocol = 2;
 
   // Label assigned to the port.
+  // +kubebuilder:validation:MaxLength=256
   string name = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The port number on the endpoint where the traffic will be
   // received. If unset, default to `number`.
+  // +kubebuilder:validation:XValidation:message="port must be between 1-65535",rule="0 < self && self <= 65535"
   uint32 target_port = 4;
+}
+
+message ServiceEntryStatus {
+  // Current service state of ServiceEntry.
+  // More info: https://istio.io/docs/reference/config/config-status/
+  // +optional
+  // +patchMergeKey=type
+  // +patchStrategy=merge
+  repeated meta.v1alpha1.IstioCondition conditions = 1;
+
+  // Includes any errors or warnings detected by Istio's analyzers.
+  // +optional
+  // +patchMergeKey=type
+  // +patchStrategy=merge
+  repeated analysis.v1alpha1.AnalysisMessageBase validation_messages = 2;
+
+  // Resource Generation to which the Reconciled Condition refers.
+  // When this value is not equal to the object's metadata generation, reconciled condition  calculation for the current
+  // generation is still in progress.  See https://istio.io/latest/docs/reference/config/config-status/ for more info.
+  // +optional
+  int64 observed_generation = 3;
+
+  // Above this is just a copy of the common IstioStatus since proto cannot embed an anonymous message whole cloth
+
+  // List of addresses which were assigned to this ServiceEntry.
+  // +optional
+  repeated ServiceEntryAddress addresses = 10;
+}
+
+// A minor abstraction to allow for adding hostnames if relevant.
+message ServiceEntryAddress {
+  // The address (e.g. 192.168.0.2)
+  string value = 1;
+
+  // The host name associated with this address
+  string host = 2;
 }

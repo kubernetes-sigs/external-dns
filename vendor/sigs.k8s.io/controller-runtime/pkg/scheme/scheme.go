@@ -21,213 +21,12 @@ limitations under the License.
 // Each API group should define a utility function
 // called AddToScheme for adding its types to a Scheme:
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
 //	 // in package myapigroupv1...
 //	var (
 //		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
 //		SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
 //		AddToScheme = SchemeBuilder.AddToScheme
 //	)
-//
-//	func init() {
-//		SchemeBuilder.Register(&MyType{}, &MyTypeList)
-//	}
-//	var (
-//		scheme *runtime.Scheme = runtime.NewScheme()
-//	)
-//
-// This also true of the built-in Kubernetes types.  Then, in the entrypoint for
-// your manager, assemble the scheme containing exactly the types you need,
-// panicing if scheme registration failed. For instance, if our controller needs
-// types from the core/v1 API group (e.g. Pod), plus types from my.api.group/v1:
-//
-<<<<<<< HEAD
-//  func init() {
-//  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
-//  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
-//  }
-//
-//  func main() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-||||||| parent of 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
-//  func init() {
-//  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
-//  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
-//  }
-//
-//  func main() {
-//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-=======
-//	func init() {
-//		utilruntime.Must(myapigroupv1.AddToScheme(scheme))
-//		utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
-//	}
->>>>>>> 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
-//
-//	func main() {
-//		mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
-//			Scheme: scheme,
-//		})
-//		// ...
-//	}
-package scheme
-
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
-type Builder struct {
-	GroupVersion schema.GroupVersion
-	runtime.SchemeBuilder
-}
-
-// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-||||||| parent of 5ce8c7613 (update vendored files)
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-=======
-//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
->>>>>>> 5ce8c7613 (update vendored files)
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-//
-package scheme
-
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
-type Builder struct {
-	GroupVersion schema.GroupVersion
-	runtime.SchemeBuilder
-}
-
-<<<<<<< HEAD
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
-=======
-// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-||||||| parent of 6b7ce455e (update vendored files)
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-=======
-//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
->>>>>>> 6b7ce455e (update vendored files)
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-//
-package scheme
-
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
-type Builder struct {
-	GroupVersion schema.GroupVersion
-	runtime.SchemeBuilder
-}
-
-<<<<<<< HEAD
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
-=======
-// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-||||||| parent of 4d7e5ad26 (update vendored files)
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-=======
-//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
->>>>>>> 4d7e5ad26 (update vendored files)
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-//
-package scheme
-
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
-type Builder struct {
-	GroupVersion schema.GroupVersion
-	runtime.SchemeBuilder
-}
-
-<<<<<<< HEAD
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
-=======
-// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//  // in package myapigroupv1...
-//  var (
-//  	SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
-//  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
-//  	AddToScheme = SchemeBuilder.AddToScheme
-//  )
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//  // in package myapigroupv1...
-//  var (
-//  	SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
-//  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
-//  	AddToScheme = SchemeBuilder.AddToScheme
-//  )
-=======
-//	 // in package myapigroupv1...
-//	var (
-//		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
-//		SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
-//		AddToScheme = SchemeBuilder.AddToScheme
-//	)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 //	func init() {
 //		SchemeBuilder.Register(&MyType{}, &MyTypeList)
@@ -261,19 +60,41 @@ import (
 )
 
 // Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
+//
+// Deprecated: This helper is only useful in api packages, but api packages should be
+// easy to import and hence have minimal dependencies. Typically, these dependencies
+// include only the standard library, k8s.io/apimachinery and other api packages.
+//
+// Use the apimachinery builder instead:
+//
+//	import (
+//		metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+//		"k8s.io/apimachinery/pkg/runtime"
+//		"k8s.io/apimachinery/pkg/runtime/schema"
+//	)
+//
+//	const GroupName = ""
+//
+//	var (
+//		SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
+//		SchemeBuilder 		 = runtime.NewSchemeBuilder(addKnownTypes)
+//		AddToScheme   		 = SchemeBuilder.AddToScheme
+//	)
+//
+//	func addKnownTypes(scheme *runtime.Scheme) error {
+//		scheme.AddKnownTypes(SchemeGroupVersion,
+//			&Pod{},
+//		)
+//
+//		metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
+//		return nil
+//	}
 type Builder struct {
 	GroupVersion schema.GroupVersion
 	runtime.SchemeBuilder
 }
 
-<<<<<<< HEAD
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
-=======
 // Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (bld *Builder) Register(object ...runtime.Object) *Builder {
 	bld.SchemeBuilder.Register(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(bld.GroupVersion, object...)

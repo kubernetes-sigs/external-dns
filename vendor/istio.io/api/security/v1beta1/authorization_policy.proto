@@ -13,9 +13,6 @@
 // limitations under the License.
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-import "type/v1beta1/selector.proto";
-
 // $schema: istio.security.v1beta1.AuthorizationPolicy
 // $title: Authorization Policy
 // $description: Configuration for access control on workloads.
@@ -42,7 +39,6 @@ import "type/v1beta1/selector.proto";
 // A request will be internally marked that it should be audited if there is an AUDIT policy on the workload that matches the request.
 // A separate plugin must be configured and enabled to actually fulfill the audit decision and complete the audit behavior.
 // The request will not be audited if there are no such supporting plugins enabled.
-// Currently, the only supported plugin is the [Stackdriver](https://istio.io/latest/docs/reference/config/proxy_extensions/stackdriver/) plugin.
 //
 // Here is an example of Istio Authorization Policy:
 //
@@ -244,13 +240,16 @@ import "type/v1beta1/selector.proto";
 // ```
 package istio.security.v1beta1;
 
-option go_package="istio.io/api/security/v1beta1";
+import "google/api/field_behavior.proto";
+import "type/v1beta1/selector.proto";
+
+option go_package = "istio.io/api/security/v1beta1";
 
 // AuthorizationPolicy enables access control on workloads.
 //
 // <!-- crd generation tags
 // +cue-gen:AuthorizationPolicy:groupName:security.istio.io
-// +cue-gen:AuthorizationPolicy:version:v1beta1
+// +cue-gen:AuthorizationPolicy:versions:v1,v1beta1
 // +cue-gen:AuthorizationPolicy:storageVersion
 // +cue-gen:AuthorizationPolicy:annotations:helm.sh/resource-policy=keep
 // +cue-gen:AuthorizationPolicy:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
@@ -271,9 +270,7 @@ option go_package="istio.io/api/security/v1beta1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-start
-// -->
+// +kubebuilder:validation:XValidation:message="only one of targetRefs or selector can be set",rule="oneof(self.selector, self.targetRef, self.targetRefs)"
 message AuthorizationPolicy {
   // Optional. The selector decides where to apply the authorization policy. The selector will match with workloads
   // in the same namespace as the authorization policy. If the authorization policy is in the root namespace, the selector
@@ -287,12 +284,15 @@ message AuthorizationPolicy {
   // $hide_from_docs
   istio.type.v1beta1.PolicyTargetReference targetRef = 5;
 
-  // Optional. The targetRef specifies the gateway the policy should be
-  // applied to. The targeted resource specified will determine which
-  // workloads the policy applies to.
+  // Optional. The targetRefs specifies a list of resources the policy should be
+  // applied to. The targeted resources specified will determine which workloads
+  // the policy applies to.
   //
   // Currently, the following resource attachment types are supported:
   // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  // * `kind: GatewayClass` with `group: gateway.networking.k8s.io` in the root namespace.
+  // * `kind: Service` with `group: ""` or `group: "core"` in the same namespace. This type is only supported for waypoints.
+  // * `kind: ServiceEntry` with `group: networking.istio.io` in the same namespace.
   //
   // If not set, the policy is applied as defined by the selector.
   // At most one of the selector and targetRefs can be set.
@@ -303,12 +303,14 @@ message AuthorizationPolicy {
   // from misinterpreting the policy as namespace-wide during the upgrade process.
   //
   // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  // +kubebuilder:validation:MaxItems=16
   repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 6;
 
   // Optional. A list of rules to match the request. A match occurs when at least one rule matches the request.
   //
   // If not set, the match will never occur. This is equivalent to setting a default of deny for the target workloads if
   // the action is ALLOW.
+  // +kubebuilder:validation:MaxItems=512
   repeated Rule rules = 2;
 
   // Action specifies the operation to take.
@@ -339,7 +341,7 @@ message AuthorizationPolicy {
     // `my-custom-authz` if the request path has prefix `/admin/`.
     //
     // ```yaml
-    // apiVersion: security.istio.io/v1beta1
+    // apiVersion: security.istio.io/v1
     // kind: AuthorizationPolicy
     // metadata:
     //   name: ext-authz
@@ -394,6 +396,7 @@ message Rule {
   // Optional. `from` specifies the source of a request.
   //
   // If not set, any source is allowed.
+  // +kubebuilder:validation:MaxItems=512
   repeated From from = 1;
 
   // To includes a list of operations.
@@ -424,10 +427,13 @@ message Rule {
 // namespaces: ["prod", "test"]
 // notIpBlocks: ["203.0.113.4"]
 // ```
+// +kubebuilder:validation:XValidation:message="Cannot set serviceAccounts with namespaces or principals",rule="(has(self.serviceAccounts) || has(self.notServiceAccounts)) ? (!has(self.principals) && !has(self.notPrincipals) && !has(self.namespaces) && !has(self.notNamespaces)) : true"
 message Source {
   // Optional. A list of peer identities derived from the peer certificate. The peer identity is in the format of
   // `"<TRUST_DOMAIN>/ns/<NAMESPACE>/sa/<SERVICE_ACCOUNT>"`, for example, `"cluster.local/ns/default/sa/productpage"`.
   // This field requires mTLS enabled and is the same as the `source.principal` attribute.
+  //
+  // Usage of `serviceAccounts` is typically simpler and offers the same functionality.
   //
   // If not set, any principal is allowed.
   repeated string principals = 1;
@@ -453,6 +459,31 @@ message Source {
 
   // Optional. A list of negative match of namespaces.
   repeated string not_namespaces = 7;
+
+  // Optional. A list of Kubernetes service accounts derived from the peer certificate.
+  // This field requires mTLS enabled and is the same as the `source.serviceaccount` attribute.
+  //
+  // This takes the format `<namespace>/<serviceaccount>`.
+  // `<serviceaccount>` may also be used to use the same namespace as the `AuthorizationPolicy`.
+  //
+  // If not set, any service account is allowed.
+  //
+  // No form of wildcard (`*`) is allowed.
+  // Cannot be set with `principals` or `namespaces`.
+  //
+  // +protoc-gen-crd:list-value-validation:MaxLength=320
+  // +kubebuilder:validation:MaxItems=16
+  repeated string service_accounts = 11;
+
+  // Optional. A list of negative match of Kubernetes service accounts.
+  //
+  // This takes the format `<namespace>/<serviceaccount>`.
+  // `<serviceaccount>` may also be used to use the same namespace as the `AuthorizationPolicy`.
+  //
+  // No form of wildcard (`*`) is allowed.
+  // +protoc-gen-crd:list-value-validation:MaxLength=320
+  // +kubebuilder:validation:MaxItems=16
+  repeated string not_service_accounts = 12;
 
   // Optional. A list of IP blocks, populated from the source address of the IP packet. Single IP (e.g. `203.0.113.4`) and
   // CIDR (e.g. `203.0.113.0/24`) are supported. This is the same as the `source.ip` attribute.
@@ -529,8 +560,8 @@ message Operation {
   // - `/foo/{*}` matches `/foo/bar` but not `/foo/bar/baz`
   // - `/foo/{**}/` matches `/foo/bar/`, `/foo/bar/baz.txt`, and `/foo//` but not `/foo/bar`
   // - `/foo/{*}/bar/{**}` matches `/foo/buzz/bar/` and `/foo/buzz/bar/baz`
-  // - `/*/baz/{*}`` is not a valid path template since it includes `*` outside of a supported operator
-  // - `/**/baz/{*}`` is not a valid path template since it includes `**` outside of a supported operator
+  // - `/*/baz/{*}` is not a valid path template since it includes `*` outside of a supported operator
+  // - `/**/baz/{*}` is not a valid path template since it includes `**` outside of a supported operator
   // - `/{**}/foo/{*}` is not a valid path template since `{**}` is not the last operator
   // - `/foo/{*}.txt` is invalid since there are characters other than `{*}` in the path segment
   //

@@ -6,24 +6,76 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"golang.org/x/mod/semver"
+	"time"
 )
 
-// DiskImage represents a DiskImage for launching instances from
+// DiskImage represents a serialized structure
 type DiskImage struct {
-	ID           string `json:"id,omitempty"`
-	Name         string `json:"name,omitempty"`
-	Version      string `json:"version,omitempty"`
-	State        string `json:"state,omitempty"`
-	Distribution string `json:"distribution,omitempty"`
-	Description  string `json:"description,omitempty"`
-	Label        string `json:"label,omitempty"`
+	ID                  string    `json:"id"`
+	Name                string    `json:"name"`
+	Version             string    `json:"version"`
+	State               string    `json:"state"`
+	InitialUser         string    `json:"initial_user,omitempty"`
+	Distribution        string    `json:"distribution"`
+	OS                  string    `json:"os,omitempty"`
+	Description         string    `json:"description"`
+	Label               string    `json:"label"`
+	DiskImageURL        string    `json:"disk_image_url,omitempty"`
+	DiskImageSizeBytes  int64     `json:"disk_image_size_bytes,omitempty"`
+	LogoURL             string    `json:"logo_url,omitempty"`
+	CreatedAt           time.Time `json:"created_at,omitempty"`
+	CreatedBy           string    `json:"created_by,omitempty"` // User information (because multiple users can operate under the same account)
+	DistributionDefault bool      `json:"distribution_default"`
+}
+
+// CreateDiskImageParams represents the parameters for creating a new disk image
+type CreateDiskImageParams struct {
+	Name           string `json:"name"`
+	Distribution   string `json:"distribution"`
+	Version        string `json:"version"`
+	Source         string `json:"source"`
+	OS             string `json:"os,omitempty"`
+	InitialUser    string `json:"initial_user,omitempty"`
+	Region         string `json:"region,omitempty"`
+	ImageSHA256    string `json:"image_sha256"`
+	ImageMD5       string `json:"image_md5"`
+	LogoBase64     string `json:"logo_base64,omitempty"`
+	ImageSizeBytes int64  `json:"image_size_bytes"` // Size of the image in bytes
+}
+
+// CreateDiskImageResponse represents the response from creating a new disk image
+type CreateDiskImageResponse struct {
+	ID                  string    `json:"id"`
+	Name                string    `json:"name"`
+	Distribution        string    `json:"distribution"`
+	Version             string    `json:"version"`
+	OS                  string    `json:"os"`
+	Region              string    `json:"region"`
+	Status              string    `json:"status"`
+	InitialUser         string    `json:"initial_user,omitempty"`
+	DiskImageURL        string    `json:"disk_image_url"`
+	DiskImageSizeBytes  int64     `json:"disk_image_size_bytes,omitempty"`
+	LogoURL             string    `json:"logo_url"`
+	ImageSize           int64     `json:"image_size"`
+	CreatedAt           time.Time `json:"created_at,omitempty"`
+	CreatedBy           string    `json:"created_by,omitempty"`
+	DistributionDefault bool      `json:"distribution_default,omitempty"`
 }
 
 // ListDiskImages return all disk image in system
-func (c *Client) ListDiskImages() ([]DiskImage, error) {
-	resp, err := c.SendGetRequest("/v2/disk_images")
+// includeCustom when true will also return custom images (default: false)
+func (c *Client) ListDiskImages(includeCustom ...bool) ([]DiskImage, error) {
+	includeCustomFlag := false
+	if len(includeCustom) > 0 {
+		includeCustomFlag = includeCustom[0]
+	}
+
+	url := "/v2/disk_images"
+	if includeCustomFlag {
+		url += "?type=custom"
+	}
+
+	resp, err := c.SendGetRequest(url)
 	if err != nil {
 		return nil, decodeError(err)
 	}
@@ -35,7 +87,7 @@ func (c *Client) ListDiskImages() ([]DiskImage, error) {
 
 	filteredDiskImages := make([]DiskImage, 0)
 	for _, diskImage := range diskImages {
-		if !strings.Contains(diskImage.Name, "k3s") {
+		if !strings.Contains(diskImage.Name, "k3s") && !strings.Contains(diskImage.Name, "talos") {
 			filteredDiskImages = append(filteredDiskImages, diskImage)
 		}
 	}
@@ -108,29 +160,29 @@ func (c *Client) GetDiskImageByName(name string) (*DiskImage, error) {
 	return nil, errors.New("diskimage not found")
 }
 
-// GetMostRecentDistro finds the highest version of a specified distro
-func (c *Client) GetMostRecentDistro(name string) (*DiskImage, error) {
-	resp, err := c.ListDiskImages()
+// CreateDiskImage creates a new disk image entry and returns a pre-signed URL for uploading
+func (c *Client) CreateDiskImage(params *CreateDiskImageParams) (*CreateDiskImageResponse, error) {
+	url := "/v2/disk_images"
+	resp, err := c.SendPostRequest(url, params)
+
 	if err != nil {
 		return nil, decodeError(err)
 	}
 
-	var highestVersionDistro *DiskImage
-
-	for _, diskimage := range resp {
-		if strings.Contains(diskimage.Name, name) {
-			if highestVersionDistro == nil {
-				highestVersionDistro = &diskimage
-			} else {
-				if semver.Compare(highestVersionDistro.Version, diskimage.Version) < 0 {
-					highestVersionDistro = &diskimage
-				}
-			}
-		}
-	}
-	if highestVersionDistro == nil {
-		return nil, fmt.Errorf("%s image not found", name)
+	diskImage := &CreateDiskImageResponse{}
+	if err := json.NewDecoder(bytes.NewReader(resp)).Decode(&diskImage); err != nil {
+		return nil, err
 	}
 
-	return highestVersionDistro, nil
+	return diskImage, nil
+}
+
+// DeleteDiskImage deletes a disk image by its ID
+func (c *Client) DeleteDiskImage(id string) error {
+	_, err := c.SendDeleteRequest(fmt.Sprintf("/v2/disk_images/%s", id))
+	if err != nil {
+		return decodeError(err)
+	}
+
+	return nil
 }

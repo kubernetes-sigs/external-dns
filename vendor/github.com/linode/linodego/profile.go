@@ -2,7 +2,6 @@ package linodego
 
 import (
 	"context"
-	"encoding/json"
 )
 
 // LishAuthMethod constants start with AuthMethod and include Linode API Lish Authentication Methods
@@ -27,17 +26,19 @@ type ProfileReferrals struct {
 
 // Profile represents a Profile object
 type Profile struct {
-	UID                int              `json:"uid"`
-	Username           string           `json:"username"`
-	Email              string           `json:"email"`
-	Timezone           string           `json:"timezone"`
-	EmailNotifications bool             `json:"email_notifications"`
-	IPWhitelistEnabled bool             `json:"ip_whitelist_enabled"`
-	TwoFactorAuth      bool             `json:"two_factor_auth"`
-	Restricted         bool             `json:"restricted"`
-	LishAuthMethod     LishAuthMethod   `json:"lish_auth_method"`
-	Referrals          ProfileReferrals `json:"referrals"`
-	AuthorizedKeys     []string         `json:"authorized_keys"`
+	UID                 int              `json:"uid"`
+	Username            string           `json:"username"`
+	Email               string           `json:"email"`
+	Timezone            string           `json:"timezone"`
+	EmailNotifications  bool             `json:"email_notifications"`
+	IPWhitelistEnabled  bool             `json:"ip_whitelist_enabled"`
+	TwoFactorAuth       bool             `json:"two_factor_auth"`
+	Restricted          bool             `json:"restricted"`
+	LishAuthMethod      LishAuthMethod   `json:"lish_auth_method"`
+	Referrals           ProfileReferrals `json:"referrals"`
+	AuthorizedKeys      []string         `json:"authorized_keys"`
+	AuthenticationType  string           `json:"authentication_type"`
+	VerifiedPhoneNumber string           `json:"verified_phone_number,omitempty"`
 }
 
 // ProfileUpdateOptions fields are those accepted by UpdateProfile
@@ -65,94 +66,15 @@ func (i Profile) GetUpdateOptions() (o ProfileUpdateOptions) {
 	o.TwoFactorAuth = copyBool(&i.TwoFactorAuth)
 	o.Restricted = copyBool(&i.Restricted)
 
-	return
+	return o
 }
 
 // GetProfile returns the Profile of the authenticated user
 func (c *Client) GetProfile(ctx context.Context) (*Profile, error) {
-	e := "profile"
-	req := c.R(ctx).SetResult(&Profile{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*Profile), nil
+	return doGETRequest[Profile](ctx, c, "profile")
 }
 
 // UpdateProfile updates the Profile with the specified id
 func (c *Client) UpdateProfile(ctx context.Context, opts ProfileUpdateOptions) (*Profile, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-<<<<<<< HEAD
-	req := c.R(ctx).SetResult(&Profile{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	req := c.R(ctx).SetResult(&Profile{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
-=======
-	e := "profile"
-	req := c.R(ctx).SetResult(&Profile{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*Profile), nil
+	return doPUTRequest[Profile](ctx, c, "profile", opts)
 }

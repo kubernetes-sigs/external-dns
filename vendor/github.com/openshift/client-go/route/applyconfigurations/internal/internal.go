@@ -3,10 +3,10 @@
 package internal
 
 import (
-	"fmt"
-	"sync"
+	fmt "fmt"
+	sync "sync"
 
-	typed "sigs.k8s.io/structured-merge-diff/v4/typed"
+	typed "sigs.k8s.io/structured-merge-diff/v6/typed"
 )
 
 func Parser() *typed.Parser {
@@ -23,6 +23,13 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.openshift.api.route.v1.LocalObjectReference
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+    elementRelationship: atomic
 - name: com.github.openshift.api.route.v1.Route
   map:
     fields:
@@ -44,6 +51,58 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.openshift.api.route.v1.RouteStatus
       default: {}
+- name: com.github.openshift.api.route.v1.RouteHTTPHeader
+  map:
+    fields:
+    - name: action
+      type:
+        namedType: com.github.openshift.api.route.v1.RouteHTTPHeaderActionUnion
+      default: {}
+    - name: name
+      type:
+        scalar: string
+      default: ""
+- name: com.github.openshift.api.route.v1.RouteHTTPHeaderActionUnion
+  map:
+    fields:
+    - name: set
+      type:
+        namedType: com.github.openshift.api.route.v1.RouteSetHTTPHeader
+    - name: type
+      type:
+        scalar: string
+      default: ""
+    unions:
+    - discriminator: type
+      fields:
+      - fieldName: set
+        discriminatorValue: Set
+- name: com.github.openshift.api.route.v1.RouteHTTPHeaderActions
+  map:
+    fields:
+    - name: request
+      type:
+        list:
+          elementType:
+            namedType: com.github.openshift.api.route.v1.RouteHTTPHeader
+          elementRelationship: associative
+          keys:
+          - name
+    - name: response
+      type:
+        list:
+          elementType:
+            namedType: com.github.openshift.api.route.v1.RouteHTTPHeader
+          elementRelationship: associative
+          keys:
+          - name
+- name: com.github.openshift.api.route.v1.RouteHTTPHeaders
+  map:
+    fields:
+    - name: actions
+      type:
+        namedType: com.github.openshift.api.route.v1.RouteHTTPHeaderActions
+      default: {}
 - name: com.github.openshift.api.route.v1.RouteIngress
   map:
     fields:
@@ -52,7 +111,9 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.openshift.api.route.v1.RouteIngressCondition
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - type
     - name: host
       type:
         scalar: string
@@ -91,7 +152,13 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: targetPort
       type:
         namedType: io.k8s.apimachinery.pkg.util.intstr.IntOrString
-      default: {}
+- name: com.github.openshift.api.route.v1.RouteSetHTTPHeader
+  map:
+    fields:
+    - name: value
+      type:
+        scalar: string
+      default: ""
 - name: com.github.openshift.api.route.v1.RouteSpec
   map:
     fields:
@@ -100,10 +167,16 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.openshift.api.route.v1.RouteTargetReference
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - name
+          - kind
     - name: host
       type:
         scalar: string
+    - name: httpHeaders
+      type:
+        namedType: com.github.openshift.api.route.v1.RouteHTTPHeaders
     - name: path
       type:
         scalar: string
@@ -158,6 +231,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: destinationCACertificate
       type:
         scalar: string
+    - name: externalCertificate
+      type:
+        namedType: com.github.openshift.api.route.v1.LocalObjectReference
     - name: insecureEdgeTerminationPolicy
       type:
         scalar: string
@@ -215,7 +291,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: creationTimestamp
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-      default: {}
     - name: deletionGracePeriodSeconds
       type:
         scalar: numeric

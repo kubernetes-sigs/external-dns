@@ -17,8 +17,8 @@ package pvtz
 
 // TagResource is a nested struct in pvtz response
 type TagResource struct {
-	TagKey       string `json:"TagKey" xml:"TagKey"`
+	ResourceType string `json:"ResourceType" xml:"ResourceType"`
 	TagValue     string `json:"TagValue" xml:"TagValue"`
 	ResourceId   string `json:"ResourceId" xml:"ResourceId"`
-	ResourceType string `json:"ResourceType" xml:"ResourceType"`
+	TagKey       string `json:"TagKey" xml:"TagKey"`
 }

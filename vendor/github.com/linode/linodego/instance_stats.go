@@ -2,7 +2,6 @@ package linodego
 
 import (
 	"context"
-	"fmt"
 )
 
 // StatsNet represents a network stats object
@@ -33,164 +32,14 @@ type InstanceStats struct {
 	Data  InstanceStatsData `json:"data"`
 }
 
-<<<<<<< HEAD
-// endpointWithIDAndDate gets the endpoint URL for InstanceStats of a given Instance and Year/Month
-func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	endpoint, err := c.InstanceStats.endpointWithParams(id)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
 // GetInstanceStats gets the template with the provided ID
 func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-	e, err := c.InstanceStats.endpointWithParams(linodeID)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-||||||| parent of 5ce8c7613 (update vendored files)
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-=======
-	endpoint, err := c.InstanceStats.endpointWithParams(id)
->>>>>>> 5ce8c7613 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
-// GetInstanceStats gets the template with the provided ID
-func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-<<<<<<< HEAD
-	e, err := c.InstanceStats.endpointWithID(linodeID)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	e, err := c.InstanceStats.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceStats.endpointWithParams(linodeID)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-||||||| parent of 6b7ce455e (update vendored files)
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-=======
-	endpoint, err := c.InstanceStats.endpointWithParams(id)
->>>>>>> 6b7ce455e (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
-// GetInstanceStats gets the template with the provided ID
-func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-<<<<<<< HEAD
-	e, err := c.InstanceStats.endpointWithID(linodeID)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	e, err := c.InstanceStats.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceStats.endpointWithParams(linodeID)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-=======
-	endpoint, err := c.InstanceStats.endpointWithParams(id)
->>>>>>> 4d7e5ad26 (update vendored files)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
-// GetInstanceStats gets the template with the provided ID
-func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-<<<<<<< HEAD
-	e, err := c.InstanceStats.endpointWithID(linodeID)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	e, err := c.InstanceStats.endpointWithID(linodeID)
-=======
-	e, err := c.InstanceStats.endpointWithParams(linodeID)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// endpointWithIDAndDate gets the endpoint URL for InstanceStats of a given Instance and Year/Month
-func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
-	endpoint, err := c.InstanceStats.endpointWithID(id)
-	if err != nil {
-		panic(err)
-	}
-
-	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
-	return endpoint
-}
-
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// GetInstanceStats gets the template with the provided ID
-func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-<<<<<<< HEAD
-	e, err := c.InstanceStats.endpointWithID(linodeID)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceStats{}).Get(e))
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	e, err := c.InstanceStats.endpointWithID(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceStats{}).Get(e))
-=======
-	e := fmt.Sprintf("linode/instances/%d/stats", linodeID)
-	req := c.R(ctx).SetResult(&InstanceStats{})
-	r, err := coupleAPIErrors(req.Get(e))
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceStats), nil
+	e := formatAPIPath("linode/instances/%d/stats", linodeID)
+	return doGETRequest[InstanceStats](ctx, c, e)
 }
 
 // GetInstanceStatsByDate gets the template with the provided ID, year, and month
 func (c *Client) GetInstanceStatsByDate(ctx context.Context, linodeID int, year int, month int) (*InstanceStats, error) {
-	e := fmt.Sprintf("linode/instances/%d/stats/%d/%d", linodeID, year, month)
-	req := c.R(ctx).SetResult(&InstanceStats{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceStats), nil
+	e := formatAPIPath("linode/instances/%d/stats/%d/%d", linodeID, year, month)
+	return doGETRequest[InstanceStats](ctx, c, e)
 }

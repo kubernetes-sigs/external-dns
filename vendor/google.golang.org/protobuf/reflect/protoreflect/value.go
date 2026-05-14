@@ -148,18 +148,7 @@ type Message interface {
 	// be preserved in marshaling or other operations.
 	IsValid() bool
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// ProtoMethods returns optional fast-path implementations of various operations.
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	// ProtoMethods returns optional fast-path implementions of various operations.
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	// ProtoMethods returns optional fast-path implementions of various operations.
-=======
-	// ProtoMethods returns optional fast-path implementations of various operations.
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// This method may return nil.
 	//
 	// The returned methods type is identical to

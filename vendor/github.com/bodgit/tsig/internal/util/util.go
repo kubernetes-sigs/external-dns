@@ -1,26 +1,29 @@
+/*
+Package util contains utility routines.
+*/
 package util
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/bodgit/tsig"
-	"github.com/jinzhu/copier"
 	"github.com/miekg/dns"
 )
 
 const (
 	_ uint16 = iota // Reserved, RFC 2930, section 2.5
-	// TkeyModeServer is used for server assigned keying
+	// TkeyModeServer is used for server assigned keying.
 	TkeyModeServer
-	// TkeyModeDH is used for Diffie-Hellman exchanged keying
+	// TkeyModeDH is used for Diffie-Hellman exchanged keying.
 	TkeyModeDH
-	// TkeyModeGSS is used for GSS-API establishment
+	// TkeyModeGSS is used for GSS-API establishment.
 	TkeyModeGSS
-	// TkeyModeResolver is used for resolver assigned keying
+	// TkeyModeResolver is used for resolver assigned keying.
 	TkeyModeResolver
-	// TkeyModeDelete is used for key deletion
+	// TkeyModeDelete is used for key deletion.
 	TkeyModeDelete
 )
 
@@ -33,11 +36,8 @@ type Exchanger interface {
 // TCP. If the existing network is configured to only use IPv4 or IPv6 then
 // the appropriate network is chosen to maintain this choice.
 func CopyDNSClient(dnsClient *dns.Client) (*dns.Client, error) {
-
-	client := new(dns.Client)
-	if err := copier.Copy(client, dnsClient); err != nil {
-		return nil, err
-	}
+	client := &dns.Client{}
+	*client = *dnsClient
 
 	switch client.Net {
 	case "tcp", "tcp4", "tcp6":
@@ -60,17 +60,17 @@ func CopyDNSClient(dnsClient *dns.Client) (*dns.Client, error) {
 }
 
 func calculateTimes(mode uint16, lifetime uint32) (uint32, uint32, error) {
-
 	switch mode {
 	case TkeyModeDH:
 		fallthrough
 	case TkeyModeGSS:
 		now := time.Now().Unix()
+
 		return uint32(now), uint32(now) + lifetime, nil
 	case TkeyModeDelete:
 		return 0, 0, nil
 	default:
-		return 0, 0, fmt.Errorf("Unsupported TKEY mode %d", mode)
+		return 0, 0, fmt.Errorf("unsupported TKEY mode %d", mode)
 	}
 }
 
@@ -80,8 +80,9 @@ func calculateTimes(mode uint16, lifetime uint32) (uint32, uint32, error) {
 // with TSIG if a key name, algorithm and MAC are provided.
 // The TKEY record is returned along with any other DNS records in the
 // response along with any error that occurred.
-func ExchangeTKEY(client Exchanger, host, keyname, algorithm string, mode uint16, lifetime uint32, input []byte, extra []dns.RR, tsigname, tsigalgo string) (*dns.TKEY, []dns.RR, error) {
-
+//
+//nolint:cyclop,funlen
+func ExchangeTKEY(client Exchanger, host, keyname, algorithm string, mode uint16, lifetime uint32, input []byte, extra []dns.RR, tsigname, tsigalgo string) (*dns.TKEY, []dns.RR, error) { //nolint:lll
 	msg := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:               dns.Id(),
@@ -141,8 +142,9 @@ func ExchangeTKEY(client Exchanger, host, keyname, algorithm string, mode uint16
 		case *dns.TKEY:
 			// There mustn't be more than one TKEY answer RR
 			if tkey != nil {
-				return nil, nil, fmt.Errorf("Multiple TKEY responses")
+				return nil, nil, errors.New("multiple TKEY responses")
 			}
+
 			tkey = t
 		default:
 			additional = append(additional, ans)
@@ -151,7 +153,7 @@ func ExchangeTKEY(client Exchanger, host, keyname, algorithm string, mode uint16
 
 	// There should always be at least a TKEY answer RR
 	if tkey == nil {
-		return nil, nil, fmt.Errorf("Received no TKEY response")
+		return nil, nil, errors.New("received no TKEY response")
 	}
 
 	if tkey.Error != 0 {

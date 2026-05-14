@@ -76,26 +76,6 @@ func (request *RpcRequest) InitWithApiInfo(product, version, action, serviceCode
 	request.actionName = action
 	request.locationServiceCode = serviceCode
 	request.locationEndpointType = endpointType
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	request.Headers["x-acs-version"] = version
 	request.Headers["x-acs-action"] = action
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Headers["x-acs-version"] = version
-	request.Headers["x-acs-action"] = action
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Headers["x-acs-version"] = version
-	request.Headers["x-acs-action"] = action
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

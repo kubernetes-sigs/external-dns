@@ -2,11 +2,6 @@
 // cgo -godefs defs_linux.go
 
 //go:build loong64
-<<<<<<< HEAD
-// +build loong64
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package socket
 

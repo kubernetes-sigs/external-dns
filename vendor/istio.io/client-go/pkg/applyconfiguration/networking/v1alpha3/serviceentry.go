@@ -17,7 +17,6 @@
 package v1alpha3
 
 import (
-	v1alpha1 "istio.io/api/meta/v1alpha1"
 	v1alpha3 "istio.io/api/networking/v1alpha3"
 	v1 "istio.io/client-go/pkg/applyconfiguration/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +28,8 @@ import (
 type ServiceEntryApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *v1alpha3.ServiceEntry `json:"spec,omitempty"`
-	Status                           *v1alpha1.IstioStatus  `json:"status,omitempty"`
+	Spec                             *v1alpha3.ServiceEntry       `json:"spec,omitempty"`
+	Status                           *v1alpha3.ServiceEntryStatus `json:"status,omitempty"`
 }
 
 // ServiceEntry constructs an declarative configuration of the ServiceEntry type for use with
@@ -213,7 +212,7 @@ func (b *ServiceEntryApplyConfiguration) WithSpec(value v1alpha3.ServiceEntry) *
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *ServiceEntryApplyConfiguration) WithStatus(value v1alpha1.IstioStatus) *ServiceEntryApplyConfiguration {
+func (b *ServiceEntryApplyConfiguration) WithStatus(value v1alpha3.ServiceEntryStatus) *ServiceEntryApplyConfiguration {
 	b.Status = &value
 	return b
 }

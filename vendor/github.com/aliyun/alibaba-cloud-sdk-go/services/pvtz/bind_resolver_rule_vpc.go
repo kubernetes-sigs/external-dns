@@ -79,6 +79,7 @@ type BindResolverRuleVpcRequest struct {
 
 // BindResolverRuleVpcVpc is a repeated param struct in BindResolverRuleVpcRequest
 type BindResolverRuleVpcVpc struct {
+	VpcType  string `name:"VpcType"`
 	RegionId string `name:"RegionId"`
 	VpcId    string `name:"VpcId"`
 }

@@ -19,11 +19,11 @@ limitations under the License.
 package v1beta1
 
 import (
-	"net/http"
+	http "net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	"sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
+	apisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1beta1Interface interface {
@@ -31,26 +31,6 @@ type GatewayV1beta1Interface interface {
 	GatewaysGetter
 	GatewayClassesGetter
 	HTTPRoutesGetter
-<<<<<<< HEAD
-}
-
-// GatewayV1beta1Client is used to interact with features provided by the gateway.networking.k8s.io group.
-type GatewayV1beta1Client struct {
-	restClient rest.Interface
-}
-
-func (c *GatewayV1beta1Client) Gateways(namespace string) GatewayInterface {
-	return newGateways(c, namespace)
-}
-
-func (c *GatewayV1beta1Client) GatewayClasses() GatewayClassInterface {
-	return newGatewayClasses(c)
-}
-
-func (c *GatewayV1beta1Client) HTTPRoutes(namespace string) HTTPRouteInterface {
-	return newHTTPRoutes(c, namespace)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	ReferenceGrantsGetter
 }
 
@@ -73,7 +53,6 @@ func (c *GatewayV1beta1Client) HTTPRoutes(namespace string) HTTPRouteInterface {
 
 func (c *GatewayV1beta1Client) ReferenceGrants(namespace string) ReferenceGrantInterface {
 	return newReferenceGrants(c, namespace)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // NewForConfig creates a new GatewayV1beta1Client for the given config.
@@ -81,9 +60,7 @@ func (c *GatewayV1beta1Client) ReferenceGrants(namespace string) ReferenceGrantI
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*GatewayV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -95,9 +72,7 @@ func NewForConfig(c *rest.Config) (*GatewayV1beta1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*GatewayV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
@@ -120,17 +95,15 @@ func New(c rest.Interface) *GatewayV1beta1Client {
 	return &GatewayV1beta1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1beta1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := apisv1beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

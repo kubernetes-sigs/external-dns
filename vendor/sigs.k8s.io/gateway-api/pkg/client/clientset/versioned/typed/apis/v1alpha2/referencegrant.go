@@ -19,15 +19,14 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
-<<<<<<< HEAD
-	"time"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
+	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	applyconfigurationapisv1alpha2 "sigs.k8s.io/gateway-api/applyconfiguration/apis/v1alpha2"
 	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 )
 
@@ -39,325 +38,33 @@ type ReferenceGrantsGetter interface {
 
 // ReferenceGrantInterface has methods to work with ReferenceGrant resources.
 type ReferenceGrantInterface interface {
-	Create(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.CreateOptions) (*v1alpha2.ReferenceGrant, error)
-	Update(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.UpdateOptions) (*v1alpha2.ReferenceGrant, error)
+	Create(ctx context.Context, referenceGrant *apisv1alpha2.ReferenceGrant, opts v1.CreateOptions) (*apisv1alpha2.ReferenceGrant, error)
+	Update(ctx context.Context, referenceGrant *apisv1alpha2.ReferenceGrant, opts v1.UpdateOptions) (*apisv1alpha2.ReferenceGrant, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.ReferenceGrant, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.ReferenceGrantList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*apisv1alpha2.ReferenceGrant, error)
+	List(ctx context.Context, opts v1.ListOptions) (*apisv1alpha2.ReferenceGrantList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ReferenceGrant, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apisv1alpha2.ReferenceGrant, err error)
+	Apply(ctx context.Context, referenceGrant *applyconfigurationapisv1alpha2.ReferenceGrantApplyConfiguration, opts v1.ApplyOptions) (result *apisv1alpha2.ReferenceGrant, err error)
 	ReferenceGrantExpansion
 }
 
 // referenceGrants implements ReferenceGrantInterface
 type referenceGrants struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*apisv1alpha2.ReferenceGrant, *apisv1alpha2.ReferenceGrantList, *applyconfigurationapisv1alpha2.ReferenceGrantApplyConfiguration]
 }
 
 // newReferenceGrants returns a ReferenceGrants
 func newReferenceGrants(c *GatewayV1alpha2Client, namespace string) *referenceGrants {
 	return &referenceGrants{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*apisv1alpha2.ReferenceGrant, *apisv1alpha2.ReferenceGrantList, *applyconfigurationapisv1alpha2.ReferenceGrantApplyConfiguration](
+			"referencegrants",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *apisv1alpha2.ReferenceGrant { return &apisv1alpha2.ReferenceGrant{} },
+			func() *apisv1alpha2.ReferenceGrantList { return &apisv1alpha2.ReferenceGrantList{} },
+		),
 	}
-}
-
-// Get takes name of the referenceGrant, and returns the corresponding referenceGrant object, and an error if there is any.
-func (c *referenceGrants) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of ReferenceGrants that match those selectors.
-func (c *referenceGrants) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ReferenceGrantList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha2.ReferenceGrantList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested referenceGrants.
-func (c *referenceGrants) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a referenceGrant and creates it.  Returns the server's representation of the referenceGrant, and an error, if there is any.
-func (c *referenceGrants) Create(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.CreateOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(referenceGrant).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a referenceGrant and updates it. Returns the server's representation of the referenceGrant, and an error, if there is any.
-func (c *referenceGrants) Update(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.UpdateOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(referenceGrant.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(referenceGrant).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the referenceGrant and deletes it. Returns an error if one occurs.
-func (c *referenceGrants) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *referenceGrants) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched referenceGrant.
-func (c *referenceGrants) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	json "encoding/json"
-	"fmt"
-	"time"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
-	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/applyconfiguration/apis/v1alpha2"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	scheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
-)
-
-// ReferenceGrantsGetter has a method to return a ReferenceGrantInterface.
-// A group's client should implement this interface.
-type ReferenceGrantsGetter interface {
-	ReferenceGrants(namespace string) ReferenceGrantInterface
-}
-
-// ReferenceGrantInterface has methods to work with ReferenceGrant resources.
-type ReferenceGrantInterface interface {
-	Create(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.CreateOptions) (*v1alpha2.ReferenceGrant, error)
-	Update(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.UpdateOptions) (*v1alpha2.ReferenceGrant, error)
-	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
-	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.ReferenceGrant, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.ReferenceGrantList, error)
-	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ReferenceGrant, err error)
-	Apply(ctx context.Context, referenceGrant *apisv1alpha2.ReferenceGrantApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.ReferenceGrant, err error)
-	ReferenceGrantExpansion
-}
-
-// referenceGrants implements ReferenceGrantInterface
-type referenceGrants struct {
-	client rest.Interface
-	ns     string
-}
-
-// newReferenceGrants returns a ReferenceGrants
-func newReferenceGrants(c *GatewayV1alpha2Client, namespace string) *referenceGrants {
-	return &referenceGrants{
-		client: c.RESTClient(),
-		ns:     namespace,
-	}
-}
-
-// Get takes name of the referenceGrant, and returns the corresponding referenceGrant object, and an error if there is any.
-func (c *referenceGrants) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of ReferenceGrants that match those selectors.
-func (c *referenceGrants) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ReferenceGrantList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha2.ReferenceGrantList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested referenceGrants.
-func (c *referenceGrants) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a referenceGrant and creates it.  Returns the server's representation of the referenceGrant, and an error, if there is any.
-func (c *referenceGrants) Create(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.CreateOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(referenceGrant).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a referenceGrant and updates it. Returns the server's representation of the referenceGrant, and an error, if there is any.
-func (c *referenceGrants) Update(ctx context.Context, referenceGrant *v1alpha2.ReferenceGrant, opts v1.UpdateOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(referenceGrant.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(referenceGrant).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the referenceGrant and deletes it. Returns an error if one occurs.
-func (c *referenceGrants) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *referenceGrants) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("referencegrants").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched referenceGrant.
-func (c *referenceGrants) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ReferenceGrant, err error) {
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied referenceGrant.
-func (c *referenceGrants) Apply(ctx context.Context, referenceGrant *apisv1alpha2.ReferenceGrantApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha2.ReferenceGrant, err error) {
-	if referenceGrant == nil {
-		return nil, fmt.Errorf("referenceGrant provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(referenceGrant)
-	if err != nil {
-		return nil, err
-	}
-	name := referenceGrant.Name
-	if name == nil {
-		return nil, fmt.Errorf("referenceGrant.Name must be provided to Apply")
-	}
-	result = &v1alpha2.ReferenceGrant{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("referencegrants").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

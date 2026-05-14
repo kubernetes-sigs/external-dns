@@ -13,20 +13,19 @@
 // limitations under the License.
 syntax = "proto3";
 
-import "analysis/v1alpha1/message.proto";
-
-import "google/protobuf/timestamp.proto";
-
 // $title: Istio Status
 // $description: Common status field for all istio collections.
 // $location: https://istio.io/docs/reference/config/meta/v1beta1/istio-status.html
 
 package istio.meta.v1alpha1;
 
-option go_package="istio.io/api/meta/v1alpha1";
+import "analysis/v1alpha1/message.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "istio.io/api/meta/v1alpha1";
 
 message IstioStatus {
-  // Current service state of pod.
+  // Current service state of the resource.
   // More info: https://istio.io/docs/reference/config/config-status/
   // +optional
   // +patchMergeKey=type
@@ -39,10 +38,13 @@ message IstioStatus {
   // +patchStrategy=merge
   repeated analysis.v1alpha1.AnalysisMessageBase validation_messages = 2;
 
+  // $hide_from_docs
+  // Deprecated. IstioCondition observed_generation will show the resource generation for which the condition was generated.
   // Resource Generation to which the Reconciled Condition refers.
   // When this value is not equal to the object's metadata generation, reconciled condition  calculation for the current
   // generation is still in progress.  See https://istio.io/latest/docs/reference/config/config-status/ for more info.
   // +optional
+  // +protoc-gen-crd:validation:XIntOrString
   int64 observed_generation = 3;
 }
 
@@ -69,4 +71,9 @@ message IstioCondition {
   // Human-readable message indicating details about last transition.
   // +optional
   string message = 6;
+
+  // Resource Generation to which the Condition refers.
+  // +optional
+  // +protoc-gen-crd:validation:XIntOrString
+  int64 observed_generation = 7;
 }

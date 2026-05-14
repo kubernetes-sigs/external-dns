@@ -10,11 +10,18 @@ import (
 	"gopkg.in/ns1/ns1-go.v2/rest/model/data"
 )
 
+// AnswerFeed wraps the values of an Answer's "feed" attribute
+type AnswerFeed struct {
+	FeedID   string `json:"feed"`
+	SourceID string `json:"source"`
+}
+
 // Answer wraps the values of a Record's "filters" attribute
 type Answer struct {
 	ID string `json:"id,omitempty"`
 
-	Meta *data.Meta `json:"meta,omitempty"`
+	Meta  *data.Meta   `json:"meta,omitempty"`
+	Feeds []AnswerFeed `json:"feeds,omitempty"`
 
 	// Answer response data. eg:
 	// Av4: ["1.1.1.1"]

@@ -60,25 +60,6 @@ const (
 	InvalidLevel = _maxLevel + 1
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// ParseLevel parses a level based on the lower-case or all-caps ASCII
-// representation of the log level. If the provided ASCII representation is
-// invalid an error is returned.
-//
-// This is particularly useful when dealing with text input to configure log
-// levels.
-func ParseLevel(text string) (Level, error) {
-	var level Level
-	err := level.UnmarshalText([]byte(text))
-	return level, err
-}
-
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 // ParseLevel parses a level based on the lower-case or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
 // invalid an error is returned.
@@ -128,7 +109,6 @@ func LevelOf(enab LevelEnabler) Level {
 	return InvalidLevel
 }
 
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {
@@ -199,19 +179,19 @@ func (l *Level) UnmarshalText(text []byte) error {
 
 func (l *Level) unmarshalText(text []byte) bool {
 	switch string(text) {
-	case "debug", "DEBUG":
+	case "debug":
 		*l = DebugLevel
-	case "info", "INFO", "": // make the zero value useful
+	case "info", "": // make the zero value useful
 		*l = InfoLevel
-	case "warn", "WARN":
+	case "warn", "warning":
 		*l = WarnLevel
-	case "error", "ERROR":
+	case "error":
 		*l = ErrorLevel
-	case "dpanic", "DPANIC":
+	case "dpanic":
 		*l = DPanicLevel
-	case "panic", "PANIC":
+	case "panic":
 		*l = PanicLevel
-	case "fatal", "FATAL":
+	case "fatal":
 		*l = FatalLevel
 	default:
 		return false

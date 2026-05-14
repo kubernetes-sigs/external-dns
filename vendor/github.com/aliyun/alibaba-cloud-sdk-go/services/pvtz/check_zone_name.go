@@ -21,10 +21,6 @@ import (
 )
 
 // CheckZoneName invokes the pvtz.CheckZoneName API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *CheckZoneNameResponse, err error) {
 	response = CreateCheckZoneNameResponse()
 	err = client.DoAction(request, response)
@@ -84,8 +80,8 @@ type CheckZoneNameRequest struct {
 type CheckZoneNameResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Check     bool   `json:"Check" xml:"Check"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCheckZoneNameRequest creates a request to invoke CheckZoneName API
@@ -95,170 +91,6 @@ func CreateCheckZoneNameRequest() (request *CheckZoneNameRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "CheckZoneName", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *CheckZoneNameResponse, err error) {
-	response = CreateCheckZoneNameResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// CheckZoneNameWithChan invokes the pvtz.CheckZoneName API asynchronously
-func (client *Client) CheckZoneNameWithChan(request *CheckZoneNameRequest) (<-chan *CheckZoneNameResponse, <-chan error) {
-	responseChan := make(chan *CheckZoneNameResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.CheckZoneName(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// CheckZoneNameWithCallback invokes the pvtz.CheckZoneName API asynchronously
-func (client *Client) CheckZoneNameWithCallback(request *CheckZoneNameRequest, callback func(response *CheckZoneNameResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *CheckZoneNameResponse
-		var err error
-		defer close(result)
-		response, err = client.CheckZoneName(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// CheckZoneNameRequest is the request struct for api CheckZoneName
-type CheckZoneNameRequest struct {
-	*requests.RpcRequest
-	ZoneName     string `position:"Query" name:"ZoneName"`
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// CheckZoneNameResponse is the response struct for api CheckZoneName
-type CheckZoneNameResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Check     bool   `json:"Check" xml:"Check"`
-}
-
-// CreateCheckZoneNameRequest creates a request to invoke CheckZoneName API
-func CreateCheckZoneNameRequest() (request *CheckZoneNameRequest) {
-	request = &CheckZoneNameRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "CheckZoneName", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *CheckZoneNameResponse, err error) {
-	response = CreateCheckZoneNameResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// CheckZoneNameWithChan invokes the pvtz.CheckZoneName API asynchronously
-func (client *Client) CheckZoneNameWithChan(request *CheckZoneNameRequest) (<-chan *CheckZoneNameResponse, <-chan error) {
-	responseChan := make(chan *CheckZoneNameResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.CheckZoneName(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// CheckZoneNameWithCallback invokes the pvtz.CheckZoneName API asynchronously
-func (client *Client) CheckZoneNameWithCallback(request *CheckZoneNameRequest, callback func(response *CheckZoneNameResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *CheckZoneNameResponse
-		var err error
-		defer close(result)
-		response, err = client.CheckZoneName(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// CheckZoneNameRequest is the request struct for api CheckZoneName
-type CheckZoneNameRequest struct {
-	*requests.RpcRequest
-	ZoneName     string `position:"Query" name:"ZoneName"`
-	UserClientIp string `position:"Query" name:"UserClientIp"`
-	Lang         string `position:"Query" name:"Lang"`
-}
-
-// CheckZoneNameResponse is the response struct for api CheckZoneName
-type CheckZoneNameResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Check     bool   `json:"Check" xml:"Check"`
-}
-
-// CreateCheckZoneNameRequest creates a request to invoke CheckZoneName API
-func CreateCheckZoneNameRequest() (request *CheckZoneNameRequest) {
-	request = &CheckZoneNameRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "CheckZoneName", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

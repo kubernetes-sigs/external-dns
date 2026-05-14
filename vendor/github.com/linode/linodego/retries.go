@@ -11,326 +11,17 @@ import (
 	"golang.org/x/net/http2"
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-const (
-	retryAfterHeaderName      = "Retry-After"
-	maintenanceModeHeaderName = "X-Maintenance-Mode"
-)
-
-// type RetryConditional func(r *resty.Response) (shouldRetry bool)
-type RetryConditional resty.RetryConditionFunc
-
-// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
-type RetryAfter resty.RetryAfterFunc
-
-// Configures resty to
-// lock until enough time has passed to retry the request as determined by the Retry-After response header.
-// If the Retry-After header is not set, we fall back to value of SetPollDelay.
-func configureRetries(c *Client) {
-	c.resty.
-		SetRetryCount(1000).
-		AddRetryCondition(checkRetryConditionals(c)).
-		SetRetryAfter(respectRetryAfter)
-}
-
-func checkRetryConditionals(c *Client) func(*resty.Response, error) bool {
-	return func(r *resty.Response, err error) bool {
-		for _, retryConditional := range c.retryConditionals {
-			retry := retryConditional(r, err)
-			if retry {
-				log.Printf("[INFO] Received error %s - Retrying", r.Error())
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// SetLinodeBusyRetry configures resty to retry specifically on "Linode busy." errors
-// The retry wait time is configured in SetPollDelay
-func linodeBusyRetryCondition(r *resty.Response, _ error) bool {
-	apiError, ok := r.Error().(*APIError)
-	linodeBusy := ok && apiError.Error() == "Linode busy."
-	retry := r.StatusCode() == http.StatusBadRequest && linodeBusy
-	return retry
-}
-
-func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusTooManyRequests
-}
-
-func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
-	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
-
-	// During maintenance events, the API will return a 503 and add
-	// an `X-MAINTENANCE-MODE` header. Don't retry during maintenance
-	// events, only for legitimate 503s.
-	if serviceUnavailable && r.Header().Get(maintenanceModeHeaderName) != "" {
-		log.Printf("[INFO] Linode API is under maintenance, request will not be retried - please see status.linode.com for more information")
-		return false
-	}
-
-	return serviceUnavailable
-}
-
-func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusRequestTimeout
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-const retryAfterHeaderName = "Retry-After"
-||||||| parent of 5ce8c7613 (update vendored files)
-const retryAfterHeaderName = "Retry-After"
-=======
-const (
-	retryAfterHeaderName      = "Retry-After"
-	maintenanceModeHeaderName = "X-Maintenance-Mode"
-)
->>>>>>> 5ce8c7613 (update vendored files)
-
-// type RetryConditional func(r *resty.Response) (shouldRetry bool)
-type RetryConditional resty.RetryConditionFunc
-
-// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
-type RetryAfter resty.RetryAfterFunc
-
-// Configures resty to
-// lock until enough time has passed to retry the request as determined by the Retry-After response header.
-// If the Retry-After header is not set, we fall back to value of SetPollDelay.
-func configureRetries(c *Client) {
-	c.resty.
-		SetRetryCount(1000).
-		AddRetryCondition(checkRetryConditionals(c)).
-		SetRetryAfter(respectRetryAfter)
-}
-
-func checkRetryConditionals(c *Client) func(*resty.Response, error) bool {
-	return func(r *resty.Response, err error) bool {
-		for _, retryConditional := range c.retryConditionals {
-			retry := retryConditional(r, err)
-			if retry {
-				log.Printf("[INFO] Received error %s - Retrying", r.Error())
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// SetLinodeBusyRetry configures resty to retry specifically on "Linode busy." errors
-// The retry wait time is configured in SetPollDelay
-func linodeBusyRetryCondition(r *resty.Response, _ error) bool {
-	apiError, ok := r.Error().(*APIError)
-	linodeBusy := ok && apiError.Error() == "Linode busy."
-	retry := r.StatusCode() == http.StatusBadRequest && linodeBusy
-	return retry
-}
-
-func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusTooManyRequests
-}
-
-func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
-<<<<<<< HEAD
-	return r.StatusCode() == http.StatusServiceUnavailable
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	return r.StatusCode() == http.StatusServiceUnavailable
-=======
-	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
-
-	// During maintenance events, the API will return a 503 and add
-	// an `X-MAINTENANCE-MODE` header. Don't retry during maintenance
-	// events, only for legitimate 503s.
-	if serviceUnavailable && r.Header().Get(maintenanceModeHeaderName) != "" {
-		log.Printf("[INFO] Linode API is under maintenance, request will not be retried - please see status.linode.com for more information")
-		return false
-	}
-
-	return serviceUnavailable
-}
-
-func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusRequestTimeout
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-const retryAfterHeaderName = "Retry-After"
-||||||| parent of 6b7ce455e (update vendored files)
-const retryAfterHeaderName = "Retry-After"
-=======
-const (
-	retryAfterHeaderName      = "Retry-After"
-	maintenanceModeHeaderName = "X-Maintenance-Mode"
-)
->>>>>>> 6b7ce455e (update vendored files)
-
-// type RetryConditional func(r *resty.Response) (shouldRetry bool)
-type RetryConditional resty.RetryConditionFunc
-
-// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
-type RetryAfter resty.RetryAfterFunc
-
-// Configures resty to
-// lock until enough time has passed to retry the request as determined by the Retry-After response header.
-// If the Retry-After header is not set, we fall back to value of SetPollDelay.
-func configureRetries(c *Client) {
-	c.resty.
-		SetRetryCount(1000).
-		AddRetryCondition(checkRetryConditionals(c)).
-		SetRetryAfter(respectRetryAfter)
-}
-
-func checkRetryConditionals(c *Client) func(*resty.Response, error) bool {
-	return func(r *resty.Response, err error) bool {
-		for _, retryConditional := range c.retryConditionals {
-			retry := retryConditional(r, err)
-			if retry {
-				log.Printf("[INFO] Received error %s - Retrying", r.Error())
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// SetLinodeBusyRetry configures resty to retry specifically on "Linode busy." errors
-// The retry wait time is configured in SetPollDelay
-func linodeBusyRetryCondition(r *resty.Response, _ error) bool {
-	apiError, ok := r.Error().(*APIError)
-	linodeBusy := ok && apiError.Error() == "Linode busy."
-	retry := r.StatusCode() == http.StatusBadRequest && linodeBusy
-	return retry
-}
-
-func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusTooManyRequests
-}
-
-func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
-<<<<<<< HEAD
-	return r.StatusCode() == http.StatusServiceUnavailable
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	return r.StatusCode() == http.StatusServiceUnavailable
-=======
-	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
-
-	// During maintenance events, the API will return a 503 and add
-	// an `X-MAINTENANCE-MODE` header. Don't retry during maintenance
-	// events, only for legitimate 503s.
-	if serviceUnavailable && r.Header().Get(maintenanceModeHeaderName) != "" {
-		log.Printf("[INFO] Linode API is under maintenance, request will not be retried - please see status.linode.com for more information")
-		return false
-	}
-
-	return serviceUnavailable
-}
-
-func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusRequestTimeout
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-const retryAfterHeaderName = "Retry-After"
-||||||| parent of 4d7e5ad26 (update vendored files)
-const retryAfterHeaderName = "Retry-After"
-=======
-const (
-	retryAfterHeaderName      = "Retry-After"
-	maintenanceModeHeaderName = "X-Maintenance-Mode"
-)
->>>>>>> 4d7e5ad26 (update vendored files)
-
-// type RetryConditional func(r *resty.Response) (shouldRetry bool)
-type RetryConditional resty.RetryConditionFunc
-
-// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
-type RetryAfter resty.RetryAfterFunc
-
-// Configures resty to
-// lock until enough time has passed to retry the request as determined by the Retry-After response header.
-// If the Retry-After header is not set, we fall back to value of SetPollDelay.
-func configureRetries(c *Client) {
-	c.resty.
-		SetRetryCount(1000).
-		AddRetryCondition(checkRetryConditionals(c)).
-		SetRetryAfter(respectRetryAfter)
-}
-
-func checkRetryConditionals(c *Client) func(*resty.Response, error) bool {
-	return func(r *resty.Response, err error) bool {
-		for _, retryConditional := range c.retryConditionals {
-			retry := retryConditional(r, err)
-			if retry {
-				log.Printf("[INFO] Received error %s - Retrying", r.Error())
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// SetLinodeBusyRetry configures resty to retry specifically on "Linode busy." errors
-// The retry wait time is configured in SetPollDelay
-func linodeBusyRetryCondition(r *resty.Response, _ error) bool {
-	apiError, ok := r.Error().(*APIError)
-	linodeBusy := ok && apiError.Error() == "Linode busy."
-	retry := r.StatusCode() == http.StatusBadRequest && linodeBusy
-	return retry
-}
-
-func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusTooManyRequests
-}
-
-func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
-<<<<<<< HEAD
-	return r.StatusCode() == http.StatusServiceUnavailable
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	return r.StatusCode() == http.StatusServiceUnavailable
-=======
-	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
-
-	// During maintenance events, the API will return a 503 and add
-	// an `X-MAINTENANCE-MODE` header. Don't retry during maintenance
-	// events, only for legitimate 503s.
-	if serviceUnavailable && r.Header().Get(maintenanceModeHeaderName) != "" {
-		log.Printf("[INFO] Linode API is under maintenance, request will not be retried - please see status.linode.com for more information")
-		return false
-	}
-
-	return serviceUnavailable
-}
-
-func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
-	return r.StatusCode() == http.StatusRequestTimeout
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-const retryAfterHeaderName = "Retry-After"
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-const retryAfterHeaderName = "Retry-After"
-=======
 const (
 	retryAfterHeaderName      = "Retry-After"
 	maintenanceModeHeaderName = "X-Maintenance-Mode"
 
 	defaultRetryCount = 1000
 )
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-// type RetryConditional func(r *resty.Response) (shouldRetry bool)
+// RetryConditional func(r *resty.Response) (shouldRetry bool)
 type RetryConditional resty.RetryConditionFunc
 
-// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
+// RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
 type RetryAfter resty.RetryAfterFunc
 
 // Configures resty to
@@ -352,6 +43,7 @@ func checkRetryConditionals(c *Client) func(*resty.Response, error) bool {
 				return true
 			}
 		}
+
 		return false
 	}
 }
@@ -362,6 +54,7 @@ func linodeBusyRetryCondition(r *resty.Response, _ error) bool {
 	apiError, ok := r.Error().(*APIError)
 	linodeBusy := ok && apiError.Error() == "Linode busy."
 	retry := r.StatusCode() == http.StatusBadRequest && linodeBusy
+
 	return retry
 }
 
@@ -370,12 +63,6 @@ func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
 }
 
 func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
-<<<<<<< HEAD
-	return r.StatusCode() == http.StatusServiceUnavailable
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	return r.StatusCode() == http.StatusServiceUnavailable
-=======
 	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
 
 	// During maintenance events, the API will return a 503 and add
@@ -400,8 +87,7 @@ func requestGOAWAYRetryCondition(_ *resty.Response, e error) bool {
 func requestNGINXRetryCondition(r *resty.Response, _ error) bool {
 	return r.StatusCode() == http.StatusBadRequest &&
 		r.Header().Get("Server") == "nginx" &&
-		r.Header().Get("Content-Type") == "text/html"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		r.Header().Get("Content-Type") == "text/html" //nolint:goconst
 }
 
 func respectRetryAfter(client *resty.Client, resp *resty.Response) (time.Duration, error) {
@@ -417,5 +103,6 @@ func respectRetryAfter(client *resty.Client, resp *resty.Response) (time.Duratio
 
 	duration := time.Duration(retryAfter) * time.Second
 	log.Printf("[INFO] Respecting Retry-After Header of %d (%s) (max %s)", retryAfter, duration, client.RetryMaxWaitTime)
+
 	return duration, nil
 }

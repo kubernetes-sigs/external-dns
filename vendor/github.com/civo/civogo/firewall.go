@@ -224,3 +224,49 @@ func (c *Client) DeleteFirewallRule(id string, ruleID string) (*SimpleResponse, 
 
 	return c.DecodeSimpleResponse(resp)
 }
+
+// IsUsingDefaultRules checks if the firewall is using the default rules
+func (c *Client) IsUsingDefaultRules(firewallID string) (bool, error) {
+	// Define default firewall rules
+	var defaultRules = []FirewallRule{
+		{Protocol: "tcp", Ports: "22", Cidr: []string{"0.0.0.0/0"}, Direction: "ingress", Action: "allow"},
+		{Protocol: "tcp", Ports: "80", Cidr: []string{"0.0.0.0/0"}, Direction: "ingress", Action: "allow"},
+		{Protocol: "tcp", Ports: "443", Cidr: []string{"0.0.0.0/0"}, Direction: "ingress", Action: "allow"},
+	}
+
+	// Retrieve actual firewall rules
+	rules, err := c.ListFirewallRules(firewallID)
+	if err != nil {
+		return false, fmt.Errorf("error retrieving firewall rules: %s", err)
+	}
+
+	// Compare the actual rules with the default rules
+	return areDefaultRules(rules, defaultRules), nil
+}
+
+// Helper function to check if the firewall rules match the default rules
+func areDefaultRules(rules []FirewallRule, defaultRules []FirewallRule) bool {
+	if len(rules) != len(defaultRules) {
+		return false
+	}
+
+	for _, defaultRule := range defaultRules {
+		match := false
+		for _, rule := range rules {
+			if rule.Protocol == defaultRule.Protocol &&
+				rule.Ports == defaultRule.Ports &&
+				rule.Direction == defaultRule.Direction &&
+				rule.Action == defaultRule.Action &&
+				len(rule.Cidr) == len(defaultRule.Cidr) &&
+				rule.Cidr[0] == defaultRule.Cidr[0] {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
+	return true
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"runtime"
 	"strings"
 
 	"golang.org/x/oauth2/clientcredentials"
@@ -66,6 +67,12 @@ func expandConfigPaths() []interface{} {
 // loadINI builds a ini.File from the configuration paths provided in configPaths.
 // It's a helper for loadConfig.
 func loadINI() (*ini.File, error) {
+	// Don't try to load configuration from the
+	// filesystem when compiling for WebAssembly
+	if runtime.GOARCH == "wasm" && runtime.GOOS == "js" {
+		return ini.Empty(), nil
+	}
+
 	paths := expandConfigPaths()
 	if len(paths) == 0 {
 		return ini.Empty(), nil
@@ -90,7 +97,7 @@ func loadINI() (*ini.File, error) {
 // - /etc/ovh.conf
 func (c *Client) loadConfig(endpointName string) error {
 	if strings.HasSuffix(endpointName, "/") {
-		return fmt.Errorf("endpoint name cannot have a tailing slash")
+		return fmt.Errorf("endpoint name cannot have a trailing slash")
 	}
 
 	// Load configuration files by order of increasing priority. All configuration
@@ -103,6 +110,10 @@ func (c *Client) loadConfig(endpointName string) error {
 	// Canonicalize configuration
 	if endpointName == "" {
 		endpointName = getConfigValue(cfg, "default", "endpoint", "ovh-eu")
+	}
+
+	if c.AccessToken == "" {
+		c.AccessToken = getConfigValue(cfg, endpointName, "access_token", "")
 	}
 
 	if c.AppKey == "" {
@@ -125,17 +136,31 @@ func (c *Client) loadConfig(endpointName string) error {
 		c.ClientSecret = getConfigValue(cfg, endpointName, "client_secret", "")
 	}
 
+	configuredAuthMethods := []string{}
+	if c.AppKey != "" || c.AppSecret != "" || c.ConsumerKey != "" {
+		configuredAuthMethods = append(configuredAuthMethods, "application_key/application_secret")
+	}
+	if c.ClientID != "" || c.ClientSecret != "" {
+		configuredAuthMethods = append(configuredAuthMethods, "client_id/client_secret")
+	}
+	if c.AccessToken != "" {
+		configuredAuthMethods = append(configuredAuthMethods, "access_token")
+	}
+
+	if len(configuredAuthMethods) > 1 {
+		return fmt.Errorf("can't use multiple authentication methods: %s", strings.Join(configuredAuthMethods, ", "))
+	}
+	if len(configuredAuthMethods) == 0 {
+		return errors.New(
+			"missing authentication information, you need to provide one of the following: application_key/application_secret, client_id/client_secret, or access_token",
+		)
+	}
+
 	if (c.ClientID != "") != (c.ClientSecret != "") {
 		return errors.New("invalid oauth2 config, both client_id and client_secret must be given")
 	}
 	if (c.AppKey != "") != (c.AppSecret != "") {
 		return errors.New("invalid authentication config, both application_key and application_secret must be given")
-	}
-
-	if c.ClientID != "" && c.AppKey != "" {
-		return errors.New("can't use both application_key/application_secret and OAuth2 client_id/client_secret")
-	} else if c.ClientID == "" && c.AppKey == "" {
-		return errors.New("missing authentication information, you need to provide at least an application_key/application_secret or a client_id/client_secret")
 	}
 
 	// Load real endpoint URL by name. If endpoint contains a '/', consider it as a URL
@@ -177,9 +202,17 @@ func getConfigValue(cfg *ini.File, section, name, def string) string {
 		return fromEnv
 	}
 
+	if !cfg.HasSection(section) {
+		return def
+	}
+
 	// Attempt to load from configuration
 	fromSection := cfg.Section(section)
 	if fromSection == nil {
+		return def
+	}
+
+	if !fromSection.HasKey(name) {
 		return def
 	}
 

@@ -71,6 +71,7 @@ func (client *Client) DescribeResolverEndpointsWithCallback(request *DescribeRes
 // DescribeResolverEndpointsRequest is the request struct for api DescribeResolverEndpoints
 type DescribeResolverEndpointsRequest struct {
 	*requests.RpcRequest
+	VpcRegionId  string           `position:"Query" name:"VpcRegionId"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize     requests.Integer `position:"Query" name:"PageSize"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`

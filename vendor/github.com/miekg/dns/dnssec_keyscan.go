@@ -4,56 +4,12 @@ import (
 	"bufio"
 	"crypto"
 	"crypto/ecdsa"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	"crypto/ed25519"
->>>>>>> 4d7e5ad26 (update vendored files)
-	"crypto/rsa"
-	"io"
-	"math/big"
-	"strconv"
-	"strings"
-<<<<<<< HEAD
-
-	"golang.org/x/crypto/ed25519"
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-
-	"golang.org/x/crypto/ed25519"
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	"crypto/ed25519"
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	"crypto/rsa"
-	"io"
-	"math/big"
-	"strconv"
-	"strings"
-<<<<<<< HEAD
-
-	"golang.org/x/crypto/ed25519"
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-	"golang.org/x/crypto/ed25519"
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.

@@ -18,47 +18,6 @@ package openapi
 
 import (
 	"context"
-<<<<<<< HEAD
-
-	openapi_v3 "github.com/google/gnostic/openapiv3"
-	"google.golang.org/protobuf/proto"
-	"k8s.io/kube-openapi/pkg/handler3"
-)
-
-const openAPIV3mimePb = "application/com.github.proto-openapi.spec.v3@v1.0+protobuf"
-
-type GroupVersion interface {
-	Schema() (*openapi_v3.Document, error)
-}
-
-type groupversion struct {
-	client *client
-	item   handler3.OpenAPIV3DiscoveryGroupVersion
-}
-
-func newGroupVersion(client *client, item handler3.OpenAPIV3DiscoveryGroupVersion) *groupversion {
-	return &groupversion{client: client, item: item}
-}
-
-func (g *groupversion) Schema() (*openapi_v3.Document, error) {
-	data, err := g.client.restClient.Get().
-		RequestURI(g.item.ServerRelativeURL).
-		SetHeader("Accept", openAPIV3mimePb).
-		Do(context.TODO()).
-		Raw()
-
-	if err != nil {
-		return nil, err
-	}
-
-	document := &openapi_v3.Document{}
-	if err := proto.Unmarshal(data, document); err != nil {
-		return nil, err
-	}
-
-	return document, nil
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	"net/url"
 
 	"k8s.io/kube-openapi/pkg/handler3"
@@ -114,7 +73,6 @@ func (g *groupversion) Schema(contentType string) ([]byte, error) {
 	}
 
 	return path.Do(context.TODO()).Raw()
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // URL used for fetching the schema. The URL includes a hash and can be used

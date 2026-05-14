@@ -30,10 +30,6 @@ type pipeBuffer interface {
 	io.Reader
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 // setBuffer initializes the pipe buffer.
 // It has no effect if the pipe is already closed.
 func (p *pipe) setBuffer(b pipeBuffer) {
@@ -45,88 +41,6 @@ func (p *pipe) setBuffer(b pipeBuffer) {
 	p.b = b
 }
 
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-// setBuffer initializes the pipe buffer.
-// It has no effect if the pipe is already closed.
-func (p *pipe) setBuffer(b pipeBuffer) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.err != nil || p.breakErr != nil {
-		return
-	}
-	p.b = b
-}
-
->>>>>>> 4d7e5ad26 (update vendored files)
-func (p *pipe) Len() int {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.b == nil {
-		return p.unread
-	}
-	return p.b.Len()
-}
-
-// Read waits until data is available and copies bytes
-// from the buffer into p.
-func (p *pipe) Read(d []byte) (n int, err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.c.L == nil {
-		p.c.L = &p.mu
-	}
-	for {
-		if p.breakErr != nil {
-			return 0, p.breakErr
-		}
-		if p.b != nil && p.b.Len() > 0 {
-			return p.b.Read(d)
-		}
-		if p.err != nil {
-			if p.readFn != nil {
-				p.readFn()     // e.g. copy trailers
-				p.readFn = nil // not sticky like p.err
-			}
-			p.b = nil
-			return 0, p.err
-		}
-		p.c.Wait()
-	}
-}
-
-var errClosedPipeWrite = errors.New("write on closed buffer")
-
-// Write copies bytes from p into the buffer and wakes a reader.
-// It is an error to write more data than the buffer can hold.
-func (p *pipe) Write(d []byte) (n int, err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.c.L == nil {
-		p.c.L = &p.mu
-	}
-	defer p.c.Signal()
-	if p.err != nil || p.breakErr != nil {
-		return 0, errClosedPipeWrite
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-// setBuffer initializes the pipe buffer.
-// It has no effect if the pipe is already closed.
-func (p *pipe) setBuffer(b pipeBuffer) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.err != nil || p.breakErr != nil {
-		return
-	}
-	p.b = b
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (p *pipe) Len() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -180,22 +94,11 @@ func (p *pipe) Write(d []byte) (n int, err error) {
 	if p.err != nil || p.breakErr != nil {
 		return 0, errClosedPipeWrite
 	}
-<<<<<<< HEAD
-	if p.breakErr != nil {
-		p.unread += len(d)
-		return len(d), nil // discard when there is no reader
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	if p.breakErr != nil {
-		p.unread += len(d)
-		return len(d), nil // discard when there is no reader
-=======
 	// pipe.setBuffer is never invoked, leaving the buffer uninitialized.
 	// We shouldn't try to write to an uninitialized pipe,
 	// but returning an error is better than panicking.
 	if p.b == nil {
 		return 0, errUninitializedPipeWrite
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return p.b.Write(d)
 }

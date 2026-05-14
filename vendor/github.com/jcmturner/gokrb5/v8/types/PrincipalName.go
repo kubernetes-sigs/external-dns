@@ -35,31 +35,9 @@ func (pn PrincipalName) GetSalt(realm string) string {
 
 // Equal tests if the PrincipalName is equal to the one provided.
 func (pn PrincipalName) Equal(n PrincipalName) bool {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if len(pn.NameString) != len(n.NameString) {
 		return false
 	}
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	if len(pn.NameString) != len(n.NameString) {
-		return false
-	}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	if len(pn.NameString) != len(n.NameString) {
-		return false
-	}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	//https://tools.ietf.org/html/rfc4120#section-6.2 - the name type is not significant when checking for equivalence
 	for i, s := range pn.NameString {
 		if n.NameString[i] != s {

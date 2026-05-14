@@ -38,16 +38,6 @@ type EventExpansion interface {
 	//
 	// Deprecated: use UpdateWithEventNamespaceWithContext instead.
 	UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// PatchWithEventNamespace is the same as a Patch, except that it sends the request to the event.Namespace.
 	//
 	// Deprecated: use PatchWithEventNamespaceWithContext instead.
@@ -117,84 +107,6 @@ func (e *events) UpdateWithEventNamespaceWithContext(ctx context.Context, event 
 	if e.GetNamespace() != "" && event.Namespace != e.GetNamespace() {
 		return nil, fmt.Errorf("can't update an event with namespace '%v' in namespace '%v'", event.Namespace, e.GetNamespace())
 	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error)
-	// Search finds events about the specified object
-	Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1.EventList, error)
-	// Returns the appropriate field selector based on the API version being used to communicate with the server.
-	// The returned field selector can be used with List and Watch to filter desired events.
-	GetFieldSelector(involvedObjectName, involvedObjectNamespace, involvedObjectKind, involvedObjectUID *string) fields.Selector
-}
-
-// CreateWithEventNamespace makes a new event. Returns the copy of the event the server returns,
-// or an error. The namespace to create the event within is deduced from the
-// event; it must either match this event client's namespace, or this event
-// client must have been created with the "" namespace.
-func (e *events) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
-	if e.ns != "" && event.Namespace != e.ns {
-		return nil, fmt.Errorf("can't create an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)
-	}
-	result := &v1.Event{}
-	err := e.client.Post().
-		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).
-		Resource("events").
-		Body(event).
-		Do(context.TODO()).
-		Into(result)
-	return result, err
-}
-
-// UpdateWithEventNamespace modifies an existing event. It returns the copy of the event that the server returns,
-// or an error. The namespace and key to update the event within is deduced from the event. The
-// namespace must either match this event client's namespace, or this event client must have been
-// created with the "" namespace. Update also requires the ResourceVersion to be set in the event
-// object.
-func (e *events) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error)
-	// Search finds events about the specified object
-	Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1.EventList, error)
-	// Returns the appropriate field selector based on the API version being used to communicate with the server.
-	// The returned field selector can be used with List and Watch to filter desired events.
-	GetFieldSelector(involvedObjectName, involvedObjectNamespace, involvedObjectKind, involvedObjectUID *string) fields.Selector
-}
-
-// CreateWithEventNamespace makes a new event. Returns the copy of the event the server returns,
-// or an error. The namespace to create the event within is deduced from the
-// event; it must either match this event client's namespace, or this event
-// client must have been created with the "" namespace.
-func (e *events) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
-	if e.ns != "" && event.Namespace != e.ns {
-		return nil, fmt.Errorf("can't create an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)
-	}
-	result := &v1.Event{}
-	err := e.client.Post().
-		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).
-		Resource("events").
-		Body(event).
-		Do(context.TODO()).
-		Into(result)
-	return result, err
-}
-
-// UpdateWithEventNamespace modifies an existing event. It returns the copy of the event that the server returns,
-// or an error. The namespace and key to update the event within is deduced from the event. The
-// namespace must either match this event client's namespace, or this event client must have been
-// created with the "" namespace. Update also requires the ResourceVersion to be set in the event
-// object.
-func (e *events) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	result := &v1.Event{}
 	err := e.GetClient().Put().
 		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).

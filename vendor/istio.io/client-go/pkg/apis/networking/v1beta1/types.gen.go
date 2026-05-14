@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	v1alpha1 "istio.io/api/meta/v1alpha1"
+	v1alpha3 "istio.io/api/networking/v1alpha3"
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,8 +31,7 @@ import (
 //
 // <!-- crd generation tags
 // +cue-gen:DestinationRule:groupName:networking.istio.io
-// +cue-gen:DestinationRule:version:v1beta1
-// +cue-gen:DestinationRule:storageVersion
+// +cue-gen:DestinationRule:versions:v1,v1beta1,v1alpha3
 // +cue-gen:DestinationRule:annotations:helm.sh/resource-policy=keep
 // +cue-gen:DestinationRule:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:DestinationRule:subresource:status
@@ -41,18 +41,15 @@ import (
 // +cue-gen:DestinationRule:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
 // representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations.
 // Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-// Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
+// Populated by the system. Read-only. Null for lists. For more information, see [Kubernetes API Conventions](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata)"
 // +cue-gen:DestinationRule:preserveUnknownFields:false
 // -->
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/destination_rule.proto
 // -->
 type DestinationRule struct {
 	v1.TypeMeta `json:",inline"`
@@ -61,9 +58,9 @@ type DestinationRule struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.DestinationRule `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.DestinationRule `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -84,8 +81,7 @@ type DestinationRuleList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:Gateway:groupName:networking.istio.io
-// +cue-gen:Gateway:version:v1beta1
-// +cue-gen:Gateway:storageVersion
+// +cue-gen:Gateway:versions:v1,v1beta1,v1alpha3
 // +cue-gen:Gateway:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Gateway:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:Gateway:subresource:status
@@ -96,12 +92,9 @@ type DestinationRuleList struct {
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/gateway.proto
 // -->
 type Gateway struct {
 	v1.TypeMeta `json:",inline"`
@@ -110,9 +103,9 @@ type Gateway struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.Gateway `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.Gateway `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -132,12 +125,13 @@ type GatewayList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:ProxyConfig:groupName:networking.istio.io
-// +cue-gen:ProxyConfig:version:v1beta1
+// +cue-gen:ProxyConfig:versions:v1beta1
 // +cue-gen:ProxyConfig:storageVersion
 // +cue-gen:ProxyConfig:annotations:helm.sh/resource-policy=keep
 // +cue-gen:ProxyConfig:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:ProxyConfig:subresource:status
 // +cue-gen:ProxyConfig:scope:Namespaced
+// +cue-gen:WasmPlugin:releaseChannel:extended
 // +cue-gen:ProxyConfig:resource:categories=istio-io,networking-istio-io,plural=proxyconfigs
 // +cue-gen:ProxyConfig:preserveUnknownFields:false
 // -->
@@ -157,7 +151,7 @@ type ProxyConfig struct {
 	// +optional
 	Spec networkingv1beta1.ProxyConfig `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -178,8 +172,7 @@ type ProxyConfigList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:ServiceEntry:groupName:networking.istio.io
-// +cue-gen:ServiceEntry:version:v1beta1
-// +cue-gen:ServiceEntry:storageVersion
+// +cue-gen:ServiceEntry:versions:v1,v1beta1,v1alpha3
 // +cue-gen:ServiceEntry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:ServiceEntry:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:ServiceEntry:subresource:status
@@ -195,17 +188,20 @@ type ProxyConfigList struct {
 // Clients may not set this value. It is represented in RFC3339 form and is in UTC.
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:ServiceEntry:preserveUnknownFields:false
+// +cue-gen:ServiceEntry:spec:required
 // -->
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
+// istiostatus-override: ServiceEntryStatus: istio.io/api/networking/v1alpha3
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/service_entry.proto
-// -->
+// +kubebuilder:validation:XValidation:message="only one of WorkloadSelector or Endpoints can be set",rule="oneof(self.workloadSelector, self.endpoints)"
+// +kubebuilder:validation:XValidation:message="CIDR addresses are allowed only for NONE/STATIC resolution types",rule="!(default(self.addresses, []).exists(k, k.contains('/')) && !(default(self.resolution, 'NONE') in ['STATIC', 'NONE']))"
+// +kubebuilder:validation:XValidation:message="NONE mode cannot set endpoints",rule="default(self.resolution, 'NONE') == 'NONE' ? !has(self.endpoints) : true"
+// +kubebuilder:validation:XValidation:message="DNS_ROUND_ROBIN mode cannot have multiple endpoints",rule="default(self.resolution, ”) == 'DNS_ROUND_ROBIN' ? default(self.endpoints, []).size() <= 1 : true"
 type ServiceEntry struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
@@ -213,9 +209,9 @@ type ServiceEntry struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.ServiceEntry `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.ServiceEntry `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha3.ServiceEntryStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -237,8 +233,7 @@ type ServiceEntryList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:Sidecar:groupName:networking.istio.io
-// +cue-gen:Sidecar:version:v1beta1
-// +cue-gen:Sidecar:storageVersion
+// +cue-gen:Sidecar:versions:v1,v1beta1,v1alpha3
 // +cue-gen:Sidecar:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Sidecar:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:Sidecar:subresource:status
@@ -249,12 +244,9 @@ type ServiceEntryList struct {
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/sidecar.proto
 // -->
 type Sidecar struct {
 	v1.TypeMeta `json:",inline"`
@@ -263,9 +255,9 @@ type Sidecar struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.Sidecar `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.Sidecar `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -285,8 +277,7 @@ type SidecarList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:VirtualService:groupName:networking.istio.io
-// +cue-gen:VirtualService:version:v1beta1
-// +cue-gen:VirtualService:storageVersion
+// +cue-gen:VirtualService:versions:v1,v1beta1,v1alpha3
 // +cue-gen:VirtualService:annotations:helm.sh/resource-policy=keep
 // +cue-gen:VirtualService:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:VirtualService:subresource:status
@@ -304,12 +295,9 @@ type SidecarList struct {
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/virtual_service.proto
 // -->
 type VirtualService struct {
 	v1.TypeMeta `json:",inline"`
@@ -318,9 +306,9 @@ type VirtualService struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.VirtualService `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.VirtualService `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -340,8 +328,7 @@ type VirtualServiceList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:WorkloadEntry:groupName:networking.istio.io
-// +cue-gen:WorkloadEntry:version:v1beta1
-// +cue-gen:WorkloadEntry:storageVersion
+// +cue-gen:WorkloadEntry:versions:v1,v1beta1,v1alpha3
 // +cue-gen:WorkloadEntry:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WorkloadEntry:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WorkloadEntry:subresource:status
@@ -353,17 +340,17 @@ type VirtualServiceList struct {
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:WorkloadEntry:printerColumn:name=Address,type=string,JSONPath=.spec.address,description="Address associated with the network endpoint."
 // +cue-gen:WorkloadEntry:preserveUnknownFields:false
+// +cue-gen:WorkloadEntry:spec:required
 // -->
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/workload_entry.proto
-// -->
+// +kubebuilder:validation:XValidation:message="Address is required",rule="has(self.address) || has(self.network)"
+// +kubebuilder:validation:XValidation:message="UDS may not include ports",rule="(default(self.address, "").startsWith('unix://')) ? !has(self.ports) : true"
 type WorkloadEntry struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
@@ -371,9 +358,9 @@ type WorkloadEntry struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.WorkloadEntry `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.WorkloadEntry `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -397,8 +384,8 @@ type WorkloadEntryList struct {
 //
 // <!-- crd generation tags
 // +cue-gen:WorkloadGroup:groupName:networking.istio.io
-// +cue-gen:WorkloadGroup:version:v1beta1
-// +cue-gen:WorkloadGroup:storageVersion
+// +cue-gen:WorkloadGroup:versions:v1,v1beta1,v1alpha3
+// +cue-gen:WorkloadGroup:annotations:helm.sh/resource-policy=keep
 // +cue-gen:WorkloadGroup:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WorkloadGroup:subresource:status
 // +cue-gen:WorkloadGroup:scope:Namespaced
@@ -408,16 +395,14 @@ type WorkloadEntryList struct {
 // Clients may not set this value. It is represented in RFC3339 form and is in UTC.
 // Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // +cue-gen:WorkloadGroup:preserveUnknownFields:false
+// +cue-gen:WorkloadGroup:spec:required
 // -->
 //
 // <!-- go code generation tags
 // +kubetype-gen
-// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +kubetype-gen:groupVersion=networking.istio.io/v1alpha3
 // +genclient
 // +k8s:deepcopy-gen=true
-// -->
-// <!-- istio code generation tags
-// +istio.io/sync-from:networking/v1alpha3/workload_group.proto
 // -->
 type WorkloadGroup struct {
 	v1.TypeMeta `json:",inline"`
@@ -426,9 +411,9 @@ type WorkloadGroup struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec networkingv1beta1.WorkloadGroup `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec v1alpha3.WorkloadGroup `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 
-	Status v1alpha1.IstioStatus `json:"status"`
+	Status v1alpha1.IstioStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

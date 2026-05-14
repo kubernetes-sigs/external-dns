@@ -23,26 +23,6 @@ package zapcore
 // ObjectMarshaler allows user-defined types to efficiently add themselves to the
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Note: ObjectMarshaler is only used when zap.Object is used or when
 // passed directly to zap.Any. It is not used when reflection-based
@@ -67,98 +47,6 @@ func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
 // Note: ArrayMarshaler is only used when zap.Array is used or when
 // passed directly to zap.Any. It is not used when reflection-based
 // encoding is used.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-type ObjectMarshaler interface {
-	MarshalLogObject(ObjectEncoder) error
-}
-
-// ObjectMarshalerFunc is a type adapter that turns a function into an
-// ObjectMarshaler.
-type ObjectMarshalerFunc func(ObjectEncoder) error
-
-// MarshalLogObject calls the underlying function.
-func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
-	return f(enc)
-}
-
-// ArrayMarshaler allows user-defined types to efficiently add themselves to the
-// logging context, and to selectively omit information which shouldn't be
-// included in logs (e.g., passwords).
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-type ObjectMarshaler interface {
-	MarshalLogObject(ObjectEncoder) error
-}
-
-// ObjectMarshalerFunc is a type adapter that turns a function into an
-// ObjectMarshaler.
-type ObjectMarshalerFunc func(ObjectEncoder) error
-
-// MarshalLogObject calls the underlying function.
-func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
-	return f(enc)
-}
-
-// ArrayMarshaler allows user-defined types to efficiently add themselves to the
-// logging context, and to selectively omit information which shouldn't be
-// included in logs (e.g., passwords).
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-=======
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-type ObjectMarshaler interface {
-	MarshalLogObject(ObjectEncoder) error
-}
-
-// ObjectMarshalerFunc is a type adapter that turns a function into an
-// ObjectMarshaler.
-type ObjectMarshalerFunc func(ObjectEncoder) error
-
-// MarshalLogObject calls the underlying function.
-func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
-	return f(enc)
-}
-
-// ArrayMarshaler allows user-defined types to efficiently add themselves to the
-// logging context, and to selectively omit information which shouldn't be
-// included in logs (e.g., passwords).
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-type ObjectMarshaler interface {
-	MarshalLogObject(ObjectEncoder) error
-}
-
-// ObjectMarshalerFunc is a type adapter that turns a function into an
-// ObjectMarshaler.
-type ObjectMarshalerFunc func(ObjectEncoder) error
-
-// MarshalLogObject calls the underlying function.
-func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
-	return f(enc)
-}
-
-// ArrayMarshaler allows user-defined types to efficiently add themselves to the
-// logging context, and to selectively omit information which shouldn't be
-// included in logs (e.g., passwords).
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ArrayMarshaler interface {
 	MarshalLogArray(ArrayEncoder) error
 }

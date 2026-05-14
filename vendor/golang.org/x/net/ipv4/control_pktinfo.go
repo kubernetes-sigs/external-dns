@@ -2,16 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 //go:build darwin || linux || solaris
-// +build darwin linux solaris
 
 package ipv4
 
@@ -28,127 +19,6 @@ import (
 func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
 	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 5ce8c7613 (update vendored files)
-=======
-//go:build darwin || linux || solaris
->>>>>>> 5ce8c7613 (update vendored files)
-// +build darwin linux solaris
-
-package ipv4
-
-import (
-	"net"
-	"unsafe"
-
-	"golang.org/x/net/internal/iana"
-	"golang.org/x/net/internal/socket"
-
-	"golang.org/x/sys/unix"
-)
-
-func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
-	m := socket.ControlMessage(b)
-<<<<<<< HEAD
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
-=======
-	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 6b7ce455e (update vendored files)
-=======
-//go:build darwin || linux || solaris
->>>>>>> 6b7ce455e (update vendored files)
-// +build darwin linux solaris
-
-package ipv4
-
-import (
-	"net"
-	"unsafe"
-
-	"golang.org/x/net/internal/iana"
-	"golang.org/x/net/internal/socket"
-
-	"golang.org/x/sys/unix"
-)
-
-func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
-	m := socket.ControlMessage(b)
-<<<<<<< HEAD
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
-=======
-	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-//go:build darwin || linux || solaris
->>>>>>> 4d7e5ad26 (update vendored files)
-// +build darwin linux solaris
-
-package ipv4
-
-import (
-	"net"
-	"unsafe"
-
-	"golang.org/x/net/internal/iana"
-	"golang.org/x/net/internal/socket"
-
-	"golang.org/x/sys/unix"
-)
-
-func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
-	m := socket.ControlMessage(b)
-<<<<<<< HEAD
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
-=======
-	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// +build darwin linux solaris
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// +build darwin linux solaris
-=======
-//go:build darwin || linux || solaris
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-
-package ipv4
-
-import (
-	"net"
-	"unsafe"
-
-	"golang.org/x/net/internal/iana"
-	"golang.org/x/net/internal/socket"
-
-	"golang.org/x/sys/unix"
-)
-
-func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
-	m := socket.ControlMessage(b)
-<<<<<<< HEAD
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
-=======
-	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if cm != nil {
 		pi := (*inetPktinfo)(unsafe.Pointer(&m.Data(sizeofInetPktinfo)[0]))
 		if ip := cm.Src.To4(); ip != nil {

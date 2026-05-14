@@ -18,7 +18,7 @@ package v1
 
 import (
 	v1alpha1 "istio.io/api/meta/v1alpha1"
-	networkingv1 "istio.io/api/networking/v1"
+	v1alpha3 "istio.io/api/networking/v1alpha3"
 	v1 "istio.io/client-go/pkg/applyconfiguration/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -29,8 +29,8 @@ import (
 type DestinationRuleApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *networkingv1.DestinationRule `json:"spec,omitempty"`
-	Status                           *v1alpha1.IstioStatus         `json:"status,omitempty"`
+	Spec                             *v1alpha3.DestinationRule `json:"spec,omitempty"`
+	Status                           *v1alpha1.IstioStatus     `json:"status,omitempty"`
 }
 
 // DestinationRule constructs an declarative configuration of the DestinationRule type for use with
@@ -205,7 +205,7 @@ func (b *DestinationRuleApplyConfiguration) ensureObjectMetaApplyConfigurationEx
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *DestinationRuleApplyConfiguration) WithSpec(value networkingv1.DestinationRule) *DestinationRuleApplyConfiguration {
+func (b *DestinationRuleApplyConfiguration) WithSpec(value v1alpha3.DestinationRule) *DestinationRuleApplyConfiguration {
 	b.Spec = &value
 	return b
 }

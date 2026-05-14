@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -99,148 +99,14 @@ type ProcStat struct {
 	VSize uint
 	// Resident set size in pages.
 	RSS int
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// Soft limit in bytes on the rss of the process.
 	RSSLimit uint64
-	// Real-time scheduling priority, a number in the range 1 to 99 for processes
-	// scheduled under a real-time policy, or 0, for non-real-time processes.
-	RTPriority uint
-	// Scheduling policy.
-	Policy uint
-	// Aggregated block I/O delays, measured in clock ticks (centiseconds).
-	DelayAcctBlkIOTicks uint64
-
-	proc fs.FS
-}
-
-// NewStat returns the current status information of the process.
-//
-// Deprecated: use p.Stat() instead
-func (p Proc) NewStat() (ProcStat, error) {
-	return p.Stat()
-}
-
-// Stat returns the current status information of the process.
-func (p Proc) Stat() (ProcStat, error) {
-	data, err := util.ReadFileNoStat(p.path("stat"))
-	if err != nil {
-		return ProcStat{}, err
-	}
-
-	var (
-		ignoreInt64  int64
-		ignoreUint64 uint64
-
-		s = ProcStat{PID: p.PID, proc: p.fs}
-		l = bytes.Index(data, []byte("("))
-		r = bytes.LastIndex(data, []byte(")"))
-	)
-
-	if l < 0 || r < 0 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
-||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
->>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 5ce8c7613 (update vendored files)
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
-=======
-		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
->>>>>>> 5ce8c7613 (update vendored files)
-||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
->>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 6b7ce455e (update vendored files)
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
-=======
-		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
->>>>>>> 6b7ce455e (update vendored files)
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
-=======
-		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
->>>>>>> 4d7e5ad26 (update vendored files)
-	}
-
-	s.Comm = string(data[l+1 : r])
-	_, err = fmt.Fscan(
-		bytes.NewBuffer(data[r+2:]),
-		&s.State,
-		&s.PPID,
-		&s.PGRP,
-		&s.Session,
-		&s.TTY,
-		&s.TPGID,
-		&s.Flags,
-		&s.MinFlt,
-		&s.CMinFlt,
-		&s.MajFlt,
-		&s.CMajFlt,
-		&s.UTime,
-		&s.STime,
-		&s.CUTime,
-		&s.CSTime,
-		&s.Priority,
-		&s.Nice,
-		&s.NumThreads,
-		&ignoreInt64,
-		&s.Starttime,
-		&s.VSize,
-		&s.RSS,
-		&s.RSSLimit,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreInt64,
-		&ignoreInt64,
-		&s.RTPriority,
-		&s.Policy,
-		&s.DelayAcctBlkIOTicks,
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	// Soft limit in bytes on the rss of the process.
-	RSSLimit uint64
+	// The address above which program text can run.
+	StartCode uint64
+	// The address below which program text can run.
+	EndCode uint64
+	// The address of the start (i.e., bottom) of the stack.
+	StartStack uint64
 	// CPU number last executed on.
 	Processor uint
 	// Real-time scheduling priority, a number in the range 1 to 99 for processes
@@ -250,16 +116,11 @@ func (p Proc) Stat() (ProcStat, error) {
 	Policy uint
 	// Aggregated block I/O delays, measured in clock ticks (centiseconds).
 	DelayAcctBlkIOTicks uint64
-<<<<<<< HEAD
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 	// Guest time of the process (time spent running a virtual CPU for a guest
 	// operating system), measured in clock ticks.
 	GuestTime int
 	// Guest time of the process's children, measured in clock ticks.
 	CGuestTime int
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	proc FS
 }
@@ -321,14 +182,10 @@ func (p Proc) Stat() (ProcStat, error) {
 		&s.Starttime,
 		&s.VSize,
 		&s.RSS,
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 		&s.RSSLimit,
-		&ignoreUint64,
-		&ignoreUint64,
-		&ignoreUint64,
+		&s.StartCode,
+		&s.EndCode,
+		&s.StartStack,
 		&ignoreUint64,
 		&ignoreUint64,
 		&ignoreUint64,
@@ -343,13 +200,8 @@ func (p Proc) Stat() (ProcStat, error) {
 		&s.RTPriority,
 		&s.Policy,
 		&s.DelayAcctBlkIOTicks,
-<<<<<<< HEAD
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
-=======
 		&s.GuestTime,
 		&s.CGuestTime,
->>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	)
 	if err != nil {
 		return ProcStat{}, err

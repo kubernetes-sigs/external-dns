@@ -27,12 +27,7 @@ const (
 )
 
 var (
-<<<<<<< HEAD
-	syscallRetryable = func(err error) bool { return false }
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 	syscallRetryable = func(error) bool { return false }
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // defaultBackoff is basically equivalent to gax.Backoff without the need for

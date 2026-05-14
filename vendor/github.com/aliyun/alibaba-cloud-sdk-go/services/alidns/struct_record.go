@@ -20,8 +20,6 @@ type Record struct {
 	Value      string `json:"Value" xml:"Value"`
 	TTL        int64  `json:"TTL" xml:"TTL"`
 	Remark     string `json:"Remark" xml:"Remark"`
-<<<<<<< HEAD
-<<<<<<< HEAD
 	RR         string `json:"RR" xml:"RR"`
 	DomainName string `json:"DomainName" xml:"DomainName"`
 	Priority   int64  `json:"Priority" xml:"Priority"`
@@ -29,25 +27,6 @@ type Record struct {
 	Status     string `json:"Status" xml:"Status"`
 	Weight     int    `json:"Weight" xml:"Weight"`
 	Locked     bool   `json:"Locked" xml:"Locked"`
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-	DomainName string `json:"DomainName" xml:"DomainName"`
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	DomainName string `json:"DomainName" xml:"DomainName"`
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-	RR         string `json:"RR" xml:"RR"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	Priority   int64  `json:"Priority" xml:"Priority"`
-	RecordId   string `json:"RecordId" xml:"RecordId"`
-	Status     string `json:"Status" xml:"Status"`
-	Weight     int    `json:"Weight" xml:"Weight"`
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	Locked     bool   `json:"Locked" xml:"Locked"`
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Line       string `json:"Line" xml:"Line"`
 	Type       string `json:"Type" xml:"Type"`
 }

@@ -36,28 +36,20 @@ func (c *FakeStorageV1) CSINodes() v1.CSINodeInterface {
 	return newFakeCSINodes(c)
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (c *FakeStorageV1) CSIStorageCapacities(namespace string) v1.CSIStorageCapacityInterface {
 	return newFakeCSIStorageCapacities(c, namespace)
 }
 
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-func (c *FakeStorageV1) CSIStorageCapacities(namespace string) v1.CSIStorageCapacityInterface {
-	return &FakeCSIStorageCapacities{c, namespace}
-}
-
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *FakeStorageV1) StorageClasses() v1.StorageClassInterface {
 	return newFakeStorageClasses(c)
 }
 
 func (c *FakeStorageV1) VolumeAttachments() v1.VolumeAttachmentInterface {
 	return newFakeVolumeAttachments(c)
+}
+
+func (c *FakeStorageV1) VolumeAttributesClasses() v1.VolumeAttributesClassInterface {
+	return newFakeVolumeAttributesClasses(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

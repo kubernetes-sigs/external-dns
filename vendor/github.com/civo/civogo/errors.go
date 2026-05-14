@@ -325,16 +325,16 @@ func decodeError(err error) error {
 	switch err := err.(type) {
 	case *url.Error:
 		if _, ok := err.Err.(net.Error); ok {
-			err := fmt.Errorf("we found a problem connected against the api")
+			err := fmt.Errorf("problem connecting to the API")
 			return TimeoutError.wrap(err)
 		}
 	case net.Error:
 		if err.Timeout() {
-			err := fmt.Errorf("we found a network issue")
+			err := fmt.Errorf("network timeout")
 			return TimeoutError.wrap(err)
 		}
 		if _, ok := err.(*net.DNSError); ok {
-			err := fmt.Errorf("we found a dns issue")
+			err := fmt.Errorf("DNS error")
 			return TimeoutError.wrap(err)
 		}
 	case wrapError:
@@ -350,13 +350,13 @@ func decodeError(err error) error {
 
 		if _, ok := response["status"].(float64); ok {
 			if response["status"].(float64) == 500 {
-				err := errors.New("internal Server Error")
+				err := errors.New("internal server error")
 				return InternalServerError.wrap(err)
 			}
 		}
 
 		if response["result"] == "requires_authentication" {
-			err := errors.New("authentication Error")
+			err := errors.New("authentication error")
 			return AuthenticationError.wrap(err)
 		}
 
@@ -1060,7 +1060,7 @@ func decodeError(err error) error {
 			err := errors.New(msg.String())
 			return KubernetesClusterInvalidNameError.wrap(err)
 		default:
-			err := fmt.Errorf(fmt.Sprintf("Unknown error response - status: %s, code: %d, reason: %s", errorData.Status, errorData.Code, errorData.Reason))
+			err := fmt.Errorf("unknown error response - status: %s, code: %d, reason: %s", errorData.Status, errorData.Code, errorData.Reason)
 			return CommonError.wrap(err)
 		}
 	}

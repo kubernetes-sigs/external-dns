@@ -21,10 +21,6 @@ import (
 )
 
 // AddZone invokes the pvtz.AddZone API synchronously
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneResponse, err error) {
 	response = CreateAddZoneResponse()
 	err = client.DoAction(request, response)
@@ -75,22 +71,24 @@ func (client *Client) AddZoneWithCallback(request *AddZoneRequest, callback func
 // AddZoneRequest is the request struct for api AddZone
 type AddZoneRequest struct {
 	*requests.RpcRequest
+	ClientToken     string `position:"Query" name:"ClientToken"`
+	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
+	Lang            string `position:"Query" name:"Lang"`
 	ProxyPattern    string `position:"Query" name:"ProxyPattern"`
 	ZoneName        string `position:"Query" name:"ZoneName"`
-	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
 	ZoneTag         string `position:"Query" name:"ZoneTag"`
+	DnsGroup        string `position:"Query" name:"DnsGroup"`
 	UserClientIp    string `position:"Query" name:"UserClientIp"`
 	ZoneType        string `position:"Query" name:"ZoneType"`
-	Lang            string `position:"Query" name:"Lang"`
 }
 
 // AddZoneResponse is the response struct for api AddZone
 type AddZoneResponse struct {
 	*responses.BaseResponse
+	ZoneName  string `json:"ZoneName" xml:"ZoneName"`
+	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	Success   bool   `json:"Success" xml:"Success"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-	ZoneName  string `json:"ZoneName" xml:"ZoneName"`
 }
 
 // CreateAddZoneRequest creates a request to invoke AddZone API
@@ -100,180 +98,6 @@ func CreateAddZoneRequest() (request *AddZoneRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZone", "pvtz", "openAPI")
 	request.Method = requests.POST
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-||||||| parent of 4d7e5ad26 (update vendored files)
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-=======
->>>>>>> 4d7e5ad26 (update vendored files)
-func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneResponse, err error) {
-	response = CreateAddZoneResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// AddZoneWithChan invokes the pvtz.AddZone API asynchronously
-func (client *Client) AddZoneWithChan(request *AddZoneRequest) (<-chan *AddZoneResponse, <-chan error) {
-	responseChan := make(chan *AddZoneResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.AddZone(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// AddZoneWithCallback invokes the pvtz.AddZone API asynchronously
-func (client *Client) AddZoneWithCallback(request *AddZoneRequest, callback func(response *AddZoneResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *AddZoneResponse
-		var err error
-		defer close(result)
-		response, err = client.AddZone(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// AddZoneRequest is the request struct for api AddZone
-type AddZoneRequest struct {
-	*requests.RpcRequest
-	ProxyPattern    string `position:"Query" name:"ProxyPattern"`
-	ZoneName        string `position:"Query" name:"ZoneName"`
-	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
-	ZoneTag         string `position:"Query" name:"ZoneTag"`
-	UserClientIp    string `position:"Query" name:"UserClientIp"`
-	ZoneType        string `position:"Query" name:"ZoneType"`
-	Lang            string `position:"Query" name:"Lang"`
-}
-
-// AddZoneResponse is the response struct for api AddZone
-type AddZoneResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-	ZoneName  string `json:"ZoneName" xml:"ZoneName"`
-}
-
-// CreateAddZoneRequest creates a request to invoke AddZone API
-func CreateAddZoneRequest() (request *AddZoneRequest) {
-	request = &AddZoneRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZone", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-	request.Method = requests.POST
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-=======
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneResponse, err error) {
-	response = CreateAddZoneResponse()
-	err = client.DoAction(request, response)
-	return
-}
-
-// AddZoneWithChan invokes the pvtz.AddZone API asynchronously
-func (client *Client) AddZoneWithChan(request *AddZoneRequest) (<-chan *AddZoneResponse, <-chan error) {
-	responseChan := make(chan *AddZoneResponse, 1)
-	errChan := make(chan error, 1)
-	err := client.AddAsyncTask(func() {
-		defer close(responseChan)
-		defer close(errChan)
-		response, err := client.AddZone(request)
-		if err != nil {
-			errChan <- err
-		} else {
-			responseChan <- response
-		}
-	})
-	if err != nil {
-		errChan <- err
-		close(responseChan)
-		close(errChan)
-	}
-	return responseChan, errChan
-}
-
-// AddZoneWithCallback invokes the pvtz.AddZone API asynchronously
-func (client *Client) AddZoneWithCallback(request *AddZoneRequest, callback func(response *AddZoneResponse, err error)) <-chan int {
-	result := make(chan int, 1)
-	err := client.AddAsyncTask(func() {
-		var response *AddZoneResponse
-		var err error
-		defer close(result)
-		response, err = client.AddZone(request)
-		callback(response, err)
-		result <- 1
-	})
-	if err != nil {
-		defer close(result)
-		callback(nil, err)
-		result <- 0
-	}
-	return result
-}
-
-// AddZoneRequest is the request struct for api AddZone
-type AddZoneRequest struct {
-	*requests.RpcRequest
-	ProxyPattern    string `position:"Query" name:"ProxyPattern"`
-	ZoneName        string `position:"Query" name:"ZoneName"`
-	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
-	ZoneTag         string `position:"Query" name:"ZoneTag"`
-	UserClientIp    string `position:"Query" name:"UserClientIp"`
-	ZoneType        string `position:"Query" name:"ZoneType"`
-	Lang            string `position:"Query" name:"Lang"`
-}
-
-// AddZoneResponse is the response struct for api AddZone
-type AddZoneResponse struct {
-	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-	ZoneName  string `json:"ZoneName" xml:"ZoneName"`
-}
-
-// CreateAddZoneRequest creates a request to invoke AddZone API
-func CreateAddZoneRequest() (request *AddZoneRequest) {
-	request = &AddZoneRequest{
-		RpcRequest: &requests.RpcRequest{},
-	}
-	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZone", "pvtz", "openAPI")
-<<<<<<< HEAD
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-	request.Method = requests.POST
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

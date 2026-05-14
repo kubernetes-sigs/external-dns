@@ -200,7 +200,7 @@ func (request *baseRequest) AppendUserAgent(key, value string) {
 		request.userAgent = make(map[string]string)
 	}
 	if strings.ToLower(key) != "core" && strings.ToLower(key) != "go" {
-		for tag, _ := range request.userAgent {
+		for tag := range request.userAgent {
 			if tag == key {
 				request.userAgent[tag] = value
 				newkey = false
@@ -355,10 +355,6 @@ func flatRepeatedList(dataValue reflect.Value, request AcsRequest, position, pre
 				if err != nil {
 					return
 				}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 			} else if typeTag == "Map" {
 				err = handleMap(request, dataValue, prefix, name, fieldPosition, i)
 				if err != nil {
@@ -407,7 +403,7 @@ func handleRepeatedParams(request AcsRequest, dataValue reflect.Value, prefix, n
 	return nil
 }
 
-func handleParam(request AcsRequest, dataValue reflect.Value, prefix, key, fieldPosition string) (err error) {
+func handleParam(request AcsRequest, dataValue reflect.Value, key, fieldPosition string) (err error) {
 	if dataValue.Type().String() == "[]string" {
 		if dataValue.IsNil() {
 			return
@@ -451,12 +447,12 @@ func handleMap(request AcsRequest, dataValue reflect.Value, prefix, name, fieldP
 			key := prefix + name + ".#" + strconv.Itoa(k.Len()) + "#" + k.String()
 			if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 				elementValue := v.Elem()
-				err = handleParam(request, elementValue, prefix, key, fieldPosition)
+				err = handleParam(request, elementValue, key, fieldPosition)
 				if err != nil {
 					return err
 				}
 			} else if v.IsValid() && v.IsNil() {
-				err = handleParam(request, v, prefix, key, fieldPosition)
+				err = handleParam(request, v, key, fieldPosition)
 				if err != nil {
 					return err
 				}
@@ -512,344 +508,6 @@ func handleStruct(request AcsRequest, dataValue reflect.Value, prefix, name, fie
 								if err != nil {
 									return
 								}
-||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of 4d7e5ad26 (update vendored files)
-=======
-			} else if typeTag == "Map" {
-				err = handleMap(request, dataValue, prefix, name, fieldPosition, i)
-				if err != nil {
-					return err
-				}
-			} else if typeTag == "Json" {
-				byt, err := json.Marshal(dataValue.Field(i).Interface())
-				if err != nil {
-					return err
-				}
-				key := prefix + name
-				err = addParam(request, fieldPosition, key, string(byt))
-				if err != nil {
-					return err
-				}
->>>>>>> 4d7e5ad26 (update vendored files)
-			}
-		}
-	}
-	return
-}
-
-func handleRepeatedParams(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	repeatedFieldValue := dataValue.Field(index)
-	if repeatedFieldValue.Kind() != reflect.Slice {
-		// possible value: {"[]string", "*[]struct"}, we must call Elem() in the last condition
-		repeatedFieldValue = repeatedFieldValue.Elem()
-	}
-	if repeatedFieldValue.IsValid() && !repeatedFieldValue.IsNil() {
-		for m := 0; m < repeatedFieldValue.Len(); m++ {
-			elementValue := repeatedFieldValue.Index(m)
-			key := prefix + name + "." + strconv.Itoa(m+1)
-			if elementValue.Type().Kind().String() == "string" {
-				value := elementValue.String()
-				err = addParam(request, fieldPosition, key, value)
-				if err != nil {
-					return
-				}
-			} else {
-				err = flatRepeatedList(elementValue, request, fieldPosition, key+".")
-				if err != nil {
-					return
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func handleParam(request AcsRequest, dataValue reflect.Value, prefix, key, fieldPosition string) (err error) {
-	if dataValue.Type().String() == "[]string" {
-		if dataValue.IsNil() {
-			return
-		}
-		for j := 0; j < dataValue.Len(); j++ {
-			err = addParam(request, fieldPosition, key+"."+strconv.Itoa(j+1), dataValue.Index(j).String())
-			if err != nil {
-				return
-			}
-		}
-	} else {
-		if dataValue.Type().Kind().String() == "string" {
-			value := dataValue.String()
-			err = addParam(request, fieldPosition, key, value)
-			if err != nil {
-				return
-			}
-		} else if dataValue.Type().Kind().String() == "struct" {
-			err = flatRepeatedList(dataValue, request, fieldPosition, key+".")
-			if err != nil {
-				return
-			}
-		} else if dataValue.Type().Kind().String() == "int" {
-			value := dataValue.Int()
-			err = addParam(request, fieldPosition, key, strconv.Itoa(int(value)))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func handleMap(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	valueField := dataValue.Field(index)
-	if valueField.IsValid() && !valueField.IsNil() {
-		iter := valueField.MapRange()
-		for iter.Next() {
-			k := iter.Key()
-			v := iter.Value()
-			key := prefix + name + ".#" + strconv.Itoa(k.Len()) + "#" + k.String()
-			if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-				elementValue := v.Elem()
-				err = handleParam(request, elementValue, prefix, key, fieldPosition)
-				if err != nil {
-					return err
-				}
-			} else if v.IsValid() && v.IsNil() {
-				err = handleParam(request, v, prefix, key, fieldPosition)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func handleStruct(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	valueField := dataValue.Field(index)
-	if valueField.IsValid() && valueField.String() != "" {
-		valueFieldType := valueField.Type()
-		for m := 0; m < valueFieldType.NumField(); m++ {
-			fieldName := valueFieldType.Field(m).Name
-			elementValue := valueField.FieldByName(fieldName)
-			key := prefix + name + "." + fieldName
-			if elementValue.Type().String() == "[]string" {
-				if elementValue.IsNil() {
-					continue
-				}
-				for j := 0; j < elementValue.Len(); j++ {
-					err = addParam(request, fieldPosition, key+"."+strconv.Itoa(j+1), elementValue.Index(j).String())
-					if err != nil {
-						return
-					}
-				}
-			} else {
-				if elementValue.Type().Kind().String() == "string" {
-					value := elementValue.String()
-					err = addParam(request, fieldPosition, key, value)
-					if err != nil {
-						return
-					}
-				} else if elementValue.Type().Kind().String() == "struct" {
-					err = flatRepeatedList(elementValue, request, fieldPosition, key+".")
-					if err != nil {
-						return
-					}
-				} else if !elementValue.IsNil() {
-					repeatedFieldValue := elementValue.Elem()
-					if repeatedFieldValue.IsValid() && !repeatedFieldValue.IsNil() {
-						for m := 0; m < repeatedFieldValue.Len(); m++ {
-							elementValue := repeatedFieldValue.Index(m)
-<<<<<<< HEAD
-							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-							if err != nil {
-								return
->>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of 4d7e5ad26 (update vendored files)
-							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-							if err != nil {
-								return
-=======
-							if elementValue.Type().Kind().String() == "string" {
-								value := elementValue.String()
-								err := addParam(request, fieldPosition, key+"."+strconv.Itoa(m+1), value)
-								if err != nil {
-									return err
-								}
-							} else {
-								err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-								if err != nil {
-									return
-								}
->>>>>>> 4d7e5ad26 (update vendored files)
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
-			} else if typeTag == "Map" {
-				err = handleMap(request, dataValue, prefix, name, fieldPosition, i)
-				if err != nil {
-					return err
-				}
-			} else if typeTag == "Json" {
-				byt, err := json.Marshal(dataValue.Field(i).Interface())
-				if err != nil {
-					return err
-				}
-				key := prefix + name
-				err = addParam(request, fieldPosition, key, string(byt))
-				if err != nil {
-					return err
-				}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-			}
-		}
-	}
-	return
-}
-
-func handleRepeatedParams(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	repeatedFieldValue := dataValue.Field(index)
-	if repeatedFieldValue.Kind() != reflect.Slice {
-		// possible value: {"[]string", "*[]struct"}, we must call Elem() in the last condition
-		repeatedFieldValue = repeatedFieldValue.Elem()
-	}
-	if repeatedFieldValue.IsValid() && !repeatedFieldValue.IsNil() {
-		for m := 0; m < repeatedFieldValue.Len(); m++ {
-			elementValue := repeatedFieldValue.Index(m)
-			key := prefix + name + "." + strconv.Itoa(m+1)
-			if elementValue.Type().Kind().String() == "string" {
-				value := elementValue.String()
-				err = addParam(request, fieldPosition, key, value)
-				if err != nil {
-					return
-				}
-			} else {
-				err = flatRepeatedList(elementValue, request, fieldPosition, key+".")
-				if err != nil {
-					return
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func handleParam(request AcsRequest, dataValue reflect.Value, prefix, key, fieldPosition string) (err error) {
-	if dataValue.Type().String() == "[]string" {
-		if dataValue.IsNil() {
-			return
-		}
-		for j := 0; j < dataValue.Len(); j++ {
-			err = addParam(request, fieldPosition, key+"."+strconv.Itoa(j+1), dataValue.Index(j).String())
-			if err != nil {
-				return
-			}
-		}
-	} else {
-		if dataValue.Type().Kind().String() == "string" {
-			value := dataValue.String()
-			err = addParam(request, fieldPosition, key, value)
-			if err != nil {
-				return
-			}
-		} else if dataValue.Type().Kind().String() == "struct" {
-			err = flatRepeatedList(dataValue, request, fieldPosition, key+".")
-			if err != nil {
-				return
-			}
-		} else if dataValue.Type().Kind().String() == "int" {
-			value := dataValue.Int()
-			err = addParam(request, fieldPosition, key, strconv.Itoa(int(value)))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func handleMap(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	valueField := dataValue.Field(index)
-	if valueField.IsValid() && !valueField.IsNil() {
-		iter := valueField.MapRange()
-		for iter.Next() {
-			k := iter.Key()
-			v := iter.Value()
-			key := prefix + name + ".#" + strconv.Itoa(k.Len()) + "#" + k.String()
-			if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-				elementValue := v.Elem()
-				err = handleParam(request, elementValue, prefix, key, fieldPosition)
-				if err != nil {
-					return err
-				}
-			} else if v.IsValid() && v.IsNil() {
-				err = handleParam(request, v, prefix, key, fieldPosition)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func handleStruct(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
-	valueField := dataValue.Field(index)
-	if valueField.IsValid() && valueField.String() != "" {
-		valueFieldType := valueField.Type()
-		for m := 0; m < valueFieldType.NumField(); m++ {
-			fieldName := valueFieldType.Field(m).Name
-			elementValue := valueField.FieldByName(fieldName)
-			key := prefix + name + "." + fieldName
-			if elementValue.Type().String() == "[]string" {
-				if elementValue.IsNil() {
-					continue
-				}
-				for j := 0; j < elementValue.Len(); j++ {
-					err = addParam(request, fieldPosition, key+"."+strconv.Itoa(j+1), elementValue.Index(j).String())
-					if err != nil {
-						return
-					}
-				}
-			} else {
-				if elementValue.Type().Kind().String() == "string" {
-					value := elementValue.String()
-					err = addParam(request, fieldPosition, key, value)
-					if err != nil {
-						return
-					}
-				} else if elementValue.Type().Kind().String() == "struct" {
-					err = flatRepeatedList(elementValue, request, fieldPosition, key+".")
-					if err != nil {
-						return
-					}
-				} else if !elementValue.IsNil() {
-					repeatedFieldValue := elementValue.Elem()
-					if repeatedFieldValue.IsValid() && !repeatedFieldValue.IsNil() {
-						for m := 0; m < repeatedFieldValue.Len(); m++ {
-							elementValue := repeatedFieldValue.Index(m)
-<<<<<<< HEAD
-							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-							if err != nil {
-								return
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-							if err != nil {
-								return
-=======
-							if elementValue.Type().Kind().String() == "string" {
-								value := elementValue.String()
-								err := addParam(request, fieldPosition, key+"."+strconv.Itoa(m+1), value)
-								if err != nil {
-									return err
-								}
-							} else {
-								err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
-								if err != nil {
-									return
-								}
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 							}
 						}
 					}

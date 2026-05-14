@@ -2,8 +2,6 @@ package linodego
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 )
 
 // InstanceConfigInterface contains information about a configuration's network interface
@@ -17,7 +15,33 @@ type InstanceConfigInterface struct {
 	VPCID       *int                   `json:"vpc_id"`
 	SubnetID    *int                   `json:"subnet_id"`
 	IPv4        *VPCIPv4               `json:"ipv4"`
-	IPRanges    []string               `json:"ip_ranges"`
+
+	// NOTE: IPv6 interfaces may not currently be available to all users.
+	IPv6 *InstanceConfigInterfaceIPv6 `json:"ipv6"`
+
+	IPRanges []string `json:"ip_ranges"`
+}
+
+// InstanceConfigInterfaceIPv6 represents the IPv6 configuration of a Linode interface.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceIPv6 struct {
+	SLAAC    []InstanceConfigInterfaceIPv6SLAAC `json:"slaac"`
+	Ranges   []InstanceConfigInterfaceIPv6Range `json:"ranges"`
+	IsPublic *bool                              `json:"is_public"`
+}
+
+// InstanceConfigInterfaceIPv6SLAAC represents a single IPv6 SLAAC under
+// a Linode interface.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceIPv6SLAAC struct {
+	Range   string `json:"range"`
+	Address string `json:"address"`
+}
+
+// InstanceConfigInterfaceIPv6Range represents a single IPv6 range under a Linode interface.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceIPv6Range struct {
+	Range string `json:"range"`
 }
 
 type VPCIPv4 struct {
@@ -32,13 +56,67 @@ type InstanceConfigInterfaceCreateOptions struct {
 	Primary     bool                   `json:"primary,omitempty"`
 	SubnetID    *int                   `json:"subnet_id,omitempty"`
 	IPv4        *VPCIPv4               `json:"ipv4,omitempty"`
-	IPRanges    []string               `json:"ip_ranges,omitempty"`
+
+	// NOTE: IPv6 interfaces may not currently be available to all users.
+	IPv6 *InstanceConfigInterfaceCreateOptionsIPv6 `json:"ipv6,omitempty"`
+
+	IPRanges []string `json:"ip_ranges,omitempty"`
+}
+
+// InstanceConfigInterfaceCreateOptionsIPv6 represents the IPv6 configuration of a Linode interface
+// specified during creation.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceCreateOptionsIPv6 struct {
+	SLAAC    []InstanceConfigInterfaceCreateOptionsIPv6SLAAC `json:"slaac,omitempty"`
+	Ranges   []InstanceConfigInterfaceCreateOptionsIPv6Range `json:"ranges,omitempty"`
+	IsPublic *bool                                           `json:"is_public,omitempty"`
+}
+
+// InstanceConfigInterfaceCreateOptionsIPv6SLAAC represents a single IPv6 SLAAC of a Linode interface
+// specified during creation.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceCreateOptionsIPv6SLAAC struct {
+	Range string `json:"range"`
+}
+
+// InstanceConfigInterfaceCreateOptionsIPv6Range represents a single IPv6 ranges of a Linode interface
+// specified during creation.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceCreateOptionsIPv6Range struct {
+	Range *string `json:"range,omitempty"`
 }
 
 type InstanceConfigInterfaceUpdateOptions struct {
-	Primary  bool      `json:"primary,omitempty"`
-	IPv4     *VPCIPv4  `json:"ipv4,omitempty"`
+	Primary bool     `json:"primary,omitempty"`
+	IPv4    *VPCIPv4 `json:"ipv4,omitempty"`
+
+	// NOTE: IPv6 interfaces may not currently be available to all users.
+	IPv6 *InstanceConfigInterfaceUpdateOptionsIPv6 `json:"ipv6,omitempty"`
+
 	IPRanges *[]string `json:"ip_ranges,omitempty"`
+}
+
+// InstanceConfigInterfaceUpdateOptionsIPv6 represents the IPv6 configuration of a Linode interface
+// specified during updates.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceUpdateOptionsIPv6 struct {
+	SLAAC    *[]InstanceConfigInterfaceUpdateOptionsIPv6SLAAC `json:"slaac,omitempty"`
+	Ranges   *[]InstanceConfigInterfaceUpdateOptionsIPv6Range `json:"ranges,omitempty"`
+	IsPublic *bool                                            `json:"is_public,omitempty"`
+}
+
+// InstanceConfigInterfaceUpdateOptionsIPv6SLAAC represents a single IPv6 SLAAC of a Linode interface
+// specified during updates.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceUpdateOptionsIPv6SLAAC struct {
+	Range *string `json:"range,omitempty"`
+}
+
+// InstanceConfigInterfaceUpdateOptionsIPv6Range represents a single IPv6 ranges of a Linode interface
+// specified during updates.
+// NOTE: IPv6 interfaces may not currently be available to all users.
+type InstanceConfigInterfaceUpdateOptionsIPv6Range struct {
+	Range *string `json:"range,omitempty"`
 }
 
 type InstanceConfigInterfacesReorderOptions struct {
@@ -52,6 +130,7 @@ func getInstanceConfigInterfacesCreateOptionsList(
 	for index, configInterface := range interfaces {
 		interfaceOptsList[index] = configInterface.GetCreateOptions()
 	}
+
 	return interfaceOptsList
 }
 
@@ -67,10 +146,34 @@ func (i InstanceConfigInterface) GetCreateOptions() InstanceConfigInterfaceCreat
 		opts.IPRanges = i.IPRanges
 	}
 
-	if i.Purpose == InterfacePurposeVPC && i.IPv4 != nil {
+	if i.IPv4 != nil {
 		opts.IPv4 = &VPCIPv4{
 			VPC:     i.IPv4.VPC,
 			NAT1To1: i.IPv4.NAT1To1,
+		}
+	}
+
+	if i.IPv6 != nil {
+		ipv6 := *i.IPv6
+
+		opts.IPv6 = &InstanceConfigInterfaceCreateOptionsIPv6{
+			SLAAC: mapSlice(
+				ipv6.SLAAC,
+				func(i InstanceConfigInterfaceIPv6SLAAC) InstanceConfigInterfaceCreateOptionsIPv6SLAAC {
+					return InstanceConfigInterfaceCreateOptionsIPv6SLAAC{
+						Range: i.Range,
+					}
+				},
+			),
+			Ranges: mapSlice(
+				ipv6.Ranges,
+				func(i InstanceConfigInterfaceIPv6Range) InstanceConfigInterfaceCreateOptionsIPv6Range {
+					return InstanceConfigInterfaceCreateOptionsIPv6Range{
+						Range: copyValue(&i.Range),
+					}
+				},
+			),
+			IsPublic: copyValue(ipv6.IsPublic),
 		}
 	}
 
@@ -84,10 +187,40 @@ func (i InstanceConfigInterface) GetUpdateOptions() InstanceConfigInterfaceUpdat
 		Primary: i.Primary,
 	}
 
-	if i.Purpose == InterfacePurposeVPC && i.IPv4 != nil {
-		opts.IPv4 = &VPCIPv4{
-			VPC:     i.IPv4.VPC,
-			NAT1To1: i.IPv4.NAT1To1,
+	if i.Purpose == InterfacePurposeVPC {
+		if i.IPv4 != nil {
+			opts.IPv4 = &VPCIPv4{
+				VPC:     i.IPv4.VPC,
+				NAT1To1: i.IPv4.NAT1To1,
+			}
+		}
+
+		if i.IPv6 != nil {
+			ipv6 := *i.IPv6
+
+			newSLAAC := mapSlice(
+				ipv6.SLAAC,
+				func(i InstanceConfigInterfaceIPv6SLAAC) InstanceConfigInterfaceUpdateOptionsIPv6SLAAC {
+					return InstanceConfigInterfaceUpdateOptionsIPv6SLAAC{
+						Range: copyValue(&i.Range),
+					}
+				},
+			)
+
+			newRanges := mapSlice(
+				ipv6.Ranges,
+				func(i InstanceConfigInterfaceIPv6Range) InstanceConfigInterfaceUpdateOptionsIPv6Range {
+					return InstanceConfigInterfaceUpdateOptionsIPv6Range{
+						Range: copyValue(&i.Range),
+					}
+				},
+			)
+
+			opts.IPv6 = &InstanceConfigInterfaceUpdateOptionsIPv6{
+				SLAAC:    &newSLAAC,
+				Ranges:   &newRanges,
+				IsPublic: copyValue(ipv6.IsPublic),
+			}
 		}
 	}
 
@@ -109,19 +242,8 @@ func (c *Client) AppendInstanceConfigInterface(
 	configID int,
 	opts InstanceConfigInterfaceCreateOptions,
 ) (*InstanceConfigInterface, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&InstanceConfigInterface{}).SetBody(string(body))
-	e := fmt.Sprintf("/linode/instances/%d/configs/%d/interfaces", linodeID, configID)
-	r, err := coupleAPIErrors(req.Post(e))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Result().(*InstanceConfigInterface), nil
+	e := formatAPIPath("/linode/instances/%d/configs/%d/interfaces", linodeID, configID)
+	return doPOSTRequest[InstanceConfigInterface](ctx, c, e, opts)
 }
 
 func (c *Client) GetInstanceConfigInterface(
@@ -130,18 +252,14 @@ func (c *Client) GetInstanceConfigInterface(
 	configID int,
 	interfaceID int,
 ) (*InstanceConfigInterface, error) {
-	e := fmt.Sprintf(
+	e := formatAPIPath(
 		"linode/instances/%d/configs/%d/interfaces/%d",
 		linodeID,
 		configID,
 		interfaceID,
 	)
-	req := c.R(ctx).SetResult(&InstanceConfigInterface{})
-	r, err := coupleAPIErrors(req.Get(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceConfigInterface), nil
+
+	return doGETRequest[InstanceConfigInterface](ctx, c, e)
 }
 
 func (c *Client) ListInstanceConfigInterfaces(
@@ -149,17 +267,18 @@ func (c *Client) ListInstanceConfigInterfaces(
 	linodeID int,
 	configID int,
 ) ([]InstanceConfigInterface, error) {
-	e := fmt.Sprintf(
+	e := formatAPIPath(
 		"linode/instances/%d/configs/%d/interfaces",
 		linodeID,
 		configID,
 	)
-	req := c.R(ctx).SetResult([]InstanceConfigInterface{})
-	r, err := coupleAPIErrors(req.Get(e))
+
+	response, err := doGETRequest[[]InstanceConfigInterface](ctx, c, e)
 	if err != nil {
 		return nil, err
 	}
-	return *r.Result().(*[]InstanceConfigInterface), nil
+
+	return *response, nil
 }
 
 func (c *Client) UpdateInstanceConfigInterface(
@@ -169,23 +288,14 @@ func (c *Client) UpdateInstanceConfigInterface(
 	interfaceID int,
 	opts InstanceConfigInterfaceUpdateOptions,
 ) (*InstanceConfigInterface, error) {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	e := fmt.Sprintf(
+	e := formatAPIPath(
 		"linode/instances/%d/configs/%d/interfaces/%d",
 		linodeID,
 		configID,
 		interfaceID,
 	)
-	req := c.R(ctx).SetResult(&InstanceConfigInterface{}).SetBody(string(body))
-	r, err := coupleAPIErrors(req.Put(e))
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*InstanceConfigInterface), nil
+
+	return doPUTRequest[InstanceConfigInterface](ctx, c, e, opts)
 }
 
 func (c *Client) DeleteInstanceConfigInterface(
@@ -194,14 +304,14 @@ func (c *Client) DeleteInstanceConfigInterface(
 	configID int,
 	interfaceID int,
 ) error {
-	e := fmt.Sprintf(
+	e := formatAPIPath(
 		"linode/instances/%d/configs/%d/interfaces/%d",
 		linodeID,
 		configID,
 		interfaceID,
 	)
-	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
-	return err
+
+	return doDELETERequest(ctx, c, e)
 }
 
 func (c *Client) ReorderInstanceConfigInterfaces(
@@ -210,18 +320,11 @@ func (c *Client) ReorderInstanceConfigInterfaces(
 	configID int,
 	opts InstanceConfigInterfacesReorderOptions,
 ) error {
-	body, err := json.Marshal(opts)
-	if err != nil {
-		return err
-	}
-	e := fmt.Sprintf(
+	e := formatAPIPath(
 		"linode/instances/%d/configs/%d/interfaces/order",
 		linodeID,
 		configID,
 	)
 
-	req := c.R(ctx).SetBody(string(body))
-	_, err = coupleAPIErrors(req.Post(e))
-
-	return err
+	return doPOSTRequestNoResponseBody(ctx, c, e, opts)
 }

@@ -29,6 +29,8 @@ type Feed struct {
 	Config Config `json:"config,omitempty"`
 	Data   Meta   `json:"data,omitempty"`
 
+	Destinations []Destination `json:"destinations"`
+
 	SourceID string
 }
 

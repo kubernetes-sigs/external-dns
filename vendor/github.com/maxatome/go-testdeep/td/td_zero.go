@@ -31,8 +31,6 @@ var _ TestDeep = &tdZero{}
 //
 // Beware that:
 //
-<<<<<<< HEAD
-<<<<<<< HEAD
 //	td.Cmp(t, AnyStruct{}, td.Zero())          // is true
 //	td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
 //	td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
@@ -80,75 +78,6 @@ var _ TestDeep = &tdNotZero{}
 //	td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
 //
 // See also [NotEmpty], [NotNil] and [Zero].
-||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-=======
-//   td.Cmp(t, AnyStruct{}, td.Zero())          // is true
-//   td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   td.Cmp(t, AnyStruct{}, td.Zero())          // is true
-//   td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
-=======
-//	td.Cmp(t, AnyStruct{}, td.Zero())          // is true
-//	td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
-//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
-//
-// See also [Empty], [Nil] and [NotZero].
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-func Zero() TestDeep {
-	return &tdZero{
-		baseOKNil: newBaseOKNil(3),
-	}
-}
-
-func (z *tdZero) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error) {
-	// nil case
-	if !got.IsValid() {
-		return nil
-	}
-	return deepValueEqual(ctx, got, reflect.New(got.Type()).Elem())
-}
-
-func (z *tdZero) String() string {
-	return "Zero()"
-}
-
-type tdNotZero struct {
-	baseOKNil
-}
-
-var _ TestDeep = &tdNotZero{}
-
-// summary(NotZero): checks that data is not zero regarding its type
-// input(NotZero): all
-
-// NotZero operator checks that data is not zero regarding its type.
-//
-//   - nil is the zero value of pointers, maps, slices, channels and functions;
-//   - 0 is the zero value of numbers;
-//   - "" is the 0 value of strings;
-//   - false is the zero value of booleans;
-//   - zero value of structs is the struct with no fields initialized.
-//
-// Beware that:
-//
-<<<<<<< HEAD
-//   td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
-//   td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
->>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-//   td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
-//   td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
-=======
-//	td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
-//	td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
-//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
-//
-// See also [NotEmpty], [NotNil] and [Zero].
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NotZero() TestDeep {
 	return &tdNotZero{
 		baseOKNil: newBaseOKNil(3),

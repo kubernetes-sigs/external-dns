@@ -18,45 +18,6 @@ package spec3
 
 import (
 	"encoding/json"
-<<<<<<< HEAD
-	"k8s.io/kube-openapi/pkg/validation/spec"
-	"github.com/go-openapi/swag"
-)
-
-type ExternalDocumentation struct {
-	ExternalDocumentationProps
-	spec.VendorExtensible
-}
-
-type ExternalDocumentationProps struct {
-	// Description is a short description of the target documentation. CommonMark syntax MAY be used for rich text representation.
-	Description string `json:"description,omitempty"`
-	// URL is the URL for the target documentation.
-	URL string `json:"url"`
-}
-
-// MarshalJSON is a custom marshal function that knows how to encode Responses as JSON
-func (e *ExternalDocumentation) MarshalJSON() ([]byte, error) {
-	b1, err := json.Marshal(e.ExternalDocumentationProps)
-	if err != nil {
-		return nil, err
-	}
-	b2, err := json.Marshal(e.VendorExtensible)
-	if err != nil {
-		return nil, err
-	}
-	return swag.ConcatJSON(b1, b2), nil
-}
-
-func (e *ExternalDocumentation) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &e.ExternalDocumentationProps); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(data, &e.VendorExtensible); err != nil {
-		return err
-	}
-||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
-=======
 
 	"github.com/go-openapi/swag"
 	"k8s.io/kube-openapi/pkg/internal"
@@ -125,6 +86,5 @@ func (e *ExternalDocumentation) UnmarshalNextJSON(opts jsonv2.UnmarshalOptions, 
 	}
 	e.Extensions = internal.SanitizeExtensions(x.Extensions)
 	e.ExternalDocumentationProps = x.ExternalDocumentationProps
->>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return nil
 }
