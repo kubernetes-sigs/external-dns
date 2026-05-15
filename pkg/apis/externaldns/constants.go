@@ -21,6 +21,7 @@ const (
 	RegistryNoop     = "noop"
 	RegistryDynamoDB = "dynamodb"
 	RegistryAWSSD    = "aws-sd"
+	RegistryCRD      = "crd"
 
 	ProviderAkamai       = "akamai"
 	ProviderAlibabaCloud = "alibabacloud"

@@ -47,7 +47,12 @@ func registries(selector string) (RegistryConstructor, bool) {
 		externaldns.RegistryNoop:     noop.New,
 		externaldns.RegistryTXT:      txt.New,
 		externaldns.RegistryAWSSD:    awssd.New,
+		externaldns.RegistryCRD:      newCRDRegistry,
 	}
 	c, ok := m[selector]
 	return c, ok
+}
+
+func newCRDRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.RequestTimeout)
 }
