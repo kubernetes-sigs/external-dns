@@ -137,7 +137,9 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 > [!TIP]
 > To pass static credentials as environment variables (e.g. when running outside AWS and
 > mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
-> and project them into the pod. With the Helm chart:
+> and project them into the pod. With the
+> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+> set the top-level `env` value:
 >
 > ```yaml
 > # values.yaml
