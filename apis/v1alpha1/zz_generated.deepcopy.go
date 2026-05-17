@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
