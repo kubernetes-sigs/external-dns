@@ -1984,13 +1984,13 @@ func TestIngressIndexer(t *testing.T) {
 		{
 			name:          "no filters returns all ingresses",
 			expectedCount: 5,
-			ingresses:     createTestIngresses("default", 5),
+			ingresses:     createTestIngresses(5),
 		},
 		{
 			name:             "annotation filter matches subset",
 			annotationFilter: "tier=frontend",
 			expectedCount:    3,
-			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
 				for i, ing := range ings {
 					if i < 3 {
 						ing.Annotations["tier"] = "frontend"
@@ -2002,7 +2002,7 @@ func TestIngressIndexer(t *testing.T) {
 			name:             "annotation filter no match returns empty",
 			annotationFilter: "tier=backend",
 			expectedCount:    0,
-			ingresses: createTestIngresses("default", 3, func(ings []*networkv1.Ingress) {
+			ingresses: createTestIngresses(3, func(ings []*networkv1.Ingress) {
 				for _, ing := range ings {
 					ing.Annotations["tier"] = "frontend"
 				}
@@ -2012,7 +2012,7 @@ func TestIngressIndexer(t *testing.T) {
 			name:          "label filter matches subset",
 			labelFilter:   "app=nginx",
 			expectedCount: 2,
-			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
 				for i, ing := range ings {
 					if i < 2 {
 						ing.Labels["app"] = "nginx"
@@ -2025,7 +2025,7 @@ func TestIngressIndexer(t *testing.T) {
 			annotationFilter: "tier=frontend",
 			labelFilter:      "app=nginx",
 			expectedCount:    2,
-			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
 				for i, ing := range ings {
 					if i < 3 {
 						ing.Annotations["tier"] = "frontend"
@@ -2039,7 +2039,7 @@ func TestIngressIndexer(t *testing.T) {
 		{
 			name:          "controller mismatch excludes ingress",
 			expectedCount: 3,
-			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
 				for i, ing := range ings {
 					if i >= 3 {
 						ing.Annotations[annotations.ControllerKey] = "other-controller"
@@ -2051,7 +2051,7 @@ func TestIngressIndexer(t *testing.T) {
 			name:             "invalid annotation filter is silently ignored and all ingresses pass through",
 			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
 			expectedCount:    3,
-			ingresses:        createTestIngresses("default", 3),
+			ingresses:        createTestIngresses(3),
 		},
 	}
 
@@ -2089,13 +2089,13 @@ func TestIngressIndexer(t *testing.T) {
 	}
 }
 
-func createTestIngresses(ns string, count int, funcs ...func([]*networkv1.Ingress)) []*networkv1.Ingress {
+func createTestIngresses(count int, funcs ...func([]*networkv1.Ingress)) []*networkv1.Ingress {
 	ingresses := make([]*networkv1.Ingress, count)
 	for i := range count {
 		ingresses[i] = &networkv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        fmt.Sprintf("ing-%d", i),
-				Namespace:   ns,
+				Namespace:   "default",
 				Labels:      map[string]string{},
 				Annotations: map[string]string{},
 			},
