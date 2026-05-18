@@ -131,18 +131,13 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 				}
 				return []string{types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()}, nil
 			}
-			// TODO: review whether a dedicated index strategy is needed for cluster-scoped
-			// resources (e.g. Node). The current approach (keyed by object name) is correct
-			// but may not be optimal — a future index could key by address or hostname annotation.
-			// Use MetaNamespaceKeyFunc so the index value matches the object's primary store
-			// key for both namespaced ("ns/name") and cluster-scoped ("name") resources.
-			// types.NamespacedName.String() produces "/name" for empty namespaces, which
-			// breaks GetByKey lookups against the store.
-			key, err := cache.MetaNamespaceKeyFunc(entity)
-			if err != nil {
-				return nil, err
+			// TODO: cluster-scoped resources may need a dedicated index strategy,
+			// e.g. keyed by address or hostname annotation rather than object name.
+			ns := entity.GetNamespace()
+			if ns == "" {
+				return []string{entity.GetName()}, nil
 			}
-			return []string{key}, nil
+			return []string{ns + "/" + entity.GetName()}, nil
 		},
 	}
 }

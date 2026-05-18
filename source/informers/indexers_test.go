@@ -14,6 +14,7 @@ limitations under the License.
 package informers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -283,6 +284,37 @@ func TestListIndexed_ClusterScopedResource(t *testing.T) {
 	result := ListIndexed[*corev1.Node](indexer)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "my-node", result[0].GetName())
+}
+
+// errIndexer is a minimal cache.Indexer stub whose GetByKey always returns an error.
+// Used to cover the err != nil defensive branch in ListIndexed — that branch is
+// unreachable with the real client-go ThreadSafeStore implementation.
+type errIndexer struct {
+	cache.Indexer
+}
+
+func (e *errIndexer) ListIndexFuncValues(_ string) []string { return []string{"default/pod"} }
+func (e *errIndexer) GetByKey(_ string) (any, bool, error) {
+	return nil, false, fmt.Errorf("store error")
+}
+
+func TestListIndexed_GetByKeyError(t *testing.T) {
+	result := ListIndexed[*corev1.Pod](&errIndexer{})
+	assert.Empty(t, result)
+}
+
+func TestListIndexed_TypeMismatch(t *testing.T) {
+	// IndexerWithOptions is parameterized on Pod, so Pods are admitted.
+	// ListIndexed[*corev1.Service] then fails the type assertion for each
+	// entry — all are silently skipped and an empty slice is returned.
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+	pod := &corev1.Pod{}
+	pod.SetNamespace("default")
+	pod.SetName("test-pod")
+	require.NoError(t, indexer.Add(pod))
+
+	result := ListIndexed[*corev1.Service](indexer)
+	assert.Empty(t, result)
 }
 
 func TestIndexSelectorWithFunctions(t *testing.T) {
