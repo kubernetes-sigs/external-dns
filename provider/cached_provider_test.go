@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -96,9 +97,10 @@ func newTestProviderFunc(t *testing.T) *testProviderFunc {
 func TestNewCachedProvider(t *testing.T) {
 	inner := newTestProviderFunc(t)
 	delay := 5 * time.Minute
-	cp := NewCachedProvider(inner, delay)
+	cp := NewCachedProvider(inner, &externaldns.Config{ProviderCacheTime: delay})
 	assert.Equal(t, inner, cp.Provider)
 	assert.Equal(t, delay, cp.RefreshDelay)
+	assert.False(t, cp.PatchOnApply)
 	assert.Nil(t, cp.cache)
 	assert.True(t, cp.lastRead.IsZero())
 }
@@ -108,7 +110,7 @@ func TestCachedProviderRecordsError(t *testing.T) {
 	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
 		return nil, assert.AnError
 	}
-	cp := NewCachedProvider(testProvider, 0)
+	cp := NewCachedProvider(testProvider, &externaldns.Config{})
 	_, err := cp.Records(t.Context())
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Nil(t, cp.cache)
@@ -223,6 +225,72 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 			require.Len(t, endpoints, 1)
 			require.NotNil(t, endpoints[0])
 			assert.Equal(t, "new.domain.fqdn", endpoints[0].DNSName)
+		})
+	})
+}
+
+func TestCachedProviderPatchOnApply(t *testing.T) {
+	testProvider := newTestProviderFunc(t)
+	testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
+		return []*endpoint.Endpoint{{DNSName: "domain.fqdn"}}, nil
+	}
+	provider := CachedProvider{
+		RefreshDelay: 30 * time.Second,
+		PatchOnApply: true,
+		Provider:     testProvider,
+	}
+	_, err := provider.Records(context.Background())
+	require.NoError(t, err)
+
+	t.Run("Successful apply patches cache without hitting provider", func(t *testing.T) {
+		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
+			return nil
+		}
+		err := provider.ApplyChanges(context.Background(), &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{DNSName: "hello.world"},
+			},
+			Delete: []*endpoint.Endpoint{
+				{DNSName: "domain.fqdn", RecordType: ""},
+			},
+		})
+		assert.NoError(t, err)
+		t.Run("Next call to Records uses patched cache without hitting provider", func(t *testing.T) {
+			testProvider.applyChanges = applyChangesNotCalled(t)
+			testProvider.records = recordsNotCalled(t)
+			endpoints, err := provider.Records(context.Background())
+
+			assert.NoError(t, err)
+			require.NotNil(t, endpoints)
+			dnsNames := make([]string, len(endpoints))
+			for i, ep := range endpoints {
+				dnsNames[i] = ep.DNSName
+			}
+			assert.Contains(t, dnsNames, "hello.world")
+			assert.NotContains(t, dnsNames, "domain.fqdn")
+		})
+	})
+
+	t.Run("Failed apply resets cache and forces provider re-fetch", func(t *testing.T) {
+		testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
+			return []*endpoint.Endpoint{{DNSName: "fresh.domain.fqdn"}}, nil
+		}
+		testProvider.applyChanges = func(_ context.Context, _ *plan.Changes) error {
+			return errors.New("provider error")
+		}
+		err := provider.ApplyChanges(context.Background(), &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{DNSName: "should.not.cache"},
+			},
+		})
+		assert.Error(t, err)
+		t.Run("Next call to Records hits provider after reset", func(t *testing.T) {
+			testProvider.applyChanges = applyChangesNotCalled(t)
+			endpoints, err := provider.Records(context.Background())
+
+			assert.NoError(t, err)
+			require.Len(t, endpoints, 1)
+			assert.Equal(t, "fresh.domain.fqdn", endpoints[0].DNSName)
 		})
 	})
 }

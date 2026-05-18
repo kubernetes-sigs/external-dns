@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -55,15 +56,17 @@ func init() {
 
 type CachedProvider struct {
 	Provider
-	RefreshDelay time.Duration
-	lastRead     time.Time
-	cache        []*endpoint.Endpoint
+	RefreshDelay   time.Duration
+	PatchOnApply   bool
+	lastRead       time.Time
+	cache          []*endpoint.Endpoint
 }
 
-func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {
+func NewCachedProvider(provider Provider, cfg *externaldns.Config) *CachedProvider {
 	return &CachedProvider{
 		Provider:     provider,
-		RefreshDelay: refreshDelay,
+		RefreshDelay: cfg.ProviderCacheTime,
+		PatchOnApply: cfg.ProviderCachePatchOnApply,
 	}
 }
 
@@ -89,9 +92,36 @@ func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Info("Records cache provider: no changes to be applied")
 		return nil
 	}
-	c.Reset()
 	cachedApplyChangesCallsTotal.Counter.Inc()
-	return c.Provider.ApplyChanges(ctx, changes)
+	if err := c.Provider.ApplyChanges(ctx, changes); err != nil {
+		c.Reset()
+		return err
+	}
+	if c.PatchOnApply && c.cache != nil {
+		c.cache = applyChangesToCache(c.cache, changes)
+	} else {
+		c.Reset()
+	}
+	return nil
+}
+
+func applyChangesToCache(cache []*endpoint.Endpoint, changes *plan.Changes) []*endpoint.Endpoint {
+	remove := make(map[string]bool, len(changes.Delete)+len(changes.UpdateOld))
+	for _, ep := range changes.Delete {
+		remove[ep.DNSName+"/"+ep.RecordType] = true
+	}
+	for _, ep := range changes.UpdateOld {
+		remove[ep.DNSName+"/"+ep.RecordType] = true
+	}
+	updated := make([]*endpoint.Endpoint, 0, len(cache))
+	for _, ep := range cache {
+		if !remove[ep.DNSName+"/"+ep.RecordType] {
+			updated = append(updated, ep)
+		}
+	}
+	updated = append(updated, changes.Create...)
+	updated = append(updated, changes.UpdateNew...)
+	return updated
 }
 
 func (c *CachedProvider) Reset() {
