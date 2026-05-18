@@ -98,16 +98,11 @@ func NewNodeSource(
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := ns.nodeInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	nodes := informers.ListIndexed[*v1.Node](ns.nodeInformer.Informer().GetIndexer())
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	endpoints := make([]*endpoint.Endpoint, 0, len(nodes))
 
-	// create endpoints for all nodes
-	for _, key := range indexKeys {
-		node, err := informers.GetByKey[*v1.Node](ns.nodeInformer.Informer().GetIndexer(), key)
-		if err != nil || node == nil {
-			continue
-		}
+	for _, node := range nodes {
 
 		if node.Spec.Unschedulable && ns.excludeUnschedulable {
 			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
@@ -118,6 +113,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
+		var err error
 		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {

@@ -1973,9 +1973,6 @@ func TestIngressSource_AddEventHandler(t *testing.T) {
 	sc.AddEventHandler(t.Context(), func() {})
 }
 
-// TestIngressIndexer verifies that the ingress indexer correctly filters ingresses
-// by annotation filter, label selector, and controller match at index time, so that
-// only matching ingresses are returned by Endpoints().
 func TestIngressIndexer(t *testing.T) {
 	tests := []struct {
 		name             string

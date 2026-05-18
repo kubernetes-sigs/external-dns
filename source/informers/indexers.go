@@ -167,6 +167,26 @@ func MustAddEventHandler(informer cache.SharedInformer, handler cache.ResourceEv
 	}
 }
 
+// ListIndexed returns all objects of type T admitted by the IndexWithSelectors index.
+// Objects missing from the store or failing type assertion are silently skipped — a missing
+// key means the object was deleted between the index scan and the lookup, which is normal.
+func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
+	keys := indexer.ListIndexFuncValues(IndexWithSelectors)
+	result := make([]T, 0, len(keys))
+	for _, key := range keys {
+		raw, exists, err := indexer.GetByKey(key)
+		if !exists || err != nil {
+			continue
+		}
+		obj, ok := raw.(T)
+		if !ok {
+			continue
+		}
+		result = append(result, obj)
+	}
+	return result
+}
+
 // GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
 // It returns the object and an error if the retrieval or type assertion fails.
 // If the object does not exist, it returns the zero value of T and nil.

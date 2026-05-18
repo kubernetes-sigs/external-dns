@@ -745,9 +745,6 @@ func (b *nodeListBuilder) build() v1.NodeList {
 	return v1.NodeList{Items: b.nodes}
 }
 
-// TestNodeIndexer verifies that the node indexer correctly filters nodes
-// by annotation filter, label selector, and controller match at index time, so that
-// only matching nodes are returned by Endpoints().
 func TestNodeIndexer(t *testing.T) {
 	tests := []struct {
 		name             string

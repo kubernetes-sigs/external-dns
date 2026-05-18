@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -102,11 +103,9 @@ func TestIndexerWithOptions_ClusterScopedResource(t *testing.T) {
 
 	node := &corev1.Node{}
 	node.SetName("my-node")
-	// no namespace — cluster-scoped resource
 
 	keys, err := indexFn(node)
 	assert.NoError(t, err)
-	// must be just "my-node", not "/my-node" — key must match MetaNamespaceKeyFunc
 	assert.Equal(t, []string{"my-node"}, keys)
 }
 
@@ -233,6 +232,57 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "object is not of type")
 	assert.Nil(t, result)
+}
+
+func TestListIndexed_Empty(t *testing.T) {
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+	assert.Empty(t, ListIndexed[*corev1.Pod](indexer))
+}
+
+func TestListIndexed_AllMatching(t *testing.T) {
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+	for _, name := range []string{"pod-1", "pod-2", "pod-3"} {
+		p := &corev1.Pod{}
+		p.SetNamespace("default")
+		p.SetName(name)
+		require.NoError(t, indexer.Add(p))
+	}
+	assert.Len(t, ListIndexed[*corev1.Pod](indexer), 3)
+}
+
+func TestListIndexed_LabelFilterExcludes(t *testing.T) {
+	sel := labels.SelectorFromSet(labels.Set{"app": "nginx"})
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod](
+		IndexSelectorWithLabelSelector(sel),
+	))
+
+	match := &corev1.Pod{}
+	match.SetNamespace("default")
+	match.SetName("nginx-pod")
+	match.SetLabels(map[string]string{"app": "nginx"})
+
+	noMatch := &corev1.Pod{}
+	noMatch.SetNamespace("default")
+	noMatch.SetName("other-pod")
+	noMatch.SetLabels(map[string]string{"app": "apache"})
+
+	require.NoError(t, indexer.Add(match))
+	require.NoError(t, indexer.Add(noMatch))
+
+	result := ListIndexed[*corev1.Pod](indexer)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "nginx-pod", result[0].GetName())
+}
+
+func TestListIndexed_ClusterScopedResource(t *testing.T) {
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Node]())
+	node := &corev1.Node{}
+	node.SetName("my-node")
+	require.NoError(t, indexer.Add(node))
+
+	result := ListIndexed[*corev1.Node](indexer)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "my-node", result[0].GetName())
 }
 
 func TestIndexSelectorWithFunctions(t *testing.T) {

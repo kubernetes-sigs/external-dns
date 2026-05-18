@@ -131,18 +131,7 @@ func NewIngressSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := sc.ingressInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
-
-	var ingresses []*networkv1.Ingress
-	for _, key := range indexKeys {
-		ing, err := informers.GetByKey[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer(), key)
-		if err != nil || ing == nil {
-			continue
-		}
-		ingresses = append(ingresses, ing)
-	}
-
-	ingresses, err := sc.filterByIngressClass(ingresses)
+	ingresses, err := sc.filterByIngressClass(informers.ListIndexed[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer()))
 	if err != nil {
 		return nil, err
 	}
