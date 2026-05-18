@@ -77,6 +77,7 @@ type ParsedResources struct {
 	Services       []*corev1.Service
 	EndpointSlices []*discoveryv1.EndpointSlice
 	Pods           []*corev1.Pod
+	Nodes          []*corev1.Node
 	DNSEndpoints   []*apiv1alpha1.DNSEndpoint
 }
 

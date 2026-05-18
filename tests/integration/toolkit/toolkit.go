@@ -95,6 +95,8 @@ func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, err
 				parsed.Pods = append(parsed.Pods, pods...)
 				parsed.EndpointSlices = append(parsed.EndpointSlices, endpointSlice)
 			}
+		case *corev1.Node:
+			parsed.Nodes = append(parsed.Nodes, res)
 		case *networkingv1.Ingress:
 			parsed.Ingresses = append(parsed.Ingresses, res)
 		case *discoveryv1.EndpointSlice:
@@ -180,6 +182,21 @@ func createIngressWithOptionalStatus(ctx context.Context, client *fake.Clientset
 	return nil
 }
 
+func createNodeWithAddresses(ctx context.Context, client *fake.Clientset, node *corev1.Node) error {
+	created, err := client.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	if len(node.Status.Addresses) > 0 {
+		created.Status = node.Status
+		_, err = client.CoreV1().Nodes().UpdateStatus(ctx, created, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func createServiceWithOptionalStatus(ctx context.Context, client *fake.Clientset, svc *corev1.Service) error {
 	created, err := client.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 	if err != nil {
@@ -210,6 +227,11 @@ func LoadResources(ctx context.Context, scenario Scenario) (*LoadedResources, er
 		return nil, err
 	}
 
+	for _, node := range resources.Nodes {
+		if err := createNodeWithAddresses(ctx, k8sClient, node); err != nil {
+			return nil, err
+		}
+	}
 	for _, ing := range resources.Ingresses {
 		if err := createIngressWithOptionalStatus(ctx, k8sClient, ing); err != nil {
 			return nil, err

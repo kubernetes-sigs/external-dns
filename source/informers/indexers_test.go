@@ -96,6 +96,20 @@ func TestIndexerWithOptions_EmptyOptions(t *testing.T) {
 	assert.Equal(t, []string{"default/test-object"}, keys)
 }
 
+func TestIndexerWithOptions_ClusterScopedResource(t *testing.T) {
+	indexers := IndexerWithOptions[*corev1.Node]()
+	indexFn := indexers[IndexWithSelectors]
+
+	node := &corev1.Node{}
+	node.SetName("my-node")
+	// no namespace — cluster-scoped resource
+
+	keys, err := indexFn(node)
+	assert.NoError(t, err)
+	// must be just "my-node", not "/my-node" — key must match MetaNamespaceKeyFunc
+	assert.Equal(t, []string{"my-node"}, keys)
+}
+
 func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
 	indexers := IndexerWithOptions[*unstructured.Unstructured](
 		IndexSelectorWithAnnotationFilter("example-annotation=value"),

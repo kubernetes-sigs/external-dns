@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -588,8 +590,13 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
 		},
 		{
 			title:            "valid matching annotation filter label",
@@ -1940,16 +1947,6 @@ func TestNewIngressSource_Errors(t *testing.T) {
 func TestIngressSource_Errors(t *testing.T) {
 	t.Parallel()
 
-	t.Run("annotations.Filter error propagates", func(t *testing.T) {
-		t.Parallel()
-		sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
-		require.NoError(t, err)
-		// Inject an invalid annotationFilter post-construction to bypass constructor validation.
-		sc.(*ingressSource).annotationFilter = "=invalid"
-		_, err = sc.Endpoints(t.Context())
-		require.Error(t, err)
-	})
-
 	t.Run("endpointsFromTemplate ExecFQDN error propagates", func(t *testing.T) {
 		t.Parallel()
 		// {{index . 0}} parses fine but fails at runtime for *networkv1.Ingress.
@@ -1974,4 +1971,141 @@ func TestIngressSource_AddEventHandler(t *testing.T) {
 	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	sc.AddEventHandler(t.Context(), func() {})
+}
+
+// TestIngressIndexer verifies that the ingress indexer correctly filters ingresses
+// by annotation filter, label selector, and controller match at index time, so that
+// only matching ingresses are returned by Endpoints().
+func TestIngressIndexer(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		ingresses        []*networkv1.Ingress
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all ingresses",
+			expectedCount: 5,
+			ingresses:     createTestIngresses("default", 5),
+		},
+		{
+			name:             "annotation filter matches subset",
+			annotationFilter: "tier=frontend",
+			expectedCount:    3,
+			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 3 {
+						ing.Annotations["tier"] = "frontend"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			annotationFilter: "tier=backend",
+			expectedCount:    0,
+			ingresses: createTestIngresses("default", 3, func(ings []*networkv1.Ingress) {
+				for _, ing := range ings {
+					ing.Annotations["tier"] = "frontend"
+				}
+			}),
+		},
+		{
+			name:          "label filter matches subset",
+			labelFilter:   "app=nginx",
+			expectedCount: 2,
+			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 2 {
+						ing.Labels["app"] = "nginx"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation and label filter intersection",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "app=nginx",
+			expectedCount:    2,
+			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 3 {
+						ing.Annotations["tier"] = "frontend"
+					}
+					if i < 2 {
+						ing.Labels["app"] = "nginx"
+					}
+				}
+			}),
+		},
+		{
+			name:          "controller mismatch excludes ingress",
+			expectedCount: 3,
+			ingresses: createTestIngresses("default", 5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i >= 3 {
+						ing.Annotations[annotations.ControllerKey] = "other-controller"
+					}
+				}
+			}),
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all ingresses pass through",
+			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
+			expectedCount:    3,
+			ingresses:        createTestIngresses("default", 3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+
+			for i, ing := range tt.ingresses {
+				maps.Copy(ing.Annotations, map[string]string{
+					annotations.HostnameKey: fmt.Sprintf("ing-%d.example.org", i),
+					annotations.TargetKey:   fmt.Sprintf("target-%d.example.com", i),
+				})
+				_, err := client.NetworkingV1().Ingresses(ing.Namespace).Create(t.Context(), ing, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewIngressSource(t.Context(), client, &Config{
+				AnnotationFilter: tt.annotationFilter,
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func createTestIngresses(ns string, count int, funcs ...func([]*networkv1.Ingress)) []*networkv1.Ingress {
+	ingresses := make([]*networkv1.Ingress, count)
+	for i := range count {
+		ingresses[i] = &networkv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        fmt.Sprintf("ing-%d", i),
+				Namespace:   ns,
+				Labels:      map[string]string{},
+				Annotations: map[string]string{},
+			},
+		}
+	}
+	for _, fn := range funcs {
+		fn(ingresses)
+	}
+	return ingresses
 }
