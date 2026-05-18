@@ -131,8 +131,6 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 				}
 				return []string{types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()}, nil
 			}
-			// TODO: cluster-scoped resources may need a dedicated index strategy,
-			// e.g. keyed by address or hostname annotation rather than object name.
 			ns := entity.GetNamespace()
 			if ns == "" {
 				return []string{entity.GetName()}, nil
