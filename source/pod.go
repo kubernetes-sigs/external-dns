@@ -188,13 +188,6 @@ func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endp
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		for _, domain := range domainList {
 			if len(targets) == 0 {
-				// Pods in Pending / Scheduled state without a PodIP must
-				// not emit an endpoint: endpoint.SuitableType("") returns
-				// CNAME, which would create a provider record whose target
-				// is the empty string. Once the pod eventually gets an IP
-				// external-dns then tries to create an A record at the
-				// same name and the provider rejects it because A and
-				// CNAME cannot coexist (#6375, #6199 on Azure / RFC2136).
 				if pod.Status.PodIP == "" {
 					continue
 				}
@@ -222,6 +215,9 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
+				if pod.Status.PodIP == "" {
+					continue
+				}
 				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
 			}
 		}
@@ -237,6 +233,9 @@ func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.Endpoi
 	if ps.podSourceDomain != "" {
 		domain := pod.Name + "." + ps.podSourceDomain
 		if len(targets) == 0 {
+			if pod.Status.PodIP == "" {
+				return
+			}
 			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
 		}
 		addTargetsToEndpointMap(endpointMap, pod, targets, domain)

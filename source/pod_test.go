@@ -797,6 +797,59 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"kops-dns-controller internal-hostname pod without a PodIP is skipped",
+			"",
+			"kops-dns-controller",
+			true,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "",
+					},
+				},
+			},
+		},
+		{
+			"pod-source-domain pod without a PodIP is skipped",
+			"",
+			"",
+			true,
+			"pod.example.org",
+			[]*endpoint.Endpoint{},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
