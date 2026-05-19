@@ -114,10 +114,10 @@
         "array",
         "null"
       ],
+      "uniqueItems": true,
       "items": {
         "type": "string"
-      },
-      "uniqueItems": true
+      }
     },
     "fullnameOverride": {
       "description": "Override the full name of the chart.",
