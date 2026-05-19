@@ -314,13 +314,50 @@ func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
 	assert.Same(t, restConfig1, gen.restConfig,
 		"Internal restConfig field should match returned value")
 
-	// Verify first call had error (no valid kubeconfig)
+	// All calls should return the same error
 	assert.Error(t, err1, "First call should return error when kubeconfig is invalid")
+	assert.Equal(t, err1, err2, "Second call should return same error as first call")
+	assert.Equal(t, err1, err3, "Third call should return same error as first call")
+}
 
-	// Due to sync.Once bug, subsequent calls won't return the error
-	// This is documented in the TODO comment on SingletonClientGenerator
-	require.NoError(t, err2, "Second call does not return error due to sync.Once bug")
-	require.NoError(t, err3, "Third call does not return error due to sync.Once bug")
+// TestSingletonClientGenerator_ErrorPersistence verifies that initialization errors
+// are persisted in struct fields and returned consistently on every subsequent call.
+func TestSingletonClientGenerator_ErrorPersistence(t *testing.T) {
+	gen := &SingletonClientGenerator{
+		KubeConfig:     "/nonexistent/path/to/kubeconfig",
+		APIServerURL:   "",
+		RequestTimeout: 30 * time.Second,
+	}
+
+	methods := []struct {
+		name string
+		call func() (any, error)
+	}{
+		{"RESTConfig", func() (any, error) { return gen.RESTConfig() }},
+		{"KubeClient", func() (any, error) { return gen.KubeClient() }},
+		{"GatewayClient", func() (any, error) { return gen.GatewayClient() }},
+		{"IstioClient", func() (any, error) { return gen.IstioClient() }},
+		{"DynamicKubernetesClient", func() (any, error) { return gen.DynamicKubernetesClient() }},
+		{"OpenShiftClient", func() (any, error) { return gen.OpenShiftClient() }},
+	}
+
+	for _, m := range methods {
+		t.Run(m.name, func(t *testing.T) {
+			client1, err1 := m.call()
+			require.Error(t, err1, "first call must return an error for invalid kubeconfig")
+			assert.Nil(t, client1, "first call must return nil client on error")
+
+			client2, err2 := m.call()
+			require.Error(t, err2, "second call must still return the init error, not nil")
+			assert.Nil(t, client2, "second call must return nil client on error")
+			assert.Equal(t, err1, err2, "second call must return the same error as first call")
+
+			client3, err3 := m.call()
+			require.Error(t, err3, "third call must still return the init error, not nil")
+			assert.Nil(t, client3, "third call must return nil client on error")
+			assert.Equal(t, err1, err3, "third call must return the same error as first call")
+		})
+	}
 }
 
 func TestNewSourceConfig(t *testing.T) {
@@ -330,6 +367,7 @@ func TestNewSourceConfig(t *testing.T) {
 		wantConfigured bool
 		wantCombining  bool
 		wantErr        bool
+		errContains    string
 	}{
 		{
 			name: "no templates configured",
@@ -338,14 +376,14 @@ func TestNewSourceConfig(t *testing.T) {
 		{
 			name: "fqdn template only",
 			cfg: &externaldns.Config{
-				FQDNTemplate: "{{.Name}}.example.com",
+				FQDNTemplate: []string{"{{.Name}}.example.com"},
 			},
 			wantConfigured: true,
 		},
 		{
 			name: "fqdn template with combine",
 			cfg: &externaldns.Config{
-				FQDNTemplate:             "{{.Name}}.example.com",
+				FQDNTemplate:             []string{"{{.Name}}.example.com"},
 				CombineFQDNAndAnnotation: true,
 			},
 			wantConfigured: true,
@@ -354,28 +392,49 @@ func TestNewSourceConfig(t *testing.T) {
 		{
 			name: "all three templates configured",
 			cfg: &externaldns.Config{
-				FQDNTemplate:             "{{.Name}}.example.com",
-				TargetTemplate:           "{{.Name}}.targets.example.com",
-				FQDNTargetTemplate:       "{{.Name}}.example.com:{{.Name}}.targets.example.com",
+				FQDNTemplate:             []string{"{{.Name}}.example.com"},
+				TargetTemplate:           []string{"{{.Name}}.targets.example.com"},
+				FQDNTargetTemplate:       []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
 				CombineFQDNAndAnnotation: true,
 			},
 			wantConfigured: true,
 			wantCombining:  true,
 		},
 		{
-			name:    "invalid fqdn template",
-			cfg:     &externaldns.Config{FQDNTemplate: "{{.Name"},
-			wantErr: true,
+			name: "multiple fqdn templates",
+			cfg: &externaldns.Config{
+				FQDNTemplate: []string{"{{.Name}}.a.example.com", "{{.Name}}.b.example.com"},
+			},
+			wantConfigured: true,
 		},
 		{
-			name:    "invalid target template",
-			cfg:     &externaldns.Config{TargetTemplate: "{{.Status.LoadBalancer.Ingress"},
-			wantErr: true,
+			name:        "invalid fqdn template",
+			cfg:         &externaldns.Config{FQDNTemplate: []string{"{{.Name"}},
+			wantErr:     true,
+			errContains: `--fqdn-template[0]`,
 		},
 		{
-			name:    "invalid fqdn-target template",
-			cfg:     &externaldns.Config{FQDNTargetTemplate: "{{.Name}}.example.com:{{.Status"},
-			wantErr: true,
+			name:        "invalid target template",
+			cfg:         &externaldns.Config{TargetTemplate: []string{"{{.Status.LoadBalancer.Ingress"}},
+			wantErr:     true,
+			errContains: `--target-template[0]`,
+		},
+		{
+			name:        "invalid fqdn-target template",
+			cfg:         &externaldns.Config{FQDNTargetTemplate: []string{"{{.Name}}.example.com:{{.Status"}},
+			wantErr:     true,
+			errContains: `--fqdn-target-template[0]`,
+		},
+		{
+			name: "duplicate define block in fqdn templates",
+			cfg: &externaldns.Config{
+				FQDNTemplate: []string{
+					`{{ define "zone" }}example.com{{ end }}{{.Name}}.{{ template "zone" }}`,
+					`{{ define "zone" }}other.com{{ end }}{{.Name}}.{{ template "zone" }}`,
+				},
+			},
+			wantErr:     true,
+			errContains: `--fqdn-template[1]`,
 		},
 	}
 
@@ -384,6 +443,9 @@ func TestNewSourceConfig(t *testing.T) {
 			got, err := NewSourceConfig(tt.cfg)
 			if tt.wantErr {
 				require.Error(t, err)
+				if tt.errContains != "" {
+					assert.ErrorContains(t, err, tt.errContains)
+				}
 				return
 			}
 			require.NoError(t, err)

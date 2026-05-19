@@ -336,6 +336,36 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
+type AliasType string
+
+const (
+	// AliasNone indicates alias property is not set
+	AliasNone AliasType = ""
+	// AliasFalse indicates alias property is set to false
+	AliasFalse AliasType = "false"
+	// AliasTrue indicates alias property is set to true (both A and AAAA)
+	AliasTrue AliasType = "true"
+	// AliasA indicates alias property is set to A record only
+	AliasA AliasType = "A"
+	// AliasAAAA indicates alias property is set to AAAA record only
+	AliasAAAA AliasType = "AAAA"
+)
+
+func (e *Endpoint) GetAliasProperty() AliasType {
+	switch a, ok := e.GetProviderSpecificProperty("alias"); {
+	case a == "true" && ok:
+		return AliasTrue
+	case a == "false" && ok:
+		return AliasFalse
+	case a == "A" && ok:
+		return AliasA
+	case a == "AAAA" && ok:
+		return AliasAAAA
+	default:
+		return AliasNone
+	}
+}
+
 // GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
 func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 	prop, ok := e.GetProviderSpecificProperty(key)
@@ -392,7 +422,7 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 // Properties belonging to other providers are dropped.
 // Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
 // TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
-// annotation form "external-dns.alpha.kubernetes.io/cloudflare-*", so filtering is skipped for
+// annotation form "external-dns.kubernetes.io/cloudflare-*", so filtering is skipped for
 // cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
 // adopts the standard prefix convention.
 func (e *Endpoint) RetainProviderProperties(provider string) {

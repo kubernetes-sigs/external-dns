@@ -319,7 +319,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 
 		endpoints = append(endpoints, routeEndpoints...)
 	}
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {

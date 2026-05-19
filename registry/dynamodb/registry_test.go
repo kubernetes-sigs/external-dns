@@ -1334,3 +1334,48 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 		Responses: responses,
 	}, nil
 }
+
+func TestWithRegion(t *testing.T) {
+	tests := []struct {
+		name           string
+		inputRegion    string
+		initialRegion  string
+		expectedRegion string
+	}{
+		{
+			name:           "empty region does not modify options",
+			inputRegion:    "",
+			initialRegion:  "us-west-2",
+			expectedRegion: "us-west-2",
+		},
+		{
+			name:           "empty region with empty initial stays empty",
+			inputRegion:    "",
+			initialRegion:  "",
+			expectedRegion: "",
+		},
+		{
+			name:           "non-empty region overrides options",
+			inputRegion:    "eu-west-1",
+			initialRegion:  "us-east-1",
+			expectedRegion: "eu-west-1",
+		},
+		{
+			name:           "non-empty region sets empty options",
+			inputRegion:    "ap-southeast-1",
+			initialRegion:  "",
+			expectedRegion: "ap-southeast-1",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opt := WithRegion(tc.inputRegion)
+			require.NotNil(t, opt, "WithRegion must never return nil")
+
+			opts := &dynamodb.Options{Region: tc.initialRegion}
+			opt(opts)
+			assert.Equal(t, tc.expectedRegion, opts.Region)
+		})
+	}
+}

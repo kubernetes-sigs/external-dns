@@ -73,14 +73,13 @@ type (
 	}
 
 	// ObjectReference holds metadata about a Kubernetes object for event correlation.
-	// TODO: consider make fields private. Ensuring data integrity, encapsulation and immutability.
 	ObjectReference struct {
-		Kind       string
-		ApiVersion string
-		Namespace  string
-		Name       string
-		UID        types.UID
-		Source     string
+		kind       string
+		apiVersion string
+		namespace  string
+		name       string
+		uid        types.UID
+		source     string
 	}
 
 	Config struct {
@@ -113,12 +112,12 @@ func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
 		}
 	}
 	return &ObjectReference{
-		Kind:       gvk.Kind,
-		ApiVersion: gvk.GroupVersion().String(),
-		Namespace:  obj.GetNamespace(),
-		Name:       obj.GetName(),
-		UID:        obj.GetUID(),
-		Source:     source,
+		kind:       gvk.Kind,
+		apiVersion: gvk.GroupVersion().String(),
+		namespace:  obj.GetNamespace(),
+		name:       obj.GetName(),
+		uid:        obj.GetUID(),
+		source:     source,
 	}
 }
 
@@ -132,7 +131,7 @@ func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
 		eType:   EventTypeNormal,
 		action:  a,
 		reason:  r,
-		source:  obj.Source,
+		source:  obj.source,
 	}
 }
 
@@ -148,7 +147,7 @@ func NewEventFromEndpoint(ep EndpointInfo, a Action, r Reason) Event {
 }
 
 func (e *Event) description() string {
-	return fmt.Sprintf("%s/%s/%s", e.ref.Kind, e.ref.Namespace, e.ref.Name)
+	return fmt.Sprintf("%s/%s/%s", e.ref.kind, e.ref.namespace, e.ref.name)
 }
 
 // Action returns the action associated with the event (e.g. Created, Updated, Deleted).
@@ -167,7 +166,7 @@ func (e *Event) EventType() EventType {
 }
 
 func (e *Event) event() *eventsv1.Event {
-	if e.ref.Name == "" {
+	if e.ref.name == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
 	}
@@ -181,53 +180,56 @@ func (e *Event) event() *eventsv1.Event {
 
 	// Events are namespaced resources. For cluster-scoped objects like Nodes,
 	// the namespace is empty, so we default to "default" namespace.
-	namespace := e.ref.Namespace
+	namespace := e.ref.namespace
 	if namespace == "" {
 		namespace = "default"
 	}
 
 	event := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sanitize(e.ref.Name),
+			Name:      sanitize(e.ref.name, timestamp.Time),
 			Namespace: namespace,
 		},
 		EventTime:           timestamp,
-		ReportingInstance:   controllerName + "/source/" + e.ref.Source,
+		ReportingInstance:   controllerName + "/source/" + e.ref.source,
 		ReportingController: controllerName,
 		Action:              string(e.action),
 		Reason:              string(e.reason),
 		Note:                message,
 		Type:                string(e.eType),
 	}
-	if e.ref.UID != "" {
+	if e.ref.name != "" {
 		ref := e.ref.objectRef()
-		event.Related = ref
 		event.Regarding = *ref
+		if e.ref.uid != "" {
+			event.Related = ref
+		}
 	}
 	return event
 }
 
-// Sanitize input to comply with RFC 1123 subdomain naming requirements
-func sanitize(input string) string {
-	t := metav1.Time{Time: time.Now()}
-	if input == "" {
-		return fmt.Sprintf("a.%x", t.UnixNano())
-	}
+// sanitize converts input to a valid RFC 1123 subdomain name, appending a hex
+// timestamp suffix for uniqueness. t should be the same timestamp used for EventTime.
+func sanitize(input string, t time.Time) string {
+	suffix := fmt.Sprintf(".%x", t.UnixNano())
 	sanitized := invalidChars.ReplaceAllString(strings.ToLower(input), "-")
 
 	// the name should start with an alphanumeric character
-	if len(sanitized) > 0 && !startsWithAlphaNumeric.MatchString(sanitized) {
+	if !startsWithAlphaNumeric.MatchString(sanitized) {
 		sanitized = "a" + sanitized
 	}
 
+	// truncate to leave room for the suffix, keeping total ≤ 253 (RFC 1123 subdomain limit)
+	if maxBase := 253 - len(suffix); len(sanitized) > maxBase {
+		sanitized = sanitized[:maxBase]
+	}
+
 	// the name should end with an alphanumeric character
-	if len(sanitized) > 0 && !endsWithAlphaNumeric.MatchString(sanitized) {
+	if !endsWithAlphaNumeric.MatchString(sanitized) {
 		sanitized += "z"
 	}
 
-	sanitized = invalidChars.ReplaceAllString(sanitized, "-")
-
-	return fmt.Sprintf("%v.%x", sanitized, t.UnixNano())
+	return sanitized + suffix
 }
 
 // WithDryRun returns a ConfigOption that sets dry-run mode; events are skipped when enabled.
@@ -262,12 +264,46 @@ func (c *Config) IsEnabled() bool {
 	return len(c.emitEvents) > 0
 }
 
+// Kind returns the Kubernetes kind of the referenced object (e.g. "Service", "Ingress").
+func (r *ObjectReference) Kind() string {
+	return r.kind
+}
+
+// Name returns the name of the referenced Kubernetes object.
+func (r *ObjectReference) Name() string {
+	return r.name
+}
+
+// Source returns the source identifier of the ObjectReference (e.g. "ingress", "service").
+func (r *ObjectReference) Source() string {
+	return r.source
+}
+
+// UID returns the UID of the referenced Kubernetes object.
+func (r *ObjectReference) UID() types.UID {
+	return r.uid
+}
+
 func (r *ObjectReference) objectRef() *apiv1.ObjectReference {
 	return &apiv1.ObjectReference{
-		Kind:       r.Kind,
-		Namespace:  r.Namespace,
-		Name:       r.Name,
-		UID:        r.UID,
-		APIVersion: r.ApiVersion,
+		Kind:       r.kind,
+		Namespace:  r.namespace,
+		Name:       r.name,
+		UID:        r.uid,
+		APIVersion: r.apiVersion,
+	}
+}
+
+// NewObjectReferenceFromParts constructs an ObjectReference directly from its components.
+// Use this when you don't have a runtime.Object (e.g., in tests or when constructing
+// references from non-Kubernetes data sources).
+func NewObjectReferenceFromParts(kind, apiVersion, namespace, name string, uid types.UID, source string) *ObjectReference {
+	return &ObjectReference{
+		kind:       kind,
+		apiVersion: apiVersion,
+		namespace:  namespace,
+		name:       name,
+		uid:        uid,
+		source:     source,
 	}
 }

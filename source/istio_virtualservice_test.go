@@ -2409,11 +2409,11 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 					"label3": "value3",
 				},
 				Annotations: map[string]string{
-					"user-annotation": "value",
-					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-					"external-dns.alpha.kubernetes.io/random":   "value",
-					"other/annotation":                          "value",
-					v1.LastAppliedConfigAnnotation:              `{"apiVersion":"v1"}`,
+					"user-annotation":                     "value",
+					"external-dns.kubernetes.io/hostname": "test-hostname",
+					"external-dns.kubernetes.io/random":   "value",
+					"other/annotation":                    "value",
+					v1.LastAppliedConfigAnnotation:        `{"apiVersion":"v1"}`,
 				},
 				UID: "someuid",
 				ManagedFields: []metav1.ManagedFieldsEntry{

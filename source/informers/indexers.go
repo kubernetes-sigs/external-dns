@@ -36,6 +36,7 @@ type IndexSelectorOptions struct {
 	// instead of the object's own name. Useful for indexing objects by a "parent"
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
+	conditions      []func(metav1.Object) bool
 }
 
 func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
@@ -54,6 +55,20 @@ func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelector
 func IndexSelectorWithLabelSelector(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
 		options.labelSelector = input
+	}
+}
+
+// IndexSelectorWithConditions adds typed predicate functions to the index selector.
+// Each function receives the concrete object type T; returning false excludes the
+// object from the index. The type parameter is inferred from the function arguments.
+func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		for _, fn := range fns {
+			options.conditions = append(options.conditions, func(obj metav1.Object) bool {
+				typed, ok := obj.(T)
+				return ok && fn(typed)
+			})
+		}
 	}
 }
 
@@ -103,6 +118,11 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 
 			if options.labelSelector != nil && !options.labelSelector.Matches(labels.Set(entity.GetLabels())) {
 				return nil, nil
+			}
+			for _, condition := range options.conditions {
+				if !condition(entity) {
+					return nil, nil
+				}
 			}
 			name := entity.GetName()
 			if options.indexByLabelKey != "" {

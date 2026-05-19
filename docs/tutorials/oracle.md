@@ -199,7 +199,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -207,7 +207,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/hostname: example.com
 spec:
   type: LoadBalancer
   ports:

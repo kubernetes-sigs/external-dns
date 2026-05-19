@@ -68,7 +68,7 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			// TODO: unlike other providers which normalise to "provider/attr",
 			// Cloudflare retains the full annotation key as the property name
-			// (e.g. "external-dns.alpha.kubernetes.io/cloudflare-proxied").
+			// (e.g. "external-dns.kubernetes.io/cloudflare-proxied").
 			// This is why RetainProviderProperties has a special case for cloudflare.
 			// Should be aligned with the standard convention in a future change.
 			switch {

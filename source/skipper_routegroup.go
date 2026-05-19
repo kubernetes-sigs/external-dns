@@ -278,7 +278,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		endpoints = append(endpoints, eps...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.Endpoint, error) {

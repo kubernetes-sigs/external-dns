@@ -264,6 +264,13 @@
         "null"
       ]
     },
+    "namespaceOverride": {
+      "description": "Override the namespace that chart resources are rendered into. Defaults to the release namespace. Useful when installing the chart as a subchart that should live in its own namespace, separate from the umbrella release namespace.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "namespaced": {
       "description": "if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).",
       "type": "boolean"
@@ -716,6 +723,10 @@
         "annotations": {
           "description": "Service annotations.",
           "type": "object"
+        },
+        "enabled": {
+          "description": "If `true`, create a `Service` Kubernetes.",
+          "type": "boolean"
         },
         "ipFamilies": {
           "description": "Service IP families (e.g. IPv4 and/or IPv6).",

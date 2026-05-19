@@ -131,7 +131,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "ip-10-1-176-1",
 						Annotations: map[string]string{
-							"external-dns.alpha.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
+							"external-dns.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
 						},
 					},
 					Status: v1.NodeStatus{
@@ -156,7 +156,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 						Name:   "node-name",
 						Labels: nil,
 						Annotations: map[string]string{
-							"external-dns.alpha.kubernetes.io/target": "203.2.45.22",
+							"external-dns.kubernetes.io/target": "203.2.45.22",
 						},
 					},
 					Status: v1.NodeStatus{

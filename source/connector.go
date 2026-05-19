@@ -72,7 +72,7 @@ func (cs *connectorSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 
 	log.Debugf("Received endpoints: %#v", endpoints)
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (cs *connectorSource) AddEventHandler(_ context.Context, _ func()) {}

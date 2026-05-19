@@ -119,7 +119,7 @@ Combine with label or annotation filters to further limit the set of Service obj
 
 ```sh
 --label-filter=external-dns/enabled=true
---annotation-filter=external-dns.alpha.kubernetes.io/hostname
+--annotation-filter=external-dns.kubernetes.io/hostname
 ```
 
 The table below shows which informers are eliminated by `--service-type-filter`:
