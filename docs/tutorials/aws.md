@@ -126,35 +126,9 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 > [!NOTE]
 > ExternalDNS resolves AWS credentials through the
 > [AWS SDK for Go v2 default credential provider chain](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials).
-> The methods documented below are the common deployment patterns, but any source supported
-> by the SDK works without additional configuration in ExternalDNS — including environment
-> variables (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`,
-> `AWS_WEB_IDENTITY_TOKEN_FILE` / `AWS_ROLE_ARN`), shared config and credentials files
-> (`AWS_SHARED_CREDENTIALS_FILE`, `AWS_CONFIG_FILE`), EC2 instance profile / ECS container
-> credentials, and EKS Pod Identity. See the AWS SDK reference for the full list and
-> precedence order.
-
-> [!TIP]
-> To pass static credentials as environment variables (e.g. when running outside AWS and
-> mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
-> and project them into the pod. With the
-> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
-> set the top-level `env` value:
->
-> ```yaml
-> # values.yaml
-> env:
->   - name: AWS_ACCESS_KEY_ID
->     valueFrom:
->       secretKeyRef:
->         name: aws-route53-credentials
->         key: aws-access-key-id
->   - name: AWS_SECRET_ACCESS_KEY
->     valueFrom:
->       secretKeyRef:
->         name: aws-route53-credentials
->         key: aws-secret-access-key
-> ```
+> Any source supported by the SDK works without additional configuration in ExternalDNS — including environment
+> variables, shared config and credentials files, EC2 instance profile / ECS container credentials, and EKS Pod
+> Identity. See the AWS SDK reference for the full list and precedence order.
 
 For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.
 Feel free to change this to something else, such `externaldns` or `kube-addons`.
@@ -329,6 +303,27 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 > ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
 
+> [!TIP]
+> To pass static credentials as environment variables (e.g. when running outside AWS and
+> mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
+> and project them into the pod. With the
+> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+> set the top-level `env` value:
+>
+> ```yaml
+> # values.yaml
+> env:
+>   - name: AWS_ACCESS_KEY_ID
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-access-key-id
+>   - name: AWS_SECRET_ACCESS_KEY
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-secret-access-key
+> ```
 ### IAM Roles for Service Accounts
 
 [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) ([IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)) allows cluster operators to map AWS IAM Roles to Kubernetes Service Accounts.
