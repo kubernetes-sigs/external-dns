@@ -1396,6 +1396,23 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "ingress with an extra annotation prefix",
+			ingressItems: []fakeIngress{
+				{
+					dnsnames:    []string{"foo.bar"},
+					hostnames:   []string{"lb.com"},
+					annotations: map[string]string{extraPrefixedAnnotation(annotations.TargetKey): "ingress-target.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"ingress-target.com"},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

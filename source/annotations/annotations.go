@@ -15,11 +15,15 @@ package annotations
 
 import (
 	"math"
+	"strings"
 )
 
 const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
 	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
+
+	// AlphaAnnotationPrefix is the legacy annotation prefix used by external-dns, still supported for backward compatibility
+	AlphaAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
@@ -28,7 +32,8 @@ const (
 var (
 	// AnnotationKeyPrefix is set on all annotations consumed by external-dns (outside of user templates)
 	// to provide easy filtering. Can be customized via SetAnnotationPrefix.
-	AnnotationKeyPrefix = DefaultAnnotationPrefix
+	AnnotationKeyPrefix        = DefaultAnnotationPrefix
+	AnnotationKeyExtraPrefixes = []string{AlphaAnnotationPrefix}
 
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
@@ -72,11 +77,15 @@ var (
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
 )
 
-// SetAnnotationPrefix sets a custom annotation prefix and rebuilds all annotation keys.
+// SetAnnotationPrefixes sets custom annotation prefixes and rebuilds all annotation keys with the first one.
 // This must be called before any sources are initialized.
-// The prefix must end with '/'.
-func SetAnnotationPrefix(prefix string) {
-	AnnotationKeyPrefix = prefix
+// All prefixes must end with '/'.
+func SetAnnotationPrefixes(prefixes ...string) {
+	if len(prefixes) == 0 {
+		panic("at least one annotation prefix must be provided")
+	}
+	AnnotationKeyPrefix = prefixes[0]
+	AnnotationKeyExtraPrefixes = prefixes[1:]
 
 	// Cloudflare annotations
 	CloudflareProxiedKey = AnnotationKeyPrefix + "cloudflare-proxied"
@@ -109,4 +118,32 @@ func SetAnnotationPrefix(prefix string) {
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+}
+
+// ResolveAnnotations convert annotations with extra prefixes into their corresponding keys with the main prefix.
+//
+// This allows users to specify annotations with any of the supported prefixes and have them normalized
+// to the main prefix, to be consumed uniformly by external-dns regardless of which prefix was used.
+// For example, with the default configuration, an annotation like "external-dns.alpha.kubernetes.io/hostname"
+// would be transformed to "external-dns.kubernetes.io/hostname".
+//
+// This function should be called on the annotations map of each relevant Kubernetes object before external-dns processes it.
+// This is typically done in the informer's transform function.
+//
+// In case of conflicts, the value of the first occurring prefix takes precedence.
+func ResolveAnnotations(annotations map[string]string) {
+	if len(AnnotationKeyExtraPrefixes) == 0 || len(annotations) == 0 {
+		return
+	}
+	for _, prefix := range AnnotationKeyExtraPrefixes {
+		for k, v := range annotations {
+			if after, ok := strings.CutPrefix(k, prefix); ok {
+				delete(annotations, k)
+				newKey := AnnotationKeyPrefix + after
+				if _, ok := annotations[newKey]; !ok {
+					annotations[newKey] = v
+				}
+			}
+		}
+	}
 }

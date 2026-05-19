@@ -17,19 +17,23 @@ limitations under the License.
 package annotations
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetAnnotationPrefix(t *testing.T) {
-	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+func TestSetAnnotationPrefixes(t *testing.T) {
+	CleanupAnnotationPrefixes(t)
 
 	// Test custom prefix
 	customPrefix := "custom.io/"
-	SetAnnotationPrefix(customPrefix)
+	extraPrefixs := []string{"custom-extra-1.io/", "custom-extra-2.io/"}
+	prefixes := append([]string{customPrefix}, extraPrefixs...)
+	SetAnnotationPrefixes(prefixes...)
 
 	assert.Equal(t, customPrefix, AnnotationKeyPrefix)
+	assert.Equal(t, extraPrefixs, AnnotationKeyExtraPrefixes)
 	assert.Equal(t, "custom.io/hostname", HostnameKey)
 	assert.Equal(t, "custom.io/internal-hostname", InternalHostnameKey)
 	assert.Equal(t, "custom.io/ttl", TtlKey)
@@ -56,9 +60,14 @@ func TestSetAnnotationPrefix(t *testing.T) {
 	assert.Equal(t, "dns-controller", ControllerValue)
 }
 
+func TestSetAnnotationPrefixes_Panic(t *testing.T) {
+	CleanupAnnotationPrefixes(t)
+	assert.Panics(t, func() { SetAnnotationPrefixes() })
+}
+
 func TestDefaultAnnotationPrefix(t *testing.T) {
-	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
-	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	CleanupAnnotationPrefixes(t)
+	SetAnnotationPrefixes(DefaultAnnotationPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
 	assert.Equal(t, DefaultAnnotationPrefix+"internal-hostname", InternalHostnameKey)
@@ -67,20 +76,100 @@ func TestDefaultAnnotationPrefix(t *testing.T) {
 }
 
 func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
-	t.Cleanup(func() { SetAnnotationPrefix(DefaultAnnotationPrefix) })
+	CleanupAnnotationPrefixes(t)
 
 	// Set first custom prefix
-	SetAnnotationPrefix("first.io/")
+	SetAnnotationPrefixes("first.io/")
 	assert.Equal(t, "first.io/", AnnotationKeyPrefix)
 	assert.Equal(t, "first.io/hostname", HostnameKey)
 
 	// Set second custom prefix
-	SetAnnotationPrefix("second.io/")
+	SetAnnotationPrefixes("second.io/")
 	assert.Equal(t, "second.io/", AnnotationKeyPrefix)
 	assert.Equal(t, "second.io/hostname", HostnameKey)
 
 	// Restore to default
-	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	SetAnnotationPrefixes(DefaultAnnotationPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
+}
+
+func TestResolveAnnotations(t *testing.T) {
+	CleanupAnnotationPrefixes(t)
+	SetAnnotationPrefixes("external-dns.kubernetes.io/", "external-dns.alpha.kubernetes.io/")
+
+	tests := []struct {
+		name        string
+		annotations map[string]string
+		want        map[string]string
+	}{
+		{
+			name:        "nil annotations",
+			annotations: nil,
+			want:        nil,
+		},
+		{
+			name:        "empty annotations",
+			annotations: map[string]string{},
+			want:        map[string]string{},
+		},
+		{
+			name: "no old prefixes",
+			annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "example.com",
+			},
+			want: map[string]string{
+				"external-dns.kubernetes.io/hostname": "example.com",
+			},
+		},
+		{
+			name: "migrate single annotation",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/hostname": "example.com",
+			},
+			want: map[string]string{
+				"external-dns.kubernetes.io/hostname": "example.com",
+			},
+		},
+		{
+			name: "migrate multiple annotations",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/hostname": "example.com",
+				"external-dns.alpha.kubernetes.io/ttl":      "300",
+				"external-dns.alpha.kubernetes.io/target":   "target.example.com",
+				"external-dns.kubernetes.io/controller":     "dns-controller",
+			},
+			want: map[string]string{
+				"external-dns.kubernetes.io/hostname":   "example.com",
+				"external-dns.kubernetes.io/ttl":        "300",
+				"external-dns.kubernetes.io/target":     "target.example.com",
+				"external-dns.kubernetes.io/controller": "dns-controller",
+			},
+		},
+		{
+			name: "conflicting annotations",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/hostname": "example.com",
+				"external-dns.kubernetes.io/hostname":       "conflict.com",
+			},
+			want: map[string]string{
+				"external-dns.kubernetes.io/hostname": "conflict.com",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			annotations := maps.Clone(tt.annotations)
+			ResolveAnnotations(annotations)
+			assert.Equal(t, tt.want, annotations)
+		})
+	}
+}
+
+func CleanupAnnotationPrefixes(t *testing.T) {
+	t.Helper()
+	prefixes := append([]string{AnnotationKeyPrefix}, AnnotationKeyExtraPrefixes...)
+	t.Cleanup(func() {
+		SetAnnotationPrefixes(prefixes...)
+	})
 }

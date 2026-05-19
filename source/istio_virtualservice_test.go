@@ -2031,6 +2031,40 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title: "virtualservice with an extra annotation prefix",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"example.org"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.TargetKey): "virtualservice-target.com",
+					},
+					dnsnames: []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"virtualservice-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

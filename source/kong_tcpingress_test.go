@@ -385,6 +385,47 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "TCPIngress with an extra annotation prefix",
+			tcpProxy: TCPIngress{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+					Kind:       "TCPIngress",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "tcp-ingress-extra-prefix",
+					Namespace: defaultKongNamespace,
+					Annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.HostnameKey): "a.example.com",
+						"kubernetes.io/ingress.class":                    "kong",
+					},
+				},
+				Spec: tcpIngressSpec{
+					Rules: []tcpIngressRule{
+						{Port: 30000},
+					},
+				},
+				Status: tcpIngressStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
+							{Hostname: "a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.com",
+					Targets:    []string{"a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "tcpingress/kong/tcp-ingress-extra-prefix",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

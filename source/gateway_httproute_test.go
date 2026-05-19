@@ -1648,6 +1648,39 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Invalid value for \"external-dns.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
 			},
 		},
+		{
+			title:      "HTTPRoute with an extra annotation prefix",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "with-hostname",
+					Namespace: "default",
+					Annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.HostnameKey): "annotation.with-hostname.internal",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("annotation.with-hostname.internal", "1.2.3.4"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {

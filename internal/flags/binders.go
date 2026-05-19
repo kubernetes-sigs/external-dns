@@ -77,6 +77,7 @@ func (b *KingpinBinder) Int64Var(name, help string, def int64, target *int64) {
 }
 
 func (b *KingpinBinder) StringsVar(name, help string, def []string, target *[]string) {
+	*target = nil
 	if len(def) > 0 {
 		b.App.Flag(name, help).Default(def...).StringsVar(target)
 		return

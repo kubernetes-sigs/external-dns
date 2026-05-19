@@ -1041,6 +1041,22 @@ func testServiceSourceEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:        "service with an extra annotation prefix",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeLoadBalancer,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				extraPrefixedAnnotation(annotations.HostnameKey): "foo.example.org.",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {

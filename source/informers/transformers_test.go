@@ -373,6 +373,70 @@ func TestTransformerWithOptions_WithFakeClient(t *testing.T) {
 	assert.Equal(t, svc.Status.LoadBalancer.Ingress, got.Status.LoadBalancer.Ingress)
 }
 
+func TestTransformerResolveAnnotations(t *testing.T) {
+	t.Run("resolves annotations with extra prefixes", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations["external-dns.alpha.kubernetes.io/foobar"] = "baz"
+
+		transform := TransformerWithOptions[*corev1.Service]()
+		got, err := transform(svc)
+		require.NoError(t, err)
+		require.IsType(t, new(corev1.Service), got)
+		result := got.(*corev1.Service)
+
+		// Annotation should be resolved to the main prefix
+		assert.NotContains(t, result.Annotations, "external-dns.alpha.kubernetes.io/foobar")
+		assert.Contains(t, result.Annotations, "external-dns.kubernetes.io/foobar")
+		assert.Equal(t, "baz", result.Annotations["external-dns.kubernetes.io/foobar"])
+		// Other annotations must survive
+		assert.Contains(t, result.Annotations, "description")
+		assert.Equal(t, "some annotation", result.Annotations["description"])
+	})
+
+	t.Run("resolves annotations with extra prefixes in conflict", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations["external-dns.alpha.kubernetes.io/hostname"] = "foobar.com" // conflicts with existing annotation
+
+		transform := TransformerWithOptions[*corev1.Service]()
+		got, err := transform(svc)
+		require.NoError(t, err)
+		require.IsType(t, new(corev1.Service), got)
+		result := got.(*corev1.Service)
+
+		// Annotation should preserve the value of the main prefix
+		assert.NotContains(t, result.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+		assert.Contains(t, result.Annotations, "external-dns.kubernetes.io/hostname")
+		assert.Equal(t, "example.com", result.Annotations["external-dns.kubernetes.io/hostname"])
+		// Other annotations must survive
+		assert.Contains(t, result.Annotations, "description")
+		assert.Equal(t, "some annotation", result.Annotations["description"])
+	})
+
+	t.Run("resolves annotations with extra prefixes on unstructured object", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations["external-dns.alpha.kubernetes.io/foobar"] = "baz"
+
+		unstructuredSvc, err := runtime.DefaultUnstructuredConverter.ToUnstructured(svc)
+		require.NoError(t, err)
+		unstructuredSvcObj := &unstructured.Unstructured{Object: unstructuredSvc}
+
+		transform := TransformerWithOptions[*unstructured.Unstructured]()
+		got, err := transform(unstructuredSvcObj)
+		require.NoError(t, err)
+		require.IsType(t, new(unstructured.Unstructured), got)
+		result := got.(*unstructured.Unstructured)
+		anns := result.GetAnnotations()
+
+		// Annotation should be resolved to the main prefix
+		assert.NotContains(t, anns, "external-dns.alpha.kubernetes.io/foobar")
+		assert.Contains(t, anns, "external-dns.kubernetes.io/foobar")
+		assert.Equal(t, "baz", anns["external-dns.kubernetes.io/foobar"])
+		// Other annotations must survive
+		assert.Contains(t, anns, "description")
+		assert.Equal(t, "some annotation", anns["description"])
+	})
+}
+
 func TestPopulateGVK(t *testing.T) {
 	t.Run("populates Kind and APIVersion on Service", func(t *testing.T) {
 		svc := fakeService()
