@@ -259,23 +259,25 @@ In this method, the policy is attached to an IAM user, and the credentials secre
 > [!WARNING]
 > **Security Risks with Static Credentials**
 >
-> *   `kubectl describe pod` could expose secrets.
-> *   Anyone who can `exec` into the container and run `env` can see them.
-> *   Env vars can leak into logs, crash dumps, or child processes.
-> *   There is no way to make them visible to a specific user only.
-> *   They are long-lived, easy to leak, hard to rotate, and easy to accidentally commit or log.
+> - `kubectl describe pod` could expose secrets.
+> - Anyone who can `exec` into the container and run `env` can see them.
+> - Env vars can leak into logs, crash dumps, or child processes.
+> - There is no way to make them visible to a specific user only.
+> - They are long-lived, easy to leak, hard to rotate, and easy to accidentally commit or log.
 >
 > **When to use:**
-> *   Limit usage to non-AWS clusters.
-> *   Always apply minimal privileges.
-> *   Acknowledges reality (sometimes it is the only viable option).
+>
+> - Limit usage to non-AWS clusters.
+> - Always apply minimal privileges.
+> - Acknowledges reality (sometimes it is the only viable option).
 >
 > **For AWS specifically, the best practice and recommended hierarchy is:**
-> 1.  **IRSA (preferred):** Map an AWS IAM role to a Kubernetes service account; no static credentials in the pod.
-> 2.  **EKS Pod Identity:** Native EKS alternative to IRSA; associates IAM role with a service account via the Pod Identity Agent.
-> 3.  **Node IAM Role:** Attach policy to the node instance profile; not recommended beyond tests because all pods on the node inherit the permissions. Tolerated, but not recommended.
-> 4.  **Mount credentials file:** Minimize privileges and avoid long-lived keys where possible.
-> 5.  **Environment variables:** Minimize privileges and avoid long-lived keys where possible.
+>
+> 1. **IRSA (preferred):** Map an AWS IAM role to a Kubernetes service account; no static credentials in the pod.
+> 2. **EKS Pod Identity:** Native EKS alternative to IRSA; associates IAM role with a service account via the Pod Identity Agent.
+> 3. **Node IAM Role:** Attach policy to the node instance profile; not recommended beyond tests because all pods on the node inherit the permissions. Tolerated, but not recommended.
+> 4. **Mount credentials file:** Minimize privileges and avoid long-lived keys where possible.
+> 5. **Environment variables:** Minimize privileges and avoid long-lived keys where possible.
 
 This method is not the preferred method as the secrets in the credential file or environment variables could be copied and used by an unauthorized threat actor.
 However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.
@@ -324,6 +326,8 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 > ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
 
+<!-- markdownlint-disable-line MD028 -->
+
 > [!TIP]
 > To pass static credentials as environment variables (e.g. when running outside AWS and
 > mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
@@ -345,6 +349,7 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 >         name: aws-route53-credentials
 >         key: aws-secret-access-key
 > ```
+
 ### IAM Roles for Service Accounts
 
 [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) ([IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)) allows cluster operators to map AWS IAM Roles to Kubernetes Service Accounts.
