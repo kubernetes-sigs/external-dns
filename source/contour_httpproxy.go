@@ -70,6 +70,12 @@ func NewContourHTTPProxySource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
+	informers.MustSetTransform(httpProxyInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
 	informers.MustAddEventHandler(httpProxyInformer.Informer(), informers.DefaultEventHandler())
 
