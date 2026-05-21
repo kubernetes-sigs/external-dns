@@ -73,6 +73,11 @@ func NewOcpRouteSource(
 	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(cfg.Namespace))
 	informer := informerFactory.Route().V1().Routes()
 
+	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*routev1.Route](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
 	informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
 
