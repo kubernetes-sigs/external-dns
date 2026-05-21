@@ -1,3 +1,4 @@
+{{- if .Values.service.enabled -}}
 {{- $providerName := include "external-dns.providerName" . }}
 apiVersion: v1
 kind: Service
@@ -34,3 +35,4 @@ spec:
       protocol: TCP
     {{- end }}
     {{- end }}
+{{- end }}

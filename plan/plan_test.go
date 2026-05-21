@@ -166,7 +166,7 @@ func (suite *PlanTestSuite) SetupTest() {
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "true",
 			},
 		},
@@ -180,7 +180,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{

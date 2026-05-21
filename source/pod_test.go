@@ -763,6 +763,7 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
+<<<<<<< HEAD
 			"pending pod with empty PodIP and internal-hostname annotation should not create CNAME",
 			"",
 			"",
@@ -817,6 +818,34 @@ func TestPodSource(t *testing.T) {
 					Status: corev1.PodStatus{
 						Phase: corev1.PodRunning,
 						PodIP: "",
+=======
+			"our controller type is dns-controller",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.ControllerKey: annotations.ControllerValue,
+							annotations.HostnameKey:   "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+>>>>>>> 49f7900af6b1f9a6a29f0bd1783bffe9975b45bf
 					},
 				},
 			},
@@ -866,6 +895,30 @@ func TestPodSource(t *testing.T) {
 					Status: corev1.PodStatus{
 						Phase: corev1.PodPending,
 						PodIP: "",
+			"different controller types are ignored",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.ControllerKey: "some-other-tool",
+							annotations.HostnameKey:   "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
 					},
 				},
 			},
@@ -1264,10 +1317,10 @@ func TestPodTransformerInPodSource(t *testing.T) {
 					"label3": "value3",
 				},
 				Annotations: map[string]string{
-					"user-annotation": "value",
-					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-					"external-dns.alpha.kubernetes.io/random":   "value",
-					"other/annotation":                          "value",
+					"user-annotation":                     "value",
+					"external-dns.kubernetes.io/hostname": "test-hostname",
+					"external-dns.kubernetes.io/random":   "value",
+					"other/annotation":                    "value",
 				},
 				UID: "someuid",
 			},
@@ -1305,10 +1358,10 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		assert.NotEmpty(t, retrieved.UID)
 		// Filtered
 		assert.Equal(t, map[string]string{
-			"user-annotation": "value",
-			"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-			"external-dns.alpha.kubernetes.io/random":   "value",
-			"other/annotation":                          "value",
+			"user-annotation":                     "value",
+			"external-dns.kubernetes.io/hostname": "test-hostname",
+			"external-dns.kubernetes.io/random":   "value",
+			"other/annotation":                    "value",
 		}, retrieved.Annotations)
 
 		// Spec — fully preserved
@@ -1344,10 +1397,10 @@ func TestPodTransformerInPodSource(t *testing.T) {
 					"label3": "value3",
 				},
 				Annotations: map[string]string{
-					"user-annotation": "value",
-					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-					"external-dns.alpha.kubernetes.io/random":   "value",
-					"other/annotation":                          "value",
+					"user-annotation":                     "value",
+					"external-dns.kubernetes.io/hostname": "test-hostname",
+					"external-dns.kubernetes.io/random":   "value",
+					"other/annotation":                    "value",
 				},
 				UID: "someuid",
 			},

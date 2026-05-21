@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -121,6 +122,14 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					continue // no format constraint on targets
 				case endpoint.RecordTypeCNAME:
 					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
+				case endpoint.RecordTypeSRV:
+					// SRV targets are "<prio> <weight> <port> <host>"; RFC 2782
+					// requires the host to be an absolute FQDN and
+					// Endpoint.ValidateSRVRecord enforces the trailing dot.
+					// Reject-on-trailing-dot (the default branch below) would
+					// loop users between this warning and ValidateSRVRecord's
+					// "does not end with a dot" error (#6357).
+					continue
 				}
 
 				hasDot := strings.HasSuffix(target, ".")
@@ -164,7 +173,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // newCrdSource wires a cache and writer into a running crdSource.
@@ -227,6 +236,10 @@ func buildCacheOptions(namespace string, labelFilter, annotationSelector labels.
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
 	}
+	// metav1.AddToGroupVersion registers ListOptions (and other meta types) under
+	// apiv1alpha1.GroupVersion so that runtime.NewParameterCodec can encode them
+	// as URL parameters when building watch requests for this group.
+	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
 
 	nsMap := map[string]crcache.Config{
 		namespace: {}, // "" == NamespaceAll

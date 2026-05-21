@@ -70,7 +70,7 @@ Not all sources are supported in namespace-only scope, since some sources depend
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
 Sources like `istio-virtualservice` only work if all resources like `Gateway` and `VirtualService` are present in the same
 namespace as `external-dns`.
-The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
+The annotation `external-dns.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
 If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
@@ -161,6 +161,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
 | securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container. |
 | service.annotations | object | `{}` | Service annotations. |
+| service.enabled | bool | `true` | If `true`, create a `Service` Kubernetes. |
 | service.ipFamilies | list | `[]` | Service IP families (e.g. IPv4 and/or IPv6). |
 | service.ipFamilyPolicy | string | `nil` | Service IP family policy. |
 | service.port | int | `7979` | Service HTTP port. |

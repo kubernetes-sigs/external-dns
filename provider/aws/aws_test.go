@@ -2301,7 +2301,7 @@ func TestAWSSuitableZones(t *testing.T) {
 
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
-		CallerReference:  aws.String("external-dns.alpha.kubernetes.io/test-zone"),
+		CallerReference:  aws.String("external-dns.kubernetes.io/test-zone"),
 		Name:             zone.Name,
 		HostedZoneConfig: zone.Config,
 	}
@@ -3308,6 +3308,66 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expectedAaaa: nil,
 		},
+		{
+			name: "CNAME record with alias=A should convert to A record only and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "A",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "A",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with alias=AAAA should convert to AAAA record only and not create A",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "AAAA",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"same-zone-target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "AAAA",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
 
 		// --- MX / other records ---
 		{
@@ -3324,35 +3384,8 @@ func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
 			},
 			expectedAaaa: nil,
 		},
-		// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed. This will be fixed in another PR.
-		{
-			name: "MX record with alias=true should remove alias and set default ttl, add evaluateTargetHealth and not create AAAA",
-			ep: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:  600,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  endpoint.ProviderSpecificAlias,
-						Value: "true",
-					},
-				},
-			},
-			expected: &endpoint.Endpoint{
-				DNSName:    "test.foo.bar.",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 mail.example.com."},
-				RecordTTL:  defaultTTL,
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: "false",
-					},
-				},
-			},
-			expectedAaaa: nil,
-		},
+		// Other record types that has alias properties should be rejected by endpoint validation,
+		// so we don't need to test them here as adjustEndpointAndNewAaaaIfNeeded should not be called for them.
 	}
 
 	for _, tt := range tests {

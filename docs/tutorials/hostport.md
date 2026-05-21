@@ -180,7 +180,7 @@ kind: Service
 metadata:
   name: ksvc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname:  example.org
+    external-dns.kubernetes.io/hostname:  example.org
 spec:
   ports:
   - port: 9092
@@ -215,7 +215,7 @@ ksvc.example.org IP-0,IP-1,IP-2
 Add the following annotation to your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/endpoints-type: HostIP
+external-dns.kubernetes.io/endpoints-type: HostIP
 ```
 
 external-dns will now publish the value of the `.status.hostIP` field of the pods backing your `Service`.
@@ -225,7 +225,7 @@ external-dns will now publish the value of the `.status.hostIP` field of the pod
 Add the following annotation to your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP
+external-dns.kubernetes.io/endpoints-type: NodeExternalIP
 ```
 
 external-dns will now publish the node external IP (`.status.addresses` entries of with `type: NodeExternalIP`) of the nodes on which the pods backing your `Service` are running.
@@ -235,7 +235,7 @@ external-dns will now publish the node external IP (`.status.addresses` entries 
 Add the following annotation to the **pods** backing your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/target: "1.2.3.4"
+external-dns.kubernetes.io/target: "1.2.3.4"
 ```
 
 external-dns will publish the IP specified in the annotation of each pod instead of using the podIP advertised by Kubernetes.

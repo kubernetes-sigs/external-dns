@@ -202,7 +202,7 @@ Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares
           name: my-svc
           namespace: default
           annotations:
-            external-dns.alpha.kubernetes.io/hostname: my.example.com
+            external-dns.kubernetes.io/hostname: my.example.com
         spec:
           type: LoadBalancer
         status:

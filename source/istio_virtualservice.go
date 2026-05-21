@@ -107,6 +107,7 @@ func NewIstioVirtualServiceSource(
 	informers.MustAddIndexers(virtualServiceInformer.Informer(), informers.IndexerWithOptions[*networkingv1.VirtualService](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.VirtualService]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -154,10 +155,6 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		if annotations.IsControllerMismatch(vService, types.IstioVirtualService) {
-			continue
-		}
-
 		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, vService)
 		if err != nil {
 			return nil, err
@@ -180,7 +177,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.

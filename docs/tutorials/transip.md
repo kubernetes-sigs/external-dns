@@ -157,7 +157,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: my-app.example.com
+    external-dns.kubernetes.io/hostname: my-app.example.com
 spec:
   selector:
     app: nginx

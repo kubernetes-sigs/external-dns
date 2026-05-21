@@ -59,8 +59,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-annotation",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -165,8 +165,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-both",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "d.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -235,8 +235,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-both",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "d.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -296,8 +296,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-sni",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"kubernetes.io/ingress.class":             "kong",
-						"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+						"kubernetes.io/ingress.class":       "kong",
+						"external-dns.kubernetes.io/target": "203.2.45.7",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -355,9 +355,9 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-provider-specific",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
-						annotations.AWSPrefix + "weight":            "10",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"kubernetes.io/ingress.class":         "kong",
+						annotations.AWSPrefix + "weight":      "10",
 					},
 				},
 				Status: tcpIngressStatus{

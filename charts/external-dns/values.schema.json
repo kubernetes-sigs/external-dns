@@ -713,6 +713,10 @@
           "description": "Service annotations.",
           "type": "object"
         },
+        "enabled": {
+          "description": "If `true`, create a `Service` Kubernetes.",
+          "type": "boolean"
+        },
         "ipFamilies": {
           "description": "Service IP families (e.g. IPv4 and/or IPv6).",
           "type": [

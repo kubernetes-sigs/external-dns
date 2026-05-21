@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+- Add value `.service.enabled` to enable the creation of the Kubernetes service.
+
 ## [v1.21.1]
 
 ### Added

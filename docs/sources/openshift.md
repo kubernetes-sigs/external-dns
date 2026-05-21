@@ -50,7 +50,7 @@ spec:
 ### Prepare ROUTER_CANONICAL_HOSTNAME in default/router deployment
 
 Read and go through [Finding the Host Name of the Router](https://docs.openshift.com/container-platform/3.11/install_config/router/default_haproxy_router.html#finding-router-hostname).
-If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.alpha.kubernetes.io/target!
+If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.kubernetes.io/target!
 
 ### Manifest (for clusters without RBAC enabled)
 

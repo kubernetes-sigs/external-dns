@@ -275,7 +275,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 						Value: "true",
 					}},
 				},

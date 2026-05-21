@@ -100,6 +100,7 @@ func NewIstioGatewaySource(
 	informers.MustAddIndexers(gatewayInformer.Informer(), informers.IndexerWithOptions[*networkingv1.Gateway](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.Gateway]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -145,10 +146,6 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
-			continue
-		}
-
 		gwHostnames := sc.hostNamesFromGateway(gateway)
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
@@ -181,7 +178,7 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.

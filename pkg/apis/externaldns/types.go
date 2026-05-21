@@ -59,9 +59,9 @@ type Config struct {
 	AnnotationPrefix                              string
 	LabelFilter                                   string
 	IngressClassNames                             []string
-	FQDNTemplate                                  string
-	TargetTemplate                                string
-	FQDNTargetTemplate                            string
+	FQDNTemplate                                  []string
+	TargetTemplate                                []string
+	FQDNTargetTemplate                            []string
 	CombineFQDNAndAnnotation                      bool
 	IgnoreHostnameAnnotation                      bool
 	IgnoreNonHostNetworkPods                      bool
@@ -216,7 +216,6 @@ type Config struct {
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
-	PiholeApiVersion                              string
 	PluralCluster                                 string
 	PluralProvider                                string
 	WebhookProviderURL                            string
@@ -297,9 +296,9 @@ var defaultConfig = &Config{
 	ExoscaleAPIZone:              "ch-gva-2",
 	ExoscaleZoneCacheDuration:    0 * time.Second,
 	ExposeInternalIPV6:           false,
-	FQDNTemplate:                 "",
-	TargetTemplate:               "",
-	FQDNTargetTemplate:           "",
+	FQDNTemplate:                 nil,
+	TargetTemplate:               nil,
+	FQDNTargetTemplate:           nil,
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -341,7 +340,6 @@ var defaultConfig = &Config{
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSSkipTLSVerify:            false,
-	PiholeApiVersion:             "5",
 	PiholePassword:               "",
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
@@ -542,7 +540,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
-	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
@@ -696,7 +694,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)", defaultConfig.PiholeServer, &cfg.PiholeServer)
 	b.StringVar("pihole-password", "When using the Pihole provider, the password to the server if it is protected", defaultConfig.PiholePassword, &cfg.PiholePassword)
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
-	b.StringVar("pihole-api-version", "When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6)", defaultConfig.PiholeApiVersion, &cfg.PiholeApiVersion)
 
 	// Flags related to the Plural provider
 	b.StringVar("plural-cluster", "When using the plural provider, specify the cluster name you're running with", defaultConfig.PluralCluster, &cfg.PluralCluster)
@@ -739,9 +736,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// FQDN Templating
 	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
-	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
-	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Accepts comma separated list for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
-	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Accepts comma separated list for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
+	b.StringsVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Specify multiple times for multiple templates.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
+	b.StringsVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Specify multiple times for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
+	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
 
 	// kube client config flags
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)

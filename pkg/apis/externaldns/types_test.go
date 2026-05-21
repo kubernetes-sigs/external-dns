@@ -44,8 +44,8 @@ var (
 		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
 		Namespace:                              "",
-		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
-		FQDNTemplate:                           "",
+		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		FQDNTemplate:                           nil,
 		Compatibility:                          "",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
@@ -133,7 +133,6 @@ var (
 		RFC2136Host:                                   []string{""},
 		RFC2136LoadBalancingStrategy:                  "disabled",
 		OCPRouterName:                                 "default",
-		PiholeApiVersion:                              "5",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
@@ -151,12 +150,12 @@ var (
 		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespace:                              "namespace",
-		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
+		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
 		IgnoreIngressRulesSpec:                 true,
-		FQDNTemplate:                           "{{.Name}}.service.example.com",
+		FQDNTemplate:                           []string{"{{.Name}}.service.example.com"},
 		Compatibility:                          "mate",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
@@ -253,7 +252,6 @@ var (
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
 		RFC2136LoadBalancingStrategy:                  "round-robin",
-		PiholeApiVersion:                              "6",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
@@ -397,7 +395,6 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
-				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
@@ -572,12 +569,6 @@ func TestParseFlags(t *testing.T) {
 	}
 }
 
-func TestParseFlagsCobraExecuteError(t *testing.T) {
-	cfg := NewConfig()
-	err := cfg.ParseFlags([]string{"--cli-backend=cobra", "--unknown-flag"})
-	require.Error(t, err)
-}
-
 func TestParseFlagsKingpinParseError(t *testing.T) {
 	cfg := NewConfig()
 	err := cfg.ParseFlags([]string{"--unknown-flag"})
@@ -623,61 +614,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.Equal(t, "default", cfg.OCPRouterName)
 }
 
-// When EXTERNAL_DNS_CLI=cobra is set, cobra path should parse the subset of
-// flags it currently binds, yielding parity with kingpin for those fields.
-func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
-	args := []string{
-		"--provider=aws",
-		"--source=service",
-		"--source=ingress",
-		"--server=http://127.0.0.1:8080",
-		"--kubeconfig=/some/path",
-		"--request-timeout=2s",
-		"--namespace=ns",
-		"--domain-filter=example.org",
-		"--domain-filter=company.com",
-		"--openshift-router-name=default",
-	}
-
-	// Kingpin baseline
-	cfgK := NewConfig()
-	require.NoError(t, cfgK.ParseFlags(args))
-
-	// Cobra path via env switch
-	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
-	cfgC := NewConfig()
-	require.NoError(t, cfgC.ParseFlags(args))
-
-	// Compare selected fields bound in cobra
-	assert.Equal(t, cfgK.Provider, cfgC.Provider)
-	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
-	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
-	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.KubeAPIRequestTimeout, cfgC.KubeAPIRequestTimeout)
-	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
-	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
-	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
-}
-
-func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
-	// Env requests cobra; CLI flag forces kingpin.
-	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
-	args := []string{
-		"--provider=aws",
-		"--source=service",
-		// Flag not bound in Cobra newCobraCommand path; will error if cobra is used.
-		"--log-format=json",
-	}
-
-	cfg := NewConfig()
-	require.NoError(t, cfg.ParseFlags(args))
-	assert.Equal(t, ProviderAWS, cfg.Provider)
-	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
-	assert.Equal(t, "json", cfg.LogFormat)
-}
-
 func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
-	// Support "--cli-backend", "cobra" form as well.
 	args := []string{
 		"--provider=aws",
 		"--source=service",

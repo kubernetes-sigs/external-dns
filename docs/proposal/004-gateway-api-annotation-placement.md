@@ -48,14 +48,14 @@ Based on the source code
 
 **Gateway resource annotations:**
 
-- `external-dns.alpha.kubernetes.io/target` - read from Gateway
+- `external-dns.kubernetes.io/target` - read from Gateway
   ([line ~380](https://github.com/kubernetes-sigs/external-dns/blob/master/source/gateway.go#L380))
 
 **Route resource annotations (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute):**
 
-- `external-dns.alpha.kubernetes.io/hostname` - read from Route
-- `external-dns.alpha.kubernetes.io/ttl` - read from Route
-- `external-dns.alpha.kubernetes.io/controller` - read from Route
+- `external-dns.kubernetes.io/hostname` - read from Route
+- `external-dns.kubernetes.io/ttl` - read from Route
+- `external-dns.kubernetes.io/controller` - read from Route
 - **Provider-specific annotations** (e.g., `cloudflare-proxied`, `aws/*`, `scw/*`, etc.) - read from Route
   ([line ~242](https://github.com/kubernetes-sigs/external-dns/blob/master/source/gateway.go#L242))
 
@@ -86,7 +86,7 @@ However, users expect provider-specific annotations to work on Gateway (similar 
 
 #### Story 1: Platform Engineer with Cloudflare (#5901)
 
-*As a platform engineer*, I set up a Gateway with the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"`
+*As a platform engineer*, I set up a Gateway with the `external-dns.kubernetes.io/cloudflare-proxied: "true"`
 annotation, expecting all DNS records for Routes using this Gateway to be proxied through Cloudflare. However, the
 annotation is silently ignored, and records are created without proxy, leading to unexpected traffic routing and
 security issues.
@@ -99,7 +99,7 @@ Route resources, not Gateway resources.
 #### Story 2: User Attempting Route-Specific Targets (#4056)
 
 *As a user*, I want to specify different target DNS records for specific hosts while sharing a common Gateway. I
-added `external-dns.alpha.kubernetes.io/target` annotation on HTTPRoute to override the Gateway's target for one
+added `external-dns.kubernetes.io/target` annotation on HTTPRoute to override the Gateway's target for one
 specific host, but it doesn't work - the annotation is ignored on HTTPRoute.
 
 **Root cause**: The `target` annotation must be on the Gateway resource, not on Route resources. There's no way to
@@ -175,7 +175,7 @@ Add a new section after "Hostnames":
 
 ExternalDNS reads different annotations from different Gateway API resources:
 
-- **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
+- **Gateway annotations**: Only `external-dns.kubernetes.io/target` is read from Gateway resources
 - **Route annotations**: All other annotations (hostname, ttl, provider-specific) are read from Route resources
 
 #### Example: Cloudflare Proxied Records
@@ -188,7 +188,7 @@ metadata:
   namespace: default
   annotations:
     #  Correct: target annotation on Gateway
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    external-dns.kubernetes.io/target: "203.0.113.1"
 spec:
   gatewayClassName: cilium
   listeners:
@@ -203,8 +203,8 @@ metadata:
   name: my-route
   annotations:
     #  Correct: provider-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.kubernetes.io/ttl: "300"
 spec:
   parentRefs:
     - name: my-gateway
@@ -226,7 +226,7 @@ metadata:
   name: aws-gateway
   annotations:
     #  Correct: target annotation on Gateway
-    external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+    external-dns.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -234,8 +234,8 @@ metadata:
   name: weighted-route
   annotations:
     #  Correct: AWS-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/aws-weight: "100"
-    external-dns.alpha.kubernetes.io/set-identifier: "backend-v1"
+    external-dns.kubernetes.io/aws-weight: "100"
+    external-dns.kubernetes.io/set-identifier: "backend-v1"
 spec:
   parentRefs:
     - name: aws-gateway
@@ -251,7 +251,7 @@ spec:
 kind: Gateway
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"  # ❌ Ignored
+    external-dns.kubernetes.io/cloudflare-proxied: "true"  # ❌ Ignored
 ```
 
 ❌ **Incorrect**: Placing target annotation on HTTPRoute
@@ -260,7 +260,7 @@ metadata:
 kind: HTTPRoute
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"  # ❌ Ignored
+    external-dns.kubernetes.io/target: "203.0.113.1"  # ❌ Ignored
 ```
 
 **Implementation effort**: Low
@@ -326,10 +326,10 @@ metadata:
   name: intranet-gateway
   annotations:
     # Default target for internal services
-    external-dns.alpha.kubernetes.io/target: "172.16.6.6"
+    external-dns.kubernetes.io/target: "172.16.6.6"
     # Set default for all Routes using this Gateway
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.kubernetes.io/ttl: "300"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -348,7 +348,7 @@ metadata:
   name: public-api
   annotations:
     # Override: expose this route to the public internet
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    external-dns.kubernetes.io/target: "203.0.113.1"
     # Inherits: cloudflare-proxied=true, ttl=300 from Gateway
 spec:
   parentRefs:
@@ -362,7 +362,7 @@ metadata:
   name: static-assets
   annotations:
     # Override: disable proxying for static content
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+    external-dns.kubernetes.io/cloudflare-proxied: "false"
     # Inherits: target=172.16.6.6, ttl=300 from Gateway
 spec:
   parentRefs:

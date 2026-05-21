@@ -127,7 +127,7 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 
 	endpoints := vs.endpointsFromVirtualServers(virtualServers)
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func()) {
