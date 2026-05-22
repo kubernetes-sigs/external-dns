@@ -56,11 +56,11 @@ Main loop in `controller.Run()` calls `RunOnce()` on interval (default 1 min), o
 
 **`pkg/apis/externaldns/types.go`** — `Config` struct with all CLI flags (~300+ fields).
 
-## Adding a New Provider
+## Providers
 
-1. Create `provider/<name>/` with `provider.go` implementing `Provider` interface.
-2. Register in `provider/factory/factory.go`.
-3. Add provider flags to `pkg/apis/externaldns/types.go`.
+**No new in-tree providers accepted.** Use the webhook mechanism (`provider/webhook/`) for new providers — see `docs/tutorials/webhook-provider.md`.
+
+Existing in-tree providers are being actively migrated out-of-tree (see issue #4347), starting with unmaintained ones. Do not add new subdirs under `provider/`.
 
 ## Adding a New Source
 
