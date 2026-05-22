@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1157,16 +1158,20 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 		txtPrefx  string // the prefix the mapper prepends, used to assert the TXT name is not in the change set
 	}{
 		{
-			name:      "CNAME",
-			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
-			labelLen:  60, // cname- (6) + 60 = 66 -> overflow
-			txtPrefx:  "cname-",
+			name: "CNAME",
+			newParent: func(dn string) *endpoint.Endpoint {
+				return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com")
+			},
+			labelLen: 60, // cname- (6) + 60 = 66 -> overflow
+			txtPrefx: "cname-",
 		},
 		{
-			name:      "AAAA",
-			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeAAAA, "fe80::1") },
-			labelLen:  60, // aaaa- (5) + 60 = 65 -> overflow
-			txtPrefx:  "aaaa-",
+			name: "AAAA",
+			newParent: func(dn string) *endpoint.Endpoint {
+				return endpoint.NewEndpoint(dn, endpoint.RecordTypeAAAA, "fe80::1")
+			},
+			labelLen: 60, // aaaa- (5) + 60 = 65 -> overflow
+			txtPrefx: "aaaa-",
 		},
 		{
 			name:      "A",
@@ -1185,13 +1190,17 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 		{
 			name:      "WithTxtPrefix",
 			txtPrefix: "ext-",
-			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com") },
-			labelLen:  56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
-			txtPrefx:  "ext-cname-",
+			newParent: func(dn string) *endpoint.Endpoint {
+				return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com")
+			},
+			labelLen: 56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
+			txtPrefx: "ext-cname-",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			registrySkippedLabelTooLongTotal.CounterVec.Reset()
+
 			ctx := t.Context()
 			p := inmemory.NewInMemoryProvider()
 			require.NoError(t, p.CreateZone(testZone))
@@ -1204,7 +1213,7 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 			require.NotNil(t, overflow, "test setup: parent record at %d-char label must itself pass RFC 1035", tc.labelLen)
 			fits := tc.newParent("ok." + testZone)
 
-			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
 			var got *plan.Changes
 			p.OnApplyChanges = func(_ context.Context, ch *plan.Changes) {
@@ -1234,7 +1243,11 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 			assert.True(t, fitsParent, "fits-fine parent must still be created")
 			assert.True(t, fitsTXT, "fits-fine TXT companion must still be created")
 
-			logtest.TestHelperLogContains("cannot establish ownership TXT", hook, t)
+			logtest.TestHelperLogContainsWithLogLevel("exceeding RFC 1035's 63-char limit", log.ErrorLevel, hook, t)
+			assert.InDelta(t, 1.0,
+				promtestutil.ToFloat64(registrySkippedLabelTooLongTotal.CounterVec.WithLabelValues(overflow.RecordType, overflow.GetNakedDomain())),
+				0,
+				"counter must record one skip for the dropped parent")
 		})
 	}
 }

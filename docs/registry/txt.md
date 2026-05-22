@@ -103,6 +103,25 @@ the record type of the DNS record for which it is storing metadata.
 The prefix is specified using the `--txt-prefix` flag and the suffix is specified using
 the `--txt-suffix` flag. The two flags are mutually exclusive.
 
+## Label length limits
+
+DNS labels are capped at 63 octets per RFC 1035. The TXT registry stores ownership at a
+sibling name with a record-type prefix on the first label (e.g., `cname-foo.example.com`
+for a CNAME `foo.example.com`). Any configured `--txt-prefix` or `--txt-suffix` further
+extends that label.
+
+If any label in the projected TXT name exceeds 63 characters, external-dns skips both
+the parent record and its ownership TXT. Creating the parent without a TXT would leave
+an unmanageable record in the zone, since later reconciles could not identify it as
+managed.
+
+Each skip is logged at error level and increments the
+`external_dns_registry_skipped_records_label_too_long_total` counter, labeled by
+`record_type` and apex `domain`.
+
+To resolve, shorten the source hostname's first label or trim `--txt-prefix`/`--txt-suffix`.
+The inline record-type prefix alone consumes 2–6 characters; the longest is `cname-`.
+
 ## Wildcard Replacement
 
 The `--txt-wildcard-replacement` flag specifies a string to use to replace the "\*" in

@@ -303,6 +303,16 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
 }
 
+// txtNameFor returns the projected TXT registry name for r, applying the
+// alias-A → CNAME rewrite that generateTXTRecordWithFilter would also apply.
+func (im *TXTRegistry) txtNameFor(r *endpoint.Endpoint) string {
+	recordType := r.RecordType
+	if isAlias, found := r.GetBoolProviderSpecificProperty(endpoint.ProviderSpecificAlias); found && isAlias && recordType == endpoint.RecordTypeA {
+		recordType = endpoint.RecordTypeCNAME
+	}
+	return im.mapper.ToTXTName(r.DNSName, recordType)
+}
+
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
@@ -333,34 +343,19 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
+		Create:    endpoint.FilterEndpointsByDNSCompliance(im.txtNameFor, changes.Create, recordSkippedLabelTooLong),
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	pendingCreate := filteredChanges.Create
-	filteredChanges.Create = make([]*endpoint.Endpoint, 0, len(pendingCreate))
-	for _, r := range pendingCreate {
+	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		// Skip records whose ownership TXT cannot be established; creating
-		// them would leak an unreclaimable record into the zone.
-		txts := im.generateTXTRecord(r)
-		if len(txts) == 0 {
-			log.Warnf("Skipping create of %s %s: cannot establish ownership TXT (label exceeds RFC 1035 63-char limit)", r.RecordType, r.DNSName)
-			continue
-		}
-
-		filteredChanges.Create = append(filteredChanges.Create, r)
-		for _, txt := range txts {
-			if im.existingTXTs.isAbsent(txt) {
-				filteredChanges.Create = append(filteredChanges.Create, txt)
-			}
-		}
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
