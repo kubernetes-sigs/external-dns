@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for Claude Code (claude.ai/code) working in this repo.
+Guidance for AI coding agents working in this repo.
 
 ## What ExternalDNS Does
 
