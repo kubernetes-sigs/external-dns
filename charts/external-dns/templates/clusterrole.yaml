@@ -61,7 +61,7 @@ rules:
     verbs: ["get","watch","list"]
   - apiGroups: ["externaldns.k8s.io"]
     resources: ["dnsendpoints/status"]
-    verbs: ["*"]
+    verbs: ["update"]
 {{- end }}
 {{- if include "external-dns.hasGatewaySources" . }}
 {{- if or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace)) }}
