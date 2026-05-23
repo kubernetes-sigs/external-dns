@@ -111,6 +111,7 @@ func execute(ctx context.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	prvdr = provider.NewAliasNormalizingProvider(prvdr)
 
 	if cfg.WebhookServer {
 		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
