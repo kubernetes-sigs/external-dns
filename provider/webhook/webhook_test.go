@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -353,6 +354,46 @@ func TestAdjustEndpoints(t *testing.T) {
 			"",
 		},
 	}}, adjustedEndpoints)
+}
+
+func TestAdjustEndpoints_PreservesRefObject(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
+
+		var endpoints []*endpoint.Endpoint
+		defer r.Body.Close()
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = json.Unmarshal(b, &endpoints)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		j, _ := json.Marshal(endpoints)
+		w.Write(j)
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "", "")
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+	require.NotNil(t, adjusted[0].RefObject(), "refObject should be preserved across webhook round-trip")
+	assert.Equal(t, ref, adjusted[0].RefObject())
 }
 
 func TestAdjustendpointsWithError(t *testing.T) {

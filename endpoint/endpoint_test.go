@@ -576,14 +576,14 @@ func TestRetainProviderProperties(t *testing.T) {
 			name: "provider agnostic properties without prefix are retained",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "alias", Value: "true"},
+					{Name: ProviderSpecificAlias, Value: "true"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
 					{Name: "coredns/group", Value: "my-group"},
 				},
 			},
 			provider: "aws",
 			expected: []ProviderSpecificProperty{
-				{Name: "alias", Value: "true"},
+				{Name: ProviderSpecificAlias, Value: "true"},
 				{Name: "aws/evaluate-target-health", Value: "true"},
 			},
 		},
@@ -600,36 +600,36 @@ func TestRetainProviderProperties(t *testing.T) {
 				{Name: "aws/weight", Value: "10"},
 			},
 		},
-		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
+		// cloudflare uses annotation-style names (e.g. "external-dns.kubernetes.io/cloudflare-*")
 		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
 		{
 			name: "cloudflare retains all properties",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
-					{Name: "alias", Value: "false"},
+					{Name: ProviderSpecificAlias, Value: "false"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "alias", Value: "false"},
+				{Name: ProviderSpecificAlias, Value: "false"},
 				{Name: "aws/evaluate-target-health", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 		{
 			name: "cloudflare properties are sorted",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 	}
@@ -1246,7 +1246,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeA,
 				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1256,7 +1256,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeAAAA,
 				Targets:          Targets{"dualstack.my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1266,7 +1266,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeCNAME,
 				Targets:          Targets{"d111111abcdef8.cloudfront.net"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1276,7 +1276,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1286,7 +1286,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeTXT,
 				Targets:          Targets{"v=spf1 ~all"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1296,7 +1296,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeNS,
 				Targets:          Targets{"ns1.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1306,7 +1306,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "_sip._tcp.example.com",
 				RecordType:       RecordTypeSRV,
 				Targets:          Targets{"10 5 5060 sip.example.com."},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1316,7 +1316,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "false"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "false"}},
 			},
 			expected: false,
 		},
@@ -1459,7 +1459,7 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLog: true,
 		},
@@ -1469,7 +1469,7 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeA,
 				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLog: false,
 		},
@@ -1570,11 +1570,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 
 func TestEndpoint_WithRefObject(t *testing.T) {
 	ep := &Endpoint{}
-	ref := &events.ObjectReference{
-		Kind:      "Service",
-		Namespace: "default",
-		Name:      "my-service",
-	}
+	ref := events.NewObjectReferenceFromParts("Service", "", "default", "my-service", "", "")
 	result := ep.WithRefObject(ref)
 
 	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
@@ -1703,6 +1699,72 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+func TestGetAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint Endpoint
+		expected AliasType
+	}{
+		{
+			name:     "no alias property returns AliasNone",
+			endpoint: Endpoint{},
+			expected: AliasNone,
+		},
+		{
+			name: "alias=true returns AliasTrue",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+				},
+			},
+			expected: AliasTrue,
+		},
+		{
+			name: "alias=false returns AliasFalse",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "false"},
+				},
+			},
+			expected: AliasFalse,
+		},
+		{
+			name: "alias=A returns AliasA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "A"},
+				},
+			},
+			expected: AliasA,
+		},
+		{
+			name: "alias=AAAA returns AliasAAAA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "AAAA"},
+				},
+			},
+			expected: AliasAAAA,
+		},
+		{
+			name: "alias with invalid value returns AliasNone",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "invalid"},
+				},
+			},
+			expected: AliasNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetAliasProperty()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestGetBoolProviderSpecificProperty(t *testing.T) {

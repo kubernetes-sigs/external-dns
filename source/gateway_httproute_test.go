@@ -1106,7 +1106,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("provider-annotations.com", "1.2.3.4").
-					WithProviderSpecific("alias", "true").
+					WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
 					WithSetIdentifier("test-set-identifier"),
 			},
 		},
@@ -1645,7 +1645,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("annotation.invalid.internal", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
+				"Invalid value for \"external-dns.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
 			},
 		},
 	}

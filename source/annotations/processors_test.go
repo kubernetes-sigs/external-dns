@@ -437,6 +437,8 @@ func TestIsControllerMismatch(t *testing.T) {
 
 			result := IsControllerMismatch(&tt.entity, tt.resourceType)
 			assert.Equal(t, tt.expected, result)
+			match := IsControllerMatch[*objectUnderTest](&tt.entity)
+			assert.Equal(t, !tt.expected, match)
 
 			if tt.debugMsg != "" {
 				logtest.TestHelperLogContains(tt.debugMsg, hook, t)

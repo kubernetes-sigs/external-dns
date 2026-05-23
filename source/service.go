@@ -211,7 +211,6 @@ func NewServiceSource(
 		podInformers:                   podInformers,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		labelSelector:                  config.LabelFilter,
 		resolveLoadBalancerHostname:    config.ResolveLoadBalancerHostname,
 		listenEndpointEvents:           config.ListenEndpointEvents,
 		exposeInternalIPv6:             config.ExposeInternalIPv6,
@@ -234,10 +233,11 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
 
-	for _, svc := range services {
-		if annotations.IsControllerMismatch(svc, types.Service) {
+	for _, key := range indexKeys {
+		svc, err := informers.GetByKey[*v1.Service](sc.serviceInformer.Informer().GetIndexer(), key)
+		if err != nil {
 			continue
 		}
 
@@ -312,7 +312,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		})
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource
@@ -493,7 +493,7 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 	})
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
-		targets := []string{}
+		targets := make([]string, 0, len(allTargets))
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
 			if _, ok := deduppedTargets[target]; ok {
@@ -503,12 +503,7 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 			deduppedTargets[target] = struct{}{}
 			targets = append(targets, target)
 		}
-		var ep *endpoint.Endpoint
-		if ttl.IsConfigured() {
-			ep = endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
-		} else {
-			ep = endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...)
-		}
+		ep := endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
 		if ep != nil {
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 			endpoints = append(endpoints, ep)
@@ -557,21 +552,6 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
-}
-
-// filterByServiceType filters services according to their types
-func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Service {
-	if !sc.serviceTypeFilter.enabled || len(services) == 0 {
-		return services
-	}
-	var result []*v1.Service
-	for _, service := range services {
-		if sc.serviceTypeFilter.isProcessed(service.Spec.Type) {
-			result = append(result, service)
-		}
-	}
-	log.Debugf("filtered %d services out of %d with service types filter %q", len(result), len(services), slices.Collect(maps.Keys(sc.serviceTypeFilter.types)))
-	return result
 }
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
@@ -825,26 +805,15 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// build a target with a priority of 0, weight of 50, and pointing the given port on the given host
 			target := fmt.Sprintf("0 50 %d %s", port.NodePort, provider.EnsureTrailingDot(hostname))
 
-			// take the service name from the K8s Service object
-			// it is safe to use since it is DNS compatible
-			// see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-			serviceName := svc.Name
-
 			// figure out the protocol
 			protocol := strings.ToLower(string(port.Protocol))
 			if protocol == "" {
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", svc.Name, protocol, hostname)
 
-			var ep *endpoint.Endpoint
-			if ttl.IsConfigured() {
-				ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
-			} else {
-				ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
-			}
-
+			ep := endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
 			if ep != nil {
 				ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 				endpoints = append(endpoints, ep)
@@ -971,6 +940,19 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 
 func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
 	return !sc.enabled || sc.types[serviceType]
+}
+
+// predicate returns a typed filter function suitable for use with
+// informers.IndexSelectorWithConditions. It returns false for services whose
+// type is not included in the filter, causing them to be excluded from the index.
+func (sc *serviceTypes) predicate(svc *v1.Service) bool {
+	if !sc.isProcessed(svc.Spec.Type) {
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debugf("filtered service %s/%s out with service types filter %q", svc.Namespace, svc.Name, slices.Collect(maps.Keys(sc.types)))
+		}
+		return false
+	}
+	return true
 }
 
 // isRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.

@@ -44,8 +44,8 @@ var (
 		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
 		Namespace:                              "",
-		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
-		FQDNTemplate:                           "",
+		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		FQDNTemplate:                           nil,
 		Compatibility:                          "",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "",
@@ -133,7 +133,6 @@ var (
 		RFC2136Host:                                   []string{""},
 		RFC2136LoadBalancingStrategy:                  "disabled",
 		OCPRouterName:                                 "default",
-		PiholeApiVersion:                              "5",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
@@ -151,12 +150,12 @@ var (
 		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespace:                              "namespace",
-		AnnotationPrefix:                       "external-dns.alpha.kubernetes.io/",
+		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
 		IgnoreIngressRulesSpec:                 true,
-		FQDNTemplate:                           "{{.Name}}.service.example.com",
+		FQDNTemplate:                           []string{"{{.Name}}.service.example.com"},
 		Compatibility:                          "mate",
 		Provider:                               ProviderGoogle,
 		GoogleProject:                          "project",
@@ -253,7 +252,6 @@ var (
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
 		RFC2136LoadBalancingStrategy:                  "round-robin",
-		PiholeApiVersion:                              "6",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
@@ -397,7 +395,6 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
-				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
@@ -572,12 +569,6 @@ func TestParseFlags(t *testing.T) {
 	}
 }
 
-func TestParseFlagsCobraExecuteError(t *testing.T) {
-	cfg := NewConfig()
-	err := cfg.ParseFlags([]string{"--cli-backend=cobra", "--unknown-flag"})
-	require.Error(t, err)
-}
-
 func TestParseFlagsKingpinParseError(t *testing.T) {
 	cfg := NewConfig()
 	err := cfg.ParseFlags([]string{"--unknown-flag"})
@@ -691,7 +682,6 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 }
 
 func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
-	// Support "--cli-backend", "cobra" form as well.
 	args := []string{
 		"--provider=aws",
 		"--source=service",

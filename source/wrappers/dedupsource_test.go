@@ -301,23 +301,23 @@ func TestDedupEndpointsValidation(t *testing.T) {
 		{
 			name: "MX record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
 			name: "A record with alias=true is kept",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 		},
 		{
 			name: "SRV record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -429,7 +429,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 				DNSName:          "example.org",
 				RecordType:       endpoint.RecordTypeMX,
 				Targets:          endpoint.Targets{"10 mail.example.org"},
-				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
+				ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
 		},
@@ -485,9 +485,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "foo", ep[0].RefObject().Name)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "foo", ep[0].RefObject().Name())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -505,9 +505,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "first-svc", ep[0].RefObject().Name)
-				require.Equal(t, "uid-first", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "first-svc", ep[0].RefObject().Name())
+				require.Equal(t, "uid-first", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -526,9 +526,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Service) wins, Ingress is discarded
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "my-service", ep[0].RefObject().Name)
-				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "my-service", ep[0].RefObject().Name())
+				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -547,9 +547,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Ingress) wins, Service is discarded
-				require.Equal(t, types.Ingress, ep[0].RefObject().Source)
-				require.Equal(t, "my-ingress", ep[0].RefObject().Name)
-				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Ingress, ep[0].RefObject().Source())
+				require.Equal(t, "my-ingress", ep[0].RefObject().Name())
+				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -580,13 +580,13 @@ func TestDedupSource_RefObjects(t *testing.T) {
 
 				require.NotNil(t, svcEndpoint)
 				require.NotNil(t, svcEndpoint.RefObject())
-				require.Equal(t, types.Service, svcEndpoint.RefObject().Source)
-				require.Equal(t, "my-service", svcEndpoint.RefObject().Name)
+				require.Equal(t, types.Service, svcEndpoint.RefObject().Source())
+				require.Equal(t, "my-service", svcEndpoint.RefObject().Name())
 
 				require.NotNil(t, ingEndpoint)
 				require.NotNil(t, ingEndpoint.RefObject())
-				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source)
-				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name)
+				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source())
+				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name())
 			},
 		},
 		{
@@ -608,9 +608,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Service) wins
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "my-service", ep[0].RefObject().Name)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "my-service", ep[0].RefObject().Name())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -626,8 +626,8 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{

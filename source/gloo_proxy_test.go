@@ -113,9 +113,9 @@ var (
 			Name:      internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
 			Namespace: internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ttl":                          "42",
-				"external-dns.alpha.kubernetes.io/aws-geolocation-country-code": "LU",
-				"external-dns.alpha.kubernetes.io/set-identifier":               "identifier",
+				"external-dns.kubernetes.io/ttl":                          "42",
+				"external-dns.kubernetes.io/aws-geolocation-country-code": "LU",
+				"external-dns.kubernetes.io/set-identifier":               "identifier",
 			},
 		},
 	}
@@ -192,9 +192,9 @@ var (
 			Name:      externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
 			Namespace: externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ttl":                          "24",
-				"external-dns.alpha.kubernetes.io/aws-geolocation-country-code": "JP",
-				"external-dns.alpha.kubernetes.io/set-identifier":               "identifier-external",
+				"external-dns.kubernetes.io/ttl":                          "24",
+				"external-dns.kubernetes.io/aws-geolocation-country-code": "JP",
+				"external-dns.kubernetes.io/set-identifier":               "identifier-external",
 			},
 		},
 	}
@@ -275,9 +275,9 @@ var (
 			Name:      proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Name,
 			Namespace: proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Namespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ttl":                          "420",
-				"external-dns.alpha.kubernetes.io/aws-geolocation-country-code": "ES",
-				"external-dns.alpha.kubernetes.io/set-identifier":               "identifier",
+				"external-dns.kubernetes.io/ttl":                          "420",
+				"external-dns.kubernetes.io/aws-geolocation-country-code": "ES",
+				"external-dns.kubernetes.io/set-identifier":               "identifier",
 			},
 		},
 	}
@@ -292,7 +292,7 @@ var (
 			Name:      "target-ann",
 			Namespace: defaultGlooNamespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+				"external-dns.kubernetes.io/target": "203.2.45.7",
 			},
 		},
 		Spec: proxySpec{
@@ -357,9 +357,9 @@ var (
 			Name:      targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
 			Namespace: targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ttl":                          "460",
-				"external-dns.alpha.kubernetes.io/aws-geolocation-country-code": "IT",
-				"external-dns.alpha.kubernetes.io/set-identifier":               "identifier-annotated",
+				"external-dns.kubernetes.io/ttl":                          "460",
+				"external-dns.kubernetes.io/aws-geolocation-country-code": "IT",
+				"external-dns.kubernetes.io/set-identifier":               "identifier-annotated",
 			},
 		},
 	}
@@ -419,7 +419,7 @@ var (
 			Name:      gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
 			Namespace: gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace,
 			Annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ingress": fmt.Sprintf("%s/%s", gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace, gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name),
+				"external-dns.kubernetes.io/ingress": fmt.Sprintf("%s/%s", gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace, gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name),
 			},
 		},
 	}

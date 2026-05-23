@@ -88,6 +88,9 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithConditions(func(u *unstructured.Unstructured) bool {
+				return annotations.IsControllerMatch(newUnstructuredWrapper(u))
+			}),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
 			informers.TransformRemoveManagedFields(),
@@ -141,10 +144,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		el := newUnstructuredWrapper(obj)
 
-		if annotations.IsControllerMismatch(el, types.Unstructured) {
-			continue
-		}
-
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
@@ -182,7 +181,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
@@ -236,7 +235,7 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.

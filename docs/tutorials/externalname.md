@@ -48,7 +48,7 @@ apiVersion: v1
 metadata:
   name: aws-service
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
+    external-dns.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
 spec:
   type: ExternalName
   externalName: aws.example.org
@@ -71,7 +71,7 @@ apiVersion: v1
 metadata:
   name: aws-service
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
+    external-dns.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
 spec:
   type: ExternalName
   externalName: 111.111.111.111

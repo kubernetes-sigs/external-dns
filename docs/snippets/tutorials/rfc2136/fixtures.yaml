@@ -27,7 +27,7 @@ metadata:
   labels:
     svc: test-svc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: svc.example.local
+    external-dns.kubernetes.io/hostname: svc.example.local
 spec:
   type: LoadBalancer
   ports:

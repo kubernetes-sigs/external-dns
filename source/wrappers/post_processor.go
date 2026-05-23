@@ -25,7 +25,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type postProcessor struct {
@@ -101,8 +100,8 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		// Set alias annotation for CNAME records when preferAlias is enabled
 		// Only set if not already explicitly configured at the source level
 		if pp.cfg.preferAlias && ep.RecordType == endpoint.RecordTypeCNAME {
-			if _, exists := ep.GetProviderSpecificProperty(annotations.AliasKey); !exists {
-				ep.WithProviderSpecific("alias", "true")
+			if _, exists := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias); !exists {
+				ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 			}
 		}
 	}

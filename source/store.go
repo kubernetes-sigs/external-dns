@@ -255,139 +255,117 @@ type ClientGenerator interface {
 //
 // Configuration: Clients are configured using KubeConfig, APIServerURL, RequestTimeout,
 // QPS, and Burst which are set during SingletonClientGenerator initialization.
-//
-// TODO: Fix error handling pattern in client methods. Current implementation has a bug where
-// errors are only returned on the first call due to sync.Once behavior. If initialization fails
-// on the first call, subsequent calls return (nil, nil) instead of (nil, originalError), which
-// can lead to nil pointer dereferences. Solution: Store error in a field alongside the client,
-// similar to how the client itself is stored. Example:
-//
-//	type SingletonClientGenerator struct {
-//	    restConfig    *rest.Config
-//	    restConfigErr error        // Store error persistently
-//	    restConfigOnce sync.Once
-//	}
-//
-//	func (p *SingletonClientGenerator) RESTConfig() (*rest.Config, error) {
-//	    p.restConfigOnce.Do(func() {
-//	        p.restConfig, p.restConfigErr = kubeclient.InstrumentedRESTConfig(...)
-//	    })
-//	    return p.restConfig, p.restConfigErr  // Return stored error
-//	}
-//
-// This pattern should be applied to all client methods: KubeClient, GatewayClient,
-// DynamicKubernetesClient, OpenShiftClient, and RESTConfig.
 type SingletonClientGenerator struct {
-	KubeConfig      string
-	APIServerURL    string
-	RequestTimeout  time.Duration
-	QPS             int
-	Burst           int
-	restConfig      *rest.Config
-	kubeClient      kubernetes.Interface
-	gatewayClient   gateway.Interface
-	istioClient     *istioclient.Clientset
-	dynKubeClient   dynamic.Interface
-	openshiftClient openshift.Interface
-	restConfigOnce  sync.Once
-	kubeOnce        sync.Once
-	gatewayOnce     sync.Once
-	istioOnce       sync.Once
-	dynCliOnce      sync.Once
-	openshiftOnce   sync.Once
+	KubeConfig         string
+	APIServerURL       string
+	RequestTimeout     time.Duration
+	QPS                int
+	Burst              int
+	restConfig         *rest.Config
+	restConfigErr      error
+	kubeClient         kubernetes.Interface
+	kubeClientErr      error
+	gatewayClient      gateway.Interface
+	gatewayClientErr   error
+	istioClient        *istioclient.Clientset
+	istioClientErr     error
+	dynKubeClient      dynamic.Interface
+	dynKubeClientErr   error
+	openshiftClient    openshift.Interface
+	openshiftClientErr error
+	restConfigOnce     sync.Once
+	kubeOnce           sync.Once
+	gatewayOnce        sync.Once
+	istioOnce          sync.Once
+	dynCliOnce         sync.Once
+	openshiftOnce      sync.Once
 }
 
 // KubeClient generates a kube client if it was not created before
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
-	var err error
 	p.kubeOnce.Do(func() {
 		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
+		config, p.kubeClientErr = p.RESTConfig()
+		if p.kubeClientErr != nil {
 			return
 		}
-		p.kubeClient, err = kubeclient.NewKubeClient(config)
+		p.kubeClient, p.kubeClientErr = kubeclient.NewKubeClient(config)
 	})
-	return p.kubeClient, err
+	return p.kubeClient, p.kubeClientErr
 }
 
 // RESTConfig generates an instrumented REST config if it was not created before.
 // The config includes request timeout handling and metrics instrumentation.
 // This is useful for sources that need to create custom clients (e.g., controller-runtime clients).
 func (p *SingletonClientGenerator) RESTConfig() (*rest.Config, error) {
-	var err error
 	p.restConfigOnce.Do(func() {
-		p.restConfig, err = kubeclient.InstrumentedRESTConfig(p.KubeConfig, p.APIServerURL, p.RequestTimeout, p.QPS, p.Burst)
+		p.restConfig, p.restConfigErr = kubeclient.InstrumentedRESTConfig(p.KubeConfig, p.APIServerURL, p.RequestTimeout, p.QPS, p.Burst)
 	})
-	return p.restConfig, err
+	return p.restConfig, p.restConfigErr
 }
 
 // GatewayClient generates a gateway client if it was not created before
 func (p *SingletonClientGenerator) GatewayClient() (gateway.Interface, error) {
-	var err error
 	p.gatewayOnce.Do(func() {
 		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
+		config, p.gatewayClientErr = p.RESTConfig()
+		if p.gatewayClientErr != nil {
 			return
 		}
-		p.gatewayClient, err = gateway.NewForConfig(config)
-		if err != nil {
+		p.gatewayClient, p.gatewayClientErr = gateway.NewForConfig(config)
+		if p.gatewayClientErr != nil {
 			return
 		}
 		log.Infof("Created GatewayAPI client %s", config.Host)
 	})
-	return p.gatewayClient, err
+	return p.gatewayClient, p.gatewayClientErr
 }
 
 // IstioClient generates an istio go client if it was not created before
 func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) {
-	var err error
 	p.istioOnce.Do(func() {
 		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
+		config, p.istioClientErr = p.RESTConfig()
+		if p.istioClientErr != nil {
 			return
 		}
-		p.istioClient, err = NewIstioClient(config)
+		p.istioClient, p.istioClientErr = NewIstioClient(config)
 	})
-	return p.istioClient, err
+	return p.istioClient, p.istioClientErr
 }
 
 // DynamicKubernetesClient generates a dynamic client if it was not created before
 func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
-	var err error
 	p.dynCliOnce.Do(func() {
 		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
+		config, p.dynKubeClientErr = p.RESTConfig()
+		if p.dynKubeClientErr != nil {
 			return
 		}
-		p.dynKubeClient, err = dynamic.NewForConfig(config)
-		if err != nil {
+		p.dynKubeClient, p.dynKubeClientErr = dynamic.NewForConfig(config)
+		if p.dynKubeClientErr != nil {
 			return
 		}
 		log.Infof("Created Dynamic Kubernetes client %s", config.Host)
 	})
-	return p.dynKubeClient, err
+	return p.dynKubeClient, p.dynKubeClientErr
 }
 
 // OpenShiftClient generates an openshift client if it was not created before
 func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error) {
-	var err error
 	p.openshiftOnce.Do(func() {
 		var config *rest.Config
-		config, err = p.RESTConfig()
-		if err != nil {
+		config, p.openshiftClientErr = p.RESTConfig()
+		if p.openshiftClientErr != nil {
 			return
 		}
-		p.openshiftClient, err = openshift.NewForConfig(config)
-		if err != nil {
+		p.openshiftClient, p.openshiftClientErr = openshift.NewForConfig(config)
+		if p.openshiftClientErr != nil {
 			return
 		}
 		log.Infof("Created OpenShift client %s", config.Host)
 	})
-	return p.openshiftClient, err
+	return p.openshiftClient, p.openshiftClientErr
 }
 
 // ByNames returns multiple Sources given multiple names.

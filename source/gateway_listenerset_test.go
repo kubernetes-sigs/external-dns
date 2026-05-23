@@ -832,7 +832,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "override.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "override.example.com"},
 		},
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
@@ -1366,7 +1366,7 @@ func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "ls", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls-override.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "ls-override.example.com"},
 		},
 		Spec: v1.ListenerSetSpec{
 			ParentRef: v1.ParentGatewayReference{Name: "gw"},
@@ -1421,7 +1421,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "gw.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "gw.example.com"},
 		},
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
@@ -1435,7 +1435,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "ls", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "ls.example.com"},
 		},
 		Spec: v1.ListenerSetSpec{
 			ParentRef: v1.ParentGatewayReference{Name: "gw"},

@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "external-dns.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "external-dns.namespace" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
@@ -109,10 +109,13 @@ spec:
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}
-            - --namespace={{ .Release.Namespace }}
+            - --namespace={{ default (include "external-dns.namespace" .) .Values.sourceNamespace }}
             {{- end }}
             {{- if .Values.gatewayNamespace }}
             - --gateway-namespace={{ .Values.gatewayNamespace }}
+            {{- end }}
+            {{- if .Values.enableGatewayListenerSets }}
+            - --gateway-listener-sets
             {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
@@ -138,19 +141,25 @@ spec:
             {{- if not (kindIs "invalid" $value) }}
             {{- if kindIs "slice" $value }}
             {{- range $value }}
-            - --{{ $key }}={{ tpl (. | toString) $ }}
+            - {{ print "--" $key "=" (tpl (. | toString) $) | quote }}
             {{- end }}
-            {{- else }}
-            - --{{ $key }}={{ tpl ($value | toString) $ }}
-            {{- end }}
-            {{- else }}
+            {{- else if kindIs "bool" $value }}
+            {{- if $value }}
             - --{{ $key }}
+            {{- else }}
+            - --no-{{ $key }}
+            {{- end }}
+            {{- else }}
+            - {{ print "--" $key "=" (tpl ($value | toString) $) | quote }}
+            {{- end }}
+            {{- else }}
+            - {{ print "--" $key | quote }}
             {{- end }}
             {{- end }}
             {{- end }}
             {{- if kindIs "slice" .Values.extraArgs }}
             {{- range .Values.extraArgs }}
-            - {{ tpl . $ }}
+            - {{ tpl . $ | quote }}
             {{- end }}
             {{- end }}
           ports:

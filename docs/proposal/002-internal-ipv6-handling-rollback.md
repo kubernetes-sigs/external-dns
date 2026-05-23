@@ -30,7 +30,7 @@ To address these concerns without causing immediate disruption, a feature flag w
 ## Non-Goals
 
 - ***Propose/Add an annotation for this specific use case***
-  - Provide support for `external-dns.alpha.kubernetes.io/expose-internal-ipv6` in follow-up releases.
+  - Provide support for `external-dns.kubernetes.io/expose-internal-ipv6` in follow-up releases.
   - Managing dual annotation and flag may introduce complexity.
 
 ## Proposal

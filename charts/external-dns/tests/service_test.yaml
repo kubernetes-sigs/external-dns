@@ -1,0 +1,26 @@
+suite: Service configuration
+templates:
+  - service.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide a single service by default
+    asserts:
+      - isKind:
+            of: Service
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 7979
+
+  - it: should provide a way to disable the service
+    set:
+      service:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

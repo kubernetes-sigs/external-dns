@@ -12,6 +12,7 @@ hide:
 
 [![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
+[![OpenSSF](https://api.scorecard.dev/projects/github.com/kubernetes-sigs/external-dns/badge)](https://scorecard.dev/viewer/?uri=github.com/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
@@ -111,10 +112,12 @@ from the usage of any externally developed webhook.
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
+| Porkbun               | https://github.com/mattgmoser/external-dns-porkbun-webhook           |
 | PS Cloud Services     | https://github.com/supervillain3000/external-dns-pscloud-webhook     |
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Tencent Cloud         | https://github.com/tkestack/external-dns-tencentcloud-webhook        |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |
@@ -248,13 +251,13 @@ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
+Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.kubernetes.io/ttl` annotation:
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+kubectl annotate service nginx "external-dns.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
@@ -262,7 +265,7 @@ For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/internal-hostname=nginx.internal.example.org."
 ```
 
 If the service is not of type Loadbalancer you need the --publish-internal-services flag.
