@@ -517,7 +517,7 @@ scenarios:
   - name: ingress-loadbalancer-hostname-resolved-via-annotation
     description: >
       Test that the per-resource annotation
-      external-dns.alpha.kubernetes.io/resolve-target: "true"
+      external-dns.kubernetes.io/resolve-target: "true"
       triggers hostname resolution.
     config:
       sources: ["ingress"]
@@ -532,7 +532,7 @@ scenarios:
             namespace: default
             annotations:
               kubernetes.io/ingress.class: "nginx"
-              external-dns.alpha.kubernetes.io/resolve-target: "true"
+              external-dns.kubernetes.io/resolve-target: "true"
           spec:
             rules:
               - host: svc.example.com
