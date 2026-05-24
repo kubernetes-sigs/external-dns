@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -260,10 +261,17 @@ func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigO
 // controller-runtime cache can initialize without a real cluster.
 func CreateWrappedSource(
 	ctx context.Context,
-	client *fake.Clientset,
+	loaded *LoadedResources,
 	scenarioCfg ScenarioConfig,
 ) (source.Source, error) {
-	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
+	var gen = newMockClientGenerator(loaded.K8sClient)
+
+	if slices.Contains(scenarioCfg.Sources, "crd") {
+		restCfg := newFakeDNSEndpointServer(ctx, loaded.DNSEndpoints)
+		gen = newCRDClientGenerator(loaded.K8sClient, restCfg)
+	}
+
+	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(gen))
 	if err != nil {
 		return nil, err
 	}
