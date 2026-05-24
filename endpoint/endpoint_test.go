@@ -205,7 +205,7 @@ func TestEndpoint_WithTargets(t *testing.T) {
 	t.Run("non-empty targets derives record type from first target and preserves other fields", func(t *testing.T) {
 		labels := Labels{"owner": "team-a"}
 		providerSpecific := ProviderSpecific{{Name: "foo", Value: "bar"}}
-		ref := &events.ObjectReference{Kind: "Service", Name: "svc-1", Namespace: "default"}
+		ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc-1", "", "")
 
 		ep := &Endpoint{
 			DNSName:          "example.com",

@@ -349,12 +349,7 @@ func TestResolveTarget_RefObjectIsPreserved(t *testing.T) {
 		return []net.IP{net.ParseIP("1.2.3.4")}, nil
 	}
 
-	ref := &events.ObjectReference{
-		ApiVersion: "networking.k8s.io/v1",
-		Kind:       "Ingress",
-		Namespace:  "default",
-		Name:       "my-ingress",
-	}
+	ref := events.NewObjectReferenceFromParts("Ingress", "networking.k8s.io/v1", "default", "my-ingress", "", "")
 
 	ep := endpoint.NewEndpoint("test.example.internal", endpoint.RecordTypeCNAME, "lb.example.com")
 	ep.WithRefObject(ref)
