@@ -29,6 +29,7 @@ Wrappers solve these key challenges:
 |:--------------------:|:----------------------------------------|:----------------------------------------------------|
 |    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
 |    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
+|   `ResolveTarget`    | Resolve CNAME targets to A/AAAA values. | Source hostnames into IP records.                   |
 | `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
 |    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
 |   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
@@ -56,6 +57,12 @@ Converts IPv4 targets to IPv6 using NAT64 prefixes.
 ```yaml
 --nat64-prefix=64:ff9b::/96
 ```
+
+### 2.2 `ResolveTarget`
+
+Resolves `CNAME` targets to concrete IP targets when the endpoint has the `resolve-target` provider-specific property set to `true`. If all target resolutions fail, the endpoint is skipped.
+
+📌 **Use case**: A Service or Gateway exposes a load balancer hostname (for example, `xxx.elb.amazonaws.com`), but the desired DNS output should be `A`/`AAAA` records rather than a `CNAME`.
 
 ### 3.1 `PostProcessor`
 
@@ -116,6 +123,7 @@ Wrappers are often composed like this:
 ```go
 source := NewMultiSource(actualSources, defaultTargets)
 source = NewDedupSource(source)
+source = NewResolveTarget(source)
 source = NewNAT64Source(source, cfg.NAT64Networks)
 source = NewTargetFilterSource(source, targetFilter)
 source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))

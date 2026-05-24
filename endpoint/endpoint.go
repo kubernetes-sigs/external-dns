@@ -313,6 +313,26 @@ func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 	return e
 }
 
+// WithTargets returns a shallow copy of the endpoint with only Targets and RecordType replaced.
+// The RecordType is derived from the first target using SuitableType.
+// All other fields remain intact (shared with the original endpoint).
+func (e *Endpoint) WithTargets(targets Targets) *Endpoint {
+	recordType := e.RecordType
+	if len(targets) > 0 {
+		recordType = SuitableType(targets[0])
+	}
+	return &Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          targets,
+		RecordType:       recordType,
+		SetIdentifier:    e.SetIdentifier,
+		RecordTTL:        e.RecordTTL,
+		Labels:           e.Labels,
+		ProviderSpecific: e.ProviderSpecific,
+		refObject:        e.refObject,
+	}
+}
+
 // WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
 // This can be used to pass additional data through the stages of ExternalDNS's Endpoint processing.
 // The assumption is that most of the time this will be provider specific metadata that doesn't

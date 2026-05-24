@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"encoding/json"
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -363,6 +364,53 @@ func TestScenarioToConfig(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, cfg)
+}
+func TestCreateWrappedSource_WithHostOverrides_SourceBuilds(t *testing.T) {
+	// When HostOverrides is non-empty, the stub lookupIP option is appended and
+	// wrappers.Build should still return a valid source.
+	client, err := LoadResources(t.Context(), Scenario{
+		Resources: []ResourceWithDependencies{
+			{Resource: runtime.RawExtension{Raw: rawService()}},
+		},
+	})
+	require.NoError(t, err)
+
+	src, err := CreateWrappedSource(t.Context(), client, ScenarioConfig{
+		Sources: []string{"service"},
+		HostOverrides: map[string][]string{
+			"elb.example.com": {"1.2.3.4"},
+		},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, src)
+}
+
+func TestStubLookupIP_ReturnsConfiguredIPs(t *testing.T) {
+	lookup := stubLookupIP(map[string][]string{
+		"example.com": {"1.2.3.4", "2001:db8::1"},
+	})
+
+	ips, err := lookup("example.com")
+	require.NoError(t, err)
+	require.Len(t, ips, 2)
+	assert.Equal(t, net.ParseIP("1.2.3.4"), ips[0])
+	assert.Equal(t, net.ParseIP("2001:db8::1"), ips[1])
+}
+
+func TestStubLookupIP_NoOverride(t *testing.T) {
+	lookup := stubLookupIP(map[string][]string{"example.com": {"1.2.3.4"}})
+
+	ips, err := lookup("missing.example.com")
+	assert.Nil(t, ips)
+	assert.EqualError(t, err, "stubLookupIP: no override for \"missing.example.com\"")
+}
+
+func TestStubLookupIP_InvalidIP(t *testing.T) {
+	lookup := stubLookupIP(map[string][]string{"example.com": {"not-an-ip"}})
+
+	ips, err := lookup("example.com")
+	assert.Nil(t, ips)
+	assert.EqualError(t, err, "stubLookupIP: invalid IP \"not-an-ip\" for \"example.com\"")
 }
 
 // encodeObject serializes a runtime.Object to JSON for use as RawExtension.Raw.

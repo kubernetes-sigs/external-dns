@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"slices"
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -260,18 +260,38 @@ func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigO
 // controller-runtime cache can initialize without a real cluster.
 func CreateWrappedSource(
 	ctx context.Context,
-	loaded *LoadedResources,
-	scenarioCfg ScenarioConfig) (source.Source, error) {
-	var gen = newMockClientGenerator(loaded.K8sClient)
-
-	if slices.Contains(scenarioCfg.Sources, "crd") {
-		restCfg := newFakeDNSEndpointServer(ctx, loaded.DNSEndpoints)
-		gen = newCRDClientGenerator(loaded.K8sClient, restCfg)
-	}
-
-	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(gen))
+	client *fake.Clientset,
+	scenarioCfg ScenarioConfig,
+) (source.Source, error) {
+	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(newMockClientGenerator(client)))
 	if err != nil {
 		return nil, err
 	}
-	return wrappers.Build(ctx, cfg)
+
+	var extraOpts []wrappers.Option
+	if len(scenarioCfg.HostOverrides) > 0 {
+		extraOpts = append(extraOpts, wrappers.WithLookupIP(stubLookupIP(scenarioCfg.HostOverrides)))
+	}
+
+	return wrappers.Build(ctx, cfg, extraOpts...)
+}
+
+// stubLookupIP returns a DNS lookup function that returns pre-configured IPs for
+// hostnames in the overrides map. For hostnames not in the map, it returns an error.
+func stubLookupIP(overrides map[string][]string) func(string) ([]net.IP, error) {
+	return func(hostname string) ([]net.IP, error) {
+		ipStrings, ok := overrides[hostname]
+		if !ok {
+			return nil, fmt.Errorf("stubLookupIP: no override for %q", hostname)
+		}
+		ips := make([]net.IP, 0, len(ipStrings))
+		for _, s := range ipStrings {
+			ip := net.ParseIP(s)
+			if ip == nil {
+				return nil, fmt.Errorf("stubLookupIP: invalid IP %q for %q", s, hostname)
+			}
+			ips = append(ips, ip)
+		}
+		return ips, nil
+	}
 }

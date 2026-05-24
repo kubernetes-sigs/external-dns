@@ -17,6 +17,7 @@ limitations under the License.
 package wrappers
 
 import (
+	"net"
 	"testing"
 	"time"
 
@@ -57,6 +58,7 @@ func TestWrapSources(t *testing.T) {
 			cfg:  NewConfig(),
 			asserts: func(t *testing.T, cfg *Config) {
 				assert.True(t, cfg.isSourceWrapperInstrumented("dedup"))
+				assert.True(t, cfg.isSourceWrapperInstrumented("resolve"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("nat64"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("target-filter"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
@@ -180,6 +182,37 @@ func TestWithMinTTL(t *testing.T) {
 	opt := WithMinTTL(300 * time.Second)
 	opt(cfg)
 	assert.Equal(t, 300*time.Second, cfg.minTTL)
+}
+
+func TestWithLookupIP(t *testing.T) {
+	cfg := &Config{}
+	calledWith := ""
+	opt := WithLookupIP(func(host string) ([]net.IP, error) {
+		calledWith = host
+		return []net.IP{net.ParseIP("127.0.0.1")}, nil
+	})
+
+	opt(cfg)
+
+	if assert.NotNil(t, cfg.lookupIP) {
+		ips, err := cfg.lookupIP("example.org")
+		require.NoError(t, err)
+		require.Len(t, ips, 1)
+		assert.Equal(t, net.ParseIP("127.0.0.1"), ips[0])
+		assert.Equal(t, "example.org", calledWith)
+	}
+}
+
+func TestWithLookupIPNil(t *testing.T) {
+	cfg := &Config{
+		lookupIP: func(string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP("192.0.2.1")}, nil
+		},
+	}
+
+	WithLookupIP(nil)(cfg)
+
+	assert.Nil(t, cfg.lookupIP)
 }
 
 func TestAddSourceWrapperAndIsSourceWrapperInstrumented(t *testing.T) {

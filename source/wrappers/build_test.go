@@ -104,3 +104,11 @@ func TestBuildWrappedSource(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildAppliesExtraOptions(t *testing.T) {
+	cfg := stubConfig(t, &externaldns.Config{Sources: []string{types.Fake}})
+
+	_, err := Build(t.Context(), cfg, WithNAT64Networks([]string{"not-a-cidr"}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create NAT64 source wrapper")
+}

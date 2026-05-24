@@ -514,3 +514,45 @@ scenarios:
       - dnsName: svc.example.com
         targets: ["10.0.0.2"]
         recordType: A
+  - name: ingress-loadbalancer-hostname-resolved-via-annotation
+    description: >
+      Test that the per-resource annotation
+      external-dns.alpha.kubernetes.io/resolve-target: "true"
+      triggers hostname resolution.
+    config:
+      sources: ["ingress"]
+      hostOverrides:
+        "example.com": ["104.20.23.154", "172.66.147.243", "2606:4700:10::ac42:93f3", "2606:4700:10::6814:179a"]
+    resources:
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              external-dns.alpha.kubernetes.io/resolve-target: "true"
+          spec:
+            rules:
+              - host: svc.example.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: example.com
+    expected:
+      - dnsName: svc.example.com
+        recordType: A
+        targets: ["104.20.23.154", "172.66.147.243"]
+      - dnsName: svc.example.com
+        recordType: AAAA
+        targets: ["2606:4700:10::ac42:93f3", "2606:4700:10::6814:179a"]
