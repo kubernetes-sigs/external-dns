@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 
+### Fixed
+
+- RBAC compliance checkbox for dnsendpoints/status [#6442](https://github.com/kubernetes-sigs/external-dns/pull/6442) _@vflaux_
+
 ## [v1.21.1]
 
 ### Added

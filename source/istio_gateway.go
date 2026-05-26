@@ -100,6 +100,7 @@ func NewIstioGatewaySource(
 	informers.MustAddIndexers(gatewayInformer.Informer(), informers.IndexerWithOptions[*networkingv1.Gateway](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.Gateway]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -142,10 +143,6 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	for _, key := range indexKeys {
 		gateway, err := informers.GetByKey[*networkingv1.Gateway](indexer, key)
 		if err != nil || gateway == nil {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
 			continue
 		}
 

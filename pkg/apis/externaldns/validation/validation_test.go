@@ -54,7 +54,7 @@ func TestValidateFlags(t *testing.T) {
 
 	cfg = newValidConfig(t)
 	cfg.IgnoreHostnameAnnotation = true
-	cfg.FQDNTemplate = ""
+	cfg.FQDNTemplate = []string{}
 	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
@@ -142,7 +142,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.IgnoreHostnameAnnotation = true
-	cfg.FQDNTemplate = ""
+	cfg.FQDNTemplate = []string{}
 
 	assert.Error(t, ValidateConfig(cfg))
 }
