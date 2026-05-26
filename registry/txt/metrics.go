@@ -23,22 +23,23 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-// registrySkippedLabelTooLongTotal counts records dropped because the projected
+// registrySkippedLabelTooLongPerSync tracks records dropped because the projected
 // TXT name has a label exceeding the 63-char RFC 1035 limit.
-var registrySkippedLabelTooLongTotal = metrics.NewCounterVecWithOpts(
-	prometheus.CounterOpts{
+var registrySkippedLabelTooLongPerSync = metrics.NewGaugedVectorOpts(
+	prometheus.GaugeOpts{
 		Subsystem: "registry",
-		Name:      "skipped_records_label_too_long_total",
-		Help:      "Total number of records skipped because the projected TXT registry name has a DNS label exceeding RFC 1035's 63-char limit (vector).",
+		Name:      "skipped_records_label_too_long_per_sync",
+		Help:      "Number of records skipped because the projected TXT registry name has a DNS label exceeding RFC 1035's 63-char limit, for each record type and domain (vector).",
 	},
 	[]string{"record_type", "domain"},
 )
 
 func init() {
-	metrics.RegisterMetric.MustRegister(registrySkippedLabelTooLongTotal)
+	metrics.RegisterMetric.MustRegister(registrySkippedLabelTooLongPerSync)
 }
 
-// recordSkippedLabelTooLong is the FilterEndpointsByDNSCompliance skip callback.
-func recordSkippedLabelTooLong(skipped *endpoint.Endpoint, _ string) {
-	registrySkippedLabelTooLongTotal.CounterVec.WithLabelValues(skipped.RecordType, skipped.GetNakedDomain()).Inc()
+// recordSkippedLabelTooLong increments the per-sync gauge for a record dropped
+// because its projected TXT name overflows RFC 1035's 63-char label limit.
+func recordSkippedLabelTooLong(skipped *endpoint.Endpoint) {
+	registrySkippedLabelTooLongPerSync.AddWithLabels(1.0, skipped.RecordType, skipped.GetNakedDomain())
 }

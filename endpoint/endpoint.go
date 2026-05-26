@@ -504,29 +504,8 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	return filtered
 }
 
-// FilterEndpointsByDNSCompliance drops endpoints whose projected registry
-// name (from toRegistryName) has any DNS label over RFC 1035's 63-char limit.
-// Such records cannot be owned by the registry and would orphan in the zone.
-// onSkip, if non-nil, is invoked per drop with the offending label so callers
-// can attach metrics or events without importing this package.
-func FilterEndpointsByDNSCompliance(toRegistryName func(*Endpoint) string, eps []*Endpoint, onSkip func(skipped *Endpoint, badLabel string)) []*Endpoint {
-	filtered := make([]*Endpoint, 0, len(eps))
-	for _, ep := range eps {
-		registryName := toRegistryName(ep)
-		if badLabel, ok := overflowingLabel(registryName); ok {
-			log.Errorf(`Skipping endpoint %s %s: projected registry name %q has label %q exceeding RFC 1035's 63-char limit; record would be unmanageable`, ep.RecordType, ep.DNSName, registryName, badLabel)
-			if onSkip != nil {
-				onSkip(ep, badLabel)
-			}
-			continue
-		}
-		filtered = append(filtered, ep)
-	}
-	return filtered
-}
-
-// overflowingLabel returns the first label in name longer than 63 chars.
-func overflowingLabel(name string) (string, bool) {
+// OverflowingLabel returns the first label in name longer than 63 chars.
+func OverflowingLabel(name string) (string, bool) {
 	for label := range strings.SplitSeq(name, ".") {
 		if len(label) > 63 {
 			return label, true

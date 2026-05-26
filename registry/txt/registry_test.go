@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1140,8 +1139,8 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 }
 
 // TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership verifies that the
-// registry refuses to create a parent record whenever its ownership TXT cannot
-// be produced. Such a parent would be unreclaimable by future reconciles and
+// registry refuses to create an owned record whenever its ownership TXT cannot
+// be produced. Such a record would be unreclaimable by future reconciles and
 // would leak in the zone.
 //
 // The subtests below exercise the only failure mode that exists today — the
@@ -1199,7 +1198,7 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			registrySkippedLabelTooLongTotal.CounterVec.Reset()
+			registrySkippedLabelTooLongPerSync.Gauge.Reset()
 
 			ctx := t.Context()
 			p := inmemory.NewInMemoryProvider()
@@ -1210,7 +1209,7 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 
 			overflowLabel := strings.Repeat("a", tc.labelLen)
 			overflow := tc.newParent(overflowLabel + "." + testZone)
-			require.NotNil(t, overflow, "test setup: parent record at %d-char label must itself pass RFC 1035", tc.labelLen)
+			require.NotNil(t, overflow, "test setup: owned record at %d-char label must itself pass RFC 1035", tc.labelLen)
 			fits := tc.newParent("ok." + testZone)
 
 			hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
@@ -1226,28 +1225,27 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 			require.NotNil(t, got)
 			overflowTXT := tc.txtPrefx + overflow.DNSName
 			for _, ep := range got.Create {
-				assert.NotEqual(t, overflow.DNSName, ep.DNSName, "parent without ownership TXT must be dropped")
-				assert.NotEqual(t, overflowTXT, ep.DNSName, "TXT companion for dropped parent must not be created")
+				assert.NotEqual(t, overflow.DNSName, ep.DNSName, "owned record without ownership TXT must be dropped")
+				assert.NotEqual(t, overflowTXT, ep.DNSName, "TXT companion for dropped owned record must not be created")
 			}
 
-			fitsParent := false
+			fitsOwned := false
 			fitsTXT := false
 			for _, ep := range got.Create {
 				if ep.DNSName == fits.DNSName && ep.RecordType == fits.RecordType {
-					fitsParent = true
+					fitsOwned = true
 				}
 				if ep.DNSName == tc.txtPrefx+fits.DNSName && ep.RecordType == endpoint.RecordTypeTXT {
 					fitsTXT = true
 				}
 			}
-			assert.True(t, fitsParent, "fits-fine parent must still be created")
+			assert.True(t, fitsOwned, "fits-fine owned record must still be created")
 			assert.True(t, fitsTXT, "fits-fine TXT companion must still be created")
 
 			logtest.TestHelperLogContainsWithLogLevel("exceeding RFC 1035's 63-char limit", log.ErrorLevel, hook, t)
-			assert.InDelta(t, 1.0,
-				promtestutil.ToFloat64(registrySkippedLabelTooLongTotal.CounterVec.WithLabelValues(overflow.RecordType, overflow.GetNakedDomain())),
-				0,
-				"counter must record one skip for the dropped parent")
+			testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1.0,
+				registrySkippedLabelTooLongPerSync.Gauge,
+				map[string]string{"record_type": overflow.RecordType, "domain": overflow.GetNakedDomain()})
 		})
 	}
 }
@@ -1635,7 +1633,8 @@ func TestGenerateTXT(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-	gotTXT := r.generateTXTRecord(record)
+	gotTXT, err := r.generateTXTRecord(record)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
@@ -1655,7 +1654,8 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-	gotTXTBeforeMigration := r.generateTXTRecord(record)
+	gotTXTBeforeMigration, err := r.generateTXTRecord(record)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
 
 	expectedTXTAfterMigration := []*endpoint.Endpoint{
@@ -1670,7 +1670,8 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	}
 
 	rMigrated, _ := newRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "owner")
-	gotTXTAfterMigration := rMigrated.generateTXTRecord(record)
+	gotTXTAfterMigration, err := rMigrated.generateTXTRecord(record)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTXTAfterMigration, gotTXTAfterMigration)
 
 }
@@ -1691,7 +1692,8 @@ func TestGenerateTXTForAAAA(t *testing.T) {
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-	gotTXT := r.generateTXTRecord(record)
+	gotTXT, err := r.generateTXTRecord(record)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
@@ -1703,14 +1705,13 @@ func TestFailGenerateTXT(t *testing.T) {
 		RecordType: endpoint.RecordTypeCNAME,
 		Labels:     map[string]string{},
 	}
-	// A bad DNS name returns empty expected TXT
-	expectedTXT := make([]*endpoint.Endpoint, 0)
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
 	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-	gotTXT := r.generateTXTRecord(cnameRecord)
-	assert.Equal(t, expectedTXT, gotTXT)
+	gotTXT, err := r.generateTXTRecord(cnameRecord)
+	require.Error(t, err, "projected TXT name must overflow the 63-char label limit")
+	assert.Nil(t, gotTXT)
 }
 
 func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
@@ -1860,7 +1861,8 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
-			records := r.generateTXTRecord(tc.endpoint)
+			records, err := r.generateTXTRecord(tc.endpoint)
+			require.NoError(t, err)
 
 			assert.Len(t, records, tc.expectedRecords, tc.description)
 
@@ -2197,7 +2199,8 @@ func TestTXTRecordMigration(t *testing.T) {
 
 	createdRecords, _ := r.Records(ctx)
 
-	newTXTRecord := r.generateTXTRecord(createdRecords[0])
+	newTXTRecord, err := r.generateTXTRecord(createdRecords[0])
+	require.NoError(t, err)
 
 	expectedTXTRecords := []*endpoint.Endpoint{
 		{
@@ -2213,7 +2216,8 @@ func TestTXTRecordMigration(t *testing.T) {
 
 	updatedRecords, _ := r.Records(ctx)
 
-	updatedTXTRecord := r.generateTXTRecord(updatedRecords[0])
+	updatedTXTRecord, err := r.generateTXTRecord(updatedRecords[0])
+	require.NoError(t, err)
 
 	expectedFinalTXT := []*endpoint.Endpoint{
 		{
@@ -2240,7 +2244,8 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	r, _ := newRegistry(p, "%{record_type}-", "", "foo", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
 
 	createdRecords := newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ownerID, nil)
-	txtRecord := r.generateTXTRecord(createdRecords)
+	txtRecord, err := r.generateTXTRecord(createdRecords)
+	require.NoError(t, err)
 
 	// 1. Create initial A and TXT records.
 	creates := append([]*endpoint.Endpoint{createdRecords}, txtRecord...)

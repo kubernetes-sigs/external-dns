@@ -111,12 +111,12 @@ for a CNAME `foo.example.com`). Any configured `--txt-prefix` or `--txt-suffix` 
 extends that label.
 
 If any label in the projected TXT name exceeds 63 characters, external-dns skips both
-the parent record and its ownership TXT. Creating the parent without a TXT would leave
-an unmanageable record in the zone, since later reconciles could not identify it as
-managed.
+the owned record and its ownership TXT. Creating the owned record without a TXT would
+leave an unmanageable record in the zone, since later reconciles could not identify it
+as managed.
 
 Each skip is logged at error level and increments the
-`external_dns_registry_skipped_records_label_too_long_total` counter, labeled by
+`external_dns_registry_skipped_records_label_too_long_per_sync` gauge, labeled by
 `record_type` and apex `domain`.
 
 To resolve, shorten the source hostname's first label or trim `--txt-prefix`/`--txt-suffix`.
