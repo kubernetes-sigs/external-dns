@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -425,4 +426,26 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
+}
+
+func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newKongUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeClient := fakeKube.NewSimpleClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &kongTCPIngressSource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		kongGroupdVersionResource,
+		fakeDynamicClient,
+		source.(*kongTCPIngressSource).kongTCPIngressInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

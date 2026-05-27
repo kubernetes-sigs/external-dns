@@ -643,3 +643,25 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newVSUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeClient := fakeKube.NewClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &f5VirtualServerSource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		f5VirtualServerGVR,
+		fakeDynamicClient,
+		source.(*f5VirtualServerSource).virtualServerInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}

@@ -105,7 +105,7 @@ func NewAmbassadorHostSource(
 		return nil, err
 	}
 
-	uc, err := newUnstructuredConverter()
+	uc, err := newAmbassadorUnstructuredConverter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
@@ -273,8 +273,8 @@ type unstructuredConverter struct {
 	scheme *runtime.Scheme
 }
 
-// newUnstructuredConverter returns a new unstructuredConverter initialized
-func newUnstructuredConverter() (*unstructuredConverter, error) {
+// newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized
+func newAmbassadorUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
 		scheme: runtime.NewScheme(),
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/stretchr/testify/assert"
@@ -1872,4 +1873,87 @@ type testInformer struct {
 func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	t.times += 1
 	return nil, fmt.Errorf("not implemented")
+}
+
+func TestTraefikSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newTraefikUnstructuredConverter()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		gvr           schema.GroupVersionResource
+		getSource     func(source *traefikSource) informers.GenericInformer
+		enabledLegacy bool
+	}{
+		{
+			name: "IngressRoute",
+			gvr:  ingressRouteGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRouteTCP",
+			gvr:  ingressRouteTCPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteTcpInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRouteUDP",
+			gvr:  ingressRouteUDPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteUdpInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRoute with legacy API group",
+			gvr:  oldIngressRouteGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteInformer
+			},
+			enabledLegacy: true,
+		},
+		{
+			name: "IngressRouteTCP with legacy API group",
+			gvr:  oldIngressRouteTCPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteTcpInformer
+			},
+			enabledLegacy: true,
+		},
+		{
+			name: "IngressRouteUDP with legacy API group",
+			gvr:  oldIngressRouteUDPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteUdpInformer
+			},
+			enabledLegacy: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeClient, &Config{
+				TraefikEnableLegacy: tt.enabledLegacy,
+			})
+			require.NoError(t, err)
+			require.IsType(t, &traefikSource{}, source)
+
+			testDynamicInformerTransformHelper(t,
+				tt.gvr,
+				fakeDynamicClient,
+				tt.getSource(source.(*traefikSource)),
+				withRemovedLastAppliedConfigAnnotation(),
+				withRemovedManagedFields(),
+			)
+		})
+	}
 }
