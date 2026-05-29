@@ -141,18 +141,41 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
-	body := params.Body.(dns.RecordNewParamsBody)
-
-	record := dns.RecordResponse{
-		ID:       generateDNSRecordID(body.Type.String(), body.Name.Value, body.Content.Value),
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
+// recordResponseFromBody reconstructs a mock RecordResponse from a create/update
+// param body. Typed SRV bodies carry structured Data; the mock rebuilds canonical
+// Content from it.
+func recordResponseFromBody(body any) dns.RecordResponse {
+	switch b := body.(type) {
+	case dns.RecordNewParamsBody:
+		return dns.RecordResponse{
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	case dns.RecordUpdateParamsBody:
+		return dns.RecordResponse{
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	case dns.SRVRecordParam:
+		return srvResponseFromParam(b)
+	case dns.NAPTRRecordParam:
+		return naptrResponseFromParam(b)
+	default:
+		panic(fmt.Sprintf("mock: unsupported DNS record body type %T", body))
 	}
+}
+
+func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	record := recordResponseFromBody(params.Body)
+	record.ID = generateDNSRecordID(string(record.Type), record.Name, record.Content)
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
@@ -191,17 +214,8 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(_ context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
 	zoneID := params.ZoneID.String()
-	body := params.Body.(dns.RecordUpdateParamsBody)
-
-	record := dns.RecordResponse{
-		ID:       recordID,
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
-	}
+	record := recordResponseFromBody(params.Body)
+	record.ID = recordID
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
@@ -677,11 +691,17 @@ func TestCloudflareSetProxied(t *testing.T) {
 			var content string
 			var priority float64
 
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				targets = endpoint.Targets{"10 mx.example.com"}
 				content = "mx.example.com"
 				priority = 10
-			} else {
+			case "SRV":
+				// SRV uses structured Data; the mock returns the canonical Content
+				// rebuilt from Data ("<priority> <weight> <port> <target>").
+				targets = endpoint.Targets{"10 20 443 target.example.com"}
+				content = "10 20 443 target.example.com"
+			default:
 				targets = endpoint.Targets{"127.0.0.1"}
 				content = "127.0.0.1"
 			}
@@ -708,8 +728,14 @@ func TestCloudflareSetProxied(t *testing.T) {
 				TTL:     1,
 				Proxied: testCase.proxiable,
 			}
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				recordData.Priority = priority
+			case "SRV":
+				// SRV records carry structured Data instead of a flat Content string;
+				// the mock rebuilds Content from Data so Priority surfaces here too.
+				recordData.Priority = 10
+				recordData.Data = dns.SRVRecordData{Priority: 10, Weight: 20, Port: 443, Target: "target.example.com"}
 			}
 			AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 				{
@@ -2382,6 +2408,7 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 		{endpoint.RecordTypeTXT, true},
 		{endpoint.RecordTypeNS, true},
 		{"SRV", true},
+		{endpoint.RecordTypeNAPTR, true},
 		{"SPF", false},
 		{"LOC", false},
 		{"UNKNOWN", false},
@@ -2890,7 +2917,8 @@ func TestGetUpdateDNSRecordParam(t *testing.T) {
 		},
 	}
 
-	params := getUpdateDNSRecordParam("zone-123", cfc)
+	params, err := getUpdateDNSRecordParam("zone-123", cfc)
+	require.NoError(t, err)
 	body := params.Body.(dns.RecordUpdateParamsBody)
 
 	assert.Equal(t, "zone-123", params.ZoneID.Value)
@@ -2925,7 +2953,8 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("CreateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		params := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		params, err := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		require.NoError(t, err)
 		record, err := client.CreateDNSRecord(ctx, params)
 		assert.Empty(t, record)
 		assert.ErrorIs(t, err, context.Canceled)
@@ -2933,8 +2962,9 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("UpdateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		recordParam := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
-		_, err := client.UpdateDNSRecord(ctx, "1234", recordParam)
+		recordParam, err := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
+		require.NoError(t, err)
+		_, err = client.UpdateDNSRecord(ctx, "1234", recordParam)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 

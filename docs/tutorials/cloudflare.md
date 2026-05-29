@@ -41,7 +41,23 @@ significantly reducing the total number of requests made.
 
 The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
 In that case, ExternalDNS automatically retries each record change in the chunk individually.
-Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+Record types whose batch PUT body the SDK does not support (e.g. CAA) are submitted individually rather than through the batch API.
+
+### Supported record types
+
+A, AAAA, CNAME, TXT, MX, NS, SRV, and NAPTR. SRV and NAPTR carry structured `Data`
+(priority/weight/port/target and order/preference/flags/service/regexp/replacement
+respectively) and travel through the batch API as typed union members.
+
+SRV and NAPTR target strings should use single-space field separators (RFC canonical form).
+The provider rebuilds canonical content from Cloudflare's structured `Data` on read, so
+endpoints declared with multi-space or tab separators will be re-emitted as plan changes
+on every reconcile.
+
+NAPTR `regexp` fields containing literal double-quote characters (RFC 2915 allows them
+when backslash-escaped) are not currently supported: the canonical-content round-trip
+through the parser loses the escapes. Avoid embedded `"` in NAPTR regexp; use the
+alternative delimiter forms allowed by RFC 2915 instead.
 
 | Flag | Default | Description |
 | :--- | :------ | :---------- |
