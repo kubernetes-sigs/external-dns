@@ -44,3 +44,32 @@ func parseMxTarget[T dns.MxRecord | privatedns.MxRecord](mxTarget string) (T, er
 		Exchange:   new(exchange),
 	}, nil
 }
+
+// Helper function (shared with test code)
+func parseSrvTarget[T dns.SrvRecord | privatedns.SrvRecord](srvTarget string) (T, error) {
+	targetParts := strings.SplitN(srvTarget, " ", 4)
+	if len(targetParts) != 4 {
+		return T{}, fmt.Errorf("srv target needs to be of form '10 5 5060 example.com.'")
+	}
+
+	priority, err := strconv.ParseInt(targetParts[0], 10, 32)
+	if err != nil {
+		return T{}, fmt.Errorf("invalid srv priority specified")
+	}
+	weight, err := strconv.ParseInt(targetParts[1], 10, 32)
+	if err != nil {
+		return T{}, fmt.Errorf("invalid srv weight specified")
+	}
+	port, err := strconv.ParseInt(targetParts[2], 10, 32)
+	if err != nil {
+		return T{}, fmt.Errorf("invalid srv port specified")
+	}
+	target := targetParts[3]
+
+	return T{
+		Priority: new(int32(priority)),
+		Weight:   new(int32(weight)),
+		Port:     new(int32(port)),
+		Target:   new(target),
+	}, nil
+}
