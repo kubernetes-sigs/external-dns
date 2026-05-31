@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,17 +18,18 @@ package registry
 
 import (
 	"context"
-	"fmt"
 	"maps"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -38,11 +39,26 @@ import (
 	"sigs.k8s.io/external-dns/registry"
 )
 
-type CRDSuite struct {
-	suite.Suite
+// newTestScheme builds a scheme with the DNSRecord types registered.
+func newTestScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+	s := runtime.NewScheme()
+	require.NoError(t, apiv1alpha1.AddToScheme(s))
+	return s
 }
 
-func (suite *CRDSuite) SetupTest() {
+// newTestRegistry wires a CRDRegistry on top of a controller-runtime fake client
+// seeded with the given DNSRecords. The fake client serves both reads and writes.
+func newTestRegistry(t *testing.T, p provider.Provider, ownerID string, objs ...client.Object) (*CRDRegistry, client.Client) {
+	t.Helper()
+	c := fake.NewClientBuilder().WithScheme(newTestScheme(t)).WithObjects(objs...).Build()
+	return &CRDRegistry{
+		crReader:  c,
+		crWriter:  c,
+		namespace: "default",
+		provider:  p,
+		ownerID:   ownerID,
+	}, c
 }
 
 // The endpoints needs to be part of the zone otherwise it will be filtered out.
@@ -59,259 +75,181 @@ func inMemoryProviderWithEntries(t *testing.T, ctx context.Context, zone string,
 	return p
 }
 
-func TestCRDSource(t *testing.T) {
-	suite.Run(t, new(CRDSuite))
-	t.Run("Interface", testCRDSourceImplementsSource)
-	t.Run("Constructor", testConstructor)
-	t.Run("Records", testRecords)
-}
-
-// testCRDSourceImplementsSource tests that crdSource is a valid Source.
-func testCRDSourceImplementsSource(t *testing.T) {
+func TestCRDRegistryImplementsRegistry(t *testing.T) {
 	require.Implements(t, (*registry.Registry)(nil), new(CRDRegistry))
 }
 
-func testConstructor(t *testing.T) {
-	_, err := NewCRDRegistry(nil, "", "", "v1", "", "", time.Second, time.Second)
-	assert.Error(t, err, "Expected a new registry to return an error when no ownerID are specified")
+func TestCRDRegistryConstructor(t *testing.T) {
+	_, err := NewCRDRegistry(nil, "", "", "", "", time.Second)
+	assert.Error(t, err, "expected an error when no ownerID is specified")
 
-	_, err = NewCRDRegistry(nil, "/dev/null", "", "v1", "default", "ownerID", time.Second, time.Second)
-	assert.Error(t, err, err.Error()+"Expected a new registry to return an error when there is no kubeconfig")
-
-	_, err = NewCRDRegistry(nil, "", "####", "v1", "default", "ownerID", time.Second, time.Second)
-	assert.Error(t, err, err.Error()+"Expected a new registry to return an error when there is an invalid url")
+	_, err = NewCRDRegistry(nil, "/dev/null", "", "default", "ownerID", time.Second)
+	assert.Error(t, err, "expected an error when the kubeconfig is invalid")
 }
 
-func testRecords(t *testing.T) {
+func TestCRDRegistryRecords(t *testing.T) {
 	ctx := t.Context()
-	t.Run("use the cache if within the time interval", func(t *testing.T) {
-		registry := &CRDRegistry{
-			recordsCacheRefreshTime: time.Now(),
-			cacheInterval:           time.Hour,
-			recordsCache: []*endpoint.Endpoint{{
-				DNSName:    "cached.mytestdomain.io",
-				RecordType: "A",
-				Targets:    []string{"127.0.0.1"},
-			}},
-		}
-		endpoints, err := registry.Records(ctx)
-		if err != nil {
-			t.Error(err)
-		}
 
-		if len(endpoints) != 1 {
-			t.Error("expected only 1 record from the cache, got: ", len(endpoints))
-		}
-
-		if endpoints[0].DNSName != "cached.mytestdomain.io" {
-			t.Error("expected DNS Name to be the cached value got: ", endpoints[0].DNSName)
-		}
+	prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", &endpoint.Endpoint{
+		DNSName:       "sub.mytestdomain.io",
+		RecordType:    "CNAME",
+		SetIdentifier: "myid-1",
 	})
 
-	t.Run("Use k8s api to get records from the registry", func(t *testing.T) {
-		// Setup the provider and the mock client for the CRD so that mytestdomain.io can be
-		// found on both the provider and the CRD
-		provider := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", &endpoint.Endpoint{
-			DNSName:       "sub.mytestdomain.io",
-			RecordType:    "CNAME",
-			SetIdentifier: "myid-1",
-		})
-
-		responses := []mockResult{{
-			request: mockRequest{
-				method:    "GET",
-				namespace: "default",
+	seeded := &apiv1alpha1.DNSRecord{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sub-mytestdomain-io-cname",
+			Namespace: "default",
+			Labels: map[string]string{
+				apiv1alpha1.RecordOwnerLabel:         "test",
+				apiv1alpha1.RecordNameLabel:          "sub.mytestdomain.io",
+				apiv1alpha1.RecordTypeLabel:          "CNAME",
+				apiv1alpha1.RecordSetIdentifierLabel: "myid-1",
 			},
-			response: &mockResponse{
-				content: apiv1alpha1.DNSRecordList{
-					Items: []apiv1alpha1.DNSRecord{{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								apiv1alpha1.RecordOwnerLabel:         "test",
-								apiv1alpha1.RecordNameLabel:          "sub.mytestdomain.io",
-								apiv1alpha1.RecordTypeLabel:          "CNAME",
-								apiv1alpha1.RecordSetIdentifierLabel: "myid-1",
-							},
-						},
-						Spec: apiv1alpha1.DNSRecordSpec{
-							Endpoint: endpoint.Endpoint{
-								DNSName:       "sub.mytestdomain.io",
-								RecordType:    "CNAME",
-								SetIdentifier: "myid-1",
-								Labels: map[string]string{
-									endpoint.ResourceLabelKey: "resource",
-								},
-							},
-						},
-					}},
-				},
+		},
+		Spec: apiv1alpha1.DNSRecordSpec{
+			Endpoint: endpoint.Endpoint{
+				DNSName:       "sub.mytestdomain.io",
+				RecordType:    "CNAME",
+				SetIdentifier: "myid-1",
+				Labels:        map[string]string{endpoint.ResourceLabelKey: "resource"},
 			},
-		}}
+		},
+	}
+	// A record owned by another instance must not be returned.
+	other := &apiv1alpha1.DNSRecord{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "other-cname",
+			Namespace: "default",
+			Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "someone-else"},
+		},
+	}
 
-		client := newMockCRDClient("default", responses...)
+	reg, _ := newTestRegistry(t, prov, "test", seeded, other)
 
-		registry := &CRDRegistry{
-			provider:  provider,
-			namespace: "default",
-			client:    client,
-			ownerID:   "test",
-		}
-
-		// The test
-		endpoints, err := registry.Records(ctx)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if len(endpoints) != 1 {
-			t.Errorf("expected only 1 endpoint, got %d", len(endpoints))
-		}
-
-		if endpoints[0].Labels[endpoint.ResourceLabelKey] != "resource" {
-			t.Errorf("endpoint doesn't include the label from the registry: %#v", endpoints[0].Labels)
-		}
-	})
+	endpoints, err := reg.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, endpoints, 1)
+	assert.Equal(t, "resource", endpoints[0].Labels[endpoint.ResourceLabelKey])
 }
 
-func TestCRDApplyChangesInMemory(t *testing.T) {
+func TestCRDRegistryApplyChanges(t *testing.T) {
 	ctx := t.Context()
 
 	testCases := []struct {
-		ChangeType string // One of Create, Update, Delete
-		Endpoint   *endpoint.Endpoint
-		AssertFn   func(c *mockClient)
+		name       string
+		changeType string // One of Create, Update, Delete
+		ep         *endpoint.Endpoint
+		seedRecord *apiv1alpha1.DNSRecord
+		assertFn   func(t *testing.T, c client.Client)
 	}{
 		{
-			ChangeType: "Create",
-			Endpoint: &endpoint.Endpoint{
+			name:       "Create",
+			changeType: "Create",
+			ep: &endpoint.Endpoint{
 				DNSName:       "sub.mytestdomain.io",
 				RecordType:    "CNAME",
 				SetIdentifier: "myid-1",
 				Targets:       endpoint.NewTargets("127.0.0.1"),
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey: "test",
-				},
+				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
-			AssertFn: func(c *mockClient) {
-				executed := c.RequestWasExecuted(keyFromRequest(&mockRequest{method: "POST", namespace: "default"}))
-				assert.True(t, executed)
+			assertFn: func(t *testing.T, c client.Client) {
+				got := &apiv1alpha1.DNSRecord{}
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "sub-mytestdomain-io-cname"}, got)
+				require.NoError(t, err)
+				assert.Equal(t, "test", got.Labels[apiv1alpha1.RecordOwnerLabel])
 			},
 		},
 		{
-			ChangeType: "Delete",
-			Endpoint: &endpoint.Endpoint{
+			name:       "Delete",
+			changeType: "Delete",
+			ep: &endpoint.Endpoint{
 				DNSName:       "to.be.deleted.mytestdomain.io",
 				RecordType:    "A",
 				SetIdentifier: "myid-2",
 				Targets:       endpoint.NewTargets("127.0.0.1"),
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey: "test",
+				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
+			},
+			seedRecord: &apiv1alpha1.DNSRecord{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-myid-2",
+					Namespace: "default",
+					Labels: map[string]string{
+						apiv1alpha1.RecordOwnerLabel:         "test",
+						apiv1alpha1.RecordNameLabel:          "to.be.deleted.mytestdomain.io",
+						apiv1alpha1.RecordTypeLabel:          "A",
+						apiv1alpha1.RecordSetIdentifierLabel: "myid-2",
+					},
 				},
 			},
-			AssertFn: func(c *mockClient) {
-				executed := c.RequestWasExecuted(keyFromRequest(&mockRequest{method: "DELETE", namespace: "default", name: "test-myid-2"}))
-				assert.True(t, executed)
+			assertFn: func(t *testing.T, c client.Client) {
+				got := &apiv1alpha1.DNSRecord{}
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "test-myid-2"}, got)
+				assert.True(t, k8sErrors.IsNotFound(err), "expected DNSRecord to be deleted, got %v", err)
 			},
 		},
 		{
-			ChangeType: "Update",
-			Endpoint: &endpoint.Endpoint{
+			name:       "Update",
+			changeType: "Update",
+			ep: &endpoint.Endpoint{
 				DNSName:       "to.be.updated.mytestdomain.io",
 				RecordType:    "CNAME",
 				SetIdentifier: "myid-3",
-				Targets:       endpoint.NewTargets("127.0.0.1"),
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey: "test",
-				},
+				Targets:       endpoint.NewTargets("127.0.0.2"),
+				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
-			AssertFn: func(c *mockClient) {
-				executed := c.RequestWasExecuted(keyFromRequest(&mockRequest{method: "PUT", namespace: "default", name: "test-myid-3"}))
-				assert.True(t, executed)
+			seedRecord: &apiv1alpha1.DNSRecord{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-myid-3",
+					Namespace: "default",
+					Labels: map[string]string{
+						apiv1alpha1.RecordOwnerLabel:         "test",
+						apiv1alpha1.RecordNameLabel:          "to.be.updated.mytestdomain.io",
+						apiv1alpha1.RecordTypeLabel:          "CNAME",
+						apiv1alpha1.RecordSetIdentifierLabel: "myid-3",
+					},
+				},
+				Spec: apiv1alpha1.DNSRecordSpec{Endpoint: endpoint.Endpoint{
+					DNSName:    "to.be.updated.mytestdomain.io",
+					RecordType: "CNAME",
+					Targets:    endpoint.NewTargets("127.0.0.1"),
+				}},
+			},
+			assertFn: func(t *testing.T, c client.Client) {
+				got := &apiv1alpha1.DNSRecord{}
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "test-myid-3"}, got)
+				require.NoError(t, err)
+				assert.Equal(t, endpoint.NewTargets("127.0.0.2"), got.Spec.Endpoint.Targets)
 			},
 		},
 	}
 
-	for _, testCase := range testCases {
-		var seedEndpoints []*endpoint.Endpoint
-		var changes plan.Changes
-		var responses []mockResult
-		switch testCase.ChangeType {
-		case "Create":
-			dnsrecord := apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sub-mytestdomain-io",
-					Namespace: "default",
-					Labels: map[string]string{
-						apiv1alpha1.RecordOwnerLabel:         "test",
-						apiv1alpha1.RecordNameLabel:          "sub.mytestdomain.io",
-						apiv1alpha1.RecordTypeLabel:          "CNAME",
-						apiv1alpha1.RecordSetIdentifierLabel: "myid-1",
-					},
-				},
-				Spec: apiv1alpha1.DNSRecordSpec{Endpoint: *testCase.Endpoint},
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var seedEndpoints []*endpoint.Endpoint
+			var changes plan.Changes
+			switch tc.changeType {
+			case "Create":
+				changes.Create = []*endpoint.Endpoint{tc.ep}
+			case "Delete":
+				changes.Delete = []*endpoint.Endpoint{tc.ep}
+				seedEndpoints = append(seedEndpoints, tc.ep)
+			case "Update":
+				changes.UpdateNew = []*endpoint.Endpoint{tc.ep}
+				changes.UpdateOld = []*endpoint.Endpoint{tc.ep}
+				seedEndpoints = append(seedEndpoints, tc.ep)
 			}
-			responses = append(responses, mockResult{
-				request:  mockRequest{method: "POST", namespace: "default"},
-				response: &mockResponse{content: dnsrecord},
-			}, mockResult{
-				request:  mockRequest{method: "GET", namespace: "default"},
-				response: &mockResponse{content: apiv1alpha1.DNSRecordList{Items: []apiv1alpha1.DNSRecord{dnsrecord}}},
-			})
-			changes.Create = []*endpoint.Endpoint{testCase.Endpoint}
 
-		case "Delete":
-			dnsrecord := apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-myid-2", Namespace: "default"},
-				Spec:       apiv1alpha1.DNSRecordSpec{Endpoint: *testCase.Endpoint},
+			prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", seedEndpoints...)
+			var objs []client.Object
+			if tc.seedRecord != nil {
+				objs = append(objs, tc.seedRecord)
 			}
-			responses = append(responses, mockResult{
-				request:  mockRequest{method: "GET", namespace: "default"},
-				response: &mockResponse{content: apiv1alpha1.DNSRecordList{Items: []apiv1alpha1.DNSRecord{dnsrecord}}},
-			}, mockResult{
-				request:  mockRequest{method: "DELETE", name: "test-myid-2", namespace: "default"},
-				response: &mockResponse{},
-			})
+			reg, c := newTestRegistry(t, prov, "test", objs...)
 
-			changes.Delete = []*endpoint.Endpoint{testCase.Endpoint}
-			seedEndpoints = append(seedEndpoints, testCase.Endpoint)
-		case "Update":
-			dnsrecord := apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-myid-3", Namespace: "default"},
-				Spec:       apiv1alpha1.DNSRecordSpec{Endpoint: *testCase.Endpoint},
-			}
-			responses = append(responses, mockResult{
-				request:  mockRequest{method: "GET", namespace: "default"},
-				response: &mockResponse{content: apiv1alpha1.DNSRecordList{Items: []apiv1alpha1.DNSRecord{dnsrecord}}},
-			}, mockResult{
-				request:  mockRequest{method: "PUT", name: "test-myid-3", namespace: "default"},
-				response: &mockResponse{},
-			})
-
-			changes.UpdateNew = []*endpoint.Endpoint{testCase.Endpoint}
-			changes.UpdateOld = []*endpoint.Endpoint{testCase.Endpoint}
-			seedEndpoints = append(seedEndpoints, testCase.Endpoint)
-		default:
-			t.Errorf("ChangeType not defined: %s", testCase.ChangeType)
-		}
-
-		provider := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", seedEndpoints...)
-		client := newMockCRDClient("default", responses...)
-		registry := &CRDRegistry{
-			provider:  provider,
-			namespace: "default",
-			client:    client,
-			ownerID:   "test",
-		}
-
-		err := registry.ApplyChanges(ctx, &changes)
-		if err != nil {
-			t.Error(fmt.Errorf("apply changes failed on %s: %w", testCase.ChangeType, err))
-		}
-
-		if testCase.AssertFn != nil {
-			testCase.AssertFn(client)
-		}
-
+			require.NoError(t, reg.ApplyChanges(ctx, &changes))
+			tc.assertFn(t, c)
+		})
 	}
 }
 
@@ -355,197 +293,32 @@ func (m *mockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 // by the provider.ApplyChanges like, for instance, with coredns provider
 func TestCRDApplyChangesMockedProvider(t *testing.T) {
 	testCases := []struct {
-		provider provider.Provider
-		assertFn func(c *mockClient)
+		name        string
+		provider    provider.Provider
+		expectLabel bool
 	}{
-		{
-			provider: &mockProvider{addLabel: true},
-			assertFn: func(c *mockClient) {
-				executed := c.RequestWasExecuted(keyFromRequest(&mockRequest{method: "PUT", name: "sub-mytestdomain-io", namespace: "default"}))
-				assert.True(t, executed)
-			},
-		},
-		{
-			provider: &mockProvider{addLabel: false},
-			assertFn: func(c *mockClient) {
-				executed := c.RequestWasExecuted(keyFromRequest(&mockRequest{method: "PUT", name: "sub-mytestdomain-io", namespace: "default"}))
-				assert.False(t, executed)
-			},
-		},
+		{name: "provider adds a label", provider: &mockProvider{addLabel: true}, expectLabel: true},
+		{name: "provider keeps labels", provider: &mockProvider{addLabel: false}, expectLabel: false},
 	}
 
-	for _, testCase := range testCases {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ep := endpoint.Endpoint{
+				DNSName:       "sub.mytestdomain.io",
+				RecordType:    "CNAME",
+				SetIdentifier: "myid-1",
+				Targets:       endpoint.NewTargets("127.0.0.1"),
+				Labels:        map[string]string{endpoint.OwnerLabelKey: "owner"},
+			}
 
-		var changes plan.Changes
-		var responses []mockResult
-		ep := endpoint.Endpoint{
-			DNSName:       "sub.mytestdomain.io",
-			RecordType:    "CNAME",
-			SetIdentifier: "myid-1",
-			Targets:       endpoint.NewTargets("127.0.0.1"),
-			Labels:        map[string]string{endpoint.OwnerLabelKey: "owner"},
-		}
-		dnsrecord := apiv1alpha1.DNSRecord{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "sub-mytestdomain-io",
-				Namespace: "default",
-			},
-			Spec: apiv1alpha1.DNSRecordSpec{Endpoint: ep},
-		}
-		responses = append(responses, mockResult{
-			request:  mockRequest{method: "POST", namespace: "default"},
-			response: &mockResponse{},
-		}, mockResult{
-			request:  mockRequest{method: "GET", namespace: "default"},
-			response: &mockResponse{content: apiv1alpha1.DNSRecordList{Items: []apiv1alpha1.DNSRecord{dnsrecord}}},
-		}, mockResult{
-			request:  mockRequest{method: "PUT", name: "sub-mytestdomain-io", namespace: "default"},
-			response: &mockResponse{},
+			reg, c := newTestRegistry(t, tc.provider, "owner")
+			require.NoError(t, reg.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{&ep}}))
+
+			got := &apiv1alpha1.DNSRecord{}
+			require.NoError(t, c.Get(t.Context(), types.NamespacedName{Namespace: "default", Name: "sub-mytestdomain-io-cname"}, got))
+
+			_, hasLabel := got.Spec.Endpoint.Labels["prefix"]
+			assert.Equal(t, tc.expectLabel, hasLabel)
 		})
-		changes.Create = []*endpoint.Endpoint{&ep}
-
-		client := newMockCRDClient("default", responses...)
-		registry := &CRDRegistry{
-			provider:  testCase.provider,
-			namespace: "default",
-			client:    client,
-			ownerID:   "owner",
-		}
-
-		err := registry.ApplyChanges(t.Context(), &changes)
-		require.NoError(t, err)
-
-		testCase.assertFn(client)
 	}
-}
-
-// Mocking tools for the CRD. These are attempt at generating all the right struct
-// for the test to be able to simulate requests and return proper objects so that
-// tests can be conducted in a controlled fashion to exercise specific behavior without
-// requiring a fully configured Kubernetes client. Hopefully it makes it easier to write tests
-// while giving enough confidence that the tests represents real-life scenarios.
-type mockResult struct {
-	request  mockRequest
-	response CRDResult
-}
-
-type mockClient struct {
-	namespace     string
-	mockResponses map[mockRequestKey]CRDResult
-	requestHit    map[mockRequestKey]struct{}
-}
-
-func newMockCRDClient(namespace string, responses ...mockResult) *mockClient {
-	mockResponses := map[mockRequestKey]CRDResult{}
-	for _, r := range responses {
-		mockResponses[keyFromRequest(&r.request)] = r.response
-	}
-
-	return &mockClient{
-		namespace:     namespace,
-		mockResponses: mockResponses,
-		requestHit:    map[mockRequestKey]struct{}{},
-	}
-}
-
-func (mc *mockClient) RequestWasExecuted(key mockRequestKey) bool {
-	_, found := mc.requestHit[key]
-	return found
-}
-
-func (m *mockClient) MockResponses() {
-}
-
-func (m *mockClient) Get() CRDRequest {
-	return &mockRequest{c: m, namespace: m.namespace, method: "GET"}
-}
-
-func (m *mockClient) List() CRDRequest {
-	return &mockRequest{c: m, namespace: m.namespace, method: "GET"}
-}
-
-func (m *mockClient) Put() CRDRequest {
-	return &mockRequest{c: m, namespace: m.namespace, method: "PUT"}
-}
-
-func (m *mockClient) Post() CRDRequest {
-	return &mockRequest{c: m, namespace: m.namespace, method: "POST"}
-}
-
-func (m *mockClient) Delete() CRDRequest {
-	return &mockRequest{c: m, namespace: m.namespace, method: "DELETE"}
-}
-
-type mockRequestKey struct {
-	method    string
-	namespace string
-	name      string
-}
-
-func keyFromRequest(mr *mockRequest) mockRequestKey {
-	return mockRequestKey{
-		method:    mr.method,
-		name:      mr.name,
-		namespace: mr.namespace,
-	}
-}
-
-type mockRequest struct {
-	c         *mockClient
-	method    string
-	namespace string
-	name      string
-}
-
-func (mr *mockRequest) Name(name string) CRDRequest {
-	mr.name = name
-	return mr
-}
-
-func (mr *mockRequest) Namespace(namespace string) CRDRequest {
-	mr.namespace = namespace
-	return mr
-}
-
-func (mr *mockRequest) Body(any) CRDRequest {
-	return mr
-}
-
-func (mr *mockRequest) Params(runtime.Object) CRDRequest {
-	return mr
-}
-
-func (mr *mockRequest) Do(_ context.Context) CRDResult {
-	key := keyFromRequest(mr)
-	if response, found := mr.c.mockResponses[key]; found {
-		mr.c.requestHit[key] = struct{}{}
-		return response
-	}
-
-	return &mockErrorResponse{request: mr}
-}
-
-type mockErrorResponse struct {
-	request *mockRequest
-}
-
-func (mr *mockErrorResponse) Error() error {
-	return fmt.Errorf("Request wasn't mocked: %+v", mr.request)
-}
-
-func (mr *mockErrorResponse) Into(_ runtime.Object) error {
-	return fmt.Errorf("Request wasn't mocked: %+v", mr.request)
-}
-
-type mockResponse struct {
-	content any
-}
-
-func (mr *mockResponse) Error() error {
-	return nil
-}
-
-func (mr *mockResponse) Into(obj runtime.Object) error {
-	reflect.ValueOf(obj).Elem().Set(reflect.ValueOf(mr.content))
-	return nil
 }

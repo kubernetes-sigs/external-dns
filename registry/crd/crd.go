@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,19 +21,15 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/apimachinery/pkg/runtime"
+	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -44,112 +40,28 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
-type CRDConfig struct {
-	KubeConfig   string
-	APIServerURL string
-	APIVersion   string
-	Kind         string
-}
-
-// The CRD interfaces are built as k8s' rest.Interface doesn't have proper support for testing
-// These interfaces exists so the runtime will use the rest.Interface but gives an
-// option for writing tests without building a complete k8s client.
-type CRDClient interface {
-	Get() CRDRequest
-	List() CRDRequest
-	Put() CRDRequest
-	Post() CRDRequest
-	Delete() CRDRequest
-}
-
-type CRDRequest interface {
-	Name(string) CRDRequest
-	Namespace(string) CRDRequest
-	Body(any) CRDRequest
-	Params(runtime.Object) CRDRequest
-	Do(context.Context) CRDResult
-}
-
-type CRDResult interface {
-	Error() error
-	Into(runtime.Object) error
-}
-
 // CRDRegistry implements registry interface with ownership implemented via associated custom resource records (DNSRecord)
 type CRDRegistry struct {
-	client    CRDClient
+	// crReader serves reads from a controller-runtime cache (informer-backed).
+	crReader client.Reader
+	// crWriter performs create/update/delete against the API server.
+	crWriter client.Client
+	// informer warms the DNSRecord watch backing crReader; the registry does
+	// not subscribe to events, reads are always served from the synced cache.
+	informer crcache.Informer
+
 	namespace string
 	provider  provider.Provider
 	ownerID   string // refers to the owner id of the current instance
-
-	// cache the records in memory and update on an interval instead.
-	recordsCache            []*endpoint.Endpoint
-	recordsCacheRefreshTime time.Time
-	cacheInterval           time.Duration
-}
-
-// NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
-func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion string) (CRDClient, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	groupVersion, err := schema.ParseGroupVersion(apiVersion)
-	if err != nil {
-		return nil, err
-	}
-
-	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(groupVersion,
-		&apiv1alpha1.DNSRecord{},
-		&apiv1alpha1.DNSRecordList{},
-	)
-	metav1.AddToGroupVersion(scheme, groupVersion)
-
-	config.GroupVersion = &groupVersion
-	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
-
-	crdClient, err := rest.UnversionedRESTClientFor(config)
-	if err != nil {
-		return nil, err
-	}
-
-	apiResourceList, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion.String())
-	if err != nil {
-		return nil, fmt.Errorf("error listing resources in GroupVersion %q: %w", groupVersion.String(), err)
-	}
-
-	var crdAPIResource *metav1.APIResource
-	for _, apiResource := range apiResourceList.APIResources {
-		if apiResource.Kind == "DNSRecord" {
-			crdAPIResource = &apiResource
-			break
-		}
-	}
-	if crdAPIResource == nil {
-		return nil, fmt.Errorf("unable to find Resource Kind %q in GroupVersion %q", "DNSRecord", apiVersion)
-	}
-	return &crdclient{scheme: scheme, resource: crdAPIResource, codec: runtime.NewParameterCodec(scheme), Interface: crdClient}, nil
 }
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion,
-		cfg.Namespace, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.RequestTimeout)
+	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
 }
 
-// NewCRDRegistry returns new CRDRegistry object
-func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, apiVersion, namespace, ownerID string, cacheInterval, apiServerTimeOut time.Duration) (*CRDRegistry, error) {
-	var err error
-	var k8sClient kubernetes.Interface
-
+// NewCRDRegistry returns new CRDRegistry object backed by a controller-runtime
+// cache (reads) and client (writes).
+func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namespace, ownerID string, apiServerTimeout time.Duration) (*CRDRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -162,30 +74,49 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, apiVer
 	// new Singleton because the user may want to store this registry on a
 	// remote (and shared) cluster between multiple external-dns instances
 	clientGenerator := &source.SingletonClientGenerator{
-		KubeConfig:   kubeConfig,
-		APIServerURL: apiServerURL,
-		// If update events are enabled, disable timeout.
-		RequestTimeout: func() time.Duration {
-			return apiServerTimeOut
-		}(),
+		KubeConfig:     kubeConfig,
+		APIServerURL:   apiServerURL,
+		RequestTimeout: apiServerTimeout,
 	}
 
-	k8sClient, err = clientGenerator.KubeClient()
+	restConfig, err := clientGenerator.RESTConfig()
 	if err != nil {
-		return nil, fmt.Errorf("unable to create kubeclient: %w", err)
+		return nil, fmt.Errorf("unable to build rest config: %w", err)
 	}
 
-	crdClient, err := NewCRDClientForAPIVersionKind(k8sClient, kubeConfig, apiServerURL, apiVersion)
+	opts, err := buildCacheOptions(namespace)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create crdclient: %w", err)
+		return nil, err
+	}
+
+	c, err := crcache.New(restConfig, opts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create cache: %w", err)
+	}
+
+	// crWriter is used exclusively for writes; reads come from the cache.
+	crWriter, err := client.New(restConfig, client.Options{Scheme: opts.Scheme})
+	if err != nil {
+		return nil, fmt.Errorf("unable to create client: %w", err)
+	}
+
+	// The cache lives for the whole process lifetime, mirroring the registry.
+	ctx := context.Background()
+	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSRecord{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get informer: %w", err)
+	}
+	if err := startAndSync(ctx, c); err != nil {
+		return nil, err
 	}
 
 	return &CRDRegistry{
-		client:        crdClient,
-		namespace:     namespace,
-		provider:      provider,
-		ownerID:       ownerID,
-		cacheInterval: cacheInterval,
+		crReader:  c,
+		crWriter:  crWriter,
+		informer:  inf,
+		namespace: namespace,
+		provider:  provider,
+		ownerID:   ownerID,
 	}, nil
 }
 
@@ -199,34 +130,17 @@ func (cr *CRDRegistry) OwnerID() string {
 
 // Records returns the current records from the registry
 func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	// If we have the zones cached AND we have refreshed the cache since the
-	// last given interval, then just use the cached results.
-	if cr.recordsCache != nil && time.Since(cr.recordsCacheRefreshTime) < cr.cacheInterval {
-		return cr.recordsCache, nil
-	}
-
-	endpoints := []*endpoint.Endpoint{}
-
 	var records apiv1alpha1.DNSRecordList
-	for more := true; more; more = records.Continue != "" {
-		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s", apiv1alpha1.RecordOwnerLabel, cr.ownerID),
-		}
-
-		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
-		if err != nil {
-			return []*endpoint.Endpoint{}, err
-		}
-
-		for _, record := range records.Items {
-			endpoints = append(endpoints, &record.Spec.Endpoint)
-		}
+	if err := cr.crReader.List(ctx, &records,
+		client.InNamespace(cr.namespace),
+		client.MatchingLabels{apiv1alpha1.RecordOwnerLabel: cr.ownerID},
+	); err != nil {
+		return []*endpoint.Endpoint{}, err
 	}
 
-	// Update the cache.
-	if cr.cacheInterval > 0 {
-		cr.recordsCache = endpoints
-		cr.recordsCacheRefreshTime = time.Now()
+	endpoints := make([]*endpoint.Endpoint, 0, len(records.Items))
+	for i := range records.Items {
+		endpoints = append(endpoints, &records.Items[i].Spec.Endpoint)
 	}
 	return endpoints, nil
 }
@@ -248,8 +162,6 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if err := cr.createDNSRecord(ctx, r); err != nil {
 			return err
 		}
-
-		cr.addToCache(r)
 	}
 
 	for _, r := range filteredChanges.Delete {
@@ -259,19 +171,15 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 
 		// While this is a list, it is expected that this call will return 0 or 1 records.
-		for _, e := range records.Items {
-			result := cr.client.Delete().Namespace(cr.namespace).Name(e.Name).Do(ctx)
-			if err := result.Error(); err != nil {
+		for i := range records.Items {
+			e := &records.Items[i]
+			if err := cr.crWriter.Delete(ctx, e); err != nil {
 				// Ignore not found as it's a benign error, the record isn't present and it's the end goal here, to remove
 				// all records. All other errors should surface back to the user.
 				if !k8sErrors.IsNotFound(err) {
 					return fmt.Errorf("unable to delete DNSRecord %s in %s: %w", e.Name, cr.namespace, err)
 				}
 			}
-		}
-
-		if cr.cacheInterval > 0 {
-			cr.removeFromCache(r)
 		}
 	}
 
@@ -284,16 +192,13 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 
 		// While this is a list, it is expected that this call will return 0 or 1 records.
-		for _, record := range records.Items {
+		for j := range records.Items {
+			record := &records.Items[j]
 			record.Spec.Endpoint = *e
-			result := cr.client.Put().Namespace(cr.namespace).Name(record.Name).Body(&record).Do(ctx)
-			if err := result.Error(); err != nil {
+			if err := cr.crWriter.Update(ctx, record); err != nil {
 				return fmt.Errorf("unable to update DNSRecord %s in %s: %w", record.Name, record.Namespace, err)
 			}
 		}
-
-		cr.addToCache(e)
-		cr.removeFromCache(old)
 	}
 
 	err := cr.provider.ApplyChanges(ctx, filteredChanges)
@@ -311,23 +216,23 @@ func (cr *CRDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 // getDNSRecords retrieve k8s DNSRecords resources from k8s api
 func (cr *CRDRegistry) getDNSRecords(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecordList, error) {
 	var records apiv1alpha1.DNSRecordList
-	opts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s,%s=%s,%s=%s",
-			apiv1alpha1.RecordOwnerLabel, cr.ownerID,
-			apiv1alpha1.RecordNameLabel, record.DNSName,
-			apiv1alpha1.RecordTypeLabel, record.RecordType,
-			apiv1alpha1.RecordSetIdentifierLabel, record.SetIdentifier,
-		),
-	}
-	err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
+	err := cr.crReader.List(ctx, &records,
+		client.InNamespace(cr.namespace),
+		client.MatchingLabels{
+			apiv1alpha1.RecordOwnerLabel:         cr.ownerID,
+			apiv1alpha1.RecordNameLabel:          record.DNSName,
+			apiv1alpha1.RecordTypeLabel:          record.RecordType,
+			apiv1alpha1.RecordSetIdentifierLabel: record.SetIdentifier,
+		},
+	)
 	return &records, err
 }
 
-// newDNSRecord create a new DNSRecord with k8s API
+// createDNSRecord create a new DNSRecord with k8s API
 func (cr *CRDRegistry) createDNSRecord(ctx context.Context, record *endpoint.Endpoint) error {
 	// name has to follow rfc 1123
 	dnsname := strings.ReplaceAll(record.DNSName, ".", "-")
-	dnsrecord := apiv1alpha1.DNSRecord{
+	dnsrecord := &apiv1alpha1.DNSRecord{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      strings.ToLower(fmt.Sprintf("%s-%s", dnsname, record.RecordType)),
 			Namespace: cr.namespace,
@@ -343,8 +248,7 @@ func (cr *CRDRegistry) createDNSRecord(ctx context.Context, record *endpoint.End
 		},
 	}
 
-	result := cr.client.Post().Namespace(cr.namespace).Body(&dnsrecord).Do(ctx)
-	if err := result.Error(); err != nil {
+	if err := cr.crWriter.Create(ctx, dnsrecord); err != nil {
 		// It could be possible that a record already exists if a previous apply change happened
 		// and there was an error while creating those records through the provider. For that reason,
 		// this error is ignored, all others will be surfaced back to the user
@@ -369,10 +273,13 @@ func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context) error {
 			return fmt.Errorf("unable to list DNSRecord for %s in %s: %w", record.DNSName, cr.namespace, err)
 		}
 
-		for _, dnsrecord := range dnsrecords.Items {
+		for i := range dnsrecords.Items {
+			dnsrecord := &dnsrecords.Items[i]
 			if !maps.Equal(dnsrecord.Spec.Endpoint.Labels, record.Labels) {
 				log.Debug("update DNSRecord with modified labels from provider")
-				cr.updateDNSRecordWithEndpointLabels(ctx, dnsrecord, record)
+				if err := cr.updateDNSRecordWithEndpointLabels(ctx, dnsrecord, record); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -380,7 +287,7 @@ func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context) error {
 	return nil
 }
 
-func (cr *CRDRegistry) updateDNSRecordWithEndpointLabels(ctx context.Context, dnsrecord apiv1alpha1.DNSRecord, record *endpoint.Endpoint) error {
+func (cr *CRDRegistry) updateDNSRecordWithEndpointLabels(ctx context.Context, dnsrecord *apiv1alpha1.DNSRecord, record *endpoint.Endpoint) error {
 	// safety net on Resource & Owner labels
 	resource := dnsrecord.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
 	dnsrecord.Spec.Endpoint.Labels = record.Labels
@@ -389,129 +296,50 @@ func (cr *CRDRegistry) updateDNSRecordWithEndpointLabels(ctx context.Context, dn
 		dnsrecord.Spec.Endpoint.Labels[endpoint.ResourceLabelKey] = resource
 	}
 
-	result := cr.client.Put().Namespace(cr.namespace).Name(dnsrecord.Name).Body(&dnsrecord).Do(ctx)
-	if err := result.Error(); err != nil {
+	if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
 		return fmt.Errorf("unable to update DNSRecord %s: %w", dnsrecord.Name, err)
 	}
 	return nil
 }
 
-func (cr *CRDRegistry) addToCache(ep *endpoint.Endpoint) {
-	if cr.recordsCache != nil && cr.cacheInterval > 0 {
-		cr.recordsCache = append(cr.recordsCache, ep)
+// buildCacheOptions constructs the controller-runtime cache options scoped to
+// the given namespace, with the DNSRecord type registered in the scheme.
+func buildCacheOptions(namespace string) (crcache.Options, error) {
+	scheme := runtime.NewScheme()
+	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
+		return crcache.Options{}, err
 	}
+	// metav1.AddToGroupVersion registers ListOptions (and other meta types) so
+	// that watch/list requests for this group can be encoded.
+	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
+
+	return crcache.Options{
+		Scheme: scheme,
+		ByObject: map[client.Object]crcache.ByObject{
+			&apiv1alpha1.DNSRecord{}: {
+				Namespaces: map[string]crcache.Config{
+					namespace: {}, // "" == NamespaceAll
+				},
+			},
+		},
+	}, nil
 }
 
-func (cr *CRDRegistry) removeFromCache(ep *endpoint.Endpoint) {
-	if cr.recordsCache == nil || ep == nil || cr.cacheInterval <= 0 {
-		return
-	}
-
-	for i, e := range cr.recordsCache {
-		if e.DNSName == ep.DNSName && e.RecordType == ep.RecordType && e.SetIdentifier == ep.SetIdentifier && e.Targets.Same(ep.Targets) {
-			// We found a match delete the endpoint from the cache.
-			cr.recordsCache = append(cr.recordsCache[:i], cr.recordsCache[i+1:]...)
-			return
+// startAndSync starts the cache in a goroutine and waits for it to sync.
+// Returns an error if the cache fails to start or sync.
+func startAndSync(ctx context.Context, c crcache.Cache) error {
+	errCh := make(chan error, 1)
+	go func() { errCh <- c.Start(ctx) }()
+	if !c.WaitForCacheSync(ctx) {
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return fmt.Errorf("cache failed to sync: %w", err)
+			}
+			return fmt.Errorf("cache failed to sync")
+		case <-ctx.Done():
+			return fmt.Errorf("cache failed to sync: %w", ctx.Err())
 		}
 	}
-}
-
-type crdclient struct {
-	scheme   *runtime.Scheme
-	resource *metav1.APIResource
-	codec    runtime.ParameterCodec
-	rest.Interface
-}
-
-func (c crdclient) Get() CRDRequest {
-	return &crdrequest{client: &c, method: "GET", resource: c.resource}
-}
-
-func (c crdclient) List() CRDRequest {
-	return &crdrequest{client: &c, method: "LIST", resource: c.resource}
-}
-
-func (c crdclient) Post() CRDRequest {
-	return &crdrequest{client: &c, method: "POST", resource: c.resource}
-}
-
-func (c crdclient) Put() CRDRequest {
-	return &crdrequest{client: &c, method: "PUT", resource: c.resource}
-}
-
-func (c crdclient) Delete() CRDRequest {
-	return &crdrequest{client: &c, method: "DELETE", resource: c.resource}
-}
-
-type crdrequest struct {
-	client   *crdclient
-	resource *metav1.APIResource
-
-	method    string
-	namespace string
-	name      string
-	params    runtime.Object
-	body      any
-}
-
-func (r *crdrequest) Name(name string) CRDRequest {
-	r.name = name
-	return r
-}
-
-func (r *crdrequest) Namespace(namespace string) CRDRequest {
-	r.namespace = namespace
-	return r
-}
-
-func (r *crdrequest) Params(obj runtime.Object) CRDRequest {
-	r.params = obj
-	return r
-}
-
-func (r *crdrequest) Body(obj any) CRDRequest {
-	r.body = obj
-	return r
-}
-
-func (r *crdrequest) Do(ctx context.Context) CRDResult {
-	var req *rest.Request
-	switch r.method {
-	case "POST":
-		req = r.client.Interface.Post()
-	case "PUT":
-		req = r.client.Interface.Put()
-	case "DELETE":
-		req = r.client.Interface.Delete()
-	default:
-		req = r.client.Interface.Get()
-	}
-
-	req = req.Namespace(r.namespace).Resource(r.resource.Name)
-	if r.name != "" {
-		req = req.Name(r.name)
-	}
-
-	if r.params != nil {
-		req = req.VersionedParams(r.params, r.client.codec)
-	}
-
-	if r.body != nil {
-		req = req.Body(r.body)
-	}
-
-	result := req.Do(ctx)
-	return &crdresult{result}
-}
-
-type crdresult struct {
-	rest.Result
-}
-
-func (r crdresult) Error() error {
-	return r.Result.Error()
-}
-
-func (r crdresult) Into(obj runtime.Object) error {
-	return r.Result.Into(obj)
+	return nil
 }
