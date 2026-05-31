@@ -1459,6 +1459,32 @@ func testGatewayEndpoints(t *testing.T) {
 			expected:    []*endpoint.Endpoint{},
 			expectError: true,
 		},
+		{
+			title:           "gateway with an extra annotation prefix",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.TargetKey): "gateway-target.com",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

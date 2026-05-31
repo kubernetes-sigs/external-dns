@@ -359,6 +359,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
+		{
+			title:              "node with an extra annotation prefix",
+			nodeName:           "node1.example.org",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				extraPrefixedAnnotation(annotations.TargetKey): "203.2.45.7",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)

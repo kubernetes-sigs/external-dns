@@ -447,6 +447,32 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "machine/default/control-plane"),
 			},
 		},
+		{
+			title: "read from annotations with an extra annotation prefix",
+			cfg: cfg{
+				resources: []string{"virtualmachineinstances.v1.kubevirt.io"},
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm-extra",
+							"namespace": "default",
+							"annotations": map[string]any{
+								extraPrefixedAnnotation(annotations.HostnameKey): "my-vm-extra.example.com",
+								extraPrefixedAnnotation(annotations.TargetKey):   "203.0.113.20",
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-vm-extra.example.com", endpoint.RecordTypeA, "203.0.113.20").
+					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm-extra"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)

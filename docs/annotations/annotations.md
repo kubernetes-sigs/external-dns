@@ -29,6 +29,12 @@ The following table documents which sources support which annotations:
 [^4]: For Gateway API sources, annotation placement differs by type. See [Gateway API Annotation Placement](#gateway-api-annotation-placement) for details.
 [^5]: The annotation must be on the listener's `VirtualService`.
 
+Annotation prefixes can be configured with the `--annotation-prefix` flag, the default prefixes are `external-dns.kubernetes.io/` and `external-dns.alpha.kubernetes.io/` (for backward compatibility).
+
+!!!note "Annotation prefix deprecation"
+    The `external-dns.alpha.kubernetes.io/` prefix is deprecated and will eventually be removed. It is recommended to use the `external-dns.kubernetes.io/` prefix for all annotations.
+    For example, `external-dns.alpha.kubernetes.io/hostname` should be updated to `external-dns.kubernetes.io/hostname`.
+
 ## external-dns.kubernetes.io/access
 
 Specifies which set of node IP addresses to use for a `Service` of type `NodePort`.

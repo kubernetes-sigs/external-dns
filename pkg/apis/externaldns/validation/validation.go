@@ -56,11 +56,16 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-filter does not specify a valid label selector")
 	}
 
-	if cfg.AnnotationPrefix == "" {
+	if len(cfg.AnnotationPrefixes) == 0 {
 		return errors.New("--annotation-prefix cannot be empty")
 	}
-	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
-		return errors.New("--annotation-prefix must end with '/'")
+	for _, prefix := range cfg.AnnotationPrefixes {
+		if len(prefix) == 0 {
+			return errors.New("--annotation-prefix cannot be empty")
+		}
+		if !strings.HasSuffix(prefix, "/") {
+			return errors.New("--annotation-prefix must end with '/'")
+		}
 	}
 
 	if cfg.KubeAPIQPS <= 0 {

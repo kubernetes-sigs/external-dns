@@ -615,6 +615,41 @@ func TestAmbassadorHostSource(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title:         "ambassador host with an extra annotation prefix",
+			labelSelector: labels.Everything(),
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation: hostAnnotation,
+						extraPrefixedAnnotation(annotations.TargetKey): "3.3.3.3",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"3.3.3.3"},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

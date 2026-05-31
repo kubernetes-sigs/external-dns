@@ -14,9 +14,12 @@ limitations under the License.
 package source
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestParseIngress(t *testing.T) {
@@ -69,4 +72,11 @@ func TestParseIngress(t *testing.T) {
 			assert.Equal(t, tt.wantName, gotName)
 		})
 	}
+}
+
+func extraPrefixedAnnotation(annotation string) string {
+	if s, ok := strings.CutPrefix(annotation, annotations.AnnotationKeyPrefix); ok {
+		return annotations.AnnotationKeyExtraPrefixes[0] + s
+	}
+	return annotation
 }

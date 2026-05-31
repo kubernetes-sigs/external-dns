@@ -992,6 +992,30 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			},
 			ignoreHostnameAnnotation: true,
 		},
+		{
+			title:           "httpproxy with an extra annotation prefix",
+			targetNamespace: "",
+			loadBalancer: fakeLoadBalancerService{
+				ips: []string{"8.8.8.8"},
+			},
+			httpProxyItems: []fakeHTTPProxy{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.TargetKey): "httpproxy-target.com",
+					},
+					host: "example.org",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {

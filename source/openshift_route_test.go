@@ -488,6 +488,40 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "route with an extra annotation prefix",
+			ocpRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-extra-prefix",
+					Annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.TargetKey): "my.site.foo.com",
+					},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-annotation-domain.com",
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-annotation-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    []string{"my.site.foo.com"},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()

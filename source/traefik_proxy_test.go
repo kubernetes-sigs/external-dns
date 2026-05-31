@@ -364,6 +364,36 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "IngressRoute with an extra annotation prefix",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-extra-prefix",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						extraPrefixedAnnotation(annotations.HostnameKey): "a.example.com",
+						extraPrefixedAnnotation(annotations.TargetKey):   "target.domain.tld",
+						"kubernetes.io/ingress.class":                    "traefik",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-extra-prefix",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()

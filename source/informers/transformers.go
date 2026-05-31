@@ -22,12 +22,22 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
+
+// Object is a composite interface that combines runtime.Object and metav1.Object.
+// It represents a Kubernetes resource object that has both metadata and runtime information.
+type Object interface {
+	runtime.Object
+	metav1.Object
+}
 
 // TransformOptions holds the configuration for TransformerWithOptions.
 // All options operate on the metav1.Object interface (or via reflection for Status
@@ -93,6 +103,9 @@ func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions
 // informers strip TypeMeta when returning objects because the client already knows the
 // type — populating it here makes cached objects self-describing for templates and logging.
 //
+// Additionally, the transformer converts all annotations with supported prefixes to a single
+// unique prefix to support multiple annotation prefixes uniformly.
+//
 // The transform is naturally idempotent: nil-ing an already-nil field and filtering an
 // already-filtered map are both no-ops, so calling it multiple times on the same object
 // is safe.
@@ -103,10 +116,7 @@ func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions
 //	    informers.TransformRemoveManagedFields(),
 //	    informers.TransformRemoveLastAppliedConfig(),
 //	))
-func TransformerWithOptions[T interface {
-	metav1.Object
-	runtime.Object
-}](optFns ...func(*TransformOptions)) cache.TransformFunc {
+func TransformerWithOptions[T Object](optFns ...func(*TransformOptions)) cache.TransformFunc {
 	options := TransformOptions{}
 	for _, fn := range optFns {
 		fn(&options)
@@ -125,8 +135,8 @@ func TransformerWithOptions[T interface {
 		if options.removeManagedFields {
 			entity.SetManagedFields(nil)
 		}
+		anns := entity.GetAnnotations()
 		if len(options.keepAnnotationPrefixes) > 0 || options.removeLastAppliedConfig {
-			anns := entity.GetAnnotations()
 			if options.removeLastAppliedConfig {
 				delete(anns, corev1.LastAppliedConfigAnnotation)
 			}
@@ -137,8 +147,9 @@ func TransformerWithOptions[T interface {
 					})
 				})
 			}
-			entity.SetAnnotations(anns)
 		}
+		annotations.ResolveAnnotations(anns)
+		entity.SetAnnotations(anns)
 		if options.removeStatusConditions {
 			clearStatusConditions(entity)
 		}
@@ -172,12 +183,17 @@ func populateGVK(obj runtime.Object) {
 }
 
 // clearStatusConditions zeroes out the Status.Conditions field on obj if it exists.
+//
 // It handles all condition types (metav1.Condition, corev1.PodCondition, etc.) uniformly.
-// Reflection is used because Status.Conditions is a structural convention shared by all
-// Kubernetes types but not codified in any interface — element types differ per resource.
+// Reflection is used — unless if the object is an Unstructured object — because Status.Conditions is a structural
+// convention shared by all Kubernetes types but not codified in any interface — element types differ per resource.
 // The reflection cost is negligible: paid once per object at cache-population time,
 // not on the hot path of every endpoint reconciliation.
 func clearStatusConditions(obj any) {
+	if unstructuredObj, ok := obj.(*unstructured.Unstructured); ok {
+		unstructured.RemoveNestedField(unstructuredObj.Object, "status", "conditions")
+		return
+	}
 	val := reflect.ValueOf(obj)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()

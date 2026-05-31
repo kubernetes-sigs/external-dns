@@ -26,7 +26,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Initialize annotation prefixes before running tests
-	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	SetAnnotationPrefixes(DefaultAnnotationPrefix)
 	os.Exit(m.Run())
 }
 

@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -63,9 +65,9 @@ func execute(ctx context.Context) {
 	}
 
 	// Set annotation prefix (required since init() was removed)
-	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
-	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
-		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
+	annotations.SetAnnotationPrefixes(cfg.AnnotationPrefixes...)
+	if !slices.Equal(cfg.AnnotationPrefixes, []string{annotations.DefaultAnnotationPrefix, annotations.AlphaAnnotationPrefix}) {
+		log.Infof("Using custom annotation prefixes: %s", strings.Join(cfg.AnnotationPrefixes, ","))
 	}
 
 	if err := configureLogger(cfg); err != nil {
