@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/registry"
 )
 
 type CRDSuite struct {
@@ -67,7 +68,7 @@ func TestCRDSource(t *testing.T) {
 
 // testCRDSourceImplementsSource tests that crdSource is a valid Source.
 func testCRDSourceImplementsSource(t *testing.T) {
-	require.Implements(t, (*Registry)(nil), new(CRDRegistry))
+	require.Implements(t, (*registry.Registry)(nil), new(CRDRegistry))
 }
 
 func testConstructor(t *testing.T) {

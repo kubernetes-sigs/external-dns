@@ -37,8 +37,10 @@ import (
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -136,6 +138,11 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 		return nil, fmt.Errorf("unable to find Resource Kind %q in GroupVersion %q", "DNSRecord", apiVersion)
 	}
 	return &crdclient{scheme: scheme, resource: crdAPIResource, codec: runtime.NewParameterCodec(scheme), Interface: crdClient}, nil
+}
+
+func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
+	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion,
+		cfg.Namespace, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.RequestTimeout)
 }
 
 // NewCRDRegistry returns new CRDRegistry object
