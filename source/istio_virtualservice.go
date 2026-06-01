@@ -379,13 +379,13 @@ func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *n
 		namespace = gateway.Namespace
 	}
 
+	targets := make(endpoint.Targets, 0)
+
 	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		log.Warnf("Could not get ingress '%s/%s' referenced by Gateway '%s/%s': %v", namespace, name, gateway.Namespace, gateway.Name, err)
+		return targets, nil
 	}
-
-	targets := make(endpoint.Targets, 0)
 
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {

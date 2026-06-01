@@ -201,8 +201,8 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 
 	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		log.Warnf("Could not get ingress '%s/%s' referenced by Gateway '%s/%s': %v", namespace, name, gateway.Namespace, gateway.Name, err)
+		return targets, nil
 	}
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
