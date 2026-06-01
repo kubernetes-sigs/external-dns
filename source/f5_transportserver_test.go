@@ -399,3 +399,25 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestF5TransportServerSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newTSUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &f5TransportServerSource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		f5TransportServerGVR,
+		fakeDynamicClient,
+		source.(*f5TransportServerSource).transportServerInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}

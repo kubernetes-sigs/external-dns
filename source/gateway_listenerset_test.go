@@ -1522,3 +1522,39 @@ func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, endpoints, "expected no endpoints when ListenerSet's parent Gateway doesn't exist")
 }
+
+func TestGatewayListenerSetSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	ls := &v1.ListenerSet{
+		ObjectMeta: informerTransformObjectMeta(),
+		Spec:       v1.ListenerSetSpec{ParentRef: v1.ParentGatewayReference{Name: "test-gateway"}},
+		Status:     v1.ListenerSetStatus{Conditions: []metav1.Condition{{}}},
+	}
+	require.Contains(t, ls.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, ls.GetManagedFields())
+
+	_, err := gwClient.GatewayV1().ListenerSets(ls.GetNamespace()).Create(t.Context(), ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{GatewayListenerSets: true})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	gatewaySrc := source.(*gatewayRouteSource)
+	require.NotNil(t, gatewaySrc.lsInformer)
+
+	testInformerTransformHelper(t,
+		gatewaySrc.lsInformer.Informer(),
+		ls,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}
