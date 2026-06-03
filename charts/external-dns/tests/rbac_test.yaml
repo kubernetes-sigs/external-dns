@@ -124,7 +124,7 @@ tests:
               verbs: ["get","watch","list"]
             - apiGroups: ["externaldns.k8s.io"]
               resources: ["dnsendpoints/status"]
-              verbs: ["*"]
+              verbs: ["update"]
             - apiGroups: ["traefik.containo.us", "traefik.io"]
               resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
               verbs: ["get","watch","list"]

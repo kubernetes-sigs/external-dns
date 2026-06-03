@@ -522,3 +522,28 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestOcpRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	route := &routev1.Route{
+		ObjectMeta: informerTransformObjectMeta(),
+	}
+	assert.Contains(t, route.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	assert.NotEmpty(t, route.GetManagedFields())
+
+	fakeClient := fake.NewClientset()
+	_, err := fakeClient.RouteV1().Routes(route.GetNamespace()).Create(t.Context(), route, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &ocpRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*ocpRouteSource).routeInformer.Informer(),
+		route,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}

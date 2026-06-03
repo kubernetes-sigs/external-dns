@@ -108,6 +108,7 @@ from the usage of any externally developed webhook.
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
+| Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
@@ -117,6 +118,7 @@ from the usage of any externally developed webhook.
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Tencent Cloud         | https://github.com/tkestack/external-dns-tencentcloud-webhook        |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |

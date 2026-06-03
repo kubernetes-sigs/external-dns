@@ -48,7 +48,7 @@ type HTTPProxySuite struct {
 	httpProxy *projectcontour.HTTPProxy
 }
 
-func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
+func newContourDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
 	s := runtime.NewScheme()
 	_ = projectcontour.AddToScheme(s)
 	return fakeDynamic.NewSimpleDynamicClient(s), s
@@ -89,7 +89,7 @@ func (ig fakeLoadBalancerService) Service() *v1.Service {
 }
 
 func (suite *HTTPProxySuite) SetupTest() {
-	fakeDynamicClient, s := newDynamicKubernetesClient()
+	fakeDynamicClient, s := newContourDynamicKubernetesClient()
 	var err error
 
 	suite.source, err = NewContourHTTPProxySource(
@@ -1003,7 +1003,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				httpProxies = append(httpProxies, item.HTTPProxy())
 			}
 
-			fakeDynamicClient, scheme := newDynamicKubernetesClient()
+			fakeDynamicClient, scheme := newContourDynamicKubernetesClient()
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
@@ -1037,7 +1037,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 
 // httpproxy specific helper functions
 func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
-	fakeDynamicClient, _ := newDynamicKubernetesClient()
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
 		t.Context(),
@@ -1108,4 +1108,22 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	}
 
 	return httpProxy
+}
+
+func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
+
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &httpProxySource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		projectcontour.HTTPProxyGVR,
+		fakeDynamicClient, source.(*httpProxySource).httpProxyInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+		withRemovedStatusConditions(),
+	)
 }

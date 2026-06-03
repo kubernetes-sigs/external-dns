@@ -39,7 +39,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return err
 	}
 
-	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+	if cfg.IgnoreHostnameAnnotation && len(cfg.FQDNTemplate) == 0 {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
 

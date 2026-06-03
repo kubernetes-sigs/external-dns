@@ -121,6 +121,18 @@ func NewTraefikSource(
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
+		informers.MustSetTransform(ingressRouteInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustSetTransform(ingressRouteTcpInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustSetTransform(ingressRouteUdpInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
 		informers.MustAddEventHandler(ingressRouteInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(ingressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(ingressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
@@ -129,6 +141,18 @@ func NewTraefikSource(
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
+		informers.MustSetTransform(oldIngressRouteInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustSetTransform(oldIngressRouteTcpInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustSetTransform(oldIngressRouteUdpInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
 		informers.MustAddEventHandler(oldIngressRouteInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(oldIngressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(oldIngressRouteUdpInformer.Informer(), informers.DefaultEventHandler())

@@ -123,6 +123,13 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 - [Static credentials](#static-credentials)
 - [IAM Roles for Service Accounts](#iam-roles-for-service-accounts)
 
+> [!NOTE]
+> ExternalDNS resolves AWS credentials through the
+> [AWS SDK for Go v2 default credential provider chain](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials).
+> Any source supported by the SDK works without additional configuration in ExternalDNS — including environment
+> variables, shared config and credentials files, EC2 instance profile / ECS container credentials, and EKS Pod
+> Identity. See the AWS SDK reference for the full list and precedence order.
+
 For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.
 Feel free to change this to something else, such `externaldns` or `kube-addons`.
 Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.
@@ -249,9 +256,32 @@ If ExternalDNS is not yet deployed, follow the steps under [Deploy ExternalDNS](
 
 In this method, the policy is attached to an IAM user, and the credentials secrets for the IAM user are then made available using a Kubernetes secret.
 
-This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.
+> [!WARNING]
+> **Security Risks with Static Credentials**
+>
+> - `kubectl describe pod` could expose secrets.
+> - Anyone who can `exec` into the container and run `env` can see them.
+> - Env vars can leak into logs, crash dumps, or child processes.
+> - There is no way to make them visible to a specific user only.
+> - They are long-lived, easy to leak, hard to rotate, and easy to accidentally commit or log.
+>
+> **When to use:**
+>
+> - Limit usage to non-AWS clusters.
+> - Always apply minimal privileges.
+> - Acknowledges reality (sometimes it is the only viable option).
+>
+> **For AWS specifically, the best practice and recommended hierarchy is:**
+>
+> 1. **IRSA (preferred):** Map an AWS IAM role to a Kubernetes service account; no static credentials in the pod.
+> 2. **EKS Pod Identity:** Native EKS alternative to IRSA; associates IAM role with a service account via the Pod Identity Agent.
+> 3. **Node IAM Role:** Attach policy to the node instance profile; not recommended beyond tests because all pods on the node inherit the permissions. Tolerated, but not recommended.
+> 4. **Mount credentials file:** Minimize privileges and avoid long-lived keys where possible.
+> 5. **Environment variables:** Minimize privileges and avoid long-lived keys where possible.
+
+This method is not the preferred method as the secrets in the credential file or environment variables could be copied and used by an unauthorized threat actor.
 However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.
-Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.
+Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not use a credentials file that has extra privileges beyond what is required.
 
 #### Create IAM user and attach the policy
 
@@ -295,6 +325,30 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 > the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case
 > ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
+
+<!-- markdownlint-disable-line MD028 -->
+
+> [!TIP]
+> To pass static credentials as environment variables (e.g. when running outside AWS and
+> mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
+> and project them into the pod. With the
+> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+> set the top-level `env` value:
+>
+> ```yaml
+> # values.yaml
+> env:
+>   - name: AWS_ACCESS_KEY_ID
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-access-key-id
+>   - name: AWS_SECRET_ACCESS_KEY
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-secret-access-key
+> ```
 
 ### IAM Roles for Service Accounts
 
@@ -709,6 +763,13 @@ Annotations which are specific to AWS.
 To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer).
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
+
+Additionally, you can set the value to `A` or `AAAA` to create only one type of ALIAS record:
+
+- `A`: Creates only an A ALIAS record (IPv4 only)
+- `AAAA`: Creates only an AAAA ALIAS record (IPv6 only)
+
+Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
 
 ### target-hosted-zone
 
