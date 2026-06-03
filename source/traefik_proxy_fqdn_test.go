@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
@@ -31,17 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
-
-func newTraefikScheme() *runtime.Scheme {
-	s := runtime.NewScheme()
-	s.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	s.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	s.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	s.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	s.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	s.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	return s
-}
 
 func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 	t.Parallel()
@@ -177,12 +166,14 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubeClient := fakeKube.NewSimpleClientset()
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(newTraefikScheme())
-
-			objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.ingressRoute)
+			uc, err := newTraefikUnstructuredConverter()
 			require.NoError(t, err)
-			obj := &unstructured.Unstructured{Object: objMap}
+
+			fakeKubeClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			obj := &unstructured.Unstructured{}
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRoute, obj, context.Background()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
@@ -308,12 +299,14 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubeClient := fakeKube.NewSimpleClientset()
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(newTraefikScheme())
-
-			objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.ingressRouteTCP)
+			uc, err := newTraefikUnstructuredConverter()
 			require.NoError(t, err)
-			obj := &unstructured.Unstructured{Object: objMap}
+
+			fakeKubeClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			obj := &unstructured.Unstructured{}
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteTCP, obj, context.Background()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
@@ -435,12 +428,14 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubeClient := fakeKube.NewSimpleClientset()
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(newTraefikScheme())
-
-			objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.ingressRouteUDP)
+			uc, err := newTraefikUnstructuredConverter()
 			require.NoError(t, err)
-			obj := &unstructured.Unstructured{Object: objMap}
+
+			fakeKubeClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			obj := &unstructured.Unstructured{}
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteUDP, obj, context.Background()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
