@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -173,7 +172,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
 			obj := &unstructured.Unstructured{}
-			require.NoError(t, uc.scheme.Convert(&tt.ingressRoute, obj, context.Background()))
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRoute, obj, t.Context()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
@@ -306,7 +305,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
 			obj := &unstructured.Unstructured{}
-			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteTCP, obj, context.Background()))
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteTCP, obj, t.Context()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteTCPGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
@@ -435,7 +434,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
 			obj := &unstructured.Unstructured{}
-			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteUDP, obj, context.Background()))
+			require.NoError(t, uc.scheme.Convert(&tt.ingressRouteUDP, obj, t.Context()))
 
 			_, err = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).
 				Create(t.Context(), obj, metav1.CreateOptions{})
