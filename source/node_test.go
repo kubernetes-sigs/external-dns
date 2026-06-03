@@ -816,9 +816,7 @@ func TestNodeIndexer(t *testing.T) {
 			client := fake.NewClientset()
 
 			for i, node := range tt.nodes {
-				maps.Copy(node.Annotations, map[string]string{
-					annotations.TargetKey: fmt.Sprintf("1.2.3.%d", i+1),
-				})
+        node.Annotations[annotations.TargetKey] = fmt.Sprintf("1.2.3.%d", i+1)
 				_, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
