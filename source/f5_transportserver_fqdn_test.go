@@ -135,6 +135,79 @@ func TestF5TransportServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-target-template with combine adds template endpoint alongside IP-based endpoint",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "tcp.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "my-ts.example.com",
+					Targets:          endpoint.Targets{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "tcp.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-transportserver/transportserver/my-ts"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title: "fqdn-target-template without combine is ignored when IP-based endpoints exist",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "tcp.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			combine:            false,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "tcp.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-transportserver/transportserver/my-ts"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
 			title: "fqdn-template without combine is ignored when IP-based endpoints exist",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{

@@ -135,6 +135,129 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-target-template with combine adds template endpoint alongside IP-based endpoint",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "my-vs.example.com",
+					Targets:          endpoint.Targets{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "www.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-virtualserver/virtualserver/my-vs"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title: "fqdn-target-template without combine is ignored when IP-based endpoints exist",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			combine:            false,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "www.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-virtualserver/virtualserver/my-vs"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title: "fqdn-template with combine alongside HostAliases-based endpoints",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			combine:        true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "alias.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-virtualserver/virtualserver/my-vs"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "my-vs.example.com",
+					Targets:          endpoint.Targets{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "www.example.com",
+					Targets:          endpoint.Targets{"192.168.1.100"},
+					RecordType:       endpoint.RecordTypeA,
+					RecordTTL:        0,
+					Labels:           endpoint.Labels{"resource": "f5-virtualserver/virtualserver/my-vs"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
 			title: "fqdn-template without combine is ignored when IP-based endpoints exist",
 			virtualServer: f5.VirtualServer{
 				TypeMeta: metav1.TypeMeta{
