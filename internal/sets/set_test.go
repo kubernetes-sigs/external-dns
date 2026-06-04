@@ -85,104 +85,238 @@ func TestNewFromMapKeys(t *testing.T) {
 }
 
 func TestSet_Insert(t *testing.T) {
-	tests := []struct {
-		name string
-		s    sets.Set[int]
-		item int
-		want sets.Set[int]
-	}{
-		{
-			name: "insert into empty set",
-			s:    sets.New[int](),
-			item: 1,
-			want: sets.New(1),
-		},
-		{
-			name: "insert existing item",
-			s:    sets.New(1, 2, 3),
-			item: 2,
-			want: sets.New(1, 2, 3),
-		},
-		{
-			name: "insert new item",
-			s:    sets.New(1, 2, 3),
-			item: 4,
-			want: sets.New(1, 2, 3, 4),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.s.Insert(tt.item)
-			assert.Equal(t, tt.want, tt.s)
-		})
-	}
+	t.Run("value", func(t *testing.T) {
+		tests := []struct {
+			name string
+			s    sets.Set[int]
+			item int
+			want sets.Set[int]
+		}{
+			{
+				name: "insert into empty set",
+				s:    sets.New[int](),
+				item: 1,
+				want: sets.New(1),
+			},
+			{
+				name: "insert existing item",
+				s:    sets.New(1, 2, 3),
+				item: 2,
+				want: sets.New(1, 2, 3),
+			},
+			{
+				name: "insert new item",
+				s:    sets.New(1, 2, 3),
+				item: 4,
+				want: sets.New(1, 2, 3, 4),
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.s.Insert(tt.item)
+				assert.Equal(t, tt.want, tt.s)
+			})
+		}
+	})
+
+	t.Run("pointer", func(t *testing.T) {
+		zero, zero2 := new(0), new(0)
+		tests := []struct {
+			name string
+			s    sets.Set[*int]
+			item *int
+			want sets.Set[*int]
+		}{
+			{
+				name: "insert nil pointer to empty set",
+				s:    sets.New[*int](),
+				item: nil,
+				want: sets.New[*int](nil),
+			},
+			{
+				name: "insert non-nil pointer to empty set",
+				s:    sets.New[*int](),
+				item: zero,
+				want: sets.New(zero),
+			},
+			{
+				name: "insert duplicate nil pointer",
+				s:    sets.New[*int](nil),
+				item: nil,
+				want: sets.New[*int](nil),
+			},
+			{
+				name: "insert duplicate non-nil pointer",
+				s:    sets.New(zero),
+				item: zero,
+				want: sets.New(zero),
+			},
+			{
+				name: "insert different non-nil pointer with same value",
+				s:    sets.New(zero),
+				item: zero2,
+				want: sets.New(zero, zero2),
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.s.Insert(tt.item)
+				assert.Equal(t, tt.want, tt.s)
+			})
+		}
+	})
 }
 
 func TestSet_Delete(t *testing.T) {
-	tests := []struct {
-		name string
-		set  sets.Set[int]
-		item int
-		want sets.Set[int]
-	}{
-		{
-			name: "delete from empty set",
-			set:  sets.New[int](),
-			item: 1,
-			want: sets.New[int](),
-		},
-		{
-			name: "delete existing item",
-			set:  sets.New(1, 2, 3),
-			item: 2,
-			want: sets.New(1, 3),
-		},
-		{
-			name: "delete non-existing item",
-			set:  sets.New(1, 2, 3),
-			item: 4,
-			want: sets.New(1, 2, 3),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.set.Delete(tt.item)
-			assert.Equal(t, tt.want, tt.set)
-		})
-	}
+	t.Run("value", func(t *testing.T) {
+		tests := []struct {
+			name string
+			set  sets.Set[int]
+			item int
+			want sets.Set[int]
+		}{
+			{
+				name: "delete from empty set",
+				set:  sets.New[int](),
+				item: 1,
+				want: sets.New[int](),
+			},
+			{
+				name: "delete existing item",
+				set:  sets.New(1, 2, 3),
+				item: 2,
+				want: sets.New(1, 3),
+			},
+			{
+				name: "delete non-existing item",
+				set:  sets.New(1, 2, 3),
+				item: 4,
+				want: sets.New(1, 2, 3),
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.set.Delete(tt.item)
+				assert.Equal(t, tt.want, tt.set)
+			})
+		}
+	})
+
+	t.Run("pointer", func(t *testing.T) {
+		zero, zero2 := new(0), new(0)
+		tests := []struct {
+			name string
+			set  sets.Set[*int]
+			item *int
+			want sets.Set[*int]
+		}{
+			{
+				name: "delete from empty set",
+				set:  sets.New[*int](),
+				item: zero,
+				want: sets.New[*int](),
+			},
+			{
+				name: "delete existing item",
+				set:  sets.New(zero, zero2),
+				item: zero,
+				want: sets.New(zero2),
+			},
+			{
+				name: "delete non-existing item",
+				set:  sets.New(zero),
+				item: zero2,
+				want: sets.New(zero),
+			},
+			{
+				name: "delete nil pointer",
+				set:  sets.New[*int](nil),
+				item: nil,
+				want: sets.New[*int](),
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.set.Delete(tt.item)
+				assert.Equal(t, tt.want, tt.set)
+			})
+		}
+	})
 }
 
 func TestSet_Has(t *testing.T) {
-	tests := []struct {
-		name string
-		set  sets.Set[int]
-		item int
-		want bool
-	}{
-		{
-			name: "item in set",
-			set:  sets.New(1, 2, 3),
-			item: 2,
-			want: true,
-		},
-		{
-			name: "item not in set",
-			set:  sets.New(1, 2, 3),
-			item: 4,
-			want: false,
-		},
-		{
-			name: "empty set",
-			set:  sets.New[int](),
-			item: 1,
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, tt.set.Has(tt.item))
-		})
-	}
+	t.Run("value", func(t *testing.T) {
+		tests := []struct {
+			name string
+			set  sets.Set[int]
+			item int
+			want bool
+		}{
+			{
+				name: "item in set",
+				set:  sets.New(1, 2, 3),
+				item: 2,
+				want: true,
+			},
+			{
+				name: "item not in set",
+				set:  sets.New(1, 2, 3),
+				item: 4,
+				want: false,
+			},
+			{
+				name: "empty set",
+				set:  sets.New[int](),
+				item: 1,
+				want: false,
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.want, tt.set.Has(tt.item))
+			})
+		}
+	})
+
+	t.Run("pointer", func(t *testing.T) {
+		zero, zero2 := new(0), new(0)
+		tests := []struct {
+			name string
+			set  sets.Set[*int]
+			item *int
+			want bool
+		}{
+			{
+				name: "item in set",
+				set:  sets.New(zero, zero2),
+				item: zero2,
+				want: true,
+			},
+			{
+				name: "item not in set",
+				set:  sets.New(zero),
+				item: zero2,
+				want: false,
+			},
+			{
+				name: "empty set",
+				set:  sets.New[*int](),
+				item: zero,
+				want: false,
+			},
+			{
+				name: "nil pointer in set",
+				set:  sets.New[*int](nil),
+				item: nil,
+				want: true,
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.want, tt.set.Has(tt.item))
+			})
+		}
+	})
 }
 
 func TestSet_List(t *testing.T) {
