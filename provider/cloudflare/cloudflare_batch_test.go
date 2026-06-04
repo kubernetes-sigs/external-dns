@@ -799,6 +799,7 @@ func TestBuildSRVData(t *testing.T) {
 		wantErrText string
 	}{
 		{"valid 4-field", "10 5 5060 sip.example.com.", 5060, "sip.example.com", ""},
+		{"valid 4-field no trailing dot", "10 5 5060 sip.example.com", 5060, "sip.example.com", ""},
 		{"preserves bare-dot (RFC 2782 service unavailable)", "0 0 0 .", 0, ".", ""},
 		{"target without trailing dot", "1 1 80 host", 80, "host", ""},
 		{"wrong field count", "10 5 sip.example.com.", 0, "", "invalid SRV target"},
@@ -943,6 +944,7 @@ func TestBuildNAPTRData(t *testing.T) {
 	}{
 		{"valid 6-field", `100 50 "U" "E2U+sip" "!^.*$!sip:info@bar.com!" .`, 100, "E2U+sip", ".", ""},
 		{"strips trailing dot on replacement", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, 10, "SIP+D2U", "_sip._udp.bar.com", ""},
+		{"no trailing dot on replacement", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`, 10, "SIP+D2U", "_sip._udp.bar.com", ""},
 		{"5 fields rejected (missing preference)", `10 "U" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
 		{"non-numeric order rejected", `x 20 "S" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
 		{"order out of uint16 range", `99999 20 "S" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
