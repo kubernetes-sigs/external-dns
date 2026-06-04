@@ -18,6 +18,7 @@ package crd
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"strings"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -53,7 +55,11 @@ func newTestScheme(t *testing.T) *runtime.Scheme {
 // seeded with the given DNSRecords. The fake client serves both reads and writes.
 func newTestRegistry(t *testing.T, p provider.Provider, ownerID string, objs ...client.Object) (*CRDRegistry, client.Client) {
 	t.Helper()
-	c := fake.NewClientBuilder().WithScheme(newTestScheme(t)).WithObjects(objs...).Build()
+	c := fake.NewClientBuilder().
+		WithScheme(newTestScheme(t)).
+		WithStatusSubresource(&apiv1alpha1.DNSRecord{}).
+		WithObjects(objs...).
+		Build()
 	return &CRDRegistry{
 		crReader:  c,
 		crWriter:  c,
@@ -113,6 +119,13 @@ func TestCRDRegistryRecords(t *testing.T) {
 				SetIdentifier: "myid-1",
 				Labels:        map[string]string{endpoint.ResourceLabelKey: "resource"},
 			},
+		},
+		Status: apiv1alpha1.DNSRecordStatus{
+			Conditions: []metav1.Condition{{
+				Type:   apiv1alpha1.ReadyCondition,
+				Status: metav1.ConditionTrue,
+				Reason: apiv1alpha1.ProgrammedReason,
+			}},
 		},
 	}
 	// A record owned by another instance must not be returned.
@@ -307,6 +320,7 @@ func TestRecordObjectName(t *testing.T) {
 type mockProvider struct {
 	records  []*endpoint.Endpoint
 	addLabel bool
+	applyErr error
 }
 
 func (m *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -316,6 +330,9 @@ func (m *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 // This applychanges in mocked provider simulate when
 // the provider change Labels of the records.
 func (m *mockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	if m.applyErr != nil {
+		return m.applyErr
+	}
 	endpoints := changes.Create
 	m.records = make([]*endpoint.Endpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
@@ -372,4 +389,62 @@ func TestCRDApplyChangesMockedProvider(t *testing.T) {
 			assert.Equal(t, tc.expectLabel, hasLabel)
 		})
 	}
+}
+
+// A successful apply must mark the DNSRecord Ready with reason Programmed and
+// record the observed generation, so the stored record carries visible status.
+func TestCRDApplyChangesSetsProgrammedStatus(t *testing.T) {
+	ctx := t.Context()
+	prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io")
+
+	ep := endpoint.Endpoint{
+		DNSName:    "sub.mytestdomain.io",
+		RecordType: "CNAME",
+		Targets:    endpoint.NewTargets("127.0.0.1"),
+		Labels:     map[string]string{endpoint.OwnerLabelKey: "test"},
+	}
+
+	reg, c := newTestRegistry(t, prov, "test")
+	require.NoError(t, reg.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{&ep}}))
+
+	got := &apiv1alpha1.DNSRecord{}
+	require.NoError(t, c.Get(ctx, types.NamespacedName{Namespace: "default", Name: recordObjectName(&ep)}, got))
+
+	cond := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
+	require.NotNil(t, cond, "expected a Ready condition")
+	assert.Equal(t, metav1.ConditionTrue, cond.Status)
+	assert.Equal(t, apiv1alpha1.ProgrammedReason, cond.Reason)
+	assert.Equal(t, got.Generation, got.Status.ObservedGeneration)
+}
+
+// When the provider rejects the changes, the DNSRecord is persisted with a
+// Ready=False/Failed condition, so the failure is visible on the object while
+// Records() still excludes it from current state (it is not Ready) and the plan
+// re-applies it on the next reconcile.
+func TestCRDApplyChangesProviderError(t *testing.T) {
+	ctx := t.Context()
+	ep := endpoint.Endpoint{
+		DNSName:       "sub.mytestdomain.io",
+		RecordType:    "CNAME",
+		SetIdentifier: "myid-1",
+		Targets:       endpoint.NewTargets("127.0.0.1"),
+		Labels:        map[string]string{endpoint.OwnerLabelKey: "owner"},
+	}
+
+	reg, c := newTestRegistry(t, &mockProvider{applyErr: errors.New("boom")}, "owner")
+	err := reg.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{&ep}})
+	require.Error(t, err)
+
+	got := &apiv1alpha1.DNSRecord{}
+	require.NoError(t, c.Get(ctx, types.NamespacedName{Namespace: "default", Name: recordObjectName(&ep)}, got))
+
+	cond := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
+	require.NotNil(t, cond, "expected a Ready condition")
+	assert.Equal(t, metav1.ConditionFalse, cond.Status)
+	assert.Equal(t, apiv1alpha1.FailedReason, cond.Reason)
+
+	// A non-Ready record must not be reported as current state.
+	endpoints, err := reg.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, endpoints, "failed record must be excluded from current state")
 }

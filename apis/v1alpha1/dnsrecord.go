@@ -28,6 +28,20 @@ const (
 	// name instead of labels, so it is not subject to the 63-character label-value
 	// limit and records are looked up directly by name.
 	RecordOwnerLabel string = "externaldns.k8s.io/owner"
+
+	// ReadyCondition reports whether the endpoint is live in the DNS provider.
+	// Its reason captures the lifecycle stage and is surfaced as the Status print
+	// column: AcceptedReason while external-dns has taken the endpoint into its
+	// plan but not yet programmed it (Ready=False), ProgrammedReason once the
+	// provider has applied it (Ready=True), or FailedReason when the provider
+	// rejected the batch it belonged to (Ready=False).
+	ReadyCondition string = "Ready"
+
+	// Reasons for the Ready condition. They double as the human-readable value of
+	// the Status print column.
+	AcceptedReason   string = "Accepted"
+	ProgrammedReason string = "Programmed"
+	FailedReason     string = "Failed"
 )
 
 // DNSRecordSpec defines the desired state of DNSRecord
@@ -42,6 +56,12 @@ type DNSRecordStatus struct {
 	// The generation observed by the external-dns controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Conditions represent the latest available observations of the DNSRecord state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +genclient
@@ -58,6 +78,7 @@ type DNSRecordStatus struct {
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.endpoint.recordType`
 // +kubebuilder:printcolumn:name="Set ID",type=string,JSONPath=`.spec.endpoint.setIdentifier`
 // +kubebuilder:printcolumn:name="Targets",type=string,JSONPath=`.spec.endpoint.targets`
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +versionName=v1alpha1
 
 type DNSRecord struct {

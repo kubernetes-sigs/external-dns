@@ -28,6 +28,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
@@ -142,12 +143,33 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(records.Items))
 	for i := range records.Items {
+		// Only records confirmed applied to the provider represent current
+		// state. An un-programmed record — one left Accepted by a provider
+		// failure — is skipped so the plan re-applies it on the next reconcile
+		// instead of mistaking it for a record that already exists.
+		if !meta.IsStatusConditionTrue(records.Items[i].Status.Conditions, apiv1alpha1.ReadyCondition) {
+			continue
+		}
 		endpoints = append(endpoints, &records.Items[i].Spec.Endpoint)
 	}
 	return endpoints, nil
 }
 
 // ApplyChanges updates dns provider with the changes and creates/updates/delete a DNSRecord accordingly.
+//
+// Intent is recorded first: the DNSRecord objects for created and updated
+// endpoints are written and marked Accepted before the provider is called. Their
+// Programmed condition is then set from the provider outcome — True on success,
+// False with reason Failed on error. Records() treats only Programmed records as
+// current state, so an object left Accepted by a provider failure is re-applied
+// on the next reconcile rather than mistaken for an existing record — the same
+// safety the apply-first ordering gave, while making the full lifecycle
+// (Accepted, Programmed, Failed) visible on the object.
+//
+// The provider reports a single batch error and cannot attribute it to
+// individual records, so on failure every record in the batch is marked Failed.
+// Provider applies are idempotent, so records that did get applied are corrected
+// to Programmed on the next reconcile.
 func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
@@ -156,16 +178,68 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.Delete),
 	}
 
+	// Stamp the owner label before applying so the provider sees owner-labeled
+	// endpoints, matching the TXT registry behavior.
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = endpoint.NewLabels()
 		}
 		r.Labels[endpoint.OwnerLabelKey] = cr.ownerID
-		if err := cr.createDNSRecord(ctx, r); err != nil {
-			return err
-		}
 	}
 
+	// Write the DNSRecord objects and collect them so their Ready condition can be
+	// set from the provider outcome below.
+	applied := make([]*apiv1alpha1.DNSRecord, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
+
+	for _, r := range filteredChanges.Create {
+		dnsrecord, err := cr.ensureDNSRecord(ctx, r)
+		if err != nil {
+			return err
+		}
+		applied = append(applied, dnsrecord)
+	}
+
+	// Update existing DNS records to reflect the newest change.
+	for i, e := range filteredChanges.UpdateNew {
+		old := filteredChanges.UpdateOld[i]
+		dnsrecord, err := cr.getDNSRecord(ctx, old)
+		if err != nil {
+			return fmt.Errorf("unable to get DNSRecord of %s: %w", old, err)
+		}
+		if dnsrecord == nil {
+			continue
+		}
+		dnsrecord.Spec.Endpoint = *e
+		if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
+			return fmt.Errorf("unable to update DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
+		}
+		applied = append(applied, dnsrecord)
+	}
+
+	// Record intent before calling the provider: each collected record is marked
+	// Ready=False/Accepted until the provider confirms it.
+	for _, dnsrecord := range applied {
+		cr.setStatus(ctx, dnsrecord, apiv1alpha1.AcceptedReason, "Endpoint accepted by external-dns; not yet programmed")
+	}
+
+	if err := cr.provider.ApplyChanges(ctx, filteredChanges); err != nil {
+		// The provider reports a single batch error and cannot attribute it to
+		// individual records, so every record in the batch is marked Failed; the
+		// apply is idempotent, so records that were in fact applied are corrected
+		// to Programmed on the next reconcile.
+		for _, dnsrecord := range applied {
+			cr.setStatus(ctx, dnsrecord, apiv1alpha1.FailedReason, fmt.Sprintf("Provider rejected the batch: %v", err))
+		}
+		return fmt.Errorf("provider cannot apply changes: %w", err)
+	}
+
+	// Provider accepted the changes; mark the records Programmed.
+	for _, dnsrecord := range applied {
+		cr.setStatus(ctx, dnsrecord, apiv1alpha1.ProgrammedReason, "Endpoint applied to the DNS provider")
+	}
+
+	// Deletes are reconciled last: the DNS record is gone from the provider, so
+	// drop its DNSRecord too.
 	for _, r := range filteredChanges.Delete {
 		dnsrecord, err := cr.getDNSRecord(ctx, r)
 		if err != nil {
@@ -183,26 +257,6 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	// Update existing DNS records to reflect the newest change.
-	for i, e := range filteredChanges.UpdateNew {
-		old := filteredChanges.UpdateOld[i]
-		dnsrecord, err := cr.getDNSRecord(ctx, old)
-		if err != nil {
-			return fmt.Errorf("unable to get DNSRecord of %s: %w", old, err)
-		}
-		if dnsrecord == nil {
-			continue
-		}
-		dnsrecord.Spec.Endpoint = *e
-		if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
-			return fmt.Errorf("unable to update DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
-		}
-	}
-
-	err := cr.provider.ApplyChanges(ctx, filteredChanges)
-	if err != nil {
-		return fmt.Errorf("provider cannot apply changes: %w", err)
-	}
 	return cr.adjustLabelsFromProvider(ctx)
 }
 
@@ -253,8 +307,11 @@ func recordObjectName(record *endpoint.Endpoint) string {
 	return base + suffix
 }
 
-// createDNSRecord create a new DNSRecord with k8s API
-func (cr *CRDRegistry) createDNSRecord(ctx context.Context, record *endpoint.Endpoint) error {
+// ensureDNSRecord creates the DNSRecord backing the endpoint, or returns the
+// existing one — refreshed to the desired endpoint — when a previous reconcile
+// already created it (e.g. a provider failure left it Accepted but not
+// Programmed). The returned object always reflects the desired endpoint.
+func (cr *CRDRegistry) ensureDNSRecord(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecord, error) {
 	dnsrecord := &apiv1alpha1.DNSRecord{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      recordObjectName(record),
@@ -269,14 +326,49 @@ func (cr *CRDRegistry) createDNSRecord(ctx context.Context, record *endpoint.End
 	}
 
 	if err := cr.crWriter.Create(ctx, dnsrecord); err != nil {
-		// It could be possible that a record already exists if a previous apply change happened
-		// and there was an error while creating those records through the provider. For that reason,
-		// this error is ignored, all others will be surfaced back to the user
 		if !k8sErrors.IsAlreadyExists(err) {
-			return fmt.Errorf("unable to create DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
+			return nil, fmt.Errorf("unable to create DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
 		}
+		// A previous reconcile already created the object; fetch it and refresh
+		// its spec so the status we set below applies to the current endpoint.
+		existing, err := cr.getDNSRecord(ctx, record)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get DNSRecord %s in %s: %w", dnsrecord.Name, cr.namespace, err)
+		}
+		if existing == nil {
+			return nil, fmt.Errorf("DNSRecord %s in %s reported as existing but was not found", dnsrecord.Name, cr.namespace)
+		}
+		existing.Spec.Endpoint = *record
+		if err := cr.crWriter.Update(ctx, existing); err != nil {
+			return nil, fmt.Errorf("unable to update DNSRecord %s in %s: %w", existing.Name, cr.namespace, err)
+		}
+		return existing, nil
 	}
-	return nil
+	return dnsrecord, nil
+}
+
+// setStatus sets the Ready condition on the DNSRecord with the given reason and
+// message, and persists the status subresource. Ready is True only for
+// ProgrammedReason (the endpoint is live in the provider); every other reason
+// leaves it False. Status is best-effort observability: a failure to write it is
+// logged but never fails reconciliation, since the DNS record itself is already
+// applied (or its failure already surfaced through the apply error).
+func (cr *CRDRegistry) setStatus(ctx context.Context, dnsrecord *apiv1alpha1.DNSRecord, reason, message string) {
+	status := metav1.ConditionFalse
+	if reason == apiv1alpha1.ProgrammedReason {
+		status = metav1.ConditionTrue
+	}
+	dnsrecord.Status.ObservedGeneration = dnsrecord.Generation
+	meta.SetStatusCondition(&dnsrecord.Status.Conditions, metav1.Condition{
+		Type:               apiv1alpha1.ReadyCondition,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: dnsrecord.Generation,
+	})
+	if err := cr.crWriter.Status().Update(ctx, dnsrecord); err != nil {
+		log.Warnf("unable to update status of DNSRecord %s in %s: %v", dnsrecord.Name, cr.namespace, err)
+	}
 }
 
 // adjustLabelsFromProvider ensures labels in CRD registry are accurate
