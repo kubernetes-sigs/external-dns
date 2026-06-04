@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package crd
 
 import (
 	"context"
@@ -140,6 +140,7 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 		name       string
 		changeType string // One of Create, Update, Delete
 		ep         *endpoint.Endpoint
+		oldEp      *endpoint.Endpoint // pre-change endpoint for Update; defaults to ep when nil
 		seedRecord *apiv1alpha1.DNSRecord
 		assertFn   func(t *testing.T, c client.Client)
 	}{
@@ -198,6 +199,14 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				Targets:       endpoint.NewTargets("127.0.0.2"),
 				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
+			// Same identity (name/type/set-id) as ep but the pre-change target.
+			oldEp: &endpoint.Endpoint{
+				DNSName:       "to.be.updated.mytestdomain.io",
+				RecordType:    "CNAME",
+				SetIdentifier: "myid-3",
+				Targets:       endpoint.NewTargets("127.0.0.1"),
+				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
+			},
 			seedRecord: &apiv1alpha1.DNSRecord{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-myid-3",
@@ -235,9 +244,13 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				changes.Delete = []*endpoint.Endpoint{tc.ep}
 				seedEndpoints = append(seedEndpoints, tc.ep)
 			case "Update":
+				oldEp := tc.oldEp
+				if oldEp == nil {
+					oldEp = tc.ep
+				}
 				changes.UpdateNew = []*endpoint.Endpoint{tc.ep}
-				changes.UpdateOld = []*endpoint.Endpoint{tc.ep}
-				seedEndpoints = append(seedEndpoints, tc.ep)
+				changes.UpdateOld = []*endpoint.Endpoint{oldEp}
+				seedEndpoints = append(seedEndpoints, oldEp)
 			}
 
 			prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", seedEndpoints...)

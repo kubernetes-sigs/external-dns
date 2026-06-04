@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/awssd"
-	crd "sigs.k8s.io/external-dns/registry/crd"
+	"sigs.k8s.io/external-dns/registry/crd"
 	"sigs.k8s.io/external-dns/registry/dynamodb"
 	"sigs.k8s.io/external-dns/registry/noop"
 	"sigs.k8s.io/external-dns/registry/txt"

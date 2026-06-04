@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"strings"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -32,10 +30,10 @@ const (
 	RecordResourceLabel      string = "externaldns.k8s.io/resource"
 )
 
-// DNSRecordSpec defines the desired state of DNSEndpoint
+// DNSRecordSpec defines the desired state of DNSRecord
 // +kubebuilder:object:generate=true
 type DNSRecordSpec struct {
-	Endpoint endpoint.Endpoint `json:"endpoints,omitempty"`
+	Endpoint endpoint.Endpoint `json:"endpoint,omitempty"`
 }
 
 // DNSRecordStatus defines the observed state of DNSRecord
@@ -52,7 +50,6 @@ type DNSRecordStatus struct {
 // DNSRecord is used to get all records managed by external-dns.
 // It can be used as a registry with the status subresource.
 // +k8s:openapi-gen=true
-// +groupName=externaldns.k8s.io
 // +kubebuilder:resource:path=dnsrecords
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -73,20 +70,4 @@ type DNSRecordList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSRecord `json:"items"`
-}
-
-func (dr *DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
-	spec := dr.Spec.Endpoint
-
-	return spec.DNSName == strings.ToLower(e.DNSName) &&
-		spec.RecordType == e.RecordType &&
-		spec.SetIdentifier == e.SetIdentifier
-}
-
-func (dr *DNSRecord) EndpointLabels() endpoint.Labels {
-	labels := endpoint.Labels{}
-
-	labels[endpoint.OwnerLabelKey] = dr.Labels[RecordOwnerLabel]
-	labels[endpoint.ResourceLabelKey] = dr.Labels[RecordResourceLabel]
-	return labels
 }

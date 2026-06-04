@@ -36,9 +36,9 @@ spec:
             metadata:
               type: object
             spec:
-              description: DNSRecordSpec defines the desired state of DNSEndpoint
+              description: DNSRecordSpec defines the desired state of DNSRecord
               properties:
-                endpoints:
+                endpoint:
                   description: Endpoint is a high-level way of a connection between a service and an IP
                   properties:
                     dnsName:
