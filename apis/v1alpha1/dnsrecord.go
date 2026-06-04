@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	RecordOwnerLabel         string = "externaldns.k8s.io/owner"
-	RecordNameLabel          string = "externaldns.k8s.io/record-name"
-	RecordTypeLabel          string = "externaldns.k8s.io/record-type"
-	RecordSetIdentifierLabel string = "externaldns.k8s.io/set-identifier"
-	RecordResourceLabel      string = "externaldns.k8s.io/resource"
+	// RecordOwnerLabel ties a DNSRecord to the external-dns instance that owns it.
+	// The record identity (name, type, set identifier) is encoded in the object
+	// name instead of labels, so it is not subject to the 63-character label-value
+	// limit and records are looked up directly by name.
+	RecordOwnerLabel string = "externaldns.k8s.io/owner"
 )
 
 // DNSRecordSpec defines the desired state of DNSRecord
@@ -54,6 +54,10 @@ type DNSRecordStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/5372"
+// +kubebuilder:printcolumn:name="DNS Name",type=string,JSONPath=`.spec.endpoint.dnsName`
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.endpoint.recordType`
+// +kubebuilder:printcolumn:name="Set ID",type=string,JSONPath=`.spec.endpoint.setIdentifier`
+// +kubebuilder:printcolumn:name="Targets",type=string,JSONPath=`.spec.endpoint.targets`
 // +versionName=v1alpha1
 
 type DNSRecord struct {

@@ -14,7 +14,20 @@ spec:
     singular: dnsrecord
   scope: Namespaced
   versions:
-    - name: v1alpha1
+    - additionalPrinterColumns:
+        - jsonPath: .spec.endpoint.dnsName
+          name: DNS Name
+          type: string
+        - jsonPath: .spec.endpoint.recordType
+          name: Type
+          type: string
+        - jsonPath: .spec.endpoint.setIdentifier
+          name: Set ID
+          type: string
+        - jsonPath: .spec.endpoint.targets
+          name: Targets
+          type: string
+      name: v1alpha1
       schema:
         openAPIV3Schema:
           properties:

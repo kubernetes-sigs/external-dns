@@ -18,9 +18,11 @@ package crd
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"maps"
+	"regexp"
 	"strings"
 	"time"
 
@@ -165,20 +167,18 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		records, err := cr.getDNSRecords(ctx, r)
+		dnsrecord, err := cr.getDNSRecord(ctx, r)
 		if err != nil {
 			return fmt.Errorf("unable to get DNSRecord of %s: %w", r, err)
 		}
-
-		// While this is a list, it is expected that this call will return 0 or 1 records.
-		for i := range records.Items {
-			e := &records.Items[i]
-			if err := cr.crWriter.Delete(ctx, e); err != nil {
-				// Ignore not found as it's a benign error, the record isn't present and it's the end goal here, to remove
-				// all records. All other errors should surface back to the user.
-				if !k8sErrors.IsNotFound(err) {
-					return fmt.Errorf("unable to delete DNSRecord %s in %s: %w", e.Name, cr.namespace, err)
-				}
+		if dnsrecord == nil {
+			continue
+		}
+		if err := cr.crWriter.Delete(ctx, dnsrecord); err != nil {
+			// Ignore not found as it's a benign error, the record isn't present and it's the end goal here, to remove
+			// all records. All other errors should surface back to the user.
+			if !k8sErrors.IsNotFound(err) {
+				return fmt.Errorf("unable to delete DNSRecord %s in %s: %w", dnsrecord.Name, cr.namespace, err)
 			}
 		}
 	}
@@ -186,18 +186,16 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// Update existing DNS records to reflect the newest change.
 	for i, e := range filteredChanges.UpdateNew {
 		old := filteredChanges.UpdateOld[i]
-		records, err := cr.getDNSRecords(ctx, old)
+		dnsrecord, err := cr.getDNSRecord(ctx, old)
 		if err != nil {
 			return fmt.Errorf("unable to get DNSRecord of %s: %w", old, err)
 		}
-
-		// While this is a list, it is expected that this call will return 0 or 1 records.
-		for j := range records.Items {
-			record := &records.Items[j]
-			record.Spec.Endpoint = *e
-			if err := cr.crWriter.Update(ctx, record); err != nil {
-				return fmt.Errorf("unable to update DNSRecord %s in %s: %w", record.Name, record.Namespace, err)
-			}
+		if dnsrecord == nil {
+			continue
+		}
+		dnsrecord.Spec.Endpoint = *e
+		if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
+			return fmt.Errorf("unable to update DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
 		}
 	}
 
@@ -213,34 +211,56 @@ func (cr *CRDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 	return cr.provider.AdjustEndpoints(endpoints)
 }
 
-// getDNSRecords retrieve k8s DNSRecords resources from k8s api
-func (cr *CRDRegistry) getDNSRecords(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecordList, error) {
-	var records apiv1alpha1.DNSRecordList
-	err := cr.crReader.List(ctx, &records,
-		client.InNamespace(cr.namespace),
-		client.MatchingLabels{
-			apiv1alpha1.RecordOwnerLabel:         cr.ownerID,
-			apiv1alpha1.RecordNameLabel:          record.DNSName,
-			apiv1alpha1.RecordTypeLabel:          record.RecordType,
-			apiv1alpha1.RecordSetIdentifierLabel: record.SetIdentifier,
-		},
-	)
-	return &records, err
+// getDNSRecord retrieves the DNSRecord backing the given endpoint by its
+// deterministic object name. It returns (nil, nil) when no such record exists.
+func (cr *CRDRegistry) getDNSRecord(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecord, error) {
+	var dnsrecord apiv1alpha1.DNSRecord
+	key := client.ObjectKey{Namespace: cr.namespace, Name: recordObjectName(record)}
+	if err := cr.crReader.Get(ctx, key, &dnsrecord); err != nil {
+		if k8sErrors.IsNotFound(err) {
+			// A missing DNSRecord is an expected, benign result; callers treat a
+			// nil record as "not found".
+			return nil, nil //nolint:nilnil // intentional not-found sentinel
+		}
+		return nil, err
+	}
+	return &dnsrecord, nil
+}
+
+// nameInvalidChars matches every character that is not allowed in the readable
+// part of a DNSRecord object name (anything outside lowercase RFC 1123 alphanumerics).
+var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
+
+// recordObjectName builds a deterministic, RFC 1123 compliant object name for a
+// DNSRecord. The dashed DNS name is kept as a readable prefix so records remain
+// discoverable with `kubectl get dnsrecords`, while a short hash of the full
+// identity (DNS name, record type, set identifier) guarantees uniqueness for
+// records that would otherwise collide after sanitization — e.g. distinct set
+// identifiers (weighted/latency policies), `sub.example.io` vs `sub-example.io`,
+// or names truncated to the length limit.
+func recordObjectName(record *endpoint.Endpoint) string {
+	hash := sha256.Sum256([]byte(strings.Join([]string{record.DNSName, record.RecordType, record.SetIdentifier}, "/")))
+	suffix := fmt.Sprintf("-%x", hash[:4]) // 8 hex characters
+
+	base := strings.Trim(nameInvalidChars.ReplaceAllString(strings.ToLower(record.DNSName), "-"), "-")
+	// Keep the whole name within the 253 character RFC 1123 subdomain limit.
+	if maxBase := 253 - len(suffix); len(base) > maxBase {
+		base = strings.Trim(base[:maxBase], "-")
+	}
+	if base == "" {
+		base = "record"
+	}
+	return base + suffix
 }
 
 // createDNSRecord create a new DNSRecord with k8s API
 func (cr *CRDRegistry) createDNSRecord(ctx context.Context, record *endpoint.Endpoint) error {
-	// name has to follow rfc 1123
-	dnsname := strings.ReplaceAll(record.DNSName, ".", "-")
 	dnsrecord := &apiv1alpha1.DNSRecord{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.ToLower(fmt.Sprintf("%s-%s", dnsname, record.RecordType)),
+			Name:      recordObjectName(record),
 			Namespace: cr.namespace,
 			Labels: map[string]string{
-				apiv1alpha1.RecordOwnerLabel:         cr.OwnerID(),
-				apiv1alpha1.RecordNameLabel:          record.DNSName,
-				apiv1alpha1.RecordTypeLabel:          record.RecordType,
-				apiv1alpha1.RecordSetIdentifierLabel: record.SetIdentifier,
+				apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
 			},
 		},
 		Spec: apiv1alpha1.DNSRecordSpec{
@@ -268,18 +288,17 @@ func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context) error {
 	}
 
 	for _, record := range records {
-		dnsrecords, err := cr.getDNSRecords(ctx, record)
+		dnsrecord, err := cr.getDNSRecord(ctx, record)
 		if err != nil {
-			return fmt.Errorf("unable to list DNSRecord for %s in %s: %w", record.DNSName, cr.namespace, err)
+			return fmt.Errorf("unable to get DNSRecord for %s in %s: %w", record.DNSName, cr.namespace, err)
 		}
-
-		for i := range dnsrecords.Items {
-			dnsrecord := &dnsrecords.Items[i]
-			if !maps.Equal(dnsrecord.Spec.Endpoint.Labels, record.Labels) {
-				log.Debug("update DNSRecord with modified labels from provider")
-				if err := cr.updateDNSRecordWithEndpointLabels(ctx, dnsrecord, record); err != nil {
-					return err
-				}
+		if dnsrecord == nil {
+			continue
+		}
+		if !maps.Equal(dnsrecord.Spec.Endpoint.Labels, record.Labels) {
+			log.Debug("update DNSRecord with modified labels from provider")
+			if err := cr.updateDNSRecordWithEndpointLabels(ctx, dnsrecord, record); err != nil {
+				return err
 			}
 		}
 	}

@@ -19,6 +19,7 @@ package crd
 import (
 	"context"
 	"maps"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -101,10 +103,7 @@ func TestCRDRegistryRecords(t *testing.T) {
 			Name:      "sub-mytestdomain-io-cname",
 			Namespace: "default",
 			Labels: map[string]string{
-				apiv1alpha1.RecordOwnerLabel:         "test",
-				apiv1alpha1.RecordNameLabel:          "sub.mytestdomain.io",
-				apiv1alpha1.RecordTypeLabel:          "CNAME",
-				apiv1alpha1.RecordSetIdentifierLabel: "myid-1",
+				apiv1alpha1.RecordOwnerLabel: "test",
 			},
 		},
 		Spec: apiv1alpha1.DNSRecordSpec{
@@ -142,7 +141,9 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 		ep         *endpoint.Endpoint
 		oldEp      *endpoint.Endpoint // pre-change endpoint for Update; defaults to ep when nil
 		seedRecord *apiv1alpha1.DNSRecord
-		assertFn   func(t *testing.T, c client.Client)
+		// assertFn receives the deterministic object name of tc.ep so cases do
+		// not have to hard-code the hashed name.
+		assertFn func(t *testing.T, c client.Client, name string)
 	}{
 		{
 			name:       "Create",
@@ -154,9 +155,9 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				Targets:       endpoint.NewTargets("127.0.0.1"),
 				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
-			assertFn: func(t *testing.T, c client.Client) {
+			assertFn: func(t *testing.T, c client.Client, name string) {
 				got := &apiv1alpha1.DNSRecord{}
-				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "sub-mytestdomain-io-cname"}, got)
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: name}, got)
 				require.NoError(t, err)
 				assert.Equal(t, "test", got.Labels[apiv1alpha1.RecordOwnerLabel])
 			},
@@ -173,19 +174,15 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 			},
 			seedRecord: &apiv1alpha1.DNSRecord{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-myid-2",
 					Namespace: "default",
 					Labels: map[string]string{
-						apiv1alpha1.RecordOwnerLabel:         "test",
-						apiv1alpha1.RecordNameLabel:          "to.be.deleted.mytestdomain.io",
-						apiv1alpha1.RecordTypeLabel:          "A",
-						apiv1alpha1.RecordSetIdentifierLabel: "myid-2",
+						apiv1alpha1.RecordOwnerLabel: "test",
 					},
 				},
 			},
-			assertFn: func(t *testing.T, c client.Client) {
+			assertFn: func(t *testing.T, c client.Client, name string) {
 				got := &apiv1alpha1.DNSRecord{}
-				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "test-myid-2"}, got)
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: name}, got)
 				assert.True(t, k8sErrors.IsNotFound(err), "expected DNSRecord to be deleted, got %v", err)
 			},
 		},
@@ -209,24 +206,21 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 			},
 			seedRecord: &apiv1alpha1.DNSRecord{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-myid-3",
 					Namespace: "default",
 					Labels: map[string]string{
-						apiv1alpha1.RecordOwnerLabel:         "test",
-						apiv1alpha1.RecordNameLabel:          "to.be.updated.mytestdomain.io",
-						apiv1alpha1.RecordTypeLabel:          "CNAME",
-						apiv1alpha1.RecordSetIdentifierLabel: "myid-3",
+						apiv1alpha1.RecordOwnerLabel: "test",
 					},
 				},
 				Spec: apiv1alpha1.DNSRecordSpec{Endpoint: endpoint.Endpoint{
-					DNSName:    "to.be.updated.mytestdomain.io",
-					RecordType: "CNAME",
-					Targets:    endpoint.NewTargets("127.0.0.1"),
+					DNSName:       "to.be.updated.mytestdomain.io",
+					RecordType:    "CNAME",
+					SetIdentifier: "myid-3",
+					Targets:       endpoint.NewTargets("127.0.0.1"),
 				}},
 			},
-			assertFn: func(t *testing.T, c client.Client) {
+			assertFn: func(t *testing.T, c client.Client, name string) {
 				got := &apiv1alpha1.DNSRecord{}
-				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: "test-myid-3"}, got)
+				err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: name}, got)
 				require.NoError(t, err)
 				assert.Equal(t, endpoint.NewTargets("127.0.0.2"), got.Spec.Endpoint.Targets)
 			},
@@ -253,17 +247,61 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				seedEndpoints = append(seedEndpoints, oldEp)
 			}
 
+			// The object name is derived deterministically from the endpoint
+			// identity, so seeded records must use the same name the registry
+			// will look up.
+			name := recordObjectName(tc.ep)
 			prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io", seedEndpoints...)
 			var objs []client.Object
 			if tc.seedRecord != nil {
+				tc.seedRecord.Name = name
 				objs = append(objs, tc.seedRecord)
 			}
 			reg, c := newTestRegistry(t, prov, "test", objs...)
 
 			require.NoError(t, reg.ApplyChanges(ctx, &changes))
-			tc.assertFn(t, c)
+			tc.assertFn(t, c, name)
 		})
 	}
+}
+
+func TestRecordObjectName(t *testing.T) {
+	ep := func(dns, recordType, setID string) *endpoint.Endpoint {
+		return &endpoint.Endpoint{DNSName: dns, RecordType: recordType, SetIdentifier: setID}
+	}
+
+	t.Run("is deterministic", func(t *testing.T) {
+		first := recordObjectName(ep("sub.example.io", "A", ""))
+		second := recordObjectName(ep("sub.example.io", "A", ""))
+		assert.Equal(t, first, second)
+	})
+
+	t.Run("produces RFC 1123 compliant names", func(t *testing.T) {
+		cases := []*endpoint.Endpoint{
+			ep("sub.example.io", "A", ""),
+			ep("*.example.io", "A", ""),                         // wildcard
+			ep("_dmarc.example.io", "TXT", ""),                  // underscore
+			ep("example.io.", "A", ""),                          // trailing dot
+			ep(strings.Repeat("a.", 200)+"example.io", "A", ""), // > 253 chars
+		}
+		for _, e := range cases {
+			name := recordObjectName(e)
+			assert.LessOrEqual(t, len(name), 253, "name %q exceeds 253 chars", name)
+			assert.Empty(t, validation.IsDNS1123Subdomain(name), "name %q is not a valid RFC 1123 subdomain", name)
+		}
+	})
+
+	t.Run("distinct identities never collide", func(t *testing.T) {
+		// Cases that collapsed to the same name under the old dns-with-dashes scheme.
+		collisions := [][2]*endpoint.Endpoint{
+			{ep("sub.example.io", "A", "eu"), ep("sub.example.io", "A", "us")}, // set identifier
+			{ep("sub.example.io", "A", ""), ep("sub-example.io", "A", "")},     // dot vs dash
+			{ep("sub.example.io", "A", ""), ep("sub.example.io", "AAAA", "")},  // record type
+		}
+		for _, c := range collisions {
+			assert.NotEqual(t, recordObjectName(c[0]), recordObjectName(c[1]))
+		}
+	})
 }
 
 type mockProvider struct {
@@ -328,7 +366,7 @@ func TestCRDApplyChangesMockedProvider(t *testing.T) {
 			require.NoError(t, reg.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{&ep}}))
 
 			got := &apiv1alpha1.DNSRecord{}
-			require.NoError(t, c.Get(t.Context(), types.NamespacedName{Namespace: "default", Name: "sub-mytestdomain-io-cname"}, got))
+			require.NoError(t, c.Get(t.Context(), types.NamespacedName{Namespace: "default", Name: recordObjectName(&ep)}, got))
 
 			_, hasLabel := got.Spec.Endpoint.Labels["prefix"]
 			assert.Equal(t, tc.expectLabel, hasLabel)
