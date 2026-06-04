@@ -41,7 +41,7 @@ func New[T comparable](items ...T) Set[T] {
 func NewFromMapKeys[T comparable, V any](m map[T]V) Set[T] {
 	s := make(Set[T], len(m))
 	for k := range m {
-		s[k] = Empty{}
+		s.Insert(k)
 	}
 	return s
 }

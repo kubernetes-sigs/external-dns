@@ -573,7 +573,7 @@ func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
 // and adds individual metadata properties to the endpoint.
 // Returns the list of unique metadata keys that were parsed.
 func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string {
-	keys := make(sets.Set[string], len(tagString))
+	keys := make(sets.Set[string])
 	for tag := range strings.SplitSeq(tagString, ",") {
 		tag = strings.TrimSpace(tag)
 		if tag == "" {
