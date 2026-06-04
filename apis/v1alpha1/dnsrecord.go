@@ -47,16 +47,12 @@ const (
 // DNSRecordSpec defines the desired state of DNSRecord
 // +kubebuilder:object:generate=true
 type DNSRecordSpec struct {
-	Endpoint endpoint.Endpoint `json:"endpoint,omitempty"`
+	Endpoint endpoint.Endpoint `json:"endpoint"`
 }
 
 // DNSRecordStatus defines the observed state of DNSRecord
 // +kubebuilder:object:generate=true
 type DNSRecordStatus struct {
-	// The generation observed by the external-dns controller.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
 	// Conditions represent the latest available observations of the DNSRecord state.
 	// +optional
 	// +listType=map
@@ -90,7 +86,7 @@ type DNSRecord struct {
 }
 
 // +kubebuilder:object:root=true
-// DNSEndpointList is a list of DNSEndpoint objects
+// DNSRecordList is a list of DNSRecord objects
 type DNSRecordList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

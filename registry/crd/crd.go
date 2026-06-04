@@ -45,13 +45,14 @@ import (
 
 // CRDRegistry implements registry interface with ownership implemented via associated custom resource records (DNSRecord)
 type CRDRegistry struct {
-	// crReader serves reads from a controller-runtime cache (informer-backed).
+	// crReader serves the bulk Records() list from a controller-runtime cache
+	// (informer-backed), keeping the per-reconcile list off the API server.
 	crReader client.Reader
-	// crWriter performs create/update/delete against the API server.
+	// crWriter performs create/update/delete against the API server. It also
+	// serves every get-before-write read (getDNSRecord), so a record written
+	// this reconcile is visible to a read later in the same reconcile — the
+	// informer cache behind crReader may still lag and must not back writes.
 	crWriter client.Client
-	// informer warms the DNSRecord watch backing crReader; the registry does
-	// not subscribe to events, reads are always served from the synced cache.
-	informer crcache.Informer
 
 	namespace string
 	provider  provider.Provider
@@ -97,7 +98,8 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namesp
 		return nil, fmt.Errorf("unable to create cache: %w", err)
 	}
 
-	// crWriter is used exclusively for writes; reads come from the cache.
+	// crWriter is used for writes and for every get-before-write read; the
+	// cache serves only the bulk Records() list.
 	crWriter, err := client.New(restConfig, client.Options{Scheme: opts.Scheme})
 	if err != nil {
 		return nil, fmt.Errorf("unable to create client: %w", err)
@@ -105,18 +107,27 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namesp
 
 	// The cache lives for the whole process lifetime, mirroring the registry.
 	ctx := context.Background()
-	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSRecord{})
-	if err != nil {
+	// GetInformer registers the DNSRecord watch that backs crReader; the returned
+	// informer is unused because reads are always served from the synced cache.
+	if _, err := c.GetInformer(ctx, &apiv1alpha1.DNSRecord{}); err != nil {
 		return nil, fmt.Errorf("unable to get informer: %w", err)
 	}
-	if err := startAndSync(ctx, c); err != nil {
+	// Bound the initial sync so a missing RBAC or unreachable API server fails
+	// fast at startup instead of hanging forever. The cache itself keeps running
+	// under ctx; only the wait is bounded.
+	syncTimeout := apiServerTimeout
+	if syncTimeout <= 0 {
+		syncTimeout = 30 * time.Second
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, syncTimeout)
+	defer cancel()
+	if err := startAndSync(ctx, syncCtx, c); err != nil {
 		return nil, err
 	}
 
 	return &CRDRegistry{
 		crReader:  c,
 		crWriter:  crWriter,
-		informer:  inf,
 		namespace: namespace,
 		provider:  provider,
 		ownerID:   ownerID,
@@ -257,7 +268,7 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	return cr.adjustLabelsFromProvider(ctx)
+	return cr.adjustLabelsFromProvider(ctx, applied)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
@@ -266,11 +277,13 @@ func (cr *CRDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 }
 
 // getDNSRecord retrieves the DNSRecord backing the given endpoint by its
-// deterministic object name. It returns (nil, nil) when no such record exists.
+// deterministic object name. It reads through crWriter (live API), not the
+// cache, so a record written earlier in the same reconcile is seen here. It
+// returns (nil, nil) when no such record exists.
 func (cr *CRDRegistry) getDNSRecord(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecord, error) {
 	var dnsrecord apiv1alpha1.DNSRecord
 	key := client.ObjectKey{Namespace: cr.namespace, Name: recordObjectName(record)}
-	if err := cr.crReader.Get(ctx, key, &dnsrecord); err != nil {
+	if err := cr.crWriter.Get(ctx, key, &dnsrecord); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			// A missing DNSRecord is an expected, benign result; callers treat a
 			// nil record as "not found".
@@ -293,10 +306,14 @@ var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
 // identifiers (weighted/latency policies), `sub.example.io` vs `sub-example.io`,
 // or names truncated to the length limit.
 func recordObjectName(record *endpoint.Endpoint) string {
-	hash := sha256.Sum256([]byte(strings.Join([]string{record.DNSName, record.RecordType, record.SetIdentifier}, "/")))
+	// Canonicalize the identity so equivalent records (case, trailing dot) map to
+	// the same object name on both the write and the provider-readback path.
+	dnsName := strings.TrimSuffix(strings.ToLower(record.DNSName), ".")
+	recordType := strings.ToUpper(record.RecordType)
+	hash := sha256.Sum256([]byte(strings.Join([]string{dnsName, recordType, record.SetIdentifier}, "/")))
 	suffix := fmt.Sprintf("-%x", hash[:4]) // 8 hex characters
 
-	base := strings.Trim(nameInvalidChars.ReplaceAllString(strings.ToLower(record.DNSName), "-"), "-")
+	base := strings.Trim(nameInvalidChars.ReplaceAllString(dnsName, "-"), "-")
 	// Keep the whole name within the 253 character RFC 1123 subdomain limit.
 	if maxBase := 253 - len(suffix); len(base) > maxBase {
 		base = strings.Trim(base[:maxBase], "-")
@@ -358,33 +375,44 @@ func (cr *CRDRegistry) setStatus(ctx context.Context, dnsrecord *apiv1alpha1.DNS
 	if reason == apiv1alpha1.ProgrammedReason {
 		status = metav1.ConditionTrue
 	}
-	dnsrecord.Status.ObservedGeneration = dnsrecord.Generation
 	meta.SetStatusCondition(&dnsrecord.Status.Conditions, metav1.Condition{
-		Type:               apiv1alpha1.ReadyCondition,
-		Status:             status,
-		Reason:             reason,
-		Message:            message,
-		ObservedGeneration: dnsrecord.Generation,
+		Type:    apiv1alpha1.ReadyCondition,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
 	})
 	if err := cr.crWriter.Status().Update(ctx, dnsrecord); err != nil {
 		log.Warnf("unable to update status of DNSRecord %s in %s: %v", dnsrecord.Name, cr.namespace, err)
 	}
 }
 
-// adjustLabelsFromProvider ensures labels in CRD registry are accurate
-// It should be called after applyChanges
-func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context) error {
+// adjustLabelsFromProvider reconciles the labels of the records applied this
+// reconcile with the labels the provider ended up storing (some providers, e.g.
+// coredns, rewrite them). Only the just-applied records are considered: records
+// untouched this round were not changed by the provider either. It is a no-op
+// when nothing was created or updated, avoiding an extra provider read on
+// delete-only or empty reconciles. It should be called after applyChanges.
+func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context, applied []*apiv1alpha1.DNSRecord) error {
+	if len(applied) == 0 {
+		return nil
+	}
+
 	records, err := cr.provider.Records(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to get records from provider: %w", err)
 	}
 
+	// Index the provider records by the deterministic DNSRecord object name so
+	// each applied record is matched in memory, without a per-record API read.
+	byName := make(map[string]*endpoint.Endpoint, len(records))
 	for _, record := range records {
-		dnsrecord, err := cr.getDNSRecord(ctx, record)
-		if err != nil {
-			return fmt.Errorf("unable to get DNSRecord for %s in %s: %w", record.DNSName, cr.namespace, err)
-		}
-		if dnsrecord == nil {
+		byName[recordObjectName(record)] = record
+	}
+
+	for _, dnsrecord := range applied {
+		record, ok := byName[dnsrecord.Name]
+		if !ok {
+			log.Debugf("no provider record matched DNSRecord %s; skipping label adjust", dnsrecord.Name)
 			continue
 		}
 		if !maps.Equal(dnsrecord.Spec.Endpoint.Labels, record.Labels) {
@@ -428,28 +456,27 @@ func buildCacheOptions(namespace string) (crcache.Options, error) {
 		Scheme: scheme,
 		ByObject: map[client.Object]crcache.ByObject{
 			&apiv1alpha1.DNSRecord{}: {
-				Namespaces: map[string]crcache.Config{
-					namespace: {}, // "" == NamespaceAll
-				},
+				Namespaces: map[string]crcache.Config{namespace: {}},
 			},
 		},
 	}, nil
 }
 
-// startAndSync starts the cache in a goroutine and waits for it to sync.
-// Returns an error if the cache fails to start or sync.
-func startAndSync(ctx context.Context, c crcache.Cache) error {
+// startAndSync starts the cache under startCtx (process lifetime) and waits for
+// the initial sync under syncCtx (bounded), returning an error if the cache
+// fails to start or does not sync before syncCtx expires.
+func startAndSync(startCtx, syncCtx context.Context, c crcache.Cache) error {
 	errCh := make(chan error, 1)
-	go func() { errCh <- c.Start(ctx) }()
-	if !c.WaitForCacheSync(ctx) {
+	go func() { errCh <- c.Start(startCtx) }()
+	if !c.WaitForCacheSync(syncCtx) {
 		select {
 		case err := <-errCh:
 			if err != nil {
 				return fmt.Errorf("cache failed to sync: %w", err)
 			}
 			return fmt.Errorf("cache failed to sync")
-		case <-ctx.Done():
-			return fmt.Errorf("cache failed to sync: %w", ctx.Err())
+		default:
+			return fmt.Errorf("cache failed to sync: %w", syncCtx.Err())
 		}
 	}
 	return nil

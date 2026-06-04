@@ -113,8 +113,6 @@ Each `DNSRecord` carries a status:
       individual records, every record in a failed batch is marked `Failed`;
       records that were in fact applied are corrected to `Programmed` on the next
       reconcile.
-* `status.observedGeneration` records the `.metadata.generation` that was last
-  reconciled.
 
 Inspect it with:
 
@@ -128,12 +126,10 @@ kind: DNSRecord
 metadata: [...]
 spec: [...]
 status:
-  observedGeneration: 1
   conditions:
     - type: Ready
       status: "True"
       reason: Programmed
       message: Endpoint applied to the DNS provider
-      observedGeneration: 1
       lastTransitionTime: "2026-06-04T10:00:00Z"
 ```

@@ -391,8 +391,8 @@ func TestCRDApplyChangesMockedProvider(t *testing.T) {
 	}
 }
 
-// A successful apply must mark the DNSRecord Ready with reason Programmed and
-// record the observed generation, so the stored record carries visible status.
+// A successful apply must mark the DNSRecord Ready with reason Programmed, so
+// the stored record carries visible status.
 func TestCRDApplyChangesSetsProgrammedStatus(t *testing.T) {
 	ctx := t.Context()
 	prov := inMemoryProviderWithEntries(t, ctx, "mytestdomain.io")
@@ -414,7 +414,6 @@ func TestCRDApplyChangesSetsProgrammedStatus(t *testing.T) {
 	require.NotNil(t, cond, "expected a Ready condition")
 	assert.Equal(t, metav1.ConditionTrue, cond.Status)
 	assert.Equal(t, apiv1alpha1.ProgrammedReason, cond.Reason)
-	assert.Equal(t, got.Generation, got.Status.ObservedGeneration)
 }
 
 // When the provider rejects the changes, the DNSRecord is persisted with a
