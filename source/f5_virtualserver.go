@@ -24,6 +24,7 @@ import (
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -125,6 +126,10 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 		if err != nil {
 			return nil, err
 		}
+		virtualServer.TypeMeta = metav1.TypeMeta{
+			Kind:       "VirtualServer",
+			APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+		}
 		virtualServers = append(virtualServers, virtualServer)
 	}
 
@@ -203,7 +208,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 }
 
 // endpointsFromVSTemplate creates endpoints using the FQDN and target templates.
-func (vs *f5VirtualServerSource) endpointsFromVSTemplate(obj traefikObject) ([]*endpoint.Endpoint, error) {
+func (vs *f5VirtualServerSource) endpointsFromVSTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
 	hostnames, err := vs.templateEngine.ExecFQDN(obj)
 	if err != nil || len(hostnames) == 0 {
 		return nil, err
@@ -216,7 +221,7 @@ func (vs *f5VirtualServerSource) endpointsFromVSTemplate(obj traefikObject) ([]*
 }
 
 // endpointsFromFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
-func (vs *f5VirtualServerSource) endpointsFromFQDNTargetTemplate(obj traefikObject) ([]*endpoint.Endpoint, error) {
+func (vs *f5VirtualServerSource) endpointsFromFQDNTargetTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
 	pairs, err := vs.templateEngine.ExecFQDNTarget(obj)
 	if err != nil || len(pairs) == 0 {
 		return nil, err
@@ -226,15 +231,15 @@ func (vs *f5VirtualServerSource) endpointsFromFQDNTargetTemplate(obj traefikObje
 	for _, pair := range pairs {
 		parts := strings.SplitN(pair, ":", 2)
 		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
-				pair, strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind), obj.GetNamespace(), obj.GetName())
+			log.Debugf("Skipping invalid host:target pair %q from virtualserver %s/%s: missing ':' separator",
+				pair, obj.GetNamespace(), obj.GetName())
 			continue
 		}
 		host := strings.TrimSpace(parts[0])
 		target := strings.TrimSpace(parts[1])
 		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
-				pair, strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind), obj.GetNamespace(), obj.GetName())
+			log.Debugf("Skipping incomplete host:target pair %q from virtualserver %s/%s: field may not yet be populated",
+				pair, obj.GetNamespace(), obj.GetName())
 			continue
 		}
 		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
