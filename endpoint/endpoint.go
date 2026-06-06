@@ -366,6 +366,7 @@ func (e *Endpoint) GetAliasProperty() AliasType {
 	}
 }
 
+// WithAliasProperty sets the alias provider-specific property on the endpoint.
 func (e *Endpoint) WithAliasProperty(a AliasType) *Endpoint {
 	return e.WithProviderSpecific(ProviderSpecificAlias, string(a))
 }
