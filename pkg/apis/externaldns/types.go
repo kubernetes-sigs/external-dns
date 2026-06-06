@@ -464,7 +464,6 @@ var allowedSources = []string{
 	"unstructured",
 }
 
-// NewConfig returns new Config object
 // NewConfig returns a new Config with zero values. All defaults are applied via
 // flag binding in bindFlags; do not set defaults here.
 func NewConfig() *Config {
