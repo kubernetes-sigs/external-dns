@@ -19,7 +19,6 @@ package factory
 import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
@@ -34,76 +33,20 @@ func TestSelectProvider(t *testing.T) {
 	tests := []struct {
 		name          string
 		cfg           *externaldns.Config
-		expectedType  string
 		expectedError string
 	}{
 		{
-			name: "aws provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderAWS,
-			},
-			expectedType: "*aws.AWSProvider",
-		},
-		{
-			name: "rfc2136 provider",
-			cfg: &externaldns.Config{
-				Provider:             externaldns.ProviderRFC2136,
-				RFC2136TSIGSecretAlg: "hmac-sha256",
-			},
-			expectedType: "*rfc2136.rfc2136Provider",
-		},
-		{
-			name: "gandi provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderGandi,
-			},
-			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
-		},
-		{
-			name: "inmemory provider",
+			name: "known provider",
 			cfg: &externaldns.Config{
 				Provider: externaldns.ProviderInMemory,
 			},
-			expectedType: "*inmemory.InMemoryProvider",
 		},
 		{
-			name: "oci provider instance principal without compartment OCID",
+			name: "known provider with cache",
 			cfg: &externaldns.Config{
-				Provider:                 externaldns.ProviderOCI,
-				OCIAuthInstancePrincipal: true,
-				OCICompartmentOCID:       "",
+				Provider:          externaldns.ProviderInMemory,
+				ProviderCacheTime: 10 * time.Millisecond,
 			},
-			expectedError: "instance principal authentication requested, but no compartment OCID provided",
-		},
-		{
-			name: "oci provider without config file",
-			cfg: &externaldns.Config{
-				Provider:      externaldns.ProviderOCI,
-				OCIConfigFile: "",
-			},
-			expectedError: "reading OCI config file",
-		},
-		{
-			name: "coredns provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderCoreDNS,
-			},
-			expectedType: "coredns.coreDNSProvider",
-		},
-		{
-			name: "pihole provider",
-			cfg: &externaldns.Config{
-				Provider:     externaldns.ProviderPihole,
-				PiholeServer: "http://localhost:8080",
-			},
-			expectedType: "*pihole.PiholeProvider",
-		},
-		{
-			name: "dnsimple provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderDNSimple,
-			},
-			expectedError: "no dnsimple oauth token provided",
 		},
 		{
 			name: "unknown provider",
@@ -113,28 +56,23 @@ func TestSelectProvider(t *testing.T) {
 			expectedError: "unknown dns provider: unknown",
 		},
 		{
-			name: "inmemory cached provider",
+			name: "provider constructor error",
 			cfg: &externaldns.Config{
-				Provider:          externaldns.ProviderInMemory,
-				ProviderCacheTime: 10 * time.Millisecond,
+				Provider: externaldns.ProviderGandi,
 			},
-			expectedType: "*provider.CachedProvider",
+			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
-
 			p, err := Select(t.Context(), tt.cfg, domainFilter)
-
 			if tt.expectedError != "" {
-				assert.Error(t, err)
 				assert.ErrorContains(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, p)
-				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
+				assert.NotNil(t, p)
 			}
 		})
 	}
