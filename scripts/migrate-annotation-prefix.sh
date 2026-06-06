@@ -42,8 +42,14 @@
 #   Apply changes:
 #     ./migrate-annotation-prefix.sh --apply
 #
-#   Restrict to specific resource types (comma-separated):
-#     ./migrate-annotation-prefix.sh --resources=services,ingresses --apply
+#   Scan additional resource types (default: services):
+#     ./migrate-annotation-prefix.sh --resources=services,ingresses,nodes,pods --apply
+#
+#   Flags:
+#     --apply                  apply changes (default: dry-run)
+#     --resources=<list>       comma-separated list of Kubernetes resource types to scan
+#                              (default: services)
+#                              common values: services, ingresses, nodes, pods
 #
 # REQUIREMENTS
 #   kubectl, jq
@@ -53,7 +59,7 @@ set -euo pipefail
 OLD_PREFIX="external-dns.alpha.kubernetes.io/"
 NEW_PREFIX="external-dns.kubernetes.io/"
 APPLY=false
-RESOURCES=("services" "ingresses")
+RESOURCES=("services")
 
 for arg in "$@"; do
   case $arg in
