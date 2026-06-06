@@ -345,54 +345,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	deleteTXTsByKey := make(map[recordKey]*endpoint.Endpoint)
-	for _, r := range filteredChanges.Delete {
-		for _, txt := range im.generateTXTRecord(r) {
-			deleteTXTsByKey[recordKey{txt.DNSName, txt.SetIdentifier}] = txt
-		}
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
-	}
-
-	// For each created endpoint, generate its TXT records.
-	// If a TXT name collides with a pending deletion
-	// (e.g. CNAME→A alias, both use the "cname-" prefix),
-	// promote the pair to UpdateOld+UpdateNew so providers receive a safe UPSERT
-	// instead of an order-dependent Delete+Create.
-	var promotedUpdateOld, promotedUpdateNew []*endpoint.Endpoint
-	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		txts := im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool {
-			_, beingDeleted := deleteTXTsByKey[recordKey{ep.DNSName, ep.SetIdentifier}]
-			return im.existingTXTs.isAbsent(ep) || beingDeleted
-		})
-		for _, txt := range txts {
-			k := recordKey{txt.DNSName, txt.SetIdentifier}
-			if oldTXT, ok := deleteTXTsByKey[k]; ok {
-				promotedUpdateOld = append(promotedUpdateOld, oldTXT)
-				promotedUpdateNew = append(promotedUpdateNew, txt)
-				delete(deleteTXTsByKey, k)
-			} else {
-				filteredChanges.Create = append(filteredChanges.Create, txt)
-			}
-		}
-
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
-
-	// Append non-promoted TXT deletions (entries remaining in the map had no
-	// matching Create and are genuine deletes).
-	for _, txt := range deleteTXTsByKey {
-		filteredChanges.Delete = append(filteredChanges.Delete, txt)
-	}
-
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
@@ -413,8 +365,52 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, promotedUpdateOld...)
-	filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, promotedUpdateNew...)
+	deleteTXTsByKey := make(map[recordKey]*endpoint.Endpoint)
+	for _, r := range filteredChanges.Delete {
+		for _, txt := range im.generateTXTRecord(r) {
+			deleteTXTsByKey[recordKey{txt.DNSName, txt.SetIdentifier}] = txt
+		}
+		if im.cacheInterval > 0 {
+			im.removeFromCache(r)
+		}
+	}
+
+	// For each created endpoint, generate its TXT records.
+	// If a TXT name collides with a pending deletion
+	// (e.g. CNAME→A alias, both use the "cname-" prefix),
+	// promote the pair to UpdateOld+UpdateNew so providers receive a safe UPSERT
+	// instead of an order-dependent Delete+Create.
+	for _, r := range filteredChanges.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+
+		txts := im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool {
+			_, beingDeleted := deleteTXTsByKey[recordKey{ep.DNSName, ep.SetIdentifier}]
+			return im.existingTXTs.isAbsent(ep) || beingDeleted
+		})
+		for _, txt := range txts {
+			k := recordKey{txt.DNSName, txt.SetIdentifier}
+			if oldTXT, ok := deleteTXTsByKey[k]; ok {
+				filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, oldTXT)
+				filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+				delete(deleteTXTsByKey, k)
+			} else {
+				filteredChanges.Create = append(filteredChanges.Create, txt)
+			}
+		}
+
+		if im.cacheInterval > 0 {
+			im.addToCache(r)
+		}
+	}
+
+	// Append non-promoted TXT deletions (entries remaining in the map had no
+	// matching Create and are genuine deletes).
+	for _, txt := range deleteTXTsByKey {
+		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+	}
 
 	// when caching is enabled, disable the provider from using the cache
 	if im.cacheInterval > 0 {
