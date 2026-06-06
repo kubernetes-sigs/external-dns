@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -30,7 +29,7 @@ import (
 
 var (
 	// annotationPrefixRe matches a valid annotation prefix: lowercase alphanumeric, dots, and hyphens, ending with exactly one slash.
-	annotationPrefixRe = regexp.MustCompile(`^[a-z0-9.\-]+/$`)
+	annotationPrefixRe = regexp.MustCompile(`^[a-z0-9.-]+/$`)
 )
 
 // ValidateConfig performs validation on the Config object
@@ -62,7 +61,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-filter does not specify a valid label selector")
 	}
 
-	if strings.TrimSpace(cfg.AnnotationPrefix) == "" {
+	if cfg.AnnotationPrefix == "" {
 		return errors.New(
 			"--annotation-prefix must be set explicitly; " +
 				"the default annotation prefix changed from 'external-dns.alpha.kubernetes.io/' to 'external-dns.kubernetes.io/' " +

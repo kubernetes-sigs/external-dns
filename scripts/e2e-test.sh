@@ -106,6 +106,7 @@ spec:
           args:
             - --source=service
             - --provider=coredns
+            - --annotation-prefix=external-dns.kubernetes.io/
             - --txt-owner-id=external.dns
             - --policy=sync
             - --log-level=debug
