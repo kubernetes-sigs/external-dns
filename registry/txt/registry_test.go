@@ -766,7 +766,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("With Templated Suffix", testTXTRegistryApplyChangesWithTemplatedSuffix)
 	t.Run("With Suffix", testTXTRegistryApplyChangesWithSuffix)
 	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
-	t.Run("CNAME to A alias promotes TXT to update", testTXTPromotedToUpdateOnRecordTypeChange)
+	t.Run("Promotes TXT to update on record type change", testTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange)
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
@@ -1142,65 +1142,95 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func testTXTPromotedToUpdateOnRecordTypeChange(t *testing.T) {
+func testTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T) {
 	ownerID := "owner"
-	ctx := t.Context()
-	p := inmemory.NewInMemoryProvider()
-	err := p.CreateZone(testZone)
-	require.NoError(t, err)
-
-	r, _ := newRegistry(p, "%{record_type}-", "", ownerID, 0, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}, []string{}, false, nil, "")
-
 	target := "my-elb.us-east-1.elb.amazonaws.com"
 	dnsName := "foo.test-zone.example.org"
 
-	// Seed provider with CNAME and its TXT record.
-	cnameEp := newEndpointWithOwner(dnsName, target, endpoint.RecordTypeCNAME, ownerID)
-	oldTXT := r.generateTXTRecord(cnameEp)
-	err = p.ApplyChanges(ctx, &plan.Changes{
-		Create: append([]*endpoint.Endpoint{cnameEp}, oldTXT...),
-	})
-	require.NoError(t, err)
-
-	// Simulates start of reconcile.
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	// In the same reconcile: delete CNAME, create A alias with the same DNS name.
-	// Both share the "cname-" TXT prefix, so the colliding TXT pair must be promoted
-	// to UpdateOld+UpdateNew instead of Delete+Create.
-	aliasEp := endpoint.NewEndpoint(dnsName, endpoint.RecordTypeA, target).
-		WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
-	aliasEpWithOwner := newEndpointWithOwner(dnsName, target, endpoint.RecordTypeA, ownerID).
-		WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
-
-	expected := &plan.Changes{
-		Create:    []*endpoint.Endpoint{aliasEpWithOwner},
-		Delete:    []*endpoint.Endpoint{cnameEp},
-		UpdateOld: oldTXT,
-		UpdateNew: r.generateTXTRecord(aliasEpWithOwner),
-	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
-		mExpected := map[string][]*endpoint.Endpoint{
-			"Create":    expected.Create,
-			"UpdateNew": expected.UpdateNew,
-			"UpdateOld": expected.UpdateOld,
-			"Delete":    expected.Delete,
-		}
-		mGot := map[string][]*endpoint.Endpoint{
-			"Create":    got.Create,
-			"UpdateNew": got.UpdateNew,
-			"UpdateOld": got.UpdateOld,
-			"Delete":    got.Delete,
-		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	tests := []struct {
+		name      string
+		fromType  string
+		fromAlias bool
+		toType    string
+		toAlias   bool
+	}{
+		{
+			name:     "CNAME to A alias",
+			fromType: endpoint.RecordTypeCNAME,
+			toType:   endpoint.RecordTypeA,
+			toAlias:  true,
+		},
+		{
+			name:      "A alias to CNAME",
+			fromType:  endpoint.RecordTypeA,
+			fromAlias: true,
+			toType:    endpoint.RecordTypeCNAME,
+		},
 	}
 
-	err = r.ApplyChanges(ctx, &plan.Changes{
-		Delete: []*endpoint.Endpoint{cnameEp},
-		Create: []*endpoint.Endpoint{aliasEp},
-	})
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			p := inmemory.NewInMemoryProvider()
+			err := p.CreateZone(testZone)
+			require.NoError(t, err)
+
+			r, _ := newRegistry(p, "%{record_type}-", "", ownerID, 0, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}, []string{}, false, nil, "")
+
+			// Seed provider with the "from" record and its TXT record.
+			fromEp := newEndpointWithOwner(dnsName, target, tt.fromType, ownerID)
+			if tt.fromAlias {
+				fromEp = fromEp.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+			}
+			oldTXT := r.generateTXTRecord(fromEp)
+			err = p.ApplyChanges(ctx, &plan.Changes{
+				Create: append([]*endpoint.Endpoint{fromEp}, oldTXT...),
+			})
+			require.NoError(t, err)
+
+			// Simulates start of reconcile.
+			_, err = r.Records(ctx)
+			require.NoError(t, err)
+
+			// In the same reconcile: delete "from", create "to" with the same DNS name.
+			// Both share the same TXT prefix (e.g. "cname-"), so the colliding TXT pair
+			// must be promoted to UpdateOld+UpdateNew instead of Delete+Create.
+			toEp := endpoint.NewEndpoint(dnsName, tt.toType, target)
+			toEpWithOwner := newEndpointWithOwner(dnsName, target, tt.toType, ownerID)
+			if tt.toAlias {
+				toEp = toEp.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+				toEpWithOwner = toEpWithOwner.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+			}
+
+			expected := &plan.Changes{
+				Create:    []*endpoint.Endpoint{toEpWithOwner},
+				Delete:    []*endpoint.Endpoint{fromEp},
+				UpdateOld: oldTXT,
+				UpdateNew: r.generateTXTRecord(toEpWithOwner),
+			}
+			p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+				mExpected := map[string][]*endpoint.Endpoint{
+					"Create":    expected.Create,
+					"UpdateNew": expected.UpdateNew,
+					"UpdateOld": expected.UpdateOld,
+					"Delete":    expected.Delete,
+				}
+				mGot := map[string][]*endpoint.Endpoint{
+					"Create":    got.Create,
+					"UpdateNew": got.UpdateNew,
+					"UpdateOld": got.UpdateOld,
+					"Delete":    got.Delete,
+				}
+				assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+			}
+
+			err = r.ApplyChanges(ctx, &plan.Changes{
+				Delete: []*endpoint.Endpoint{fromEp},
+				Create: []*endpoint.Endpoint{toEp},
+			})
+			require.NoError(t, err)
+		})
+	}
 }
 
 func testTXTRegistryMissingRecords(t *testing.T) {
