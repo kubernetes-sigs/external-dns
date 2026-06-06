@@ -47,7 +47,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: defaultGlooNamespace,
 		},
@@ -88,8 +88,8 @@ var (
 	}
 	internalProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      internalProxy.Metadata.Name,
-			Namespace: internalProxy.Metadata.Namespace,
+			Name:      internalProxy.Name,
+			Namespace: internalProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -126,7 +126,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "external",
 			Namespace: defaultGlooNamespace,
 		},
@@ -167,8 +167,8 @@ var (
 	}
 	externalProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      externalProxy.Metadata.Name,
-			Namespace: externalProxy.Metadata.Namespace,
+			Name:      externalProxy.Name,
+			Namespace: externalProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -205,7 +205,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal-static",
 			Namespace: defaultGlooNamespace,
 		},
@@ -250,8 +250,8 @@ var (
 	}
 	proxyWithMetadataStaticSvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      proxyWithMetadataStatic.Metadata.Name,
-			Namespace: proxyWithMetadataStatic.Metadata.Namespace,
+			Name:      proxyWithMetadataStatic.Name,
+			Namespace: proxyWithMetadataStatic.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -288,7 +288,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "target-ann",
 			Namespace: defaultGlooNamespace,
 			Annotations: map[string]string{
@@ -332,8 +332,8 @@ var (
 	}
 	targetAnnotatedProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetAnnotatedProxy.Metadata.Name,
-			Namespace: targetAnnotatedProxy.Metadata.Namespace,
+			Name:      targetAnnotatedProxy.Name,
+			Namespace: targetAnnotatedProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -370,7 +370,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gateway-ingress-annotated",
 			Namespace: defaultGlooNamespace,
 		},
