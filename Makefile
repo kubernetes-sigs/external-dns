@@ -207,6 +207,19 @@ helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
 
+.PHONY: helm-chart-package
+#? helm-chart-package: Package the Helm chart into a versioned chart archive file
+helm-chart-package:
+	DEST_CHART_DIR=$(DEST_CHART_DIR) \
+	HELM_CHART_PUSH=$(HELM_CHART_PUSH) \
+	HELM_CHART_REPO=$(HELM_CHART_REPO) \
+	./scripts/helm-chart-package.sh
+
+.PHONY: helm-chart-push
+#? helm-chart-push: Package and push the Helm chart to an OCI registry
+helm-chart-push: HELM_CHART_PUSH=true
+helm-chart-push: helm-chart-package
+
 .PHONY: go-dependency
 #? go-dependency: Dependency maintenance
 go-dependency:
