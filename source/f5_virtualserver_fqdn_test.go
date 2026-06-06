@@ -291,6 +291,45 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "fqdn-template can reference .Kind",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec:   f5.VirtualServerSpec{Host: "www.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("virtualserver.my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template can reference .APIVersion",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec:   f5.VirtualServerSpec{Host: "www.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-vs.cis.f5.com.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
 	}
 
 	for _, tt := range tests {

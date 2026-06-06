@@ -241,6 +241,45 @@ func TestF5TransportServerFQDNTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "fqdn-template can reference .Kind",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+				},
+				Spec:   f5.TransportServerSpec{Host: "tcp.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("transportserver.my-ts.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template can reference .APIVersion",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+				},
+				Spec:   f5.TransportServerSpec{Host: "tcp.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-ts.cis.f5.com.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
