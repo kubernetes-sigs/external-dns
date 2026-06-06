@@ -366,6 +366,11 @@ func (e *Endpoint) GetAliasProperty() AliasType {
 	}
 }
 
+// WithAliasProperty sets the alias provider-specific property on the endpoint.
+func (e *Endpoint) WithAliasProperty(a AliasType) *Endpoint {
+	return e.WithProviderSpecific(ProviderSpecificAlias, string(a))
+}
+
 // GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
 func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 	prop, ok := e.GetProviderSpecificProperty(key)
