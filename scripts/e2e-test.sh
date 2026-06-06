@@ -60,7 +60,7 @@ kubectl apply -f e2e/provider/etcd.yaml
 
 # wait for etcd to be ready
 echo "Waiting for etcd to be ready..."
-kubectl rollout status statefulset/etcd --timeout=120s
+kubectl rollout status statefulset/etcd --timeout=300s
 
 # apply coredns deployment
 echo "Applying CoreDNS"
