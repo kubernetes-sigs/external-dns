@@ -19,12 +19,18 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+)
+
+var (
+	// annotationPrefixRe matches a valid annotation prefix: lowercase alphanumeric, dots, and hyphens, ending with exactly one slash.
+	annotationPrefixRe = regexp.MustCompile(`^[a-z0-9.\-]+/$`)
 )
 
 // ValidateConfig performs validation on the Config object
@@ -56,7 +62,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-filter does not specify a valid label selector")
 	}
 
-	if cfg.AnnotationPrefix == "" {
+	if strings.TrimSpace(cfg.AnnotationPrefix) == "" {
 		return errors.New(
 			"--annotation-prefix must be set explicitly; " +
 				"the default annotation prefix changed from 'external-dns.alpha.kubernetes.io/' to 'external-dns.kubernetes.io/' " +
@@ -65,8 +71,8 @@ func ValidateConfig(cfg *externaldns.Config) error {
 				"or --annotation-prefix=external-dns.kubernetes.io/ once migration is complete; " +
 				"in a future release this flag will default to 'external-dns.kubernetes.io/' and become optional")
 	}
-	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
-		return errors.New("--annotation-prefix must end with '/'")
+	if !annotationPrefixRe.MatchString(cfg.AnnotationPrefix) {
+		return errors.New("--annotation-prefix must end with exactly one '/'")
 	}
 
 	if cfg.KubeAPIQPS <= 0 {
