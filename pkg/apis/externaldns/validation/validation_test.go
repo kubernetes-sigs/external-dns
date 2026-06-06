@@ -133,6 +133,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.Provider = "test-provider"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 
 	require.NoError(t, ValidateConfig(cfg))
 
@@ -181,6 +182,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 50
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)

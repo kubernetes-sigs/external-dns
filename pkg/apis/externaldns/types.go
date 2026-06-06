@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/flags"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -241,7 +240,7 @@ var defaultConfig = &Config{
 	AkamaiServiceConsumerDomain: "",
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:            "",
-	AnnotationPrefix:            annotations.DefaultAnnotationPrefix,
+	AnnotationPrefix:            "",
 	APIServerURL:                "",
 	AWSAPIRetries:               3,
 	AWSAssumeRole:               "",
@@ -466,11 +465,10 @@ var allowedSources = []string{
 }
 
 // NewConfig returns new Config object
+// NewConfig returns a new Config with zero values. All defaults are applied via
+// flag binding in bindFlags; do not set defaults here.
 func NewConfig() *Config {
-	return &Config{
-		AnnotationPrefix: annotations.DefaultAnnotationPrefix,
-		AWSSDCreateTag:   map[string]string{},
-	}
+	return &Config{}
 }
 
 func (cfg *Config) String() string {
