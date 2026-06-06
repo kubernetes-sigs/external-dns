@@ -273,6 +273,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
+		ingressRouteTCP.GetObjectKind().SetGroupVersionKind(unstructuredHost.GetObjectKind().GroupVersionKind())
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
@@ -924,7 +925,10 @@ func (ts *traefikSource) endpointsFromFQDNTargetTemplate(obj traefikObject) ([]*
 // 3. Filters the converted objects based on the annotation filter.
 // 4. Generates endpoints for each filtered object using the generateEndpoints function.
 // Returns a list of generated endpoints or an error if any step fails.
-func extractEndpoints[T annotations.AnnotatedObject](
+func extractEndpoints[T interface {
+	annotations.AnnotatedObject
+	runtime.Object
+}](
 	informer cache.GenericLister,
 	namespace string,
 	convertFunc func(*unstructured.Unstructured) (T, error),
@@ -949,6 +953,7 @@ func extractEndpoints[T annotations.AnnotatedObject](
 		if err != nil {
 			return nil, err
 		}
+		typed.GetObjectKind().SetGroupVersionKind(unstructuredObj.GetObjectKind().GroupVersionKind())
 		typedObjs = append(typedObjs, typed)
 	}
 

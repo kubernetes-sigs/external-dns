@@ -87,6 +87,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 	tests := []struct {
 		title              string
 		proxyName          string
+		customProxy        *proxy // overrides makeProxy when set
 		svc                corev1.Service
 		fqdnTemplate       string
 		targetTemplate     string
@@ -193,6 +194,84 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:          "fqdn-template can reference .Kind",
+			proxyName:      "my-proxy",
+			svc:            makeEmptySvc("my-proxy"),
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("proxy.my-proxy.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .APIVersion",
+			proxyName:          "my-proxy",
+			svc:                makeEmptySvc("my-proxy"),
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-proxy.gloo.solo.io.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title: "fqdn-template with combine alongside multiple virtual-host domains",
+			customProxy: &proxy{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: proxyGVR.GroupVersion().String(),
+					Kind:       "Proxy",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "multi-host-proxy",
+					Namespace: ns,
+				},
+				Spec: proxySpec{
+					Listeners: []proxySpecListener{
+						{
+							HTTPListener: proxySpecHTTPListener{
+								VirtualHosts: []proxyVirtualHost{
+									{Domains: []string{"host1.example.com", "host2.example.com"}},
+									{Domains: []string{"host3.example.com"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			svc:            makeIPSvc("multi-host-proxy", "10.0.0.2"),
+			fqdnTemplate:   "{{.Name}}.dns.example.com",
+			targetTemplate: "lb.example.com",
+			combine:        true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "host1.example.com",
+					Targets:          endpoint.Targets{"10.0.0.2"},
+					RecordType:       endpoint.RecordTypeA,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "host2.example.com",
+					Targets:          endpoint.Targets{"10.0.0.2"},
+					RecordType:       endpoint.RecordTypeA,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "host3.example.com",
+					Targets:          endpoint.Targets{"10.0.0.2"},
+					RecordType:       endpoint.RecordTypeA,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:          "multi-host-proxy.dns.example.com",
+					Targets:          endpoint.Targets{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,6 +279,9 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			t.Parallel()
 
 			p := makeProxy(tt.proxyName)
+			if tt.customProxy != nil {
+				p = *tt.customProxy
+			}
 			proxyJSON, err := json.Marshal(p)
 			require.NoError(t, err)
 

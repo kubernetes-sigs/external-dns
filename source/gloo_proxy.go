@@ -231,8 +231,6 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 				return nil, err
 			}
 
-			unstructuredObj.SetGroupVersionKind(proxyGVR.GroupVersion().WithKind("Proxy"))
-
 			jsonData, err := json.Marshal(unstructuredObj.Object)
 			if err != nil {
 				return nil, err
