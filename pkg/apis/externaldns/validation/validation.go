@@ -57,11 +57,13 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	}
 
 	if cfg.AnnotationPrefix == "" {
-		return errors.New(`--annotation-prefix must be set explicitly.
-The default annotation prefix changed from 'external-dns.alpha.kubernetes.io/' to 'external-dns.kubernetes.io/'.
-To prevent silently deleting DNS records for resources still using the old prefix, you must set this flag.
-Use --annotation-prefix=external-dns.alpha.kubernetes.io/ if your resources have not been migrated,
-or --annotation-prefix=external-dns.kubernetes.io/ once migration is complete.`)
+		return errors.New(
+			"--annotation-prefix must be set explicitly; " +
+				"the default annotation prefix changed from 'external-dns.alpha.kubernetes.io/' to 'external-dns.kubernetes.io/' " +
+				"and omitting this flag risks silently deleting DNS records for resources still using the old prefix: " +
+				"use --annotation-prefix=external-dns.alpha.kubernetes.io/ if your resources have not been migrated, " +
+				"or --annotation-prefix=external-dns.kubernetes.io/ once migration is complete; " +
+				"in a future release this flag will default to 'external-dns.kubernetes.io/' and become optional")
 	}
 	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
 		return errors.New("--annotation-prefix must end with '/'")
