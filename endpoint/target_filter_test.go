@@ -23,60 +23,77 @@ import (
 )
 
 type targetFilterTest struct {
+	stubEndpoint *Endpoint
 	targetFilter []string
 	exclusions   []string
 	targets      []string
 	expected     bool
 }
 
+var targetFilterTestsStubEndpointNetwork = NewEndpoint("test-a.example.com", RecordTypeA)
+var targetFilterTestsStubEndpointCname = NewEndpoint("test-cname.example.com", RecordTypeCNAME)
 var targetFilterTests = []targetFilterTest{
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{"10.0.0.0/8"},
 		[]string{},
 		[]string{"10.1.2.3"},
 		true,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{" 10.0.0.0/8 "},
 		[]string{},
 		[]string{"10.1.2.3"},
 		true,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{"0"},
 		[]string{},
 		[]string{"10.1.2.3"},
 		true,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{"10.0.0.0/8"},
 		[]string{},
 		[]string{"1.1.1.1"},
 		false,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{},
 		[]string{"10.0.0.0/8"},
 		[]string{"1.1.1.1"},
 		true,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{},
 		[]string{"10.0.0.0/8"},
 		[]string{"10.1.2.3"},
 		false,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{},
 		[]string{"10.0.0.0/8"},
 		[]string{"49.13.41.161"},
 		true,
 	},
 	{
+		targetFilterTestsStubEndpointNetwork,
 		[]string{},
 		[]string{"10.0.0.0/8"},
 		[]string{"10.0.1.101"},
 		false,
+	},
+	{targetFilterTestsStubEndpointCname,
+		[]string{"10.0.0.0/8"},
+		[]string{"10.1.0.0/24"},
+		[]string{"10.2.254.254", "10.1.1.1", "cname-1.example.com", "random text data"},
+		true,
 	},
 }
 
@@ -87,7 +104,7 @@ func TestTargetFilterWithExclusions(t *testing.T) {
 		}
 		targetFilter := NewTargetNetFilterWithExclusions(tt.targetFilter, tt.exclusions)
 		for _, target := range tt.targets {
-			assert.Equal(t, tt.expected, targetFilter.Match(target), "should not fail: %v in test-case #%v", target, i)
+			assert.Equal(t, tt.expected, targetFilter.Match(target, tt.stubEndpoint), "should not fail: %v in test-case #%v", target, i)
 		}
 	}
 }
@@ -96,7 +113,7 @@ func TestTargetFilterMatchWithEmptyFilter(t *testing.T) {
 	for _, tt := range targetFilterTests {
 		targetFilter := TargetNetFilter{}
 		for i, target := range tt.targets {
-			assert.True(t, targetFilter.Match(target), "should not fail: %v in test-case #%v", target, i)
+			assert.True(t, targetFilter.Match(target, tt.stubEndpoint), "should not fail: %v in test-case #%v", target, i)
 		}
 	}
 }

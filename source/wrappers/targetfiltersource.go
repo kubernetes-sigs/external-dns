@@ -55,7 +55,7 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 		filteredTargets := make([]string, 0, len(ep.Targets))
 
 		for _, t := range ep.Targets {
-			if ms.targetFilter.Match(t) {
+			if ms.targetFilter.Match(t, ep) {
 				filteredTargets = append(filteredTargets, t)
 			}
 		}

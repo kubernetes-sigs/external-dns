@@ -40,7 +40,7 @@ func NewMockTargetNetFilter(targets []string) endpoint.TargetFilterInterface {
 	return &mockTargetNetFilter{targets: targetMap}
 }
 
-func (m *mockTargetNetFilter) Match(target string) bool {
+func (m *mockTargetNetFilter) Match(target string, _ *endpoint.Endpoint) bool {
 	return m.targets[target]
 }
 
@@ -212,6 +212,43 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1"),
 			},
 			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			echo := testutils.NewMockSource(tt.endpoints...)
+			src := NewTargetFilterSource(echo, tt.filters)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err, "failed to get Endpoints")
+
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+func TestTargetFilterNonAddressRecords(t *testing.T) {
+	tests := []struct {
+		title     string
+		filters   endpoint.TargetFilterInterface
+		endpoints []*endpoint.Endpoint
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title:   "should pass CNAME records",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8", "91ca::/16"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2ac3:beef:83b2:beef:1490:beef:d192:beef"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+			},
 		},
 	}
 	for _, tt := range tests {
