@@ -657,7 +657,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 func createAmbassadorHost(host *ambassador.Host) (*unstructured.Unstructured, error) {
 	obj := &unstructured.Unstructured{}
-	uc, _ := newUnstructuredConverter()
+	uc, _ := newAmbassadorUnstructuredConverter()
 	err := uc.scheme.Convert(host, obj, nil)
 
 	return obj, err
@@ -700,4 +700,25 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 			t.Errorf("%s: got err \"%s\", wanted \"%s\"", v.input, errstr, v.errstr)
 		}
 	}
+}
+
+func TestAmbassadorHostSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := fakeKube.NewSimpleClientset()
+	uc, err := newAmbassadorUnstructuredConverter()
+	require.NoError(t, err)
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.NotNil(t, source)
+
+	testDynamicInformerTransformHelper(t,
+		ambHostGVR,
+		fakeDynamicClient,
+		source.(*ambassadorHostSource).ambassadorHostInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

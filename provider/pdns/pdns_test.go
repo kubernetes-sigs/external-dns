@@ -250,7 +250,7 @@ var (
 	}
 
 	// Endpoint with alias annotation
-	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithAliasProperty(endpoint.AliasTrue)
 
 	// Endpoints for preferAlias test
 	endpointsPreferAlias = []*endpoint.Endpoint{

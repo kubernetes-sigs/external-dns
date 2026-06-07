@@ -108,6 +108,7 @@ from the usage of any externally developed webhook.
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
+| Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |

@@ -1326,6 +1326,66 @@ func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
 	validateServices(client.services, expectedServices1, t, 1)
 }
 
+// Prevents unwanted deletion of etcd keys https://github.com/kubernetes-sigs/external-dns/commit/83ea480c57fcc6beeaf8a6a3e8446cb87e07415d
+func TestApplyChangesPreventCleanupForKnownLabels(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1/test":         {Host: "10.0.0.0"},
+			"/skydns/local/domain1/originalText": {Host: "10.0.0.0"},
+			"/skydns/local/domain1/prefix":       {Host: "10.0.0.0"},
+			"/skydns/local/domain1/resource":     {Host: "10.0.0.0"},
+			"/skydns/local/domain1/owner":        {Host: "10.0.0.0"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	changes1 := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "domain1.local",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"5.5.5.5"},
+				Labels: map[string]string{
+					"5.5.5.5":              "random",
+					"10.0.0.0":             "test",
+					"originalText":         "originalText",
+					"prefix":               "prefix",
+					"resource":             "resource",
+					endpoint.OwnerLabelKey: endpoint.OwnerLabelKey,
+				},
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "domain1.local",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"5.5.5.5"},
+				Labels: map[string]string{
+					"5.5.5.5":              "random",
+					"10.0.0.0":             "test",
+					"originalText":         "originalText",
+					"prefix":               "prefix",
+					"resource":             "resource",
+					endpoint.OwnerLabelKey: endpoint.OwnerLabelKey,
+				},
+			},
+		},
+	}
+	coredns.ApplyChanges(t.Context(), changes1)
+
+	expectedServices1 := map[string][]*Service{
+		"/skydns/local/domain1":              {{Host: "5.5.5.5", Key: "/skydns/local/domain1/random", Text: "originalText", TargetStrip: 1}},
+		"/skydns/local/domain1/originalText": {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/prefix":       {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/resource":     {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/owner":        {{Host: "10.0.0.0"}},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
 func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 	client := fakeETCDClient{
 		map[string]Service{
