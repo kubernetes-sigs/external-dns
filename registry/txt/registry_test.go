@@ -766,7 +766,6 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("With Templated Suffix", testTXTRegistryApplyChangesWithTemplatedSuffix)
 	t.Run("With Suffix", testTXTRegistryApplyChangesWithSuffix)
 	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
-	t.Run("Promotes TXT to update on record type change", testTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange)
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
@@ -1142,7 +1141,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func testTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T) {
+func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T) {
 	ownerID := "owner"
 	target := "my-elb.us-east-1.elb.amazonaws.com"
 	dnsName := "foo.test-zone.example.org"
