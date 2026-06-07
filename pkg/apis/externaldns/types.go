@@ -180,8 +180,8 @@ type Config struct {
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
 	ExoscaleZoneCacheDuration                     time.Duration
-	CRDAPIVersion                                 string
-	CRDKind                                       string
+	CRDSourceAPIVersion                           string
+	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
 	ResolveServiceLoadBalancerHostname            bool
 	RFC2136Host                                   []string
@@ -280,8 +280,8 @@ var defaultConfig = &Config{
 	ConnectorSourceServer:        "localhost:8080",
 	CoreDNSPrefix:                "/skydns/",
 	CoreDNSStrictlyOwned:         false,
-	CRDAPIVersion:                "externaldns.k8s.io/v1alpha1",
-	CRDKind:                      "DNSEndpoint",
+	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
+	CRDSourceKind:                "DNSEndpoint",
 	DefaultTargets:               []string{},
 	DomainFilter:                 []string{},
 	DryRun:                       false,
@@ -543,8 +543,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
-	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDAPIVersion, &cfg.CRDAPIVersion)
-	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDKind, &cfg.CRDKind)
+	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
+	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled)", defaultConfig.PreferAlias, &cfg.PreferAlias)

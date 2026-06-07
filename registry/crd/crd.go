@@ -192,10 +192,7 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// Stamp the owner label before applying so the provider sees owner-labeled
 	// endpoints, matching the TXT registry behavior.
 	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = endpoint.NewLabels()
-		}
-		r.Labels[endpoint.OwnerLabelKey] = cr.ownerID
+		r.WithLabel(endpoint.OwnerLabelKey, cr.ownerID)
 	}
 
 	// Write the DNSRecord objects and collect them so their Ready condition can be
@@ -427,14 +424,7 @@ func (cr *CRDRegistry) adjustLabelsFromProvider(ctx context.Context, applied []*
 }
 
 func (cr *CRDRegistry) updateDNSRecordWithEndpointLabels(ctx context.Context, dnsrecord *apiv1alpha1.DNSRecord, record *endpoint.Endpoint) error {
-	// safety net on Resource & Owner labels
-	resource := dnsrecord.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
-	dnsrecord.Spec.Endpoint.Labels = record.Labels
-	dnsrecord.Spec.Endpoint.Labels[endpoint.OwnerLabelKey] = cr.ownerID
-	if resource != "" {
-		dnsrecord.Spec.Endpoint.Labels[endpoint.ResourceLabelKey] = resource
-	}
-
+	dnsrecord.MergeProviderLabels(record.Labels, cr.ownerID)
 	if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
 		return fmt.Errorf("unable to update DNSRecord %s: %w", dnsrecord.Name, err)
 	}
