@@ -378,7 +378,7 @@ var defaultConfig = &Config{
 	RFC2136UseTLS:                false,
 	RFC2136Zone:                  []string{},
 	ServiceTypeFilter:            []string{},
-	ServiceNamespaces:            []string{},
+	ServiceNamespaces:            nil,
 	SkipperRouteGroupVersion:     "zalando.org/v1",
 	Sources:                      nil,
 	TargetNetFilter:              []string{},
