@@ -37,7 +37,7 @@ func (s *stubProvider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.En
 	return eps, nil
 }
 
-func TestAliasNormalizingProvider(t *testing.T) {
+func TestAliasNormalizingMiddleware(t *testing.T) {
 	tests := []struct {
 		name        string
 		recordType  string
@@ -95,7 +95,7 @@ func TestAliasNormalizingProvider(t *testing.T) {
 				ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, string(tt.aliasIn))
 			}
 
-			p := NewAliasNormalizingProvider(&stubProvider{})
+			p := NewAliasNormalizingMiddleware(&stubProvider{})
 			result, err := p.AdjustEndpoints([]*endpoint.Endpoint{ep})
 			require.NoError(t, err)
 			require.Len(t, result, 1)

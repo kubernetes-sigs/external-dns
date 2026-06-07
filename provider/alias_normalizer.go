@@ -20,22 +20,22 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// AliasNormalizingProvider wraps a Provider and normalizes alias ProviderSpecific
+// AliasNormalizingMiddleware wraps a Provider and normalizes alias ProviderSpecific
 // values after AdjustEndpoints. Providers may convert CNAME endpoints to A/AAAA
 // alias records but leave the alias property as "A" or "AAAA", while Records()
 // always returns "true" for alias records. This mismatch causes the plan to
 // generate a spurious update on every reconciliation loop.
-type AliasNormalizingProvider struct {
+type AliasNormalizingMiddleware struct {
 	Provider
 }
 
-func NewAliasNormalizingProvider(p Provider) *AliasNormalizingProvider {
-	return &AliasNormalizingProvider{Provider: p}
+func NewAliasNormalizingMiddleware(p Provider) *AliasNormalizingMiddleware {
+	return &AliasNormalizingMiddleware{Provider: p}
 }
 
 // AdjustEndpoints delegates to the inner provider then normalizes alias values
 // so they match what Records() returns.
-func (p *AliasNormalizingProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+func (p *AliasNormalizingMiddleware) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	eps, err := p.Provider.AdjustEndpoints(endpoints)
 	if err != nil {
 		return nil, err
