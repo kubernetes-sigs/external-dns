@@ -614,6 +614,73 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.Equal(t, "default", cfg.OCPRouterName)
 }
 
+func TestParseFlagsServiceNamespace(t *testing.T) {
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--service-namespace=team-a",
+		"--service-namespace=team-b",
+	}
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+
+	assert.ElementsMatch(t, []string{"team-a", "team-b"}, cfg.ServiceNamespaces)
+}
+
+// When EXTERNAL_DNS_CLI=cobra is set, cobra path should parse the subset of
+// flags it currently binds, yielding parity with kingpin for those fields.
+func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--source=ingress",
+		"--server=http://127.0.0.1:8080",
+		"--kubeconfig=/some/path",
+		"--request-timeout=2s",
+		"--namespace=ns",
+		"--domain-filter=example.org",
+		"--domain-filter=company.com",
+		"--openshift-router-name=default",
+	}
+
+	// Kingpin baseline
+	cfgK := NewConfig()
+	require.NoError(t, cfgK.ParseFlags(args))
+
+	// Cobra path via env switch
+	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
+	cfgC := NewConfig()
+	require.NoError(t, cfgC.ParseFlags(args))
+
+	// Compare selected fields bound in cobra
+	assert.Equal(t, cfgK.Provider, cfgC.Provider)
+	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
+	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
+	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
+	assert.Equal(t, cfgK.KubeAPIRequestTimeout, cfgC.KubeAPIRequestTimeout)
+	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
+	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
+	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
+}
+
+func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
+	// Env requests cobra; CLI flag forces kingpin.
+	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		// Flag not bound in Cobra newCobraCommand path; will error if cobra is used.
+		"--log-format=json",
+	}
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+	assert.Equal(t, ProviderAWS, cfg.Provider)
+	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+	assert.Equal(t, "json", cfg.LogFormat)
+}
+
 func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	args := []string{
 		"--provider=aws",
