@@ -48,7 +48,7 @@ jobs:
 
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
-      uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+      uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
       with:
         verify: true
         args: --timeout=30m

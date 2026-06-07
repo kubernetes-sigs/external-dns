@@ -73,6 +73,11 @@ func NewF5VirtualServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
+	informers.MustSetTransform(virtualServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	informers.MustAddEventHandler(virtualServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())

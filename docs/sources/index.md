@@ -47,7 +47,7 @@ Sources are responsible for:
 | **pod**                  | annotation,label | all,single | true          | true   | false             | kubernetes core     | Pod                                                                                   |
 | **service**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Service                                                                               |
 | **skipper-routegroup**   | annotation       | all,single | true          | false  | true              | ingress controllers | RouteGroup.zalando.org                                                                |
-| **traefik-proxy**        | annotation       | all,single | false         | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
+| **traefik-proxy**        | annotation       | all,single | true          | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
 | **unstructured**         | annotation,label | all,single | true          | false  | false             | custom resources    | Unstructured                                                                          |
 
 ## Usage

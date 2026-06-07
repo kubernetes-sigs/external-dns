@@ -1106,7 +1106,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("provider-annotations.com", "1.2.3.4").
-					WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
+					WithAliasProperty(endpoint.AliasTrue).
 					WithSetIdentifier("test-set-identifier"),
 			},
 		},
@@ -1692,4 +1692,73 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGatewayHTTPRouteSource_RouteInformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	rt := &v1.HTTPRoute{ObjectMeta: informerTransformObjectMeta()}
+	require.Contains(t, rt.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, rt.GetManagedFields())
+
+	_, err := gwClient.GatewayV1().HTTPRoutes(rt.GetNamespace()).Create(t.Context(), rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*gatewayRouteSource).rtInformer.Informer(),
+		rt,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}
+
+func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	// Create Gateway with fields that the transformer should strip.
+	gw := &v1.Gateway{
+		ObjectMeta: informerTransformObjectMeta(),
+		Spec:       v1.GatewaySpec{GatewayClassName: "test"},
+		Status: v1.GatewayStatus{
+			Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}},
+		},
+	}
+	require.Contains(t, gw.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, gw.GetManagedFields())
+	require.NotEmpty(t, gw.Status.Conditions)
+
+	_, err := gwClient.GatewayV1().Gateways(gw.GetNamespace()).Create(t.Context(), gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	gatewaySrc := source.(*gatewayRouteSource)
+
+	testInformerTransformHelper(t,
+		gatewaySrc.gwInformer.Informer(),
+		gw,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+		withRemovedStatusConditions(),
+	)
 }

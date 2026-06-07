@@ -90,6 +90,11 @@ func NewAmbassadorHostSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
+	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
 	informers.MustAddEventHandler(ambassadorHostInformer.Informer(), informers.DefaultEventHandler())
 
@@ -100,7 +105,7 @@ func NewAmbassadorHostSource(
 		return nil, err
 	}
 
-	uc, err := newUnstructuredConverter()
+	uc, err := newAmbassadorUnstructuredConverter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
@@ -268,8 +273,8 @@ type unstructuredConverter struct {
 	scheme *runtime.Scheme
 }
 
-// newUnstructuredConverter returns a new unstructuredConverter initialized
-func newUnstructuredConverter() (*unstructuredConverter, error) {
+// newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized
+func newAmbassadorUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
 		scheme: runtime.NewScheme(),
 	}

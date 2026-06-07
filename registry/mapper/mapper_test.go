@@ -108,6 +108,27 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeCNAME,
 		},
 		{
+			name:             "suffix with multiple dots and trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar.com",
+			wantEndpointName: "example.com",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and no trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar",
+			wantEndpointName: "example",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and too few labels does not panic",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo",
+			wantEndpointName: "",
+			wantRecordType:   "",
+		},
+		{
 			name:             "no affix with A record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "a-foo.example.com",
@@ -167,8 +188,8 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			name:             "suffix with txt record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "txt-foo.example.com",
-			wantEndpointName: "txt-foo.example.com",
-			wantRecordType:   "",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeTXT,
 		},
 		{
 			name:             "both prefix and suffix set returns empty",
@@ -265,6 +286,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "naptr-foo.example.com",
 		},
 		{
+			name:        "prefix with TXT record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
+		},
+		{
 			name:        "suffix with A record type in affix",
 			mapper:      NewAffixNameMapper("", "-%{record_type}", ""),
 			dns:         "foo.example.com",
@@ -279,6 +307,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "foo-cname.example.com",
 		},
 		{
+			name:        "suffix with TXT record type in affix",
+			mapper:      NewAffixNameMapper("", "-%{record_type}", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "foo-txt.example.com",
+		},
+		{
 			name:        "wildcard replacement with A record",
 			mapper:      NewAffixNameMapper("txt-", "", "wild"),
 			dns:         "*.example.com",
@@ -291,6 +326,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "*.example.com",
 			recordType:  endpoint.RecordTypeMX,
 			wantTXTName: "txt-mx-wild.example.com",
+		},
+		{
+			name:        "wildcard replacement with TXT record",
+			mapper:      NewAffixNameMapper("txt-", "", "wild"),
+			dns:         "*.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-txt-wild.example.com",
 		},
 		{
 			name:        "no affix with A record",
@@ -347,6 +389,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeNAPTR,
 			wantTXTName: "naptr-foo.example.com",
+		},
+		{
+			name:        "no affix with TXT record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
 		},
 	}
 
