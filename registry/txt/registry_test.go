@@ -1207,7 +1207,9 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 				UpdateOld: oldTXT,
 				UpdateNew: r.generateTXTRecord(toEpWithOwner),
 			}
+			called := false
 			p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+				called = true
 				mExpected := map[string][]*endpoint.Endpoint{
 					"Create":    expected.Create,
 					"UpdateNew": expected.UpdateNew,
@@ -1228,6 +1230,7 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 				Create: []*endpoint.Endpoint{toEp},
 			})
 			require.NoError(t, err)
+			assert.True(t, called, "provider ApplyChanges was never invoked")
 		})
 	}
 }
