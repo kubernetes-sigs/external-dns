@@ -1179,7 +1179,7 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 			// Seed provider with the "from" record and its TXT record.
 			fromEp := newEndpointWithOwner(dnsName, target, tt.fromType, ownerID)
 			if tt.fromAlias {
-				fromEp = fromEp.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+				fromEp = fromEp.WithAliasProperty(endpoint.AliasTrue)
 			}
 			oldTXT := r.generateTXTRecord(fromEp)
 			err = p.ApplyChanges(ctx, &plan.Changes{
@@ -1197,8 +1197,8 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 			toEp := endpoint.NewEndpoint(dnsName, tt.toType, target)
 			toEpWithOwner := newEndpointWithOwner(dnsName, target, tt.toType, ownerID)
 			if tt.toAlias {
-				toEp = toEp.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
-				toEpWithOwner = toEpWithOwner.WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+				toEp = toEp.WithAliasProperty(endpoint.AliasTrue)
+				toEpWithOwner = toEpWithOwner.WithAliasProperty(endpoint.AliasTrue)
 			}
 
 			expected := &plan.Changes{
