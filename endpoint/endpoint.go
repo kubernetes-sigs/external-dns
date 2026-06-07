@@ -291,11 +291,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label, ok := OverflowingLabel(dnsName); ok {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{
