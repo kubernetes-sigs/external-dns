@@ -306,15 +306,9 @@ func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
-}
-
-func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// Always create new format record
 	recordType := r.RecordType
-
 	if shouldUseCNAMEForTxtRecord(r) {
 		recordType = endpoint.RecordTypeCNAME
 	}
@@ -328,9 +322,7 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
+		endpoints = append(endpoints, txtNew)
 	}
 	return endpoints
 }
@@ -383,17 +375,13 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.Create {
 		r.WithLabel(endpoint.OwnerLabelKey, im.ownerID)
 
-		txts := im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool {
-			_, beingDeleted := deleteTXTsByKey[recordKey{ep.DNSName, ep.SetIdentifier}]
-			return im.existingTXTs.isAbsent(ep) || beingDeleted
-		})
-		for _, txt := range txts {
+		for _, txt := range im.generateTXTRecord(r) {
 			k := recordKey{txt.DNSName, txt.SetIdentifier}
 			if oldTXT, ok := deleteTXTsByKey[k]; ok {
 				filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, oldTXT)
 				filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 				delete(deleteTXTsByKey, k)
-			} else {
+			} else if im.existingTXTs.isAbsent(txt) {
 				filteredChanges.Create = append(filteredChanges.Create, txt)
 			}
 		}
