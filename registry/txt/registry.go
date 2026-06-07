@@ -381,10 +381,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// promote the pair to UpdateOld+UpdateNew so providers receive a safe UPSERT
 	// instead of an order-dependent Delete+Create.
 	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		r.WithLabel(endpoint.OwnerLabelKey, im.ownerID)
 
 		txts := im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool {
 			_, beingDeleted := deleteTXTsByKey[recordKey{ep.DNSName, ep.SetIdentifier}]
