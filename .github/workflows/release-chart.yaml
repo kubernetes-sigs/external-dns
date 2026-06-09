@@ -197,7 +197,10 @@ jobs:
           }
 
           get_release() {
-            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}"
+            gh release view "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --json databaseId,isDraft,tagName \
+              --jq '{id: .databaseId, draft: .isDraft, tag_name: .tagName}'
           }
 
           create_draft_release() {
@@ -225,9 +228,28 @@ jobs:
           release_id="$(jq -r '.id' release.json)"
           is_draft="$(jq -r '.draft' release.json)"
 
-          asset_exists() {
+          get_asset() {
             gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" \
-              --jq ".[] | select(.name == \"${asset_name}\") | .id" | grep -q .
+              --jq ".[] | select(.name == \"${asset_name}\")" | jq -s '.[0] // empty'
+          }
+
+          asset_exists() {
+            local asset
+            asset="$(get_asset)"
+            [[ -n "${asset}" ]] && jq -e '.state == "uploaded" and .size > 0' <<<"${asset}" >/dev/null
+          }
+
+          delete_incomplete_asset_if_present() {
+            local asset
+            asset="$(get_asset)"
+            if [[ -z "${asset}" ]] || jq -e '.state == "uploaded" and .size > 0' <<<"${asset}" >/dev/null; then
+              return 0
+            fi
+
+            local asset_id
+            asset_id="$(jq -r '.id' <<<"${asset}")"
+            echo "Deleting incomplete asset ${asset_name} from draft release ${release_tag}."
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" >/dev/null
           }
 
           upload_asset_if_missing() {
@@ -236,6 +258,7 @@ jobs:
               return 0
             fi
 
+            delete_incomplete_asset_if_present
             gh release upload "${release_tag}" "${chart_asset}"
           }
 
