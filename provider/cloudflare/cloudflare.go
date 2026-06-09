@@ -587,6 +587,9 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			failedChange = true
 		}
 		bc := p.buildBatchCollections(zoneID, zoneChanges, records)
+		if bc.failed {
+			failedChange = true
+		}
 
 		if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
 			failedChange = true

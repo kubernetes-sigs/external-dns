@@ -55,6 +55,8 @@ type batchCollections struct {
 	// requires structured Data fields (e.g. SRV, CAA). These are submitted
 	// via individual UpdateDNSRecord calls instead of the batch API.
 	fallbackUpdates []*cloudFlareChange
+
+	failed bool
 }
 
 // batchChunk holds a DNS record batch request alongside the source changes
@@ -406,6 +408,7 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 // buildBatchCollections classifies per-zone changes into batch collections.
 // Custom hostname side-effects are handled separately by
 // processCustomHostnameChanges before this is called.
+// Sets bc.failed when a change is skipped and a retry would help reconcile it.
 func (p *CloudFlareProvider) buildBatchCollections(
 	zoneID string,
 	changes []*cloudFlareChange,
@@ -427,6 +430,7 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			postParam, err := buildBatchPostParam(change.ResourceRecord)
 			if err != nil {
 				log.WithFields(logFields).Errorf("failed to build batch POST param, skipping record: %v", err)
+				bc.failed = true
 				continue
 			}
 			bc.batchPosts = append(bc.batchPosts, postParam)
@@ -435,7 +439,8 @@ func (p *CloudFlareProvider) buildBatchCollections(
 		case cloudFlareDelete:
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
-				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				// Record already gone is the desired state; no retry needed.
+				log.WithFields(logFields).Infof("record already gone, treating delete as success: %v", change.ResourceRecord)
 				continue
 			}
 			bc.batchDeletes = append(bc.batchDeletes, dns.RecordBatchParamsDelete{ID: cloudflare.F(recordID)})
@@ -445,14 +450,14 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				bc.failed = true
 				continue
 			}
 			if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
 				bc.batchPuts = append(bc.batchPuts, putParam)
 				bc.updateChanges = append(bc.updateChanges, change)
 			} else {
-				// Parse errors are re-logged by fallbackIndividualChanges; type-unsupported
-				// cases (e.g. CAA) silently fall back here as designed.
+				// Routing only; parse errors surface in the fallbackUpdates drain.
 				log.WithFields(logFields).Debugf("batch PUT not supported by SDK for this type or content; routing to individual update")
 				bc.fallbackUpdates = append(bc.fallbackUpdates, change)
 			}
@@ -582,8 +587,9 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			case cloudFlareUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					// Record is gone; let the next sync cycle issue a fresh CREATE.
-					log.WithFields(logFields).Info("fallback: record unexpectedly not found for update, will re-evaluate on next sync")
+					// Mirror buildBatchCollections: flag retry on stale UPDATE.
+					log.WithFields(logFields).Errorf("fallback: failed to find previous record: %v", change.ResourceRecord)
+					failed = true
 					continue
 				}
 				params, paramErr := getUpdateDNSRecordParam(zoneID, *change)

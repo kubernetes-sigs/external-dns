@@ -1122,6 +1122,44 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 	}
 }
 
+// NAPTR field-count errors aren't caught by upstream validation; provider must surface SoftError.
+func TestCloudflareInvalidCreateReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "NAPTR",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{`10 20`},
+			RecordTTL:  120,
+		},
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints})
+	require.Error(t, err, "invalid create must not be silently swallowed")
+	assert.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
+}
+
+// UPDATE against an unknown record (stale cache) must surface SoftError so the controller retries.
+func TestCloudflareUpdateMissingRecordReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: endpoint.RecordTypeA,
+			DNSName:    "missing.bar.com",
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordTTL:  120,
+		},
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateNew: endpoints, UpdateOld: endpoints})
+	require.Error(t, err, "update of a record not present in cache must not be silently swallowed")
+	assert.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
+}
+
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	recordsMap := DNSRecordsMap{
