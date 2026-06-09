@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/set"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -543,15 +544,15 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 // This function doesn't contemplate the Targets of an Endpoint
 // as part of the primary Key
 func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
-	visited := make(map[EndpointKey]struct{})
+	visited := make(sets.Set[EndpointKey], len(endpoints))
 	result := []*Endpoint{}
 
 	for _, ep := range endpoints {
 		key := ep.Key()
 
-		if _, found := visited[key]; !found {
+		if !visited.Has(key) {
 			result = append(result, ep)
-			visited[key] = struct{}{}
+			visited.Insert(key)
 		} else {
 			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
 		}

@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -59,7 +60,7 @@ func NewMetricsRegister() *MetricRegistry {
 	return &MetricRegistry{
 		Registerer: reg,
 		Metrics:    []*Metric{},
-		mName:      make(map[string]bool),
+		mName:      sets.New[string](),
 	}
 }
 
@@ -74,11 +75,10 @@ func NewMetricsRegister() *MetricRegistry {
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
 	case CounterMetric, GaugeMetric, SummaryVecMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
-		if _, exists := m.mName[cs.Get().FQDN]; exists {
+		if m.mName.Has(cs.Get().FQDN) {
 			return
-		} else {
-			m.mName[cs.Get().FQDN] = true
 		}
+		m.mName.Insert(cs.Get().FQDN)
 		m.Metrics = append(m.Metrics, cs.Get())
 		switch metric := v.(type) {
 		case CounterMetric:
