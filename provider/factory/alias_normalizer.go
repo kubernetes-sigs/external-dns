@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package factory
 
 import (
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // AliasNormalizingMiddleware wraps a Provider and normalizes alias ProviderSpecific
@@ -26,10 +27,10 @@ import (
 // always returns "true" for alias records. This mismatch causes the plan to
 // generate a spurious update on every reconciliation loop.
 type AliasNormalizingMiddleware struct {
-	Provider
+	provider.Provider
 }
 
-func NewAliasNormalizingMiddleware(p Provider) *AliasNormalizingMiddleware {
+func newAliasNormalizingMiddleware(p provider.Provider) *AliasNormalizingMiddleware {
 	return &AliasNormalizingMiddleware{Provider: p}
 }
 

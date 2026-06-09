@@ -70,10 +70,10 @@ func Select(
 	if err != nil {
 		return nil, err
 	}
-	if p != nil && cfg.ProviderCacheTime > 0 {
-		return provider.NewAliasNormalizingMiddleware(provider.NewCachedProvider(p, cfg.ProviderCacheTime)), nil
+	if cfg.ProviderCacheTime > 0 {
+		p = provider.NewCachedProvider(p, cfg.ProviderCacheTime)
 	}
-	return provider.NewAliasNormalizingMiddleware(p), nil
+	return newAliasNormalizingMiddleware(p), nil
 }
 
 // providers looks up the constructor for the named provider.

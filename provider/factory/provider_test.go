@@ -28,7 +28,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/provider"
 )
 
 func TestSelectProvider(t *testing.T) {
@@ -135,8 +134,8 @@ func TestSelectProvider(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, p)
-				mw, ok := p.(*provider.AliasNormalizingMiddleware)
-				require.True(t, ok, "expected outer *provider.AliasNormalizingMiddleware, got %T", p)
+				mw, ok := p.(*AliasNormalizingMiddleware)
+				require.True(t, ok, "expected outer *AliasNormalizingMiddleware, got %T", p)
 				assert.Equal(t, tt.expectedType, reflect.TypeOf(mw.Provider).String())
 			}
 		})

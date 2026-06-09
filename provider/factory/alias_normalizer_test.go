@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package factory
 
 import (
 	"context"
@@ -25,10 +25,11 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type stubProvider struct {
-	BaseProvider
+	provider.BaseProvider
 }
 
 func (s *stubProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
@@ -95,7 +96,7 @@ func TestAliasNormalizingMiddleware(t *testing.T) {
 				ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, string(tt.aliasIn))
 			}
 
-			p := NewAliasNormalizingMiddleware(&stubProvider{})
+			p := newAliasNormalizingMiddleware(&stubProvider{})
 			result, err := p.AdjustEndpoints([]*endpoint.Endpoint{ep})
 			require.NoError(t, err)
 			require.Len(t, result, 1)
