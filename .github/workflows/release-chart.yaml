@@ -149,10 +149,145 @@ jobs:
         with:
           version: latest
 
-      - name: Run chart-releaser
+      - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
+        with:
+          install_only: true
         env:
           CR_TOKEN: "${{ github.token }}"
-          CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
-          CR_RELEASE_NOTES_FILE: "${{ steps.changelog.outputs.release_notes_file }}"
-          CR_MAKE_RELEASE_LATEST: "false"
+
+      - name: Package chart
+        run: |
+          set -euo pipefail
+
+          rm -rf .cr-release-packages .cr-index
+          mkdir -p .cr-release-packages .cr-index
+
+          cr package charts/external-dns --package-path .cr-release-packages
+
+      - name: Publish chart release
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          RELEASE_NOTES_FILE: "${{ steps.changelog.outputs.release_notes_file }}"
+          VERSION: "${{ steps.chart_version.outputs.version }}"
+        run: |
+          set -euo pipefail
+
+          release_tag="external-dns-helm-chart-${VERSION}"
+          release_title="${release_tag}"
+          release_notes_path="charts/external-dns/${RELEASE_NOTES_FILE}"
+          chart_asset=".cr-release-packages/external-dns-${VERSION}.tgz"
+          asset_name="$(basename "${chart_asset}")"
+
+          retry() {
+            local attempts="$1"
+            shift
+            local delay=5
+            local attempt
+            for attempt in $(seq 1 "${attempts}"); do
+              if "$@"; then
+                return 0
+              fi
+              if [[ "${attempt}" == "${attempts}" ]]; then
+                return 1
+              fi
+              sleep "${delay}"
+              delay=$((delay * 2))
+            done
+          }
+
+          get_release() {
+            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}"
+          }
+
+          create_draft_release() {
+            local notes
+            notes="$(<"${release_notes_path}")"
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/releases" \
+              -f tag_name="${release_tag}" \
+              -f target_commitish="${GITHUB_SHA}" \
+              -f name="${release_title}" \
+              -f body="${notes}" \
+              -F draft=true \
+              -f make_latest=false
+          }
+
+          ensure_release_exists() {
+            if get_release >release.json 2>/dev/null; then
+              return 0
+            fi
+
+            create_draft_release >release.json
+          }
+
+          retry 5 ensure_release_exists
+
+          release_id="$(jq -r '.id' release.json)"
+          is_draft="$(jq -r '.draft' release.json)"
+
+          asset_exists() {
+            gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" \
+              --jq ".[] | select(.name == \"${asset_name}\") | .id" | grep -q .
+          }
+
+          upload_asset_if_missing() {
+            if asset_exists; then
+              echo "Asset ${asset_name} is already attached to draft release ${release_tag}."
+              return 0
+            fi
+
+            gh release upload "${release_tag}" "${chart_asset}"
+          }
+
+          publish_release_if_draft() {
+            local is_draft
+            is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" --jq '.draft')"
+            if [[ "${is_draft}" == "false" ]]; then
+              echo "Release ${release_tag} is already published."
+              return 0
+            fi
+
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${release_id}" \
+              -F draft=false \
+              -f make_latest=false >/dev/null
+          }
+
+          if [[ "${is_draft}" == "true" ]]; then
+            retry 5 upload_asset_if_missing
+            retry 5 publish_release_if_draft
+          elif retry 5 asset_exists; then
+            echo "Release ${release_tag} is already published with ${asset_name}; continuing to index update."
+          else
+            echo "Release ${release_tag} is already published without ${asset_name}; refusing to modify an immutable release." >&2
+            exit 1
+          fi
+
+      - name: Update chart index
+        env:
+          CR_TOKEN: "${{ github.token }}"
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local attempts="$1"
+            shift
+            local delay=5
+            local attempt
+            for attempt in $(seq 1 "${attempts}"); do
+              if "$@"; then
+                return 0
+              fi
+              if [[ "${attempt}" == "${attempts}" ]]; then
+                return 1
+              fi
+              sleep "${delay}"
+              delay=$((delay * 2))
+            done
+          }
+
+          retry 5 cr index \
+            --owner kubernetes-sigs \
+            --git-repo external-dns \
+            --package-path .cr-release-packages \
+            --release-name-template "external-dns-helm-chart-{{ .Version }}" \
+            --push
