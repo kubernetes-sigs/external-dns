@@ -18,6 +18,7 @@ package plan
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -63,6 +64,38 @@ type Changes struct {
 	UpdateNew []*endpoint.Endpoint `json:"updateNew,omitempty"`
 	// Records that need to be deleted
 	Delete []*endpoint.Endpoint `json:"delete,omitempty"`
+	// SuppressedDelete lists records whose deletion was held back by policy
+	// (upsert-only / create-only).
+	//
+	// After Plan.Calculate() it contains ONLY records owned by this
+	// instance — use SuppressedDeleteTotal for the pre-partition count
+	// (owned + foreign). During Policy.Apply this field transiently holds
+	// the full list as an intermediate between the policy chain and the
+	// ownership partition; external consumers must read it only from the
+	// Changes returned by Plan.Calculate().
+	//
+	// json:"-" keeps the provider ApplyChanges ABI stable; observability-only.
+	SuppressedDelete []*endpoint.Endpoint `json:"-"`
+	// SuppressedDeleteTotal is the count of all records held back by policy
+	// for this reconcile (owned + foreign), post-dedup.
+	SuppressedDeleteTotal int `json:"-"`
+	// SuppressedUpdateOld lists the pre-change state of records whose
+	// update was held back by policy (create-only). Used only to emit a
+	// per-record debug log in Plan.Calculate with the same schema as the
+	// deletion log; no metric is computed because suppressed updates are
+	// not a safety-net signal in the sense that suppressed deletions are.
+	// Transient: populated by the policy chain and consumed in-place.
+	SuppressedUpdateOld []*endpoint.Endpoint `json:"-"`
+	// SuppressedUpdateTotal is the count of THIS instance's records whose
+	// update was held back by policy for this reconcile. Foreign-owned
+	// records are excluded because the ownership filter would have
+	// discarded their updates regardless of policy — counting them
+	// would make the controller's no-op log falsely blame policy in
+	// shared-zone deployments where only another instance's records
+	// drifted. Survives Plan.Calculate so the controller's no-op log
+	// can distinguish a reconcile where create-only dropped the user's
+	// own updates from a true no-op.
+	SuppressedUpdateTotal int `json:"-"`
 }
 
 // planKey is a key for a row in `planTable`.
@@ -226,7 +259,45 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 		changes = pol.Apply(changes)
 	}
 
-	// filter out updates this external dns does not have ownership claim over
+	if len(changes.SuppressedDelete) > 0 {
+		changes.SuppressedDelete, changes.SuppressedDeleteTotal = p.partitionSuppressed(changes.SuppressedDelete)
+	}
+
+	// Log suppressed updates (create-only drops UpdateOld/UpdateNew wholesale;
+	// this is the only operator-facing visibility, as there is no metric).
+	// The log fires BEFORE the ownership filter below, same as suppressed
+	// deletions, so `owned` distinguishes records this instance manages from
+	// those belonging to other external-dns instances in a shared zone. The
+	// field is cleared unconditionally (not gated on debug level) so the
+	// returned Changes does not leak transient policy state to downstream
+	// consumers, and log-level changes don't alter the public contract.
+	if len(changes.SuppressedUpdateOld) > 0 {
+		// Count only owned suppressions — foreign-owned updates would
+		// have been dropped by the ownership filter below regardless of
+		// policy, so counting them would falsely blame the policy in
+		// the controller's no-op log for a shared-zone reconcile where
+		// only another instance's records drifted.
+		for _, ep := range changes.SuppressedUpdateOld {
+			if p.ownsEndpoint(ep) {
+				changes.SuppressedUpdateTotal++
+			}
+		}
+		if log.IsLevelEnabled(log.DebugLevel) {
+			policyField := p.policyChainString()
+			for _, ep := range changes.SuppressedUpdateOld {
+				log.WithFields(log.Fields{
+					"record":  ep.DNSName,
+					"type":    ep.RecordType,
+					"targets": strings.Join(ep.Targets, ","),
+					"owned":   p.ownsEndpoint(ep),
+					"policy":  policyField,
+				}).Debug("skipping update of record due to policy")
+			}
+		}
+		changes.SuppressedUpdateOld = nil
+	}
+
+	// filter out changes this external dns does not have ownership claim over
 	if p.OwnerID != "" {
 		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
 		changes.Delete = endpoint.RemoveDuplicates(changes.Delete)
@@ -235,6 +306,93 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 	}
 
 	return changes
+}
+
+// policyChainString renders the comma-joined registry keys of p.Policies
+// for use as a structured log field. An empty chain is rendered as "none"
+// so the field stays grep-friendly even in pathological configurations.
+func (p *Plan) policyChainString() string {
+	names := make([]string, 0, len(p.Policies))
+	for _, pol := range p.Policies {
+		names = append(names, policyName(pol))
+	}
+	s := strings.Join(names, ",")
+	if s == "" {
+		return "none"
+	}
+	return s
+}
+
+// ownsEndpoint reports whether ep carries this instance's owner label.
+// When OwnerID is unset (ownership disabled) every endpoint is considered
+// owned so suppressed deletions are not reported as orphans — this
+// short-circuit DIVERGES from endpoint.IsOwnedBy, which returns false for
+// an empty ownerID. For non-empty OwnerID the check delegates to
+// endpoint.IsOwnedBy so the ownership predicate stays consistent with
+// the rest of the codebase.
+func (p *Plan) ownsEndpoint(ep *endpoint.Endpoint) bool {
+	if p.OwnerID == "" {
+		return true
+	}
+	return ep.IsOwnedBy(p.OwnerID)
+}
+
+// partitionSuppressed splits suppressed into owned / foreign buckets,
+// deduplicates within each, and (when debug logging is enabled) emits
+// one structured "skipping deletion of record due to policy" entry per
+// input record — the log fires BEFORE dedup, so pathological providers
+// can still inflate log volume; the `!!! info "Debug-log volume…"`
+// admonition in operational-best-practices.md is the operator-facing
+// mitigation. It returns the owned bucket (nil when empty so the
+// zero-value contract on Changes.SuppressedDelete holds) and the total
+// count across both buckets post-dedup.
+//
+// Partitioning BEFORE dedup is load-bearing: endpoint.RemoveDuplicates
+// keys only on (DNS name, type, set identifier) and ignores labels, so
+// a mixed-owner duplicate for the same key would otherwise let the
+// foreign twin evict the owned record. Dedup within each bucket keeps
+// pathological providers from inflating the metric.
+func (p *Plan) partitionSuppressed(suppressed []*endpoint.Endpoint) ([]*endpoint.Endpoint, int) {
+	logSuppressions := log.IsLevelEnabled(log.DebugLevel)
+	var policyField string
+	if logSuppressions {
+		policyField = p.policyChainString()
+	}
+
+	owned := make([]*endpoint.Endpoint, 0, len(suppressed))
+	// foreign is left nil and grown by append: when OwnerID is unset
+	// every record is considered owned and this stays nil; when OwnerID
+	// is set the foreign count is typically a minority of suppressed
+	// and pre-sizing to len(suppressed) would over-allocate.
+	var foreign []*endpoint.Endpoint
+	for _, ep := range suppressed {
+		isOwned := p.ownsEndpoint(ep)
+		if logSuppressions {
+			log.WithFields(log.Fields{
+				"record":  ep.DNSName,
+				"type":    ep.RecordType,
+				"targets": strings.Join(ep.Targets, ","),
+				"owned":   isOwned,
+				"policy":  policyField,
+			}).Debug("skipping deletion of record due to policy")
+		}
+		if isOwned {
+			owned = append(owned, ep)
+		} else {
+			foreign = append(foreign, ep)
+		}
+	}
+	if len(owned) > 0 {
+		owned = endpoint.RemoveDuplicates(owned)
+	}
+	if len(foreign) > 0 {
+		foreign = endpoint.RemoveDuplicates(foreign)
+	}
+	total := len(owned) + len(foreign)
+	if len(owned) == 0 {
+		return nil, total
+	}
+	return owned, total
 }
 
 func (p *Plan) appendTakenDNSNameChanges(
