@@ -190,15 +190,12 @@ func NewServiceSource(
 
 // Endpoints return endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := sc.serviceInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	services := informers.ListIndexed[*v1.Service](sc.serviceInformer.Informer().GetIndexer())
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(services))
 
-	for _, key := range indexKeys {
-		svc, err := informers.GetByKey[*v1.Service](sc.serviceInformer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
+	for _, svc := range services {
+		var err error
 
 		svcEndpoints := sc.endpoints(svc)
 
