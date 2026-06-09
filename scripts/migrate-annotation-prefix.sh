@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# migrate-annotation-prefix.sh — migrate external-dns annotations from the legacy prefix to the GA prefix.
+# migrate-annotation-prefix.sh — scan for resources that need annotation migration.
 #
 # WARNING
 #   This script is provided as a possible migration aid and is used at your own risk.
 #   It may not suit every operator's environment, workflow, or cluster configuration.
-#   Review it carefully, test it against a non-production cluster first, and ensure you
-#   have a backup or rollback strategy before running it with --apply in production.
+#   Review the output carefully and test against a non-production cluster first.
 #
 # BACKGROUND
 #   The default annotation prefix changed from:
@@ -18,8 +17,8 @@
 #   prefix annotations causes silent DNS record deletion: the controller sees records it owns in the
 #   registry but no source claiming them, and removes them.
 #
-#   This script performs the one-time annotation migration before you switch the prefix in your
-#   external-dns deployment.
+#   This script performs a read-only scan and prints the kubectl annotate commands needed to migrate
+#   resources before you switch the prefix in your external-dns deployment. No changes are made.
 #
 # WHAT IT DOES (example)
 #   Given a Service with:
@@ -27,7 +26,7 @@
 #     external-dns.alpha.kubernetes.io/ttl:      300
 #     external-dns.alpha.kubernetes.io/target:   1.2.3.4
 #
-#   The script adds:
+#   The script prints the command to add:
 #     external-dns.kubernetes.io/hostname: my-app.example.com
 #     external-dns.kubernetes.io/ttl:      300
 #     external-dns.kubernetes.io/target:   1.2.3.4
@@ -36,17 +35,13 @@
 #   Unrelated annotations are never touched.
 #
 # USAGE
-#   Dry-run (default — no changes made, prints what would happen):
+#   Scan default resource types (services):
 #     ./migrate-annotation-prefix.sh
 #
-#   Apply changes:
-#     ./migrate-annotation-prefix.sh --apply
-#
-#   Scan additional resource types (default: services):
-#     ./migrate-annotation-prefix.sh --resources=services,ingresses,nodes,pods --apply
+#   Scan additional resource types:
+#     ./migrate-annotation-prefix.sh --resources=services,ingresses,nodes,pods
 #
 #   Flags:
-#     --apply                  apply changes (default: dry-run)
 #     --resources=<list>       comma-separated list of Kubernetes resource types to scan
 #                              (default: services)
 #                              common values: services, ingresses, nodes, pods
@@ -58,14 +53,10 @@ set -euo pipefail
 
 OLD_PREFIX="external-dns.alpha.kubernetes.io/"
 NEW_PREFIX="external-dns.kubernetes.io/"
-APPLY=false
 RESOURCES=("services")
 
 for arg in "$@"; do
   case $arg in
-    --apply)
-      APPLY=true
-      ;;
     --resources=*)
       IFS=',' read -ra RESOURCES <<< "${arg#*=}"
       ;;
@@ -86,28 +77,17 @@ done
 echo "WARNING: This script is provided as a possible migration aid and is used at your own risk."
 echo "         It may not suit every operator's environment. Test on a non-production cluster first."
 echo ""
-
-if [ "$APPLY" = false ]; then
-  echo "DRY-RUN mode — no changes will be made. Pass --apply to apply."
-  echo ""
-fi
+echo "Scanning for resources with prefix: $OLD_PREFIX"
+echo ""
 
 total_resources=0
 total_annotations=0
 
 for resource in "${RESOURCES[@]}"; do
-  echo "Scanning $resource..."
-
   while IFS=$'\t' read -r ns name; do
-    total_resources=$((total_resources + 1))
-    echo "  $resource $name (namespace: $ns)"
-
+    annotations=()
     while IFS= read -r annotation; do
-      total_annotations=$((total_annotations + 1))
-      echo "    + $annotation"
-      if [ "$APPLY" = true ]; then
-        kubectl annotate "$resource" -n "$ns" "$name" --overwrite "$annotation"
-      fi
+      annotations+=("$annotation")
     done < <(
       kubectl get "$resource" -n "$ns" "$name" -o json | jq -r \
         --arg old "$OLD_PREFIX" \
@@ -119,6 +99,19 @@ for resource in "${RESOURCES[@]}"; do
           | .[]
         '
     )
+
+    if [ "${#annotations[@]}" -eq 0 ]; then
+      continue
+    fi
+
+    total_resources=$((total_resources + 1))
+    total_annotations=$((total_annotations + ${#annotations[@]}))
+
+    echo "$resource/$name (namespace: $ns)"
+    for annotation in "${annotations[@]}"; do
+      echo "  $annotation"
+    done
+    echo ""
   done < <(
     kubectl get "$resource" --all-namespaces -o json | jq -r \
       --arg old "$OLD_PREFIX" '
@@ -130,16 +123,9 @@ for resource in "${RESOURCES[@]}"; do
   )
 done
 
-echo ""
 if [ "$total_resources" -eq 0 ]; then
   echo "No resources found with prefix $OLD_PREFIX — nothing to migrate."
   exit 0
 fi
 
 echo "Found $total_resources resource(s) with $total_annotations annotation(s) to migrate."
-
-if [ "$APPLY" = false ]; then
-  echo "Re-run with --apply to apply the changes."
-else
-  echo "Migration complete."
-fi
