@@ -121,6 +121,22 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			},
 			setIdentifier: "",
 		},
+		{
+			name: "resolve-target annotation",
+			annotations: map[string]string{
+				ResolveTargetKey: "true",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "resolve-target", Value: "true"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name:          "resolve-target annotation absent",
+			annotations:   map[string]string{},
+			expected:      endpoint.ProviderSpecific{},
+			setIdentifier: "",
+		},
 	}
 
 	for _, tt := range tests {

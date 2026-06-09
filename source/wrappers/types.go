@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -33,9 +34,10 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
-	ptrSupported        bool            // PTR is in --managed-record-types
-	createPTR           bool            // --create-ptr default for all A/AAAA records
-	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
+	ptrSupported        bool                           // PTR is in --managed-record-types
+	createPTR           bool                           // --create-ptr default for all A/AAAA records
+	sourceWrappers      map[string]bool                // map of source wrappers, e.g. "targetfilter", "nat64"
+	lookupIP            func(string) ([]net.IP, error) // nil means use net.LookupIP
 }
 
 func NewConfig(opts ...Option) *Config {
@@ -98,6 +100,14 @@ func WithPreferAlias(enabled bool) Option {
 	}
 }
 
+// WithLookupIP sets a custom DNS lookup function for resolving hostnames to IPs.
+// If nil, the default net.LookupIP is used.
+func WithLookupIP(fn func(string) ([]net.IP, error)) Option {
+	return func(o *Config) {
+		o.lookupIP = fn
+	}
+}
+
 // WithPTRSupported indicates whether PTR is included in --managed-record-types.
 // When false the PTR source wrapper is not installed at all, so no reverse
 // records are generated regardless of the --create-ptr flag.
@@ -144,6 +154,8 @@ func wrapSources(
 ) (source.Source, error) {
 	combinedSource := NewDedupSource(NewMultiSource(sources, opts.defaultTargets, opts.forceDefaultTargets))
 	opts.addSourceWrapper("dedup")
+	combinedSource = NewResolveTarget(combinedSource, WithResolveTargetLookupIP(opts.lookupIP))
+	opts.addSourceWrapper("resolve")
 	if len(opts.nat64Networks) > 0 {
 		var err error
 		combinedSource, err = NewNAT64Source(combinedSource, opts.nat64Networks)

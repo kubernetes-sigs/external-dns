@@ -201,6 +201,43 @@ func TestEndpoint_WithLabel(t *testing.T) {
 	})
 }
 
+func TestEndpoint_WithTargets(t *testing.T) {
+	t.Run("non-empty targets derives record type from first target and preserves other fields", func(t *testing.T) {
+		labels := Labels{"owner": "team-a"}
+		providerSpecific := ProviderSpecific{{Name: "foo", Value: "bar"}}
+		ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc-1", "", "")
+
+		ep := &Endpoint{
+			DNSName:          "example.com",
+			Targets:          Targets{"old.example.net"},
+			RecordType:       RecordTypeCNAME,
+			SetIdentifier:    "set-1",
+			RecordTTL:        TTL(300),
+			Labels:           labels,
+			ProviderSpecific: providerSpecific,
+			refObject:        ref,
+		}
+
+		newTargets := Targets{"1.2.3.4", "example.net"}
+		got := ep.WithTargets(newTargets)
+
+		require.NotNil(t, got)
+		assert.NotSame(t, ep, got)
+		assert.Equal(t, "example.com", got.DNSName)
+		assert.Equal(t, newTargets, got.Targets)
+		assert.Equal(t, RecordTypeA, got.RecordType)
+		assert.Equal(t, "set-1", got.SetIdentifier)
+		assert.Equal(t, TTL(300), got.RecordTTL)
+		assert.Equal(t, labels, got.Labels)
+		assert.Equal(t, providerSpecific, got.ProviderSpecific)
+		assert.Equal(t, ref, got.refObject)
+
+		// Original endpoint remains unchanged.
+		assert.Equal(t, Targets{"old.example.net"}, ep.Targets)
+		assert.Equal(t, RecordTypeCNAME, ep.RecordType)
+	})
+}
+
 func TestSame_ParseErrorLogged(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 

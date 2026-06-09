@@ -100,5 +100,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			}
 		}
 	}
+	if v, ok := annotations[ResolveTargetKey]; ok {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  "resolve-target",
+			Value: v,
+		})
+	}
 	return providerSpecificAnnotations, setIdentifier
 }

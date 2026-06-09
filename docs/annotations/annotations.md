@@ -299,6 +299,52 @@ spec:
 
 > ExternalDNS will create an internal DNS record for `my-pod.internal.example.com` targeting the Pod `Status.PodIP`.
 
+## external-dns.alpha.kubernetes.io/resolve-target
+
+Controls whether load balancer hostname targets when they are CNAME records. When the annotation is set to `"true"` the CNAME records are resolved to their underlying
+A/AAAA records at sync time, ExternalDNS performs a DNS lookup for each hostname target and emits the
+resulting IP addresses as A and/or AAAA endpoints. If resolution fails (e.g. the hostname is
+temporarily unresolvable), that target is silently skipped.
+
+This is useful when a DNS provider does not support CNAME flattening
+or ALIAS records and a flat IP address record is required.
+
+### Use Cases for `external-dns.alpha.kubernetes.io/resolve-target` annotation
+
+#### Opt in to resolution for a single Source
+
+Resolve load balancer hostnames to IPs for one Ingress:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: test-ingress
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/resolve-target: "true"
+spec:
+  rules:
+    - host: svc.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+status:
+  loadBalancer:
+    ingress:
+      - hostname: example.com
+```
+
+> ExternalDNS will resolve the Ingress load balancer hostname and publish A/AAAA records instead of a CNAME.
+Let's take an example, "example.com" CNAME resolves to A record "104.20.23.154" and AAAA record "2606:4700:10::ac42:93f3".
+ExternalDNS will create an A record for "svc.example.com" with target "104.20.23.154" and an AAAA record for "svc.example.com" with target "2606:4700:10::ac42:93f3".
+
 ## external-dns.kubernetes.io/target
 
 Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA).
@@ -451,9 +497,9 @@ spec:
 ## Gateway API Annotation Placement
 
 When using Gateway API sources (`gateway-httproute`, `gateway-grpcroute`, `gateway-tlsroute`, etc.), annotations
-are read from different resources: **Gateway resource** reads only `target` annotation, while **Route resources**
-(HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`, and
-provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
+are read from different resources: **Gateway resource** reads only the `target` annotation, while **Route resources**
+(HTTPRoute, GRPCRoute, TLSRoute, etc.) read all other annotations (`hostname`, `ttl`, `controller`,
+`resolve-target`, and provider-specific annotations like `cloudflare-*`, `aws-*`, `scw-*`).
 
 **ListenerSet resources** also support the `target` annotation. When a Route references a ListenerSet
 as its parent, the ListenerSet's target annotation takes precedence over the parent Gateway's target annotation.
