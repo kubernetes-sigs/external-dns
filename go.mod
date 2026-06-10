@@ -24,9 +24,9 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/civo/civogo v0.7.2
 	github.com/cloudflare/cloudflare-go/v5 v5.1.0
-	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dnsimple/dnsimple-go v1.7.0
+	github.com/emissary-ingress/emissary/v3 v3.10.0
 	github.com/exoscale/egoscale/v3 v3.1.37
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.7.0
@@ -131,7 +131,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
-	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
