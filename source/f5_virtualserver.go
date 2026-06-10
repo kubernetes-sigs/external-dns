@@ -24,6 +24,7 @@ import (
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 var f5VirtualServerGVR = schema.GroupVersionResource{
@@ -53,7 +55,7 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // +externaldns:source:resources=VirtualServer.cis.f5.com
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
@@ -61,6 +63,7 @@ type f5VirtualServerSource struct {
 	kubeClient            kubernetes.Interface
 	annotationFilter      string
 	namespace             string
+	templateEngine        template.Engine
 	unstructuredConverter *unstructuredConverter
 }
 
@@ -98,6 +101,7 @@ func NewF5VirtualServerSource(
 		kubeClient:            kubeClient,
 		namespace:             cfg.Namespace,
 		annotationFilter:      cfg.AnnotationFilter,
+		templateEngine:        cfg.TemplateEngine,
 		unstructuredConverter: uc,
 	}, nil
 }
@@ -122,6 +126,10 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 		if err != nil {
 			return nil, err
 		}
+		virtualServer.TypeMeta = metav1.TypeMeta{
+			Kind:       "VirtualServer",
+			APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+		}
 		virtualServers = append(virtualServers, virtualServer)
 	}
 
@@ -130,7 +138,10 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
-	endpoints := vs.endpointsFromVirtualServers(virtualServers)
+	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)
+	if err != nil {
+		return nil, err
+	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
@@ -141,40 +152,99 @@ func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func
 	informers.MustAddEventHandler(vs.virtualServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
-// endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers
-func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f5.VirtualServer) []*endpoint.Endpoint {
+// endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers.
+func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f5.VirtualServer) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		if !hasValidVirtualServerIP(virtualServer) {
-			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
-				virtualServer.Namespace, virtualServer.Name)
-			continue
-		}
+		var vsEndpoints []*endpoint.Endpoint
 
-		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
+		if hasValidVirtualServerIP(virtualServer) {
+			resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 
-		ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
+			ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
 
-		targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
-		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
-		}
+			targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
+			if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
+				targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+			}
+			if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
+				targets = append(targets, virtualServer.Status.VSAddress)
+			}
 
-		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
-			targets = append(targets, virtualServer.Status.VSAddress)
-		}
-
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
-
-		for _, alias := range virtualServer.Spec.HostAliases {
-			if alias != "" {
-				endpoints = append(endpoints, endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+			vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+			for _, alias := range virtualServer.Spec.HostAliases {
+				if alias != "" {
+					vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+				}
 			}
 		}
+
+		var err error
+		vsEndpoints, err = vs.templateEngine.CombineWithEndpoints(
+			vsEndpoints,
+			func() ([]*endpoint.Endpoint, error) { return vs.endpointsFromFQDNTargetTemplate(virtualServer) },
+		)
+		if err != nil {
+			return nil, err
+		}
+		vsEndpoints, err = vs.templateEngine.CombineWithEndpoints(
+			vsEndpoints,
+			func() ([]*endpoint.Endpoint, error) { return vs.endpointsFromVSTemplate(virtualServer) },
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(vsEndpoints) == 0 {
+			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
+				virtualServer.Namespace, virtualServer.Name)
+		}
+
+		endpoints = append(endpoints, vsEndpoints...)
 	}
 
-	return endpoints
+	return endpoints, nil
+}
+
+// endpointsFromVSTemplate creates endpoints using the FQDN and target templates.
+func (vs *f5VirtualServerSource) endpointsFromVSTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
+	hostnames, err := vs.templateEngine.ExecFQDN(obj)
+	if err != nil || len(hostnames) == 0 {
+		return nil, err
+	}
+	targets, err := vs.templateEngine.ExecTarget(obj)
+	if err != nil {
+		return nil, err
+	}
+	return EndpointsForHostsAndTargets(hostnames, targets), nil
+}
+
+// endpointsFromFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
+func (vs *f5VirtualServerSource) endpointsFromFQDNTargetTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
+	pairs, err := vs.templateEngine.ExecFQDNTarget(obj)
+	if err != nil || len(pairs) == 0 {
+		return nil, err
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from virtualserver %s/%s: missing ':' separator",
+				pair, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from virtualserver %s/%s: field may not yet be populated",
+				pair, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+	}
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
