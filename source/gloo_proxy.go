@@ -288,22 +288,17 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 		}
 	}
 
-	var err error
-	endpoints, err = gs.templateEngine.CombineWithEndpoints(
+	endpoints, err := gs.templateEngine.CombineWithEndpoints(
 		endpoints,
 		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyFQDNTargetTemplate(p) },
 	)
 	if err != nil {
 		return nil, err
 	}
-	endpoints, err = gs.templateEngine.CombineWithEndpoints(
+	return gs.templateEngine.CombineWithEndpoints(
 		endpoints,
 		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyTemplate(p) },
 	)
-	if err != nil {
-		return nil, err
-	}
-	return endpoints, nil
 }
 
 func (gs *glooSource) endpointsFromProxyTemplate(p *proxy) ([]*endpoint.Endpoint, error) {
