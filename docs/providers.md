@@ -28,5 +28,6 @@ Provider supported configurations
 | Plural        | n/a        | n/a     | n/a                   |
 | RFC2136       | n/a        | yes     | n/a                   |
 | Scaleway      | n/a        | n/a     | 300                   |
+| TencentCloud  | n/a        | n/a     | n/a                   |
 | Transip       | n/a        | yes     | 60                    |
 | Webhook       | n/a        | n/a     | n/a                   |

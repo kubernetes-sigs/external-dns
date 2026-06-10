@@ -213,6 +213,8 @@ type Config struct {
 	GoDaddyTTL                                    int64
 	GoDaddyOTE                                    bool
 	OCPRouterName                                 string
+	TencentCloudConfigFile                        string
+	TencentCloudZoneType                          string
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
@@ -380,6 +382,8 @@ var defaultConfig = &Config{
 	SkipperRouteGroupVersion:     "zalando.org/v1",
 	Sources:                      nil,
 	TargetNetFilter:              []string{},
+	TencentCloudConfigFile:       "/etc/kubernetes/tencent-cloud.json",
+	TencentCloudZoneType:         "",
 	TLSCA:                        "",
 	TLSClientCert:                "",
 	TLSClientCertKey:             "",
@@ -433,6 +437,7 @@ var ProviderNames = []string{
 	ProviderRFC2136,
 	ProviderScaleway,
 	ProviderSkyDNS,
+	ProviderTencentCloud,
 	ProviderTransip,
 	ProviderWebhook,
 }
@@ -654,6 +659,10 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)
 	b.Int64Var("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.", cfg.GoDaddyTTL, &cfg.GoDaddyTTL)
 	b.BoolVar("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)", defaultConfig.GoDaddyOTE, &cfg.GoDaddyOTE)
+
+	// TencentCloud flags
+	b.StringVar("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)", defaultConfig.TencentCloudConfigFile, &cfg.TencentCloudConfigFile)
+	b.EnumVar("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones of this type (optional, options: public, private)", defaultConfig.TencentCloudZoneType, &cfg.TencentCloudZoneType, "", "public", "private")
 
 	// Flags related to TLS communication
 	b.StringVar("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)", defaultConfig.TLSCA, &cfg.TLSCA)

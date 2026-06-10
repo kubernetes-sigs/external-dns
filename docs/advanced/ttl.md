@@ -68,6 +68,7 @@ TTL must be a positive value.
 | `Plural`       |    No     |
 | `RFC2136`      |    Yes    |
 | `Scaleway`     |    Yes    |
+| `TencentCloud` |    Yes    |
 | `Transip`      |    Yes    |
 | `Webhook`      |    Yes    |
 

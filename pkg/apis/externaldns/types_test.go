@@ -102,6 +102,7 @@ var (
 		InMemoryZones:                                 []string{""},
 		OVHEndpoint:                                   "ovh-eu",
 		OVHApiRateLimit:                               20,
+		TencentCloudConfigFile:                        "/etc/kubernetes/tencent-cloud.json",
 		PDNSServer:                                    "http://localhost:8081",
 		PDNSServerID:                                  "localhost",
 		PDNSAPIKey:                                    "",
@@ -214,6 +215,7 @@ var (
 		InMemoryZones:                                 []string{"example.org", "company.com"},
 		OVHEndpoint:                                   "ovh-ca",
 		OVHApiRateLimit:                               42,
+		TencentCloudConfigFile:                        "/etc/kubernetes/tencent-cloud.json",
 		PDNSServer:                                    "http://ns.example.com:8081",
 		PDNSServerID:                                  "localhost",
 		PDNSAPIKey:                                    "some-secret-key",
@@ -656,6 +658,16 @@ func TestParseFlagsAlibabaCloud(t *testing.T) {
 	)
 	assert.Equal(t, "/etc/kubernetes/alibaba-override.json", cfg.AlibabaCloudConfigFile)
 	assert.Equal(t, "private", cfg.AlibabaCloudZoneType)
+}
+
+func TestParseFlagsTencentCloud(t *testing.T) {
+	t.Parallel()
+	cfg := parseCfg(t,
+		"--tencent-cloud-config-file=/etc/kubernetes/tencent-cloud.json",
+		"--tencent-cloud-zone-type=private",
+	)
+	assert.Equal(t, "/etc/kubernetes/tencent-cloud.json", cfg.TencentCloudConfigFile)
+	assert.Equal(t, "private", cfg.TencentCloudZoneType)
 }
 
 func TestParseFlagsPublishingAndFilters(t *testing.T) {

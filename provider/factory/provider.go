@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/scaleway"
+	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/webhook"
 )
@@ -105,6 +106,7 @@ func providers(selector string) (ProviderConstructor, bool) {
 		externaldns.ProviderPlural:       plural.New,
 		externaldns.ProviderRFC2136:      rfc2136.New,
 		externaldns.ProviderScaleway:     scaleway.New,
+		externaldns.ProviderTencentCloud: tencentcloud.New,
 		externaldns.ProviderTransip:      transip.New,
 		externaldns.ProviderWebhook:      webhook.New,
 	}

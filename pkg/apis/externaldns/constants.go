@@ -48,6 +48,7 @@ const (
 	ProviderPlural       = "plural"
 	ProviderRFC2136      = "rfc2136"
 	ProviderScaleway     = "scaleway"
+	ProviderTencentCloud = "tencentcloud"
 	ProviderTransip      = "transip"
 	ProviderWebhook      = "webhook"
 )
