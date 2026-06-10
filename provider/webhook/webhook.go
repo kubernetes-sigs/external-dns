@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -135,7 +136,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	df := &endpoint.DomainFilter{}
-	if err := json.NewDecoder(resp.Body).Decode(df); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
@@ -214,7 +215,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(&endpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
@@ -324,7 +325,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(&endpoints); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err

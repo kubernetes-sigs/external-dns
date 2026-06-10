@@ -355,3 +355,40 @@ func TestNegotiateHandler_FiltersWithSpecialEncodings(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
 }
+
+// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
+// that pushes a request body with no end in sight.
+type endlessBody struct{}
+
+func (endlessBody) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 'a'
+	}
+	return len(p), nil
+}
+
+func TestRecordsHandlerApplyChangesRequestBodyOverLimit(t *testing.T) {
+	body := io.MultiReader(strings.NewReader(`{"create":[{"dnsName":"`), endlessBody{})
+	req := httptest.NewRequest(http.MethodPost, UrlApplyChanges, body)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		Provider: &FakeWebhookProvider{},
+	}
+	providerAPIServer.RecordsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
+}
+
+func TestAdjustEndpointsHandlerRequestBodyOverLimit(t *testing.T) {
+	body := io.MultiReader(strings.NewReader(`[{"dnsName":"`), endlessBody{})
+	req := httptest.NewRequest(http.MethodPost, UrlAdjustEndpoints, body)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		Provider: &FakeWebhookProvider{},
+	}
+	providerAPIServer.AdjustEndpointsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
+}
