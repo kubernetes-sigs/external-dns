@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -661,6 +662,32 @@ func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
 
 	assert.Greater(t, httpDurationSampleCount(t, "records", http.MethodGet), before,
 		"external_dns_http_request_duration_seconds should be incremented for a Records call")
+}
+
+func TestRecords_ResponseBodyOverLimit(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		// stream a JSON string that only terminates past the decode cap
+		_, _ = w.Write([]byte(`[{"dnsName":"`))
+		chunk := bytes.Repeat([]byte("a"), 1<<20)
+		for written := 0; written <= extdnshttp.MaxBodyBytes; written += len(chunk) {
+			if _, err := w.Write(chunk); err != nil {
+				return
+			}
+		}
+		_, _ = w.Write([]byte(`"}]`))
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	_, err = p.Records(t.Context())
+	require.ErrorContains(t, err, "unexpected EOF")
 }
 
 func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
