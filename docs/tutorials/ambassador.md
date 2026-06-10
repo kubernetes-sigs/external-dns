@@ -105,6 +105,7 @@ spec:
         args:
         - --source=ambassador-host
         - --provider=inmemory
+        - --inmemory-zone=example.com # persist records so updates/deletes are observable
         - --log-level=debug # show the records that would be created
         # for a real provider, replace the two lines above, e.g.:
         # - --provider=xxx
@@ -126,8 +127,15 @@ uses your current kubeconfig context (the kind cluster), so no in-cluster RBAC i
 go run main.go \
     --source=ambassador-host \
     --provider=inmemory \
+    --inmemory-zone=example.com \
+    --interval=10s \
     --log-level=debug
 ```
+
+`--inmemory-zone=example.com` gives the `inmemory` provider a zone to store records in.
+Without it the provider keeps no state between reconcile loops, so it re-emits the same
+`CREATE` every cycle and you never see an `UPDATE` or `DELETE`. `--interval=10s` shortens
+the wait between reconcile loops (default is one minute).
 
 ### 4. Create a Host
 
