@@ -29,7 +29,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-const pathToDocs = "%s/../../../../docs/monitoring"
+const (
+	pathToDocs        = "%s/../../../../docs/monitoring"
+	knownMetricsCount = 24
+)
 
 func TestComputeMetrics(t *testing.T) {
 	reg := metrics.RegisterMetric
@@ -38,7 +41,7 @@ func TestComputeMetrics(t *testing.T) {
 		t.Errorf("Expected not empty metrics registry, got %d", len(reg.Metrics))
 	}
 
-	assert.Len(t, reg.Metrics, 21)
+	assert.Len(t, reg.Metrics, knownMetricsCount)
 }
 
 func TestGenerateMarkdownTableRenderer(t *testing.T) {
@@ -48,7 +51,7 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Contains(t, got, "# Available Metrics\n\n<!-- THIS FILE MUST NOT BE EDITED BY HAND -->\n")
-	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Help |")
+	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Labels | Help |")
 }
 
 func TestGenerateMarkdownTableWithSingleMetric(t *testing.T) {
@@ -90,8 +93,11 @@ func TestMetricsMdExtraMetricAdded(t *testing.T) {
 	expected, err := fs.ReadFile(fsys, fileName)
 	assert.NoError(t, err, "expected file %s to exist", fileName)
 
-	reg := metrics.RegisterMetric
-
+	// Use a fresh registry to avoid mutating the global RegisterMetric.
+	reg := metrics.NewMetricsRegister()
+	for _, m := range metrics.RegisterMetric.Metrics {
+		reg.Metrics = append(reg.Metrics, m)
+	}
 	reg.MustRegister(metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
@@ -126,8 +132,7 @@ func TestGetRuntimeMetricsForNewRegistry(t *testing.T) {
 }
 
 func TestGetRuntimeMetricsForDefaultRegistry(t *testing.T) {
-	reg := prometheus.DefaultRegisterer
-	runtimeMetrics := getRuntimeMetrics(reg)
+	runtimeMetrics := getRuntimeMetrics(prometheus.DefaultGatherer)
 	if len(runtimeMetrics) == 0 {
 		t.Errorf("Expected not empty runtime metrics, got %d", len(runtimeMetrics))
 	}

@@ -97,7 +97,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// Validate that the nested sources were called.
 			for _, src := range sources {
@@ -161,7 +161,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -191,7 +191,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -229,7 +229,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})
@@ -264,7 +264,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		endpoints, err := source.Endpoints(t.Context())
 		require.NoError(t, err)
 
-		validateEndpoints(t, endpoints, expectedEndpoints)
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
 
 		src.AssertExpectations(t)
 	})

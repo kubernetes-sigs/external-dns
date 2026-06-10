@@ -43,10 +43,12 @@ func newRegistry(provider provider.Provider) *NoopRegistry {
 	}
 }
 
+// GetDomainFilter returns the domain filter from the underlying provider.
 func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return im.provider.GetDomainFilter()
 }
 
+// OwnerID returns an empty string as the noop registry does not track ownership.
 func (im *NoopRegistry) OwnerID() string {
 	return ""
 }

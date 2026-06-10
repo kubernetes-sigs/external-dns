@@ -43,74 +43,14 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestNodeSource(t *testing.T) {
 	t.Parallel()
 
-	t.Run("NewNodeSource", testNodeSourceNewNodeSource)
 	t.Run("Endpoints", testNodeSourceEndpoints)
 	t.Run("EndpointsIPv6", testNodeEndpointsWithIPv6)
-}
-
-// testNodeSourceNewNodeSource tests that NewNodeService doesn't return an error.
-func testNodeSourceNewNodeSource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title            string
-		annotationFilter string
-		fqdnTemplate     string
-		expectError      bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "complex template",
-			expectError:  false,
-			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewNodeSource(
-				t.Context(),
-				fake.NewClientset(),
-				&Config{
-					AnnotationFilter:     ti.annotationFilter,
-					FQDNTemplate:         ti.fqdnTemplate,
-					LabelFilter:          labels.Everything(),
-					ExcludeUnschedulable: true,
-					ExposeInternalIPv6:   true,
-				},
-			)
-
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 // testNodeSourceEndpoints tests that various node generate the correct endpoints.
@@ -261,7 +201,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+				"external-dns.kubernetes.io/target": "203.2.45.7",
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
@@ -407,6 +347,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"Skipping node node1 because it is unschedulable",
 			},
 		},
+		{
+			title:              "provider-specific annotation is not supported and is ignored",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				annotations.AWSPrefix + "weight": "10",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
@@ -444,7 +396,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubeClient,
 				&Config{
 					AnnotationFilter:     tc.annotationFilter,
-					FQDNTemplate:         tc.fqdnTemplate,
+					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
 					ExcludeUnschedulable: tc.excludeUnschedulable,
@@ -460,7 +412,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
 				logtest.TestHelperLogContains(entry, hook, t)
@@ -558,7 +510,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			kubeClient,
 			&Config{
 				AnnotationFilter:     tc.annotationFilter,
-				FQDNTemplate:         tc.fqdnTemplate,
+				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
 				ExcludeUnschedulable: tc.excludeUnschedulable,
@@ -574,13 +526,64 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		}
 
 		// Validate returned endpoints against desired endpoints.
-		validateEndpoints(t, endpoints, tc.expected)
+		testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 		for _, ep := range endpoints {
 			require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 		}
 	}
+}
+
+func TestTransformerInNodeSource(t *testing.T) {
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake-node",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+			},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
+			},
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.4"},
+			},
+			Conditions: []v1.NodeCondition{
+				{Type: v1.NodeReady, Status: v1.ConditionTrue},
+			},
+		},
+	}
+
+	kubeClient := fake.NewClientset()
+	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+	ns, ok := src.(*nodeSource)
+	require.True(t, ok)
+
+	retrieved, err := ns.nodeInformer.Lister().Get(node.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, node.Name, retrieved.Name)
+	assert.Equal(t, node.Labels, retrieved.Labels)
+	assert.Equal(t, node.UID, retrieved.UID)
+	assert.Empty(t, retrieved.ManagedFields)
+	assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
+	assert.Contains(t, retrieved.Annotations, "user-annotation")
+	// Status.Addresses must be preserved — used for endpoint generation
+	assert.Equal(t, node.Status.Addresses, retrieved.Status.Addresses)
+	// Status.Conditions stripped
+	assert.Empty(t, retrieved.Status.Conditions)
 }
 
 func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
@@ -714,7 +717,7 @@ func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
 			Annotations: map[string]string{
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
-				"external-dns.alpha.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
+				"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
 			},
 		},
 		Spec: v1.NodeSpec{
@@ -740,4 +743,118 @@ func (b *nodeListBuilder) build() v1.NodeList {
 		})
 	}
 	return v1.NodeList{Items: b.nodes}
+}
+
+func TestNodeIndexer(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		nodes            []*v1.Node
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all nodes",
+			expectedCount: 5,
+			nodes:         createTestNodes(5),
+		},
+		{
+			name:             "annotation filter matches subset",
+			annotationFilter: "tier=frontend",
+			expectedCount:    3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 3 {
+						node.Annotations["tier"] = "frontend"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			annotationFilter: "tier=backend",
+			expectedCount:    0,
+			nodes: createTestNodes(3, func(nodes []*v1.Node) {
+				for _, node := range nodes {
+					node.Annotations["tier"] = "frontend"
+				}
+			}),
+		},
+		{
+			name:          "label filter matches subset",
+			labelFilter:   "app=my-node",
+			expectedCount: 2,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 2 {
+						node.Labels["app"] = "my-node"
+					}
+				}
+			}),
+		},
+		{
+			name:          "controller mismatch excludes node",
+			expectedCount: 3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i >= 3 {
+						node.Annotations[annotations.ControllerKey] = "other-controller"
+					}
+				}
+			}),
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all nodes pass through",
+			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
+			expectedCount:    3,
+			nodes:            createTestNodes(3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+
+			for i, node := range tt.nodes {
+				node.Annotations[annotations.TargetKey] = fmt.Sprintf("1.2.3.%d", i+1)
+				_, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewNodeSource(t.Context(), client, &Config{
+				AnnotationFilter: tt.annotationFilter,
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func createTestNodes(count int, funcs ...func([]*v1.Node)) []*v1.Node {
+	nodes := make([]*v1.Node, count)
+	for i := range count {
+		nodes[i] = &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        fmt.Sprintf("node-%d", i),
+				Labels:      map[string]string{},
+				Annotations: map[string]string{},
+			},
+		}
+	}
+	for _, fn := range funcs {
+		fn(nodes)
+	}
+	return nodes
 }

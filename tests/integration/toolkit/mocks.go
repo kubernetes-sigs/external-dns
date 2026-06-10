@@ -17,70 +17,14 @@ limitations under the License.
 package toolkit
 
 import (
-	"fmt"
-
-	openshift "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/stretchr/testify/mock"
-	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/rest"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source"
 )
 
-// MockClientGenerator implements source.ClientGenerator for testing.
-type MockClientGenerator struct {
-	mock.Mock
-}
-
-func (m *MockClientGenerator) RESTConfig() (*rest.Config, error) {
-	return nil, fmt.Errorf("RESTConfig: not implemented")
-}
-
-func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
-	args := m.Called()
-	if args.Error(1) != nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(kubernetes.Interface), nil
-}
-
-func (m *MockClientGenerator) GatewayClient() (gateway.Interface, error) {
-	args := m.Called()
-	if args.Error(1) != nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(gateway.Interface), nil
-}
-
-func (m *MockClientGenerator) IstioClient() (istioclient.Interface, error) {
-	args := m.Called()
-	if args.Error(1) != nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(istioclient.Interface), nil
-}
-
-func (m *MockClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
-	args := m.Called()
-	if args.Error(1) != nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(dynamic.Interface), nil
-}
-
-func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
-	args := m.Called()
-	if args.Error(1) != nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(openshift.Interface), nil
-}
-
-// newMockClientGenerator creates a MockClientGenerator that returns the provided fake client.
-func newMockClientGenerator(client *fake.Clientset) *MockClientGenerator {
-	m := new(MockClientGenerator)
-	m.On("KubeClient").Return(client, nil)
-	return m
+// newMockClientGenerator returns a ClientGenerator whose KubeClient returns the
+// provided fake clientset.
+func newMockClientGenerator(client *fake.Clientset) source.ClientGenerator {
+	return testutils.NewFakeClientGenerator(client)
 }

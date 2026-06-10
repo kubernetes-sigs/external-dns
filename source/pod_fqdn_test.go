@@ -19,53 +19,16 @@ package source
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
-
-func TestNewPodSourceWithFqdn(t *testing.T) {
-	for _, tt := range []struct {
-		title            string
-		annotationFilter string
-		fqdnTemplate     string
-		expectError      bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-	} {
-		t.Run(tt.title, func(t *testing.T) {
-			_, err := NewPodSource(
-				t.Context(),
-				fake.NewClientset(),
-				&Config{
-					FQDNTemplate: tt.fqdnTemplate,
-				})
-
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
 
 func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 	for _, tt := range []struct {
@@ -204,7 +167,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Name:      "pod-1",
 						Namespace: "default",
 						Annotations: map[string]string{
-							"external-dns.alpha.kubernetes.io/target": "203.2.45.22",
+							"external-dns.kubernetes.io/target": "203.2.45.22",
 						},
 					},
 					Status: v1.PodStatus{
@@ -228,7 +191,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Name:      "pod-1",
 						Namespace: "default",
 						Annotations: map[string]string{
-							"external-dns.alpha.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
+							"external-dns.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
 						},
 					},
 					Status: v1.PodStatus{
@@ -441,16 +404,15 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: tt.combineFQDN,
-					PodSourceDomain:          tt.sourceDomain,
+					TemplateEngine:  templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					PodSourceDomain: tt.sourceDomain,
 				})
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -502,9 +464,8 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: tt.combineFQDN,
-					PodSourceDomain:          tt.sourceDomain,
+					TemplateEngine:  templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combineFQDN),
+					PodSourceDomain: tt.sourceDomain,
 				})
 			require.NoError(t, err)
 

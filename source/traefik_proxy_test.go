@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/stretchr/testify/assert"
@@ -34,6 +37,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // This is a compile-time validation that traefikSource is a Source.
@@ -61,9 +65,9 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -91,8 +95,8 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -127,8 +131,8 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-hostheader-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -163,8 +167,8 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -209,9 +213,9 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -266,9 +270,9 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -314,8 +318,8 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-omit-wildcard-host",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -327,6 +331,39 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 			},
 			expected: nil,
+		},
+		{
+			title: "IngressRoute with provider-specific annotation",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-provider-specific",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						annotations.HostnameKey:          "a.example.com",
+						annotations.TargetKey:            "target.domain.tld",
+						"kubernetes.io/ingress.class":    "traefik",
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-provider-specific",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -369,7 +406,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -394,9 +431,9 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -424,8 +461,8 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-hostsni-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -460,8 +497,8 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -506,9 +543,9 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -563,9 +600,9 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -611,8 +648,8 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-omit-wildcard-host",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -666,7 +703,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -691,9 +728,9 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -721,9 +758,9 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-multi-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com, b.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com, b.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -761,9 +798,9 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -811,7 +848,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -836,9 +873,9 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -866,8 +903,8 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -902,8 +939,8 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-hostheader-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -938,8 +975,8 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -984,9 +1021,9 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -1041,9 +1078,9 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -1089,8 +1126,8 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 					Name:      "ingressroute-omit-wildcard-host",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteSpec{
@@ -1145,7 +1182,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1170,9 +1207,9 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1200,8 +1237,8 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-hostsni-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -1236,8 +1273,8 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -1282,9 +1319,9 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -1339,9 +1376,9 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-multi-host-annotations-match",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "f.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -1387,8 +1424,8 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 					Name:      "ingressroutetcp-omit-wildcard-host",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
-						"kubernetes.io/ingress.class":             "traefik",
+						"external-dns.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":       "traefik",
 					},
 				},
 				Spec: traefikIngressRouteTCPSpec{
@@ -1443,7 +1480,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1468,9 +1505,9 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1498,9 +1535,9 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-multi-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com, b.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com, b.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1538,9 +1575,9 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 					Name:      "ingressrouteudp-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1589,7 +1626,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1617,9 +1654,9 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1650,9 +1687,9 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1671,9 +1708,9 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1704,9 +1741,9 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":               "traefik",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
 					},
 				},
 			},
@@ -1757,7 +1794,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1836,4 +1873,87 @@ type testInformer struct {
 func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	t.times += 1
 	return nil, fmt.Errorf("not implemented")
+}
+
+func TestTraefikSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newTraefikUnstructuredConverter()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		gvr           schema.GroupVersionResource
+		getSource     func(source *traefikSource) informers.GenericInformer
+		enabledLegacy bool
+	}{
+		{
+			name: "IngressRoute",
+			gvr:  ingressRouteGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRouteTCP",
+			gvr:  ingressRouteTCPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteTcpInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRouteUDP",
+			gvr:  ingressRouteUDPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.ingressRouteUdpInformer
+			},
+			enabledLegacy: false,
+		},
+		{
+			name: "IngressRoute with legacy API group",
+			gvr:  oldIngressRouteGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteInformer
+			},
+			enabledLegacy: true,
+		},
+		{
+			name: "IngressRouteTCP with legacy API group",
+			gvr:  oldIngressRouteTCPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteTcpInformer
+			},
+			enabledLegacy: true,
+		},
+		{
+			name: "IngressRouteUDP with legacy API group",
+			gvr:  oldIngressRouteUDPGVR,
+			getSource: func(source *traefikSource) informers.GenericInformer {
+				return source.oldIngressRouteUdpInformer
+			},
+			enabledLegacy: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeClient, &Config{
+				TraefikEnableLegacy: tt.enabledLegacy,
+			})
+			require.NoError(t, err)
+			require.IsType(t, &traefikSource{}, source)
+
+			testDynamicInformerTransformHelper(t,
+				tt.gvr,
+				fakeDynamicClient,
+				tt.getSource(source.(*traefikSource)),
+				withRemovedLastAppliedConfigAnnotation(),
+				withRemovedManagedFields(),
+			)
+		})
+	}
 }

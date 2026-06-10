@@ -24,10 +24,10 @@ import (
 	"time"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -234,7 +234,7 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 type azurePrivateDNSChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, changes *plan.Changes) (azurePrivateDNSChangeMap, azurePrivateDNSChangeMap) {
-	ignored := map[string]bool{}
+	ignored := sets.New[string]()
 	deleted := azurePrivateDNSChangeMap{}
 	updated := azurePrivateDNSChangeMap{}
 	zoneNameIDMapper := provider.ZoneIDName{}
@@ -246,8 +246,8 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 	mapChange := func(changeMap azurePrivateDNSChangeMap, change *endpoint.Endpoint) {
 		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
 		if zone == "" {
-			if _, ok := ignored[change.DNSName]; !ok {
-				ignored[change.DNSName] = true
+			if !ignored.Has(change.DNSName) {
+				ignored.Insert(change.DNSName)
 				log.Infof("Ignoring changes to '%s' because a suitable Azure Private DNS zone was not found.", change.DNSName)
 			}
 			return
@@ -375,12 +375,12 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 		aRecords := make([]*privatedns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &privatedns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: new(target),
 			}
 		}
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
-				TTL:      to.Ptr(ttl),
+				TTL:      new(ttl),
 				ARecords: aRecords,
 			},
 		}, nil
@@ -388,21 +388,21 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 		aaaaRecords := make([]*privatedns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &privatedns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: new(target),
 			}
 		}
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
-				TTL:         to.Ptr(ttl),
+				TTL:         new(ttl),
 				AaaaRecords: aaaaRecords,
 			},
 		}, nil
 	case privatedns.RecordTypeCNAME:
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				CnameRecord: &privatedns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: new(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -417,14 +417,14 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 		}
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				MxRecords: mxRecords,
 			},
 		}, nil
 	case privatedns.RecordTypeTXT:
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				TxtRecords: []*privatedns.TxtRecord{
 					{
 						Value: []*string{

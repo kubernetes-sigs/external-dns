@@ -19,6 +19,8 @@ limitations under the License.
 package kubeclient
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -26,11 +28,54 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/flowcontrol"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
-// GetRestConfig returns the REST client configuration for Kubernetes API access.
+// InstrumentedRESTConfig builds a REST config with Prometheus transport metrics, request timeout,
+// and a token-bucket rate limiter. When qps > 0, it overrides the client-go defaults (5 QPS / 10 burst).
+func InstrumentedRESTConfig(
+	kubeConfig, apiServerURL string,
+	requestTimeout time.Duration,
+	qps int, burst int) (*rest.Config, error) {
+	config, err := buildRestConfig(kubeConfig, apiServerURL)
+	if err != nil {
+		return nil, err
+	}
+
+	config.UserAgent = externaldns.UserAgent()
+	config.WrapTransport = extdnshttp.NewInstrumentedTransport
+	config.Timeout = requestTimeout
+
+	config.QPS = rest.DefaultQPS
+	config.Burst = rest.DefaultBurst
+	if qps > 0 {
+		config.QPS = float32(qps)
+	}
+	if burst > 0 {
+		config.Burst = burst
+	}
+	log.Debugf("kube client qps: %f, burst %d", config.QPS, config.Burst)
+	config.RateLimiter = &rateLimiter{
+		delegate: flowcontrol.NewTokenBucketRateLimiter(config.QPS, config.Burst),
+	}
+	return config, nil
+}
+
+// NewKubeClient creates a Kubernetes client from the given REST config.
+func NewKubeClient(config *rest.Config) (kubernetes.Interface, error) {
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Created Kubernetes client %s", config.Host)
+	return client, nil
+}
+
+// buildRestConfig returns the REST client configuration for Kubernetes API access.
 // Supports both in-cluster and external cluster configurations.
 //
 // Configuration Priority:
@@ -38,7 +83,7 @@ import (
 // 2. Recommended home file (~/.kube/config)
 // 3. In-cluster config
 // TODO: consider clientcmd.NewDefaultClientConfigLoadingRules() with clientcmd.NewNonInteractiveDeferredLoadingClientConfig
-func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
+func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -66,38 +111,23 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	return config, nil
 }
 
-// InstrumentedRESTConfig creates a REST config with request instrumentation for monitoring.
-// Adds HTTP transport wrapper for Prometheus metrics collection and request timeout configuration.
-//
-// Metrics: Wraps the transport with pkg/http.NewInstrumentedTransport to collect
-// HTTP request duration metrics for all Kubernetes API calls.
-//
-// Timeout: Applies the specified request timeout to prevent hanging requests.
-func InstrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*rest.Config, error) {
-	config, err := GetRestConfig(kubeConfig, apiServerURL)
-	if err != nil {
-		return nil, err
-	}
-
-	config.WrapTransport = extdnshttp.NewInstrumentedTransport
-	config.Timeout = requestTimeout
-
-	return config, nil
+// rateLimiter wraps a RateLimiter and enriches Wait errors with an
+// actionable hint so callers get a clear message without needing to inspect
+// the error string themselves.
+type rateLimiter struct {
+	delegate flowcontrol.RateLimiter
 }
 
-// NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
-	log.Infof("Instantiating new Kubernetes client")
-	config, err := InstrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
-	if err != nil {
-		return nil, err
+func (r *rateLimiter) TryAccept() bool { return r.delegate.TryAccept() }
+func (r *rateLimiter) Accept()         { r.delegate.Accept() }
+func (r *rateLimiter) Stop()           { r.delegate.Stop() }
+func (r *rateLimiter) QPS() float32    { return r.delegate.QPS() }
+
+// Wait blocks until a token is available or the context is done.
+// Any error from Wait is a rate limit timeout; it is enriched with an actionable hint.
+func (r *rateLimiter) Wait(ctx context.Context) error {
+	if err := r.delegate.Wait(ctx); err != nil {
+		return fmt.Errorf("consider raising --kube-api-qps/--kube-api-burst: %w", err)
 	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	log.Infof("Created Kubernetes client %s", config.Host)
-	return client, nil
+	return nil
 }

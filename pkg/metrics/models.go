@@ -18,15 +18,19 @@ package metrics
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 type MetricRegistry struct {
 	Registerer prometheus.Registerer
 	Metrics    []*Metric
-	mName      map[string]bool
+	mName      sets.Set[string]
 }
 
 type Metric struct {
@@ -36,6 +40,7 @@ type Metric struct {
 	Name      string
 	Help      string
 	FQDN      string
+	Labels    []string
 }
 
 type IMetric interface {
@@ -93,6 +98,13 @@ func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
 	g.Gauge.WithLabelValues(toLower(lvs)...).Add(value)
 }
 
+// Reset removes all label combinations from the gauge vector.
+// Use Reset() at the start of each collection cycle followed by
+// AddWithLabels() to prevent stale label combinations from persisting.
+func (g GaugeVecMetric) Reset() {
+	g.Gauge.Reset()
+}
+
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace
 	return GaugeMetric{
@@ -103,6 +115,7 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
 		},
 		Gauge: prometheus.NewGauge(opts),
 	}
@@ -120,6 +133,7 @@ func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVe
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
 		},
 		Gauge: *prometheus.NewGaugeVec(opts, labelNames),
 	}
@@ -135,6 +149,7 @@ func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
 		},
 		Counter: prometheus.NewCounter(opts),
 	}
@@ -150,6 +165,7 @@ func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) Cou
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
 		},
 		CounterVec: prometheus.NewCounterVec(opts, labelNames),
 	}
@@ -178,6 +194,7 @@ func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
 		},
 		GaugeFunc: prometheus.NewGaugeFunc(opts, func() float64 { return 1 }),
 	}
@@ -206,6 +223,7 @@ func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) Summary
 			Namespace: opts.Namespace,
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
+			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labels...),
 		},
 		SummaryVec: *prometheus.NewSummaryVec(opts, labels),
 	}

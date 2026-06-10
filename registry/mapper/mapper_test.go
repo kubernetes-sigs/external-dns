@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 var (
@@ -115,6 +116,27 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeCNAME,
 		},
 		{
+			name:             "suffix with multiple dots and trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar.com",
+			wantEndpointName: "example.com",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and no trailing labels",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo.bar",
+			wantEndpointName: "example",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
+		{
+			name:             "suffix with multiple dots and too few labels does not panic",
+			mapper:           NewAffixNameMapper("", ".foo.bar", ""),
+			input:            "a-example.foo",
+			wantEndpointName: "",
+			wantRecordType:   "",
+		},
+		{
 			name:             "no affix with A record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "a-foo.example.com",
@@ -174,7 +196,14 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			name:             "suffix with txt record",
 			mapper:           NewAffixNameMapper("", "", ""),
 			input:            "txt-foo.example.com",
-			wantEndpointName: "txt-foo.example.com",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeTXT,
+		},
+		{
+			name:             "both prefix and suffix set returns empty",
+			mapper:           NewAffixNameMapper("pre-", "-suf", ""),
+			input:            "pre-a-foo-suf.example.com",
+			wantEndpointName: "",
 			wantRecordType:   "",
 		},
 	}
@@ -188,15 +217,15 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 	}
 
 	// Verify all supported records are tested
-	testedRecords := make(map[string]bool)
+	testedRecords := sets.New[string]()
 	for _, tt := range tests {
 		if tt.wantRecordType != "" {
-			testedRecords[tt.wantRecordType] = true
+			testedRecords.Insert(tt.wantRecordType)
 		}
 	}
 
 	for _, recordType := range supportedRecords {
-		assert.True(t, testedRecords[recordType], "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToEndpointName", recordType)
+		assert.True(t, testedRecords.Has(recordType), "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToEndpointName", recordType)
 	}
 }
 
@@ -272,6 +301,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "naptr-foo.example.com",
 		},
 		{
+			name:        "prefix with TXT record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
+		},
+		{
 			name:        "suffix with A record type in affix",
 			mapper:      NewAffixNameMapper("", "-%{record_type}", ""),
 			dns:         "foo.example.com",
@@ -286,6 +322,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "foo-cname.example.com",
 		},
 		{
+			name:        "suffix with TXT record type in affix",
+			mapper:      NewAffixNameMapper("", "-%{record_type}", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "foo-txt.example.com",
+		},
+		{
 			name:        "wildcard replacement with A record",
 			mapper:      NewAffixNameMapper("txt-", "", "wild"),
 			dns:         "*.example.com",
@@ -298,6 +341,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "*.example.com",
 			recordType:  endpoint.RecordTypeMX,
 			wantTXTName: "txt-mx-wild.example.com",
+		},
+		{
+			name:        "wildcard replacement with TXT record",
+			mapper:      NewAffixNameMapper("txt-", "", "wild"),
+			dns:         "*.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-txt-wild.example.com",
 		},
 		{
 			name:        "no affix with A record",
@@ -362,6 +412,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			recordType:  endpoint.RecordTypeNAPTR,
 			wantTXTName: "naptr-foo.example.com",
 		},
+		{
+			name:        "no affix with TXT record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -372,13 +429,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 	}
 
 	// Verify all supported records are tested
-	testedRecords := make(map[string]bool)
+	testedRecords := sets.New[string]()
 	for _, tt := range tests {
-		testedRecords[tt.recordType] = true
+		testedRecords.Insert(tt.recordType)
 	}
 
 	for _, recordType := range supportedRecords {
-		assert.True(t, testedRecords[recordType], "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToTXTName", recordType)
+		assert.True(t, testedRecords.Has(recordType), "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToTXTName", recordType)
 	}
 }
 
@@ -572,6 +629,33 @@ func TestDropSuffix(t *testing.T) {
 			rClean, _ := mapper.dropAffixExtractType(r[0])
 			actualOutput := rClean + "." + r[1]
 			assert.Equal(t, expectedOutput, actualOutput)
+		})
+	}
+}
+
+func TestDropAffixExtractType_NoMatch(t *testing.T) {
+	tests := []struct {
+		name   string
+		mapper AffixNameMapper
+		input  string
+	}{
+		{
+			name:   "prefix mapper input missing prefix",
+			mapper: NewAffixNameMapper("foo-", "", ""),
+			input:  "bar.example.com",
+		},
+		{
+			name:   "suffix mapper input missing suffix",
+			mapper: NewAffixNameMapper("", "-foo", ""),
+			input:  "bar.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotType := tt.mapper.dropAffixExtractType(tt.input)
+			assert.Empty(t, gotName)
+			assert.Empty(t, gotType)
 		})
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -59,10 +60,14 @@ type Provider interface {
 
 type BaseProvider struct{}
 
+// AdjustEndpoints returns the endpoints unchanged. Providers that need to
+// canonicalize or transform candidate endpoints should override this method.
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// GetDomainFilter returns an empty domain filter. Providers that support
+// domain filtering should override this method.
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
 }
@@ -91,18 +96,14 @@ func EnsureTrailingDot(hostname string) string {
 // added, removed, or left untouched for "current" to be transformed to "desired"
 func Difference(current, desired []string) ([]string, []string, []string) {
 	add, remove, leave := []string{}, []string{}, []string{}
-	index := make(map[string]struct{}, len(current))
-	for _, x := range current {
-		index[x] = struct{}{}
-	}
+	index := sets.New(current...)
 	for _, x := range desired {
-		if _, found := index[x]; found {
+		if index.Has(x) {
 			leave = append(leave, x)
-			delete(index, x)
 		} else {
 			add = append(add, x)
-			delete(index, x)
 		}
+		index.Delete(x)
 	}
 	for x := range index {
 		remove = append(remove, x)

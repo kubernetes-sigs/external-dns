@@ -16,6 +16,8 @@ package source
 import (
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/client-go/route/clientset/versioned/fake"
 	"github.com/stretchr/testify/require"
@@ -26,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
@@ -338,12 +341,11 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					Namespace:                "",
-					AnnotationFilter:         "",
-					FQDNTemplate:             tt.fqdnTemplate,
-					CombineFQDNAndAnnotation: !tt.combineFqdn,
-					LabelFilter:              labels.Everything(),
-					OCPRouterName:            "",
+					Namespace:        "",
+					AnnotationFilter: "",
+					TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
+					LabelFilter:      labels.Everything(),
+					OCPRouterName:    "",
 				},
 			)
 			require.NoError(t, err)
@@ -351,7 +353,7 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

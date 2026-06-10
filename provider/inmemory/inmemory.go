@@ -23,11 +23,10 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -142,11 +141,7 @@ func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, er
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for zoneID := range im.Zones() {
-		records, err := im.client.Records(zoneID)
-		if err != nil {
-			return nil, err
-		}
-
+		records, _ := im.client.Records(zoneID)
 		endpoints = append(endpoints, copyEndpoints(records)...)
 	}
 

@@ -25,12 +25,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -40,6 +40,10 @@ import (
 
 const (
 	defaultTTL = 300
+	// Azure-specific provider properties
+	providerSpecificAzureTags      = "azure/tags"
+	providerSpecificMetadataPrefix = "azure/metadata-"
+	providerSpecificMetadataKeys   = "azure/metadata-keys"
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -166,6 +170,7 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
 				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				extractMetadataFromRecordSet(ep, recordSet)
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",
 					ep.RecordType,
@@ -233,7 +238,7 @@ func (p *AzureProvider) SupportedRecordType(recordType string) bool {
 type azureChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azureChangeMap, azureChangeMap) {
-	ignored := map[string]bool{}
+	ignored := sets.New[string]()
 	deleted := azureChangeMap{}
 	updated := azureChangeMap{}
 	zoneNameIDMapper := provider.ZoneIDName{}
@@ -245,8 +250,8 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	mapChange := func(changeMap azureChangeMap, change *endpoint.Endpoint) {
 		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
 		if zone == "" {
-			if _, ok := ignored[change.DNSName]; !ok {
-				ignored[change.DNSName] = true
+			if !ignored.Has(change.DNSName) {
+				ignored.Insert(change.DNSName)
 				log.Infof("Ignoring changes to '%s' because a suitable Azure DNS zone was not found.", change.DNSName)
 			}
 			return
@@ -367,40 +372,45 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int64(endpoint.RecordTTL)
 	}
+	// Extract metadata from ProviderSpecific properties
+	metadata := extractMetadataFromEndpoint(endpoint)
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.RecordTypeA:
 		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &dns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:      to.Ptr(ttl),
+				TTL:      new(ttl),
 				ARecords: aRecords,
+				Metadata: metadata,
 			},
 		}, nil
 	case dns.RecordTypeAAAA:
 		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &dns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:         to.Ptr(ttl),
+				TTL:         new(ttl),
 				AaaaRecords: aaaaRecords,
+				Metadata:    metadata,
 			},
 		}, nil
 	case dns.RecordTypeCNAME:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: new(endpoint.Targets[0]),
 				},
+				Metadata: metadata,
 			},
 		}, nil
 	case dns.RecordTypeMX:
@@ -414,27 +424,29 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				MxRecords: mxRecords,
+				Metadata:  metadata,
 			},
 		}, nil
 	case dns.RecordTypeNS:
 		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			nsRecords[i] = &dns.NsRecord{
-				Nsdname: to.Ptr(target),
+				Nsdname: new(target),
 			}
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:       to.Ptr(ttl),
+				TTL:       new(ttl),
 				NsRecords: nsRecords,
+				Metadata:  metadata,
 			},
 		}, nil
 	case dns.RecordTypeTXT:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL: to.Ptr(ttl),
+				TTL: new(ttl),
 				TxtRecords: []*dns.TxtRecord{
 					{
 						Value: []*string{
@@ -442,6 +454,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 						},
 					},
 				},
+				Metadata: metadata,
 			},
 		}, nil
 	}
@@ -518,4 +531,79 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		}
 	}
 	return []string{}
+}
+
+// extractMetadataFromRecordSet extracts Azure RecordSet metadata into endpoint ProviderSpecific properties.
+func extractMetadataFromRecordSet(ep *endpoint.Endpoint, recordSet *dns.RecordSet) {
+	if recordSet.Properties == nil || recordSet.Properties.Metadata == nil {
+		return
+	}
+	keys := make([]string, 0, len(recordSet.Properties.Metadata))
+	for key, value := range recordSet.Properties.Metadata {
+		if value != nil {
+			ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, *value)
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) > 0 {
+		ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
+	}
+}
+
+// extractMetadataFromEndpoint extracts Azure metadata from endpoint ProviderSpecific properties.
+// Uses the tracked metadata keys list to retrieve values via GetProviderSpecificProperty.
+func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
+	keysStr, ok := ep.GetProviderSpecificProperty(providerSpecificMetadataKeys)
+	if !ok || keysStr == "" {
+		return nil
+	}
+	metadata := make(map[string]*string)
+	for key := range strings.SplitSeq(keysStr, ",") {
+		if value, ok := ep.GetProviderSpecificProperty(providerSpecificMetadataPrefix + key); ok && value != "" {
+			metadata[key] = new(value)
+		}
+	}
+	if len(metadata) == 0 {
+		return nil
+	}
+	return metadata
+}
+
+// parseAzureTagsAnnotation parses the azure-tags annotation value (key1=value1,key2=value2)
+// and adds individual metadata properties to the endpoint.
+// Returns the list of unique metadata keys that were parsed.
+func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string {
+	keys := make(sets.Set[string])
+	for tag := range strings.SplitSeq(tagString, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		parts := strings.SplitN(tag, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if key != "" && value != "" {
+				ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, value)
+				keys.Insert(key)
+			}
+		}
+	}
+	return keys.List()
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the Azure provider.
+// It parses the azure-tags annotation and converts it to individual metadata properties.
+func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if val, ok := ep.GetProviderSpecificProperty(providerSpecificAzureTags); ok {
+			keys := parseAzureTagsAnnotation(ep, val)
+			if len(keys) > 0 {
+				ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
+			}
+			// Remove the original azure-tags property as it's now expanded
+			ep.DeleteProviderSpecificProperty(providerSpecificAzureTags)
+		}
+	}
+	return endpoints, nil
 }

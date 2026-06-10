@@ -539,6 +539,30 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 	}
 }
 
+func TestDomainFilterMatch_NilReceiver(t *testing.T) {
+	// A nil *DomainFilter must match everything.
+	assert.True(t, (*DomainFilter)(nil).Match("example.com"))
+	assert.True(t, (*DomainFilter)(nil).Match(""))
+}
+
+func TestMatchAllDomainFilters(t *testing.T) {
+	allow := NewDomainFilter([]string{"example.com"})
+	deny := NewDomainFilter([]string{"other.com"})
+
+	t.Run("empty filter list returns true", func(t *testing.T) {
+		assert.True(t, MatchAllDomainFilters(nil).Match("example.com"))
+	})
+	t.Run("all filters pass returns true", func(t *testing.T) {
+		assert.True(t, MatchAllDomainFilters{allow, allow}.Match("sub.example.com"))
+	})
+	t.Run("one filter fails returns false", func(t *testing.T) {
+		assert.False(t, MatchAllDomainFilters{allow, deny}.Match("sub.example.com"))
+	})
+	t.Run("nil filter entry is skipped", func(t *testing.T) {
+		assert.True(t, MatchAllDomainFilters{nil, allow}.Match("sub.example.com"))
+	})
+}
+
 func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -597,6 +621,46 @@ func TestRegexDomainFilter(t *testing.T) {
 	}
 }
 
+func TestMatchRegex(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		regex  string
+		excl   string
+		domain string
+		want   bool
+	}{
+		{
+			name:   "inclusion matches",
+			regex:  `\.org$`,
+			domain: "foo.org",
+			want:   true,
+		},
+		{
+			name:   "inclusion does not match",
+			regex:  `\.org$`,
+			domain: "foo.com",
+			want:   false,
+		},
+		{
+			name:   "exclusion rejects domain",
+			regex:  `\.org$`,
+			excl:   `^excluded\.`,
+			domain: "excluded.foo.org",
+			want:   false,
+		},
+		{
+			name:   "only exclusion set — domain not excluded is accepted",
+			excl:   `^excluded\.`,
+			domain: "allowed.example.com",
+			want:   true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, matchRegex(regexp.MustCompile(tt.regex), regexp.MustCompile(tt.excl), tt.domain))
+		})
+	}
+}
+
 func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 	for _, tt := range []struct {
 		input  []string
@@ -633,6 +697,12 @@ func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
 	emptyFilters := []string{}
 	assert.True(t, matchFilter(emptyFilters, "somedomain.com", true))
 	assert.False(t, matchFilter(emptyFilters, "somedomain.com", false))
+}
+
+func TestMatchFilter_EmptyStringInList(t *testing.T) {
+	// An empty string entry inside a non-empty filter list is skipped;
+	// subsequent valid entries are still evaluated.
+	assert.True(t, matchFilter([]string{"", "example.com"}, "sub.example.com", true))
 }
 
 func TestDomainFilterIsConfigured(t *testing.T) {
@@ -718,6 +788,20 @@ func TestRegexDomainFilterIsConfigured(t *testing.T) {
 			assert.Equal(t, tt.expected, df.IsConfigured())
 		})
 	}
+}
+
+func TestDomainFilterNilReceiver(t *testing.T) {
+	t.Run("IsConfigured returns false", func(t *testing.T) {
+		assert.False(t, (*DomainFilter)(nil).IsConfigured())
+	})
+	t.Run("MarshalJSON returns empty include/exclude", func(t *testing.T) {
+		b, err := (*DomainFilter)(nil).MarshalJSON()
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{}`, string(b))
+	})
+	t.Run("MatchParent returns true", func(t *testing.T) {
+		assert.True(t, (*DomainFilter)(nil).MatchParent("example.com"))
+	})
 }
 
 func TestDomainFilterDeserializeError(t *testing.T) {
@@ -903,6 +987,17 @@ func TestDomainFilterMatchParent(t *testing.T) {
 			[]string{""},
 			true,
 			map[string][]string{},
+		},
+		{
+			// exclusion filter rejects the domain
+			[]string{"example.com"},
+			[]string{"excluded.example.com"},
+			[]string{"excluded.example.com"},
+			false,
+			map[string][]string{
+				"include": {"example.com"},
+				"exclude": {"excluded.example.com"},
+			},
 		},
 	}
 	for i, tt := range parentMatchTests {

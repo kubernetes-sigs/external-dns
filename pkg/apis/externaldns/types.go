@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/external-dns/internal/flags"
 
@@ -35,7 +37,9 @@ import (
 )
 
 const (
-	passwordMask = "******"
+	passwordMask  = "******"
+	LogFormatText = "text"
+	LogFormatJSON = "json"
 )
 
 // Config is a project-wide configuration
@@ -43,6 +47,9 @@ type Config struct {
 	APIServerURL                                  string
 	KubeConfig                                    string
 	RequestTimeout                                time.Duration
+	KubeAPIRequestTimeout                         time.Duration
+	KubeAPIQPS                                    int
+	KubeAPIBurst                                  int
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
 	SkipperRouteGroupVersion                      string
@@ -52,9 +59,9 @@ type Config struct {
 	AnnotationPrefix                              string
 	LabelFilter                                   string
 	IngressClassNames                             []string
-	FQDNTemplate                                  string
-	TargetTemplate                                string
-	FQDNTargetTemplate                            string
+	FQDNTemplate                                  []string
+	TargetTemplate                                []string
+	FQDNTargetTemplate                            []string
 	CombineFQDNAndAnnotation                      bool
 	IgnoreHostnameAnnotation                      bool
 	IgnoreNonHostNetworkPods                      bool
@@ -65,6 +72,7 @@ type Config struct {
 	GatewayName                                   string
 	GatewayNamespace                              string
 	GatewayLabelFilter                            string
+	GatewayListenerSets                           bool
 	Compatibility                                 string
 	PodSourceDomain                               string
 	PublishInternal                               bool
@@ -73,6 +81,7 @@ type Config struct {
 	ConnectorSourceServer                         string
 	Provider                                      string
 	ProviderCacheTime                             time.Duration
+	CreatePTR                                     bool
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
@@ -170,6 +179,7 @@ type Config struct {
 	ExoscaleAPISecret                             string `secure:"yes"`
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
+	ExoscaleZoneCacheDuration                     time.Duration
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
@@ -179,7 +189,6 @@ type Config struct {
 	RFC2136Zone                                   []string
 	RFC2136Insecure                               bool
 	RFC2136GSSTSIG                                bool
-	RFC2136CreatePTR                              bool
 	RFC2136KerberosRealm                          string
 	RFC2136KerberosUsername                       string
 	RFC2136KerberosPassword                       string `secure:"yes"`
@@ -207,7 +216,6 @@ type Config struct {
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
-	PiholeApiVersion                              string
 	PluralCluster                                 string
 	PluralProvider                                string
 	WebhookProviderURL                            string
@@ -286,10 +294,11 @@ var defaultConfig = &Config{
 	ExoscaleAPIKey:               "",
 	ExoscaleAPISecret:            "",
 	ExoscaleAPIZone:              "ch-gva-2",
+	ExoscaleZoneCacheDuration:    0 * time.Second,
 	ExposeInternalIPV6:           false,
-	FQDNTemplate:                 "",
-	TargetTemplate:               "",
-	FQDNTargetTemplate:           "",
+	FQDNTemplate:                 nil,
+	TargetTemplate:               nil,
+	FQDNTargetTemplate:           nil,
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -331,7 +340,6 @@ var defaultConfig = &Config{
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSSkipTLSVerify:            false,
-	PiholeApiVersion:             "5",
 	PiholePassword:               "",
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
@@ -341,12 +349,16 @@ var defaultConfig = &Config{
 	Policy:                       "sync",
 	Provider:                     "",
 	ProviderCacheTime:            0,
+	CreatePTR:                    false,
 	PublishHostIP:                false,
 	PublishInternal:              false,
 	RegexDomainExclude:           regexp.MustCompile(""),
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     RegistryTXT,
 	RequestTimeout:               time.Second * 30,
+	KubeAPIRequestTimeout:        time.Second * 30,
+	KubeAPIQPS:                   int(rest.DefaultQPS),
+	KubeAPIBurst:                 rest.DefaultBurst,
 	RFC2136BatchChangeSize:       50,
 	RFC2136GSSTSIG:               false,
 	RFC2136Host:                  []string{""},
@@ -469,9 +481,6 @@ func (cfg *Config) String() string {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
-			if f.Type.Kind() != reflect.String {
-				continue
-			}
 			v := reflect.ValueOf(&temp).Elem().Field(i)
 			if v.String() != "" {
 				v.SetString(passwordMask)
@@ -496,14 +505,29 @@ func (cfg *Config) ParseFlags(args []string) error {
 	if _, err := App(cfg).Parse(args); err != nil {
 		return err
 	}
+	cfg.resolveDeprecatedFlags()
 	return nil
+}
+
+// resolveDeprecatedFlags reconciles deprecated flags with their replacements.
+// When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
+// was not, the deprecated value is promoted and a warning is logged.
+// If both are explicitly set, --kube-api-request-timeout takes precedence.
+func (cfg *Config) resolveDeprecatedFlags() {
+	if cfg.RequestTimeout != defaultConfig.RequestTimeout {
+		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
+		cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
+	}
+}
+
+// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
+func (cfg *Config) IsPTRSupported() bool {
+	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
 func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
-	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
-	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
@@ -516,7 +540,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
-	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
@@ -531,6 +555,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
 	b.StringVar("gateway-namespace", "Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)", defaultConfig.GatewayNamespace, &cfg.GatewayNamespace)
+	b.BoolVar("gateway-listener-sets", "Enable ListenerSet support for Gateway API sources (requires Gateway API v1.5+ CRDs) (default: false)", false, &cfg.GatewayListenerSets)
 	b.BoolVar("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)", false, &cfg.IgnoreHostnameAnnotation)
 	b.BoolVar("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)", false, &cfg.IgnoreIngressRulesSpec)
 	b.BoolVar("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)", false, &cfg.IgnoreIngressTLSSpec)
@@ -553,6 +578,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("unstructured-resource", "When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources", nil, &cfg.UnstructuredResources)
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
+	b.BoolVar("create-ptr", "When enabled, automatically create PTR records for A/AAAA records. Per-resource annotations can override this default. The provider must have authority over the reverse DNS zones (e.g. in-addr.arpa). Include reverse zones in --domain-filter.", defaultConfig.CreatePTR, &cfg.CreatePTR)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.DomainExclude)
 	b.RegexpVar("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)", defaultConfig.RegexDomainFilter, &cfg.RegexDomainFilter)
@@ -639,12 +665,12 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("exoscale-apizone", "When using Exoscale provider, specify the API Zone (optional)", defaultConfig.ExoscaleAPIZone, &cfg.ExoscaleAPIZone)
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
+	b.DurationVar("exoscale-zones-cache-duration", "When using Exoscale provider, set the zones list cache TTL (0s to disable)", defaultConfig.ExoscaleZoneCacheDuration, &cfg.ExoscaleZoneCacheDuration)
 
 	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
 	b.IntVar("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server", defaultConfig.RFC2136Port, &cfg.RFC2136Port)
 	b.StringsVar("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)", nil, &cfg.RFC2136Zone)
-	b.BoolVar("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management", defaultConfig.RFC2136CreatePTR, &cfg.RFC2136CreatePTR)
 	b.BoolVar("rfc2136-insecure", "When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret)", defaultConfig.RFC2136Insecure, &cfg.RFC2136Insecure)
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
@@ -668,7 +694,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)", defaultConfig.PiholeServer, &cfg.PiholeServer)
 	b.StringVar("pihole-password", "When using the Pihole provider, the password to the server if it is protected", defaultConfig.PiholePassword, &cfg.PiholePassword)
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
-	b.StringVar("pihole-api-version", "When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6)", defaultConfig.PiholeApiVersion, &cfg.PiholeApiVersion)
 
 	// Flags related to the Plural provider
 	b.StringVar("plural-cluster", "When using the plural provider, specify the cluster name you're running with", defaultConfig.PluralCluster, &cfg.PluralCluster)
@@ -711,9 +736,16 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// FQDN Templating
 	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
-	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
-	b.StringVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Accepts comma separated list for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
-	b.StringVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Accepts comma separated list for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
+	b.StringsVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Specify multiple times for multiple templates.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
+	b.StringsVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Specify multiple times for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
+	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
+
+	// kube client config flags
+	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
+	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
+	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
+	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
+	b.IntVar("kube-api-burst", "Maximum burst for throttle to the Kubernetes API server from this client.", defaultConfig.KubeAPIBurst, &cfg.KubeAPIBurst)
 }
 
 func App(cfg *Config) *kingpin.Application {

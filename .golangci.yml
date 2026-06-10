@@ -87,7 +87,6 @@ linters:
           - depguard
           - dogsled
           - goprintffuncname
-          - govet
           - ineffassign
           - misspell
           - nolintlint

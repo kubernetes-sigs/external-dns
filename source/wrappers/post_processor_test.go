@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -199,9 +200,17 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
+
+	t.Run("wrapped source error is propagated", func(t *testing.T) {
+		ms := new(testutils.MockSource)
+		ms.On("Endpoints").Return([]*endpoint.Endpoint(nil), assert.AnError)
+		src := NewPostProcessor(ms, WithTTL(time.Second))
+		_, err := src.Endpoints(t.Context())
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
@@ -309,7 +318,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "true"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 						{Name: "coredns/group", Value: "my-group"},
 					},
@@ -320,7 +329,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "true"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 					},
 				},
@@ -334,9 +343,9 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "alias", Value: "false"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 					},
 				},
 			},
@@ -345,9 +354,9 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "false"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					},
 				},
 			},
@@ -360,8 +369,8 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
 					},
 				},
 			},
@@ -370,8 +379,8 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					},
 				},
 			},
@@ -411,7 +420,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -455,7 +464,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
@@ -480,7 +489,27 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+		},
+		{
+			title:       "existing alias=false is not overridden by preferAlias",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+		},
+		{
+			title:       "existing alias=true is preserved when preferAlias is enabled",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 		},
 	}
@@ -492,7 +521,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

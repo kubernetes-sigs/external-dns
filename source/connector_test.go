@@ -21,6 +21,8 @@ import (
 	"net"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -138,7 +140,7 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against expected endpoints.
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

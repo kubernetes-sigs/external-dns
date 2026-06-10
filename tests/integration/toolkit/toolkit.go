@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"reflect"
-	"sort"
-	"testing"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -34,11 +32,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-
-	"sigs.k8s.io/external-dns/internal/testutils"
-
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
@@ -50,6 +45,7 @@ var (
 		utilruntime.Must(corev1.AddToScheme(s))
 		utilruntime.Must(discoveryv1.AddToScheme(s))
 		utilruntime.Must(networkingv1.AddToScheme(s))
+		utilruntime.Must(apiv1alpha1.AddToScheme(s))
 		return s
 	}()
 	decoder = serializer.NewCodecFactory(scheme).UniversalDeserializer()
@@ -99,10 +95,14 @@ func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, err
 				parsed.Pods = append(parsed.Pods, pods...)
 				parsed.EndpointSlices = append(parsed.EndpointSlices, endpointSlice)
 			}
+		case *corev1.Node:
+			parsed.Nodes = append(parsed.Nodes, res)
 		case *networkingv1.Ingress:
 			parsed.Ingresses = append(parsed.Ingresses, res)
 		case *discoveryv1.EndpointSlice:
 			parsed.EndpointSlices = append(parsed.EndpointSlices, res)
+		case *apiv1alpha1.DNSEndpoint:
+			parsed.DNSEndpoints = append(parsed.DNSEndpoints, res)
 		default:
 			return nil, fmt.Errorf("unsupported resource type %T", obj)
 		}
@@ -142,7 +142,7 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 				Name: podName,
 			},
 			Conditions: discoveryv1.EndpointConditions{
-				Ready: testutils.ToPtr(true),
+				Ready: new(true),
 			},
 		})
 	}
@@ -182,6 +182,21 @@ func createIngressWithOptionalStatus(ctx context.Context, client *fake.Clientset
 	return nil
 }
 
+func createNodeWithAddresses(ctx context.Context, client *fake.Clientset, node *corev1.Node) error {
+	created, err := client.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	if len(node.Status.Addresses) > 0 {
+		created.Status = node.Status
+		_, err = client.CoreV1().Nodes().UpdateStatus(ctx, created, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func createServiceWithOptionalStatus(ctx context.Context, client *fake.Clientset, svc *corev1.Service) error {
 	created, err := client.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 	if err != nil {
@@ -200,10 +215,11 @@ func createServiceWithOptionalStatus(ctx context.Context, client *fake.Clientset
 	return nil
 }
 
-// LoadResources creates the resources in the fake client using the API.
+// LoadResources creates the Kubernetes resources in a fake clientset and collects
+// any DNSEndpoint CRD objects for use by the CRD source.
 // This must be called BEFORE creating sources so the informers can see the resources.
-func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, error) {
-	client := fake.NewClientset()
+func LoadResources(ctx context.Context, scenario Scenario) (*LoadedResources, error) {
+	k8sClient := fake.NewClientset()
 
 	// Parse resources from scenario
 	resources, err := ParseResources(scenario.Resources)
@@ -211,143 +227,73 @@ func LoadResources(ctx context.Context, scenario Scenario) (*fake.Clientset, err
 		return nil, err
 	}
 
+	for _, node := range resources.Nodes {
+		if err := createNodeWithAddresses(ctx, k8sClient, node); err != nil {
+			return nil, err
+		}
+	}
 	for _, ing := range resources.Ingresses {
-		if err := createIngressWithOptionalStatus(ctx, client, ing); err != nil {
+		if err := createIngressWithOptionalStatus(ctx, k8sClient, ing); err != nil {
 			return nil, err
 		}
 	}
 	for _, svc := range resources.Services {
-		if err := createServiceWithOptionalStatus(ctx, client, svc); err != nil {
+		if err := createServiceWithOptionalStatus(ctx, k8sClient, svc); err != nil {
 			return nil, err
 		}
 	}
 	for _, pod := range resources.Pods {
-		_, err := client.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+		_, err := k8sClient.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, eps := range resources.EndpointSlices {
-		_, err := client.DiscoveryV1().EndpointSlices(eps.Namespace).Create(ctx, eps, metav1.CreateOptions{})
+		_, err := k8sClient.DiscoveryV1().EndpointSlices(eps.Namespace).Create(ctx, eps, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
-	return client, nil
+	return &LoadedResources{
+		K8sClient:    k8sClient,
+		DNSEndpoints: resources.DNSEndpoints,
+	}, nil
 }
 
 // scenarioToConfig creates a source.Config for testing with the scenario config.
-func scenarioToConfig(scenarioCfg ScenarioConfig) *source.Config {
+func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) (*source.Config, error) {
 	return source.NewSourceConfig(&externaldns.Config{
 		Sources:             scenarioCfg.Sources,
 		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
 		DefaultTargets:      scenarioCfg.DefaultTargets,
 		ForceDefaultTargets: scenarioCfg.ForceDefaultTargets,
 		TargetNetFilter:     scenarioCfg.TargetNetFilter,
-	})
+		ExcludeTargetNets:   scenarioCfg.ExcludeTargetNets,
+		NAT64Networks:       scenarioCfg.NAT64Networks,
+		Provider:            scenarioCfg.Provider,
+		PreferAlias:         scenarioCfg.PreferAlias,
+	}, opts...)
 }
 
-// CreateWrappedSource creates sources using source.BuildWithConfig and wraps them with wrappers.WrapSources.
-// TODO: could we reuse the same source.BuildWithConfig() code as the controller instead of duplicating it here? It would require refactoring to allow passing in a custom client generator, but it would ensure we're testing the same code as the controller.
+// CreateWrappedSource builds all named sources using the loaded resources and
+// wraps them with the same pipeline used by the controller.
+// If the "crd" source is requested, a minimal fake Kubernetes REST API server is
+// started (serving only DNSEndpoint resources) so the CRD source's
+// controller-runtime cache can initialize without a real cluster.
 func CreateWrappedSource(
 	ctx context.Context,
-	client *fake.Clientset,
+	loaded *LoadedResources,
 	scenarioCfg ScenarioConfig) (source.Source, error) {
-	clientGen := newMockClientGenerator(client)
-	cfg := scenarioToConfig(scenarioCfg)
+	var gen = newMockClientGenerator(loaded.K8sClient)
 
-	// TODO: copied from controller/execute.go#buildSources
-	sources, err := source.ByNames(ctx, cfg, clientGen)
+	if slices.Contains(scenarioCfg.Sources, "crd") {
+		restCfg := newFakeDNSEndpointServer(ctx, loaded.DNSEndpoints)
+		gen = newCRDClientGenerator(loaded.K8sClient, restCfg)
+	}
+
+	cfg, err := scenarioToConfig(scenarioCfg, source.WithClientGenerator(gen))
 	if err != nil {
 		return nil, err
 	}
-	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL))
-
-	return wrappers.WrapSources(sources, opts)
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func ValidateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
-	t.Helper()
-
-	if len(endpoints) != len(expected) {
-		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
-	}
-
-	// Make sure endpoints are sorted - validateEndpoint() depends on it.
-	sortEndpoints(endpoints)
-	sortEndpoints(expected)
-
-	for i := range endpoints {
-		validateEndpoint(t, endpoints[i], expected[i])
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
-	t.Helper()
-
-	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
-	}
-
-	if !endpoint.Targets.Same(expected.Targets) {
-		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
-	}
-
-	if endpoint.RecordTTL != expected.RecordTTL {
-		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
-	}
-
-	// if a non-empty record type is expected, check that it matches.
-	if endpoint.RecordType != expected.RecordType {
-		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
-	}
-
-	// if non-empty labels are expected, check that they match.
-	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
-		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
-	}
-
-	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
-		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
-		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
-	}
-
-	if endpoint.SetIdentifier != expected.SetIdentifier {
-		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, endpoint.SetIdentifier)
-	}
-}
-
-// TODO: copied from source/wrappers/source_test.go - unify in following PR
-func sortEndpoints(endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		sort.Strings(ep.Targets)
-	}
-	sort.Slice(endpoints, func(i, k int) bool {
-		// Sort by DNSName, RecordType, and Targets
-		ei, ek := endpoints[i], endpoints[k]
-		if ei.DNSName != ek.DNSName {
-			return ei.DNSName < ek.DNSName
-		}
-		if ei.RecordType != ek.RecordType {
-			return ei.RecordType < ek.RecordType
-		}
-		// Targets are sorted ahead of time.
-		for j, ti := range ei.Targets {
-			if j >= len(ek.Targets) {
-				return true
-			}
-			if tk := ek.Targets[j]; ti != tk {
-				return ti < tk
-			}
-		}
-		return false
-	})
+	return wrappers.Build(ctx, cfg)
 }

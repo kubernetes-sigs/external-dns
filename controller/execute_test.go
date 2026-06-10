@@ -17,13 +17,15 @@ limitations under the License.
 package controller
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -35,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 // Logger
@@ -72,30 +75,15 @@ func TestConfigureLogger(t *testing.T) {
 			},
 			wantLevel:  log.InfoLevel,
 			wantErr:    true,
-			wantErrMsg: "failed to parse log level",
+			wantErrMsg: "not a valid logrus Level: \"invalid\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.wantErr {
-				// Capture and suppress fatal exit; restore logger after test
-				logger := log.StandardLogger()
-				prevOut := logger.Out
-				prevExit := logger.ExitFunc
-				b := new(bytes.Buffer)
-				var captureLogFatal bool
-				logger.ExitFunc = func(int) { captureLogFatal = true }
-				logger.SetOutput(b)
-				t.Cleanup(func() {
-					logger.SetOutput(prevOut)
-					logger.ExitFunc = prevExit
-				})
-
-				configureLogger(tt.cfg)
-
-				assert.True(t, captureLogFatal)
-				assert.Contains(t, b.String(), tt.wantErrMsg)
+				err := configureLogger(tt.cfg)
+				require.Error(t, err)
 			} else {
 				// Save and restore logger state to avoid leaking between tests
 				logger := log.StandardLogger()
@@ -106,7 +94,9 @@ func TestConfigureLogger(t *testing.T) {
 					logger.SetFormatter(prevFormatter)
 				})
 
-				configureLogger(tt.cfg)
+				err := configureLogger(tt.cfg)
+				require.NoError(t, err)
+
 				assert.Equal(t, tt.wantLevel, log.GetLevel())
 
 				if tt.wantJSON {
@@ -119,54 +109,10 @@ func TestConfigureLogger(t *testing.T) {
 	}
 }
 
-func TestBuildSourceWithWrappers(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name    string
-		cfg     *externaldns.Config
-		asserts func(*testing.T, *externaldns.Config)
-	}{
-		{
-			name: "configuration with target filter wrapper",
-			cfg: &externaldns.Config{
-				APIServerURL:    svr.URL,
-				Sources:         []string{"fake"},
-				TargetNetFilter: []string{"10.0.0.0/8"},
-			},
-		},
-		{
-			name: "configuration with nat64 networks",
-			cfg: &externaldns.Config{
-				APIServerURL:  svr.URL,
-				Sources:       []string{"fake"},
-				NAT64Networks: []string{"2001:db8::/96"},
-			},
-		},
-		{
-			name: "default configuration",
-			cfg: &externaldns.Config{
-				APIServerURL: svr.URL,
-				Sources:      []string{"fake"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildSource(t.Context(), source.NewSourceConfig(tt.cfg))
-			require.NoError(t, err)
-		})
-	}
-}
-
 // Helper used by runExecuteSubprocess.
-func TestHelperProcess(_ *testing.T) {
+func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		return
+		t.SkipNow()
 	}
 	// Parse args after the "--" sentinel.
 	idx := -1
@@ -191,7 +137,6 @@ func runExecuteSubprocess(t *testing.T, args []string) (int, error) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
-	// TODO: investigate why -test.run=TestHelperProcess
 	cmdArgs := append([]string{"-test.run=TestHelperProcess", "--"}, args...)
 	cmd := exec.CommandContext(ctx, os.Args[0], cmdArgs...)
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
@@ -335,10 +280,11 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	sCfg := source.NewSourceConfig(cfg)
+	sCfg, err := source.NewSourceConfig(cfg)
+	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	src, err := buildSource(ctx, sCfg)
+	src, err := wrappers.Build(ctx, sCfg)
 	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilterWithOptions(
 		endpoint.WithDomainFilter(cfg.DomainFilter),
@@ -362,4 +308,55 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("controller did not stop after context cancellation")
 	}
+}
+
+// TestContextWithSigtermHandlerHelper is a helper process that sets up the SIGTERM handler
+// and waits for it to be triggered.
+func TestContextWithSigtermHandlerHelper(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		t.SkipNow()
+	}
+	log.SetOutput(os.Stdout)
+	ctx, finalize := contextWithSigtermHandler(t.Context())
+	t.Log("helper started")
+	<-ctx.Done()
+	defer finalize()
+}
+
+// TestContextWithSigtermHandler verifies that the contextWithSigtermHandler function correctly handles SIGTERM signals.
+func TestContextWithSigtermHandler(t *testing.T) {
+	// Start the helper process that sets up the signal handler and waits for SIGTERM.
+	cmd := exec.CommandContext(t.Context(),
+		os.Args[0],
+		"-test.run=TestContextWithSigtermHandlerHelper",
+		"-test.v",
+	)
+	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+	out, err := cmd.StdoutPipe()
+	require.NoError(t, err)
+	err = cmd.Start()
+	require.NoError(t, err)
+	require.NotNil(t, cmd.Process)
+
+	// Wait for the helper to start before sending SIGTERM.
+	scanner := bufio.NewScanner(out)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "helper started") {
+			break
+		}
+	}
+	require.NoError(t, scanner.Err())
+
+	err = cmd.Process.Signal(syscall.SIGTERM)
+	require.NoError(t, err)
+
+	// Read the remaining output.
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, out)
+	require.NoError(t, err)
+
+	err = cmd.Wait()
+	require.NoError(t, err)
+
+	assert.Contains(t, buf.String(), "Received SIGTERM. Terminating...")
 }

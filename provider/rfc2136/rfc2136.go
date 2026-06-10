@@ -61,7 +61,6 @@ type rfc2136Provider struct {
 	minTTL          time.Duration
 	batchChangeSize int
 	tlsConfig       TLSConfig
-	createPTR       bool
 
 	// options specific to rfc3645 gss-tsig support
 	gssTsig      bool
@@ -120,11 +119,11 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		ClientCertFilePath:    cfg.TLSClientCert,
 		ClientCertKeyFilePath: cfg.TLSClientCertKey,
 	}
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
-func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName, secret, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR, gssTsig bool, krb5Username, krb5Password, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -151,7 +150,6 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		zoneNames:             zoneNames,
 		insecure:              insecure,
 		gssTsig:               gssTsig,
-		createPTR:             createPTR,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
 		krb5Realm:             strings.ToUpper(krb5Realm),
@@ -333,33 +331,6 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 	return records, nil
 }
 
-func (r *rfc2136Provider) AddReverseRecord(ip string, hostname string) error {
-	changes := r.GenerateReverseRecord(ip, hostname)
-	return r.ApplyChanges(context.Background(), &plan.Changes{Create: changes})
-}
-
-func (r *rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
-	changes := r.GenerateReverseRecord(ip, hostname)
-	return r.ApplyChanges(context.Background(), &plan.Changes{Delete: changes})
-}
-
-func (r *rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
-	// Generate PTR notation record starting from the IP address
-	var records []*endpoint.Endpoint
-
-	log.Debugf("Reverse zone is: %s %s", ip, dns.Fqdn(ip))
-	reverseAddress, _ := dns.ReverseAddr(ip)
-
-	// PTR
-	records = append(records, &endpoint.Endpoint{
-		DNSName:    reverseAddress[:len(reverseAddress)-1],
-		RecordType: "PTR",
-		Targets:    endpoint.Targets{hostname},
-	})
-
-	return records
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
 func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
@@ -385,10 +356,6 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			m[zone].SetUpdate(zone)
 
 			r.AddRecord(m[zone], ep)
-
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
-			}
 		}
 
 		// only send if there are records available
@@ -425,10 +392,6 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
 			j := (c * r.batchChangeSize) + i
 			r.UpdateRecord(m[zone], changes.UpdateOld[j], ep)
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(changes.UpdateOld[j].Targets[0], ep.DNSName)
-				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
-			}
 		}
 
 		// only send if there are records available
@@ -462,9 +425,6 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			m[zone].SetUpdate(zone)
 
 			r.RemoveRecord(m[zone], ep)
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
-			}
 		}
 
 		// only send if there are records available

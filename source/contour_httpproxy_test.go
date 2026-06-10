@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -34,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -45,7 +48,7 @@ type HTTPProxySuite struct {
 	httpProxy *projectcontour.HTTPProxy
 }
 
-func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
+func newContourDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
 	s := runtime.NewScheme()
 	_ = projectcontour.AddToScheme(s)
 	return fakeDynamic.NewSimpleDynamicClient(s), s
@@ -86,15 +89,15 @@ func (ig fakeLoadBalancerService) Service() *v1.Service {
 }
 
 func (suite *HTTPProxySuite) SetupTest() {
-	fakeDynamicClient, s := newDynamicKubernetesClient()
+	fakeDynamicClient, s := newContourDynamicKubernetesClient()
 	var err error
 
 	suite.source, err = NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
 		&Config{
-			Namespace:    "default",
-			FQDNTemplate: "{{.Name}}",
+			Namespace:      "default",
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
 	suite.NoError(err, "should initialize httpproxy source")
@@ -136,71 +139,6 @@ func TestHTTPProxy(t *testing.T) {
 	suite.Run(t, new(HTTPProxySuite))
 	t.Run("endpointsFromHTTPProxy", testEndpointsFromHTTPProxy)
 	t.Run("Endpoints", testHTTPProxyEndpoints)
-}
-
-func TestNewContourHTTPProxySource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "contour.heptio.com/ingress.class=contour",
-		},
-	} {
-
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			fakeDynamicClient, _ := newDynamicKubernetesClient()
-
-			_, err := NewContourHTTPProxySource(
-				t.Context(),
-				fakeDynamicClient,
-				&Config{
-					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
-				},
-			)
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func testEndpointsFromHTTPProxy(t *testing.T) {
@@ -282,16 +220,38 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "provider-specific annotation is converted to endpoint property",
+			httpProxy: fakeHTTPProxy{
+				host: "foo.bar",
+				annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
+				},
+				loadBalancer: fakeLoadBalancerService{
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			source, err := newTestHTTPProxySource()
+			source, err := newTestHTTPProxySource(t)
 			require.NoError(t, err)
 
 			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
@@ -1043,7 +1003,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				httpProxies = append(httpProxies, item.HTTPProxy())
 			}
 
-			fakeDynamicClient, scheme := newDynamicKubernetesClient()
+			fakeDynamicClient, scheme := newContourDynamicKubernetesClient()
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
@@ -1057,8 +1017,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         ti.annotationFilter,
-					FQDNTemplate:             ti.fqdnTemplate,
-					CombineFQDNAndAnnotation: ti.combineFQDNAndAnnotation,
+					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
 			)
@@ -1071,20 +1030,20 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			validateEndpoints(t, res, ti.expected)
+			testutils.ValidateEndpoints(t, res, ti.expected)
 		})
 	}
 }
 
 // httpproxy specific helper functions
-func newTestHTTPProxySource() (*httpProxySource, error) {
-	fakeDynamicClient, _ := newDynamicKubernetesClient()
+func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
-		context.TODO(),
+		t.Context(),
 		fakeDynamicClient,
 		&Config{
-			FQDNTemplate: "{{.Name}}",
+			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
 	if err != nil {
@@ -1149,4 +1108,22 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	}
 
 	return httpProxy
+}
+
+func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
+
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &httpProxySource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		projectcontour.HTTPProxyGVR,
+		fakeDynamicClient, source.(*httpProxySource).httpProxyInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+		withRemovedStatusConditions(),
+	)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -46,6 +47,12 @@ import (
 )
 
 func Execute() {
+	ctx, finalize := contextWithSigtermHandler(context.Background())
+	defer finalize()
+	execute(ctx)
+}
+
+func execute(ctx context.Context) {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
@@ -61,7 +68,9 @@ func Execute() {
 		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
-	configureLogger(cfg)
+	if err := configureLogger(cfg); err != nil {
+		log.Fatal(err)
+	}
 
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
@@ -74,15 +83,19 @@ func Execute() {
 		klog.SetLogger(logr.Discard())
 	}
 
+	// controller-runtime prints a stack trace warning if its logger is never initialized.
+	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
+	crlog.SetLogger(logr.Discard())
+
 	log.Info(externaldns.Banner())
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(cancel)
 
-	sCfg := source.NewSourceConfig(cfg)
-	endpointsSource, err := buildSource(ctx, sCfg)
+	sCfg, err := source.NewSourceConfig(cfg)
+	if err != nil {
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
+	}
+	endpointsSource, err := wrappers.Build(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -126,7 +139,9 @@ func Execute() {
 	}
 
 	ctrl.ScheduleRunOnce(time.Now())
-	ctrl.Run(ctx)
+	if err := ctrl.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func buildController(
@@ -177,45 +192,35 @@ func buildController(
 }
 
 // This function configures the logger format and level based on the provided configuration.
-func configureLogger(cfg *externaldns.Config) {
+func configureLogger(cfg *externaldns.Config) error {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 	ll, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		log.Fatalf("failed to parse log level: %v", err)
+		return err
 	}
 	log.SetLevel(ll)
+	return nil
 }
 
-// buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
-// It initializes the source configuration, generates the required sources, and combines them into a single,
-// deduplicated source. Returns the combined source or an error if source creation fails.
-func buildSource(ctx context.Context, cfg *source.Config) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
-	if err != nil {
-		return nil, err
+// contextWithSigtermHandler returns a context that is canceled when a SIGTERM signal is received and
+// a function to wait for the signal handler to finish processing.
+func contextWithSigtermHandler(ctx context.Context) (context.Context, func()) {
+	endCh := make(chan struct{})
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM)
+	context.AfterFunc(ctx, func() {
+		log.Info("Received SIGTERM. Terminating...")
+		close(endCh)
+	})
+	return ctx, func() {
+		stop()
+		select {
+		case <-ctx.Done():
+			<-endCh
+		default:
+		}
 	}
-	opts := wrappers.NewConfig(
-		wrappers.WithDefaultTargets(cfg.DefaultTargets),
-		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
-		wrappers.WithNAT64Networks(cfg.NAT64Networks),
-		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
-		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
-		wrappers.WithMinTTL(cfg.MinTTL),
-		wrappers.WithProvider(cfg.Provider),
-		wrappers.WithPreferAlias(cfg.PreferAlias))
-	return wrappers.WrapSources(sources, opts)
-}
-
-// handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
-// to gracefully terminate the application. It logs a message when the signal is received.
-func handleSigterm(cancel func()) {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGTERM)
-	<-signals
-	log.Info("Received SIGTERM. Terminating...")
-	cancel()
 }
 
 // serveMetrics starts an HTTP server that serves health and metrics endpoints.

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -175,12 +176,34 @@ func TestDedupEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			// Validate that the mock source was called.
 			mockSource.AssertExpectations(t)
 		})
 	}
+
+	t.Run("wrapped source error is propagated", func(t *testing.T) {
+		mockSource := new(testutils.MockSource)
+		mockSource.On("Endpoints").Return([]*endpoint.Endpoint(nil), assert.AnError)
+		src := NewDedupSource(mockSource)
+		_, err := src.Endpoints(t.Context())
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("nil endpoint is skipped", func(t *testing.T) {
+		mockSource := new(testutils.MockSource)
+		mockSource.On("Endpoints").Return([]*endpoint.Endpoint{
+			nil,
+			{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+		}, nil)
+		src := NewDedupSource(mockSource)
+		endpoints, err := src.Endpoints(t.Context())
+		require.NoError(t, err)
+		testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+			{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+		})
+	})
 }
 
 func TestDedupSource_AddEventHandler(t *testing.T) {
@@ -278,23 +301,23 @@ func TestDedupEndpointsValidation(t *testing.T) {
 		{
 			name: "MX record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
 			name: "A record with alias=true is kept",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 		},
 		{
 			name: "SRV record with alias=true is filtered out",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}}},
+				{DNSName: "_sip._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 5060 sip.example.org."}, ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}}},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -302,7 +325,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			name: "mixed valid and invalid TXT, A, AAAA records",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}}, // valid
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},                                // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},                                // valid (TXT allows empty)
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},                       // valid
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},                         // invalid
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},                    // valid
@@ -378,7 +401,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			endpoints, err := sr.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 			mockSource.AssertExpectations(t)
 		})
 	}
@@ -406,7 +429,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 				DNSName:          "example.org",
 				RecordType:       endpoint.RecordTypeMX,
 				Targets:          endpoint.Targets{"10 mail.example.org"},
-				ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "true"}},
+				ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
 		},
@@ -462,9 +485,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "foo", ep[0].RefObject().Name)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "foo", ep[0].RefObject().Name())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -482,9 +505,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "first-svc", ep[0].RefObject().Name)
-				require.Equal(t, "uid-first", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "first-svc", ep[0].RefObject().Name())
+				require.Equal(t, "uid-first", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -503,9 +526,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Service) wins, Ingress is discarded
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "my-service", ep[0].RefObject().Name)
-				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "my-service", ep[0].RefObject().Name())
+				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -524,9 +547,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Ingress) wins, Service is discarded
-				require.Equal(t, types.Ingress, ep[0].RefObject().Source)
-				require.Equal(t, "my-ingress", ep[0].RefObject().Name)
-				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Ingress, ep[0].RefObject().Source())
+				require.Equal(t, "my-ingress", ep[0].RefObject().Name())
+				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -547,22 +570,23 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				// Find endpoints by DNS name since order may vary
 				var svcEndpoint, ingEndpoint *endpoint.Endpoint
 				for _, e := range ep {
-					if e.DNSName == "a.example.com" {
+					switch e.DNSName {
+					case "a.example.com":
 						svcEndpoint = e
-					} else if e.DNSName == "b.example.com" {
+					case "b.example.com":
 						ingEndpoint = e
 					}
 				}
 
 				require.NotNil(t, svcEndpoint)
 				require.NotNil(t, svcEndpoint.RefObject())
-				require.Equal(t, types.Service, svcEndpoint.RefObject().Source)
-				require.Equal(t, "my-service", svcEndpoint.RefObject().Name)
+				require.Equal(t, types.Service, svcEndpoint.RefObject().Source())
+				require.Equal(t, "my-service", svcEndpoint.RefObject().Name())
 
 				require.NotNil(t, ingEndpoint)
 				require.NotNil(t, ingEndpoint.RefObject())
-				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source)
-				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name)
+				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source())
+				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name())
 			},
 		},
 		{
@@ -584,9 +608,9 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
 				// First endpoint (Service) wins
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "my-service", ep[0].RefObject().Name)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "my-service", ep[0].RefObject().Name())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -602,8 +626,8 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source)
-				require.Equal(t, "123", string(ep[0].RefObject().UID))
+				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, "123", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
@@ -637,4 +661,53 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			mockSource.AssertExpectations(t)
 		})
 	}
+}
+
+func TestDedupSource_DeduplicatedEndpointsMetric(t *testing.T) {
+	deduplicatedEndpoints.Reset()
+
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"), // duplicate
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // duplicate
+		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // another duplicate
+	}
+
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewDedupSource(mockSource)
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, result, 2) // only unique endpoints
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, deduplicatedEndpoints.Gauge,
+		map[string]string{"record_type": "a", "source_type": "unknown"},
+	)
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 2.0, deduplicatedEndpoints.Gauge,
+		map[string]string{"record_type": "aaaa", "source_type": "unknown"},
+	)
+}
+
+func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
+	invalidEndpoints.Reset()
+
+	eps := []*endpoint.Endpoint{
+		// valid A record
+		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		// invalid SRV record (missing port and target host)
+		{DNSName: "_svc._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 mail.example.org"}},
+	}
+
+	mockSource := testutils.NewMockSource(eps...)
+	src := NewDedupSource(mockSource)
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, result, 1) // only the valid A record
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(
+		t, 1.0, invalidEndpoints.Gauge,
+		map[string]string{"record_type": "srv", "source_type": "unknown"},
+	)
 }

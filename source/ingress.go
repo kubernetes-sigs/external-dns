@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
@@ -37,7 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 const (
@@ -60,19 +59,16 @@ const (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
 type ingressSource struct {
 	client                   kubernetes.Interface
-	namespace                string
-	annotationFilter         string
 	ingressClassNames        []string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
-	labelSelector            labels.Selector
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -80,11 +76,6 @@ func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	cfg *Config) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
 	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
@@ -105,8 +96,19 @@ func NewIngressSource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
+	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
+	))
+
+	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -115,35 +117,21 @@ func NewIngressSource(
 		return nil, err
 	}
 
-	sc := &ingressSource{
+	return &ingressSource{
 		client:                   kubeClient,
-		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
 		ingressClassNames:        cfg.IngressClassNames,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
-		labelSelector:            cfg.LabelFilter,
-	}
-	return sc, nil
+	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
-	}
-	ingresses, err = annotations.Filter(ingresses, sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	ingresses, err = sc.filterByIngressClass(ingresses)
+	ingresses, err := sc.filterByIngressClass(informers.ListIndexed[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer()))
 	if err != nil {
 		return nil, err
 	}
@@ -151,17 +139,11 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		if annotations.IsControllerMismatch(ing, types.Ingress) {
-			continue
-		}
-
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		ingEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			ingEndpoints,
-			sc.fqdnTemplate,
-			sc.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
 		)
 		if err != nil {
@@ -178,11 +160,11 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, ing)
+	hostnames, err := sc.templateEngine.ExecFQDN(ing)
 	if err != nil {
 		return nil, err
 	}
@@ -335,5 +317,5 @@ func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	_, _ = sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.ingressInformer.Informer(), eventHandlerFunc(handler))
 }

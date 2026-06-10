@@ -1,0 +1,50 @@
+# ref: https://github.com/localstack/helm-charts/blob/main/charts/localstack/values.yaml
+
+debug: false
+
+extraLabels:
+  app: localstack
+
+extraEnvVars:
+  - name: SERVICES
+    value: "route53"
+
+# -- Set a fixed port for LocalStack edge service --
+service:
+  type: NodePort
+  edgeService:
+    name: edge
+    targetPort: 4566
+    nodePort: 32379
+
+enableStartupScripts: true
+startupScriptContent: |
+  #!/bin/bash
+  create_zone_if_missing() {
+  ZONE_NAME="$1"
+  COMMENT="$2"
+
+  EXISTING_ZONE_ID=$(
+    awslocal route53 list-hosted-zones-by-name \
+      --dns-name "${ZONE_NAME}." \
+      --query "HostedZones[?Name=='${ZONE_NAME}.'].Id | [0]" \
+      --output text
+  )
+
+  if [ "$EXISTING_ZONE_ID" != "None" ]; then
+    echo "Route53 zone '${ZONE_NAME}' already exists (${EXISTING_ZONE_ID})"
+    return 0
+  fi
+
+  echo "Creating Route53 zone '${ZONE_NAME}'"
+  awslocal route53 create-hosted-zone \
+    --name "$ZONE_NAME" \
+    --caller-reference "$(date +%s)" \
+    --hosted-zone-config Comment="$COMMENT"
+  }
+
+  create_zone_if_missing "local.tld" "external-dns"
+  create_zone_if_missing "example.com" "external-dns"
+
+lambda:
+  executor: "kubernetes"

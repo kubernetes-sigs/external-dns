@@ -19,7 +19,7 @@ import (
 
 const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
-	DefaultAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
 
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
@@ -36,6 +36,9 @@ var (
 	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
 	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
+
+	// AzureTagsKey The annotation used for Azure DNS record tags
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
@@ -81,6 +84,9 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflareRegionKey = AnnotationKeyPrefix + "cloudflare-region-key"
 	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
+
+	// Azure annotations
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
 
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"

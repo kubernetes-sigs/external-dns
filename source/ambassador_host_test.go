@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -273,7 +275,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 						Value: "true",
 					}},
 				},
@@ -623,7 +625,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			ambassador.AddToScheme(ambassadorScheme)
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
 
-			namespace := "default"
+			namespace := v1.NamespaceDefault
 
 			// Create Ambassador service
 			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &ti.service, metav1.CreateOptions{})
@@ -648,14 +650,14 @@ func TestAmbassadorHostSource(t *testing.T) {
 			endpoints, err := source.Endpoints(t.Context())
 			assert.NoError(t, err)
 			// Validate returned endpoints against expected endpoints.
-			validateEndpoints(t, endpoints, ti.expected)
+			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }
 
 func createAmbassadorHost(host *ambassador.Host) (*unstructured.Unstructured, error) {
 	obj := &unstructured.Unstructured{}
-	uc, _ := newUnstructuredConverter()
+	uc, _ := newAmbassadorUnstructuredConverter()
 	err := uc.scheme.Convert(host, obj, nil)
 
 	return obj, err
@@ -669,7 +671,7 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 		svc    string
 		errstr string
 	}{
-		{"svc", "default", "svc", ""},
+		{"svc", v1.NamespaceDefault, "svc", ""},
 		{"ns/svc", "ns", "svc", ""},
 		{"svc.ns", "ns", "svc", ""},
 		{"svc.ns.foo.bar", "ns.foo.bar", "svc", ""},
@@ -698,4 +700,25 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 			t.Errorf("%s: got err \"%s\", wanted \"%s\"", v.input, errstr, v.errstr)
 		}
 	}
+}
+
+func TestAmbassadorHostSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := fakeKube.NewSimpleClientset()
+	uc, err := newAmbassadorUnstructuredConverter()
+	require.NoError(t, err)
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.NotNil(t, source)
+
+	testDynamicInformerTransformHelper(t,
+		ambHostGVR,
+		fakeDynamicClient,
+		source.(*ambassadorHostSource).ambassadorHostInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

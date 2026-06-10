@@ -57,7 +57,7 @@ The following fields are used:
 * `aadClientID` is associated with the Service Principal. This is used with Service Principal or Workload Identity methods documented in the next section.
 * `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
-* `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
+* `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next section.
 * `activeDirectoryAuthorityHost` - this contains the URI to override the default Azure Active Directory authority endpoint.
   This is useful for Azure Stack Cloud deployments or custom environments.
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
@@ -141,7 +141,7 @@ The [managed identity](https://docs.microsoft.com/azure/active-directory/managed
 Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.
 The managed identity assigned Kubernetes node pool, or specifically the [VMSS](https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview), is called the Kubelet identity.
 
-The managed identites were previously called MSI (Managed Service Identity) and are enabled by default when creating an AKS cluster.
+The managed identities were previously called MSI (Managed Service Identity) and are enabled by default when creating an AKS cluster.
 
 Note that permissions granted to this identity will be accessible to all containers running inside the Kubernetes cluster, not just the ExternalDNS container(s).
 
@@ -496,7 +496,7 @@ NOTE: make sure the pod is restarted whenever you make a configuration change.
 ## Throttling
 
 When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
-Also, one can leverage the built-in retry policies of the Azure SDK with a tunable maxRetries value. Environment variable AZURE_SDK_MAX_RETRIES can be specified in the manifest yaml to configure behavior. The defualt value of Azure SDK retry is 3.
+Also, one can leverage the built-in retry policies of the Azure SDK with a tunable maxRetries value. Environment variable AZURE_SDK_MAX_RETRIES can be specified in the manifest yaml to configure behavior. The default value of Azure SDK retry is 3.
 
 ## Ingress used with ExternalDNS
 
@@ -510,6 +510,60 @@ Ensure that your nginx-ingress deployment has the following arg: added to it:
 ```
 
 For more details see here: [nginx-ingress external-dns](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead)
+
+## DNS Record Metadata (Tags)
+
+External-DNS supports setting Azure resource metadata (tags) on DNS records using annotations on Kubernetes resources.
+
+### Usage with Ingress
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.kubernetes.io/azure-tags: "cost-center=12345,owner=backend-team"
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+### Usage with Gateway API (HTTPRoute)
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    external-dns.kubernetes.io/azure-tags: "environment=production,app=myapp"
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - "api.example.com"
+  rules:
+    - backendRefs:
+        - name: my-service
+          port: 8080
+```
+
+**Note:** Metadata annotations must be placed directly on each route resource (HTTPRoute, TLSRoute, GRPCRoute, etc.). Gateway annotations are not automatically inherited by routes.
+
+### Annotation Format
+
+Metadata annotations must follow the format:
+`external-dns.kubernetes.io/azure-tags: "key1=value1,key2=value2"`
 
 ## Deploy ExternalDNS
 
@@ -537,7 +591,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
@@ -609,7 +663,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.20.0
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
@@ -685,7 +739,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.20.0
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
@@ -812,7 +866,7 @@ kind: Service
 metadata:
   name: nginx-svc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: server.example.com
+    external-dns.kubernetes.io/hostname: server.example.com
 spec:
   ports:
     - port: 80
@@ -823,7 +877,7 @@ spec:
   type: LoadBalancer
 ```
 
-The annotation `external-dns.alpha.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
+The annotation `external-dns.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
 
 ## Verifying Azure DNS records
 

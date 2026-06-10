@@ -24,6 +24,7 @@ import (
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -66,6 +67,7 @@ var (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=false
+// +externaldns:source:provider-specific=true
 type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
@@ -88,8 +90,13 @@ func NewAmbassadorHostSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
+	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = ambassadorHostInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(ambassadorHostInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -98,7 +105,7 @@ func NewAmbassadorHostSource(
 		return nil, err
 	}
 
-	uc, err := newUnstructuredConverter()
+	uc, err := newAmbassadorUnstructuredConverter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
@@ -174,7 +181,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, hostEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
@@ -241,7 +248,7 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 		// If here, we have no separator, so the whole string is the service, and
 		// we can assume the default namespace.
 		name := service
-		namespace := "default"
+		namespace := corev1.NamespaceDefault
 
 		return namespace, name, nil
 	} else if len(parts) == 2 {
@@ -266,8 +273,8 @@ type unstructuredConverter struct {
 	scheme *runtime.Scheme
 }
 
-// newUnstructuredConverter returns a new unstructuredConverter initialized
-func newUnstructuredConverter() (*unstructuredConverter, error) {
+// newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized
+func newAmbassadorUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
 		scheme: runtime.NewScheme(),
 	}

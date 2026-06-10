@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -36,11 +37,11 @@ type RegionalServicesConfig struct {
 	RegionKey string
 }
 
-var recordTypeRegionalHostnameSupported = map[string]bool{
-	"A":     true,
-	"AAAA":  true,
-	"CNAME": true,
-}
+var recordTypeRegionalHostnameSupported = sets.New(
+	"A",
+	"AAAA",
+	"CNAME",
+)
 
 type regionalHostname struct {
 	hostname  string
@@ -181,7 +182,7 @@ func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.C
 // it returns an empty regionalHostname.
 // If the endpoint has a specific region key set, it uses that; otherwise, it defaults to the region key configured in the provider.
 func (p *CloudFlareProvider) regionalHostname(ep *endpoint.Endpoint) regionalHostname {
-	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
 		return regionalHostname{}
 	}
 	regionKey := p.RegionalServicesConfig.RegionKey
@@ -208,7 +209,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 	// so we can skip regional hostname lookups if not needed.
 	var supportedEndpoints []*endpoint.Endpoint
 	for _, ep := range endpoints {
-		if recordTypeRegionalHostnameSupported[ep.RecordType] {
+		if recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
 			supportedEndpoints = append(supportedEndpoints, ep)
 		}
 	}
@@ -240,7 +241,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 //
 // The endpoint is modified in place and any explicitly set region key is left unchanged.
 func (p *CloudFlareProvider) adjustEndpointProviderSpecificRegionKeyProperty(ep *endpoint.Endpoint) {
-	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
 		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionKey)
 		return
 	}

@@ -7,6 +7,12 @@ tags:
 
 # Domain Filter
 
+> **Important:** Domain filter flags express application-level intent — they are not an
+> enforcement boundary. Credentials (IAM policies, API token scopes, ACLs) are the real
+> enforcement boundary. A misconfigured or missing flag will expose all zones the credentials
+> can reach. Always scope API keys or IAM roles to only the specific zones external-dns manages;
+> use these flags to complement that boundary, not replace it.
+
 ExternalDNS has two modes for selecting which domains it manages: **plain domain filter** and **regex domain filter**.
 
 Using any of the regex filter flags enables the **regex domain filter** mode, which overrides and ignores the **plain domain filter** flags.

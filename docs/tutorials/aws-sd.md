@@ -181,7 +181,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -251,7 +251,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -268,7 +268,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -276,7 +276,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
 spec:
   type: LoadBalancer
   ports:
@@ -313,7 +313,7 @@ After one minute check that a corresponding DNS record for your service was crea
 
 ## Custom TTL
 
-The default DNS record TTL (time to live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+The default DNS record TTL (time to live) is 300 seconds. You can customize this value by setting the annotation `external-dns.kubernetes.io/ttl`.
 For example, modify the service manifest YAML file above:
 
 ```yaml
@@ -322,8 +322,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
     ...
 ```
@@ -341,8 +341,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
   ipFamilies:
     - "IPv6"

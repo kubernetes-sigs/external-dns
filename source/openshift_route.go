@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"text/template"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -34,8 +33,8 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -51,12 +50,12 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
 	annotationFilter         string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
+	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	routeInformer            routeInformer.RouteInformer
 	labelSelector            labels.Selector
@@ -69,18 +68,18 @@ func NewOcpRouteSource(
 	ocpClient versioned.Interface,
 	cfg *Config,
 ) (Source, error) {
-	tmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(cfg.Namespace))
 	informer := informerFactory.Route().V1().Routes()
 
+	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*routev1.Route](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -93,8 +92,7 @@ func NewOcpRouteSource(
 		client:                   ocpClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		routeInformer:            informer,
 		labelSelector:            cfg.LabelFilter,
@@ -107,7 +105,7 @@ func (ors *ocpRouteSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	_, _ = ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(ors.routeInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
@@ -134,10 +132,8 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
-		orEndpoints, err = fqdn.CombineWithTemplatedEndpoints(
+		orEndpoints, err = ors.templateEngine.CombineWithEndpoints(
 			orEndpoints,
-			ors.fqdnTemplate,
-			ors.combineFQDNAnnotation,
 			func() ([]*endpoint.Endpoint, error) { return ors.endpointsFromTemplate(ocpRoute) },
 		)
 		if err != nil {
@@ -152,11 +148,11 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, orEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(ors.fqdnTemplate, ocpRoute)
+	hostnames, err := ors.templateEngine.ExecFQDN(ocpRoute)
 	if err != nil {
 		return nil, err
 	}

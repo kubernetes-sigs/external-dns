@@ -112,7 +112,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ManagedRecords: c.ManagedRecordTypes,
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
-		OldOwnerId:     c.TXTOwnerOld,
+		OldOwnerID:     c.TXTOwnerOld,
 	}
 
 	plan = plan.Calculate()
@@ -178,7 +178,7 @@ func (c *Controller) ShouldRunOnce(now time.Time) bool {
 }
 
 // Run runs RunOnce in a loop with a delay until context is canceled
-func (c *Controller) Run(ctx context.Context) {
+func (c *Controller) Run(ctx context.Context) error {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	var softErrorCount int
@@ -190,7 +190,7 @@ func (c *Controller) Run(ctx context.Context) {
 					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
 					log.Errorf("Failed to do run once: %v (consecutive soft errors: %d)", err, softErrorCount)
 				} else {
-					log.Fatalf("Failed to do run once: %v", err) // nolint: gocritic // exitAfterDefer
+					return fmt.Errorf("failed to do run once: %w", err)
 				}
 			} else {
 				if softErrorCount > 0 {
@@ -204,7 +204,7 @@ func (c *Controller) Run(ctx context.Context) {
 		case <-ticker.C:
 		case <-ctx.Done():
 			log.Info("Terminating main controller loop")
-			return
+			return nil
 		}
 	}
 }

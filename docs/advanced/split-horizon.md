@@ -4,7 +4,7 @@ Split horizon DNS allows you to serve different DNS responses based on the clien
 
 ## Overview
 
-By default, all external-dns instances use the same annotation prefix: `external-dns.alpha.kubernetes.io/`. This means all instances process the same annotations. To enable split horizon DNS, you can configure each instance to use a different annotation prefix via the `--annotation-prefix` flag.
+By default, all external-dns instances use the same annotation prefix: `external-dns.kubernetes.io/`. This means all instances process the same annotations. To enable split horizon DNS, you can configure each instance to use a different annotation prefix via the `--annotation-prefix` flag.
 
 ## Use Cases
 
@@ -33,7 +33,7 @@ external-dns \
 
 ```bash
 external-dns \
-  --annotation-prefix=external-dns.alpha.kubernetes.io/ \  # default, can be omitted
+  --annotation-prefix=external-dns.kubernetes.io/ \  # default, can be omitted
   --source=service \
   --source=ingress \
   --provider=aws \
@@ -56,8 +56,8 @@ metadata:
     internal.company.io/target: 10.0.1.50  # Private IP
 
     # External DNS reads this
-    external-dns.alpha.kubernetes.io/hostname: myapp.company.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: myapp.company.com
+    external-dns.kubernetes.io/ttl: "60"
     # No target = uses LoadBalancer IP automatically
 spec:
   type: LoadBalancer
@@ -102,9 +102,9 @@ sources:
 **values-external.yaml:**
 
 ```yaml
-# annotationPrefix defaults to "external-dns.alpha.kubernetes.io/"
+# annotationPrefix defaults to "external-dns.kubernetes.io/"
 # can be omitted or set explicitly:
-# annotationPrefix: "external-dns.alpha.kubernetes.io/"
+# annotationPrefix: "external-dns.kubernetes.io/"
 
 provider:
   name: aws
@@ -157,9 +157,9 @@ metadata:
     dmz.company.io/ttl: "120"
 
     # External (public internet)
-    external-dns.alpha.kubernetes.io/hostname: api.company.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.kubernetes.io/hostname: api.company.com
+    external-dns.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
 spec:
   type: LoadBalancer
   # ...
@@ -175,7 +175,7 @@ spec:
 --annotation-prefix=dmz.company.io/ --provider=aws --aws-zone-type=private
 
 # External
---annotation-prefix=external-dns.alpha.kubernetes.io/ --provider=cloudflare
+--annotation-prefix=external-dns.kubernetes.io/ --provider=cloudflare
 ```
 
 ### Different Providers Per Instance
@@ -211,14 +211,14 @@ spec:
 ## Important Notes
 
 1. **Annotation prefix must end with `/`** - The validation will fail if the prefix doesn't end with a forward slash.
-2. **Backward compatibility** - If you don't specify `--annotation-prefix`, the default `external-dns.alpha.kubernetes.io/` is used, maintaining full backward compatibility.
+2. **Backward compatibility** - If you don't specify `--annotation-prefix`, the default `external-dns.kubernetes.io/` is used, maintaining full backward compatibility.
 3. **All annotations use the same prefix** - When you set a custom prefix, ALL external-dns annotations (hostname, ttl, target, cloudflare-proxied, etc.) must use that prefix.
 4. **TXT ownership records** - Each instance should have a unique `--txt-owner-id` to avoid conflicts in ownership tracking.
 5. **Provider-specific annotations** - Provider-specific annotations (like `cloudflare-proxied`, `aws-alias`) also use the custom prefix:
 
 ```yaml
 custom.io/hostname: example.com
-custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/cloudflare-proxied
+custom.io/cloudflare-proxied: "true"  # NOT external-dns.kubernetes.io/cloudflare-proxied
 ```
 
 ## Troubleshooting
@@ -232,11 +232,11 @@ custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/clo
 ```yaml
 # ✅ Correct - different prefixes
 internal.company.io/hostname: internal.example.com
-external-dns.alpha.kubernetes.io/hostname: example.com
+external-dns.kubernetes.io/hostname: example.com
 
 # ❌ Wrong - same prefix
-external-dns.alpha.kubernetes.io/hostname: internal.example.com
-external-dns.alpha.kubernetes.io/hostname: example.com  # Second one overwrites first
+external-dns.kubernetes.io/hostname: internal.example.com
+external-dns.kubernetes.io/hostname: example.com  # Second one overwrites first
 ```
 
 ### Validation error: "annotation-prefix must end with '/'"

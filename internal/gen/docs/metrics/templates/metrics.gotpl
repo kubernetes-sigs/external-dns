@@ -24,10 +24,10 @@ curl https://localhost:7979/metrics
 > Full metric name is constructed as follows:
 > {{backtick 1}}external_dns_<subsystem>_<name>{{backtick 1}}
 
-| {{ padRight .ColWidths.Name "Name" }} | {{ padRight .ColWidths.Type "Metric Type" }} | {{ padRight .ColWidths.Subsystem "Subsystem" }} | {{ padRight .ColWidths.Help "Help" }} |
-|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Type }}|:{{ leftSep .ColWidths.Subsystem }}|:{{ leftSep .ColWidths.Help }}|
+| {{ padRight .ColWidths.Name "Name" }} | {{ padRight .ColWidths.Type "Metric Type" }} | {{ padRight .ColWidths.Subsystem "Subsystem" }} | {{ padRight .ColWidths.Labels "Labels" }} | {{ padRight .ColWidths.Help "Help" }} |
+|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Type }}|:{{ leftSep .ColWidths.Subsystem }}|:{{ leftSep .ColWidths.Labels }}|:{{ leftSep .ColWidths.Help }}|
 {{- range .Metrics }}
-| {{ padRight $.ColWidths.Name .Name }} | {{ padRight $.ColWidths.Type (.Type | capitalize) }} | {{ padRight $.ColWidths.Subsystem .Subsystem }} | {{ padRight $.ColWidths.Help .Help }} |
+| {{ padRight $.ColWidths.Name .Name }} | {{ padRight $.ColWidths.Type (.Type | capitalize) }} | {{ padRight $.ColWidths.Subsystem .Subsystem }} | {{ padRight $.ColWidths.Labels (join .Labels ", ") }} | {{ padRight $.ColWidths.Help .Help }} |
 {{- end }}
 
 ## Available Go Runtime Metrics

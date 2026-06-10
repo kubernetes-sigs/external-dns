@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 
 	"sigs.k8s.io/external-dns/provider/blueprint"
@@ -124,8 +123,8 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(_ context.Context, _ s
 
 func createMockPrivateZone(zone string, id string) *privatedns.PrivateZone {
 	return &privatedns.PrivateZone{
-		ID:   to.Ptr(id),
-		Name: to.Ptr(zone),
+		ID:   new(id),
+		Name: new(zone),
 	}
 }
 
@@ -133,11 +132,11 @@ func privateARecordSetPropertiesGetter(values []string, ttl int64) *privatedns.R
 	aRecords := make([]*privatedns.ARecord, len(values))
 	for i, value := range values {
 		aRecords[i] = &privatedns.ARecord{
-			IPv4Address: to.Ptr(value),
+			IPv4Address: new(value),
 		}
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:      to.Ptr(ttl),
+		TTL:      new(ttl),
 		ARecords: aRecords,
 	}
 }
@@ -146,20 +145,20 @@ func privateAAAARecordSetPropertiesGetter(values []string, ttl int64) *privatedn
 	aaaaRecords := make([]*privatedns.AaaaRecord, len(values))
 	for i, value := range values {
 		aaaaRecords[i] = &privatedns.AaaaRecord{
-			IPv6Address: to.Ptr(value),
+			IPv6Address: new(value),
 		}
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:         to.Ptr(ttl),
+		TTL:         new(ttl),
 		AaaaRecords: aaaaRecords,
 	}
 }
 
 func privateCNameRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		CnameRecord: &privatedns.CnameRecord{
-			Cname: to.Ptr(values[0]),
+			Cname: new(values[0]),
 		},
 	}
 }
@@ -171,14 +170,14 @@ func privateMXRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.
 		mxRecords[i] = &mxRecord
 	}
 	return &privatedns.RecordSetProperties{
-		TTL:       to.Ptr(ttl),
+		TTL:       new(ttl),
 		MxRecords: mxRecords,
 	}
 }
 
 func privateTxtRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 		TxtRecords: []*privatedns.TxtRecord{
 			{
 				Value: []*string{&values[0]},
@@ -189,7 +188,7 @@ func privateTxtRecordSetPropertiesGetter(values []string, ttl int64) *privatedns
 
 func privateOthersRecordSetPropertiesGetter(_ []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
-		TTL: to.Ptr(ttl),
+		TTL: new(ttl),
 	}
 }
 
@@ -219,8 +218,8 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 		getterFunc = privateOthersRecordSetPropertiesGetter
 	}
 	return &privatedns.RecordSet{
-		Name:       to.Ptr(name),
-		Type:       to.Ptr("Microsoft.Network/privateDnsZones/" + recordType),
+		Name:       new(name),
+		Type:       new("Microsoft.Network/privateDnsZones/" + recordType),
 		Properties: getterFunc(values, ttl),
 	}
 }

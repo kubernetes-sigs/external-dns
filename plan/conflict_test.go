@@ -20,7 +20,10 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -288,6 +291,74 @@ func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
 		suite.Run(tt.name, func() {
 			if got := suite.perResource.ResolveRecordTypes(tt.args.key, tt.args.row); !reflect.DeepEqual(got, tt.want) {
 				suite.T().Errorf("PerResource.ResolveRecordTypes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPerResource_ResolveRecordTypes_LogsWarning(t *testing.T) {
+	const warnMsg = "contains conflicting record type candidates; discarding CNAME record"
+
+	cname := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"v1"}}
+	a := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.5.5.5"}}
+	aaaa := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}}
+
+	tests := []struct {
+		name        string
+		row         *planTableRow
+		expectsWarn bool
+	}{
+		{
+			name: "no warning: cname only",
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+				},
+			},
+		},
+		{
+			name: "no warning: a and aaaa only",
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{a, aaaa},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeA:    {candidates: []*endpoint.Endpoint{a}},
+					endpoint.RecordTypeAAAA: {candidates: []*endpoint.Endpoint{aaaa}},
+				},
+			},
+		},
+		{
+			name: "warning: cname conflicts with a record",
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname, a},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+					endpoint.RecordTypeA:     {candidates: []*endpoint.Endpoint{a}},
+				},
+			},
+			expectsWarn: true,
+		},
+		{
+			name: "warning: cname conflicts with a and aaaa records",
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname, a, aaaa},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+					endpoint.RecordTypeA:     {candidates: []*endpoint.Endpoint{a}},
+					endpoint.RecordTypeAAAA:  {candidates: []*endpoint.Endpoint{aaaa}},
+				},
+			},
+			expectsWarn: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			PerResource{}.ResolveRecordTypes(planKey{dnsName: "foo"}, tt.row)
+			if tt.expectsWarn {
+				logtest.TestHelperLogContainsWithLogLevel(warnMsg, log.WarnLevel, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(warnMsg, hook, t)
 			}
 		})
 	}

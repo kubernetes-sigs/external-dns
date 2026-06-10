@@ -56,6 +56,7 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool
@@ -77,8 +78,13 @@ func NewKongTCPIngressSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
+	informers.MustSetTransform(kongTCPIngressInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = kongTCPIngressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	informers.MustAddEventHandler(kongTCPIngressInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -156,7 +162,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
@@ -192,7 +198,7 @@ func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func(
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	_, _ = sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.kongTCPIngressInformer.Informer(), eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

@@ -14,17 +14,20 @@ limitations under the License.
 package source
 
 import (
+	"reflect"
 	"testing"
+	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
-	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/source/types"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 )
 
 func TestParseIngress(t *testing.T) {
@@ -79,350 +82,162 @@ func TestParseIngress(t *testing.T) {
 	}
 }
 
-func TestSelectorMatchesService(t *testing.T) {
-	tests := []struct {
-		name        string
-		selector    map[string]string
-		svcSelector map[string]string
-		expected    bool
-	}{
-		{
-			name:        "all key-value pairs match",
-			selector:    map[string]string{"app": "nginx", "env": "prod"},
-			svcSelector: map[string]string{"app": "nginx", "env": "prod"},
-			expected:    true,
+// informerTransformObjectMeta returns an ObjectMeta populated with
+// LastAppliedConfigAnnotation and ManagedFields — the fields that the
+// informer transformers are expected to strip.
+func informerTransformObjectMeta() metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      "test",
+		Namespace: metav1.NamespaceDefault,
+		Annotations: map[string]string{
+			corev1.LastAppliedConfigAnnotation: "test",
 		},
-		{
-			name:        "one key-value pair does not match",
-			selector:    map[string]string{"app": "nginx", "env": "prod"},
-			svcSelector: map[string]string{"app": "nginx", "env": "dev"},
-			expected:    false,
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "test-manager"},
 		},
-		{
-			name:        "key not present in svcSelector",
-			selector:    map[string]string{"app": "nginx", "env": "prod"},
-			svcSelector: map[string]string{"app": "nginx"},
-			expected:    false,
-		},
-		{
-			name:        "empty selector",
-			selector:    map[string]string{},
-			svcSelector: map[string]string{"app": "nginx", "env": "prod"},
-			expected:    true,
-		},
-		{
-			name:        "empty svcSelector",
-			selector:    map[string]string{"app": "nginx", "env": "prod"},
-			svcSelector: map[string]string{},
-			expected:    false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := MatchesServiceSelector(tt.selector, tt.svcSelector)
-			assert.Equal(t, tt.expected, result)
-		})
 	}
 }
 
-func TestMergeEndpoints(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []*endpoint.Endpoint
-		expected []*endpoint.Endpoint
-	}{
-		{
-			name:     "nil input returns nil",
-			input:    nil,
-			expected: nil,
-		},
-		{
-			name:     "empty input returns empty",
-			input:    []*endpoint.Endpoint{},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
-			name: "single endpoint unchanged",
-			input: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-			},
-		},
-		{
-			name: "different keys not merged",
-			input: []*endpoint.Endpoint{
-				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
-			},
-		},
-		{
-			name: "same DNSName different RecordType not merged",
-			input: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
-			},
-		},
-		{
-			name: "same key merged with sorted targets",
-			input: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"5.6.7.8"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
-			},
-		},
-		{
-			name: "multiple endpoints same key merged",
-			input: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "2.2.2.2", "3.3.3.3"}},
-			},
-		},
-		{
-			name: "mixed merge and no merge",
-			input: []*endpoint.Endpoint{
-				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
-				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"3.3.3.3"}},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "3.3.3.3"}},
-				{DNSName: "b.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"2.2.2.2"}},
-			},
-		},
-		{
-			name: "duplicate targets deduplicated",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "1.2.3.4", "5.6.7.8"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
-			},
-		},
-		{
-			name: "duplicate targets across merged endpoints deduplicated",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8"),
-			},
-		},
-		{
-			name: "CNAME endpoints not merged",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
-			},
-		},
-		{
-			name: "CNAME with no targets is skipped",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
-			},
-		},
-		{
-			name: "identical CNAME endpoints deduplicated",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-			},
-		},
-		{
-			name: "same key with different TTL not merged",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 600, "5.6.7.8"),
-			},
-		},
-		{
-			name: "same DNSName and RecordType with different SetIdentifier not merged",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
-			},
-		},
-		{
-			name: "same DNSName, RecordType and SetIdentifier targets are merged",
-			input: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
-			},
-		},
-	}
+// informerTransformHelperConfig is a struct that holds configuration for the informerTransformHelper functions.
+type informerTransformHelperConfig struct {
+	removedLastAppliedConfigAnnotation bool
+	removedManagedFields               bool
+	removedStatusConditions            bool
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := MergeEndpoints(tt.input)
-			assert.ElementsMatch(t, tt.expected, result)
-		})
+// informerTransformHelperOptions are options for configuring the behavior of the informerTransformHelper functions.
+type informerTransformHelperOptions func(*informerTransformHelperConfig)
+
+// withRemovedLastAppliedConfigAnnotation indicates that the informer transformer should have removed the
+// "metadata.annotations['kubectl.kubernetes.io/last-applied']" annotation
+func withRemovedLastAppliedConfigAnnotation() informerTransformHelperOptions {
+	return func(config *informerTransformHelperConfig) {
+		config.removedLastAppliedConfigAnnotation = true
 	}
 }
 
-func TestMergeEndpoints_RefObjects(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    func() []*endpoint.Endpoint
-		expected func(*testing.T, []*endpoint.Endpoint)
-	}{
-		{
-			name:  "empty input",
-			input: func() []*endpoint.Endpoint { return []*endpoint.Endpoint{} },
-			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
-				assert.Empty(t, ep)
-			},
-		},
-		{
-			name: "single endpoint",
-			input: func() []*endpoint.Endpoint {
-				return []*endpoint.Endpoint{
-					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
-					}, types.Service),
-				}
-			},
-			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
-				assert.Len(t, ep, 1)
-				assert.Equal(t, types.Service, ep[0].RefObject().Source)
-				assert.Equal(t, "foo", ep[0].RefObject().Name)
-				assert.Equal(t, "123", string(ep[0].RefObject().UID))
-			},
-		},
-		{
-			name: "two endpoints merged and only single refObject preserved",
-			input: func() []*endpoint.Endpoint {
-				return []*endpoint.Endpoint{
-					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
-					}, types.Service),
-					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
-					}, types.Service),
-				}
-			},
-			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
-				assert.Len(t, ep, 1)
-				assert.Equal(t, types.Service, ep[0].RefObject().Source)
-				assert.Equal(t, "foo", ep[0].RefObject().Name)
-				assert.Equal(t, "123", string(ep[0].RefObject().UID))
-				assert.NotEqual(t, "345", string(ep[0].RefObject().UID))
-			},
-		},
-		{
-			name: "two endpoints not merged and two refObject preserved",
-			input: func() []*endpoint.Endpoint {
-				return []*endpoint.Endpoint{
-					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
-					}, types.Service),
-					testutils.NewEndpointWithRef("b.example.com", "1.1.1.2", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
-					}, types.Service),
-				}
-			},
-			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
-				assert.Len(t, ep, 2)
-				assert.NotEqual(t, ep[0], ep[1])
-				for _, el := range ep {
-					assert.Equal(t, types.Service, el.RefObject().Source)
-					assert.Contains(t, []string{"foo", "bar"}, el.RefObject().Name)
-					assert.Contains(t, []string{"123", "345"}, string(el.RefObject().UID))
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := MergeEndpoints(tt.input())
-			tt.expected(t, result)
-		})
+// withRemovedManagedFields indicates that the informer transformer should have removed the "metadata.managedFields" field
+func withRemovedManagedFields() informerTransformHelperOptions {
+	return func(config *informerTransformHelperConfig) {
+		config.removedManagedFields = true
 	}
 }
 
-func TestMergeEndpointsLogging(t *testing.T) {
-	t.Run("warns on CNAME conflict", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+// withRemovedStatusConditions indicates that the informer transformer should hav removed the "status.conditions" field
+// from the cached object.
+func withRemovedStatusConditions() informerTransformHelperOptions {
+	return func(config *informerTransformHelperConfig) {
+		config.removedStatusConditions = true
+	}
+}
 
-		MergeEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com"),
-		})
+// testDynamicInformerTransformHelper creates an unstructured object via the
+// dynamic client and waits for it to appear in the generic informer cache, then
+// asserts whether the informer transformer stripped the fields selected by opts.
+func testDynamicInformerTransformHelper(
+	t *testing.T,
+	gvr schema.GroupVersionResource,
+	client dynamic.Interface,
+	informer informers.GenericInformer,
+	opts ...informerTransformHelperOptions,
+) {
+	t.Helper()
 
-		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
-		logtest.TestHelperLogContains("example.com CNAME a.elb.com", hook, t)
-		logtest.TestHelperLogContains("example.com CNAME b.elb.com", hook, t)
-	})
+	cfg := &informerTransformHelperConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
 
-	t.Run("no warning for identical CNAMEs", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	meta := informerTransformObjectMeta()
 
-		MergeEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com"),
-		})
+	obj := &unstructured.Unstructured{}
+	obj.SetName(meta.Name)
+	obj.SetNamespace(meta.Namespace)
+	obj.SetAnnotations(meta.Annotations)
+	obj.SetManagedFields(meta.ManagedFields)
 
-		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
-	})
+	if cfg.removedStatusConditions {
+		err := unstructured.SetNestedField(obj.Object, []any{}, "status", "conditions")
+		require.NoError(t, err)
+	}
 
-	t.Run("no warning for same DNSName with different SetIdentifier", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	_, err := client.Resource(gvr).Namespace(obj.GetNamespace()).Create(t.Context(), obj, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		MergeEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
-		})
+	var gotObj runtime.Object
+	require.Eventually(t, func() bool {
+		var err error
+		gotObj, err = informer.Lister().ByNamespace(obj.GetNamespace()).Get(obj.GetName())
+		return err == nil
+	}, 5*time.Second, 10*time.Millisecond)
+	require.IsType(t, &unstructured.Unstructured{}, gotObj)
 
-		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
-	})
+	assertObjectTransformedHelper(t, gotObj.(*unstructured.Unstructured), cfg)
+}
 
-	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+// testInformerTransformHelper verifies that the informer transformer stripped
+// the fields configured via opts from the single cached object.
+func testInformerTransformHelper(t *testing.T, informer cache.SharedIndexInformer, obj metav1.Object, opts ...informerTransformHelperOptions) {
+	t.Helper()
 
-		MergeEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME),
-		})
+	cfg := &informerTransformHelperConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
 
-		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
-		logtest.TestHelperLogContains("example.com", hook, t)
-	})
+	item, exists, err := informer.GetStore().Get(obj)
+	require.NoError(t, err)
+	require.True(t, exists)
+	require.Implements(t, (*metav1.Object)(nil), item)
+
+	assertObjectTransformedHelper(t, item.(metav1.Object), cfg)
+}
+
+// assertObjectTransformedHelper asserts whether the informer transformer stripped the fields selected by cfg from obj.
+func assertObjectTransformedHelper(t *testing.T, obj metav1.Object, cfg *informerTransformHelperConfig) {
+	t.Helper()
+
+	if cfg.removedLastAppliedConfigAnnotation {
+		assert.NotContains(t, obj.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	} else {
+		assert.Contains(t, obj.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	}
+
+	if cfg.removedManagedFields {
+		assert.Empty(t, obj.GetManagedFields())
+	} else {
+		assert.NotEmpty(t, obj.GetManagedFields())
+	}
+
+	if obj, ok := obj.(*unstructured.Unstructured); ok {
+		conditions, found, err := unstructured.NestedFieldNoCopy(obj.Object, "status", "conditions")
+		require.NoError(t, err)
+		if cfg.removedStatusConditions {
+			require.False(t, found)
+			require.Nil(t, conditions)
+		} else if found {
+			require.NotNil(t, conditions)
+		}
+		return
+	}
+
+	val := reflect.ValueOf(obj)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+	require.True(t, val.IsValid(), "object is not valid")
+	statusField := val.FieldByName("Status")
+	if cfg.removedStatusConditions {
+		require.True(t, statusField.IsValid(), "object does not have a Status field")
+		condField := statusField.FieldByName("Conditions")
+		require.True(t, condField.IsValid(), "Status does not have a Conditions field")
+		require.IsType(t, reflect.Slice, condField.Kind())
+		assert.Zero(t, condField.Len())
+	} else if statusField.IsValid() {
+		condField := statusField.FieldByName("Conditions")
+		if condField.IsValid() {
+			require.IsType(t, reflect.Slice, condField.Kind())
+			assert.NotZero(t, condField.Len())
+		}
+	}
 }

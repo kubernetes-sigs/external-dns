@@ -4,7 +4,7 @@
 # | Field                                  | Type     | Description                              |
 # |----------------------------------------|----------|------------------------------------------|
 # | name                                   | string   | Test scenario name                       |
-# | config.sources                         | []string | Sources to create: ingress, service      |
+# | config.sources                         | []string | Sources to create: ingress, node, service |
 # | config.defaultTargets                  | []string | --default-targets flag values            |
 # | config.forceDefaultTargets             | bool     | --force-default-targets flag             |
 # | config.targetNetFilter                 | []string | --target-net-filter flag values          |
@@ -21,6 +21,28 @@
 # 3. Support for Endpoint.ProviderSpecific
 
 scenarios:
+  - name: node-with-external-ip
+    description: >
+      A Node with an ExternalIP address creates an A record using the node name
+      as the DNS name. The node source uses the node's name directly as the
+      hostname when no FQDN template is configured.
+    config:
+      sources: ["node"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Node
+          metadata:
+            name: node-1.example.com
+          status:
+            addresses:
+              - type: ExternalIP
+                address: 1.2.3.4
+    expected:
+      - dnsName: node-1.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+
   - name: headless-service-with-pods
     description: >
       Test that a headless Service with associated Pods
@@ -39,7 +61,7 @@ scenarios:
             labels:
               app: myapp
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: headless.example.com
+              external-dns.kubernetes.io/hostname: headless.example.com
           spec:
             type: ClusterIP
             clusterIP: None
@@ -73,7 +95,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: svc.example.com
+              external-dns.kubernetes.io/hostname: svc.example.com
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -108,7 +130,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -194,7 +216,7 @@ scenarios:
             name: test-service
             namespace: default
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: example.local
+              external-dns.kubernetes.io/hostname: example.local
           spec:
             selector:
               app.kubernetes.io/name: MyApp
@@ -230,4 +252,287 @@ scenarios:
     expected:
       - dnsName: example.local
         targets: ["1.2.3.4"]
+        recordType: A
+
+  - name: cname-dedup-across-sources
+    description: Deduplicates identical CNAMEs when multiple sources produce the same hostname target
+    config:
+      sources: ["service", "ingress"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: test-service
+            namespace: default
+            annotations:
+              external-dns.kubernetes.io/hostname: example.local
+          spec:
+            selector:
+              app.kubernetes.io/name: MyApp
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: elb.example.com
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: test-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: elb.example.com
+    expected:
+      - dnsName: example.local
+        targets: ["elb.example.com"]
+        recordType: CNAME
+
+  - name: cname-conflict-across-sources
+    description: >
+      When a Service and an Ingress map the same hostname to different CNAME targets,
+      dedupSource keeps both (targets differ, so no dedup match).
+      Conflict resolution is left to the provider.
+    config:
+      sources: ["service", "ingress"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: test-service
+            namespace: default
+            annotations:
+              external-dns.kubernetes.io/hostname: example.local
+          spec:
+            selector:
+              app.kubernetes.io/name: MyApp
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: a.elb.example.com
+      - resource:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: test-ingress
+            namespace: default
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+          spec:
+            rules:
+              - host: example.local
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: test-service
+                          port:
+                            number: 80
+          status:
+            loadBalancer:
+              ingress:
+                - hostname: b.elb.example.com
+    expected:
+      - dnsName: example.local
+        targets: ["a.elb.example.com"]
+        recordType: CNAME
+      - dnsName: example.local
+        targets: ["b.elb.example.com"]
+        recordType: CNAME
+
+# CRD
+  - name: crd-a-record
+    description: >
+      A DNSEndpoint with an A record creates the correct DNS entry.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: my-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: www.example.com
+                targets:
+                  - 1.2.3.4
+                recordType: A
+                recordTTL: 300
+    expected:
+      - dnsName: www.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+        recordTTL: 300
+
+  - name: crd-cname-record
+    description: >
+      A DNSEndpoint with a CNAME record creates the correct DNS entry.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: my-cname
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: alias.example.com
+                targets:
+                  - target.example.com
+                recordType: CNAME
+                recordTTL: 180
+    expected:
+      - dnsName: alias.example.com
+        targets: ["target.example.com"]
+        recordType: CNAME
+        recordTTL: 180
+
+  - name: crd-multiple-endpoints
+    description: >
+      A DNSEndpoint with multiple spec.endpoints entries produces one DNS record
+      per entry. MergeEndpoints combines entries sharing the same dnsName and
+      recordType into a single multi-target record.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: multi-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: multi.example.com
+                targets:
+                  - 1.2.3.4
+                  - 5.6.7.8
+                recordType: A
+                recordTTL: 60
+              - dnsName: alias.example.com
+                targets:
+                  - multi.example.com
+                recordType: CNAME
+                recordTTL: 60
+    expected:
+      - dnsName: multi.example.com
+        targets: ["1.2.3.4", "5.6.7.8"]
+        recordType: A
+        recordTTL: 60
+      - dnsName: alias.example.com
+        targets: ["multi.example.com"]
+        recordType: CNAME
+        recordTTL: 60
+
+  - name: crd-srv-record
+    description: >
+      A DNSEndpoint with SRV targets missing the trailing dot is rejected by
+      ValidateSRVRecord (RFC 2782 requires absolute FQDNs) and produces no
+      endpoint. A DNSEndpoint with properly dotted targets is accepted by the
+      CRD source and produces an endpoint; the CRD source no longer strips or
+      warns on the trailing dot.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: srv-invalid
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: _svc._tcp.example.com
+                targets:
+                  - "0 0 80 abc.example.com"
+                  - "0 0 80 def.example.com"
+                recordType: SRV
+                recordTTL: 180
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: srv-valid
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: _secure._tcp.example.com
+                targets:
+                  - "0 0 443 abc.example.com."
+                  - "10 20 443 def.example.com."
+                recordType: SRV
+                recordTTL: 180
+    expected:
+      - dnsName: _secure._tcp.example.com
+        targets: ["0 0 443 abc.example.com.", "10 20 443 def.example.com."]
+        recordType: SRV
+        recordTTL: 180
+
+  - name: crd-and-service
+    description: >
+      When both the crd and service sources are active, endpoints from each
+      source are combined. The crd source contributes an A record for
+      api.example.com and the service source contributes an A record for
+      svc.example.com.
+    config:
+      sources: ["crd", "service"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: api-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: api.example.com
+                targets:
+                  - 10.0.0.1
+                recordType: A
+                recordTTL: 120
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: my-svc
+            namespace: default
+            annotations:
+              external-dns.kubernetes.io/hostname: svc.example.com
+          spec:
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 10.0.0.2
+    expected:
+      - dnsName: api.example.com
+        targets: ["10.0.0.1"]
+        recordType: A
+        recordTTL: 120
+      - dnsName: svc.example.com
+        targets: ["10.0.0.2"]
         recordType: A

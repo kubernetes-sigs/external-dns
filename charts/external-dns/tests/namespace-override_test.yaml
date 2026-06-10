@@ -1,0 +1,80 @@
+suite: namespaceOverride
+templates:
+  - "*.yaml"
+release:
+  name: external-dns
+  namespace: release-ns
+chart:
+  version: "1.15.0"
+  appVersion: "0.15.0"
+tests:
+  - it: "defaults metadata.namespace to the release namespace when namespaceOverride is unset"
+    templates:
+      - deployment.yaml
+      - service.yaml
+      - serviceaccount.yaml
+      - secret.yaml
+      - servicemonitor.yaml
+    set:
+      secretConfiguration:
+        enabled: true
+        mountPath: "/etc/kubernetes/"
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: release-ns
+
+  - it: "routes metadata.namespace through namespaceOverride when it is set"
+    templates:
+      - deployment.yaml
+      - service.yaml
+      - serviceaccount.yaml
+      - secret.yaml
+      - servicemonitor.yaml
+    set:
+      namespaceOverride: chart-ns
+      secretConfiguration:
+        enabled: true
+        mountPath: "/etc/kubernetes/"
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: chart-ns
+
+  - it: "cascades namespaceOverride into the --namespace flag when namespaced is true"
+    templates:
+      - deployment.yaml
+    set:
+      namespaceOverride: chart-ns
+      namespaced: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --namespace=chart-ns
+
+  - it: "still lets serviceMonitor.namespace override namespaceOverride for the ServiceMonitor resource"
+    templates:
+      - servicemonitor.yaml
+    set:
+      namespaceOverride: chart-ns
+      serviceMonitor:
+        enabled: true
+        namespace: metrics-ns
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: metrics-ns
+
+  - it: "ClusterRoleBinding subjects[].namespace follows namespaceOverride"
+    templates:
+      - clusterrolebinding.yaml
+    set:
+      namespaceOverride: chart-ns
+    asserts:
+      - equal:
+          path: subjects[0].namespace
+          value: chart-ns

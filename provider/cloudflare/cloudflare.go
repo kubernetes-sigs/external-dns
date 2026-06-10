@@ -38,6 +38,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -84,14 +85,14 @@ type DNSRecordIndex struct {
 
 type DNSRecordsMap map[DNSRecordIndex]dns.RecordResponse
 
-var recordTypeProxyNotSupported = map[string]bool{
-	"LOC": true,
-	"MX":  true,
-	"NS":  true,
-	"SPF": true,
-	"TXT": true,
-	"SRV": true,
-}
+var recordTypeProxyNotSupported = sets.New(
+	"LOC",
+	"MX",
+	"NS",
+	"SPF",
+	"TXT",
+	"SRV",
+)
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
@@ -288,8 +289,8 @@ func newProvider(
 
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
-		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
-			tokenBytes, err := os.ReadFile(trimed)
+		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
+			tokenBytes, err := os.ReadFile(trimmed)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
 			}
@@ -800,7 +801,7 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 		}
 	}
 
-	if recordTypeProxyNotSupported[ep.RecordType] {
+	if recordTypeProxyNotSupported.Has(ep.RecordType) {
 		proxied = false
 	}
 	return proxied

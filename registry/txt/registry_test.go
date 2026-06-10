@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -110,6 +111,88 @@ func testTXTRegistryNew(t *testing.T) {
 		_, err := newRegistry(p, "", "-%{record_type}", "owner", time.Hour, "", []string{"TXT"}, []string{}, false, nil, "")
 		require.NoError(t, err)
 	})
+}
+
+// errProvider is a provider whose Records call always returns an error.
+type errProvider struct {
+	provider.BaseProvider
+	err error
+}
+
+func (p *errProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, p.err
+}
+
+func (p *errProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error { return nil }
+
+func TestTXTRegistry_Records_ProviderError(t *testing.T) {
+	p := &errProvider{err: assert.AnError}
+	r, err := newRegistry(p, "", "", "owner", 0, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	_, err = r.Records(t.Context())
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestTXTRegistry_OwnerID(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "my-owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	assert.Equal(t, "my-owner", r.OwnerID())
+}
+
+func TestTXTRegistry_GetDomainFilter(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	assert.Equal(t, p.GetDomainFilter(), r.GetDomainFilter())
+}
+
+// nilLabelsProvider returns a single non-TXT endpoint with nil Labels.
+type nilLabelsProvider struct {
+	provider.BaseProvider
+}
+
+func (p *nilLabelsProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	ep := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	ep.Labels = nil
+	return []*endpoint.Endpoint{ep}, nil
+}
+
+func (p *nilLabelsProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error { return nil }
+
+func TestTXTRegistry_Records_NilLabels(t *testing.T) {
+	r, err := newRegistry(&nilLabelsProvider{}, "", "", "owner", 0, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	endpoints, err := r.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 1)
+	assert.NotNil(t, endpoints[0].Labels)
+}
+
+func TestNew(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	cfg := &externaldns.Config{
+		TXTOwnerID:            "owner",
+		TXTPrefix:             "prefix-",
+		TXTCacheInterval:      time.Minute,
+		ManagedDNSRecordTypes: []string{endpoint.RecordTypeA},
+		ExcludeDNSRecordTypes: []string{},
+	}
+	r, err := New(cfg, p)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestTXTRegistry_AdjustEndpoints(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+	got, err := r.AdjustEndpoints(eps)
+	require.NoError(t, err)
+	assert.Equal(t, eps, got)
 }
 
 func testTXTRegistryRecords(t *testing.T) {
@@ -469,7 +552,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwner("alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithAliasProperty(endpoint.AliasTrue),
 			newEndpointWithOwner("cname-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, ""),
@@ -522,7 +605,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			},
 			ProviderSpecific: []endpoint.ProviderSpecificProperty{
 				{
-					Name:  "alias",
+					Name:  endpoint.ProviderSpecificAlias,
 					Value: "true",
 				},
 			},
@@ -1029,7 +1112,8 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithAliasProperty(endpoint.AliasTrue),
+			newEndpointWithOwner("new-alias-a-only.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "").WithAliasProperty(endpoint.AliasA),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
@@ -1047,8 +1131,10 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("cname-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
 			newTXTEndpointWithOwnedRecord("cname-example", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
-			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithProviderSpecific("alias", "true"),
-			newTXTEndpointWithOwnedRecord("cname-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithProviderSpecific("alias", "true"),
+			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasTrue),
+			newTXTEndpointWithOwnedRecord("cname-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithAliasProperty(endpoint.AliasTrue),
+			newEndpointWithOwner("new-alias-a-only.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasA),
+			newTXTEndpointWithOwnedRecord("cname-new-alias-a-only.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias-a-only.test-zone.example.org").WithAliasProperty(endpoint.AliasA),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),

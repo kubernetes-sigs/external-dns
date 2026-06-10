@@ -22,7 +22,6 @@ import (
 	"maps"
 	"slices"
 	"strings"
-	"text/template"
 
 	log "github.com/sirupsen/logrus"
 
@@ -37,10 +36,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -53,13 +53,11 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
 type unstructuredSource struct {
-	combineFqdnAnnotation bool
-	fqdnTemplate          *template.Template
-	targetTemplate        *template.Template
-	fqdnTargetTemplate    *template.Template
-	informers             []kubeinformers.GenericInformer
+	templateEngine template.Engine
+	informers      []kubeinformers.GenericInformer
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -69,21 +67,6 @@ func NewUnstructuredFQDNSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	fqdnTmpl, err := fqdn.ParseTemplate(cfg.FQDNTemplate)
-	if err != nil {
-		return nil, err
-	}
-
-	targetTmpl, err := fqdn.ParseTemplate(cfg.TargetTemplate)
-	if err != nil {
-		return nil, err
-	}
-
-	fqdnTargetTmpl, err := fqdn.ParseTemplate(cfg.FQDNTargetTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	gvrs, err := discoverResources(kubeClient, cfg.UnstructuredResources)
 	if err != nil {
 		return nil, err
@@ -103,17 +86,19 @@ func NewUnstructuredFQDNSource(
 		informer := informerFactory.ForResource(gvr)
 
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
-		err := informer.Informer().AddIndexers(
-			informers.IndexerWithOptions[*unstructured.Unstructured](
-				informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
-				informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
-			),
-		)
-		if err != nil {
-			return nil, err
-		}
+		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithConditions(func(u *unstructured.Unstructured) bool {
+				return annotations.IsControllerMatch(newUnstructuredWrapper(u))
+			}),
+		))
+		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
 
-		_, _ = informer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
 		resourceInformers = append(resourceInformers, informer)
 	}
 
@@ -123,11 +108,8 @@ func NewUnstructuredFQDNSource(
 	}
 
 	return &unstructuredSource{
-		fqdnTemplate:          fqdnTmpl,
-		targetTemplate:        targetTmpl,
-		fqdnTargetTemplate:    fqdnTargetTmpl,
-		informers:             resourceInformers,
-		combineFqdnAnnotation: cfg.CombineFQDNAndAnnotation,
+		templateEngine: cfg.TemplateEngine,
+		informers:      resourceInformers,
 	}, nil
 }
 
@@ -163,16 +145,12 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		el := newUnstructuredWrapper(obj)
 
-		if annotations.IsControllerMismatch(el, types.Unstructured) {
-			continue
-		}
-
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
 
-		fqdnTargetEdps, err := fqdn.CombineWithTemplatedEndpoints(
-			annotationEdps, us.fqdnTargetTemplate, us.combineFqdnAnnotation,
+		fqdnTargetEdps, err := us.templateEngine.CombineWithEndpoints(
+			annotationEdps,
 			func() ([]*endpoint.Endpoint, error) {
 				return us.endpointsFromFQDNTargetTemplate(el)
 			},
@@ -181,8 +159,8 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 			return nil, err
 		}
 
-		edps, err := fqdn.CombineWithTemplatedEndpoints(
-			fqdnTargetEdps, us.fqdnTemplate, us.combineFqdnAnnotation,
+		edps, err := us.templateEngine.CombineWithEndpoints(
+			fqdnTargetEdps,
 			func() ([]*endpoint.Endpoint, error) {
 				return us.endpointsFromTemplate(el)
 			},
@@ -204,12 +182,12 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
 func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	hostnames, err := fqdn.ExecTemplate(us.fqdnTemplate, el)
+	hostnames, err := us.templateEngine.ExecFQDN(el)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +195,9 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 		return nil, nil
 	}
 
-	var targets []string
-	if us.targetTemplate != nil {
-		targets, err = fqdn.ExecTemplate(us.targetTemplate, el)
-		if err != nil {
-			return nil, err
-		}
+	targets, err := us.templateEngine.ExecTarget(el)
+	if err != nil {
+		return nil, err
 	}
 
 	return EndpointsForHostsAndTargets(hostnames, targets), nil
@@ -231,7 +206,7 @@ func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]
 // endpointsFromFQDNTargetTemplate creates endpoints from a template that returns host:target pairs.
 // Each pair creates a single endpoint with 1:1 mapping between host and target.
 func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	pairs, err := fqdn.ExecTemplate(us.fqdnTargetTemplate, el)
+	pairs, err := us.templateEngine.ExecFQDNTarget(el)
 	if err != nil {
 		return nil, err
 	}
@@ -261,13 +236,13 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.
 func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
 	for _, informer := range us.informers {
-		_, _ = informer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		informers.MustAddEventHandler(informer.Informer(), eventHandlerFunc(handler))
 	}
 }
 
@@ -297,7 +272,7 @@ func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
 }
 
 // newUnstructuredWrapper creates a wrapper around an *unstructured.Unstructured,
-// exposing typed convenience fields for templates alongside raw map sections.
+// exposing typed convenience fields for templateEngine alongside raw map sections.
 func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 	w := &unstructuredWrapper{
 		Unstructured: u,
@@ -378,20 +353,17 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoi
 	}
 
 	// Deduplicate hostnames
-	hostSet := make(map[string]struct{}, len(hostnames))
-	for _, h := range hostnames {
-		hostSet[h] = struct{}{}
-	}
-	sortedHosts := slices.Sorted(maps.Keys(hostSet))
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
 
 	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]map[string]struct{})
+	targetsByType := make(map[string]sets.Set[string])
 	for _, target := range targets {
 		recordType := endpoint.SuitableType(target)
 		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = make(map[string]struct{})
+			targetsByType[recordType] = sets.New(target)
+		} else {
+			targetsByType[recordType].Insert(target)
 		}
-		targetsByType[recordType][target] = struct{}{}
 	}
 
 	// Resolve to sorted slices once

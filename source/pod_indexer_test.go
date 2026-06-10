@@ -27,7 +27,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 type podSpec struct {
@@ -131,11 +133,11 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 
 	client := fake.NewClientset()
 
-	nodes := map[string]bool{}
+	nodes := sets.New[string]()
 
 	for _, pod := range pods {
-		if _, exists := nodes[pod.Spec.NodeName]; !exists {
-			nodes[pod.Spec.NodeName] = true
+		if !nodes.Has(pod.Spec.NodeName) {
+			nodes.Insert(pod.Spec.NodeName)
 			node := &corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pod.Spec.NodeName,
@@ -220,7 +222,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				t.Context(), client,
 				&Config{
 					Namespace:        tt.namespace,
-					FQDNTemplate:     "{{ .Name }}.tld.org",
+					TemplateEngine:   templatetest.MustEngine(t, "{{ .Name }}.tld.org", "", "", false),
 					AnnotationFilter: tt.annotationFilter,
 					LabelFilter:      selector,
 				})

@@ -5,7 +5,7 @@ Using nodes (`--source=node`) as source is possible to synchronize a DNS zone wi
 
 The node source adds an `A` record per each node `externalIP` (if not found, any IPv4 `internalIP` is used instead).
 It also adds an `AAAA` record per each node IPv6 `internalIP`. Refer to the [IPv6 Behavior](#ipv6-behavior) section for more details.
-The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
+The TTL of the records can be set with the `external-dns.kubernetes.io/ttl` node annotation.
 
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded by default.
 As such, no DNS records are created for Unhealthy, NotReady or SchedulingDisabled (cordon) nodes (and existing ones are removed).
@@ -23,7 +23,7 @@ spec:
   serviceAccountName: external-dns
   containers:
   - name: external-dns
-    image: registry.k8s.io/external-dns/external-dns:v0.20.0 # update this to the desired external-dns version
+    image: registry.k8s.io/external-dns/external-dns:v0.21.0 # update this to the desired external-dns version
     args:
     - --source=node # will use nodes as source
     - --provider=aws
@@ -59,7 +59,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -133,7 +133,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws

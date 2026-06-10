@@ -21,6 +21,9 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -61,7 +64,11 @@ type ScenarioConfig struct {
 	DefaultTargets      []string `json:"defaultTargets"`
 	ForceDefaultTargets bool     `json:"forceDefaultTargets"`
 	TargetNetFilter     []string `json:"targetNetFilter"`
+	ExcludeTargetNets   []string `json:"excludeTargetNets"`
+	NAT64Networks       []string `json:"nat64Networks"`
 	ServiceTypeFilter   []string `json:"serviceTypeFilter"`
+	Provider            string   `json:"provider"`
+	PreferAlias         bool     `json:"preferAlias"`
 }
 
 // ParsedResources holds the parsed Kubernetes resources from a scenario.
@@ -70,4 +77,14 @@ type ParsedResources struct {
 	Services       []*corev1.Service
 	EndpointSlices []*discoveryv1.EndpointSlice
 	Pods           []*corev1.Pod
+	Nodes          []*corev1.Node
+	DNSEndpoints   []*apiv1alpha1.DNSEndpoint
+}
+
+// LoadedResources holds the clients.
+type LoadedResources struct {
+	// K8sClient is the fake Kubernetes clientset for core/networking/discovery resources.
+	K8sClient *fake.Clientset
+	// DNSEndpoints are the parsed DNSEndpoint CRD objects ready to be injected into the CRD source fake cache.
+	DNSEndpoints []*apiv1alpha1.DNSEndpoint
 }

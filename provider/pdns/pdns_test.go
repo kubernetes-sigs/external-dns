@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -250,7 +251,7 @@ var (
 	}
 
 	// Endpoint with alias annotation
-	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithProviderSpecific("alias", "true")
+	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithAliasProperty(endpoint.AliasTrue)
 
 	// Endpoints for preferAlias test
 	endpointsPreferAlias = []*endpoint.Endpoint{
@@ -907,14 +908,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSHasAliasAnnotation() {
 	// Test endpoint with alias=false
 	epWithAliasFalse := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasFalse.ProviderSpecific = endpoint.ProviderSpecific{
-		{Name: "alias", Value: "false"},
+		{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 	}
 	suite.False(p.hasAliasAnnotation(epWithAliasFalse))
 
 	// Test endpoint with alias=true
 	epWithAliasTrue := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasTrue.ProviderSpecific = endpoint.ProviderSpecific{
-		{Name: "alias", Value: "true"},
+		{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 	}
 	suite.True(p.hasAliasAnnotation(epWithAliasTrue))
 
@@ -1028,18 +1029,18 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
 	suite.NoError(err)
 
-	trailingTypes := map[string]bool{
-		endpoint.RecordTypeCNAME: true,
-		"ALIAS":                  true,
-		endpoint.RecordTypeMX:    true,
-		endpoint.RecordTypeSRV:   true,
-		endpoint.RecordTypeNS:    true,
-		endpoint.RecordTypePTR:   true,
-	}
+	trailingTypes := sets.New(
+		endpoint.RecordTypeCNAME,
+		"ALIAS",
+		endpoint.RecordTypeMX,
+		endpoint.RecordTypeSRV,
+		endpoint.RecordTypeNS,
+		endpoint.RecordTypePTR,
+	)
 
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
-			if trailingTypes[rs.Type_] {
+			if trailingTypes.Has(rs.Type_) {
 				for _, r := range rs.Records {
 					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
 				}

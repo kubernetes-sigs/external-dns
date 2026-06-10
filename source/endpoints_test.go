@@ -37,7 +37,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 		{
 			name:      "no services",
 			services:  []*corev1.Service{},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
 		},
@@ -47,7 +47,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "nginx"},
@@ -55,7 +55,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
 		},
@@ -65,7 +65,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "nginx"},
@@ -73,7 +73,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
 		},
@@ -83,14 +83,14 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						ExternalIPs: []string{"192.0.2.1"},
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
 		},
@@ -100,7 +100,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc2",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "nginx"},
@@ -114,7 +114,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"192.0.2.2"},
 		},
@@ -124,7 +124,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc3",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "nginx"},
@@ -138,7 +138,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"lb.example.com"},
 		},
@@ -148,14 +148,14 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc4",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "apache"},
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
 		},
@@ -165,7 +165,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "fake",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "apache", "version": "v1"},
@@ -173,7 +173,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"version": "v1"},
 			expected:  endpoint.Targets{"158.123.32.23"},
 		},
@@ -183,7 +183,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "fake",
-						Namespace: "default",
+						Namespace: corev1.NamespaceDefault,
 					},
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{
@@ -199,7 +199,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 					},
 				},
 			},
-			namespace: "default",
+			namespace: corev1.NamespaceDefault,
 			selector: map[string]string{
 				"version": "v1",
 				"release": "stable",
@@ -207,6 +207,91 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				"app":     "demo",
 			},
 			expected: endpoint.Targets{"158.123.32.23"},
+		},
+		{
+			// Gateway selector is a SUPERSET of the service selector: the service is
+			// missing a label the gateway requires. The index returns the service as a
+			// candidate (it has the first queried k=v), but the label selector must
+			// reject it because the remaining required label is absent.
+			name: "gateway selector is superset of service selector — no match",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"istio": "ingressgateway", "app": "required"},
+			expected:  endpoint.Targets{},
+		},
+		{
+			// Reproduces the bug from PR #5708: the gateway selector is a strict subset of
+			// the service's spec.selector. A hash-of-full-selector index would miss this.
+			name: "gateway selector is subset of service selector",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "release": "istio"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"istio": "ingressgateway"},
+			expected:  endpoint.Targets{"10.0.0.1"},
+		},
+		{
+			// Two services share the same first index entry ("istio=ingressgateway") but
+			// only one satisfies the full gateway selector. Validates that the label selector
+			// correctly eliminates the false positive returned by the index.
+			name: "index returns multiple candidates, post-filter eliminates false positives",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw-a", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "app": "foo"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "igw-b", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"istio": "ingressgateway", "app": "bar"},
+						ExternalIPs: []string{"10.0.0.2"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"istio": "ingressgateway", "app": "foo"},
+			expected:  endpoint.Targets{"10.0.0.1"},
+		},
+		{
+			// Empty gateway selector takes the lister path (no index key to query) and
+			// returns all services in the namespace — same behaviour as an empty label selector matching everything.
+			name: "empty selector returns all services",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "svc-a", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "foo"},
+						ExternalIPs: []string{"10.0.0.1"},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "svc-b", Namespace: corev1.NamespaceDefault},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "bar"},
+						ExternalIPs: []string{"10.0.0.2"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{},
+			expected:  endpoint.Targets{"10.0.0.1", "10.0.0.2"},
 		},
 	}
 
@@ -242,7 +327,7 @@ func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
 
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
-	targets, err := EndpointTargetsFromServices(svcInformer, "default", sel)
+	targets, err := EndpointTargetsFromServices(svcInformer, corev1.NamespaceDefault, sel)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, targets.Len())
 }

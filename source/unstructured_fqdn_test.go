@@ -19,6 +19,8 @@ package source
 import (
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,7 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/fqdn"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
@@ -818,6 +820,66 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
+		{
+			title: "fqdnTargetTemplate pair without colon separator is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: "nocolonseparator",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "fqdnTargetTemplate pair with empty host is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: ":10.0.0.1",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "fqdnTargetTemplate pair with empty target is skipped",
+			cfg: cfg{
+				resources:          []string{"virtualmachineinstances.v1.kubevirt.io"},
+				fqdnTargetTemplate: "host.example.com:",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "kubevirt.io/v1",
+						"kind":       "VirtualMachineInstance",
+						"metadata": map[string]any{
+							"name":      "my-vm",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
@@ -836,12 +898,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				dynamicClient,
 				kubeClient,
 				&Config{
-					LabelFilter:              selector,
-					UnstructuredResources:    tt.cfg.resources,
-					FQDNTemplate:             tt.cfg.fqdnTemplate,
-					TargetTemplate:           tt.cfg.targetTemplate,
-					FQDNTargetTemplate:       tt.cfg.fqdnTargetTemplate,
-					CombineFQDNAndAnnotation: tt.cfg.combine,
+					LabelFilter:           selector,
+					UnstructuredResources: tt.cfg.resources,
+					TemplateEngine:        templatetest.MustEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),
 				},
 			)
 			require.NoError(t, err)
@@ -849,7 +908,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			validateEndpoints(t, endpoints, tt.expected)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
@@ -994,11 +1053,10 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpl, err := fqdn.ParseTemplate(tt.tmpl)
-			require.NoError(t, err)
+			engine := templatetest.MustEngine(t, tt.tmpl, "", "", false)
 
 			wrapped := newUnstructuredWrapper(tt.obj)
-			got, err := fqdn.ExecTemplate(tmpl, wrapped)
+			got, err := engine.ExecFQDN(wrapped)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

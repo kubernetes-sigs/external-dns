@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -38,7 +39,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return err
 	}
 
-	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+	if cfg.IgnoreHostnameAnnotation && len(cfg.FQDNTemplate) == 0 {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
 
@@ -51,6 +52,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--label-filter does not specify a valid label selector")
 	}
 
+	if _, err := metav1.ParseToLabelSelector(cfg.AnnotationFilter); err != nil {
+		return errors.New("--annotation-filter does not specify a valid label selector")
+	}
+
 	if cfg.AnnotationPrefix == "" {
 		return errors.New("--annotation-prefix cannot be empty")
 	}
@@ -58,11 +63,22 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--annotation-prefix must end with '/'")
 	}
 
+	if cfg.KubeAPIQPS <= 0 {
+		return errors.New("--kube-api-qps must be greater than 0")
+	}
+	if cfg.KubeAPIBurst <= 0 {
+		return errors.New("--kube-api-burst must be greater than 0")
+	}
+
+	if cfg.CreatePTR && !cfg.IsPTRSupported() {
+		return errors.New("--create-ptr requires PTR in --managed-record-types")
+	}
+
 	return nil
 }
 
 func preValidateConfig(cfg *externaldns.Config) error {
-	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
+	if cfg.LogFormat != externaldns.LogFormatText && cfg.LogFormat != externaldns.LogFormatJSON {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
 	}
 	if len(cfg.Sources) == 0 {

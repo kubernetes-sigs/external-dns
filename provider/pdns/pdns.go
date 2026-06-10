@@ -322,7 +322,7 @@ func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 
 // hasAliasAnnotation checks if the endpoint has the alias annotation set to true
 func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
-	value, exists := ep.GetProviderSpecificProperty("alias")
+	value, exists := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 	return exists && value == "true"
 }
 
@@ -380,9 +380,6 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			ep := endpoints[i]
 			dnsname := provider.EnsureTrailingDot(ep.DNSName)
 			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
-				// The assumption here is that there will only ever be one target
-				// per (ep.DNSName, ep.RecordType) tuple, which holds true for
-				// external-dns v5.0.0-alpha onwards
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
@@ -394,7 +391,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 
 				// Check if we should use ALIAS instead of CNAME:
 				// 1. APEX records (dnsname == zone.Name) always use ALIAS
-				// 2. If annotation external-dns.alpha.kubernetes.io/alias=true is set
+				// 2. If annotation external-dns.kubernetes.io/alias=true is set
 				//    (can be set via --prefer-alias flag globally or per-resource annotation)
 				if ep.RecordType == endpoint.RecordTypeCNAME {
 					useAlias := dnsname == zone.Name || p.hasAliasAnnotation(ep)
@@ -573,6 +570,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 			return err
 		}
 	}
+
 	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }
