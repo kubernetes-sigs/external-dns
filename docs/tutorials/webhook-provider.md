@@ -42,6 +42,9 @@ The default recommended port for the provider endpoints is `8888`, and should li
 The total client timeout is the sum of both values and covers the full round-trip: writing the request body, waiting for the response,
 and reading the response body. Requests that exceed this deadline are cancelled and treated as a failure.
 
+**NOTE**: request and response bodies are capped at 32 MiB (roughly 60,000 records). Larger responses fail to decode,
+and the webhook server rejects larger requests with `413 Request Entity Too Large`.
+
 ### Exposed endpoints
 
 | Provider method | HTTP Method | Route    | Description                                                                                  |
@@ -77,6 +80,7 @@ ExternalDNS drains response bodies before closing them so that TCP connections c
 
 - **Always write a complete response body**, even for errors. An empty JSON object `{}` or a plain-text message is fine.
 - **Keep error response bodies small** (well under 1 MiB). ExternalDNS caps the drain at 1 MiB; bodies larger than that cause the connection to be discarded rather than pooled, increasing latency and resource usage on both sides.
+- **Keep success response bodies under 32 MiB.** ExternalDNS stops decoding beyond that limit and treats the request as failed.
 - **Do not stream indefinitely.** Finish writing the response and close it promptly.
 
 ### Timeouts and cancellation
