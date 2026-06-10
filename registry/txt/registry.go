@@ -389,6 +389,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
+		// Owner-filtered records were created with valid TXT names; the projected
+		// name cannot overflow on a re-generate, so the error is unreachable here.
 		txts, _ := im.generateTXTRecord(r)
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txts...)
 		// remove old version of record from cache
@@ -399,6 +401,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
+		// Owner-filtered records were created with valid TXT names; the projected
+		// name cannot overflow on a re-generate, so the error is unreachable here.
 		txts, _ := im.generateTXTRecord(r)
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txts...)
 		// add new version of record to cache
