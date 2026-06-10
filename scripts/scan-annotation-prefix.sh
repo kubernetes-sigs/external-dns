@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# migrate-annotation-prefix.sh — scan for resources that need annotation migration.
+# scan-annotation-prefix.sh — scan for resources that need annotation migration.
 #
 # WARNING
 #   This script is provided as a possible migration aid and is used at your own risk.
@@ -17,29 +17,29 @@
 #   prefix annotations causes silent DNS record deletion: the controller sees records it owns in the
 #   registry but no source claiming them, and removes them.
 #
-#   This script performs a read-only scan and prints the kubectl annotate commands needed to migrate
-#   resources before you switch the prefix in your external-dns deployment. No changes are made.
+#   This script performs a read-only scan and prints resources that still carry the old prefix
+#   alongside the new-prefix annotations that need to be added. No changes are made to the cluster.
 #
 # WHAT IT DOES (example)
 #   Given a Service with:
-#     external-dns.alpha.kubernetes.io/hostname: my-app.example.com
-#     external-dns.alpha.kubernetes.io/ttl:      300
-#     external-dns.alpha.kubernetes.io/target:   1.2.3.4
+#     external-dns.alpha.kubernetes.io/hostname=my-app.example.com
+#     external-dns.alpha.kubernetes.io/ttl=300
+#     external-dns.alpha.kubernetes.io/target=1.2.3.4
 #
-#   The script prints the command to add:
-#     external-dns.kubernetes.io/hostname: my-app.example.com
-#     external-dns.kubernetes.io/ttl:      300
-#     external-dns.kubernetes.io/target:   1.2.3.4
+#   The script reports the new-prefix annotations that need to be added:
+#     external-dns.kubernetes.io/hostname=my-app.example.com
+#     external-dns.kubernetes.io/ttl=300
+#     external-dns.kubernetes.io/target=1.2.3.4
 #
 #   The old annotations are left in place (harmless — external-dns with the new prefix ignores them).
 #   Unrelated annotations are never touched.
 #
 # USAGE
 #   Scan default resource types (services):
-#     ./migrate-annotation-prefix.sh
+#     ./scan-annotation-prefix.sh
 #
 #   Scan additional resource types:
-#     ./migrate-annotation-prefix.sh --resources=services,ingresses,nodes,pods
+#     ./scan-annotation-prefix.sh --resources=services,ingresses,nodes,pods
 #
 #   Flags:
 #     --resources=<list>       comma-separated list of Kubernetes resource types to scan
