@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # scan-annotation-prefix.sh — scan for resources that need annotation migration.
 #
-# WARNING
-#   This script is provided as a possible migration aid and is used at your own risk.
-#   It may not suit every operator's environment, workflow, or cluster configuration.
-#   Review the output carefully and test against a non-production cluster first.
+# NOTE
+#   This script is read-only — it makes no changes to the cluster.
+#   It scans resources and reports annotations that need to be migrated, making the work visible.
 #
 # BACKGROUND
 #   The default annotation prefix changed from:
@@ -26,10 +25,11 @@
 #     external-dns.alpha.kubernetes.io/ttl=300
 #     external-dns.alpha.kubernetes.io/target=1.2.3.4
 #
-#   The script reports the new-prefix annotations that need to be added:
-#     external-dns.kubernetes.io/hostname=my-app.example.com
-#     external-dns.kubernetes.io/ttl=300
-#     external-dns.kubernetes.io/target=1.2.3.4
+#   The script reports the resource and the new-prefix annotations that need to be added:
+#     services/my-service (namespace: default)
+#       external-dns.kubernetes.io/hostname=my-app.example.com
+#       external-dns.kubernetes.io/ttl=300
+#       external-dns.kubernetes.io/target=1.2.3.4
 #
 #   The old annotations are left in place (harmless — external-dns with the new prefix ignores them).
 #   Unrelated annotations are never touched.
@@ -74,8 +74,7 @@ for cmd in kubectl jq; do
   fi
 done
 
-echo "WARNING: This script is provided as a possible migration aid and is used at your own risk."
-echo "         It may not suit every operator's environment. Test on a non-production cluster first."
+echo "NOTE: This script is read-only — it makes no changes to the cluster."
 echo ""
 echo "Scanning for resources with prefix: $OLD_PREFIX"
 echo ""
