@@ -50,6 +50,14 @@ func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
 			RR:         "abc",
 			Value:      "heritage=external-dns;external-dns/owner=default",
 		},
+		{
+			RecordId:   "3",
+			DomainName: "container-service.top",
+			Type:       "TXT",
+			TTL:        300,
+			RR:         "a-abc",
+			Value:      "heritage=external-dns;external-dns/owner=default",
+		},
 	}
 	return &api
 }
@@ -152,6 +160,13 @@ func NewMockAlibabaCloudPrivateZoneAPI() *MockAlibabaCloudPrivateZoneAPI {
 			Rr:       "abc",
 			Value:    "heritage=external-dns;external-dns/owner=default",
 		},
+		{
+			RecordId: 3,
+			Type:     "TXT",
+			Ttl:      300,
+			Rr:       "a-abc",
+			Value:    "heritage=external-dns;external-dns/owner=default",
+		},
 	}
 	return &api
 }
@@ -232,28 +247,13 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 	}
 }
 
-func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records(t.Context())
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 2 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
-	}
-}
-
 func TestAlibabaCloudProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
 	endpoints, err := p.Records(t.Context())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 2 {
+		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, ep := range endpoints {
@@ -287,6 +287,12 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 				RecordTTL:  500,
 				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 			},
+			{
+				DNSName:    "a-abc.container-service.top",
+				RecordType: "TXT",
+				RecordTTL:  300,
+				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=default\""),
+			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
@@ -304,17 +310,26 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 3 {
+		if len(endpoints) != 4 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, ep := range endpoints {
 			t.Logf("Endpoint for %++v", *ep)
-		}
-	}
-	for _, ep := range endpoints {
-		if ep.DNSName == defaultTtlPlan.DNSName {
-			if ep.RecordTTL != defaultTtlPlan.RecordTTL {
+
+			if ep.DNSName == defaultTtlPlan.DNSName &&
+				ep.RecordType == "A" &&
+				ep.RecordTTL != defaultTtlPlan.RecordTTL {
 				t.Error("default ttl execute error")
+			}
+
+			if ep.DNSName == "abc.container-service.top" &&
+				ep.RecordType == "A" && len(ep.Targets) != 2 {
+				t.Errorf("Incorrect number of A records: %d", len(ep.Targets))
+			}
+
+			if ep.DNSName == "a-abc.container-service.top" &&
+				ep.RecordType == "TXT" && len(ep.Targets) > 1 {
+				t.Errorf("Multiple TXT records exist: %d", len(ep.Targets))
 			}
 		}
 	}
@@ -362,7 +377,7 @@ func TestAlibabaCloudProvider_ApplyChanges_HaveNoDefinedZoneDomain(t *testing.T)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 2 {
+		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, ep := range endpoints {
@@ -384,7 +399,7 @@ func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 2 {
+		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, ep := range endpoints {
@@ -411,6 +426,12 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 				RecordTTL:  500,
 				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 			},
+			{
+				DNSName:    "a-abc.container-service.top",
+				RecordType: "TXT",
+				RecordTTL:  300,
+				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=default\""),
+			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
@@ -428,11 +449,21 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 2 {
+		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, ep := range endpoints {
 			t.Logf("Endpoint for %++v", *ep)
+
+			if ep.DNSName == "abc.container-service.top" &&
+				ep.RecordType == "A" && len(ep.Targets) != 2 {
+				t.Errorf("Incorrect number of A records: %d", len(ep.Targets))
+			}
+
+			if ep.DNSName == "a-abc.container-service.top" &&
+				ep.RecordType == "TXT" && len(ep.Targets) > 1 {
+				t.Errorf("Multiple TXT records exist: %d", len(ep.Targets))
+			}
 		}
 	}
 }

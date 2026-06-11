@@ -642,13 +642,7 @@ func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Recor
 			if record.Type == "TXT" {
 				value = p.unescapeTXTRecordValue(value)
 			}
-			found := false
-			for _, target := range endpoint.Targets {
-				// Find matched record to delete
-				if value == target {
-					found = true
-				}
-			}
+			found := slices.Contains(endpoint.Targets, value)
 			if found {
 				if !p.equals(record, endpoint) {
 					// Update record
@@ -659,14 +653,16 @@ func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Recor
 			}
 		}
 		for _, target := range endpoint.Targets {
-			if endpoint.RecordType == "TXT" {
-				target = p.escapeTXTRecordValue(target)
-			}
 			found := false
 			for _, record := range records {
+				value := record.Value
+				if record.Type == "TXT" {
+					value = p.unescapeTXTRecordValue(value)
+				}
 				// Find matched record to delete
-				if record.Value == target {
+				if value == target {
 					found = true
+					break
 				}
 			}
 			if !found {
@@ -1051,16 +1047,17 @@ func (p *AlibabaCloudProvider) updatePrivateZoneRecords(zones map[string]*alibab
 			}
 		}
 		for _, target := range endpoint.Targets {
-			if endpoint.RecordType == "TXT" {
-				target = p.escapeTXTRecordValue(target)
-			}
 			found := false
 			for _, record := range zone.records {
 				if record.Rr != rr || record.Type != endpoint.RecordType {
 					continue
 				}
+				value := record.Value
+				if record.Type == "TXT" {
+					value = p.unescapeTXTRecordValue(value)
+				}
 				// Find matched record to delete
-				if record.Value == target {
+				if value == target {
 					found = true
 					break
 				}
