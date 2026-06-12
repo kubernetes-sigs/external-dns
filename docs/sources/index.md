@@ -32,6 +32,7 @@ Sources are responsible for:
 | **f5-transportserver**   | annotation       | all,single | true          | false  | false             | load balancers      | TransportServer.cis.f5.com                                                            |
 | **f5-virtualserver**     | annotation       | all,single | true          | false  | false             | load balancers      | VirtualServer.cis.f5.com                                                              |
 | **fake**                 |                  |            | true          | true   | false             | testing             | Fake Endpoints                                                                        |
+| **gateway**              | annotation,label | all,single | true          | false  | true              | gateway api         | Gateway.gateway.networking.k8s.io                                                     |
 | **gateway-grpcroute**    | annotation,label | all,single | true          | false  | true              | gateway api         | GRPCRoute.gateway.networking.k8s.io                                                   |
 | **gateway-httproute**    | annotation,label | all,single | true          | false  | true              | gateway api         | HTTPRoute.gateway.networking.k8s.io                                                   |
 | **gateway-tcproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TCPRoute.gateway.networking.k8s.io                                                    |
