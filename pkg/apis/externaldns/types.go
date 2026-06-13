@@ -133,12 +133,6 @@ type Config struct {
 	CloudflareRegionKey                           string
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
-	AkamaiServiceConsumerDomain                   string
-	AkamaiClientToken                             string
-	AkamaiClientSecret                            string
-	AkamaiAccessToken                             string
-	AkamaiEdgercPath                              string
-	AkamaiEdgercSection                           string
 	OCIConfigFile                                 string
 	OCICompartmentOCID                            string
 	OCIAuthInstancePrincipal                      bool
@@ -204,8 +198,6 @@ type Config struct {
 	NS1Endpoint                                   string
 	NS1IgnoreSSL                                  bool
 	NS1MinTTLSeconds                              int
-	TransIPAccountName                            string
-	TransIPPrivateKeyFile                         string
 	ManagedDNSRecordTypes                         []string
 	ExcludeDNSRecordTypes                         []string
 	GoDaddyAPIKey                                 string `secure:"yes"`
@@ -216,8 +208,6 @@ type Config struct {
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
-	PluralCluster                                 string
-	PluralProvider                                string
 	WebhookProviderURL                            string
 	WebhookProviderReadTimeout                    time.Duration
 	WebhookProviderWriteTimeout                   time.Duration
@@ -233,40 +223,34 @@ type Config struct {
 }
 
 var defaultConfig = &Config{
-	AkamaiAccessToken:           "",
-	AkamaiClientSecret:          "",
-	AkamaiClientToken:           "",
-	AkamaiEdgercPath:            "",
-	AkamaiEdgercSection:         "",
-	AkamaiServiceConsumerDomain: "",
-	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
-	AnnotationFilter:            "",
-	AnnotationPrefix:            annotations.DefaultAnnotationPrefix,
-	APIServerURL:                "",
-	AWSAPIRetries:               3,
-	AWSAssumeRole:               "",
-	AWSAssumeRoleExternalID:     "",
-	AWSBatchChangeInterval:      time.Second,
-	AWSBatchChangeSize:          1000,
-	AWSBatchChangeSizeBytes:     32000,
-	AWSBatchChangeSizeValues:    1000,
-	AWSDynamoDBRegion:           "",
-	AWSDynamoDBTable:            "external-dns",
-	AWSEvaluateTargetHealth:     true,
-	AWSPreferCNAME:              false,
-	AWSSDCreateTag:              map[string]string{},
-	AWSSDServiceCleanup:         false,
-	AWSZoneCacheDuration:        0 * time.Second,
-	AWSZoneMatchParent:          false,
-	AWSZoneTagFilter:            []string{},
-	AWSZoneType:                 "",
-	AzureConfigFile:             "/etc/kubernetes/azure.json",
-	AzureResourceGroup:          "",
-	AzureSubscriptionID:         "",
-	AzureZonesCacheDuration:     0 * time.Second,
-	AzureMaxRetriesCount:        3,
-	BatchChangeSize:             200,
-	BatchChangeInterval:         time.Second,
+	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
+	AnnotationFilter:         "",
+	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
+	APIServerURL:             "",
+	AWSAPIRetries:            3,
+	AWSAssumeRole:            "",
+	AWSAssumeRoleExternalID:  "",
+	AWSBatchChangeInterval:   time.Second,
+	AWSBatchChangeSize:       1000,
+	AWSBatchChangeSizeBytes:  32000,
+	AWSBatchChangeSizeValues: 1000,
+	AWSDynamoDBRegion:        "",
+	AWSDynamoDBTable:         "external-dns",
+	AWSEvaluateTargetHealth:  true,
+	AWSPreferCNAME:           false,
+	AWSSDCreateTag:           map[string]string{},
+	AWSSDServiceCleanup:      false,
+	AWSZoneCacheDuration:     0 * time.Second,
+	AWSZoneMatchParent:       false,
+	AWSZoneTagFilter:         []string{},
+	AWSZoneType:              "",
+	AzureConfigFile:          "/etc/kubernetes/azure.json",
+	AzureResourceGroup:       "",
+	AzureSubscriptionID:      "",
+	AzureZonesCacheDuration:  0 * time.Second,
+	AzureMaxRetriesCount:     3,
+	BatchChangeSize:          200,
+	BatchChangeInterval:      time.Second,
 	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
@@ -343,8 +327,6 @@ var defaultConfig = &Config{
 	PiholePassword:               "",
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
-	PluralCluster:                "",
-	PluralProvider:               "",
 	PodSourceDomain:              "",
 	Policy:                       "sync",
 	Provider:                     "",
@@ -385,8 +367,6 @@ var defaultConfig = &Config{
 	TLSClientCertKey:             "",
 	TraefikEnableLegacy:          false,
 	TraefikDisableNew:            false,
-	TransIPAccountName:           "",
-	TransIPPrivateKeyFile:        "",
 	TXTCacheInterval:             0,
 	TXTEncryptAESKey:             "",
 	TXTEncryptEnabled:            false,
@@ -407,7 +387,6 @@ var defaultConfig = &Config{
 }
 
 var ProviderNames = []string{
-	ProviderAkamai,
 	ProviderAlibabaCloud,
 	ProviderAWS,
 	ProviderAWSSD,
@@ -429,11 +408,9 @@ var ProviderNames = []string{
 	ProviderOVH,
 	ProviderPDNS,
 	ProviderPihole,
-	ProviderPlural,
 	ProviderRFC2136,
 	ProviderScaleway,
 	ProviderSkyDNS,
-	ProviderTransip,
 	ProviderWebhook,
 }
 
@@ -627,12 +604,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
 	b.BoolVar("coredns-strictly-owned", "When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false)", defaultConfig.CoreDNSStrictlyOwned, &cfg.CoreDNSStrictlyOwned)
-	b.StringVar("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiServiceConsumerDomain, &cfg.AkamaiServiceConsumerDomain)
-	b.StringVar("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientToken, &cfg.AkamaiClientToken)
-	b.StringVar("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientSecret, &cfg.AkamaiClientSecret)
-	b.StringVar("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiAccessToken, &cfg.AkamaiAccessToken)
-	b.StringVar("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)", defaultConfig.AkamaiEdgercPath, &cfg.AkamaiEdgercPath)
-	b.StringVar("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)", defaultConfig.AkamaiEdgercSection, &cfg.AkamaiEdgercSection)
 	b.StringVar("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci", defaultConfig.OCIConfigFile, &cfg.OCIConfigFile)
 	b.StringVar("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.", defaultConfig.OCICompartmentOCID, &cfg.OCICompartmentOCID)
 	b.EnumVar("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.", defaultConfig.OCIZoneScope, &cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")
@@ -686,18 +657,10 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("rfc2136-skip-tls-verify", "When using TLS with the RFC2136 provider, disable verification of any TLS certificates", defaultConfig.RFC2136SkipTLSVerify, &cfg.RFC2136SkipTLSVerify)
 	b.EnumVar("rfc2136-load-balancing-strategy", "When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled)", defaultConfig.RFC2136LoadBalancingStrategy, &cfg.RFC2136LoadBalancingStrategy, "random", "round-robin", "disabled")
 
-	// Flags related to TransIP provider
-	b.StringVar("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)", defaultConfig.TransIPAccountName, &cfg.TransIPAccountName)
-	b.StringVar("transip-keyfile", "When using the TransIP provider, specify the path to the private key file (required when --provider=transip)", defaultConfig.TransIPPrivateKeyFile, &cfg.TransIPPrivateKeyFile)
-
 	// Flags related to Pihole provider
 	b.StringVar("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)", defaultConfig.PiholeServer, &cfg.PiholeServer)
 	b.StringVar("pihole-password", "When using the Pihole provider, the password to the server if it is protected", defaultConfig.PiholePassword, &cfg.PiholePassword)
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
-
-	// Flags related to the Plural provider
-	b.StringVar("plural-cluster", "When using the plural provider, specify the cluster name you're running with", defaultConfig.PluralCluster, &cfg.PluralCluster)
-	b.StringVar("plural-provider", "When using the plural provider, specify the provider name you're running with", defaultConfig.PluralProvider, &cfg.PluralProvider)
 
 	// Flags related to policies
 	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
