@@ -274,17 +274,11 @@ type mockEndpointInfo struct {
 	refObjects []*ObjectReference
 }
 
-func (m *mockEndpointInfo) GetDNSName() string    { return m.dnsName }
-func (m *mockEndpointInfo) GetRecordType() string { return m.recordType }
-func (m *mockEndpointInfo) GetRecordTTL() int64   { return m.recordTTL }
-func (m *mockEndpointInfo) GetTargets() []string  { return m.targets }
-func (m *mockEndpointInfo) GetOwner() string      { return m.owner }
-func (m *mockEndpointInfo) RefObject() *ObjectReference {
-	if len(m.refObjects) == 0 {
-		return nil
-	}
-	return m.refObjects[0]
-}
+func (m *mockEndpointInfo) GetDNSName() string             { return m.dnsName }
+func (m *mockEndpointInfo) GetRecordType() string          { return m.recordType }
+func (m *mockEndpointInfo) GetRecordTTL() int64            { return m.recordTTL }
+func (m *mockEndpointInfo) GetTargets() []string           { return m.targets }
+func (m *mockEndpointInfo) GetOwner() string               { return m.owner }
 func (m *mockEndpointInfo) RefObjects() []*ObjectReference { return m.refObjects }
 
 func TestNewEventFromEndpoint(t *testing.T) {

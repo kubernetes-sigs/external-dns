@@ -94,7 +94,6 @@ type (
 		GetRecordTTL() int64
 		GetTargets() []string
 		GetOwner() string
-		RefObject() *ObjectReference
 		RefObjects() []*ObjectReference
 	}
 )

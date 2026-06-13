@@ -218,9 +218,10 @@ func AssertEndpointsHaveRefObject(
 	t.Helper()
 	assert.Len(t, endpoints, expectedCount)
 	for _, ep := range endpoints {
-		assert.NotNil(t, ep.RefObject())
-		assert.NotEmpty(t, ep.RefObject().UID())
-		assert.Equal(t, expectedSource, ep.RefObject().Source())
+		refs := ep.RefObjects()
+		assert.NotEmpty(t, refs)
+		assert.NotEmpty(t, refs[0].UID())
+		assert.Equal(t, expectedSource, refs[0].Source())
 	}
 }
 

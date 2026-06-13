@@ -484,10 +484,11 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "foo", ep[0].RefObject().Name())
-				require.Equal(t, "123", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.NotEmpty(t, refs)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "foo", refs[0].Name())
+				require.Equal(t, "123", string(refs[0].UID()))
 			},
 		},
 		{
@@ -507,7 +508,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				refs := ep[0].RefObjects()
 				require.Len(t, refs, 2)
 				// First endpoint is the surviving one; its ref is first
-				require.Equal(t, "uid-first", string(ep[0].RefObject().UID()))
+				require.Equal(t, "uid-first", string(refs[0].UID()))
 				uids := []string{string(refs[0].UID()), string(refs[1].UID())}
 				require.ElementsMatch(t, []string{"uid-first", "uid-second"}, uids)
 			},
@@ -529,7 +530,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				refs := ep[0].RefObjects()
 				require.Len(t, refs, 2)
 				// Service arrived first — still primary
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, types.Service, refs[0].Source())
 				sources := []string{refs[0].Source(), refs[1].Source()}
 				require.ElementsMatch(t, []string{types.Service, types.Ingress}, sources)
 			},
@@ -551,7 +552,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				refs := ep[0].RefObjects()
 				require.Len(t, refs, 2)
 				// Ingress arrived first — still primary
-				require.Equal(t, types.Ingress, ep[0].RefObject().Source())
+				require.Equal(t, types.Ingress, refs[0].Source())
 				sources := []string{refs[0].Source(), refs[1].Source()}
 				require.ElementsMatch(t, []string{types.Ingress, types.Service}, sources)
 			},
@@ -583,14 +584,16 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				}
 
 				require.NotNil(t, svcEndpoint)
-				require.NotNil(t, svcEndpoint.RefObject())
-				require.Equal(t, types.Service, svcEndpoint.RefObject().Source())
-				require.Equal(t, "my-service", svcEndpoint.RefObject().Name())
+				svcRefs := svcEndpoint.RefObjects()
+				require.NotEmpty(t, svcRefs)
+				require.Equal(t, types.Service, svcRefs[0].Source())
+				require.Equal(t, "my-service", svcRefs[0].Name())
 
 				require.NotNil(t, ingEndpoint)
-				require.NotNil(t, ingEndpoint.RefObject())
-				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source())
-				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name())
+				ingRefs := ingEndpoint.RefObjects()
+				require.NotEmpty(t, ingRefs)
+				require.Equal(t, types.Ingress, ingRefs[0].Source())
+				require.Equal(t, "my-ingress", ingRefs[0].Name())
 			},
 		},
 		{
@@ -613,7 +616,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				refs := ep[0].RefObjects()
 				require.Len(t, refs, 3)
 				// Service arrived first — still primary
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
+				require.Equal(t, types.Service, refs[0].Source())
 				uids := []string{string(refs[0].UID()), string(refs[1].UID()), string(refs[2].UID())}
 				require.ElementsMatch(t, []string{"123", "345", "456"}, uids)
 			},
@@ -631,9 +634,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				// Duplicate has no refs — surviving endpoint keeps its single ref
-				require.Len(t, ep[0].RefObjects(), 1)
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "123", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 1)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "123", string(refs[0].UID()))
 			},
 		},
 		{
@@ -649,9 +653,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
 				// First endpoint had no ref; the duplicate's ref is merged in
-				require.Len(t, ep[0].RefObjects(), 1)
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "345", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 1)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "345", string(refs[0].UID()))
 			},
 		},
 	}

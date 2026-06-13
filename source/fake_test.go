@@ -65,8 +65,9 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				ip := net.ParseIP(ep.Targets[0])
 				assert.NotNil(t, ip, "A record target %q is not a valid IP", ep.Targets[0])
 				assert.NotNil(t, ip.To4(), "A record target %q must be IPv4", ep.Targets[0])
-				require.NotNil(t, ep.RefObject())
-				assert.Equal(t, "Pod", ep.RefObject().Kind())
+				refs := ep.RefObjects()
+				require.NotEmpty(t, refs)
+				assert.Equal(t, "Pod", refs[0].Kind())
 			},
 		},
 		{

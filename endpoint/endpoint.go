@@ -466,22 +466,13 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 		return e
 	}
 	key := obj.Key()
-	for _, existing := range e.refObjects {
-		if existing.Key() == key {
-			return e
-		}
+	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+		return r.Key() == key
+	}) {
+		return e
 	}
 	e.refObjects = append(e.refObjects, obj)
 	return e
-}
-
-// RefObject returns the first Kubernetes object reference associated with this endpoint,
-// or nil if none have been set. Use RefObjects for the full set.
-func (e *Endpoint) RefObject() *events.ObjectReference {
-	if len(e.refObjects) == 0 {
-		return nil
-	}
-	return e.refObjects[0]
 }
 
 // RefObjects returns all Kubernetes object references associated with this endpoint.

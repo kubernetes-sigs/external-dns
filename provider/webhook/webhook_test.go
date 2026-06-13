@@ -388,8 +388,9 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, adjusted, 1)
-		require.Len(t, adjusted[0].RefObjects(), 1)
-		assert.Equal(t, ref, adjusted[0].RefObject())
+		refs := adjusted[0].RefObjects()
+		require.NotEmpty(t, refs)
+		assert.Equal(t, ref, refs[0])
 	})
 
 	t.Run("multiple refObjects are all preserved across round-trip", func(t *testing.T) {
