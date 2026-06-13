@@ -40,9 +40,11 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var (
@@ -263,6 +265,9 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 				return nil, err
 			}
 			log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Name, len(proxyEndpoints))
+
+			endpoint.AttachRefObject(proxyEndpoints, events.NewObjectReference(unstructuredObj, types.GlooProxy))
+
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}

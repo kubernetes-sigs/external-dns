@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
@@ -2176,6 +2177,52 @@ func (c fakeVirtualServiceConfig) Config() *networkingv1.VirtualService {
 		},
 		Spec: *vs.DeepCopy(),
 	}
+}
+
+func TestProcessEndpoint_IstioVirtualService_RefObjectExist(t *testing.T) {
+	const namespace = "default"
+
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	svc := fakeIngressGatewayService{
+		namespace: namespace,
+		name:      "ingressgateway",
+		ips:       []string{"8.8.8.8"},
+	}.Service()
+	_, err := fakeKubernetesClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	gwCfg := fakeGatewayConfig{
+		name:      "fake-gateway",
+		namespace: namespace,
+		dnsnames:  [][]string{{"example.org"}},
+	}.Config()
+	_, err = fakeIstioClient.NetworkingV1().Gateways(gwCfg.Namespace).Create(t.Context(), gwCfg, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	vsCfg := fakeVirtualServiceConfig{
+		name:      "fake-virtualservice",
+		namespace: namespace,
+		gateways:  []string{"fake-gateway"},
+		dnsnames:  []string{"example.org"},
+	}.Config()
+	vsCfg.UID = types.UID("istio-virtualservice-uid")
+	_, err = fakeIstioClient.NetworkingV1().VirtualServices(vsCfg.Namespace).Create(t.Context(), vsCfg, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioVirtualServiceSource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.IstioVirtualService), 1)
 }
 
 func TestVirtualServiceSourceGetGateway(t *testing.T) {

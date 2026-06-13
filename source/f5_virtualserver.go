@@ -36,9 +36,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var f5VirtualServerGVR = schema.GroupVersionResource{
@@ -200,6 +202,8 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				virtualServer.Namespace, virtualServer.Name)
 		}
+
+		endpoint.AttachRefObject(vsEndpoints, events.NewObjectReference(virtualServer, types.F5VirtualServer))
 
 		endpoints = append(endpoints, vsEndpoints...)
 	}

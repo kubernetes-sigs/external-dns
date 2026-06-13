@@ -35,11 +35,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
@@ -296,6 +298,8 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.TraefikProxy, ingressRouteTCP) {
 			continue
 		}
+
+		endpoint.AttachRefObject(ingressEndpoints, events.NewObjectReference(ingressRouteTCP, types.TraefikProxy))
 
 		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
@@ -974,6 +978,12 @@ func extractEndpoints[T interface {
 		if len(ingressEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from Host %s", name)
 			continue
+		}
+
+		// All traefik route kinds map to the traefik-proxy source. The concrete
+		// CRD types satisfy client.Object; the assertion guards the generic T.
+		if obj, ok := any(item).(client.Object); ok {
+			endpoint.AttachRefObject(ingressEndpoints, events.NewObjectReference(obj, types.TraefikProxy))
 		}
 
 		log.Debugf("Endpoints generated from %s: %v", name, ingressEndpoints)

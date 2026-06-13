@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
@@ -867,4 +868,43 @@ func TestResourceLabelIsSet(t *testing.T) {
 			t.Errorf("Failed to set resource label on ep %v", ep)
 		}
 	}
+}
+
+func TestProcessEndpoint_SkipperRouteGroup_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	rg := &routeGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace1",
+			Name:      "rg1",
+			UID:       "skipper-rg-uid-1234",
+		},
+		Spec: routeGroupSpec{
+			Hosts: []string{"rg1.k8s.example"},
+		},
+		Status: routeGroupStatus{
+			LoadBalancer: routeGroupLoadBalancerStatus{
+				RouteGroup: []routeGroupLoadBalancer{
+					{
+						Hostname: "lb.example.org",
+					},
+				},
+			},
+		},
+	}
+
+	source := &routeGroupSource{
+		cli: &fakeRouteGroupClient{
+			rg: &routeGroupList{
+				Items: []*routeGroup{rg},
+			},
+		},
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	if err != nil {
+		t.Fatalf("Got unexpected error: %v", err)
+	}
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.SkipperRouteGroup), 1)
 }

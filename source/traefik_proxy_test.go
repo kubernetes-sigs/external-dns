@@ -38,6 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that traefikSource is a Source.
@@ -1956,4 +1957,60 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestProcessEndpoint_TraefikProxy_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	ingressRoute := IngressRoute{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: ingressRouteGVR.GroupVersion().String(),
+			Kind:       "IngressRoute",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ingressroute-annotation",
+			Namespace: defaultTraefikNamespace,
+			UID:       "traefik-ir-uid-1234",
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "a.example.com",
+				"external-dns.kubernetes.io/target":   "target.domain.tld",
+				"kubernetes.io/ingress.class":         "traefik",
+			},
+		},
+	}
+
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	scheme.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	scheme.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	scheme.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
+
+	ir := unstructured.Unstructured{}
+	ingressRouteAsJSON, err := json.Marshal(ingressRoute)
+	require.NoError(t, err)
+	require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+
+	_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{
+			Namespace:        defaultTraefikNamespace,
+			AnnotationFilter: "kubernetes.io/ingress.class=traefik",
+		})
+	require.NoError(t, err)
+
+	count := &unstructured.UnstructuredList{}
+	for len(count.Items) < 1 {
+		count, _ = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.TraefikProxy), 1)
 }

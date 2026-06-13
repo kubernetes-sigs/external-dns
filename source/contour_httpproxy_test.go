@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -1056,6 +1057,38 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	}
 
 	return irsrc, nil
+}
+
+func TestProcessEndpoint_ContourHTTPProxy_RefObjectExist(t *testing.T) {
+	fakeDynamicClient, s := newContourDynamicKubernetesClient()
+
+	httpProxy := (fakeHTTPProxy{
+		name:      "foo-httpproxy",
+		namespace: "default",
+		host:      "example.com",
+		loadBalancer: fakeLoadBalancerService{
+			ips: []string{"8.8.8.8"},
+		},
+	}).HTTPProxy()
+	httpProxy.UID = "contour-httpproxy-uid"
+
+	unstructuredHTTPProxy, err := convertHTTPProxyToUnstructured(httpProxy, s)
+	require.NoError(t, err)
+
+	_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(t.Context(), unstructuredHTTPProxy, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewContourHTTPProxySource(
+		t.Context(),
+		fakeDynamicClient,
+		&Config{Namespace: "default"},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.ContourHTTPProxy), 1)
 }
 
 type fakeHTTPProxy struct {

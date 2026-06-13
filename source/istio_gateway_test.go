@@ -41,6 +41,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -2017,4 +2018,39 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
+}
+
+func TestProcessEndpoint_IstioGateway_RefObjectExist(t *testing.T) {
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	svc := fakeIngressGatewayService{
+		ips:       []string{"8.8.8.8"},
+		namespace: "default",
+		name:      "gateway-service",
+	}.Service()
+	_, err := fakeKubernetesClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	gwCfg := fakeGatewayConfig{
+		namespace: "default",
+		name:      "test-gateway",
+		dnsnames:  [][]string{{"foo.bar"}},
+	}.Config()
+	gwCfg.UID = types.UID("istio-gateway-uid")
+	_, err = fakeIstioClient.NetworkingV1().Gateways(gwCfg.Namespace).Create(t.Context(), gwCfg, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.IstioGateway), 1)
 }
