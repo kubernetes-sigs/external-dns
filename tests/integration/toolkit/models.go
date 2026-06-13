@@ -33,13 +33,50 @@ type TestScenarios struct {
 	Scenarios []Scenario `json:"scenarios"`
 }
 
+// ExpectedRefObject describes an expected Kubernetes object reference on an endpoint.
+// Key is matched against ObjectReference.Key() (UID when set, else "kind/namespace/name").
+type ExpectedRefObject struct {
+	Key string `json:"key"`
+}
+
+// ExpectedEndpoint mirrors the JSON-serialisable fields of endpoint.Endpoint and
+// adds an optional RefObjects list for asserting event-source attribution.
+type ExpectedEndpoint struct {
+	DNSName          string                    `json:"dnsName,omitempty"`
+	Targets          endpoint.Targets          `json:"targets,omitempty"`
+	RecordType       string                    `json:"recordType,omitempty"`
+	SetIdentifier    string                    `json:"setIdentifier,omitempty"`
+	RecordTTL        endpoint.TTL              `json:"recordTTL,omitempty"`
+	Labels           endpoint.Labels           `json:"labels,omitempty"`
+	ProviderSpecific endpoint.ProviderSpecific `json:"providerSpecific,omitempty"`
+	// RefObjects is optional. When non-empty, the test asserts that the actual
+	// endpoint has exactly this many ref objects and that each one matches the
+	// corresponding ExpectedRefObject (partial match: only non-empty fields checked).
+	RefObjects []ExpectedRefObject `json:"refObjects,omitempty"`
+}
+
+// ToEndpoint converts an ExpectedEndpoint to a plain *endpoint.Endpoint for use
+// with the standard field validation helpers.
+func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
+	ep := &endpoint.Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          e.Targets,
+		RecordType:       e.RecordType,
+		SetIdentifier:    e.SetIdentifier,
+		RecordTTL:        e.RecordTTL,
+		Labels:           e.Labels,
+		ProviderSpecific: e.ProviderSpecific,
+	}
+	return ep
+}
+
 // Scenario represents a single test scenario.
 type Scenario struct {
 	Name        string                     `json:"name"`
 	Description string                     `json:"description"`
 	Config      ScenarioConfig             `json:"config"`
 	Resources   []ResourceWithDependencies `json:"resources"`
-	Expected    []*endpoint.Endpoint       `json:"expected"`
+	Expected    []*ExpectedEndpoint        `json:"expected"`
 }
 
 // ResourceWithDependencies wraps a K8s resource with optional dependencies.

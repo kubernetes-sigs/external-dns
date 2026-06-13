@@ -23,7 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -48,7 +47,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	result := make([]*endpoint.Endpoint, 0, len(endpoints))
-	collected := make(sets.Set[string], len(endpoints))
+	byIdentifier := make(map[string]*endpoint.Endpoint, len(endpoints))
 
 	for _, ep := range endpoints {
 		if ep == nil {
@@ -68,13 +67,16 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
 
-		if collected.Has(identifier) {
+		if existing, ok := byIdentifier[identifier]; ok {
+			for _, ref := range ep.RefObjects() {
+				existing.WithRefObject(ref)
+			}
 			log.Debugf("Removing duplicate endpoint %s", ep)
 			deduplicatedEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}
 
-		collected.Insert(identifier)
+		byIdentifier[identifier] = ep
 		result = append(result, ep)
 	}
 

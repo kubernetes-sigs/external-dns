@@ -356,44 +356,64 @@ func TestAdjustEndpoints(t *testing.T) {
 	}}, adjustedEndpoints)
 }
 
-func TestAdjustEndpoints_PreservesRefObject(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-			w.Write([]byte(`{}`))
-			return
-		}
-		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
-
-		var endpoints []*endpoint.Endpoint
-		defer r.Body.Close()
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = json.Unmarshal(b, &endpoints)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		j, _ := json.Marshal(endpoints)
-		w.Write(j)
-	}))
-	defer svr.Close()
-
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
-	require.NoError(t, err)
-
-	ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "", "")
-	endpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
+	echoSvr := func(t *testing.T) *httptest.Server {
+		t.Helper()
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+				w.Write([]byte(`{}`))
+				return
+			}
+			var eps []*endpoint.Endpoint
+			defer r.Body.Close()
+			b, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.NoError(t, json.Unmarshal(b, &eps))
+			j, _ := json.Marshal(eps)
+			w.Write(j)
+		}))
 	}
 
-	adjusted, err := p.AdjustEndpoints(endpoints)
-	require.NoError(t, err)
-	require.Len(t, adjusted, 1)
-	require.NotNil(t, adjusted[0].RefObject(), "refObject should be preserved across webhook round-trip")
-	assert.Equal(t, ref, adjusted[0].RefObject())
+	t.Run("single refObject is preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "uid-1", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+		require.Len(t, adjusted[0].RefObjects(), 1)
+		assert.Equal(t, ref, adjusted[0].RefObject())
+	})
+
+	t.Run("multiple refObjects are all preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+		ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").
+				WithRefObject(ref1).
+				WithRefObject(ref2),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+
+		refs := adjusted[0].RefObjects()
+		require.Len(t, refs, 2)
+		uids := []string{string(refs[0].UID()), string(refs[1].UID())}
+		assert.ElementsMatch(t, []string{"uid-1", "uid-2"}, uids)
+	})
 }
 
 func TestAdjustendpointsWithError(t *testing.T) {

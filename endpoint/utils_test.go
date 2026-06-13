@@ -444,14 +444,14 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			},
 		},
 		{
-			name: "two endpoints merged and only single refObject preserved",
+			name: "two endpoints merged — both distinct refObjects collected",
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
 						}, "service")),
-					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
+					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
 						}, "service")),
@@ -459,10 +459,27 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
 				assert.Len(t, ep, 1)
-				assert.Equal(t, "service", ep[0].RefObject().Source())
-				assert.Equal(t, "foo", ep[0].RefObject().Name())
+				refs := ep[0].RefObjects()
+				assert.Len(t, refs, 2)
+				uids := []string{string(refs[0].UID()), string(refs[1].UID())}
+				assert.ElementsMatch(t, []string{"123", "345"}, uids)
+			},
+		},
+		{
+			name: "two endpoints merged with same ref — deduplication keeps one entry",
+			input: func() []*Endpoint {
+				ref := events.NewObjectReference(&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+				}, "service")
+				return []*Endpoint{
+					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
+					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(ref),
+				}
+			},
+			expected: func(t *testing.T, ep []*Endpoint) {
+				assert.Len(t, ep, 1)
+				assert.Len(t, ep[0].RefObjects(), 1)
 				assert.Equal(t, "123", string(ep[0].RefObject().UID()))
-				assert.NotEqual(t, "345", string(ep[0].RefObject().UID()))
 			},
 		},
 		{
