@@ -161,43 +161,6 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 	assert.Contains(t, item.Reason, RecordReady)
 }
 
-func TestController_ProcessNextWorkItem(t *testing.T) {
-	t.Run("dryRun sets DryRunAll on create options", func(t *testing.T) {
-		var capturedDryRun []string
-		kubeClient := fake.NewClientset()
-		kubeClient.PrependReactor("create", "events", func(action clienttesting.Action) (bool, runtime.Object, error) {
-			capturedDryRun = action.(clienttesting.CreateActionImpl).CreateOptions.DryRun
-			return true, nil, nil
-		})
-		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{dryRun: true})
-		require.NoError(t, err)
-		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
-		})
-		ctrl.processNextWorkItem(t.Context())
-		assert.Equal(t, []string{metav1.DryRunAll}, capturedDryRun)
-	})
-
-	t.Run("drops event after max retries", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
-		kubeClient := fake.NewClientset()
-		kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
-			return true, nil, fmt.Errorf("persistent error")
-		})
-		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
-		require.NoError(t, err)
-
-		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
-		})
-		// First maxTriesPerEvent calls requeue; the final call exhausts retries and drops.
-		for range maxRetriesPerEvent + 1 {
-			ctrl.processNextWorkItem(t.Context())
-		}
-		logtest.TestHelperLogContains("dropping event", hook, t)
-	})
-}
-
 func TestController_Add(t *testing.T) {
 	svcRef := NewObjectReference(&v1.Service{
 		TypeMeta:   metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
@@ -232,6 +195,43 @@ func TestController_Add(t *testing.T) {
 		require.NoError(t, err)
 		ctrl.Add(NewEventFromEndpoint(ep(svcRef, crdRef), ActionCreate, RecordReady))
 		assert.Equal(t, 2, ctrl.queue.Len())
+	})
+}
+
+func TestController_ProcessNextWorkItem(t *testing.T) {
+	t.Run("dryRun sets DryRunAll on create options", func(t *testing.T) {
+		var capturedDryRun []string
+		kubeClient := fake.NewClientset()
+		kubeClient.PrependReactor("create", "events", func(action clienttesting.Action) (bool, runtime.Object, error) {
+			capturedDryRun = action.(clienttesting.CreateActionImpl).CreateOptions.DryRun
+			return true, nil, nil
+		})
+		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{dryRun: true})
+		require.NoError(t, err)
+		ctrl.queue.Add(&eventsv1.Event{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+		})
+		ctrl.processNextWorkItem(t.Context())
+		assert.Equal(t, []string{metav1.DryRunAll}, capturedDryRun)
+	})
+
+	t.Run("drops event after max retries", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
+		kubeClient := fake.NewClientset()
+		kubeClient.PrependReactor("create", "events", func(_ clienttesting.Action) (bool, runtime.Object, error) {
+			return true, nil, fmt.Errorf("persistent error")
+		})
+		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
+		require.NoError(t, err)
+
+		ctrl.queue.Add(&eventsv1.Event{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+		})
+		// First maxTriesPerEvent calls requeue; the final call exhausts retries and drops.
+		for range maxRetriesPerEvent + 1 {
+			ctrl.processNextWorkItem(t.Context())
+		}
+		logtest.TestHelperLogContains("dropping event", hook, t)
 	})
 }
 
