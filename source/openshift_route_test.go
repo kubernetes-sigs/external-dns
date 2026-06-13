@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type OCPRouteSuite struct {
@@ -521,6 +522,51 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
+}
+
+func TestProcessEndpoint_OpenShiftRoute_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	ocpRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "route-with-target",
+			UID:       "openshift-route-uid",
+		},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{
+				{
+					Host:                    "my-domain.com",
+					RouterCanonicalHostname: "apps.my-domain.com",
+					Conditions: []routev1.RouteIngressCondition{
+						{
+							Type:   routev1.RouteAdmitted,
+							Status: corev1.ConditionTrue,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset()
+	_, err := fakeClient.RouteV1().Routes(ocpRoute.Namespace).Create(t.Context(), ocpRoute, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewOcpRouteSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.OpenShiftRoute, 1)
 }
 
 func TestOcpRouteSource_InformerTransform(t *testing.T) {

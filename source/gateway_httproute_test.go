@@ -36,6 +36,7 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -1761,4 +1762,68 @@ func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
 		withRemovedManagedFields(),
 		withRemovedStatusConditions(),
 	)
+}
+
+func TestProcessEndpoint_GatewayHTTPRoute_RefObjectExist(t *testing.T) {
+	fromAll := v1.NamespacesFromAll
+	allowAllNamespaces := &v1.AllowedRoutes{
+		Namespaces: &v1.RouteNamespaces{From: &fromAll},
+	}
+	objectMeta := func(namespace, name string) metav1.ObjectMeta {
+		return metav1.ObjectMeta{Name: name, Namespace: namespace}
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	gw := &v1.Gateway{
+		ObjectMeta: objectMeta("gateway-namespace", "gateway-name"),
+		Spec: v1.GatewaySpec{
+			Listeners: []v1.Listener{{
+				Protocol:      v1.HTTPProtocolType,
+				AllowedRoutes: allowAllNamespaces,
+			}},
+		},
+		Status: gatewayStatus("1.2.3.4"),
+	}
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "route-namespace",
+			UID:       "httproute-uid",
+		},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"test.example.internal"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("gateway-namespace", "gateway-name"),
+				},
+			},
+		},
+		Status: httpRouteStatus(gwParentRef("gateway-namespace", "gateway-name")),
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	kubeClient := kubefake.NewClientset()
+	for _, ns := range []string{"gateway-namespace", "route-namespace"} {
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: objectMeta("", ns)}, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.GatewayHttpRoute), 1)
 }

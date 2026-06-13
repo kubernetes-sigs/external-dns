@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -642,6 +643,59 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
+}
+
+func TestProcessEndpoint_F5VirtualServer_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	virtualServer := f5.VirtualServer{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+			Kind:       "VirtualServer",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-vs",
+			Namespace: defaultF5VirtualServerNamespace,
+			UID:       "f5-vs-uid-1234",
+		},
+		Spec: f5.VirtualServerSpec{
+			Host:                 "www.example.com",
+			VirtualServerAddress: "192.168.1.100",
+		},
+		Status: f5.CustomResourceStatus{
+			VSAddress: "192.168.1.200",
+			Status:    "OK",
+		},
+	}
+
+	fakeKubernetesClient := fakeKube.NewClientset()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(f5VirtualServerGVR.GroupVersion(), &f5.VirtualServer{}, &f5.VirtualServerList{})
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
+
+	vsUnstructured := unstructured.Unstructured{}
+	vsJSON, err := json.Marshal(virtualServer)
+	require.NoError(t, err)
+	require.NoError(t, vsUnstructured.UnmarshalJSON(vsJSON))
+
+	_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &vsUnstructured, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{
+			Namespace: defaultF5VirtualServerNamespace,
+		})
+	require.NoError(t, err)
+
+	count := &unstructured.UnstructuredList{}
+	for len(count.Items) < 1 {
+		count, _ = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).List(t.Context(), metav1.ListOptions{})
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.F5VirtualServer), 1)
 }
 
 func TestF5VirtualServerSource_InformerTransform(t *testing.T) {

@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that kongTCPIngressSource is a Source.
@@ -426,6 +427,69 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
+}
+
+func TestProcessEndpoint_KongTCPIngress_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	tcpProxy := TCPIngress{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+			Kind:       "TCPIngress",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tcp-ingress-annotation",
+			Namespace: defaultKongNamespace,
+			UID:       "kong-tcpingress-uid",
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "a.example.com",
+				"kubernetes.io/ingress.class":         "kong",
+			},
+		},
+		Spec: tcpIngressSpec{
+			Rules: []tcpIngressRule{
+				{Port: 30000},
+			},
+		},
+		Status: tcpIngressStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					{Hostname: "a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+				},
+			},
+		},
+	}
+
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(kongGroupdVersionResource.GroupVersion(), &TCPIngress{}, &TCPIngressList{})
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
+
+	tcpi := unstructured.Unstructured{}
+	tcpIngressAsJSON, err := json.Marshal(tcpProxy)
+	assert.NoError(t, err)
+	assert.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
+
+	_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &tcpi, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{
+			Namespace:        defaultKongNamespace,
+			AnnotationFilter: "kubernetes.io/ingress.class=kong",
+		})
+	assert.NoError(t, err)
+	assert.NotNil(t, source)
+
+	count := &unstructured.UnstructuredList{}
+	for len(count.Items) < 1 {
+		count, _ = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).List(t.Context(), metav1.ListOptions{})
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	assert.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.KongTCPIngress, 1)
 }
 
 func TestKongTCPIngressSource_InformerTransform(t *testing.T) {

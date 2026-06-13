@@ -29,7 +29,9 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -395,9 +397,62 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			assert.Equal(t, tc.expected, endpoints)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
+}
+
+func TestProcessEndpoint_F5TransportServer_RefObjectExist(t *testing.T) {
+	t.Parallel()
+
+	transportServer := f5.TransportServer{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: f5TransportServerGVR.GroupVersion().String(),
+			Kind:       "TransportServer",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-ts",
+			Namespace: defaultF5TransportServerNamespace,
+			UID:       "f5-ts-uid-1234",
+		},
+		Spec: f5.TransportServerSpec{
+			Host:                 "www.example.com",
+			VirtualServerAddress: "192.168.1.100",
+		},
+		Status: f5.CustomResourceStatus{
+			VSAddress: "192.168.1.200",
+			Status:    "OK",
+		},
+	}
+
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(f5TransportServerGVR.GroupVersion(), &f5.TransportServer{}, &f5.TransportServerList{})
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
+
+	tsUnstructured := unstructured.Unstructured{}
+	tsJSON, err := json.Marshal(transportServer)
+	require.NoError(t, err)
+	require.NoError(t, tsUnstructured.UnmarshalJSON(tsJSON))
+
+	_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &tsUnstructured, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{
+			Namespace: defaultF5TransportServerNamespace,
+		})
+	require.NoError(t, err)
+
+	count := &unstructured.UnstructuredList{}
+	for len(count.Items) < 1 {
+		count, _ = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).List(t.Context(), metav1.ListOptions{})
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.F5TransportServer), 1)
 }
 
 func TestF5TransportServerSource_InformerTransform(t *testing.T) {

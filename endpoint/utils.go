@@ -96,6 +96,10 @@ func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
 // MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)
 // by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
 // This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.
+//
+// When several endpoints merge into one, only the first endpoint's metadata (TTL, ProviderSpecific,
+// RefObject, ...) is retained; the merged record keeps a single RefObject and therefore references
+// only the first contributing source object. "First" follows the input slice order.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints

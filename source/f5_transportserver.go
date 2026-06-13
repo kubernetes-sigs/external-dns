@@ -38,8 +38,10 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -196,6 +198,8 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 			log.Warnf("F5 TransportServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				transportServer.Namespace, transportServer.Name)
 		}
+
+		endpoint.AttachRefObject(tsEndpoints, events.NewObjectReference(transportServer, types.F5TransportServer))
 
 		endpoints = append(endpoints, tsEndpoints...)
 	}

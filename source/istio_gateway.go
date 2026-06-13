@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -173,6 +174,8 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
 			continue
 		}
+
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(gateway, types.IstioGateway))
 
 		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
