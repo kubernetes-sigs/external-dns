@@ -1591,9 +1591,9 @@ func TestEndpoint_WithRefObject(t *testing.T) {
 			wantRefs: []*events.ObjectReference{ref1},
 		},
 		{
-			name:    "same ref added twice is deduplicated",
-			add:     []*events.ObjectReference{ref1, ref1},
-			wantLen: 1,
+			name:     "same ref added twice is deduplicated",
+			add:      []*events.ObjectReference{ref1, ref1},
+			wantLen:  1,
 			wantRefs: []*events.ObjectReference{ref1},
 		},
 		{
