@@ -519,8 +519,11 @@ func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
 }
 
 func guessRecordType(target string) string {
-	if net.ParseIP(target) != nil {
-		return endpoint.RecordTypeA
+	if ip := net.ParseIP(target); ip != nil {
+		if ip.To4() != nil {
+			return endpoint.RecordTypeA
+		}
+		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
 }

@@ -196,6 +196,55 @@ func TestAServiceTranslation(t *testing.T) {
 	}
 }
 
+func TestAAAAServiceTranslation(t *testing.T) {
+	expectedTarget := "2001:db8::1"
+	expectedDNSName := "example.com"
+	expectedRecordType := endpoint.RecordTypeAAAA
+
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/com/example": {Host: expectedTarget},
+		},
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	endpoints, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	if len(endpoints) != 1 {
+		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
+	}
+	if endpoints[0].DNSName != expectedDNSName {
+		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
+	}
+	if endpoints[0].Targets[0] != expectedTarget {
+		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget)
+	}
+	if endpoints[0].RecordType != expectedRecordType {
+		t.Errorf("got unexpected DNS record type: %s != %s", endpoints[0].RecordType, expectedRecordType)
+	}
+}
+
+func TestGuessRecordType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		{"1.2.3.4", endpoint.RecordTypeA},
+		{"2001:db8::1", endpoint.RecordTypeAAAA},
+		{"::1", endpoint.RecordTypeAAAA},
+		{"::ffff:1.2.3.4", endpoint.RecordTypeA}, // IPv4-mapped IPv6 has a valid To4()
+		{"other.example.com", endpoint.RecordTypeCNAME},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			assert.Equal(t, tt.expected, guessRecordType(tt.target))
+		})
+	}
+}
+
 func TestCNAMEServiceTranslation(t *testing.T) {
 	expectedTarget := "example.net"
 	expectedDNSName := "example.com"
