@@ -761,14 +761,15 @@ func testGatewayEndpoints(t *testing.T) {
 					name:     "fake1",
 					labels:   map[string]string{"app": "istio-gateway"},
 					dnsnames: [][]string{{"example.org"}},
+					uid:      "istio-gateway-uid",
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.IstioGateway))),
 			},
 		},
 		{
@@ -1988,6 +1989,7 @@ type fakeGatewayConfig struct {
 	labels      map[string]string
 	dnsnames    [][]string
 	selector    map[string]string
+	uid         string
 }
 
 func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
@@ -2001,6 +2003,7 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 			Namespace:   ns,
 			Annotations: c.annotations,
 			Labels:      c.labels,
+			UID:         types.UID(c.uid),
 		},
 		Spec: istionetworking.Gateway{
 			Servers:  nil,
@@ -2018,39 +2021,4 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
-}
-
-func TestProcessEndpoint_IstioGateway_RefObjectExist(t *testing.T) {
-	fakeKubernetesClient := fake.NewClientset()
-	fakeIstioClient := istiofake.NewSimpleClientset()
-
-	svc := fakeIngressGatewayService{
-		ips:       []string{"8.8.8.8"},
-		namespace: "default",
-		name:      "gateway-service",
-	}.Service()
-	_, err := fakeKubernetesClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	gwCfg := fakeGatewayConfig{
-		namespace: "default",
-		name:      "test-gateway",
-		dnsnames:  [][]string{{"foo.bar"}},
-	}.Config()
-	gwCfg.UID = types.UID("istio-gateway-uid")
-	_, err = fakeIstioClient.NetworkingV1().Gateways(gwCfg.Namespace).Create(t.Context(), gwCfg, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	src, err := NewIstioGatewaySource(
-		t.Context(),
-		fakeKubernetesClient,
-		fakeIstioClient,
-		&Config{},
-	)
-	require.NoError(t, err)
-
-	endpoints, err := src.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.IstioGateway), 1)
 }

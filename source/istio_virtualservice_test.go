@@ -869,11 +869,11 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.IstioVirtualService))),
 			},
 		},
 		{
@@ -2044,7 +2044,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				gateways = append(gateways, gwItem.Config())
 			}
 			for _, vsItem := range ti.vsConfigs {
-				virtualservices = append(virtualservices, vsItem.Config())
+				vs := vsItem.Config()
+				vs.UID = types.UID("istio-virtualservice-uid")
+				virtualservices = append(virtualservices, vs)
 			}
 
 			fakeKubernetesClient := fake.NewClientset()
@@ -2177,52 +2179,6 @@ func (c fakeVirtualServiceConfig) Config() *networkingv1.VirtualService {
 		},
 		Spec: *vs.DeepCopy(),
 	}
-}
-
-func TestProcessEndpoint_IstioVirtualService_RefObjectExist(t *testing.T) {
-	const namespace = "default"
-
-	fakeKubernetesClient := fake.NewClientset()
-	fakeIstioClient := istiofake.NewSimpleClientset()
-
-	svc := fakeIngressGatewayService{
-		namespace: namespace,
-		name:      "ingressgateway",
-		ips:       []string{"8.8.8.8"},
-	}.Service()
-	_, err := fakeKubernetesClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	gwCfg := fakeGatewayConfig{
-		name:      "fake-gateway",
-		namespace: namespace,
-		dnsnames:  [][]string{{"example.org"}},
-	}.Config()
-	_, err = fakeIstioClient.NetworkingV1().Gateways(gwCfg.Namespace).Create(t.Context(), gwCfg, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	vsCfg := fakeVirtualServiceConfig{
-		name:      "fake-virtualservice",
-		namespace: namespace,
-		gateways:  []string{"fake-gateway"},
-		dnsnames:  []string{"example.org"},
-	}.Config()
-	vsCfg.UID = types.UID("istio-virtualservice-uid")
-	_, err = fakeIstioClient.NetworkingV1().VirtualServices(vsCfg.Namespace).Create(t.Context(), vsCfg, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	src, err := NewIstioVirtualServiceSource(
-		t.Context(),
-		fakeKubernetesClient,
-		fakeIstioClient,
-		&Config{},
-	)
-	require.NoError(t, err)
-
-	endpoints, err := src.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.IstioVirtualService), 1)
 }
 
 func TestVirtualServiceSourceGetGateway(t *testing.T) {

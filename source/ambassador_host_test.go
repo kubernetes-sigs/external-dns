@@ -78,6 +78,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			host: ambassador.Host{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
+					UID:  "ambassador-host-uid",
 					Annotations: map[string]string{
 						ambHostAnnotation: hostAnnotation,
 					},
@@ -99,11 +100,11 @@ func TestAmbassadorHostSource(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
-				},
+				}).WithRefObject(testutils.RefSource(types.AmbassadorHost)),
 			},
 		}, {
 			title:         "Service with load balancer hostname",
@@ -662,64 +663,6 @@ func createAmbassadorHost(host *ambassador.Host) (*unstructured.Unstructured, er
 	err := uc.scheme.Convert(host, obj, nil)
 
 	return obj, err
-}
-
-func TestProcessEndpoint_AmbassadorHost_RefObjectExist(t *testing.T) {
-	t.Parallel()
-
-	hostAnnotation := fmt.Sprintf("%s/%s", defaultAmbassadorNamespace, defaultAmbassadorServiceName)
-
-	fakeKubernetesClient := fakeKube.NewSimpleClientset()
-	ambassadorScheme := runtime.NewScheme()
-	ambassador.AddToScheme(ambassadorScheme)
-	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
-
-	namespace := v1.NamespaceDefault
-
-	service := v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultAmbassadorServiceName,
-		},
-		Status: v1.ServiceStatus{
-			LoadBalancer: v1.LoadBalancerStatus{
-				Ingress: []v1.LoadBalancerIngress{{
-					IP: "1.1.1.1",
-				}},
-			},
-		},
-	}
-	_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &service, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	host, err := createAmbassadorHost(&ambassador.Host{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "basic-host",
-			UID:  "ambassador-host-uid",
-			Annotations: map[string]string{
-				ambHostAnnotation: hostAnnotation,
-			},
-		},
-		Spec: &ambassador.HostSpec{
-			Hostname: "www.example.org",
-		},
-	})
-	assert.NoError(t, err)
-
-	_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(t.Context(), host, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-		&Config{
-			Namespace:   namespace,
-			LabelFilter: labels.Everything(),
-		})
-	assert.NoError(t, err)
-	assert.NotNil(t, source)
-
-	endpoints, err := source.Endpoints(t.Context())
-	assert.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.AmbassadorHost, 1)
 }
 
 // TestParseAmbLoadBalancerService tests our parsing of Ambassador service info.
