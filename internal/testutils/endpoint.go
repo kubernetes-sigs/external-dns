@@ -278,13 +278,15 @@ func validateEndpoint(ep, expected *endpoint.Endpoint) []string {
 	}
 	// Opt-in: only checked when the expected endpoint declares a RefObject (see RefSource).
 	if expected.RefObject() != nil {
-		switch {
-		case ep.RefObject() == nil:
+		if ep.RefObject() == nil {
 			errs = append(errs, fmt.Sprintf("%s: RefObject expected, got nil", prefix))
-		case ep.RefObject().Source() != expected.RefObject().Source():
-			errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expected.RefObject().Source(), ep.RefObject().Source()))
-		case ep.RefObject().UID() == "":
-			errs = append(errs, fmt.Sprintf("%s: RefObject.UID is empty", prefix))
+		} else {
+			if ep.RefObject().Source() != expected.RefObject().Source() {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expected.RefObject().Source(), ep.RefObject().Source()))
+			}
+			if ep.RefObject().UID() == "" {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.UID is empty", prefix))
+			}
 		}
 	}
 
