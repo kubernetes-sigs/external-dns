@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -404,6 +405,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				{
 					name:      "fake1",
 					namespace: namespace,
+					uid:       "contour-httpproxy-uid",
 					annotations: map[string]string{
 						"contour.heptio.com/ingress.class": "contour",
 					},
@@ -411,11 +413,11 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.ContourHTTPProxy))),
 			},
 		},
 		{
@@ -1059,41 +1061,10 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	return irsrc, nil
 }
 
-func TestProcessEndpoint_ContourHTTPProxy_RefObjectExist(t *testing.T) {
-	fakeDynamicClient, s := newContourDynamicKubernetesClient()
-
-	httpProxy := (fakeHTTPProxy{
-		name:      "foo-httpproxy",
-		namespace: "default",
-		host:      "example.com",
-		loadBalancer: fakeLoadBalancerService{
-			ips: []string{"8.8.8.8"},
-		},
-	}).HTTPProxy()
-	httpProxy.UID = "contour-httpproxy-uid"
-
-	unstructuredHTTPProxy, err := convertHTTPProxyToUnstructured(httpProxy, s)
-	require.NoError(t, err)
-
-	_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(t.Context(), unstructuredHTTPProxy, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	src, err := NewContourHTTPProxySource(
-		t.Context(),
-		fakeDynamicClient,
-		&Config{Namespace: "default"},
-	)
-	require.NoError(t, err)
-
-	endpoints, err := src.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(sourcetypes.ContourHTTPProxy), 1)
-}
-
 type fakeHTTPProxy struct {
 	namespace   string
 	name        string
+	uid         string
 	annotations map[string]string
 
 	host         string
@@ -1132,6 +1103,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ir.namespace,
 			Name:        ir.name,
+			UID:         k8stypes.UID(ir.uid),
 			Annotations: ir.annotations,
 		},
 		Spec: spec,

@@ -117,6 +117,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-target",
+					UID:       "openshift-route-uid",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -134,13 +135,13 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(types.OpenShiftRoute)),
 			},
 		},
 		{
@@ -522,51 +523,6 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
-}
-
-func TestProcessEndpoint_OpenShiftRoute_RefObjectExist(t *testing.T) {
-	t.Parallel()
-
-	ocpRoute := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "route-with-target",
-			UID:       "openshift-route-uid",
-		},
-		Status: routev1.RouteStatus{
-			Ingress: []routev1.RouteIngress{
-				{
-					Host:                    "my-domain.com",
-					RouterCanonicalHostname: "apps.my-domain.com",
-					Conditions: []routev1.RouteIngressCondition{
-						{
-							Type:   routev1.RouteAdmitted,
-							Status: corev1.ConditionTrue,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	fakeClient := fake.NewClientset()
-	_, err := fakeClient.RouteV1().Routes(ocpRoute.Namespace).Create(t.Context(), ocpRoute, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	source, err := NewOcpRouteSource(
-		t.Context(),
-		fakeClient,
-		&Config{
-			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
-			LabelFilter:    labels.Everything(),
-		},
-	)
-	require.NoError(t, err)
-
-	endpoints, err := source.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.OpenShiftRoute, 1)
 }
 
 func TestOcpRouteSource_InformerTransform(t *testing.T) {
