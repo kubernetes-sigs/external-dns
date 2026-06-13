@@ -171,6 +171,17 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 		assert.Equal(t, "CNAME", result[0].Type)
 		assert.Equal(t, "foo.bar.", result[0].Content)
 	}
+
+	// NS targets need a trailing dot, like CNAME
+	ep.RecordType = "NS"
+	ep.Targets = []string{"ns0.example.com", "ns1.example.com."}
+	result = dnsEntriesForEndpoint(ep, zone.Name)
+	if assert.Len(t, result, 2) {
+		assert.Equal(t, "NS", result[0].Type)
+		assert.Equal(t, "ns0.example.com.", result[0].Content)
+		assert.Equal(t, "NS", result[1].Type)
+		assert.Equal(t, "ns1.example.com.", result[1].Content)
+	}
 }
 
 func TestZoneNameForDNSName(t *testing.T) {
