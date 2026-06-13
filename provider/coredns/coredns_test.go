@@ -215,9 +215,8 @@ func TestGuessRecordType(t *testing.T) {
 	}
 }
 
-// It asserts both record types survive an apply + read round-trip with the
-// correct type (A stays A, AAAA stays AAAA), and that a second reconcile is a
-// no-op.
+// It asserts both record types survive an apply + read round-trip with the correct
+// type (A stays A, AAAA stays AAAA), and that a second reconcile is a no-op.
 func TestCoreDNSRoundTrip(t *testing.T) {
 	client := fakeETCDClient{
 		map[string]Service{},
