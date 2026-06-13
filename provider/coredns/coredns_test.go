@@ -97,7 +97,7 @@ func (m *MockEtcdKV) Delete(ctx context.Context, key string, opts ...etcdcv3.OpO
 }
 
 func TestETCDConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		input map[string]string
 		want  *etcdcv3.Config
@@ -243,6 +243,57 @@ func TestGuessRecordType(t *testing.T) {
 			assert.Equal(t, tt.expected, guessRecordType(tt.target))
 		})
 	}
+}
+
+// It asserts both record types survive an apply + read round-trip with the
+// correct type (A stays A, AAAA stays AAAA), and that a second reconcile is a
+// no-op.
+func TestCoreDNSRoundTrip(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	desired := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.org", endpoint.RecordTypeA, "172.18.0.2"),
+		endpoint.NewEndpoint("aa.example.org", endpoint.RecordTypeAAAA, "2001:db8::1"),
+	}
+
+	// Write the records (controller's ApplyChanges with the source's desired state).
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{Create: desired})
+	require.NoError(t, err)
+
+	// Read them back from etcd.
+	current, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, current, 2)
+
+	byName := map[string]*endpoint.Endpoint{}
+	for _, ep := range current {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "a.example.org")
+	assert.Equal(t, endpoint.RecordTypeA, byName["a.example.org"].RecordType)
+	assert.Equal(t, "172.18.0.2", byName["a.example.org"].Targets[0])
+
+	require.Contains(t, byName, "aa.example.org")
+	assert.Equal(t, endpoint.RecordTypeAAAA, byName["aa.example.org"].RecordType, "IPv6 target must read back as AAAA, not A")
+	assert.Equal(t, "2001:db8::1", byName["aa.example.org"].Targets[0])
+
+	// Second reconcile: desired vs read-back state must produce no changes.
+	managed := []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}
+	changes := (&plan.Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managed,
+	}).Calculate().Changes
+	assert.Empty(t, changes.Create, "no records to create on second sync")
+	assert.Empty(t, changes.UpdateNew, "no records to update on second sync (no churn)")
+	assert.Empty(t, changes.Delete, "no records to delete on second sync")
 }
 
 func TestCNAMEServiceTranslation(t *testing.T) {
