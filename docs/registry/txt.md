@@ -116,8 +116,10 @@ leave an unmanageable record in the zone, since later reconciles could not ident
 as managed.
 
 Each skip is logged at error level and increments the
-`external_dns_registry_skipped_records_label_too_long_per_sync` gauge, labeled by
-`record_type` and apex `domain`.
+`external_dns_registry_skipped_records_label_overflow_per_sync` gauge, labeled by
+`record_type`, apex `domain`, and `overflow_in` (`txt_prefix` when the record-type
+prefix or `--txt-prefix`/`--txt-suffix` push the projected TXT name over the limit,
+or `source` when the source DNS name itself is already too long).
 
 To resolve, shorten the source hostname's first label or trim `--txt-prefix`/`--txt-suffix`.
 The inline record-type prefix alone consumes 2–6 characters; the longest is `cname-`.

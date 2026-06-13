@@ -293,6 +293,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 
 	if label, ok := OverflowingLabel(dnsName); ok {
 		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		if SourceLabelOverflowReporter != nil {
+			SourceLabelOverflowReporter(recordType, parentDomain(dnsName))
+		}
 		return nil
 	}
 
@@ -540,6 +543,25 @@ func OverflowingLabel(name string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// SourceLabelOverflowReporter is invoked from NewEndpoint when a source-side
+// DNS label exceeds RFC 1035's 63-char limit. Set by registry/txt at init so
+// the registry's per-sync overflow gauge captures the source case too;
+// endpoint cannot import registry/txt directly.
+var SourceLabelOverflowReporter func(recordType, domain string)
+
+// parentDomain returns the parent domain of dnsName (without the first label),
+// or dnsName unchanged when it is an apex/two-label name.
+func parentDomain(dnsName string) string {
+	if dnsName == "" {
+		return ""
+	}
+	parts := strings.SplitN(dnsName, ".", 2)
+	if len(parts) < 2 || !strings.Contains(parts[1], ".") {
+		return dnsName
+	}
+	return parts[1]
 }
 
 // RemoveDuplicates returns a slice holding the unique endpoints.

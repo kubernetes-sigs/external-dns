@@ -23,23 +23,46 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-// registrySkippedLabelTooLongPerSync tracks records dropped because the projected
-// TXT name has a label exceeding the 63-char RFC 1035 limit.
-var registrySkippedLabelTooLongPerSync = metrics.NewGaugedVectorOpts(
+// overflow_in label values.
+const (
+	overflowInSource    = "source"
+	overflowInTXTPrefix = "txt_prefix"
+)
+
+// labelOverflowPerSync tracks records dropped because a DNS label exceeded RFC
+// 1035's 63-char limit. The "domain" label uses the naked/apex domain (e.g.,
+// "example.com") rather than full FQDNs to prevent cardinality explosion.
+// "overflow_in" distinguishes whether the overflow was caught at NewEndpoint
+// (source name) or in the projected TXT registry name after a record-type/user
+// prefix is applied.
+var labelOverflowPerSync = metrics.NewGaugedVectorOpts(
 	prometheus.GaugeOpts{
 		Subsystem: "registry",
-		Name:      "skipped_records_label_too_long_per_sync",
-		Help:      "Number of records skipped because the projected TXT registry name has a DNS label exceeding RFC 1035's 63-char limit, for each record type and domain (vector).",
+		Name:      "skipped_records_label_overflow_per_sync",
+		Help:      "Number of records skipped per sync because a DNS label exceeds RFC 1035's 63-char limit, by record type, apex domain, and whether the overflow is in the source name or the projected TXT registry name.",
 	},
-	[]string{"record_type", "domain"},
+	[]string{"record_type", "domain", "overflow_in"},
 )
 
 func init() {
-	metrics.RegisterMetric.MustRegister(registrySkippedLabelTooLongPerSync)
+	metrics.RegisterMetric.MustRegister(labelOverflowPerSync)
+	// Wire the endpoint package's source-side reporter so NewEndpoint's nil
+	// path increments the same gauge. Without this, source overflows would go
+	// untracked. endpoint cannot import this package directly (registry/txt
+	// depends on endpoint), so a func var is set here at init time.
+	endpoint.SourceLabelOverflowReporter = func(recordType, domain string) {
+		labelOverflowPerSync.AddWithLabels(1.0, recordType, domain, overflowInSource)
+	}
 }
 
-// recordSkippedLabelTooLong increments the per-sync gauge for a record dropped
-// because its projected TXT name overflows RFC 1035's 63-char label limit.
-func recordSkippedLabelTooLong(skipped *endpoint.Endpoint) {
-	registrySkippedLabelTooLongPerSync.AddWithLabels(1.0, skipped.RecordType, skipped.GetNakedDomain())
+// recordTXTPrefixOverflow increments the per-sync gauge for an owned record
+// dropped because the projected TXT name overflows RFC 1035's 63-char limit.
+func recordTXTPrefixOverflow(skipped *endpoint.Endpoint) {
+	labelOverflowPerSync.AddWithLabels(1.0, skipped.RecordType, skipped.GetNakedDomain(), overflowInTXTPrefix)
+}
+
+// resetLabelOverflow clears the per-sync gauge. Called at the start of each
+// reconciliation loop, before sources or the registry can emit.
+func resetLabelOverflow() {
+	labelOverflowPerSync.Gauge.Reset()
 }

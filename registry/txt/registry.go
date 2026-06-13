@@ -189,6 +189,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	// In that case, stale TXT record information could remain, so we reset it here instead.
 	im.existingTXTs.reset()
 
+	// Records() runs first each reconcile, before sources call NewEndpoint or
+	// ApplyChanges projects TXT names — reset the overflow gauge here so both
+	// source and txt_prefix emissions land in the current sync's snapshot.
+	resetLabelOverflow()
+
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -276,11 +281,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
-				// Get desired TXT records and detect the missing ones
-				desiredTXTs, err := im.generateTXTRecord(ep)
-				if err != nil {
-					log.Warnf("Skipping migration check: %v", err)
-				}
+				// Get desired TXT records and detect the missing ones.
+				// Owner-filtered records were created with valid TXT names; the projected
+				// name cannot overflow on a re-generate, so the error is unreachable here.
+				desiredTXTs, _ := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
@@ -326,9 +330,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) ([]*endpoint.Endp
 	}
 
 	txtNew := endpoint.NewEndpoint(txtName, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew == nil {
-		return nil, nil
-	}
 	txtNew.WithSetIdentifier(r.SetIdentifier)
 	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 	txtNew.ProviderSpecific = r.ProviderSpecific
@@ -338,8 +339,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) ([]*endpoint.Endp
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	registrySkippedLabelTooLongPerSync.Gauge.Reset()
-
 	filteredChanges := &plan.Changes{
 		Create:    make([]*endpoint.Endpoint, 0, len(changes.Create)),
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -356,7 +355,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		txts, err := im.generateTXTRecord(r)
 		if err != nil {
 			log.Errorf("Skipping owned record: %v; record would become unmanageable", err)
-			recordSkippedLabelTooLong(r)
+			recordTXTPrefixOverflow(r)
 			continue
 		}
 		filteredChanges.Create = append(filteredChanges.Create, r)

@@ -1153,41 +1153,41 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 // hit the same guard.
 func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 	tests := []struct {
-		name      string
-		txtPrefix string
-		newParent func(dnsName string) *endpoint.Endpoint
-		labelLen  int
-		txtPrefx  string // the prefix the mapper prepends, used to assert the TXT name is not in the change set
+		name            string
+		txtPrefix       string
+		newParent       func(dnsName string) *endpoint.Endpoint
+		labelLen        int
+		projectedPrefix string // the prefix the mapper prepends, used to assert the TXT name is not in the change set
 	}{
 		{
 			name: "CNAME",
 			newParent: func(dn string) *endpoint.Endpoint {
 				return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com")
 			},
-			labelLen: 60, // cname- (6) + 60 = 66 -> overflow
-			txtPrefx: "cname-",
+			labelLen:        60, // cname- (6) + 60 = 66 -> overflow
+			projectedPrefix: "cname-",
 		},
 		{
 			name: "AAAA",
 			newParent: func(dn string) *endpoint.Endpoint {
 				return endpoint.NewEndpoint(dn, endpoint.RecordTypeAAAA, "fe80::1")
 			},
-			labelLen: 60, // aaaa- (5) + 60 = 65 -> overflow
-			txtPrefx: "aaaa-",
+			labelLen:        60, // aaaa- (5) + 60 = 65 -> overflow
+			projectedPrefix: "aaaa-",
 		},
 		{
-			name:      "A",
-			newParent: func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "1.2.3.4") },
-			labelLen:  62, // a- (2) + 62 = 64 -> overflow
-			txtPrefx:  "a-",
+			name:            "A",
+			newParent:       func(dn string) *endpoint.Endpoint { return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "1.2.3.4") },
+			labelLen:        62, // a- (2) + 62 = 64 -> overflow
+			projectedPrefix: "a-",
 		},
 		{
 			name: "AliasA",
 			newParent: func(dn string) *endpoint.Endpoint {
 				return endpoint.NewEndpoint(dn, endpoint.RecordTypeA, "lb.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
 			},
-			labelLen: 60, // alias-A is encoded as cname- (6) + 60 = 66 -> overflow
-			txtPrefx: "cname-",
+			labelLen:        60, // alias-A is encoded as cname- (6) + 60 = 66 -> overflow
+			projectedPrefix: "cname-",
 		},
 		{
 			name:      "WithTxtPrefix",
@@ -1195,13 +1195,13 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 			newParent: func(dn string) *endpoint.Endpoint {
 				return endpoint.NewEndpoint(dn, endpoint.RecordTypeCNAME, "lb.example.com")
 			},
-			labelLen: 56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
-			txtPrefx: "ext-cname-",
+			labelLen:        56, // ext- (4) + cname- (6) + 56 = 66 -> overflow
+			projectedPrefix: "ext-cname-",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			registrySkippedLabelTooLongPerSync.Gauge.Reset()
+			labelOverflowPerSync.Gauge.Reset()
 
 			ctx := t.Context()
 			p := inmemory.NewInMemoryProvider()
@@ -1226,7 +1226,7 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 			}))
 
 			require.NotNil(t, got)
-			overflowTXT := tc.txtPrefx + overflow.DNSName
+			overflowTXT := tc.projectedPrefix + overflow.DNSName
 			for _, ep := range got.Create {
 				assert.NotEqual(t, overflow.DNSName, ep.DNSName, "owned record without ownership TXT must be dropped")
 				assert.NotEqual(t, overflowTXT, ep.DNSName, "TXT companion for dropped owned record must not be created")
@@ -1238,7 +1238,7 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 				if ep.DNSName == fits.DNSName && ep.RecordType == fits.RecordType {
 					fitsOwned = true
 				}
-				if ep.DNSName == tc.txtPrefx+fits.DNSName && ep.RecordType == endpoint.RecordTypeTXT {
+				if ep.DNSName == tc.projectedPrefix+fits.DNSName && ep.RecordType == endpoint.RecordTypeTXT {
 					fitsTXT = true
 				}
 			}
@@ -1247,8 +1247,8 @@ func TestTXTRegistryApplyChangesSkipsRecordWithoutOwnership(t *testing.T) {
 
 			logtest.TestHelperLogContainsWithLogLevel("exceeding RFC 1035's 63-char limit", log.ErrorLevel, hook, t)
 			testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1.0,
-				registrySkippedLabelTooLongPerSync.Gauge,
-				map[string]string{"record_type": overflow.RecordType, "domain": overflow.GetNakedDomain()})
+				labelOverflowPerSync.Gauge,
+				map[string]string{"record_type": overflow.RecordType, "domain": overflow.GetNakedDomain(), "overflow_in": overflowInTXTPrefix})
 		})
 	}
 }
