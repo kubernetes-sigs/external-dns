@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net"
 	"os"
 	"slices"
 	"strings"
@@ -519,10 +518,7 @@ func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
 }
 
 func guessRecordType(target string) string {
-	if net.ParseIP(target) != nil {
-		return endpoint.RecordTypeA
-	}
-	return endpoint.RecordTypeCNAME
+	return endpoint.SuitableType(target)
 }
 
 func reverse(slice []string) {
