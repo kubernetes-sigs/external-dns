@@ -52,6 +52,7 @@ var (
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: defaultGlooNamespace,
+			UID:       "gloo-proxy-uid",
 		},
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
@@ -554,14 +555,14 @@ func TestGlooSource(t *testing.T) {
 	assert.Len(t, endpoints, 11)
 
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
-		{
+		(&endpoint.Endpoint{
 			DNSName:          "a.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
-		},
+		}).WithRefObject(testutils.RefSource(types.GlooProxy)),
 		{
 			DNSName:          "b.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
@@ -789,76 +790,6 @@ func TestTransformerInGlooSource(t *testing.T) {
 		assert.NotContains(t, obj.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
 		assert.Contains(t, obj.GetAnnotations(), "user-annotation")
 	})
-}
-
-func TestProcessEndpoint_GlooProxy_RefObjectExist(t *testing.T) {
-	t.Parallel()
-
-	refProxy := proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ref-proxy",
-			Namespace: defaultGlooNamespace,
-			UID:       "gloo-proxy-uid",
-		},
-		Spec: proxySpec{
-			Listeners: []proxySpecListener{
-				{
-					HTTPListener: proxySpecHTTPListener{
-						VirtualHosts: []proxyVirtualHost{
-							{
-								Domains: []string{"a.test"},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	refProxySvc := corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      refProxy.Name,
-			Namespace: refProxy.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeLoadBalancer,
-		},
-		Status: corev1.ServiceStatus{
-			LoadBalancer: corev1.LoadBalancerStatus{
-				Ingress: []corev1.LoadBalancerIngress{
-					{IP: "203.0.113.1"},
-				},
-			},
-		},
-	}
-
-	fakeKubernetesClient := fakeKube.NewSimpleClientset()
-	fakeDynamicClient := newGlooDynamicClient()
-
-	refProxyUnstructured := unstructured.Unstructured{}
-	refProxyAsJSON, err := json.Marshal(refProxy)
-	assert.NoError(t, err)
-	assert.NoError(t, refProxyUnstructured.UnmarshalJSON(refProxyAsJSON))
-
-	_, err = fakeKubernetesClient.CoreV1().Services(refProxySvc.GetNamespace()).Create(t.Context(), &refProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &refProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-		GlooNamespaces: []string{defaultGlooNamespace},
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, source)
-
-	endpoints, err := source.Endpoints(t.Context())
-	assert.NoError(t, err)
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.GlooProxy, 1)
 }
 
 func newGlooDynamicClient(objs ...runtime.Object) *fakeDynamic.FakeDynamicClient {

@@ -352,27 +352,35 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
 						Items: []*routeGroup{
-							createTestRouteGroup(
-								"namespace1",
-								"rg1",
-								nil,
-								[]string{"rg1.k8s.example"},
-								[]routeGroupLoadBalancer{
-									{
-										Hostname: "lb.example.org",
+							{
+								ObjectMeta: metav1.ObjectMeta{
+									Namespace: "namespace1",
+									Name:      "rg1",
+									UID:       "skipper-rg-uid-1234",
+								},
+								Spec: routeGroupSpec{
+									Hosts: []string{"rg1.k8s.example"},
+								},
+								Status: routeGroupStatus{
+									LoadBalancer: routeGroupLoadBalancerStatus{
+										RouteGroup: []routeGroupLoadBalancer{
+											{
+												Hostname: "lb.example.org",
+											},
+										},
 									},
 								},
-							),
+							},
 						},
 					},
 				},
 			},
 			want: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "rg1.k8s.example",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets:    endpoint.Targets([]string{"lb.example.org"}),
-				},
+				}).WithRefObject(testutils.RefSource(string(types.SkipperRouteGroup))),
 			},
 		},
 		{
@@ -868,43 +876,4 @@ func TestResourceLabelIsSet(t *testing.T) {
 			t.Errorf("Failed to set resource label on ep %v", ep)
 		}
 	}
-}
-
-func TestProcessEndpoint_SkipperRouteGroup_RefObjectExist(t *testing.T) {
-	t.Parallel()
-
-	rg := &routeGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "namespace1",
-			Name:      "rg1",
-			UID:       "skipper-rg-uid-1234",
-		},
-		Spec: routeGroupSpec{
-			Hosts: []string{"rg1.k8s.example"},
-		},
-		Status: routeGroupStatus{
-			LoadBalancer: routeGroupLoadBalancerStatus{
-				RouteGroup: []routeGroupLoadBalancer{
-					{
-						Hostname: "lb.example.org",
-					},
-				},
-			},
-		},
-	}
-
-	source := &routeGroupSource{
-		cli: &fakeRouteGroupClient{
-			rg: &routeGroupList{
-				Items: []*routeGroup{rg},
-			},
-		},
-	}
-
-	endpoints, err := source.Endpoints(t.Context())
-	if err != nil {
-		t.Fatalf("Got unexpected error: %v", err)
-	}
-
-	testutils.AssertEndpointsHaveRefObject(t, endpoints, string(types.SkipperRouteGroup), 1)
 }
