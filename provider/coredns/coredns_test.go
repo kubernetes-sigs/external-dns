@@ -204,7 +204,7 @@ func TestGuessRecordType(t *testing.T) {
 		{"1.2.3.4", endpoint.RecordTypeA},
 		{"2001:db8::1", endpoint.RecordTypeAAAA},
 		{"::1", endpoint.RecordTypeAAAA},
-		{"::ffff:1.2.3.4", endpoint.RecordTypeA}, // IPv4-mapped IPv6 has a valid To4()
+		{"::ffff:1.2.3.4", endpoint.RecordTypeAAAA}, // IPv4-mapped IPv6 is typed AAAA, matching endpoint.SuitableType
 		{"other.example.com", endpoint.RecordTypeCNAME},
 	}
 
