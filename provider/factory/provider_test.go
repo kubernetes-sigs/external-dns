@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func TestSelectProvider(t *testing.T) {
@@ -138,6 +139,20 @@ func TestSelectProvider(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSelectCachedProviderPatchOnApply(t *testing.T) {
+	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
+	cfg := &externaldns.Config{
+		Provider:                  externaldns.ProviderInMemory,
+		ProviderCacheTime:         10 * time.Millisecond,
+		ProviderCachePatchOnApply: true,
+	}
+	p, err := Select(t.Context(), cfg, domainFilter)
+	require.NoError(t, err)
+	cp, ok := p.(*provider.CachedProvider)
+	require.True(t, ok, "expected *provider.CachedProvider")
+	assert.True(t, cp.PatchOnApply)
 }
 
 func TestKnownProviders(t *testing.T) {

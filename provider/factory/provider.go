@@ -71,7 +71,7 @@ func Select(
 		return nil, err
 	}
 	if p != nil && cfg.ProviderCacheTime > 0 {
-		return provider.NewCachedProvider(p, cfg.ProviderCacheTime), nil
+		return provider.NewCachedProvider(p, cfg), nil
 	}
 	return p, nil
 }

@@ -81,6 +81,7 @@ type Config struct {
 	ConnectorSourceServer                         string
 	Provider                                      string
 	ProviderCacheTime                             time.Duration
+	ProviderCachePatchOnApply                     bool
 	CreatePTR                                     bool
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
@@ -349,6 +350,7 @@ var defaultConfig = &Config{
 	Policy:                       "sync",
 	Provider:                     "",
 	ProviderCacheTime:            0,
+	ProviderCachePatchOnApply:    false,
 	CreatePTR:                    false,
 	PublishHostIP:                false,
 	PublishInternal:              false,
@@ -578,6 +580,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("unstructured-resource", "When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources", nil, &cfg.UnstructuredResources)
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
+	b.BoolVar("provider-cache-patch-on-apply", "When enabled, successful ApplyChanges calls patch the in-memory record cache instead of invalidating it. Avoids full re-fetches on large zones (e.g. 100k+ Route53 records).", defaultConfig.ProviderCachePatchOnApply, &cfg.ProviderCachePatchOnApply)
 	b.BoolVar("create-ptr", "When enabled, automatically create PTR records for A/AAAA records. Per-resource annotations can override this default. The provider must have authority over the reverse DNS zones (e.g. in-addr.arpa). Include reverse zones in --domain-filter.", defaultConfig.CreatePTR, &cfg.CreatePTR)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.DomainExclude)
