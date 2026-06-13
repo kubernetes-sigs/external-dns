@@ -37,7 +37,7 @@ Sources are responsible for:
 | **gateway-tcproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TCPRoute.gateway.networking.k8s.io                                                    |
 | **gateway-tlsroute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TLSRoute.gateway.networking.k8s.io                                                    |
 | **gateway-udproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | UDPRoute.gateway.networking.k8s.io                                                    |
-| **gloo-proxy**           |                  | all,single | false         | false  | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
+| **gloo-proxy**           |                  | all,single | true          | false  | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
 | **ingress**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Ingress                                                                               |
 | **istio-gateway**        | annotation,label | all,single | true          | false  | true              | service mesh        | Gateway.networking.istio.io                                                           |
 | **istio-virtualservice** | annotation,label | all,single | true          | false  | true              | service mesh        | VirtualService.networking.istio.io                                                    |

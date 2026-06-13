@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -41,6 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 var (
@@ -63,9 +65,14 @@ var (
 
 // Basic redefinition of "Proxy" CRD : https://github.com/solo-io/gloo/blob/v1.4.6/projects/gloo/pkg/api/v1/proxy.pb.go
 type proxy struct {
-	metav1.TypeMeta `json:",inline"`
-	Metadata        metav1.ObjectMeta `json:"metadata"`
-	Spec            proxySpec         `json:"spec"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              proxySpec `json:"spec"`
+}
+
+func (p *proxy) DeepCopyObject() runtime.Object {
+	cp := *p
+	return &cp
 }
 
 type proxySpec struct {
@@ -134,7 +141,7 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:resources=Proxy.gloo.solo.io
 // +externaldns:source:filters=
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
@@ -144,6 +151,7 @@ type glooSource struct {
 	gatewayInformer        kubeinformers.GenericInformer
 	// TODO: glooNamespaces is the list of namespaces to scan for Gloo Proxies. All namespace access is still required
 	glooNamespaces []string
+	templateEngine template.Engine
 }
 
 // NewGlooSource creates a new glooSource with the given config
@@ -194,12 +202,13 @@ func NewGlooSource(
 	}
 
 	return &glooSource{
-		serviceInformer,
-		ingressInformer,
-		proxyInformer,
-		virtualServiceInformer,
-		gatewayInformer,
-		cfg.GlooNamespaces,
+		serviceInformer:        serviceInformer,
+		ingressInformer:        ingressInformer,
+		proxyInformer:          proxyInformer,
+		virtualServiceInformer: virtualServiceInformer,
+		gatewayInformer:        gatewayInformer,
+		glooNamespaces:         cfg.GlooNamespaces,
+		templateEngine:         cfg.TemplateEngine,
 	}, nil
 }
 
@@ -231,9 +240,9 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			if err = json.Unmarshal(jsonData, &proxy); err != nil {
 				return nil, err
 			}
-			log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
+			log.Debugf("Gloo: Find %s proxy", proxy.Name)
 
-			proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Metadata.Annotations)
+			proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Annotations)
 			if len(proxyTargets) == 0 {
 				proxyTargets, err = gs.targetsFromGatewayIngress(&proxy)
 				if err != nil {
@@ -242,30 +251,30 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			}
 
 			if len(proxyTargets) == 0 {
-				proxyTargets, err = gs.proxyTargets(proxy.Metadata.Name, ns)
+				proxyTargets, err = gs.proxyTargets(proxy.Name, ns)
 				if err != nil {
 					return nil, err
 				}
 			}
-			log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Metadata.Name, len(proxyTargets), proxyTargets)
+			log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Name, len(proxyTargets), proxyTargets)
 
 			proxyEndpoints, err := gs.generateEndpointsFromProxy(&proxy, proxyTargets)
 			if err != nil {
 				return nil, err
 			}
-			log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Metadata.Name, len(proxyEndpoints))
+			log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Name, len(proxyEndpoints))
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
-	endpoints := []*endpoint.Endpoint{}
+func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+	var endpoints []*endpoint.Endpoint
 
-	resource := fmt.Sprintf("proxy/%s/%s", proxy.Metadata.Namespace, proxy.Metadata.Name)
+	resource := fmt.Sprintf("proxy/%s/%s", p.Namespace, p.Name)
 
-	for _, listener := range proxy.Spec.Listeners {
+	for _, listener := range p.Spec.Listeners {
 		for _, virtualHost := range listener.HTTPListener.VirtualHosts {
 			ants, err := gs.annotationsFromProxySource(virtualHost)
 			if err != nil {
@@ -278,7 +287,55 @@ func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.
 			}
 		}
 	}
-	return endpoints, nil
+
+	endpoints, err := gs.templateEngine.CombineWithEndpoints(
+		endpoints,
+		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyFQDNTargetTemplate(p) },
+	)
+	if err != nil {
+		return nil, err
+	}
+	return gs.templateEngine.CombineWithEndpoints(
+		endpoints,
+		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyTemplate(p) },
+	)
+}
+
+func (gs *glooSource) endpointsFromProxyTemplate(p *proxy) ([]*endpoint.Endpoint, error) {
+	hostnames, err := gs.templateEngine.ExecFQDN(p)
+	if err != nil || len(hostnames) == 0 {
+		return nil, err
+	}
+	targets, err := gs.templateEngine.ExecTarget(p)
+	if err != nil {
+		return nil, err
+	}
+	return EndpointsForHostsAndTargets(hostnames, targets), nil
+}
+
+func (gs *glooSource) endpointsFromProxyFQDNTargetTemplate(p *proxy) ([]*endpoint.Endpoint, error) {
+	pairs, err := gs.templateEngine.ExecFQDNTarget(p)
+	if err != nil || len(pairs) == 0 {
+		return nil, err
+	}
+	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from proxy %s/%s: missing ':' separator",
+				pair, p.GetNamespace(), p.GetName())
+			continue
+		}
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from proxy %s/%s: field may not yet be populated",
+				pair, p.GetNamespace(), p.GetName())
+			continue
+		}
+		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+	}
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {
