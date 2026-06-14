@@ -71,20 +71,6 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
 }
 
-func validateAndParse(templates []string, flag string) (*template.Template, error) {
-	if err := validateTemplates(templates, flag); err != nil {
-		return nil, err
-	}
-	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debugf("%s: %s", flag, strings.Join(templates, ","))
-	}
-	t, err := parseTemplate(strings.Join(templates, ","))
-	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", flag, err)
-	}
-	return t, nil
-}
-
 // IsConfigured reports whether the FQDN template is set and ready to use.
 func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil
@@ -108,12 +94,28 @@ func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
 }
 
-func (e Engine) execTarget(obj kubeObject) ([]string, error) {
-	return execTemplate(e.target, obj)
-}
+// CombineWithEndpoints merges annotation-based endpoints with template-based endpoints.
+func (e Engine) CombineWithEndpoints(
+	endpoints []*endpoint.Endpoint,
+	templateFunc func() ([]*endpoint.Endpoint, error),
+) ([]*endpoint.Endpoint, error) {
+	if e.fqdn == nil && e.target == nil && e.fqdnTarget == nil {
+		return endpoints, nil
+	}
 
-func (e Engine) execFQDNTarget(obj kubeObject) ([]string, error) {
-	return execTemplate(e.fqdnTarget, obj)
+	if !e.combine && len(endpoints) > 0 {
+		return endpoints, nil
+	}
+
+	templatedEndpoints, err := templateFunc()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+	}
+
+	if e.combine {
+		return append(endpoints, templatedEndpoints...), nil
+	}
+	return templatedEndpoints, nil
 }
 
 // ApplyFQDNTargetTemplate combines existing endpoints with those derived from the fqdn-target
@@ -138,6 +140,14 @@ func (e Engine) ApplyTemplates(existing []*endpoint.Endpoint, obj kubeObject) ([
 	return e.CombineWithEndpoints(eps, func() ([]*endpoint.Endpoint, error) {
 		return e.endpointsFromTemplate(obj)
 	})
+}
+
+func (e Engine) execTarget(obj kubeObject) ([]string, error) {
+	return execTemplate(e.target, obj)
+}
+
+func (e Engine) execFQDNTarget(obj kubeObject) ([]string, error) {
+	return execTemplate(e.fqdnTarget, obj)
 }
 
 func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
@@ -178,28 +188,22 @@ func (e Engine) endpointsFromTemplate(obj kubeObject) ([]*endpoint.Endpoint, err
 	return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
 }
 
-// CombineWithEndpoints merges annotation-based endpoints with template-based endpoints.
-func (e Engine) CombineWithEndpoints(
-	endpoints []*endpoint.Endpoint,
-	templateFunc func() ([]*endpoint.Endpoint, error),
-) ([]*endpoint.Endpoint, error) {
-	if e.fqdn == nil && e.target == nil && e.fqdnTarget == nil {
-		return endpoints, nil
+func validateAndParse(templates []string, flag string) (*template.Template, error) {
+	if err := validateTemplates(templates, flag); err != nil {
+		return nil, err
 	}
-
-	if !e.combine && len(endpoints) > 0 {
-		return endpoints, nil
+	joined := strings.Join(templates, ",")
+	if strings.TrimSpace(joined) == "" {
+		return nil, nil //nolint:nilnil // nil signals "not configured"; callers guard via IsConfigured/HasDNSNameTemplate
 	}
-
-	templatedEndpoints, err := templateFunc()
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("%s: %s", flag, joined)
+	}
+	t, err := parseTemplate(joined)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+		return nil, fmt.Errorf("parse %s: %w", flag, err)
 	}
-
-	if e.combine {
-		return append(endpoints, templatedEndpoints...), nil
-	}
-	return templatedEndpoints, nil
+	return t, nil
 }
 
 // validateTemplates validates each template string individually for syntax errors,
@@ -224,9 +228,6 @@ func validateTemplates(templates []string, flagName string) error {
 }
 
 func parseTemplate(input string) (*template.Template, error) {
-	if strings.TrimSpace(input) == "" {
-		return nil, nil //nolint:nilnil // nil template signals "not configured"; callers check IsConfigured()
-	}
 	// Clone is cheaper than re-registering all functions on a new template each call.
 	t, err := baseTemplate.Clone()
 	if err != nil {
