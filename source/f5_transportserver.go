@@ -179,11 +179,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 		}
 
 		var err error
-		tsEndpoints, err = ts.templateEngine.ApplyFQDNTargetTemplate(tsEndpoints, transportServer)
-		if err != nil {
-			return nil, err
-		}
-		tsEndpoints, err = ts.templateEngine.ApplyTemplate(tsEndpoints, transportServer)
+		tsEndpoints, err = ts.templateEngine.ApplyTemplates(tsEndpoints, transportServer)
 		if err != nil {
 			return nil, err
 		}

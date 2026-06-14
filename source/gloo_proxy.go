@@ -293,11 +293,7 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 		}
 	}
 
-	endpoints, err := gs.templateEngine.ApplyFQDNTargetTemplate(endpoints, p)
-	if err != nil {
-		return nil, err
-	}
-	return gs.templateEngine.ApplyTemplate(endpoints, p)
+	return gs.templateEngine.ApplyTemplates(endpoints, p)
 }
 
 func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {

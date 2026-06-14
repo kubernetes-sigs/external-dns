@@ -144,12 +144,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 		annotationEdps := endpoint.EndpointsForHostsAndTargets(hosts, addrs)
 
-		fqdnTargetEdps, err := us.templateEngine.ApplyFQDNTargetTemplate(annotationEdps, el)
-		if err != nil {
-			return nil, err
-		}
-
-		edps, err := us.templateEngine.ApplyTemplate(fqdnTargetEdps, el)
+		edps, err := us.templateEngine.ApplyTemplates(annotationEdps, el)
 		if err != nil {
 			return nil, err
 		}

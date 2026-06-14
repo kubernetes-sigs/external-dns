@@ -183,11 +183,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		var err error
-		vsEndpoints, err = vs.templateEngine.ApplyFQDNTargetTemplate(vsEndpoints, virtualServer)
-		if err != nil {
-			return nil, err
-		}
-		vsEndpoints, err = vs.templateEngine.ApplyTemplate(vsEndpoints, virtualServer)
+		vsEndpoints, err = vs.templateEngine.ApplyTemplates(vsEndpoints, virtualServer)
 		if err != nil {
 			return nil, err
 		}

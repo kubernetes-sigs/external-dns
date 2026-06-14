@@ -106,38 +106,40 @@ func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
 }
 
-// ExecTarget executes the Target template against a Kubernetes object and returns targets.
-func (e Engine) ExecTarget(obj kubeObject) ([]string, error) {
+func (e Engine) execTarget(obj kubeObject) ([]string, error) {
 	return execTemplate(e.target, obj)
 }
 
-// ExecFQDNTarget executes the FQDNTarget template against a Kubernetes object and returns hostname:target pairs.
-func (e Engine) ExecFQDNTarget(obj kubeObject) ([]string, error) {
+func (e Engine) execFQDNTarget(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdnTarget, obj)
 }
 
-// ApplyFQDNTargetTemplate is a convenience wrapper around CombineWithEndpoints that generates
-// endpoints from the fqdn-target template and combines them with the existing slice.
-// It consolidates the identical endpointsFromXxxFQDNTargetTemplate helpers that each source
-// previously duplicated.
+// ApplyFQDNTargetTemplate combines existing endpoints with those derived from the fqdn-target
+// template (host:target pairs). Used standalone by sources whose second template pass derives
+// targets from the resource itself (pod IPs, service ClusterIP, node addresses).
 func (e Engine) ApplyFQDNTargetTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
 	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
 		return e.endpointsFromFQDNTargetTemplate(obj)
 	})
 }
 
-// ApplyTemplate is a convenience wrapper around CombineWithEndpoints that generates endpoints
-// from the FQDN and target templates (ExecFQDN + ExecTarget) and combines them with the existing
-// slice. Use this for sources where the template itself provides the DNS target; sources that
-// derive targets from the resource (pod IPs, node addresses, LB ingress) keep their own method.
-func (e Engine) ApplyTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
-	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
+// ApplyTemplates runs both template passes in sequence — fqdn-target first, then
+// fqdn+target — returning the combined result. Use this for sources where the template
+// itself provides the DNS target (gloo, traefik, f5, unstructured). Sources that derive
+// targets from the resource (pod, service, node) call ApplyFQDNTargetTemplate and then
+// their own resource-specific CombineWithEndpoints.
+func (e Engine) ApplyTemplates(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
+	eps, err := e.ApplyFQDNTargetTemplate(existing, obj)
+	if err != nil {
+		return nil, err
+	}
+	return e.CombineWithEndpoints(eps, func() ([]*endpoint.Endpoint, error) {
 		return e.endpointsFromTemplate(obj)
 	})
 }
 
 func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
-	pairs, err := e.ExecFQDNTarget(obj)
+	pairs, err := e.execFQDNTarget(obj)
 	if err != nil || len(pairs) == 0 {
 		return nil, err
 	}
@@ -167,7 +169,7 @@ func (e Engine) endpointsFromTemplate(obj kubeObject) ([]*endpoint.Endpoint, err
 	if err != nil || len(hostnames) == 0 {
 		return nil, err
 	}
-	targets, err := e.ExecTarget(obj)
+	targets, err := e.execTarget(obj)
 	if err != nil {
 		return nil, err
 	}

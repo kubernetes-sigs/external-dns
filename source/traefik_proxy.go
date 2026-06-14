@@ -394,11 +394,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 		}
 	}
 
-	endpoints, err := ts.templateEngine.ApplyFQDNTargetTemplate(endpoints, ingressRoute)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.ApplyTemplate(endpoints, ingressRoute)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
@@ -431,11 +427,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 		}
 	}
 
-	endpoints, err := ts.templateEngine.ApplyFQDNTargetTemplate(endpoints, ingressRoute)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.ApplyTemplate(endpoints, ingressRoute)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
@@ -455,11 +447,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 		}
 	}
 
-	endpoints, err := ts.templateEngine.ApplyFQDNTargetTemplate(endpoints, ingressRoute)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.ApplyTemplate(endpoints, ingressRoute)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
@@ -857,7 +845,6 @@ func (in *IngressRouteTCP) GetAnnotations() map[string]string {
 func (in *IngressRouteUDP) GetAnnotations() map[string]string {
 	return in.Annotations
 }
-
 
 // extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
 // It performs the following steps:
