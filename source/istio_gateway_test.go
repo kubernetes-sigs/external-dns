@@ -1459,7 +1459,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 			},
 			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expectError: false, // bad annotation should be skipped gracefully, not crash the controller
 		},
 	} {
 
