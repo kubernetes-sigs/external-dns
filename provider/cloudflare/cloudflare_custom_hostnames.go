@@ -25,9 +25,11 @@ import (
 
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/option"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -67,10 +69,10 @@ type CustomHostnamesConfig struct {
 	CertificateAuthority string
 }
 
-var recordTypeCustomHostnameSupported = map[string]bool{
-	"A":     true,
-	"CNAME": true,
-}
+var recordTypeCustomHostnameSupported = sets.New[dns.RecordResponseType](
+	"A",
+	"CNAME",
+)
 
 func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse] {
 	params := custom_hostnames.CustomHostnameListParams{
@@ -141,7 +143,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 }
 
 func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zoneID string, change *cloudFlareChange, chs customHostnamesMap, logFields log.Fields) bool {
-	if !recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] {
+	if !recordTypeCustomHostnameSupported.Has(change.ResourceRecord.Type) {
 		return true
 	}
 	failedChange := false
@@ -175,7 +177,7 @@ func (p *CloudFlareProvider) processCustomHostnameUpdate(ctx context.Context, zo
 func (p *CloudFlareProvider) processCustomHostnameDelete(ctx context.Context, zoneID string, change *cloudFlareChange, chs customHostnamesMap, logFields log.Fields) bool {
 	failedChange := false
 	for _, changeCH := range change.CustomHostnames {
-		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.hostname != "" {
+		if recordTypeCustomHostnameSupported.Has(change.ResourceRecord.Type) && changeCH.hostname != "" {
 			log.WithFields(logFields).Infof("Deleting custom hostname %q", changeCH.hostname)
 			if ch, err := getCustomHostname(chs, changeCH.hostname); err == nil {
 				chID := ch.id
@@ -196,7 +198,7 @@ func (p *CloudFlareProvider) processCustomHostnameDelete(ctx context.Context, zo
 func (p *CloudFlareProvider) processCustomHostnameCreate(ctx context.Context, zoneID string, change *cloudFlareChange, chs customHostnamesMap, logFields log.Fields) bool {
 	failedChange := false
 	for _, changeCH := range change.CustomHostnames {
-		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.hostname != "" {
+		if recordTypeCustomHostnameSupported.Has(change.ResourceRecord.Type) && changeCH.hostname != "" {
 			log.WithFields(logFields).Infof("Creating custom hostname %q", changeCH.hostname)
 			if ch, err := getCustomHostname(chs, changeCH.hostname); err == nil {
 				if changeCH.customOriginServer == ch.customOriginServer {

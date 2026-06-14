@@ -4,7 +4,7 @@
 # | Field                                  | Type     | Description                              |
 # |----------------------------------------|----------|------------------------------------------|
 # | name                                   | string   | Test scenario name                       |
-# | config.sources                         | []string | Sources to create: ingress, service      |
+# | config.sources                         | []string | Sources to create: ingress, node, service |
 # | config.defaultTargets                  | []string | --default-targets flag values            |
 # | config.forceDefaultTargets             | bool     | --force-default-targets flag             |
 # | config.targetNetFilter                 | []string | --target-net-filter flag values          |
@@ -21,6 +21,28 @@
 # 3. Support for Endpoint.ProviderSpecific
 
 scenarios:
+  - name: node-with-external-ip
+    description: >
+      A Node with an ExternalIP address creates an A record using the node name
+      as the DNS name. The node source uses the node's name directly as the
+      hostname when no FQDN template is configured.
+    config:
+      sources: ["node"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Node
+          metadata:
+            name: node-1.example.com
+          status:
+            addresses:
+              - type: ExternalIP
+                address: 1.2.3.4
+    expected:
+      - dnsName: node-1.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+
   - name: headless-service-with-pods
     description: >
       Test that a headless Service with associated Pods

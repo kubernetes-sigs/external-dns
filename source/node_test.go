@@ -744,3 +744,117 @@ func (b *nodeListBuilder) build() v1.NodeList {
 	}
 	return v1.NodeList{Items: b.nodes}
 }
+
+func TestNodeIndexer(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		nodes            []*v1.Node
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all nodes",
+			expectedCount: 5,
+			nodes:         createTestNodes(5),
+		},
+		{
+			name:             "annotation filter matches subset",
+			annotationFilter: "tier=frontend",
+			expectedCount:    3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 3 {
+						node.Annotations["tier"] = "frontend"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			annotationFilter: "tier=backend",
+			expectedCount:    0,
+			nodes: createTestNodes(3, func(nodes []*v1.Node) {
+				for _, node := range nodes {
+					node.Annotations["tier"] = "frontend"
+				}
+			}),
+		},
+		{
+			name:          "label filter matches subset",
+			labelFilter:   "app=my-node",
+			expectedCount: 2,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 2 {
+						node.Labels["app"] = "my-node"
+					}
+				}
+			}),
+		},
+		{
+			name:          "controller mismatch excludes node",
+			expectedCount: 3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i >= 3 {
+						node.Annotations[annotations.ControllerKey] = "other-controller"
+					}
+				}
+			}),
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all nodes pass through",
+			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
+			expectedCount:    3,
+			nodes:            createTestNodes(3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+
+			for i, node := range tt.nodes {
+				node.Annotations[annotations.TargetKey] = fmt.Sprintf("1.2.3.%d", i+1)
+				_, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewNodeSource(t.Context(), client, &Config{
+				AnnotationFilter: tt.annotationFilter,
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func createTestNodes(count int, funcs ...func([]*v1.Node)) []*v1.Node {
+	nodes := make([]*v1.Node, count)
+	for i := range count {
+		nodes[i] = &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        fmt.Sprintf("node-%d", i),
+				Labels:      map[string]string{},
+				Annotations: map[string]string{},
+			},
+		}
+	}
+	for _, fn := range funcs {
+		fn(nodes)
+	}
+	return nodes
+}

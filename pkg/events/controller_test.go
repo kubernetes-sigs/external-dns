@@ -33,13 +33,13 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 	eventsclient "k8s.io/client-go/kubernetes/typed/events/v1"
 	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 

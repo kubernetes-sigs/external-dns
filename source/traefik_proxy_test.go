@@ -38,6 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that traefikSource is a Source.
@@ -64,6 +65,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingressroute-annotation",
 					Namespace: defaultTraefikNamespace,
+					UID:       "traefik-ir-uid-1234",
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "a.example.com",
 						"external-dns.kubernetes.io/target":   "target.domain.tld",
@@ -72,7 +74,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "a.example.com",
 					Targets:    []string{"target.domain.tld"},
 					RecordType: endpoint.RecordTypeCNAME,
@@ -81,7 +83,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 						"resource": "ingressroute/traefik/ingressroute-annotation",
 					},
 					ProviderSpecific: endpoint.ProviderSpecific{},
-				},
+				}).WithRefObject(testutils.RefSource(string(types.TraefikProxy))),
 			},
 		},
 		{

@@ -540,7 +540,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 
 					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
 					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, "false")
+						ep = ep.WithAliasProperty(endpoint.AliasFalse)
 					}
 					newEndpoints = append(newEndpoints, ep)
 				}
@@ -553,7 +553,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithProviderSpecific(endpoint.ProviderSpecificAlias, "true")
+						WithAliasProperty(endpoint.AliasTrue)
 					newEndpoints = append(newEndpoints, ep)
 				}
 

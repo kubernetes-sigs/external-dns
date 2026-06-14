@@ -1767,6 +1767,47 @@ func TestGetAliasProperty(t *testing.T) {
 	}
 }
 
+func TestWithAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    AliasType
+		expected AliasType
+	}{
+		{
+			name:     "AliasNone sets alias to empty string",
+			input:    AliasNone,
+			expected: AliasNone,
+		},
+		{
+			name:     "AliasFalse sets alias=false",
+			input:    AliasFalse,
+			expected: AliasFalse,
+		},
+		{
+			name:     "AliasTrue sets alias=true",
+			input:    AliasTrue,
+			expected: AliasTrue,
+		},
+		{
+			name:     "AliasA sets alias=A",
+			input:    AliasA,
+			expected: AliasA,
+		},
+		{
+			name:     "AliasAAAA sets alias=AAAA",
+			input:    AliasAAAA,
+			expected: AliasAAAA,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewEndpoint("example.com", "A", "1.2.3.4").WithAliasProperty(tt.input)
+			assert.Equal(t, tt.expected, e.GetAliasProperty())
+		})
+	}
+}
+
 func TestGetBoolProviderSpecificProperty(t *testing.T) {
 	tests := []struct {
 		name           string

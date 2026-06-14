@@ -29,8 +29,9 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
@@ -219,9 +220,9 @@ func TestWithEmitEvents(t *testing.T) {
 		{
 			name:     "valid events",
 			input:    []string{string(RecordReady), string(RecordError)},
-			expected: sets.New[Reason](RecordReady, RecordError),
+			expected: sets.New(RecordReady, RecordError),
 			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady, RecordError), c.emitEvents)
+				require.Equal(t, sets.New(RecordReady, RecordError), c.emitEvents)
 				require.True(t, c.IsEnabled())
 			},
 		},
@@ -237,9 +238,9 @@ func TestWithEmitEvents(t *testing.T) {
 		{
 			name:     "mixed valid and invalid",
 			input:    []string{string(RecordReady), "InvalidEvent"},
-			expected: sets.New[Reason](RecordReady),
+			expected: sets.New(RecordReady),
 			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady), c.emitEvents)
+				require.Equal(t, sets.New(RecordReady), c.emitEvents)
 				require.True(t, c.IsEnabled())
 			},
 		},

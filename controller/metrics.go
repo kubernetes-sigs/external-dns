@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
@@ -151,14 +152,14 @@ type dnsKey struct {
 func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint, metric metrics.GaugeVecMetric) {
 	metric.Gauge.Reset()
 
-	registry := make(map[dnsKey]struct{}, len(registryRecords))
+	registry := make(sets.Set[dnsKey], len(registryRecords))
 	for _, r := range registryRecords {
-		registry[dnsKey{r.DNSName, r.RecordType}] = struct{}{}
+		registry.Insert(dnsKey{r.DNSName, r.RecordType})
 	}
 
 	counts := make(map[string]float64)
 	for _, ep := range endpoints {
-		if _, found := registry[dnsKey{ep.DNSName, ep.RecordType}]; found {
+		if registry.Has(dnsKey{ep.DNSName, ep.RecordType}) {
 			counts[ep.RecordType]++
 		}
 	}

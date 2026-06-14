@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -172,6 +173,8 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
+
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(vService, types.IstioVirtualService))
 
 		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(vService.Kind), vService.Namespace, vService.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)

@@ -36,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 const defaultAmbassadorNamespace = "ambassador"
@@ -77,6 +78,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			host: ambassador.Host{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
+					UID:  "ambassador-host-uid",
 					Annotations: map[string]string{
 						ambHostAnnotation: hostAnnotation,
 					},
@@ -98,11 +100,11 @@ func TestAmbassadorHostSource(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
-				},
+				}).WithRefObject(testutils.RefSource(types.AmbassadorHost)),
 			},
 		}, {
 			title:         "Service with load balancer hostname",

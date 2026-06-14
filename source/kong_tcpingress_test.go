@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that kongTCPIngressSource is a Source.
@@ -59,6 +60,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "tcp-ingress-annotation",
 					Namespace: defaultKongNamespace,
+					UID:       "kong-tcpingress-uid",
 					Annotations: map[string]string{
 						"external-dns.kubernetes.io/hostname": "a.example.com",
 						"kubernetes.io/ingress.class":         "kong",
@@ -85,7 +87,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "a.example.com",
 					Targets:    []string{"a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
 					RecordType: endpoint.RecordTypeCNAME,
@@ -94,7 +96,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 						"resource": "tcpingress/kong/tcp-ingress-annotation",
 					},
 					ProviderSpecific: endpoint.ProviderSpecific{},
-				},
+				}).WithRefObject(testutils.RefSource(types.KongTCPIngress)),
 			},
 		},
 		{

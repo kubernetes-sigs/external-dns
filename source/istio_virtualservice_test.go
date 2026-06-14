@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
@@ -868,11 +869,11 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.IstioVirtualService))),
 			},
 		},
 		{
@@ -2043,7 +2044,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				gateways = append(gateways, gwItem.Config())
 			}
 			for _, vsItem := range ti.vsConfigs {
-				virtualservices = append(virtualservices, vsItem.Config())
+				vs := vsItem.Config()
+				vs.UID = types.UID("istio-virtualservice-uid")
+				virtualservices = append(virtualservices, vs)
 			}
 
 			fakeKubernetesClient := fake.NewClientset()

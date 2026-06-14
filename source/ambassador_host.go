@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
@@ -176,6 +177,8 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
+
+		endpoint.AttachRefObject(hostEndpoints, events.NewObjectReference(host, types.AmbassadorHost))
 
 		log.Debugf("Endpoints generated from Host: %s: %v", fullname, hostEndpoints)
 		endpoints = append(endpoints, hostEndpoints...)

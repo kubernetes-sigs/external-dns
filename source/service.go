@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -45,12 +46,12 @@ import (
 )
 
 var (
-	knownServiceTypes = map[v1.ServiceType]struct{}{
-		v1.ServiceTypeClusterIP:    {}, // Default service type exposes the service on a cluster-internal IP.
-		v1.ServiceTypeNodePort:     {}, // Exposes the service on each node's IP at a static port.
-		v1.ServiceTypeLoadBalancer: {}, // Exposes the service externally using a cloud provider's load balancer.
-		v1.ServiceTypeExternalName: {}, // Maps the service to an external DNS name.
-	}
+	knownServiceTypes = sets.New(
+		v1.ServiceTypeClusterIP,    // Default service type exposes the service on a cluster-internal IP.
+		v1.ServiceTypeNodePort,     // Exposes the service on each node's IP at a static port.
+		v1.ServiceTypeLoadBalancer, // Exposes the service externally using a cloud provider's load balancer.
+		v1.ServiceTypeExternalName, // Maps the service to an external DNS name.
+	)
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -190,15 +191,12 @@ func NewServiceSource(
 
 // Endpoints return endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := sc.serviceInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	services := informers.ListIndexed[*v1.Service](sc.serviceInformer.Informer().GetIndexer())
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(services))
 
-	for _, key := range indexKeys {
-		svc, err := informers.GetByKey[*v1.Service](sc.serviceInformer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
+	for _, svc := range services {
+		var err error
 
 		svcEndpoints := sc.endpoints(svc)
 
@@ -447,13 +445,13 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := make([]string, 0, len(allTargets))
-		deduppedTargets := map[string]struct{}{}
+		deduppedTargets := make(sets.Set[string], len(allTargets))
 		for _, target := range allTargets {
-			if _, ok := deduppedTargets[target]; ok {
+			if deduppedTargets.Has(target) {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
-			deduppedTargets[target] = struct{}{}
+			deduppedTargets.Insert(target)
 			targets = append(targets, target)
 		}
 		ep := endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
@@ -785,7 +783,7 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 type serviceTypes struct {
 	enabled bool
-	types   map[v1.ServiceType]bool
+	types   sets.Set[v1.ServiceType]
 }
 
 // newServiceTypesFilter processes a slice of service type filter strings and returns a serviceTypes struct.
@@ -797,12 +795,12 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 			enabled: false,
 		}, nil
 	}
-	result := make(map[v1.ServiceType]bool)
+	result := sets.New[v1.ServiceType]()
 	for _, serviceType := range filter {
-		if _, ok := knownServiceTypes[v1.ServiceType(serviceType)]; !ok {
-			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, slices.Collect(maps.Keys(knownServiceTypes)))
+		if !knownServiceTypes.Has(v1.ServiceType(serviceType)) {
+			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, sets.Sorted(knownServiceTypes))
 		}
-		result[v1.ServiceType(serviceType)] = true
+		result.Insert(v1.ServiceType(serviceType))
 	}
 
 	return &serviceTypes{
@@ -812,7 +810,7 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 }
 
 func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
-	return !sc.enabled || sc.types[serviceType]
+	return !sc.enabled || sc.types.Has(serviceType)
 }
 
 // predicate returns a typed filter function suitable for use with

@@ -208,6 +208,13 @@ func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string
 		WithRefObject(events.NewObjectReference(obj, source))
 }
 
+// RefSource returns an ObjectReference carrying only a source identity. Set it on an
+// expected endpoint via WithRefObject to opt into ValidateEndpoints' RefObject check,
+// which asserts the actual endpoint has a non-nil RefObject with this Source and a non-empty UID.
+func RefSource(source string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("", "", "", "", "", source)
+}
+
 // AssertEndpointsHaveRefObject asserts that endpoints have the expected count
 // and each endpoint has a non-nil RefObject with the expected source type.
 func AssertEndpointsHaveRefObject(
@@ -268,6 +275,19 @@ func validateEndpoint(ep, expected *endpoint.Endpoint) []string {
 	}
 	if ep.SetIdentifier != expected.SetIdentifier {
 		errs = append(errs, fmt.Sprintf("%s: SetIdentifier expected %q, got %q", prefix, expected.SetIdentifier, ep.SetIdentifier))
+	}
+	// Opt-in: only checked when the expected endpoint declares a RefObject (see RefSource).
+	if expected.RefObject() != nil {
+		if ep.RefObject() == nil {
+			errs = append(errs, fmt.Sprintf("%s: RefObject expected, got nil", prefix))
+		} else {
+			if ep.RefObject().Source() != expected.RefObject().Source() {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expected.RefObject().Source(), ep.RefObject().Source()))
+			}
+			if ep.RefObject().UID() == "" {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.UID is empty", prefix))
+			}
+		}
 	}
 
 	return errs

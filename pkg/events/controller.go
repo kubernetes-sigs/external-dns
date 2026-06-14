@@ -24,10 +24,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
 	"k8s.io/client-go/util/workqueue"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 const (

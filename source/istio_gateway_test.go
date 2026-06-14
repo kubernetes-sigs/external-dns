@@ -41,6 +41,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -760,14 +761,15 @@ func testGatewayEndpoints(t *testing.T) {
 					name:     "fake1",
 					labels:   map[string]string{"app": "istio-gateway"},
 					dnsnames: [][]string{{"example.org"}},
+					uid:      "istio-gateway-uid",
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.IstioGateway))),
 			},
 		},
 		{
@@ -1987,6 +1989,7 @@ type fakeGatewayConfig struct {
 	labels      map[string]string
 	dnsnames    [][]string
 	selector    map[string]string
+	uid         string
 }
 
 func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
@@ -2000,6 +2003,7 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 			Namespace:   ns,
 			Annotations: c.annotations,
 			Labels:      c.labels,
+			UID:         types.UID(c.uid),
 		},
 		Spec: istionetworking.Gateway{
 			Servers:  nil,

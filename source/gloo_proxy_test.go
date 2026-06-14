@@ -33,6 +33,8 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that glooSource is a Source.
@@ -47,9 +49,10 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: defaultGlooNamespace,
+			UID:       "gloo-proxy-uid",
 		},
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
@@ -88,8 +91,8 @@ var (
 	}
 	internalProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      internalProxy.Metadata.Name,
-			Namespace: internalProxy.Metadata.Namespace,
+			Name:      internalProxy.Name,
+			Namespace: internalProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -126,7 +129,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "external",
 			Namespace: defaultGlooNamespace,
 		},
@@ -167,8 +170,8 @@ var (
 	}
 	externalProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      externalProxy.Metadata.Name,
-			Namespace: externalProxy.Metadata.Namespace,
+			Name:      externalProxy.Name,
+			Namespace: externalProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -205,7 +208,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal-static",
 			Namespace: defaultGlooNamespace,
 		},
@@ -250,8 +253,8 @@ var (
 	}
 	proxyWithMetadataStaticSvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      proxyWithMetadataStatic.Metadata.Name,
-			Namespace: proxyWithMetadataStatic.Metadata.Namespace,
+			Name:      proxyWithMetadataStatic.Name,
+			Namespace: proxyWithMetadataStatic.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -288,7 +291,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "target-ann",
 			Namespace: defaultGlooNamespace,
 			Annotations: map[string]string{
@@ -332,8 +335,8 @@ var (
 	}
 	targetAnnotatedProxySvc = corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetAnnotatedProxy.Metadata.Name,
-			Namespace: targetAnnotatedProxy.Metadata.Namespace,
+			Name:      targetAnnotatedProxy.Name,
+			Namespace: targetAnnotatedProxy.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -370,7 +373,7 @@ var (
 			APIVersion: proxyGVR.GroupVersion().String(),
 			Kind:       "Proxy",
 		},
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gateway-ingress-annotated",
 			Namespace: defaultGlooNamespace,
 		},
@@ -551,15 +554,15 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, endpoints, 11)
 
-	assert.ElementsMatch(t, endpoints, []*endpoint.Endpoint{
-		{
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		(&endpoint.Endpoint{
 			DNSName:          "a.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
-		},
+		}).WithRefObject(testutils.RefSource(types.GlooProxy)),
 		{
 			DNSName:          "b.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},

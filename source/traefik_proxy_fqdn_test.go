@@ -159,6 +159,47 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "fqdn-template can reference .Kind",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("ingressroute.my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template can reference .APIVersion",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -292,6 +333,47 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "fqdn-template can reference .Kind",
+			ingressRouteTCP: IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteTCPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-tcp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("ingressroutetcp.my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template can reference .APIVersion",
+			ingressRouteTCP: IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteTCPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-tcp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-tcp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -419,6 +501,47 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 					Labels:           endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
+			},
+		},
+		{
+			title: "fqdn-template can reference .Kind",
+			ingressRouteUDP: IngressRouteUDP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteUDPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteUDP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-udp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("ingressrouteudp.my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template can reference .APIVersion",
+			ingressRouteUDP: IngressRouteUDP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteUDPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteUDP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-udp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "traefik",
+					},
+				},
+			},
+			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-udp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 	}
