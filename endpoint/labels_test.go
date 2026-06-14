@@ -181,3 +181,47 @@ func (suite *LabelsSuite) TestDeserialize() {
 func TestLabels(t *testing.T) {
 	suite.Run(t, new(LabelsSuite))
 }
+
+func TestParseLabels(t *testing.T) {
+	testCases := []struct {
+		name      string
+		labelText string
+		expected  Labels
+	}{
+		{
+			name:      "parses regular owner value",
+			labelText: "heritage=external-dns,external-dns/owner=team-platform,external-dns/resource=ingress/default/example",
+			expected: Labels{
+				"owner":    "team-platform",
+				"resource": "ingress/default/example",
+			},
+		},
+		{
+			name:      "preserves equals in owner value",
+			labelText: "heritage=external-dns,external-dns/owner=team=platform,external-dns/resource=ingress/default/example",
+			expected: Labels{
+				"owner":    "team=platform",
+				"resource": "ingress/default/example",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			parsed, err := NewLabelsFromStringPlain(tc.labelText)
+			if err != nil {
+				t.Fatalf("NewLabelsFromStringPlain(%q) returned error: %v", tc.labelText, err)
+			}
+
+			if len(parsed) != len(tc.expected) {
+				t.Fatalf("NewLabelsFromStringPlain(%q) returned %#v, want %#v", tc.labelText, parsed, tc.expected)
+			}
+
+			for key, expectedValue := range tc.expected {
+				if parsed[key] != expectedValue {
+					t.Fatalf("NewLabelsFromStringPlain(%q) returned value %q for key %q, want %q", tc.labelText, parsed[key], key, expectedValue)
+				}
+			}
+		})
+	}
+}

@@ -1672,6 +1672,56 @@ func TestIngressWithConfiguration(t *testing.T) {
 			},
 		},
 		{
+			title: "multiple ingresses with same hostname, different IPs from different ingressClasses are merged",
+			ingresses: []*networkv1.Ingress{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-service",
+						Namespace: "old-ns",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("old-class"),
+						Rules: []networkv1.IngressRule{
+							{Host: "my-service.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "10.0.0.1"},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-service",
+						Namespace: "new-ns",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("new-class"),
+						Rules: []networkv1.IngressRule{
+							{Host: "my-service.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "10.0.0.2"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-service.example.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"10.0.0.1", "10.0.0.2"},
+				},
+			},
+		},
+		{
 			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
 			ingresses: []*networkv1.Ingress{
 				{

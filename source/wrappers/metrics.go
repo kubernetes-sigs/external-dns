@@ -47,8 +47,8 @@ var (
 // or "unknown" if the reference is not set. Sources that set RefObject will
 // populate this with their name (e.g. "ingress", "service").
 func endpointSource(ep *endpoint.Endpoint) string {
-	if ref := ep.RefObject(); ref != nil && ref.Source() != "" {
-		return ref.Source()
+	if refs := ep.RefObjects(); len(refs) > 0 && refs[0].Source() != "" {
+		return refs[0].Source()
 	}
 	return "unknown"
 }

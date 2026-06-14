@@ -65,9 +65,8 @@ type (
 	ConfigOption func(*Config)
 
 	Event struct {
-		ref     ObjectReference
+		refs    []ObjectReference
 		message string
-		source  string
 		action  Action
 		eType   EventType
 		reason  Reason
@@ -95,7 +94,7 @@ type (
 		GetRecordTTL() int64
 		GetTargets() []string
 		GetOwner() string
-		RefObject() *ObjectReference
+		RefObjects() []*ObjectReference
 	}
 )
 
@@ -127,28 +126,40 @@ func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
 		return Event{}
 	}
 	return Event{
-		ref:     *obj,
+		refs:    []ObjectReference{*obj},
 		message: msg,
 		eType:   EventTypeNormal,
 		action:  a,
 		reason:  r,
-		source:  obj.source,
 	}
 }
 
 // NewEventFromEndpoint creates an Event from an EndpointInfo with formatted message.
+// All ref objects on the endpoint are stored in the event; one Kubernetes event is
+// emitted per ref when the event is processed by the Controller.
 func NewEventFromEndpoint(ep EndpointInfo, a Action, r Reason) Event {
-	if ep == nil || ep.RefObject() == nil {
+	if ep == nil {
+		return Event{}
+	}
+	var refs []ObjectReference
+	for _, ref := range ep.RefObjects() {
+		if ref != nil {
+			refs = append(refs, *ref)
+		}
+	}
+	if len(refs) == 0 {
 		return Event{}
 	}
 	msg := fmt.Sprintf("(external-dns) record:%s,owner:%s,type:%s,ttl:%d,targets:%s",
 		ep.GetDNSName(), ep.GetOwner(), ep.GetRecordType(), ep.GetRecordTTL(),
 		strings.Join(ep.GetTargets(), ","))
-	return NewEvent(ep.RefObject(), msg, a, r)
-}
-
-func (e *Event) description() string {
-	return fmt.Sprintf("%s/%s/%s", e.ref.kind, e.ref.namespace, e.ref.name)
+	return Event{
+		refs:    refs,
+		message: msg,
+		eType:   EventTypeNormal,
+		action:  a,
+		reason:  r,
+	}
 }
 
 // Action returns the action associated with the event (e.g. Created, Updated, Deleted).
@@ -166,8 +177,19 @@ func (e *Event) EventType() EventType {
 	return e.eType
 }
 
-func (e *Event) event() *eventsv1.Event {
-	if e.ref.name == "" {
+// events returns one Kubernetes event per ref stored in the Event.
+func (e *Event) events() []*eventsv1.Event {
+	result := make([]*eventsv1.Event, 0, len(e.refs))
+	for _, ref := range e.refs {
+		if ev := e.eventForRef(ref); ev != nil {
+			result = append(result, ev)
+		}
+	}
+	return result
+}
+
+func (e *Event) eventForRef(ref ObjectReference) *eventsv1.Event {
+	if ref.name == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
 	}
@@ -181,30 +203,28 @@ func (e *Event) event() *eventsv1.Event {
 
 	// Events are namespaced resources. For cluster-scoped objects like Nodes,
 	// the namespace is empty, so we default to "default" namespace.
-	namespace := e.ref.namespace
+	namespace := ref.namespace
 	if namespace == "" {
 		namespace = "default"
 	}
 
 	event := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sanitize(e.ref.name, timestamp.Time),
+			Name:      sanitize(ref.name, timestamp.Time),
 			Namespace: namespace,
 		},
 		EventTime:           timestamp,
-		ReportingInstance:   controllerName + "/source/" + e.ref.source,
+		ReportingInstance:   controllerName + "/source/" + ref.source,
 		ReportingController: controllerName,
 		Action:              string(e.action),
 		Reason:              string(e.reason),
 		Note:                message,
 		Type:                string(e.eType),
 	}
-	if e.ref.name != "" {
-		ref := e.ref.objectRef()
-		event.Regarding = *ref
-		if e.ref.uid != "" {
-			event.Related = ref
-		}
+	objRef := ref.objectRef()
+	event.Regarding = *objRef
+	if ref.uid != "" {
+		event.Related = objRef
 	}
 	return event
 }
@@ -265,9 +285,29 @@ func (c *Config) IsEnabled() bool {
 	return len(c.emitEvents) > 0
 }
 
+// description returns a human-readable summary of the reference.
+// Namespaced resources use "kind/namespace/name"; cluster-scoped resources omit the namespace: "kind/name".
+func (r *ObjectReference) description() string {
+	if r.namespace == "" {
+		return fmt.Sprintf("%s/%s", r.kind, r.name)
+	}
+	return fmt.Sprintf("%s/%s/%s", r.kind, r.namespace, r.name)
+}
+
+// Key returns a stable string that uniquely identifies this object reference
+// in the form "source/namespace/name".
+func (r *ObjectReference) Key() string {
+	return r.source + "/" + r.namespace + "/" + r.name
+}
+
 // Kind returns the Kubernetes kind of the referenced object (e.g. "Service", "Ingress").
 func (r *ObjectReference) Kind() string {
 	return r.kind
+}
+
+// Namespace returns the namespace of the referenced Kubernetes object.
+func (r *ObjectReference) Namespace() string {
+	return r.namespace
 }
 
 // Name returns the name of the referenced Kubernetes object.

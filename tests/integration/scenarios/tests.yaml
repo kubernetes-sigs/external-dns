@@ -1,24 +1,25 @@
 # Integration Test Scenarios
 #
 # Schema Summary:
-# | Field                                  | Type     | Description                              |
-# |----------------------------------------|----------|------------------------------------------|
-# | name                                   | string   | Test scenario name                       |
-# | config.sources                         | []string | Sources to create: ingress, node, service |
-# | config.defaultTargets                  | []string | --default-targets flag values            |
-# | config.forceDefaultTargets             | bool     | --force-default-targets flag             |
-# | config.targetNetFilter                 | []string | --target-net-filter flag values          |
-# | config.serviceTypeFilter               | []string | --service-type-filter flag values        |
-# | resources                              | []object | K8s resources with optional dependencies |
-# | resources[].resource                   | object   | K8s resource (Ingress, Service, etc.)    |
-# | resources[].dependencies               | object   | Auto-generated dependent resources       |
-# | resources[].dependencies.pods.replicas | int      | Number of pods to generate               |
-# | expected                               | []object | Expected endpoints                       |
+# | Field                                        | Type     | Description                              |
+# |----------------------------------------------|----------|------------------------------------------|
+# | name                                         | string   | Test scenario name                       |
+# | config.sources                               | []string | Sources to create: ingress, node, service |
+# | config.defaultTargets                        | []string | --default-targets flag values            |
+# | config.forceDefaultTargets                   | bool     | --force-default-targets flag             |
+# | config.targetNetFilter                       | []string | --target-net-filter flag values          |
+# | config.serviceTypeFilter                     | []string | --service-type-filter flag values        |
+# | resources                                    | []object | K8s resources with optional dependencies |
+# | resources[].resource                         | object   | K8s resource (Ingress, Service, etc.)    |
+# | resources[].dependencies                     | object   | Auto-generated dependent resources       |
+# | resources[].dependencies.pods.replicas       | int      | Number of pods to generate               |
+# | expected                                     | []object | Expected endpoints                       |
+# | expected[].refObjects                        | []object | Optional: assert ref object attribution  |
+# | expected[].refObjects[].key                  | string   | ObjectReference.Key(): source/namespace/name      |
 
 # TODO:
 # 1. Support to Endpoint.ResourceLabelKey
-# 2. Support for Endpoint.RefObject
-# 3. Support for Endpoint.ProviderSpecific
+# 2. Support for Endpoint.ProviderSpecific
 
 scenarios:
   - name: node-with-external-ip
@@ -536,3 +537,118 @@ scenarios:
       - dnsName: svc.example.com
         targets: ["10.0.0.2"]
         recordType: A
+
+# RefObject scenarios
+  - name: crd-two-records-ref-objects
+    description: >
+      A DNSEndpoint with two spec.endpoints produces two DNS records. Both
+      endpoints are attributed to the same DNSEndpoint object via a shared
+      refObject. The key is "source/namespace/name".
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: multi-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: api.example.com
+                targets:
+                  - 1.2.3.4
+                recordType: A
+                recordTTL: 120
+              - dnsName: www.example.com
+                targets:
+                  - 5.6.7.8
+                recordType: A
+                recordTTL: 120
+    expected:
+      - dnsName: api.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+        recordTTL: 120
+        refObjects:
+          - key: crd/default/multi-dns
+      - dnsName: www.example.com
+        targets: ["5.6.7.8"]
+        recordType: A
+        recordTTL: 120
+        refObjects:
+          - key: crd/default/multi-dns
+
+  - name: service-one-record-ref-object
+    description: >
+      A LoadBalancer Service produces a single A record attributed to that
+      Service via a refObject.
+    config:
+      sources: ["service"]
+    resources:
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: my-svc
+            namespace: default
+            annotations:
+              external-dns.kubernetes.io/hostname: svc.example.com
+          spec:
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 1.2.3.4
+    expected:
+      - dnsName: svc.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+        refObjects:
+          - key: service/default/my-svc
+
+  - name: crd-and-service-shared-endpoint-two-ref-objects
+    description: >
+      When a CRD and a Service both publish the same hostname and target, the
+      dedupSource retains one endpoint and merges the refObjects from both
+      sources into it. The surviving endpoint therefore has two refObjects —
+      one from the CRD DNSEndpoint and one from the Service. Sources are
+      processed in declaration order (crd first), so the CRD ref is primary.
+    config:
+      sources: ["crd", "service"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: shared-dns
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: shared.example.com
+                targets:
+                  - 1.2.3.4
+                recordType: A
+                recordTTL: 300
+      - resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: shared-svc
+            namespace: default
+            annotations:
+              external-dns.kubernetes.io/hostname: shared.example.com
+          spec:
+            type: LoadBalancer
+          status:
+            loadBalancer:
+              ingress:
+                - ip: 1.2.3.4
+    expected:
+      - dnsName: shared.example.com
+        targets: ["1.2.3.4"]
+        recordType: A
+        recordTTL: 300
+        refObjects:
+          - key: crd/default/shared-dns
+          - key: service/default/shared-svc
