@@ -225,9 +225,10 @@ func AssertEndpointsHaveRefObject(
 	t.Helper()
 	assert.Len(t, endpoints, expectedCount)
 	for _, ep := range endpoints {
-		assert.NotNil(t, ep.RefObject())
-		assert.NotEmpty(t, ep.RefObject().UID())
-		assert.Equal(t, expectedSource, ep.RefObject().Source())
+		refs := ep.RefObjects()
+		assert.NotEmpty(t, refs)
+		assert.NotEmpty(t, refs[0].UID())
+		assert.Equal(t, expectedSource, refs[0].Source())
 	}
 }
 
@@ -277,14 +278,15 @@ func validateEndpoint(ep, expected *endpoint.Endpoint) []string {
 		errs = append(errs, fmt.Sprintf("%s: SetIdentifier expected %q, got %q", prefix, expected.SetIdentifier, ep.SetIdentifier))
 	}
 	// Opt-in: only checked when the expected endpoint declares a RefObject (see RefSource).
-	if expected.RefObject() != nil {
-		if ep.RefObject() == nil {
-			errs = append(errs, fmt.Sprintf("%s: RefObject expected, got nil", prefix))
+	if expRefs := expected.RefObjects(); len(expRefs) > 0 {
+		actRefs := ep.RefObjects()
+		if len(actRefs) == 0 {
+			errs = append(errs, fmt.Sprintf("%s: RefObject expected, got none", prefix))
 		} else {
-			if ep.RefObject().Source() != expected.RefObject().Source() {
-				errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expected.RefObject().Source(), ep.RefObject().Source()))
+			if actRefs[0].Source() != expRefs[0].Source() {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expRefs[0].Source(), actRefs[0].Source()))
 			}
-			if ep.RefObject().UID() == "" {
+			if actRefs[0].UID() == "" {
 				errs = append(errs, fmt.Sprintf("%s: RefObject.UID is empty", prefix))
 			}
 		}

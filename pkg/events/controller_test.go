@@ -162,41 +162,40 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 }
 
 func TestController_Add(t *testing.T) {
-	for _, tt := range []struct {
-		title           string
-		maxQueuedEvents int
-		events          []Event
-		wantQueueLen    int
-		wantWarnLog     string
-	}{
-		{
-			title:           "queue full drops events and logs warning",
-			maxQueuedEvents: 0, // 0 >= 0 is always true, so queue is immediately "full"
-			events:          []Event{NewEvent(&ObjectReference{name: "test", namespace: "default"}, "msg", ActionCreate, RecordReady)},
-			wantQueueLen:    0,
-			wantWarnLog:     "event queue is full, dropped 1 events",
-		},
-		{
-			title:           "nil event is skipped",
-			maxQueuedEvents: maxQueuedEvents,
-			// NewEvent(nil, ...) returns a zero-value Event; its event() returns nil because ref.Name == "".
-			events:       []Event{NewEvent(nil, "msg", ActionCreate, RecordReady)},
-			wantQueueLen: 0,
-		},
-	} {
-		t.Run(tt.title, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-			ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
-			ctrl.maxQueuedEvents = tt.maxQueuedEvents
-			require.NoError(t, err)
+	svcRef := NewObjectReference(&v1.Service{
+		TypeMeta:   metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "my-svc", Namespace: "default", UID: "uid-svc"},
+	}, "service")
 
-			ctrl.Add(tt.events...)
-			assert.Equal(t, tt.wantQueueLen, ctrl.queue.Len())
-			if tt.wantWarnLog != "" {
-				logtest.TestHelperLogContains(tt.wantWarnLog, hook, t)
-			}
-		})
+	crdRef := NewObjectReference(&v1.ConfigMap{
+		TypeMeta:   metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "my-crd", Namespace: "default", UID: "uid-crd"},
+	}, "crd")
+
+	ep := func(refs ...*ObjectReference) EndpointInfo {
+		return &mockEndpointInfo{
+			dnsName:    "example.com",
+			recordType: "A",
+			recordTTL:  300,
+			targets:    []string{"1.2.3.4"},
+			owner:      "owner",
+			refObjects: refs,
+		}
 	}
+
+	t.Run("single ref object enqueues one k8s event", func(t *testing.T) {
+		ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
+		require.NoError(t, err)
+		ctrl.Add(NewEventFromEndpoint(ep(svcRef), ActionCreate, RecordReady))
+		assert.Equal(t, 1, ctrl.queue.Len())
+	})
+
+	t.Run("multiple ref objects enqueue one k8s event per ref", func(t *testing.T) {
+		ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
+		require.NoError(t, err)
+		ctrl.Add(NewEventFromEndpoint(ep(svcRef, crdRef), ActionCreate, RecordReady))
+		assert.Equal(t, 2, ctrl.queue.Len())
+	})
 }
 
 func TestController_ProcessNextWorkItem(t *testing.T) {

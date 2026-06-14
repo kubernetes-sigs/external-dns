@@ -266,10 +266,10 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-	// refObject stores reference object
-	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
+	// refObjects stores the set of unique Kubernetes objects this endpoint was derived from.
+	// An endpoint merged from multiple sources will have more than one entry.
 	// +optional
-	refObject *ObjectRef `json:"-"`
+	refObjects []*ObjectRef `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -459,16 +459,25 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
-// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
-// This can be used to associate the Endpoint with a specific Kubernetes object.
+// WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
+// Calling it multiple times with the same object is safe — it is added at most once.
 func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
-	e.refObject = obj
+	if obj == nil {
+		return e
+	}
+	key := obj.Key()
+	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+		return r.Key() == key
+	}) {
+		return e
+	}
+	e.refObjects = append(e.refObjects, obj)
 	return e
 }
 
-// RefObject returns the Kubernetes object reference associated with this endpoint.
-func (e *Endpoint) RefObject() *events.ObjectReference {
-	return e.refObject
+// RefObjects returns all Kubernetes object references associated with this endpoint.
+func (e *Endpoint) RefObjects() []*events.ObjectReference {
+	return e.refObjects
 }
 
 // Key returns the EndpointKey of the Endpoint.
