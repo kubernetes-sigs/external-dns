@@ -303,15 +303,9 @@ func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
-}
-
-func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// Always create new format record
 	recordType := r.RecordType
-
 	if shouldUseCNAMEForTxtRecord(r) {
 		recordType = endpoint.RecordTypeCNAME
 	}
@@ -325,9 +319,7 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
+		endpoints = append(endpoints, txtNew)
 	}
 	return endpoints
 }
@@ -340,30 +332,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
-	}
-
-	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
-
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
-
-	for _, r := range filteredChanges.Delete {
-		// when we delete TXT records for which value has changed (due to new label) this would still work because
-		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
-
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
 	}
 
 	// make sure TXT records are consistently updated as well
@@ -384,6 +352,46 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
+	}
+
+	deleteTXTsByKey := make(map[recordKey]*endpoint.Endpoint)
+	for _, r := range filteredChanges.Delete {
+		for _, txt := range im.generateTXTRecord(r) {
+			deleteTXTsByKey[recordKey{txt.DNSName, txt.SetIdentifier}] = txt
+		}
+		if im.cacheInterval > 0 {
+			im.removeFromCache(r)
+		}
+	}
+
+	// For each created endpoint, generate its TXT records.
+	// If a TXT name collides with a pending deletion
+	// (e.g. CNAME→A alias, both use the "cname-" prefix),
+	// promote the pair to UpdateOld+UpdateNew so providers receive a safe UPSERT
+	// instead of an order-dependent Delete+Create.
+	for _, r := range filteredChanges.Create {
+		r.WithLabel(endpoint.OwnerLabelKey, im.ownerID)
+
+		for _, txt := range im.generateTXTRecord(r) {
+			k := recordKey{txt.DNSName, txt.SetIdentifier}
+			if oldTXT, ok := deleteTXTsByKey[k]; ok {
+				filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, oldTXT)
+				filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+				delete(deleteTXTsByKey, k)
+			} else if im.existingTXTs.isAbsent(txt) {
+				filteredChanges.Create = append(filteredChanges.Create, txt)
+			}
+		}
+
+		if im.cacheInterval > 0 {
+			im.addToCache(r)
+		}
+	}
+
+	// Append non-promoted TXT deletions (entries remaining in the map had no
+	// matching Create and are genuine deletes).
+	for _, txt := range deleteTXTsByKey {
+		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
 
 	// when caching is enabled, disable the provider from using the cache
