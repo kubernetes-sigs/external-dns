@@ -550,8 +550,9 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					if ttl == 0 {
 						ttl = defaultTTL
 					}
+					aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
 					ep := endpoint.
-						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
+						NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithAliasProperty(endpoint.AliasTrue)
 					newEndpoints = append(newEndpoints, ep)
