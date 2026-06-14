@@ -49,6 +49,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -76,6 +77,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						NodeName: "node-1.internal",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -111,6 +113,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -123,6 +126,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "kube-system",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.102",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.102"},
@@ -145,6 +149,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -171,6 +176,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -195,6 +201,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -219,6 +226,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -234,6 +242,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.102",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.102"},
@@ -259,6 +268,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -274,6 +284,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.102",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.102"},
@@ -296,6 +307,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "kube-system",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
@@ -436,6 +448,7 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 						Namespace: "kube-system",
 					},
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"},
