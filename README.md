@@ -48,7 +48,8 @@ You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to s
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`.
 
-ExternalDNS runs as a controller in your cluster, and can also be run locally to test a configuration. For provider-specific setup, see the [In-tree providers](#in-tree-providers) table (each row links its tutorial) or the [webhook providers](#new-providers). More tutorials — ingress controllers, sources, and provider extras — are in the [full documentation](https://kubernetes-sigs.github.io/external-dns/).
+ExternalDNS runs as a controller in your cluster, and can also be run locally to test a configuration. For provider-specific setup, see the [In-tree providers](#in-tree-providers) table (each row links its tutorial) or the [webhook providers](#new-providers).
+More tutorials — ingress controllers, sources, and provider extras — are in the [full documentation](https://kubernetes-sigs.github.io/external-dns/).
 
 <details>
 <summary><b>Running Locally</b></summary>
@@ -56,7 +57,7 @@ ExternalDNS runs as a controller in your cluster, and can also be run locally to
 See the [contributor guide](docs/contributing/dev-guide.md) for details on compiling
 from source.
 
-#### Setup Steps
+### Setup Steps
 
 Next, run an application and expose it via a Kubernetes Service:
 
@@ -120,6 +121,13 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 
 </details>
 
+## Note
+
+If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts. Changing `--txt-prefix` will result in lost ownership over previously created records.
+
+If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
+It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
+
 ## New providers
 
 No new provider will be added to ExternalDNS _in-tree_.
@@ -174,12 +182,13 @@ from the usage of any externally developed webhook.
 ## In-tree providers
 
 ExternalDNS supports the DNS providers below, implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors).
-Maintaining all of these in a central repository introduces lots of toil and potential risks, so `external-dns` has begun moving providers out of tree (see [#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347)). No new in-tree providers are accepted; use the [webhook system](#new-providers) instead.
+Maintaining all of these in a central repository introduces lots of toil and potential risks, so `external-dns` has begun moving providers out of tree (see [#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347)).
+No new in-tree providers are accepted; use the [webhook system](#new-providers) instead.
 
 Those interested can create a webhook provider based on an _in-tree_ provider and submit a PR to reference it in the table above. Providers without a maintainer listed are in need of assistance.
 
-| Provider                                                                                                         | Maintainers   | Tutorials                                                                                                                                                                                                                                                                                                  |
-|------------------------------------------------------------------------------------------------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Provider | Maintainers | Tutorials |
+|----------|-------------|-----------|
 | [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)                                                    |               | [guide](docs/tutorials/alibabacloud.md)                                                                                                                                                                                                                                                                    |
 | [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)                                                          |               | [guide](docs/tutorials/aws-sd.md)                                                                                                                                                                                                                                                                          |
 | [AWS Route 53](https://aws.amazon.com/route53/)                                                                  |               | [Route 53](docs/tutorials/aws.md), [public & private zones](docs/tutorials/aws-public-private-route53.md), [filters](docs/tutorials/aws-filters.md), [LocalStack](docs/tutorials/aws-localstack.md), [Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md), [kube-ingress-aws](docs/tutorials/kube-ingress-aws.md) |
@@ -203,9 +212,10 @@ Those interested can create a webhook provider based on an _in-tree_ provider an
 
 ## Sources
 
-ExternalDNS reads Kubernetes resources from one or more _sources_ (set via `--source`) and turns them into the desired DNS records. The first column links the upstream resource, the second the ExternalDNS guides. See the [sources documentation](docs/sources/about.md) for the full list and configuration details.
+ExternalDNS reads Kubernetes resources from one or more _sources_ (set via `--source`) and turns them into the desired DNS records.
+See the [sources documentation](docs/sources/about.md) for the full list and configuration details.
 
-| Source                                                                                                | Guides                                                                                                                            |
+| Source                                                                                                | Tutorials                                                                                                                       |
 |-------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 | [Ambassador Host](https://www.getambassador.io/docs/emissary/latest/topics/running/host-crd)          | [guide](docs/sources/ambassador.md)                                                                                            |
 | Connector                                                                                             | —                                                                                                                               |
@@ -242,13 +252,6 @@ Breaking changes were introduced in external-dns in the following versions:
 | Kubernetes 1.21              | :white_check_mark: |  :white_check_mark:   | :white_check_mark: |
 | Kubernetes ≥ 1.22 and ≤ 1.32 |        :x:         |  :white_check_mark:   | :white_check_mark: |
 | Kubernetes ≥ 1.33            |        :x:         |          :x:          | :white_check_mark: |
-
-## Note
-
-If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts. Changing `--txt-prefix` will result in lost ownership over previously created records.
-
-If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
-It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
 
 ## Contributing
 
