@@ -109,7 +109,8 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 				key := []byte(k)
 				r, err := newRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key, "")
 				assert.NoError(t, err, "Error creating TXT registry")
-				txtRecords := r.generateTXTRecord(test.record)
+				txtRecords, err := r.generateTXTRecord(test.record)
+				require.NoError(t, err)
 				assert.Len(t, txtRecords, len(test.record.Targets))
 
 				for _, txt := range txtRecords {

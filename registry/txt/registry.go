@@ -20,6 +20,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"errors"
+	"fmt"
 	"maps"
 	"strings"
 	"time"
@@ -185,6 +186,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	// In that case, stale TXT record information could remain, so we reset it here instead.
 	im.existingTXTs.reset()
 
+	// Records() runs first each reconcile, before sources call NewEndpoint or
+	// ApplyChanges projects TXT names — reset the overflow gauge here so both
+	// source and txt_prefix emissions land in the current sync's snapshot.
+	resetLabelOverflow()
+
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -272,8 +278,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsSet) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
-				// Get desired TXT records and detect the missing ones
-				desiredTXTs := im.generateTXTRecord(ep)
+				// Get desired TXT records and detect the missing ones.
+				// Owner-filtered records were created with valid TXT names; the projected
+				// name cannot overflow on a re-generate, so the error is unreachable here.
+				desiredTXTs, _ := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
 					if !txtRecordsSet.Has(desiredTXT.DNSName) {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
@@ -299,17 +307,10 @@ func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
 	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
 }
 
-// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
-// depending on the newFormatOnly configuration. The old format is maintained for backwards
-// compatibility but can be disabled to reduce the number of DNS records.
-func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
-}
-
-func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
-
-	// Always create new format record
+// generateTXTRecord builds the ownership TXT record for r, or returns an
+// error if the projected TXT name would contain a label exceeding RFC 1035's
+// 63-char limit (in which case the owned record cannot be safely created).
+func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	recordType := r.RecordType
 
 	if shouldUseCNAMEForTxtRecord(r) {
@@ -320,35 +321,46 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	txtNew := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
+	txtName := im.mapper.ToTXTName(r.DNSName, recordType)
+	if label, ok := endpoint.OverflowingLabel(txtName); ok {
+		return nil, fmt.Errorf("%s %s: projected TXT name %q has label %q exceeding RFC 1035's 63-char limit", r.RecordType, r.DNSName, txtName, label)
 	}
-	return endpoints
+
+	txtNew := endpoint.NewEndpoint(txtName, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	txtNew.WithSetIdentifier(r.SetIdentifier)
+	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+	txtNew.ProviderSpecific = r.ProviderSpecific
+	return []*endpoint.Endpoint{txtNew}, nil
 }
 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
+		Create:    make([]*endpoint.Endpoint, 0, len(changes.Create)),
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	for _, r := range filteredChanges.Create {
+	for _, r := range changes.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		txts, err := im.generateTXTRecord(r)
+		if err != nil {
+			log.Errorf("Skipping owned record: %v; record would become unmanageable", err)
+			recordTXTPrefixOverflow(r)
+			continue
+		}
+		filteredChanges.Create = append(filteredChanges.Create, r)
+		for _, txt := range txts {
+			if im.existingTXTs.isAbsent(txt) {
+				filteredChanges.Create = append(filteredChanges.Create, txt)
+			}
+		}
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -359,7 +371,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		// Owner-filtered records were created with valid TXT names; the projected
+		// name cannot overflow on a re-generate, so the error is unreachable here.
+		txts, _ := im.generateTXTRecord(r)
+		filteredChanges.Delete = append(filteredChanges.Delete, txts...)
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -370,7 +385,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		// Owner-filtered records were created with valid TXT names; the projected
+		// name cannot overflow on a re-generate, so the error is unreachable here.
+		txts, _ := im.generateTXTRecord(r)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txts...)
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -379,7 +397,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		// Owner-filtered records were created with valid TXT names; the projected
+		// name cannot overflow on a re-generate, so the error is unreachable here.
+		txts, _ := im.generateTXTRecord(r)
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txts...)
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
