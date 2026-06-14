@@ -90,9 +90,11 @@ func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil
 }
 
-// IsAnyConfigured reports whether any template (fqdn, target, or fqdn-target) is configured.
-func (e Engine) IsAnyConfigured() bool {
-	return e.fqdn != nil || e.target != nil || e.fqdnTarget != nil
+// HasDNSNameTemplate reports whether any name-generating template (fqdn or fqdn-target) is
+// configured. The target template alone cannot generate DNS names, so it is excluded.
+// Use this to decide whether template output should replace resource-derived DNS names.
+func (e Engine) HasDNSNameTemplate() bool {
+	return e.fqdn != nil || e.fqdnTarget != nil
 }
 
 // Combining reports whether the engine is configured to combine template-based

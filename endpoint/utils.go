@@ -121,7 +121,7 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
 	}
 
-	endpoints := make([]*Endpoint, 0, len(sortedHosts)*len(sortedTypes))
+	endpoints := make([]*Endpoint, 0, len(sortedHosts))
 	for _, hostname := range sortedHosts {
 		for _, recordType := range sortedTypes {
 			endpoints = append(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))

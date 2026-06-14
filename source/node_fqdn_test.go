@@ -108,6 +108,13 @@ func TestNodeFQDNTargetTemplate(t *testing.T) {
 				endpoint.NewEndpoint(nodeName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
+		{
+			title:          "target-template alone still generates default node-name endpoints",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: nodeName, RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{nodeExtIP}},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()

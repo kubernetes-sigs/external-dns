@@ -113,7 +113,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
 		var err error
-		if !ns.templateEngine.IsAnyConfigured() || ns.templateEngine.Combining() {
+		if !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
