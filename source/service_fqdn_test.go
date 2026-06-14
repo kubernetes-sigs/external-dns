@@ -31,6 +31,123 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+func TestServiceFQDNTargetTemplate(t *testing.T) {
+	const (
+		svcName   = "my-svc"
+		clusterIP = "10.0.0.1"
+	)
+
+	makeSvc := func(anns map[string]string) *v1.Service {
+		return &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        svcName,
+				Namespace:   "default",
+				Annotations: anns,
+			},
+			Spec: v1.ServiceSpec{
+				Type:      v1.ServiceTypeClusterIP,
+				ClusterIP: clusterIP,
+			},
+		}
+	}
+
+	for _, tt := range []struct {
+		title              string
+		svc                *v1.Service
+		fqdnTemplate       string
+		targetTemplate     string
+		fqdnTargetTemplate string
+		combine            bool
+		expected           []*endpoint.Endpoint
+	}{
+		{
+			title:              "fqdn-target-template generates A record when no annotation-derived endpoints",
+			svc:                makeSvc(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(svcName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:              "fqdn-target-template generates CNAME for hostname target",
+			svc:                makeSvc(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(svcName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template with combine adds endpoint alongside annotation-derived",
+			svc: makeSvc(map[string]string{
+				annotations.HostnameKey: "annotated.example.com",
+			}),
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "annotated.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{clusterIP}},
+				{DNSName: svcName + ".tmpl.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title: "fqdn-target-template without combine is ignored when annotation-derived endpoints exist",
+			svc: makeSvc(map[string]string{
+				annotations.HostnameKey: "annotated.example.com",
+			}),
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            false,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "annotated.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{clusterIP}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .Kind",
+			svc:                makeSvc(nil),
+			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("service."+svcName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:              "fqdn-target-template pair missing colon is skipped",
+			svc:                makeSvc(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com",
+		},
+		{
+			title:        "fqdn-template can reference .Kind",
+			svc:          makeSvc(nil),
+			fqdnTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "service." + svcName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{clusterIP}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .APIVersion",
+			svc:                makeSvc(nil),
+			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(svcName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			_, err := kubeClient.CoreV1().Services("default").Create(t.Context(), tt.svc, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewServiceSource(t.Context(), kubeClient, &Config{
+				TemplateEngine:  templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
+				PublishInternal: true,
+				LabelFilter:     labels.Everything(),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 	for _, tt := range []struct {

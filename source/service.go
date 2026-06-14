@@ -209,6 +209,11 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if none of the above is found
+		svcEndpoints, err = sc.templateEngine.ApplyFQDNTargetTemplate(svcEndpoints, svc)
+		if err != nil {
+			return nil, err
+		}
+
 		svcEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			svcEndpoints,
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(svc) },

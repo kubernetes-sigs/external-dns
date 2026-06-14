@@ -183,17 +183,11 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		var err error
-		vsEndpoints, err = vs.templateEngine.CombineWithEndpoints(
-			vsEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return vs.endpointsFromFQDNTargetTemplate(virtualServer) },
-		)
+		vsEndpoints, err = vs.templateEngine.ApplyFQDNTargetTemplate(vsEndpoints, virtualServer)
 		if err != nil {
 			return nil, err
 		}
-		vsEndpoints, err = vs.templateEngine.CombineWithEndpoints(
-			vsEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return vs.endpointsFromVSTemplate(virtualServer) },
-		)
+		vsEndpoints, err = vs.templateEngine.ApplyTemplate(vsEndpoints, virtualServer)
 		if err != nil {
 			return nil, err
 		}
@@ -209,46 +203,6 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	}
 
 	return endpoints, nil
-}
-
-// endpointsFromVSTemplate creates endpoints using the FQDN and target templates.
-func (vs *f5VirtualServerSource) endpointsFromVSTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
-	hostnames, err := vs.templateEngine.ExecFQDN(obj)
-	if err != nil || len(hostnames) == 0 {
-		return nil, err
-	}
-	targets, err := vs.templateEngine.ExecTarget(obj)
-	if err != nil {
-		return nil, err
-	}
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-// endpointsFromFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
-func (vs *f5VirtualServerSource) endpointsFromFQDNTargetTemplate(obj *f5.VirtualServer) ([]*endpoint.Endpoint, error) {
-	pairs, err := vs.templateEngine.ExecFQDNTarget(obj)
-	if err != nil || len(pairs) == 0 {
-		return nil, err
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from virtualserver %s/%s: missing ':' separator",
-				pair, obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from virtualserver %s/%s: field may not yet be populated",
-				pair, obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
-	}
-	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

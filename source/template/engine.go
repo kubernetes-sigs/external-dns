@@ -90,6 +90,11 @@ func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil
 }
 
+// IsAnyConfigured reports whether any template (fqdn, target, or fqdn-target) is configured.
+func (e Engine) IsAnyConfigured() bool {
+	return e.fqdn != nil || e.target != nil || e.fqdnTarget != nil
+}
+
 // Combining reports whether the engine is configured to combine template-based
 // endpoints with annotation-based endpoints.
 func (e Engine) Combining() bool {
@@ -109,6 +114,64 @@ func (e Engine) ExecTarget(obj kubeObject) ([]string, error) {
 // ExecFQDNTarget executes the FQDNTarget template against a Kubernetes object and returns hostname:target pairs.
 func (e Engine) ExecFQDNTarget(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdnTarget, obj)
+}
+
+// ApplyFQDNTargetTemplate is a convenience wrapper around CombineWithEndpoints that generates
+// endpoints from the fqdn-target template and combines them with the existing slice.
+// It consolidates the identical endpointsFromXxxFQDNTargetTemplate helpers that each source
+// previously duplicated.
+func (e Engine) ApplyFQDNTargetTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
+	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
+		return e.endpointsFromFQDNTargetTemplate(obj)
+	})
+}
+
+// ApplyTemplate is a convenience wrapper around CombineWithEndpoints that generates endpoints
+// from the FQDN and target templates (ExecFQDN + ExecTarget) and combines them with the existing
+// slice. Use this for sources where the template itself provides the DNS target; sources that
+// derive targets from the resource (pod IPs, node addresses, LB ingress) keep their own method.
+func (e Engine) ApplyTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
+	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
+		return e.endpointsFromTemplate(obj)
+	})
+}
+
+func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
+	pairs, err := e.ExecFQDNTarget(obj)
+	if err != nil || len(pairs) == 0 {
+		return nil, err
+	}
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	eps := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
+				pair, kind, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
+				pair, kind, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+	}
+	return endpoint.MergeEndpoints(eps), nil
+}
+
+func (e Engine) endpointsFromTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
+	hostnames, err := e.ExecFQDN(obj)
+	if err != nil || len(hostnames) == 0 {
+		return nil, err
+	}
+	targets, err := e.ExecTarget(obj)
+	if err != nil {
+		return nil, err
+	}
+	return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
 }
 
 // CombineWithEndpoints merges annotation-based endpoints with template-based endpoints.

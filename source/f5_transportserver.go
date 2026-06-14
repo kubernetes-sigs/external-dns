@@ -179,17 +179,11 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 		}
 
 		var err error
-		tsEndpoints, err = ts.templateEngine.CombineWithEndpoints(
-			tsEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTSFQDNTargetTemplate(transportServer) },
-		)
+		tsEndpoints, err = ts.templateEngine.ApplyFQDNTargetTemplate(tsEndpoints, transportServer)
 		if err != nil {
 			return nil, err
 		}
-		tsEndpoints, err = ts.templateEngine.CombineWithEndpoints(
-			tsEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTSTemplate(transportServer) },
-		)
+		tsEndpoints, err = ts.templateEngine.ApplyTemplate(tsEndpoints, transportServer)
 		if err != nil {
 			return nil, err
 		}
@@ -205,46 +199,6 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 	}
 
 	return endpoints, nil
-}
-
-// endpointsFromTSTemplate creates endpoints using the FQDN and target templates.
-func (ts *f5TransportServerSource) endpointsFromTSTemplate(obj *f5.TransportServer) ([]*endpoint.Endpoint, error) {
-	hostnames, err := ts.templateEngine.ExecFQDN(obj)
-	if err != nil || len(hostnames) == 0 {
-		return nil, err
-	}
-	targets, err := ts.templateEngine.ExecTarget(obj)
-	if err != nil {
-		return nil, err
-	}
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-// endpointsFromTSFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
-func (ts *f5TransportServerSource) endpointsFromTSFQDNTargetTemplate(obj *f5.TransportServer) ([]*endpoint.Endpoint, error) {
-	pairs, err := ts.templateEngine.ExecFQDNTarget(obj)
-	if err != nil || len(pairs) == 0 {
-		return nil, err
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from transportserver %s/%s: missing ':' separator",
-				pair, obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from transportserver %s/%s: field may not yet be populated",
-				pair, obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
-	}
-	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

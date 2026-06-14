@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -412,6 +413,121 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+func TestPodFQDNTargetTemplate(t *testing.T) {
+	const (
+		podName = "my-pod"
+		podIP   = "100.67.94.101"
+	)
+
+	makePod := func(anns map[string]string) *v1.Pod {
+		return &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName,
+				Namespace:   "default",
+				Annotations: anns,
+			},
+			Status: v1.PodStatus{
+				PodIP:  podIP,
+				PodIPs: []v1.PodIP{{IP: podIP}},
+			},
+		}
+	}
+
+	for _, tt := range []struct {
+		title              string
+		pod                *v1.Pod
+		fqdnTemplate       string
+		targetTemplate     string
+		fqdnTargetTemplate string
+		combine            bool
+		expected           []*endpoint.Endpoint
+	}{
+		{
+			title:              "fqdn-target-template generates A record when no annotation-derived endpoints",
+			pod:                makePod(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:              "fqdn-target-template generates CNAME for hostname target",
+			pod:                makePod(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(podName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "fqdn-target-template with combine adds endpoint alongside annotation-derived",
+			pod: makePod(map[string]string{
+				annotations.InternalHostnameKey: "annotated.example.com",
+			}),
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "annotated.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{podIP}},
+				{DNSName: podName + ".tmpl.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title: "fqdn-target-template without combine is ignored when annotation-derived endpoints exist",
+			pod: makePod(map[string]string{
+				annotations.InternalHostnameKey: "annotated.example.com",
+			}),
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            false,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "annotated.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{podIP}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .Kind",
+			pod:                makePod(nil),
+			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("pod."+podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:              "fqdn-target-template pair missing colon is skipped",
+			pod:                makePod(nil),
+			fqdnTargetTemplate: "{{.Name}}.example.com",
+		},
+		{
+			title:        "fqdn-template can reference .Kind",
+			pod:          makePod(nil),
+			fqdnTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "pod." + podName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{podIP}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .APIVersion",
+			pod:                makePod(nil),
+			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(podName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			_, err := kubeClient.CoreV1().Pods(tt.pod.Namespace).Create(t.Context(), tt.pod, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewPodSource(t.Context(), kubeClient, &Config{
+				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}

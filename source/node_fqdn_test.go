@@ -31,6 +31,102 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+func TestNodeFQDNTargetTemplate(t *testing.T) {
+	const (
+		nodeName  = "my-node"
+		nodeExtIP = "10.0.0.1"
+	)
+
+	makeNode := func() *v1.Node {
+		return &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+			Status: v1.NodeStatus{
+				Addresses: []v1.NodeAddress{
+					{Type: v1.NodeExternalIP, Address: nodeExtIP},
+				},
+			},
+		}
+	}
+
+	for _, tt := range []struct {
+		title              string
+		fqdnTemplate       string
+		targetTemplate     string
+		fqdnTargetTemplate string
+		combine            bool
+		expected           []*endpoint.Endpoint
+	}{
+		{
+			title:              "fqdn-target-template generates A record when no other endpoints",
+			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(nodeName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:              "fqdn-target-template generates CNAME for hostname target",
+			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(nodeName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title:              "fqdn-target-template without combine replaces default node-name endpoint",
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            false,
+			expected: []*endpoint.Endpoint{
+				{DNSName: nodeName + ".tmpl.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "fqdn-target-template with combine adds endpoint alongside default node-name endpoint",
+			fqdnTargetTemplate: "{{.Name}}.tmpl.example.com:lb.example.com",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: nodeName, RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{nodeExtIP}},
+				{DNSName: nodeName + ".tmpl.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .Kind",
+			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("node."+nodeName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			title:        "fqdn-template can reference .Kind",
+			fqdnTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "node." + nodeName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{nodeExtIP}},
+			},
+		},
+		{
+			title:              "fqdn-target-template can reference .APIVersion",
+			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint(nodeName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), makeNode(), metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewNodeSource(t.Context(), kubeClient, &Config{
+				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
+				LabelFilter:    labels.Everything(),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
 func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 	for _, tt := range []struct {
 		title        string

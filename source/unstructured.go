@@ -19,11 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -147,24 +142,14 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
-		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
+		annotationEdps := endpoint.EndpointsForHostsAndTargets(hosts, addrs)
 
-		fqdnTargetEdps, err := us.templateEngine.CombineWithEndpoints(
-			annotationEdps,
-			func() ([]*endpoint.Endpoint, error) {
-				return us.endpointsFromFQDNTargetTemplate(el)
-			},
-		)
+		fqdnTargetEdps, err := us.templateEngine.ApplyFQDNTargetTemplate(annotationEdps, el)
 		if err != nil {
 			return nil, err
 		}
 
-		edps, err := us.templateEngine.CombineWithEndpoints(
-			fqdnTargetEdps,
-			func() ([]*endpoint.Endpoint, error) {
-				return us.endpointsFromTemplate(el)
-			},
-		)
+		edps, err := us.templateEngine.ApplyTemplate(fqdnTargetEdps, el)
 		if err != nil {
 			return nil, err
 		}
@@ -180,60 +165,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 				WithMinTTL(int64(ttl))
 			endpoints = append(endpoints, ep)
 		}
-	}
-
-	return endpoint.MergeEndpoints(endpoints), nil
-}
-
-// endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
-func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	hostnames, err := us.templateEngine.ExecFQDN(el)
-	if err != nil {
-		return nil, err
-	}
-	if len(hostnames) == 0 {
-		return nil, nil
-	}
-
-	targets, err := us.templateEngine.ExecTarget(el)
-	if err != nil {
-		return nil, err
-	}
-
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-// endpointsFromFQDNTargetTemplate creates endpoints from a template that returns host:target pairs.
-// Each pair creates a single endpoint with 1:1 mapping between host and target.
-func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	pairs, err := us.templateEngine.ExecFQDNTarget(el)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pairs) == 0 {
-		return nil, nil
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		// Split at first colon (hostnames can't contain colons, IPv6 targets can)
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
-				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
-			continue
-		}
-
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
-				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
-			continue
-		}
-
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
@@ -342,43 +273,4 @@ func validateResource(discoveryClient discovery.DiscoveryInterface, gvr schema.G
 	}
 
 	return fmt.Errorf("resource %q not found in %q", gvr.Resource, gv)
-}
-
-// EndpointsForHostsAndTargets creates endpoints by grouping targets by record type
-// and creating an endpoint for each hostname/record-type combination.
-// The function returns endpoints in deterministic order (sorted by record type).
-func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoint {
-	if len(hostnames) == 0 || len(targets) == 0 {
-		return nil
-	}
-
-	// Deduplicate hostnames
-	sortedHosts := sets.Sorted(sets.New(hostnames...))
-
-	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]sets.Set[string])
-	for _, target := range targets {
-		recordType := endpoint.SuitableType(target)
-		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = sets.New(target)
-		} else {
-			targetsByType[recordType].Insert(target)
-		}
-	}
-
-	// Resolve to sorted slices once
-	sortedTypes := slices.Sorted(maps.Keys(targetsByType))
-	sortedTargets := make(map[string][]string, len(targetsByType))
-	for _, recordType := range sortedTypes {
-		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(sortedHosts)*len(sortedTypes))
-	for _, hostname := range sortedHosts {
-		for _, recordType := range sortedTypes {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
-		}
-	}
-
-	return endpoints
 }
