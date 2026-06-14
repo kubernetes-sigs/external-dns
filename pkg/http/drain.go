@@ -28,6 +28,13 @@ const (
 	// the deferred DrainAndClose runs, so only trailing bytes remain. On error paths
 	// the body is typically a short error message. 1 MiB is generous for either case.
 	drainMaxBytes = 1 << 20 // 1 MiB
+
+	// MaxBodyBytes caps how many bytes of a webhook request or response body
+	// the JSON decoder will consume. Webhook payloads scale with zone size
+	// (~0.5 KiB per endpoint), so 32 MiB allows ~60k+ records while preventing
+	// a compromised or buggy peer from streaming an unbounded body and
+	// exhausting controller memory before the client timeout fires.
+	MaxBodyBytes = 32 << 20 // 32 MiB
 )
 
 // DrainAndClose drains up to drainMaxBytes of the response body before
