@@ -254,3 +254,38 @@ tests:
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--gateway-listener-sets"
+
+  - it: should not include fqdn-template flag when fqdnTemplates is empty
+    set:
+      fqdnTemplates: []
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--fqdn-template"
+
+  - it: should not include fqdn-template flag when fqdnTemplates is null
+    set:
+      fqdnTemplates: null
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--fqdn-template"
+
+  - it: should configure single fqdn template
+    set:
+      fqdnTemplates:
+        - "{{.Name}}.example.com"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--fqdn-template={{.Name}}.example.com"
+
+  - it: should configure multiple fqdn templates as comma-separated list
+    set:
+      fqdnTemplates:
+        - "{{.Name}}.example.com"
+        - "{{.Name}}.example.org"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--fqdn-template={{.Name}}.example.com,{{.Name}}.example.org"

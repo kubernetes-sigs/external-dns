@@ -108,6 +108,17 @@
       "description": "Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`.",
       "type": "array"
     },
+    "fqdnTemplates": {
+      "description": "[FQDN templates](https://kubernetes-sigs.github.io/external-dns/latest/docs/advanced/fqdn-templating) to use for generating DNS records.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
     "fullnameOverride": {
       "description": "Override the full name of the chart.",
       "type": [
