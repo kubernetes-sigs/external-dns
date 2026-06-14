@@ -858,11 +858,6 @@ func (in *IngressRouteUDP) GetAnnotations() map[string]string {
 	return in.Annotations
 }
 
-// traefikObject is satisfied by IngressRoute, IngressRouteTCP, and IngressRouteUDP.
-type traefikObject interface {
-	runtime.Object
-	metav1.Object
-}
 
 // extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
 // It performs the following steps:
