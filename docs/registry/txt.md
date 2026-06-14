@@ -100,6 +100,10 @@ lest the registry records be orphaned and the metadata be lost.
 The prefix or suffix may contain the substring `%{record_type}`, which is replaced with
 the record type of the DNS record for which it is storing metadata.
 
+> Note: When managing TXT records (`--managed-record-types=TXT`), `%{record_type}` **must** be
+> present in `--txt-prefix` or `--txt-suffix`. Without it, external-dns cannot distinguish
+> data TXT records from ownership TXT records and will refuse to start.
+
 The prefix is specified using the `--txt-prefix` flag and the suffix is specified using
 the `--txt-suffix` flag. The two flags are mutually exclusive.
 
