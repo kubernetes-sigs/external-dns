@@ -35,7 +35,9 @@ jobs:
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      - run: pip install -r docs/scripts/requirements.txt
+      # To update dependencies, edit docs/scripts/requirements.in and run:
+      #   pip-compile --generate-hashes --strip-extras --output-file=docs/scripts/requirements.txt docs/scripts/requirements.in
+      - run: pip install --require-hashes -r docs/scripts/requirements.txt
 
       - name: lint and build docs
         run: mkdocs build --strict
@@ -58,7 +60,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      - run: pip install -r docs/scripts/requirements.txt
+      - run: pip install --require-hashes -r docs/scripts/requirements.txt
 
       - name: Configure Git user
         run: |
