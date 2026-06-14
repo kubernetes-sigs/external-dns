@@ -421,6 +421,21 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 				MxRecords: mxRecords,
 			},
 		}, nil
+	case privatedns.RecordTypeSRV:
+		srvRecords := make([]*privatedns.SrvRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			srvRecord, err := parseSrvTarget[privatedns.SrvRecord](target)
+			if err != nil {
+				return privatedns.RecordSet{}, err
+			}
+			srvRecords[i] = &srvRecord
+		}
+		return privatedns.RecordSet{
+			Properties: &privatedns.RecordSetProperties{
+				TTL:        new(ttl),
+				SrvRecords: srvRecords,
+			},
+		}, nil
 	case privatedns.RecordTypeTXT:
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
@@ -477,6 +492,16 @@ func extractAzurePrivateDNSTargets(recordSet *privatedns.RecordSet) []string {
 		targets := make([]string, len(mxRecords))
 		for i, mxRecord := range mxRecords {
 			targets[i] = fmt.Sprintf("%d %s", *mxRecord.Preference, *mxRecord.Exchange)
+		}
+		return targets
+	}
+
+	// Check for SRV records
+	srvRecords := properties.SrvRecords
+	if len(srvRecords) > 0 && (srvRecords)[0].Target != nil {
+		targets := make([]string, len(srvRecords))
+		for i, srvRecord := range srvRecords {
+			targets[i] = fmt.Sprintf("%d %d %d %s", *srvRecord.Priority, *srvRecord.Weight, *srvRecord.Port, *srvRecord.Target)
 		}
 		return targets
 	}
