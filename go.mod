@@ -28,12 +28,12 @@ require (
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/emissary-ingress/emissary/v3 v3.10.0
 	github.com/exoscale/egoscale/v3 v3.1.37
-	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.7.0
 	github.com/go-logr/logr v1.4.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/joeig/go-powerdns/v3 v3.22.0
 	github.com/linode/linodego v1.69.1
 	github.com/maxatome/go-testdeep v1.15.0
 	github.com/miekg/dns v1.1.72
