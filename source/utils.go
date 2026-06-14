@@ -18,20 +18,20 @@ import (
 	"strings"
 )
 
-// ParseIngress parses an ingress string in the format "namespace/name" or "name".
+// ParseNamespacedName parses a string in the format "namespace/name" or "name".
 // It returns the namespace and name extracted from the string, or an error if the format is invalid.
 // If the namespace is not provided, it defaults to an empty string.
-func ParseIngress(ingress string) (string, string, error) {
+func ParseNamespacedName(ref string) (string, string, error) {
 	var namespace, name string
 	var err error
-	parts := strings.Split(ingress, "/")
+	parts := strings.Split(ref, "/")
 	switch len(parts) {
 	case 2:
 		namespace, name = parts[0], parts[1]
 	case 1:
 		name = parts[0]
 	default:
-		err = fmt.Errorf("invalid ingress name (name or namespace/name) found %q", ingress)
+		err = fmt.Errorf("invalid namespaced name (expected name or namespace/name) found %q", ref)
 	}
 
 	return namespace, name, err

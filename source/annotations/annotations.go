@@ -59,8 +59,12 @@ var (
 	AccessKey = AnnotationKeyPrefix + "access"
 	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
 	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
-	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
+	// Ingress the annotation used to reference an Ingress object for endpoint target resolution.
+	// The value is in the format "namespace/name" or "name".
 	Ingress = AnnotationKeyPrefix + "ingress"
+	// GatewayKey the annotation used to reference a Gateway API Gateway object for endpoint target resolution.
+	// The value is in the format "namespace/name" or "name".
+	GatewayKey = AnnotationKeyPrefix + "gateway"
 	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
@@ -106,6 +110,7 @@ func SetAnnotationPrefix(prefix string) {
 	AccessKey = AnnotationKeyPrefix + "access"
 	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
 	Ingress = AnnotationKeyPrefix + "ingress"
+	GatewayKey = AnnotationKeyPrefix + "gateway"
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
