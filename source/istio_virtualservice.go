@@ -406,7 +406,7 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[annotations.Ingress]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
