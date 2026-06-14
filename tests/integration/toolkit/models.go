@@ -34,7 +34,7 @@ type TestScenarios struct {
 }
 
 // ExpectedRefObject describes an expected Kubernetes object reference on an endpoint.
-// Key is matched against ObjectReference.Key() (UID when set, else "kind/namespace/name").
+// Key is matched against ObjectReference.Key() ("source/namespace/name").
 type ExpectedRefObject struct {
 	Key string `json:"key"`
 }
