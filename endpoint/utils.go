@@ -17,12 +17,14 @@ limitations under the License.
 package endpoint
 
 import (
+	"maps"
 	"net/netip"
 	"slices"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -91,6 +93,41 @@ func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
 	for _, ep := range eps {
 		ep.WithRefObject(ref)
 	}
+}
+
+// EndpointsForHostsAndTargets creates endpoints by grouping targets by record type
+// and creating an endpoint for each hostname/record-type combination.
+// Hostnames and targets are deduplicated; output order is deterministic.
+func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
+	if len(hostnames) == 0 || len(targets) == 0 {
+		return nil
+	}
+
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
+
+	targetsByType := make(map[string]sets.Set[string])
+	for _, target := range targets {
+		recordType := SuitableType(target)
+		if targetsByType[recordType] == nil {
+			targetsByType[recordType] = sets.New(target)
+		} else {
+			targetsByType[recordType].Insert(target)
+		}
+	}
+
+	sortedTypes := slices.Sorted(maps.Keys(targetsByType))
+	sortedTargets := make(map[string][]string, len(targetsByType))
+	for _, recordType := range sortedTypes {
+		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
+	}
+
+	endpoints := make([]*Endpoint, 0, len(sortedHosts))
+	for _, hostname := range sortedHosts {
+		for _, recordType := range sortedTypes {
+			endpoints = append(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+		}
+	}
+	return endpoints
 }
 
 // MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)

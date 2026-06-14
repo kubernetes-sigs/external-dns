@@ -293,54 +293,7 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 		}
 	}
 
-	endpoints, err := gs.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyFQDNTargetTemplate(p) },
-	)
-	if err != nil {
-		return nil, err
-	}
-	return gs.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return gs.endpointsFromProxyTemplate(p) },
-	)
-}
-
-func (gs *glooSource) endpointsFromProxyTemplate(p *proxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := gs.templateEngine.ExecFQDN(p)
-	if err != nil || len(hostnames) == 0 {
-		return nil, err
-	}
-	targets, err := gs.templateEngine.ExecTarget(p)
-	if err != nil {
-		return nil, err
-	}
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-func (gs *glooSource) endpointsFromProxyFQDNTargetTemplate(p *proxy) ([]*endpoint.Endpoint, error) {
-	pairs, err := gs.templateEngine.ExecFQDNTarget(p)
-	if err != nil || len(pairs) == 0 {
-		return nil, err
-	}
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from proxy %s/%s: missing ':' separator",
-				pair, p.GetNamespace(), p.GetName())
-			continue
-		}
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from proxy %s/%s: field may not yet be populated",
-				pair, p.GetNamespace(), p.GetName())
-			continue
-		}
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
-	}
-	return endpoint.MergeEndpoints(endpoints), nil
+	return gs.templateEngine.ApplyTemplates(endpoints, p)
 }
 
 func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {
