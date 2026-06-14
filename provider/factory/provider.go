@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
@@ -43,10 +42,8 @@ import (
 	"sigs.k8s.io/external-dns/provider/ovh"
 	"sigs.k8s.io/external-dns/provider/pdns"
 	"sigs.k8s.io/external-dns/provider/pihole"
-	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/scaleway"
-	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/webhook"
 )
 
@@ -79,7 +76,6 @@ func Select(
 // providers looks up the constructor for the named provider.
 func providers(selector string) (ProviderConstructor, bool) {
 	m := map[string]ProviderConstructor{
-		externaldns.ProviderAkamai:       akamai.New,
 		externaldns.ProviderAlibabaCloud: alibabacloud.New,
 		externaldns.ProviderAWS:          aws.New,
 		externaldns.ProviderAWSSD:        awssd.New,
@@ -102,10 +98,8 @@ func providers(selector string) (ProviderConstructor, bool) {
 		externaldns.ProviderOVH:          ovh.New,
 		externaldns.ProviderPDNS:         pdns.New,
 		externaldns.ProviderPihole:       pihole.New,
-		externaldns.ProviderPlural:       plural.New,
 		externaldns.ProviderRFC2136:      rfc2136.New,
 		externaldns.ProviderScaleway:     scaleway.New,
-		externaldns.ProviderTransip:      transip.New,
 		externaldns.ProviderWebhook:      webhook.New,
 	}
 	c, ok := m[selector]

@@ -90,12 +90,6 @@ var (
 		CloudflareDNSRecordsComment:                   "",
 		CloudflareRegionKey:                           "",
 		CoreDNSPrefix:                                 "/skydns/",
-		AkamaiServiceConsumerDomain:                   "",
-		AkamaiClientToken:                             "",
-		AkamaiClientSecret:                            "",
-		AkamaiAccessToken:                             "",
-		AkamaiEdgercPath:                              "",
-		AkamaiEdgercSection:                           "",
 		OCIConfigFile:                                 "/etc/kubernetes/oci.yaml",
 		OCIZoneScope:                                  "GLOBAL",
 		OCIZoneCacheDuration:                          0 * time.Second,
@@ -126,8 +120,6 @@ var (
 		ExoscaleAPISecret:                             "",
 		CRDSourceAPIVersion:                           "externaldns.k8s.io/v1alpha1",
 		CRDSourceKind:                                 "DNSEndpoint",
-		TransIPAccountName:                            "",
-		TransIPPrivateKeyFile:                         "",
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:                        50,
 		RFC2136Host:                                   []string{""},
@@ -202,12 +194,6 @@ var (
 		CloudflareRegionalServices:                    true,
 		CloudflareRegionKey:                           "us",
 		CoreDNSPrefix:                                 "/coredns/",
-		AkamaiServiceConsumerDomain:                   "oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
-		AkamaiClientToken:                             "o184671d5307a388180fbf7f11dbdf46",
-		AkamaiClientSecret:                            "o184671d5307a388180fbf7f11dbdf46",
-		AkamaiAccessToken:                             "o184671d5307a388180fbf7f11dbdf46",
-		AkamaiEdgercPath:                              "/home/test/.edgerc",
-		AkamaiEdgercSection:                           "default",
 		OCIConfigFile:                                 "oci.yaml",
 		OCIZoneScope:                                  "PRIVATE",
 		OCIZoneCacheDuration:                          30 * time.Second,
@@ -246,8 +232,6 @@ var (
 		CRDSourceKind:                                 "Endpoint",
 		NS1Endpoint:                                   "https://api.example.com/v1",
 		NS1IgnoreSSL:                                  true,
-		TransIPAccountName:                            "transip",
-		TransIPPrivateKeyFile:                         "/path/to/transip.key",
 		ManagedDNSRecordTypes:                         []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
@@ -343,12 +327,6 @@ func TestParseFlags(t *testing.T) {
 				"--cloudflare-regional-services",
 				"--cloudflare-region-key=us",
 				"--coredns-prefix=/coredns/",
-				"--akamai-serviceconsumerdomain=oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
-				"--akamai-client-token=o184671d5307a388180fbf7f11dbdf46",
-				"--akamai-client-secret=o184671d5307a388180fbf7f11dbdf46",
-				"--akamai-access-token=o184671d5307a388180fbf7f11dbdf46",
-				"--akamai-edgerc-path=/home/test/.edgerc",
-				"--akamai-edgerc-section=default",
 				"--inmemory-zone=example.org",
 				"--inmemory-zone=company.com",
 				"--ovh-endpoint=ovh-ca",
@@ -421,8 +399,6 @@ func TestParseFlags(t *testing.T) {
 				"--crd-source-kind=Endpoint",
 				"--ns1-endpoint=https://api.example.com/v1",
 				"--ns1-ignoressl",
-				"--transip-account=transip",
-				"--transip-keyfile=/path/to/transip.key",
 				"--managed-record-types=A",
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
@@ -475,12 +451,6 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_CLOUDFLARE_REGIONAL_SERVICES":                      "1",
 				"EXTERNAL_DNS_CLOUDFLARE_REGION_KEY":                             "us",
 				"EXTERNAL_DNS_COREDNS_PREFIX":                                    "/coredns/",
-				"EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN":                      "oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
-				"EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_CLIENT_SECRET":                              "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":                                "/home/test/.edgerc",
-				"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":                             "default",
 				"EXTERNAL_DNS_OCI_CONFIG_FILE":                                   "oci.yaml",
 				"EXTERNAL_DNS_OCI_ZONE_SCOPE":                                    "PRIVATE",
 				"EXTERNAL_DNS_OCI_ZONES_CACHE_DURATION":                          "30s",
@@ -547,8 +517,6 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_CRD_SOURCE_KIND":                                   "Endpoint",
 				"EXTERNAL_DNS_NS1_ENDPOINT":                                      "https://api.example.com/v1",
 				"EXTERNAL_DNS_NS1_IGNORESSL":                                     "1",
-				"EXTERNAL_DNS_TRANSIP_ACCOUNT":                                   "transip",
-				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
 				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
@@ -764,16 +732,6 @@ func TestParseFlagsOCI(t *testing.T) {
 	)
 	assert.True(t, cfg.OCIAuthInstancePrincipal)
 	assert.Equal(t, "ocid1.compartment.oc1..aaaa", cfg.OCICompartmentOCID)
-}
-
-func TestParseFlagsPlural(t *testing.T) {
-	t.Parallel()
-	cfg := parseCfg(t,
-		"--plural-cluster=mycluster",
-		"--plural-provider=aws",
-	)
-	assert.Equal(t, "mycluster", cfg.PluralCluster)
-	assert.Equal(t, "aws", cfg.PluralProvider)
 }
 
 func TestParseFlagsProviderCacheAndDynamoDB(t *testing.T) {
