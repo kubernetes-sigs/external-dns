@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+- Add values `.txtWildcardReplacement`, `.txtEncryptEnabled`, and `.txtEncryptAesKey` for TXT registry options.
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 
 ### Fixed
