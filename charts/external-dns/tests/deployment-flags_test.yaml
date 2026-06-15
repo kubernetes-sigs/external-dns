@@ -56,6 +56,26 @@ tests:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--txt-suffix=custom-suffix"
 
+  - it: should configure 'txtWildcardReplacement' when set
+    set:
+      txtWildcardReplacement: "wildcard"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-wildcard-replacement=wildcard"
+
+  - it: should configure TXT record encryption flags when set
+    set:
+      txtEncryptEnabled: true
+      txtEncryptAesKey: "01234567890123456789012345678901"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-encrypt-enabled"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-encrypt-aes-key=01234567890123456789012345678901"
+
   - it: should be able configure multiple sources
     set:
       sources:

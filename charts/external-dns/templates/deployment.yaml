@@ -108,6 +108,15 @@ spec:
             {{- else if .Values.txtSuffix }}
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
+            {{- with .Values.txtWildcardReplacement }}
+            - --txt-wildcard-replacement={{ . }}
+            {{- end }}
+            {{- if .Values.txtEncryptEnabled }}
+            - --txt-encrypt-enabled
+            {{- end }}
+            {{- with .Values.txtEncryptAesKey }}
+            - --txt-encrypt-aes-key={{ . }}
+            {{- end }}
             {{- if .Values.namespaced }}
             - --namespace={{ default (include "external-dns.namespace" .) .Values.sourceNamespace }}
             {{- end }}
