@@ -47,12 +47,13 @@ const (
 
 	randomPrefixLabel     = "prefix"
 	providerSpecificGroup = "coredns/group"
+	originalTextLabel     = "originalText"
 )
 
 var (
 	// avoids allocating a new slice on every call
 	// prevents unwanted deletion of etcd keys based on labels
-	skipLabels = []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
+	skipLabels = []string{originalTextLabel, "prefix", "resource", endpoint.OwnerLabelKey}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
@@ -325,9 +326,13 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				ep.Targets = append(ep.Targets, service.Host)
 				log.Debugf("Extending ep (%s) with new service host (%s)", ep, service.Host)
 			} else {
+				recordType := guessRecordType(service.Host)
+				if isPTRDomain(dnsName) {
+					recordType = endpoint.RecordTypePTR
+				}
 				ep = endpoint.NewEndpointWithTTL(
 					dnsName,
-					guessRecordType(service.Host),
+					recordType,
 					endpoint.TTL(service.TTL),
 					service.Host,
 				)
@@ -339,7 +344,7 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			if p.strictlyOwned {
 				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
 			}
-			ep.Labels["originalText"] = service.Text
+			ep.Labels[originalTextLabel] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
 			ep.Labels[service.Host] = prefix
 			result = append(result, ep)
@@ -421,6 +426,19 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 	var services []*Service
 
 	for _, target := range ep.Targets {
+		if ep.RecordType == endpoint.RecordTypePTR {
+			// CoreDNS etcd plugin expects PTR records at the exact reverse-DNS
+			// path (e.g., /skydns/arpa/in-addr/172/26/0/2) without any unique suffix.
+			services = append(services, &Service{
+				Host:        target,
+				Text:        ep.Labels[originalTextLabel],
+				Key:         p.etcdKeyFor(dnsName),
+				TargetStrip: 0,
+				TTL:         uint32(ep.RecordTTL),
+			})
+			continue
+		}
+
 		prefix := ep.Labels[target]
 		if prefix == "" {
 			prefix = fmt.Sprintf("%08x", rand.Int31())
@@ -432,7 +450,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		}
 		service := Service{
 			Host:        target,
-			Text:        ep.Labels["originalText"],
+			Text:        ep.Labels[originalTextLabel],
 			Key:         p.etcdKeyFor(prefix + "." + dnsName),
 			TargetStrip: strings.Count(prefix, ".") + 1,
 			TTL:         uint32(ep.RecordTTL),
@@ -448,9 +466,15 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 			continue
 		}
 		if !slices.Contains(ep.Targets, label) {
-			err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName)
-			if err != nil {
-				return nil, err
+			if ep.RecordType == endpoint.RecordTypePTR {
+				// PTR records have no prefix — delete at the exact reverse-DNS key
+				if err := p.deleteByDnsName(ctx, dnsName); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -459,19 +483,31 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
 func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endpoint, services []*Service) []*Service {
+	isPTR := isPTRDomain(dnsName)
 	index := 0
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
 			continue
 		}
 		if index >= len(services) {
-			prefix := ep.Labels[randomPrefixLabel]
-			if prefix == "" {
-				prefix = fmt.Sprintf("%08x", rand.Int31())
+			var key string
+			var targetStrip int
+			if isPTR {
+				// PTR reverse zones must not have a random prefix — CoreDNS
+				// expects the key at the exact reverse-DNS path.
+				key = p.etcdKeyFor(dnsName)
+				targetStrip = 0
+			} else {
+				prefix := ep.Labels[randomPrefixLabel]
+				if prefix == "" {
+					prefix = fmt.Sprintf("%08x", rand.Int31())
+				}
+				key = p.etcdKeyFor(prefix + "." + dnsName)
+				targetStrip = strings.Count(prefix, ".") + 1
 			}
 			services = append(services, &Service{
-				Key:         p.etcdKeyFor(prefix + "." + dnsName),
-				TargetStrip: strings.Count(prefix, ".") + 1,
+				Key:         key,
+				TargetStrip: targetStrip,
 				TTL:         uint32(ep.RecordTTL),
 			})
 		}
@@ -515,6 +551,10 @@ func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
 	domains := strings.Split(dnsName, ".")
 	reverse(domains)
 	return p.coreDNSPrefix + strings.Join(domains, "/")
+}
+
+func isPTRDomain(dnsName string) bool {
+	return strings.HasSuffix(dnsName, ".in-addr.arpa") || strings.HasSuffix(dnsName, ".ip6.arpa")
 }
 
 func guessRecordType(target string) string {
