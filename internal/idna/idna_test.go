@@ -155,3 +155,53 @@ func TestNormalizeDNSName(tt *testing.T) {
 		})
 	}
 }
+
+func TestToASCII(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "unicode domain",
+			input: "例子.com",
+			want:  "xn--fsqu00a.com",
+		},
+		{
+			name:  "invalid input returns original",
+			input: "a\x00b.com",
+			want:  "a\x00b.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, ToASCII(tt.input))
+		})
+	}
+}
+
+func TestToUnicode(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "punycode domain",
+			input: "xn--fsqu00a.com",
+			want:  "例子.com",
+		},
+		{
+			name:  "invalid input returns original",
+			input: "a\x00b.com",
+			want:  "a\x00b.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, ToUnicode(tt.input))
+		})
+	}
+}
