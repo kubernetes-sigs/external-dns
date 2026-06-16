@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that kongTCPIngressSource is a Source.
@@ -58,9 +60,10 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "tcp-ingress-annotation",
 					Namespace: defaultKongNamespace,
+					UID:       "kong-tcpingress-uid",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -84,7 +87,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "a.example.com",
 					Targets:    []string{"a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
 					RecordType: endpoint.RecordTypeCNAME,
@@ -93,7 +96,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 						"resource": "tcpingress/kong/tcp-ingress-annotation",
 					},
 					ProviderSpecific: endpoint.ProviderSpecific{},
-				},
+				}).WithRefObject(testutils.RefSource(types.KongTCPIngress)),
 			},
 		},
 		{
@@ -165,8 +168,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-both",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "d.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -235,8 +238,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-both",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "d.example.com",
-						"kubernetes.io/ingress.class":               "kong",
+						"external-dns.kubernetes.io/hostname": "d.example.com",
+						"kubernetes.io/ingress.class":         "kong",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -296,8 +299,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-sni",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"kubernetes.io/ingress.class":             "kong",
-						"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+						"kubernetes.io/ingress.class":       "kong",
+						"external-dns.kubernetes.io/target": "203.2.45.7",
 					},
 				},
 				Spec: tcpIngressSpec{
@@ -355,9 +358,9 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					Name:      "tcp-ingress-provider-specific",
 					Namespace: defaultKongNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
-						"kubernetes.io/ingress.class":               "kong",
-						annotations.AWSPrefix + "weight":            "10",
+						"external-dns.kubernetes.io/hostname": "a.example.com",
+						"kubernetes.io/ingress.class":         "kong",
+						annotations.AWSPrefix + "weight":      "10",
 					},
 				},
 				Status: tcpIngressStatus{
@@ -425,4 +428,26 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
+}
+
+func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newKongUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeClient := fakeKube.NewSimpleClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &kongTCPIngressSource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		kongGroupdVersionResource,
+		fakeDynamicClient,
+		source.(*kongTCPIngressSource).kongTCPIngressInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

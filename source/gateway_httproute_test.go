@@ -36,6 +36,7 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -193,7 +194,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			routes: []*v1.HTTPRoute{{
-				ObjectMeta: objectMeta("route-namespace", "test"),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "route-namespace",
+					UID:       "httproute-uid",
+				},
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
@@ -209,7 +214,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4").
+					WithRefObject(testutils.RefSource(string(types.GatewayHttpRoute))),
 			},
 			logExpectations: []string{
 				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
@@ -1106,7 +1112,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("provider-annotations.com", "1.2.3.4").
-					WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
+					WithAliasProperty(endpoint.AliasTrue).
 					WithSetIdentifier("test-set-identifier"),
 			},
 		},
@@ -1645,7 +1651,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("annotation.invalid.internal", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
+				"Invalid value for \"external-dns.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
 			},
 		},
 	}
@@ -1692,4 +1698,73 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGatewayHTTPRouteSource_RouteInformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	rt := &v1.HTTPRoute{ObjectMeta: informerTransformObjectMeta()}
+	require.Contains(t, rt.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, rt.GetManagedFields())
+
+	_, err := gwClient.GatewayV1().HTTPRoutes(rt.GetNamespace()).Create(t.Context(), rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*gatewayRouteSource).rtInformer.Informer(),
+		rt,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}
+
+func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	// Create Gateway with fields that the transformer should strip.
+	gw := &v1.Gateway{
+		ObjectMeta: informerTransformObjectMeta(),
+		Spec:       v1.GatewaySpec{GatewayClassName: "test"},
+		Status: v1.GatewayStatus{
+			Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}},
+		},
+	}
+	require.Contains(t, gw.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, gw.GetManagedFields())
+	require.NotEmpty(t, gw.Status.Conditions)
+
+	_, err := gwClient.GatewayV1().Gateways(gw.GetNamespace()).Create(t.Context(), gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	gatewaySrc := source.(*gatewayRouteSource)
+
+	testInformerTransformHelper(t,
+		gatewaySrc.gwInformer.Informer(),
+		gw,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+		withRemovedStatusConditions(),
+	)
 }

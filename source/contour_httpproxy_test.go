@@ -33,10 +33,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -48,7 +50,7 @@ type HTTPProxySuite struct {
 	httpProxy *projectcontour.HTTPProxy
 }
 
-func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
+func newContourDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
 	s := runtime.NewScheme()
 	_ = projectcontour.AddToScheme(s)
 	return fakeDynamic.NewSimpleDynamicClient(s), s
@@ -89,7 +91,7 @@ func (ig fakeLoadBalancerService) Service() *v1.Service {
 }
 
 func (suite *HTTPProxySuite) SetupTest() {
-	fakeDynamicClient, s := newDynamicKubernetesClient()
+	fakeDynamicClient, s := newContourDynamicKubernetesClient()
 	var err error
 
 	suite.source, err = NewContourHTTPProxySource(
@@ -403,6 +405,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				{
 					name:      "fake1",
 					namespace: namespace,
+					uid:       "contour-httpproxy-uid",
 					annotations: map[string]string{
 						"contour.heptio.com/ingress.class": "contour",
 					},
@@ -410,11 +413,11 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.ContourHTTPProxy))),
 			},
 		},
 		{
@@ -1003,7 +1006,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				httpProxies = append(httpProxies, item.HTTPProxy())
 			}
 
-			fakeDynamicClient, scheme := newDynamicKubernetesClient()
+			fakeDynamicClient, scheme := newContourDynamicKubernetesClient()
 			for _, httpProxy := range httpProxies {
 				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
@@ -1037,7 +1040,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 
 // httpproxy specific helper functions
 func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
-	fakeDynamicClient, _ := newDynamicKubernetesClient()
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
 		t.Context(),
@@ -1061,6 +1064,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 type fakeHTTPProxy struct {
 	namespace   string
 	name        string
+	uid         string
 	annotations map[string]string
 
 	host         string
@@ -1099,6 +1103,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ir.namespace,
 			Name:        ir.name,
+			UID:         k8stypes.UID(ir.uid),
 			Annotations: ir.annotations,
 		},
 		Spec: spec,
@@ -1108,4 +1113,22 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	}
 
 	return httpProxy
+}
+
+func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
+
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &httpProxySource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		projectcontour.HTTPProxyGVR,
+		fakeDynamicClient, source.(*httpProxySource).httpProxyInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+		withRemovedStatusConditions(),
+	)
 }

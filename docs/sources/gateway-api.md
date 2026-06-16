@@ -86,7 +86,7 @@ ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
 They use the v1 API and allow attaching additional listeners to an existing Gateway.
 Routes that reference a ListenerSet as a parentRef are automatically supported —
 ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
-The `external-dns.alpha.kubernetes.io/target` annotation is also supported on ListenerSet
+The `external-dns.kubernetes.io/target` annotation is also supported on ListenerSet
 resources. When present, it takes precedence over the parent Gateway's target annotation.
 ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
 
@@ -102,7 +102,7 @@ TCPRoute and UDPRoute remain experimental and are only available as v1alpha2 in 
 
 HTTPRoute and TLSRoute specs, along with their associated Gateway Listeners, contain hostnames that
 will be used by ExternalDNS. However, no such hostnames may be specified in TCPRoute or UDPRoute
-specs. For TCPRoutes and UDPRoutes, the `external-dns.alpha.kubernetes.io/hostname` annotation
+specs. For TCPRoutes and UDPRoutes, the `external-dns.kubernetes.io/hostname` annotation
 is the recommended way to provide their hostnames to ExternalDNS. This annotation is also supported
 for HTTPRoutes and TLSRoutes by ExternalDNS, but it's _strongly_ recommended that they use their
 specs to provide all intended hostnames, since the Gateway that ultimately routes their
@@ -114,8 +114,8 @@ requests/connections won't recognize additional hostnames from the annotation.
 
 ExternalDNS reads different annotations from different Gateway API resources:
 
-- **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
-- **ListenerSet annotations**: The `external-dns.alpha.kubernetes.io/target` annotation is also supported on
+- **Gateway annotations**: Only `external-dns.kubernetes.io/target` is read from Gateway resources
+- **ListenerSet annotations**: The `external-dns.kubernetes.io/target` annotation is also supported on
   ListenerSet resources. When a Route references a ListenerSet, the ListenerSet target annotation takes
   precedence over the parent Gateway's target annotation. Requires `--gateway-listener-sets`.
 - **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
@@ -136,7 +136,7 @@ metadata:
   namespace: default
   annotations:
     # ✅ Correct: target annotation on Gateway
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    external-dns.kubernetes.io/target: "203.0.113.1"
 spec:
   gatewayClassName: cilium
   listeners:
@@ -151,8 +151,8 @@ metadata:
   name: my-route
   annotations:
     # ✅ Correct: provider-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.kubernetes.io/ttl: "300"
 spec:
   parentRefs:
     - name: my-gateway
@@ -174,7 +174,7 @@ metadata:
   name: aws-gateway
   annotations:
     # ✅ Correct: target annotation on Gateway
-    external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+    external-dns.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -182,8 +182,8 @@ metadata:
   name: weighted-route
   annotations:
     # ✅ Correct: AWS-specific annotations on HTTPRoute
-    external-dns.alpha.kubernetes.io/aws-weight: "100"
-    external-dns.alpha.kubernetes.io/set-identifier: "backend-v1"
+    external-dns.kubernetes.io/aws-weight: "100"
+    external-dns.kubernetes.io/set-identifier: "backend-v1"
 spec:
   parentRefs:
     - name: aws-gateway
@@ -200,8 +200,8 @@ kind: Gateway
 metadata:
   annotations:
     # ❌ These annotations are ignored on Gateway
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.kubernetes.io/ttl: "300"
 ```
 
 ❌ **Incorrect**: Placing target annotation on HTTPRoute
@@ -211,10 +211,10 @@ kind: HTTPRoute
 metadata:
   annotations:
     # ❌ This annotation is ignored on Routes
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    external-dns.kubernetes.io/target: "203.0.113.1"
 ```
 
-### external-dns.alpha.kubernetes.io/gateway-hostname-source
+### external-dns.kubernetes.io/gateway-hostname-source
 
 **Why is this needed:**
 In certain scenarios, conflicting DNS records can arise when External DNS processes both the hostname annotations and the hostnames defined in the `*Route` spec. For example:
@@ -224,7 +224,7 @@ In certain scenarios, conflicting DNS records can arise when External DNS proces
 - Without this annotation, External DNS may override the CNAME record with an A record due to conflicting hostname definitions.
 
 **Usage:**
-By setting the annotation `external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS
+By setting the annotation `external-dns.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS
 to ignore hostnames defined in the `HTTPRoute` spec and use only the hostnames specified in annotations. This ensures
 compatibility with complex DNS configurations and avoids record conflicts.
 
@@ -235,8 +235,8 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only
-    external-dns.alpha.kubernetes.io/hostname: company.private.example.com
+    external-dns.kubernetes.io/gateway-hostname-source: annotation-only
+    external-dns.kubernetes.io/hostname: company.private.example.com
 spec:
   hostnames:
     - company.public.example.com

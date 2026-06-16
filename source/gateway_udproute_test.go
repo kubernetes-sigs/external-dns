@@ -106,3 +106,32 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 		newTestEndpoint("api-template.foobar.internal", ips...),
 	})
 }
+
+func TestGatewayUDPRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	rt := &v1alpha2.UDPRoute{ObjectMeta: informerTransformObjectMeta()}
+	require.Contains(t, rt.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, rt.GetManagedFields())
+
+	_, err := gwClient.GatewayV1alpha2().UDPRoutes(rt.GetNamespace()).Create(t.Context(), rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayUDPRouteSource(t.Context(), clients, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*gatewayRouteSource).rtInformer.Informer(),
+		rt,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
+}

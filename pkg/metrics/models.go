@@ -23,12 +23,14 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 type MetricRegistry struct {
 	Registerer prometheus.Registerer
 	Metrics    []*Metric
-	mName      map[string]bool
+	mName      sets.Set[string]
 }
 
 type Metric struct {

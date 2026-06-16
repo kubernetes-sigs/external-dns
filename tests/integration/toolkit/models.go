@@ -21,6 +21,9 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -30,13 +33,50 @@ type TestScenarios struct {
 	Scenarios []Scenario `json:"scenarios"`
 }
 
+// ExpectedRefObject describes an expected Kubernetes object reference on an endpoint.
+// Key is matched against ObjectReference.Key() ("source/namespace/name").
+type ExpectedRefObject struct {
+	Key string `json:"key"`
+}
+
+// ExpectedEndpoint mirrors the JSON-serialisable fields of endpoint.Endpoint and
+// adds an optional RefObjects list for asserting event-source attribution.
+type ExpectedEndpoint struct {
+	DNSName          string                    `json:"dnsName,omitempty"`
+	Targets          endpoint.Targets          `json:"targets,omitempty"`
+	RecordType       string                    `json:"recordType,omitempty"`
+	SetIdentifier    string                    `json:"setIdentifier,omitempty"`
+	RecordTTL        endpoint.TTL              `json:"recordTTL,omitempty"`
+	Labels           endpoint.Labels           `json:"labels,omitempty"`
+	ProviderSpecific endpoint.ProviderSpecific `json:"providerSpecific,omitempty"`
+	// RefObjects is optional. When non-empty, the test asserts that the actual
+	// endpoint has exactly this many ref objects and that each one matches the
+	// corresponding ExpectedRefObject (partial match: only non-empty fields checked).
+	RefObjects []ExpectedRefObject `json:"refObjects,omitempty"`
+}
+
+// ToEndpoint converts an ExpectedEndpoint to a plain *endpoint.Endpoint for use
+// with the standard field validation helpers.
+func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
+	ep := &endpoint.Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          e.Targets,
+		RecordType:       e.RecordType,
+		SetIdentifier:    e.SetIdentifier,
+		RecordTTL:        e.RecordTTL,
+		Labels:           e.Labels,
+		ProviderSpecific: e.ProviderSpecific,
+	}
+	return ep
+}
+
 // Scenario represents a single test scenario.
 type Scenario struct {
 	Name        string                     `json:"name"`
 	Description string                     `json:"description"`
 	Config      ScenarioConfig             `json:"config"`
 	Resources   []ResourceWithDependencies `json:"resources"`
-	Expected    []*endpoint.Endpoint       `json:"expected"`
+	Expected    []*ExpectedEndpoint        `json:"expected"`
 }
 
 // ResourceWithDependencies wraps a K8s resource with optional dependencies.
@@ -74,4 +114,14 @@ type ParsedResources struct {
 	Services       []*corev1.Service
 	EndpointSlices []*discoveryv1.EndpointSlice
 	Pods           []*corev1.Pod
+	Nodes          []*corev1.Node
+	DNSEndpoints   []*apiv1alpha1.DNSEndpoint
+}
+
+// LoadedResources holds the clients.
+type LoadedResources struct {
+	// K8sClient is the fake Kubernetes clientset for core/networking/discovery resources.
+	K8sClient *fake.Clientset
+	// DNSEndpoints are the parsed DNSEndpoint CRD objects ready to be injected into the CRD source fake cache.
+	DNSEndpoints []*apiv1alpha1.DNSEndpoint
 }

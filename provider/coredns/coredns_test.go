@@ -97,7 +97,7 @@ func (m *MockEtcdKV) Delete(ctx context.Context, key string, opts ...etcdcv3.OpO
 }
 
 func TestETCDConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		input map[string]string
 		want  *etcdcv3.Config
@@ -194,6 +194,75 @@ func TestAServiceTranslation(t *testing.T) {
 	if endpoints[0].RecordType != expectedRecordType {
 		t.Errorf("got unexpected DNS record type: %s != %s", endpoints[0].RecordType, expectedRecordType)
 	}
+}
+
+func TestGuessRecordType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		{"1.2.3.4", endpoint.RecordTypeA},
+		{"2001:db8::1", endpoint.RecordTypeAAAA},
+		{"::1", endpoint.RecordTypeAAAA},
+		{"::ffff:1.2.3.4", endpoint.RecordTypeAAAA}, // IPv4-mapped IPv6 is typed AAAA, matching endpoint.SuitableType
+		{"other.example.com", endpoint.RecordTypeCNAME},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			assert.Equal(t, tt.expected, guessRecordType(tt.target))
+		})
+	}
+}
+
+// It asserts both record types survive an apply + read round-trip with the correct
+// type (A stays A, AAAA stays AAAA), and that a second reconcile is a no-op.
+func TestCoreDNSRoundTrip(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	desired := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.org", endpoint.RecordTypeA, "172.18.0.2"),
+		endpoint.NewEndpoint("aa.example.org", endpoint.RecordTypeAAAA, "2001:db8::1"),
+	}
+
+	// Write the records (controller's ApplyChanges with the source's desired state).
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{Create: desired})
+	require.NoError(t, err)
+
+	// Read them back from etcd.
+	current, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, current, 2)
+
+	byName := map[string]*endpoint.Endpoint{}
+	for _, ep := range current {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "a.example.org")
+	assert.Equal(t, endpoint.RecordTypeA, byName["a.example.org"].RecordType)
+	assert.Equal(t, "172.18.0.2", byName["a.example.org"].Targets[0])
+
+	require.Contains(t, byName, "aa.example.org")
+	assert.Equal(t, endpoint.RecordTypeAAAA, byName["aa.example.org"].RecordType, "IPv6 target must read back as AAAA, not A")
+	assert.Equal(t, "2001:db8::1", byName["aa.example.org"].Targets[0])
+
+	// Second reconcile: desired vs read-back state must produce no changes.
+	managed := []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}
+	changes := (&plan.Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managed,
+	}).Calculate().Changes
+	assert.Empty(t, changes.Create, "no records to create on second sync")
+	assert.Empty(t, changes.UpdateNew, "no records to update on second sync (no churn)")
+	assert.Empty(t, changes.Delete, "no records to delete on second sync")
 }
 
 func TestCNAMEServiceTranslation(t *testing.T) {
@@ -1322,6 +1391,66 @@ func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
 		"/skydns/local/domain1": {{Host: "5.5.5.5", Group: "test1"}},
 		"/skydns/local/domain2": {{Host: "5.5.5.6", Group: "test1"}},
 		"/skydns/local/domain3": {{Host: "5.5.5.7", Group: "test2"}},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
+// Prevents unwanted deletion of etcd keys https://github.com/kubernetes-sigs/external-dns/commit/83ea480c57fcc6beeaf8a6a3e8446cb87e07415d
+func TestApplyChangesPreventCleanupForKnownLabels(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1/test":         {Host: "10.0.0.0"},
+			"/skydns/local/domain1/originalText": {Host: "10.0.0.0"},
+			"/skydns/local/domain1/prefix":       {Host: "10.0.0.0"},
+			"/skydns/local/domain1/resource":     {Host: "10.0.0.0"},
+			"/skydns/local/domain1/owner":        {Host: "10.0.0.0"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	changes1 := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "domain1.local",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"5.5.5.5"},
+				Labels: map[string]string{
+					"5.5.5.5":              "random",
+					"10.0.0.0":             "test",
+					"originalText":         "originalText",
+					"prefix":               "prefix",
+					"resource":             "resource",
+					endpoint.OwnerLabelKey: endpoint.OwnerLabelKey,
+				},
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "domain1.local",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"5.5.5.5"},
+				Labels: map[string]string{
+					"5.5.5.5":              "random",
+					"10.0.0.0":             "test",
+					"originalText":         "originalText",
+					"prefix":               "prefix",
+					"resource":             "resource",
+					endpoint.OwnerLabelKey: endpoint.OwnerLabelKey,
+				},
+			},
+		},
+	}
+	coredns.ApplyChanges(t.Context(), changes1)
+
+	expectedServices1 := map[string][]*Service{
+		"/skydns/local/domain1":              {{Host: "5.5.5.5", Key: "/skydns/local/domain1/random", Text: "originalText", TargetStrip: 1}},
+		"/skydns/local/domain1/originalText": {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/prefix":       {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/resource":     {{Host: "10.0.0.0"}},
+		"/skydns/local/domain1/owner":        {{Host: "10.0.0.0"}},
 	}
 	validateServices(client.services, expectedServices1, t, 1)
 }

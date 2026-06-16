@@ -3,7 +3,7 @@
 ## Introduction
 
 By design, external-dns refreshes all the records of a zone using API calls.
-This refresh may happen peridically and upon any changed object if the flag `--events` is enabled.
+This refresh may happen periodically and upon any changed object if the flag `--events` is enabled.
 
 Depending on the size of the zone and the infrastructure deployment, this may lead to external-dns
 hitting the DNS provider's rate-limits more easily.

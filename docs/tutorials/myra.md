@@ -99,12 +99,12 @@ kubectl logs -l app=myra-externaldns -c external-dns
 # Edit the domain in the nginx-demo.yaml file to match your domain
 vi deploy/nginx-demo.yaml
 
-# Most important part is to set the correct domain in the external-dns.alpha.kubernetes.io/hostname annotation
+# Most important part is to set the correct domain in the external-dns.kubernetes.io/hostname annotation
 # Example:
 # annotations:
-#   external-dns.alpha.kubernetes.io/enabled: "true"
-#   external-dns.alpha.kubernetes.io/hostname: "nginx-demo.dummydomainforkubes.de"
-#   external-dns.alpha.kubernetes.io/target: "9.2.3.4"
+#   external-dns.kubernetes.io/enabled: "true"
+#   external-dns.kubernetes.io/hostname: "nginx-demo.dummydomainforkubes.de"
+#   external-dns.kubernetes.io/target: "9.2.3.4"
 
 # Apply the demo resources
 kubectl apply -f deploy/nginx-demo.yaml

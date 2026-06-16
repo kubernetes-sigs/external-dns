@@ -600,13 +600,13 @@ func TestRetainProviderProperties(t *testing.T) {
 				{Name: "aws/weight", Value: "10"},
 			},
 		},
-		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
+		// cloudflare uses annotation-style names (e.g. "external-dns.kubernetes.io/cloudflare-*")
 		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
 		{
 			name: "cloudflare retains all properties",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
 					{Name: ProviderSpecificAlias, Value: "false"},
 				},
@@ -615,21 +615,21 @@ func TestRetainProviderProperties(t *testing.T) {
 			expected: []ProviderSpecificProperty{
 				{Name: ProviderSpecificAlias, Value: "false"},
 				{Name: "aws/evaluate-target-health", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 		{
 			name: "cloudflare properties are sorted",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 			},
 		},
 	}
@@ -1569,16 +1569,52 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 }
 
 func TestEndpoint_WithRefObject(t *testing.T) {
-	ep := &Endpoint{}
-	ref := &events.ObjectReference{
-		Kind:      "Service",
-		Namespace: "default",
-		Name:      "my-service",
-	}
-	result := ep.WithRefObject(ref)
+	ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+	ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
 
-	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
-	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+	tests := []struct {
+		name     string
+		add      []*events.ObjectReference
+		wantLen  int
+		wantRefs []*events.ObjectReference
+	}{
+		{
+			name:     "nil ref is a no-op",
+			add:      []*events.ObjectReference{nil},
+			wantLen:  0,
+			wantRefs: nil,
+		},
+		{
+			name:     "single ref is stored",
+			add:      []*events.ObjectReference{ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "same ref added twice is deduplicated",
+			add:      []*events.ObjectReference{ref1, ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "distinct refs are added in insertion order",
+			add:      []*events.ObjectReference{ref1, ref2},
+			wantLen:  2,
+			wantRefs: []*events.ObjectReference{ref1, ref2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &Endpoint{}
+			for _, ref := range tt.add {
+				ep.WithRefObject(ref)
+			}
+			refs := ep.RefObjects()
+			require.Len(t, refs, tt.wantLen)
+			assert.Equal(t, tt.wantRefs, refs)
+		})
+	}
 }
 
 func TestTargets_UniqueOrdered(t *testing.T) {
@@ -1703,6 +1739,113 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+func TestGetAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint Endpoint
+		expected AliasType
+	}{
+		{
+			name:     "no alias property returns AliasNone",
+			endpoint: Endpoint{},
+			expected: AliasNone,
+		},
+		{
+			name: "alias=true returns AliasTrue",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+				},
+			},
+			expected: AliasTrue,
+		},
+		{
+			name: "alias=false returns AliasFalse",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "false"},
+				},
+			},
+			expected: AliasFalse,
+		},
+		{
+			name: "alias=A returns AliasA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "A"},
+				},
+			},
+			expected: AliasA,
+		},
+		{
+			name: "alias=AAAA returns AliasAAAA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "AAAA"},
+				},
+			},
+			expected: AliasAAAA,
+		},
+		{
+			name: "alias with invalid value returns AliasNone",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "invalid"},
+				},
+			},
+			expected: AliasNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetAliasProperty()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestWithAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    AliasType
+		expected AliasType
+	}{
+		{
+			name:     "AliasNone sets alias to empty string",
+			input:    AliasNone,
+			expected: AliasNone,
+		},
+		{
+			name:     "AliasFalse sets alias=false",
+			input:    AliasFalse,
+			expected: AliasFalse,
+		},
+		{
+			name:     "AliasTrue sets alias=true",
+			input:    AliasTrue,
+			expected: AliasTrue,
+		},
+		{
+			name:     "AliasA sets alias=A",
+			input:    AliasA,
+			expected: AliasA,
+		},
+		{
+			name:     "AliasAAAA sets alias=AAAA",
+			input:    AliasAAAA,
+			expected: AliasAAAA,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewEndpoint("example.com", "A", "1.2.3.4").WithAliasProperty(tt.input)
+			assert.Equal(t, tt.expected, e.GetAliasProperty())
+		})
+	}
 }
 
 func TestGetBoolProviderSpecificProperty(t *testing.T) {

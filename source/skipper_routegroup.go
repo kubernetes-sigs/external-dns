@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 )
@@ -270,15 +271,17 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(eps, types.OpenShiftRoute, rg) {
+		if endpoint.HasNoEmptyEndpoints(eps, types.SkipperRouteGroup, rg) {
 			continue
 		}
+
+		endpoint.AttachRefObject(eps, events.NewObjectReference(rg, types.SkipperRouteGroup))
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Namespace, rg.Name, eps)
 		endpoints = append(endpoints, eps...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.Endpoint, error) {

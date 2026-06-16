@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/utils/set"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -265,10 +266,10 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-	// refObject stores reference object
-	// TODO: should be an array, as endpoints merged from multiple sources may have multiple ref objects
+	// refObjects stores the set of unique Kubernetes objects this endpoint was derived from.
+	// An endpoint merged from multiple sources will have more than one entry.
 	// +optional
-	refObject *ObjectRef `json:"-"`
+	refObjects []*ObjectRef `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -336,6 +337,41 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
+type AliasType string
+
+const (
+	// AliasNone indicates alias property is not set
+	AliasNone AliasType = ""
+	// AliasFalse indicates alias property is set to false
+	AliasFalse AliasType = "false"
+	// AliasTrue indicates alias property is set to true (both A and AAAA)
+	AliasTrue AliasType = "true"
+	// AliasA indicates alias property is set to A record only
+	AliasA AliasType = "A"
+	// AliasAAAA indicates alias property is set to AAAA record only
+	AliasAAAA AliasType = "AAAA"
+)
+
+func (e *Endpoint) GetAliasProperty() AliasType {
+	switch a, ok := e.GetProviderSpecificProperty("alias"); {
+	case a == "true" && ok:
+		return AliasTrue
+	case a == "false" && ok:
+		return AliasFalse
+	case a == "A" && ok:
+		return AliasA
+	case a == "AAAA" && ok:
+		return AliasAAAA
+	default:
+		return AliasNone
+	}
+}
+
+// WithAliasProperty sets the alias provider-specific property on the endpoint.
+func (e *Endpoint) WithAliasProperty(a AliasType) *Endpoint {
+	return e.WithProviderSpecific(ProviderSpecificAlias, string(a))
+}
+
 // GetBoolProviderSpecificProperty returns a boolean provider-specific property value.
 func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 	prop, ok := e.GetProviderSpecificProperty(key)
@@ -392,7 +428,7 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 // Properties belonging to other providers are dropped.
 // Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
 // TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
-// annotation form "external-dns.alpha.kubernetes.io/cloudflare-*", so filtering is skipped for
+// annotation form "external-dns.kubernetes.io/cloudflare-*", so filtering is skipped for
 // cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
 // adopts the standard prefix convention.
 func (e *Endpoint) RetainProviderProperties(provider string) {
@@ -423,16 +459,25 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
-// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
-// This can be used to associate the Endpoint with a specific Kubernetes object.
+// WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
+// Calling it multiple times with the same object is safe — it is added at most once.
 func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
-	e.refObject = obj
+	if obj == nil {
+		return e
+	}
+	key := obj.Key()
+	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+		return r.Key() == key
+	}) {
+		return e
+	}
+	e.refObjects = append(e.refObjects, obj)
 	return e
 }
 
-// RefObject returns the Kubernetes object reference associated with this endpoint.
-func (e *Endpoint) RefObject() *events.ObjectReference {
-	return e.refObject
+// RefObjects returns all Kubernetes object references associated with this endpoint.
+func (e *Endpoint) RefObjects() []*events.ObjectReference {
+	return e.refObjects
 }
 
 // Key returns the EndpointKey of the Endpoint.
@@ -508,15 +553,15 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 // This function doesn't contemplate the Targets of an Endpoint
 // as part of the primary Key
 func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
-	visited := make(map[EndpointKey]struct{})
+	visited := make(sets.Set[EndpointKey], len(endpoints))
 	result := []*Endpoint{}
 
 	for _, ep := range endpoints {
 		key := ep.Key()
 
-		if _, found := visited[key]; !found {
+		if !visited.Has(key) {
 			result = append(result, ep)
-			visited[key] = struct{}{}
+			visited.Insert(key)
 		} else {
 			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
 		}

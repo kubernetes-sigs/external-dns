@@ -60,7 +60,7 @@ jobs:
 
       - name: Get changelog entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@32aa5b4c155d76c94e4ec883a223c947b2f02656 # v2.2.3
+        uses: mindsers/changelog-reader-action@1faaf50aa09d5793d9a100819973df801febfb31 # v2.4.0
         with:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
@@ -149,10 +149,20 @@ jobs:
         with:
           version: latest
 
-      - name: Run chart-releaser
+      - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
+        with:
+          install_only: true
+
+      # Package, release and index are driven by scripts/chart-release.sh so the
+      # logic stays testable outside CI. This replaces a plain chart-releaser run
+      # to work around GitHub immutable releases:
+      # https://github.com/helm/chart-releaser/issues/591
+      - name: Release chart
         env:
+          GH_TOKEN: "${{ github.token }}"
           CR_TOKEN: "${{ github.token }}"
-          CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
-          CR_RELEASE_NOTES_FILE: "${{ steps.changelog.outputs.release_notes_file }}"
-          CR_MAKE_RELEASE_LATEST: "false"
+        run: |
+          scripts/chart-release.sh \
+            "${{ steps.chart_version.outputs.version }}" \
+            "charts/external-dns/${{ steps.changelog.outputs.release_notes_file }}"

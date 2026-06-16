@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type OCPRouteSuite struct {
@@ -116,6 +117,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-target",
+					UID:       "openshift-route-uid",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -133,13 +135,13 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(types.OpenShiftRoute)),
 			},
 		},
 		{
@@ -348,7 +350,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-ignore-annotation",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/controller": "foo",
+						"external-dns.kubernetes.io/controller": "foo",
 					},
 				},
 			},
@@ -361,7 +363,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-annotation-target",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 				},
 				Status: routev1.RouteStatus{
@@ -398,7 +400,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-external",
@@ -442,7 +444,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-without-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-internal",
@@ -521,4 +523,29 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
+}
+
+func TestOcpRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	route := &routev1.Route{
+		ObjectMeta: informerTransformObjectMeta(),
+	}
+	assert.Contains(t, route.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	assert.NotEmpty(t, route.GetManagedFields())
+
+	fakeClient := fake.NewClientset()
+	_, err := fakeClient.RouteV1().Routes(route.GetNamespace()).Create(t.Context(), route, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &ocpRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*ocpRouteSource).routeInformer.Informer(),
+		route,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

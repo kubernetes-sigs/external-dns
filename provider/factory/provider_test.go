@@ -93,9 +93,8 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name: "pihole provider",
 			cfg: &externaldns.Config{
-				Provider:         externaldns.ProviderPihole,
-				PiholeApiVersion: "6",
-				PiholeServer:     "http://localhost:8080",
+				Provider:     externaldns.ProviderPihole,
+				PiholeServer: "http://localhost:8080",
 			},
 			expectedType: "*pihole.PiholeProvider",
 		},
@@ -135,7 +134,9 @@ func TestSelectProvider(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, p)
-				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
+				mw, ok := p.(*AliasNormalizingMiddleware)
+				require.True(t, ok, "expected outer *AliasNormalizingMiddleware, got %T", p)
+				assert.Equal(t, tt.expectedType, reflect.TypeOf(mw.Provider).String())
 			}
 		})
 	}

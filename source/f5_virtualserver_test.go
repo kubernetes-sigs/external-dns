@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -57,6 +58,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
+					UID:       "f5-vs-uid-1234",
 					Annotations: map[string]string{
 						annotations.TargetKey: "192.168.1.150",
 					},
@@ -71,7 +73,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.com",
 					Targets:    []string{"192.168.1.150"},
 					RecordType: endpoint.RecordTypeA,
@@ -79,7 +81,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Labels: endpoint.Labels{
 						"resource": "f5-virtualserver/virtualserver/test-vs",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(string(types.F5VirtualServer))),
 			},
 		},
 		{
@@ -241,7 +243,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -276,7 +278,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -312,7 +314,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "600",
+						"external-dns.kubernetes.io/ttl": "600",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -442,7 +444,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/ttl": "300",
+						"external-dns.kubernetes.io/ttl": "300",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -642,4 +644,26 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
+}
+
+func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	uc, err := newVSUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeClient := fakeKube.NewClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &f5VirtualServerSource{}, source)
+
+	testDynamicInformerTransformHelper(t,
+		f5VirtualServerGVR,
+		fakeDynamicClient,
+		source.(*f5VirtualServerSource).virtualServerInformer,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

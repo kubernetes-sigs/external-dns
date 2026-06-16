@@ -68,6 +68,11 @@ func IsControllerMismatch(
 	return false
 }
 
+// IsControllerMatch returns true when the resource should not be skipped
+func IsControllerMatch[T metav1.ObjectMetaAccessor](entity T) bool {
+	return !IsControllerMismatch(entity, "")
+}
+
 // parseTTL parses TTL from string, returning duration in seconds.
 // parseTTL supports both integers like "600" and durations based
 // on Go Duration like "10m", hence "600" and "10m" represent the same value.

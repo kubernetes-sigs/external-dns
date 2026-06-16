@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -88,6 +89,9 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithConditions(func(u *unstructured.Unstructured) bool {
+				return annotations.IsControllerMatch(newUnstructuredWrapper(u))
+			}),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
 			informers.TransformRemoveManagedFields(),
@@ -141,10 +145,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		el := newUnstructuredWrapper(obj)
 
-		if annotations.IsControllerMismatch(el, types.Unstructured) {
-			continue
-		}
-
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
 		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
@@ -182,7 +182,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
@@ -236,7 +236,7 @@ func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWr
 		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.
@@ -353,20 +353,17 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoi
 	}
 
 	// Deduplicate hostnames
-	hostSet := make(map[string]struct{}, len(hostnames))
-	for _, h := range hostnames {
-		hostSet[h] = struct{}{}
-	}
-	sortedHosts := slices.Sorted(maps.Keys(hostSet))
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
 
 	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]map[string]struct{})
+	targetsByType := make(map[string]sets.Set[string])
 	for _, target := range targets {
 		recordType := endpoint.SuitableType(target)
 		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = make(map[string]struct{})
+			targetsByType[recordType] = sets.New(target)
+		} else {
+			targetsByType[recordType].Insert(target)
 		}
-		targetsByType[recordType][target] = struct{}{}
 	}
 
 	// Resolve to sorted slices once

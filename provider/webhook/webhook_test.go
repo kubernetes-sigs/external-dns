@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -353,6 +354,67 @@ func TestAdjustEndpoints(t *testing.T) {
 			"",
 		},
 	}}, adjustedEndpoints)
+}
+
+func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
+	echoSvr := func(t *testing.T) *httptest.Server {
+		t.Helper()
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+				w.Write([]byte(`{}`))
+				return
+			}
+			var eps []*endpoint.Endpoint
+			defer r.Body.Close()
+			b, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.NoError(t, json.Unmarshal(b, &eps))
+			j, _ := json.Marshal(eps)
+			w.Write(j)
+		}))
+	}
+
+	t.Run("single refObject is preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "uid-1", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+		refs := adjusted[0].RefObjects()
+		require.NotEmpty(t, refs)
+		assert.Equal(t, ref, refs[0])
+	})
+
+	t.Run("multiple refObjects are all preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+		ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").
+				WithRefObject(ref1).
+				WithRefObject(ref2),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+
+		refs := adjusted[0].RefObjects()
+		require.Len(t, refs, 2)
+		uids := []string{string(refs[0].UID()), string(refs[1].UID())}
+		assert.ElementsMatch(t, []string{"uid-1", "uid-2"}, uids)
+	})
 }
 
 func TestAdjustendpointsWithError(t *testing.T) {

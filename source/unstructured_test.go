@@ -743,9 +743,16 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 					}},
 				},
 			},
-			// Empty scheme: List always returns "no kind registered", so HasSynced() stays false.
-			// Pre-cancelled context: WaitForCacheSync sees a closed stopCh and returns immediately.
-			dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), nil),
+			// Pre-cancelled context: WaitForCacheSync sees a closed stopCh and returns
+			// immediately with a sync failure, before the informer can populate.
+			// The list kind is registered so a racing reflector LIST returns cleanly
+			// instead of panicking in a background goroutine (which would crash the binary).
+			dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+				runtime.NewScheme(),
+				map[schema.GroupVersionResource]string{
+					{Group: "kubevirt.io", Version: "v1", Resource: "virtualmachineinstances"}: "VirtualMachineInstanceList",
+				},
+			),
 			ctx: func() context.Context {
 				ctx, cancel := context.WithCancel(t.Context())
 				cancel()

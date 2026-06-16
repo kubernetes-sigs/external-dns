@@ -269,6 +269,16 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustEndpointsRequestsGauge.Gauge.Inc()
+
+	// refObjects are not serialized to JSON (tagged json:"-"), so we must
+	// preserve them across the webhook round-trip to keep event emission working.
+	refObjects := make(map[endpoint.EndpointKey][]*endpoint.ObjectRef, len(e))
+	for _, ep := range e {
+		if refs := ep.RefObjects(); len(refs) > 0 {
+			refObjects[ep.Key()] = refs
+		}
+	}
+
 	var endpoints []*endpoint.Endpoint
 	u, err := url.JoinPath(p.remoteServerURL.String(), webhookapi.UrlAdjustEndpoints)
 	if err != nil {
@@ -318,6 +328,12 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
+	}
+
+	for _, ep := range endpoints {
+		for _, ref := range refObjects[ep.Key()] {
+			ep.WithRefObject(ref)
+		}
 	}
 
 	return endpoints, nil

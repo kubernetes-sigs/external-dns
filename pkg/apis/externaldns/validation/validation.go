@@ -39,7 +39,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return err
 	}
 
-	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+	if cfg.IgnoreHostnameAnnotation && len(cfg.FQDNTemplate) == 0 {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
 
@@ -94,8 +94,6 @@ func validateConfigForProvider(cfg *externaldns.Config) error {
 	switch cfg.Provider {
 	case externaldns.ProviderAzure:
 		return validateConfigForAzure(cfg)
-	case externaldns.ProviderAkamai:
-		return validateConfigForAkamai(cfg)
 	case externaldns.ProviderRFC2136:
 		return validateConfigForRfc2136(cfg)
 	default:
@@ -106,22 +104,6 @@ func validateConfigForProvider(cfg *externaldns.Config) error {
 func validateConfigForAzure(cfg *externaldns.Config) error {
 	if cfg.AzureConfigFile == "" {
 		return errors.New("no Azure config file specified")
-	}
-	return nil
-}
-
-func validateConfigForAkamai(cfg *externaldns.Config) error {
-	if cfg.AkamaiServiceConsumerDomain == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai ServiceConsumerDomain specified")
-	}
-	if cfg.AkamaiClientToken == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai client token specified")
-	}
-	if cfg.AkamaiClientSecret == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai client secret specified")
-	}
-	if cfg.AkamaiAccessToken == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai access token specified")
 	}
 	return nil
 }

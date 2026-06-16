@@ -89,15 +89,15 @@ spec:
 
 ## Configuration
 
-| Flag                        | Description                                                        |
-|-----------------------------|--------------------------------------------------------------------|
-| `--unstructured-resource`   | Resources to watch in `resource.version.group` format (repeatable) |
-| `--fqdn-template`           | Go template for DNS names                                          |
-| `--target-template`         | Go template for DNS targets                                        |
-| `--fqdn-target-template`    | Go template returning `host:target` pairs                          |
-| `--label-filter`            | Filter resources by labels                                         |
-| `--annotation-filter`       | Filter resources by annotations                                    |
-| `--combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting       |
+| Flag                        | Description                                                                       |
+|-----------------------------|-----------------------------------------------------------------------------------|
+| `--unstructured-resource`   | Resources to watch in `resource.version.group` format (repeatable)                |
+| `--fqdn-template`           | Go template for DNS names (repeatable; comma-separated values within one flag also accepted)              |
+| `--target-template`         | Go template for DNS targets (repeatable; comma-separated values within one flag also accepted)            |
+| `--fqdn-target-template`    | Go template returning `host:target` pairs (repeatable; comma-separated values within one flag also accepted) |
+| `--label-filter`            | Filter resources by labels                                                        |
+| `--annotation-filter`       | Filter resources by annotations                                                   |
+| `--combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting                      |
 
 ## Template Syntax
 
@@ -129,7 +129,7 @@ metadata:
   name: api-dns
   namespace: production
   labels:
-    external-dns.alpha.kubernetes.io/dns-controller: "dns-controller"
+    external-dns.kubernetes.io/dns-controller: "dns-controller"
 data:
   hostname: api.example.com
   target: 10.0.0.100
@@ -141,7 +141,7 @@ external-dns \
   --unstructured-resource=configmaps.v1 \
   --fqdn-template='{{index .Object.data "hostname"}}' \
   --target-template='{{index .Object.data "target"}}' \
-  --label-filter='external-dns.alpha.kubernetes.io/controller=dns-controller'
+  --label-filter='external-dns.kubernetes.io/controller=dns-controller'
 
 # Result:
 # api.example.com -> 10.0.0.100 (A)
@@ -177,7 +177,7 @@ metadata:
   name: production-pool
   namespace: metallb-system
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: "lb.example.com"
+    external-dns.kubernetes.io/hostname: "lb.example.com"
 spec:
   addresses:
   - 192.168.10.11/32
@@ -187,7 +187,7 @@ spec:
 external-dns \
   --source=unstructured \
   --unstructured-resource=ipaddresspools.v1beta1.metallb.io \
-  --fqdn-template='{{index .Annotations "external-dns.alpha.kubernetes.io/hostname"}}' \
+  --fqdn-template='{{index .Annotations "external-dns.kubernetes.io/hostname"}}' \
   --target-template='{{$addr := index .Spec.addresses 0}}{{if contains $addr "/32"}}{{trimSuffix $addr "/32"}}{{else}}{{$addr}}{{end}}'
 
 # Result:
@@ -240,7 +240,7 @@ metadata:
   name: my-app-tls
   namespace: production
   annotations:
-    external-dns.alpha.kubernetes.io/target: "10.0.0.50"
+    external-dns.kubernetes.io/target: "10.0.0.50"
 spec:
   secretName: my-app-tls-secret
   dnsNames:
@@ -256,7 +256,7 @@ external-dns \
   --source=unstructured \
   --unstructured-resource=certificates.v1.cert-manager.io \
   --fqdn-template='{{index .Spec.dnsNames 0}}' \
-  --target-template='{{index .Annotations "external-dns.alpha.kubernetes.io/target"}}'
+  --target-template='{{index .Annotations "external-dns.kubernetes.io/target"}}'
 
 # Result:
 # my-app.example.com -> 10.0.0.50 (A)
@@ -403,10 +403,14 @@ external-dns \
 # Result:
 # app-abc12.pod.com -> 10.244.1.2 (A)
 # app-def34.pod.com -> 10.244.2.3, 10.244.2.4 (A)
-# test-abc12.example.com -> 10.244.1.2, 10.244.2.3, 10.244.2.4 (A)
+# test-headless.example.com -> 10.244.1.2, 10.244.2.3, 10.244.2.4 (A)
 ```
 
-The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets. Useful when a Kubernetes resource contains arrays where each element should produce its own DNS record (e.g., EndpointSlice endpoints, multi-host configurations).
+Specifying `--fqdn-target-template` multiple times applies each template independently against the same object and merges all results. This lets you produce per-pod records from one template and a service-level aggregate record from another — in a single ExternalDNS pass.
+
+The `--fqdn-target-template` flag returns `host:target` pairs, enabling 1:1 mapping between hostnames and targets.
+It is most useful when a resource contains arrays where each element produces its own record (e.g., EndpointSlice endpoints).
+The same repeatable behaviour applies to `--fqdn-template` and `--target-template`.
 
 ## RBAC
 

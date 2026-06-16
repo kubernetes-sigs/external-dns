@@ -343,7 +343,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 					},
@@ -356,7 +356,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					},
 				},
 			},
@@ -369,8 +369,8 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
 					},
 				},
 			},
@@ -379,8 +379,8 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
 					},
 				},
 			},
@@ -464,7 +464,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
@@ -489,7 +489,27 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+		},
+		{
+			title:       "existing alias=false is not overridden by preferAlias",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+		},
+		{
+			title:       "existing alias=true is preserved when preferAlias is enabled",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 		},
 	}

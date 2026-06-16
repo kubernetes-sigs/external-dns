@@ -35,7 +35,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be change if you have mulitple sources
+Could be change if you have multiple sources
 
 ```yaml
 apiVersion: v1
@@ -134,7 +134,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
+    external-dns.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
   labels:
     app: gloo
   name: gateway-proxy

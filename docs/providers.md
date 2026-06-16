@@ -4,7 +4,6 @@ Provider supported configurations
 
 | Provider Name | Zone Cache | Dry Run | Default TTL (seconds) |
 |:--------------|:-----------|:--------|:----------------------|
-| Akamai        | n/a        | yes     | 600                   |
 | AlibabaCloud  | n/a        | yes     | 600                   |
 | AWS           | yes        | yes     | 300                   |
 | AWSSD         | n/a        | yes     | 300                   |
@@ -25,8 +24,6 @@ Provider supported configurations
 | OVH           | n/a        | yes     | 0                     |
 | PDNS          | n/a        | yes     | 300                   |
 | PiHole        | n/a        | yes     | n/a                   |
-| Plural        | n/a        | n/a     | n/a                   |
 | RFC2136       | n/a        | yes     | n/a                   |
 | Scaleway      | n/a        | n/a     | 300                   |
-| Transip       | n/a        | yes     | 60                    |
 | Webhook       | n/a        | n/a     | n/a                   |

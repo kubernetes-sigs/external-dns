@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net"
 	"os"
 	"slices"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
@@ -51,7 +51,8 @@ const (
 
 var (
 	// avoids allocating a new slice on every call
-	skipLabels = []string{"originalText", "prefix", "resource"}
+	// prevents unwanted deletion of etcd keys based on labels
+	skipLabels = []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
@@ -119,7 +120,7 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 	}
 
 	var svcs []*Service
-	bx := make(map[Service]bool)
+	bx := sets.New[Service]()
 	for _, n := range r.Kvs {
 		svc, err := c.unmarshalService(n)
 		if err != nil {
@@ -136,12 +137,12 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 			Text:     svc.Text,
 			Key:      string(n.Key),
 		}
-		if _, ok := bx[b]; ok {
+		if bx.Has(b) {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
 			continue
 		}
-		bx[b] = true
+		bx.Insert(b)
 
 		svc.Key = string(n.Key)
 		if svc.Priority == 0 {
@@ -447,12 +448,8 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 			continue
 		}
 		if !slices.Contains(ep.Targets, label) {
-			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
-			log.Infof("Delete key %s", key)
-			if p.dryRun {
-				continue
-			}
-			if err := p.client.DeleteService(ctx, key); err != nil {
+			err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName)
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -494,14 +491,22 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
-		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
-		if p.dryRun {
-			continue
-		}
-		if err := p.client.DeleteService(ctx, key); err != nil {
+		err := p.deleteByDnsName(ctx, dnsName)
+		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string) error {
+	key := p.etcdKeyFor(dnsName)
+	log.Infof("Delete key %s", key)
+	if p.dryRun {
+		return nil
+	}
+	if err := p.client.DeleteService(ctx, key); err != nil {
+		return err
 	}
 	return nil
 }
@@ -513,10 +518,7 @@ func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
 }
 
 func guessRecordType(target string) string {
-	if net.ParseIP(target) != nil {
-		return endpoint.RecordTypeA
-	}
-	return endpoint.RecordTypeCNAME
+	return endpoint.SuitableType(target)
 }
 
 func reverse(slice []string) {

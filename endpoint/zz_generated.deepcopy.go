@@ -24,10 +24,15 @@ func (in *Endpoint) DeepCopyInto(out *Endpoint) {
 		*out = make(ProviderSpecific, len(*in))
 		copy(*out, *in)
 	}
-	if in.refObject != nil {
-		in, out := &in.refObject, &out.refObject
-		*out = new(ObjectRef)
-		**out = **in
+	if in.refObjects != nil {
+		in, out := &in.refObjects, &out.refObjects
+		*out = make([]*ObjectRef, len(*in))
+		for i, ref := range *in {
+			if ref != nil {
+				copied := *ref
+				(*out)[i] = &copied
+			}
+		}
 	}
 }
 

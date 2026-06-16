@@ -29,8 +29,8 @@ Sources are responsible for:
 | **contour-httpproxy**    | annotation       | all,single | true          | false  | true              | ingress controllers | HTTPProxy.projectcontour.io                                                           |
 | **crd**                  | annotation,label | all,single | false         | true   | true              | externaldns         | DNSEndpoint.externaldns.k8s.io                                                        |
 | **empty**                |                  |            | false         | false  | false             | testing             | None                                                                                  |
-| **f5-transportserver**   | annotation       | all,single | false         | false  | false             | load balancers      | TransportServer.cis.f5.com                                                            |
-| **f5-virtualserver**     | annotation       | all,single | false         | false  | false             | load balancers      | VirtualServer.cis.f5.com                                                              |
+| **f5-transportserver**   | annotation       | all,single | true          | false  | false             | load balancers      | TransportServer.cis.f5.com                                                            |
+| **f5-virtualserver**     | annotation       | all,single | true          | false  | false             | load balancers      | VirtualServer.cis.f5.com                                                              |
 | **fake**                 |                  |            | true          | true   | false             | testing             | Fake Endpoints                                                                        |
 | **gateway**              | annotation,label | all,single | true          | false  | true              | gateway api         | Gateway.gateway.networking.k8s.io                                                     |
 | **gateway-grpcroute**    | annotation,label | all,single | true          | false  | true              | gateway api         | GRPCRoute.gateway.networking.k8s.io                                                   |
@@ -38,7 +38,7 @@ Sources are responsible for:
 | **gateway-tcproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TCPRoute.gateway.networking.k8s.io                                                    |
 | **gateway-tlsroute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TLSRoute.gateway.networking.k8s.io                                                    |
 | **gateway-udproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | UDPRoute.gateway.networking.k8s.io                                                    |
-| **gloo-proxy**           |                  | all,single | false         | false  | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
+| **gloo-proxy**           |                  | all,single | true          | false  | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
 | **ingress**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Ingress                                                                               |
 | **istio-gateway**        | annotation,label | all,single | true          | false  | true              | service mesh        | Gateway.networking.istio.io                                                           |
 | **istio-virtualservice** | annotation,label | all,single | true          | false  | true              | service mesh        | VirtualService.networking.istio.io                                                    |
@@ -48,7 +48,7 @@ Sources are responsible for:
 | **pod**                  | annotation,label | all,single | true          | true   | false             | kubernetes core     | Pod                                                                                   |
 | **service**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Service                                                                               |
 | **skipper-routegroup**   | annotation       | all,single | true          | false  | true              | ingress controllers | RouteGroup.zalando.org                                                                |
-| **traefik-proxy**        | annotation       | all,single | false         | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
+| **traefik-proxy**        | annotation       | all,single | true          | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
 | **unstructured**         | annotation,label | all,single | true          | false  | false             | custom resources    | Unstructured                                                                          |
 
 ## Usage

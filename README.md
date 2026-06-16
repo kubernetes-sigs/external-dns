@@ -12,6 +12,7 @@ hide:
 
 [![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
+[![OpenSSF](https://api.scorecard.dev/projects/github.com/kubernetes-sigs/external-dns/badge)](https://scorecard.dev/viewer/?uri=github.com/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
@@ -56,13 +57,10 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [Linode DNS](https://www.linode.com/docs/networking/dns/)
 - [RFC2136](https://tools.ietf.org/html/rfc2136)
 - [NS1](https://ns1.com/)
-- [TransIP](https://www.transip.eu/domain-name/)
 - [OVHcloud](https://www.ovhcloud.com)
 - [Scaleway](https://www.scaleway.com)
-- [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 - [GoDaddy](https://www.godaddy.com)
 - [Gandi](https://www.gandi.net)
-- [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
 - [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
 - [Myra Security DNS](https://www.myrasecurity.com/en/saasp/application-security/secure-dns/)
@@ -107,14 +105,17 @@ from the usage of any externally developed webhook.
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
+| Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
+| Porkbun               | https://github.com/mattgmoser/external-dns-porkbun-webhook           |
 | PS Cloud Services     | https://github.com/supervillain3000/external-dns-pscloud-webhook     |
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Tencent Cloud         | https://github.com/tkestack/external-dns-tencentcloud-webhook        |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |
@@ -143,7 +144,6 @@ The following table clarifies the current status of the providers according to t
 | Google Cloud DNS                | Stable |                  |
 | AWS Route 53                    | Stable |                  |
 | AWS Cloud Map                   | Beta   |                  |
-| Akamai Edge DNS                 | Beta   |                  |
 | AzureDNS                        | Stable |                  |
 | Civo                            | Alpha  | @alejandrojnm    |
 | CloudFlare                      | Beta   |                  |
@@ -155,12 +155,10 @@ The following table clarifies the current status of the providers according to t
 | Linode DNS                      | Alpha  |                  |
 | RFC2136                         | Alpha  |                  |
 | NS1                             | Alpha  |                  |
-| TransIP                         | Alpha  |                  |
 | OVHcloud                        | Beta   | @rbeuque74       |
 | Scaleway DNS                    | Alpha  | @Sh4d1           |
 | GoDaddy                         | Alpha  |                  |
 | Gandi                           | Alpha  | @packi           |
-| Plural                          | Alpha  | @michaeljguarino |
 | Pi-hole                         | Alpha  | @tinyzimmer      |
 | Alibaba Cloud DNS               | Alpha  |                  |
 
@@ -191,7 +189,6 @@ There are two ways of running ExternalDNS:
 
 The following tutorials are provided:
 
-- [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 - [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 - AWS
   - [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
@@ -222,13 +219,11 @@ The following tutorials are provided:
 - [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 - [PowerDNS](docs/tutorials/pdns.md)
 - [RFC2136](docs/tutorials/rfc2136.md)
-- [TransIP](docs/tutorials/transip.md)
 - [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
 - [Nodes as source](docs/sources/nodes.md)
-- [Plural](docs/tutorials/plural.md)
 - [Pi-hole](docs/tutorials/pihole.md)
 
 ### Running Locally
@@ -248,13 +243,13 @@ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
+Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.kubernetes.io/ttl` annotation:
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+kubectl annotate service nginx "external-dns.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
@@ -262,7 +257,7 @@ For more details on configuring TTL, see [advanced ttl](docs/advanced/ttl.md).
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
 ```console
-kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+kubectl annotate service nginx "external-dns.kubernetes.io/internal-hostname=nginx.internal.example.org."
 ```
 
 If the service is not of type Loadbalancer you need the --publish-internal-services flag.

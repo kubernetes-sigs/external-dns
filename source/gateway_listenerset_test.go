@@ -832,7 +832,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotation(t *testing.T) {
 	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "override.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "override.example.com"},
 		},
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
@@ -1366,7 +1366,7 @@ func TestGatewayHTTPRouteWithListenerSetOwnTargetAnnotation(t *testing.T) {
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "ls", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls-override.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "ls-override.example.com"},
 		},
 		Spec: v1.ListenerSetSpec{
 			ParentRef: v1.ParentGatewayReference{Name: "gw"},
@@ -1421,7 +1421,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	gw := &v1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gw", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "gw.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "gw.example.com"},
 		},
 		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
 		Status: gatewayStatus("10.0.0.1"),
@@ -1435,7 +1435,7 @@ func TestGatewayHTTPRouteWithListenerSetTargetAnnotationPrecedence(t *testing.T)
 	ls := &v1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "ls", Namespace: "default",
-			Annotations: map[string]string{"external-dns.alpha.kubernetes.io/target": "ls.example.com"},
+			Annotations: map[string]string{"external-dns.kubernetes.io/target": "ls.example.com"},
 		},
 		Spec: v1.ListenerSetSpec{
 			ParentRef: v1.ParentGatewayReference{Name: "gw"},
@@ -1521,4 +1521,40 @@ func TestGatewayHTTPRouteWithListenerSetGatewayNotFound(t *testing.T) {
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err)
 	require.Empty(t, endpoints, "expected no endpoints when ListenerSet's parent Gateway doesn't exist")
+}
+
+func TestGatewayListenerSetSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	ls := &v1.ListenerSet{
+		ObjectMeta: informerTransformObjectMeta(),
+		Spec:       v1.ListenerSetSpec{ParentRef: v1.ParentGatewayReference{Name: "test-gateway"}},
+		Status:     v1.ListenerSetStatus{Conditions: []metav1.Condition{{}}},
+	}
+	require.Contains(t, ls.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	require.NotEmpty(t, ls.GetManagedFields())
+
+	_, err := gwClient.GatewayV1().ListenerSets(ls.GetNamespace()).Create(t.Context(), ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{GatewayListenerSets: true})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, source)
+
+	gatewaySrc := source.(*gatewayRouteSource)
+	require.NotNil(t, gatewaySrc.lsInformer)
+
+	testInformerTransformHelper(t,
+		gatewaySrc.lsInformer.Informer(),
+		ls,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

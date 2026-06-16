@@ -37,6 +37,7 @@ import (
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -324,7 +325,12 @@ func newGatewayRouteSource(
 
 	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                     // Register with factory before starting.
+
+	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
 
 	var lsInformer informers_v1.ListenerSetInformer
 	lsInformerFactory := gwInformerFactory
@@ -334,7 +340,10 @@ func newGatewayRouteSource(
 			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
 		}
 		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
-		lsInformer.Informer()                                        // Register with factory before starting.
+		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
 	}
 
 	rtInformerFactory := gwInformerFactory
@@ -342,7 +351,11 @@ func newGatewayRouteSource(
 		rtInformerFactory = newGatewayInformerFactory(client, config.Namespace, rtLabels)
 	}
 	rtInformer := newInformerFn(rtInformerFactory)
-	rtInformer.Informer() // Register with factory before starting.
+	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
 
 	kubeClient, err := clients.KubeClient()
 	if err != nil {
@@ -351,7 +364,11 @@ func newGatewayRouteSource(
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
-	nsInformer.Informer()                                      // Register with factory before starting.
+	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
 
 	gwInformerFactory.Start(ctx.Done())
 	if lsInformerFactory != gwInformerFactory {
@@ -464,9 +481,11 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
+		endpoint.AttachRefObject(routeEndpoints, events.NewObjectReference(rt.Object(), "gateway-"+kind))
+
 		endpoints = append(endpoints, routeEndpoints...)
 	}
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {

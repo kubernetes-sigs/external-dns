@@ -78,6 +78,7 @@ func NewPodSource(
 	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Pod]),
 	))
 	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
 		informers.TransformRemoveManagedFields(),
@@ -117,18 +118,13 @@ func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	pods := informers.ListIndexed[*v1.Pod](ps.podInformer.Informer().GetIndexer())
 
-	endpoints := make([]*endpoint.Endpoint, 0)
-	for _, key := range indexKeys {
-		pod, err := informers.GetByKey[*v1.Pod](ps.podInformer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
-
+	endpoints := make([]*endpoint.Endpoint, 0, len(pods))
+	for _, pod := range pods {
 		podEndpoints := ps.endpointsFromPodAnnotations(pod)
 
-		podEndpoints, err = ps.templateEngine.CombineWithEndpoints(
+		podEndpoints, err := ps.templateEngine.CombineWithEndpoints(
 			podEndpoints,
 			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
 		)
@@ -141,7 +137,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		endpoints = append(endpoints, podEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoint {

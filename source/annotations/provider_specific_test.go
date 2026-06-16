@@ -66,7 +66,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 		{
 			name: "AWS annotation",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight": "100",
+				"external-dns.kubernetes.io/aws-weight": "100",
 			},
 			expected: endpoint.ProviderSpecific{
 				{Name: "aws/weight", Value: "100"},
@@ -76,7 +76,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 		{
 			name: "CoreDNS annotation",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/coredns-group": "g1",
+				"external-dns.kubernetes.io/coredns-group": "g1",
 			},
 			expected: endpoint.ProviderSpecific{
 				{Name: "coredns/group", Value: "g1"},
@@ -361,7 +361,7 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 }
 
 // TestProviderSpecificPropertyNameConvention enforces that only Cloudflare may
-// emit the full annotation name (e.g. "external-dns.alpha.kubernetes.io/cloudflare-proxied")
+// emit the full annotation name (e.g. "external-dns.kubernetes.io/cloudflare-proxied")
 // as a property name. All other providers must normalise to the short "provider/attr" form
 // (e.g. "aws/weight"). If a new provider (e.g. azure-, ovh-) is added but accidentally
 // outputs the full annotation name, this test will catch it.
@@ -408,9 +408,9 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 		{
 			title: "aws- provider specific annotations are set correctly",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-annotation-1": "value 1",
+				"external-dns.kubernetes.io/aws-annotation-1": "value 1",
 				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/aws-annotation-2": "value 2",
+				"external-dns.kubernetes.io/aws-annotation-2": "value 2",
 			},
 			expectedResult: map[string]string{
 				"aws/annotation-1": "value 1",
@@ -421,9 +421,9 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 		{
 			title: "scw- provider specific annotations are set correctly",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/scw-annotation-1": "value 1",
+				"external-dns.kubernetes.io/scw-annotation-1": "value 1",
 				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/scw-annotation-2": "value 2",
+				"external-dns.kubernetes.io/scw-annotation-2": "value 2",
 			},
 			expectedResult: map[string]string{
 				"scw/annotation-1": "value 1",
@@ -434,9 +434,9 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 		{
 			title: "webhook- provider specific annotations are set correctly",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/webhook-annotation-1": "value 1",
+				"external-dns.kubernetes.io/webhook-annotation-1": "value 1",
 				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/webhook-annotation-2": "value 2",
+				"external-dns.kubernetes.io/webhook-annotation-2": "value 2",
 			},
 			expectedResult: map[string]string{
 				"webhook/annotation-1": "value 1",

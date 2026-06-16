@@ -84,7 +84,7 @@ Explicitly providing a list of selected zones instead of `*` you can scope the d
 Additional resources:
 
 - AWS IAM actions [documentation](https://www.awsiamactions.io/?o=route53%3A)
-- AWS IAM [fine grained controll](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
+- AWS IAM [fine grained control](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
 - [Actions and condition keys for Amazon Route 53](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonroute53.html)
 
 ## Create Role with AWS CLI
@@ -122,6 +122,13 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 - [Node IAM Role](#node-iam-role)
 - [Static credentials](#static-credentials)
 - [IAM Roles for Service Accounts](#iam-roles-for-service-accounts)
+
+> [!NOTE]
+> ExternalDNS resolves AWS credentials through the
+> [AWS SDK for Go v2 default credential provider chain](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials).
+> Any source supported by the SDK works without additional configuration in ExternalDNS — including environment
+> variables, shared config and credentials files, EC2 instance profile / ECS container credentials, and EKS Pod
+> Identity. See the AWS SDK reference for the full list and precedence order.
 
 For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.
 Feel free to change this to something else, such `externaldns` or `kube-addons`.
@@ -249,9 +256,32 @@ If ExternalDNS is not yet deployed, follow the steps under [Deploy ExternalDNS](
 
 In this method, the policy is attached to an IAM user, and the credentials secrets for the IAM user are then made available using a Kubernetes secret.
 
-This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.
+> [!WARNING]
+> **Security Risks with Static Credentials**
+>
+> - `kubectl describe pod` could expose secrets.
+> - Anyone who can `exec` into the container and run `env` can see them.
+> - Env vars can leak into logs, crash dumps, or child processes.
+> - There is no way to make them visible to a specific user only.
+> - They are long-lived, easy to leak, hard to rotate, and easy to accidentally commit or log.
+>
+> **When to use:**
+>
+> - Limit usage to non-AWS clusters.
+> - Always apply minimal privileges.
+> - Acknowledges reality (sometimes it is the only viable option).
+>
+> **For AWS specifically, the best practice and recommended hierarchy is:**
+>
+> 1. **IRSA (preferred):** Map an AWS IAM role to a Kubernetes service account; no static credentials in the pod.
+> 2. **EKS Pod Identity:** Native EKS alternative to IRSA; associates IAM role with a service account via the Pod Identity Agent.
+> 3. **Node IAM Role:** Attach policy to the node instance profile; not recommended beyond tests because all pods on the node inherit the permissions. Tolerated, but not recommended.
+> 4. **Mount credentials file:** Minimize privileges and avoid long-lived keys where possible.
+> 5. **Environment variables:** Minimize privileges and avoid long-lived keys where possible.
+
+This method is not the preferred method as the secrets in the credential file or environment variables could be copied and used by an unauthorized threat actor.
 However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.
-Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.
+Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not use a credentials file that has extra privileges beyond what is required.
 
 #### Create IAM user and attach the policy
 
@@ -296,6 +326,30 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 > ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
 
+<!-- markdownlint-disable-line MD028 -->
+
+> [!TIP]
+> To pass static credentials as environment variables (e.g. when running outside AWS and
+> mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
+> and project them into the pod. With the
+> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+> set the top-level `env` value:
+>
+> ```yaml
+> # values.yaml
+> env:
+>   - name: AWS_ACCESS_KEY_ID
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-access-key-id
+>   - name: AWS_SECRET_ACCESS_KEY
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-secret-access-key
+> ```
+
 ### IAM Roles for Service Accounts
 
 [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) ([IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)) allows cluster operators to map AWS IAM Roles to Kubernetes Service Accounts.
@@ -309,7 +363,7 @@ This is the preferred method as it implements [PoLP](https://csrc.nist.gov/gloss
 This method requires deploying with RBAC.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
 
 > [!NOTE]
-> Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenence mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).
+> Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenance mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).
 > IRSA is the officially supported method for EKS clusters, and so for non-EKS clusters on AWS, these other tools could be an option.
 
 #### Verify OIDC is supported
@@ -568,7 +622,7 @@ If using your own domain that was registered with a third-party domain registrar
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
-For clusters with RBAC enabled, be sure to choose the correct `namespace`.  For this tutorial, the enviornment variable `EXTERNALDNS_NS` will refer to the namespace.  You can set this to a value of your choice:
+For clusters with RBAC enabled, be sure to choose the correct `namespace`.  For this tutorial, the environment variable `EXTERNALDNS_NS` will refer to the namespace.  You can set this to a value of your choice:
 
 ```bash
 export EXTERNALDNS_NS="default" # externaldns, kube-addons, etc
@@ -693,7 +747,7 @@ helm upgrade --install external-dns external-dns/external-dns --values values.ya
 
 ## Arguments
 
-This list is not the full list, but a few arguments that where chosen.
+This is not a complete list, but a few selected items.
 
 ### aws-zone-type
 
@@ -705,14 +759,21 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
+`external-dns.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
 To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer).
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
+Additionally, you can set the value to `A` or `AAAA` to create only one type of ALIAS record:
+
+- `A`: Creates only an A ALIAS record (IPv4 only)
+- `AAAA`: Creates only an AAAA ALIAS record (IPv6 only)
+
+Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
+
 ### target-hosted-zone
 
-`external-dns.alpha.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
+`external-dns.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
 
 ### aws-zone-match-parent
 
@@ -728,8 +789,8 @@ If one uses the `nginx-ingress` Helm chart, this flag can be set with the `contr
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
-> If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma `,` separator.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
+> If you want to give multiple names to service, you can set it to external-dns.kubernetes.io/hostname with a comma `,` separator.
 
 For this verification phase, you can use default or another namespace for the nginx demo, for example:
 
@@ -746,7 +807,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/hostname: nginx.example.com
 spec:
   type: LoadBalancer
   ports:
@@ -915,7 +976,7 @@ With the previous `deployment` and `service` objects deployed, we can add an `in
 
 > For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
 
-For this tutorial, we have two endpoints, the service with `LoadBalancer` type and an ingress.  For practical purposes, if an ingress is used, the service type can be changed to `ClusterIP` as two endpoints are unecessary in this scenario.
+For this tutorial, we have two endpoints, the service with `LoadBalancer` type and an ingress.  For practical purposes, if an ingress is used, the service type can be changed to `ClusterIP` as two endpoints are unnecessary in this scenario.
 
 > [!IMPORTANT]
 > This requires that an ingress controller has been installed in your Kubernetes cluster.
@@ -984,7 +1045,7 @@ curl server.example.com.
 
 ### Custom TTL
 
-The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.kubernetes.io/ttl`.
 e.g., modify the service manifest YAML file above:
 
 ```yaml
@@ -993,8 +1054,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
     ...
 ```
@@ -1005,23 +1066,23 @@ This will set the DNS record's TTL to 60 seconds.
 
 Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
 
-- `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+- `external-dns.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
 
 For any given DNS name, only **one** of the following routing policies can be used:
 
-- Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
-- Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
-- Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+- Weighted records: `external-dns.kubernetes.io/aws-weight`
+- Latency-based routing: `external-dns.kubernetes.io/aws-region`
+- Failover:`external-dns.kubernetes.io/aws-failover`
 - Geolocation-based routing:
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
-  - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+  - `external-dns.kubernetes.io/aws-geolocation-continent-code`
+  - `external-dns.kubernetes.io/aws-geolocation-country-code`
+  - `external-dns.kubernetes.io/aws-geolocation-subdivision-code`
 - Geoproximity routing:
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
-  - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
-- Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
+  - `external-dns.kubernetes.io/aws-geoproximity-region`
+  - `external-dns.kubernetes.io/aws-geoproximity-local-zone-group`
+  - `external-dns.kubernetes.io/aws-geoproximity-coordinates`
+  - `external-dns.kubernetes.io/aws-geoproximity-bias`
+- Multi-value answer:`external-dns.kubernetes.io/aws-multi-value-answer`
 
 #### Weighted Routing
 
@@ -1033,9 +1094,9 @@ kind: Service
 metadata:
   name: my-service-v1
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: app-v1
-    external-dns.alpha.kubernetes.io/aws-weight: "80"
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/set-identifier: app-v1
+    external-dns.kubernetes.io/aws-weight: "80"
 spec:
   type: LoadBalancer
 ---
@@ -1044,9 +1105,9 @@ kind: Service
 metadata:
   name: my-service-v2
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: app-v2
-    external-dns.alpha.kubernetes.io/aws-weight: "20"
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/set-identifier: app-v2
+    external-dns.kubernetes.io/aws-weight: "20"
 spec:
   type: LoadBalancer
 ```
@@ -1063,16 +1124,16 @@ kind: Ingress
 metadata:
   name: my-ingress-primary
   annotations:
-    external-dns.alpha.kubernetes.io/set-identifier: my-app-primary
-    external-dns.alpha.kubernetes.io/aws-failover: PRIMARY
+    external-dns.kubernetes.io/set-identifier: my-app-primary
+    external-dns.kubernetes.io/aws-failover: PRIMARY
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: my-ingress-secondary
   annotations:
-    external-dns.alpha.kubernetes.io/set-identifier: my-app-secondary
-    external-dns.alpha.kubernetes.io/aws-failover: SECONDARY
+    external-dns.kubernetes.io/set-identifier: my-app-secondary
+    external-dns.kubernetes.io/aws-failover: SECONDARY
 ```
 
 > Route53 will serve the `PRIMARY` record when healthy, and automatically fall back to `SECONDARY` when the health check fails.
@@ -1087,9 +1148,9 @@ kind: Service
 metadata:
   name: my-service-us
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: api.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: api-us-east-1
-    external-dns.alpha.kubernetes.io/aws-region: us-east-1
+    external-dns.kubernetes.io/hostname: api.example.com
+    external-dns.kubernetes.io/set-identifier: api-us-east-1
+    external-dns.kubernetes.io/aws-region: us-east-1
 spec:
   type: LoadBalancer
 ---
@@ -1098,9 +1159,9 @@ kind: Service
 metadata:
   name: my-service-eu
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: api.example.com
-    external-dns.alpha.kubernetes.io/set-identifier: api-eu-west-1
-    external-dns.alpha.kubernetes.io/aws-region: eu-west-1
+    external-dns.kubernetes.io/hostname: api.example.com
+    external-dns.kubernetes.io/set-identifier: api-eu-west-1
+    external-dns.kubernetes.io/aws-region: eu-west-1
 spec:
   type: LoadBalancer
 ```
@@ -1110,7 +1171,7 @@ spec:
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using
-`external-dns.alpha.kubernetes.io/aws-health-check-id: <health-check-id>` annotation.
+`external-dns.kubernetes.io/aws-health-check-id: <health-check-id>` annotation.
 
 Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
 

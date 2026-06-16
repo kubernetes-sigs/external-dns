@@ -36,6 +36,7 @@ type IndexSelectorOptions struct {
 	// instead of the object's own name. Useful for indexing objects by a "parent"
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
+	conditions      []func(metav1.Object) bool
 }
 
 func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
@@ -54,6 +55,20 @@ func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelector
 func IndexSelectorWithLabelSelector(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
 		options.labelSelector = input
+	}
+}
+
+// IndexSelectorWithConditions adds typed predicate functions to the index selector.
+// Each function receives the concrete object type T; returning false excludes the
+// object from the index. The type parameter is inferred from the function arguments.
+func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		for _, fn := range fns {
+			options.conditions = append(options.conditions, func(obj metav1.Object) bool {
+				typed, ok := obj.(T)
+				return ok && fn(typed)
+			})
+		}
 	}
 }
 
@@ -104,15 +119,23 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			if options.labelSelector != nil && !options.labelSelector.Matches(labels.Set(entity.GetLabels())) {
 				return nil, nil
 			}
-			name := entity.GetName()
-			if options.indexByLabelKey != "" {
-				name = entity.GetLabels()[options.indexByLabelKey]
-				if name == "" {
+			for _, condition := range options.conditions {
+				if !condition(entity) {
 					return nil, nil
 				}
 			}
-			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()
-			return []string{key}, nil
+			if options.indexByLabelKey != "" {
+				name := entity.GetLabels()[options.indexByLabelKey]
+				if name == "" {
+					return nil, nil
+				}
+				return []string{types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()}, nil
+			}
+			ns := entity.GetNamespace()
+			if ns == "" {
+				return []string{entity.GetName()}, nil
+			}
+			return []string{ns + "/" + entity.GetName()}, nil
 		},
 	}
 }
@@ -135,6 +158,26 @@ func MustAddEventHandler(informer cache.SharedInformer, handler cache.ResourceEv
 	if _, err := informer.AddEventHandler(handler); err != nil {
 		log.Warnf("AddEventHandler called on stopped informer: %v", err)
 	}
+}
+
+// ListIndexed returns all objects of type T admitted by the IndexWithSelectors index.
+// Objects missing from the store or failing type assertion are silently skipped — a missing
+// key means the object was deleted between the index scan and the lookup, which is normal.
+func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
+	keys := indexer.ListIndexFuncValues(IndexWithSelectors)
+	result := make([]T, 0, len(keys))
+	for _, key := range keys {
+		raw, exists, err := indexer.GetByKey(key)
+		if !exists || err != nil {
+			continue
+		}
+		obj, ok := raw.(T)
+		if !ok {
+			continue
+		}
+		result = append(result, obj)
+	}
+	return result
 }
 
 // GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
