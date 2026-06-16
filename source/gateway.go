@@ -269,7 +269,7 @@ func (src *gatewayResourceSource) Endpoints(_ context.Context) ([]*endpoint.Endp
 		log.Debugf("Endpoints generated from Gateway %s/%s: %v", gw.Namespace, gw.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (src *gatewayResourceSource) hostnames(gw *v1.Gateway) ([]string, error) {
