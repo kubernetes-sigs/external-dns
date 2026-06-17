@@ -64,6 +64,11 @@ rbac:  # @schema additionalProperties: true
   # -- Additional rules to add to the `ClusterRole`.
   additionalPermissions: []
 
+# -- Number of replicas of the `external-dns` `Deployment`. external-dns does not
+# support leader election, so this must be `0` or `1` to avoid duplicate or
+# conflicting DNS record updates. Set to `0` to scale the `Deployment` down.
+replicaCount: 1  # @schema minimum:0; maximum:1
+
 # -- Annotations to add to the `Deployment`.
 deploymentAnnotations: {}
 
