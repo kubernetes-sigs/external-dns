@@ -1834,6 +1834,103 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	assert.Empty(t, planned.Changes.Delete, "no new changes should be here")
 }
 
+func TestCanonicalizeStructuredTarget(t *testing.T) {
+	cases := []struct {
+		name       string
+		recordType string
+		in         string
+		want       string
+		wantErr    bool
+	}{
+		{"SRV canonical unchanged", endpoint.RecordTypeSRV, "10 5 5060 sip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV multi-space collapsed", endpoint.RecordTypeSRV, "10  5  5060  sip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV tab collapsed", endpoint.RecordTypeSRV, "10\t5\t5060\tsip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV trailing dot added", endpoint.RecordTypeSRV, "10 5 5060 sip.bar.com", "10 5 5060 sip.bar.com.", false},
+		{"SRV malformed kept", endpoint.RecordTypeSRV, "10 5 sip.bar.com.", "10 5 sip.bar.com.", true},
+		{"NAPTR canonical unchanged", endpoint.RecordTypeNAPTR, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR multi-space collapsed", endpoint.RecordTypeNAPTR, `10  20  "S"  "SIP+D2U"  ""  _sip._udp.bar.com.`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR trailing dot added", endpoint.RecordTypeNAPTR, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR malformed kept", endpoint.RecordTypeNAPTR, "10 20", "10 20", true},
+		{"non-structured type unchanged", endpoint.RecordTypeA, "1.2.3.4", "1.2.3.4", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := canonicalizeStructuredTarget(c.recordType, c.in)
+			if c.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+// replanAfterApply applies a single SRV/NAPTR endpoint, reads it back, and re-plans
+// against the same desired endpoint. Because AdjustEndpoints canonicalizes the
+// desired target to the read-back form, the second plan must be empty; otherwise the
+// record churns an update on every reconcile.
+func replanAfterApply(t *testing.T, recordType, dnsName, target string) *plan.Plan {
+	t.Helper()
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client}
+	ctx := t.Context()
+
+	desired := func() []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{{
+			DNSName:    dnsName,
+			RecordType: recordType,
+			Targets:    endpoint.Targets{target},
+			RecordTTL:  endpoint.TTL(defaultTTL),
+			Labels:     endpoint.Labels{},
+		}}
+	}
+
+	create, err := p.AdjustEndpoints(desired())
+	require.NoError(t, err)
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: create}))
+
+	records, err := p.Records(ctx)
+	require.NoError(t, err)
+
+	adjusted, err := p.AdjustEndpoints(desired())
+	require.NoError(t, err)
+
+	pl := &plan.Plan{
+		Current:        records,
+		Desired:        adjusted,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"bar.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR},
+	}
+	return pl.Calculate()
+}
+
+func TestCloudflareSRVNAPTRConverge(t *testing.T) {
+	cases := []struct {
+		name       string
+		recordType string
+		dnsName    string
+		target     string
+	}{
+		{"SRV canonical", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10 5 5060 sip.bar.com."},
+		{"SRV multi-space", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10  5  5060  sip.bar.com."},
+		{"SRV tab", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10\t5\t5060\tsip.bar.com."},
+		{"SRV no trailing dot", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10 5 5060 sip.bar.com"},
+		{"NAPTR canonical", endpoint.RecordTypeNAPTR, "bar.com", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`},
+		{"NAPTR multi-space", endpoint.RecordTypeNAPTR, "bar.com", `10  20  "S"  "SIP+D2U"  ""  _sip._udp.bar.com.`},
+		{"NAPTR tab", endpoint.RecordTypeNAPTR, "bar.com", "10\t20\t\"S\"\t\"SIP+D2U\"\t\"\"\t_sip._udp.bar.com."},
+		{"NAPTR no trailing dot", endpoint.RecordTypeNAPTR, "bar.com", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			planned := replanAfterApply(t, c.recordType, c.dnsName, c.target)
+			assert.Empty(t, planned.Changes.Create, "should converge: unexpected create on second reconcile")
+			assert.Empty(t, planned.Changes.UpdateNew, "should converge: unexpected update on second reconcile")
+			assert.Empty(t, planned.Changes.Delete, "should converge: unexpected delete on second reconcile")
+		})
+	}
+}
+
 func TestCloudFlareProvider_Region(t *testing.T) {
 	testutils.TestHelperEnvSetter(t, map[string]string{
 		cfAPITokenEnvKey: "abc123def",

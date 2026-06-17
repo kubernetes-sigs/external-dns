@@ -52,10 +52,6 @@ Record types whose batch PUT body the SDK does not support (e.g. CAA) are submit
 
 A, AAAA, CNAME, TXT, MX, NS, SRV, NAPTR.
 
-SRV and NAPTR targets should use single-space field separators. Multi-space or
-tab separators cause the record to be re-emitted as a plan change on every
-reconcile.
-
 NAPTR `regexp` fields with literal double-quote characters are not supported.
 
 ## Deploy ExternalDNS

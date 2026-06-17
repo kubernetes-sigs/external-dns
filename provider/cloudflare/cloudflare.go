@@ -672,6 +672,20 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			}
 		}
 
+		// Canonicalize SRV/NAPTR targets to the read-back form so multi-space, tab,
+		// or missing-dot input does not re-emit an update on every reconcile.
+		switch e.RecordType {
+		case endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR:
+			for i, t := range e.Targets {
+				canonical, err := canonicalizeStructuredTarget(e.RecordType, t)
+				if err != nil {
+					log.Debugf("cloudflare: leaving %s target %q unchanged: %v", e.RecordType, t, err)
+					continue
+				}
+				e.Targets[i] = canonical
+			}
+		}
+
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
@@ -793,15 +807,7 @@ func naptrContent(r dns.RecordResponse) string {
 			return r.Content
 		}
 	}
-	rr := &miekg.NAPTR{
-		Order:       uint16(data.Order),
-		Preference:  uint16(data.Preference),
-		Flags:       data.Flags,
-		Service:     data.Service,
-		Regexp:      data.Regex,
-		Replacement: provider.EnsureTrailingDot(data.Replacement),
-	}
-	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
+	return naptrCanonical(uint16(data.Order), uint16(data.Preference), data.Flags, data.Service, data.Regex, data.Replacement)
 }
 
 // srvContent rebuilds the canonical SRV target from a record's structured Data,
@@ -823,13 +829,64 @@ func srvContent(r dns.RecordResponse) string {
 			return r.Content
 		}
 	}
+	return srvCanonical(uint16(data.Priority), uint16(data.Weight), uint16(data.Port), data.Target)
+}
+
+// srvCanonical renders SRV fields in the canonical single-space, trailing-dot form
+// read-back produces, so a desired target normalized here matches the read-back
+// record and the plan converges instead of churning an update every reconcile.
+func srvCanonical(priority, weight, port uint16, target string) string {
 	rr := &miekg.SRV{
-		Priority: uint16(data.Priority),
-		Weight:   uint16(data.Weight),
-		Port:     uint16(data.Port),
-		Target:   provider.EnsureTrailingDot(data.Target),
+		Priority: priority,
+		Weight:   weight,
+		Port:     port,
+		Target:   provider.EnsureTrailingDot(target),
 	}
 	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
+}
+
+// naptrCanonical mirrors srvCanonical for NAPTR.
+func naptrCanonical(order, preference uint16, flags, service, regexp, replacement string) string {
+	rr := &miekg.NAPTR{
+		Order:       order,
+		Preference:  preference,
+		Flags:       flags,
+		Service:     service,
+		Regexp:      regexp,
+		Replacement: provider.EnsureTrailingDot(replacement),
+	}
+	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
+}
+
+// canonicalizeStructuredTarget rewrites an SRV or NAPTR target into the same
+// canonical form read-back produces. Multi-space, tab, or missing-dot targets
+// otherwise differ from the canonical read-back and re-emit an update every
+// reconcile. The input is returned unchanged on a parse error, so a malformed
+// target still surfaces downstream as a SoftError.
+func canonicalizeStructuredTarget(recordType, target string) (string, error) {
+	switch recordType {
+	case endpoint.RecordTypeSRV:
+		rr, err := miekg.NewRR("x. 0 IN SRV " + target)
+		if err != nil || rr == nil {
+			return target, fmt.Errorf("invalid SRV target %q: %w", target, err)
+		}
+		srv, ok := rr.(*miekg.SRV)
+		if !ok {
+			return target, fmt.Errorf("invalid SRV target %q: parsed as %T", target, rr)
+		}
+		return srvCanonical(srv.Priority, srv.Weight, srv.Port, srv.Target), nil
+	case endpoint.RecordTypeNAPTR:
+		rr, err := miekg.NewRR("x. 0 IN NAPTR " + target)
+		if err != nil || rr == nil {
+			return target, fmt.Errorf("invalid NAPTR target %q: %w", target, err)
+		}
+		naptr, ok := rr.(*miekg.NAPTR)
+		if !ok {
+			return target, fmt.Errorf("invalid NAPTR target %q: parsed as %T", target, rr)
+		}
+		return naptrCanonical(naptr.Order, naptr.Preference, naptr.Flags, naptr.Service, naptr.Regexp, naptr.Replacement), nil
+	}
+	return target, nil
 }
 
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
