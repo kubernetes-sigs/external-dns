@@ -53,7 +53,7 @@ const (
 var (
 	// avoids allocating a new slice on every call
 	// prevents unwanted deletion of etcd keys based on labels
-	skipLabels = []string{originalTextLabel, "prefix", "resource", endpoint.OwnerLabelKey}
+	skipLabels = []string{originalTextLabel, randomPrefixLabel, "resource", endpoint.OwnerLabelKey}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
