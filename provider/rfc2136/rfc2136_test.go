@@ -185,7 +185,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub, zoneNames ...string) (provider
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return newProvider([]string{""}, 0, zoneNames, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zoneNames, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, error) {
@@ -196,15 +196,15 @@ func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136TLSStubProvider(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
-	return newProvider([]string{"rfc2136-host"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host"}, 0, nil, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136TLSStubProviderWithHosts(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
-	return newProvider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithReverseZone(stub *rfc2136Stub) (provider.Provider, error) {
@@ -217,7 +217,7 @@ func createRfc2136StubProviderWithReverseZone(stub *rfc2136Stub) (provider.Provi
 	}
 
 	zones := []string{"foo.com", "3.2.1.in-addr.arpa"}
-	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, error) {
@@ -229,7 +229,7 @@ func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Provider, error) {
@@ -241,7 +241,7 @@ func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Prov
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return newProvider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, zones, false, false, "key", "secret", "hmac-sha512", true, endpoint.NewDomainFilter(zones), false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (provider.Provider, error) {
@@ -252,7 +252,7 @@ func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, strategy, stub)
+	return newProvider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, strategy, stub)
 }
 
 func createRfc2136StubProviderWithBatchChangeSize(stub *rfc2136Stub, batchChangeSize int) (provider.Provider, error) {
@@ -263,7 +263,7 @@ func createRfc2136StubProviderWithBatchChangeSize(stub *rfc2136Stub, batchChange
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return newProvider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", batchChangeSize, tlsConfig, "", stub)
+	return newProvider([]string{""}, 0, nil, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", batchChangeSize, tlsConfig, "", stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -1059,6 +1059,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 		53,
 		[]string{"example.com"},
 		false,
+		false,
 		"key",
 		"secret",
 		"hmac-sha512",
@@ -1095,4 +1096,50 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
+}
+
+func Test_attachTSIGSecret(t *testing.T) {
+	tests := []struct {
+		name         string
+		insecure     bool
+		gssTsig      bool
+		insecureAXFR bool
+		want         bool
+	}{
+		{
+			name:         "secure default: attach TSIG",
+			insecure:     false,
+			gssTsig:      false,
+			insecureAXFR: false,
+			want:         true,
+		},
+		{
+			name:         "insecure-AXFR skips TSIG on zone transfer",
+			insecure:     false,
+			gssTsig:      false,
+			insecureAXFR: true,
+			want:         false,
+		},
+		{
+			name:         "insecure mode never attaches TSIG",
+			insecure:     true,
+			gssTsig:      false,
+			insecureAXFR: false,
+			want:         false,
+		},
+		{
+			name:         "gss-tsig manages its own auth",
+			insecure:     false,
+			gssTsig:      true,
+			insecureAXFR: false,
+			want:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := attachTSIGSecret(tt.insecure, tt.gssTsig, tt.insecureAXFR)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

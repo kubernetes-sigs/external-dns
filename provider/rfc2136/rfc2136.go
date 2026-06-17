@@ -57,6 +57,7 @@ type rfc2136Provider struct {
 	tsigSecret      string
 	tsigSecretAlg   string
 	insecure        bool
+	insecureAXFR    bool
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
@@ -119,11 +120,11 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		ClientCertFilePath:    cfg.TLSClientCert,
 		ClientCertKeyFilePath: cfg.TLSClientCertKey,
 	}
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136InsecureAXFR, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
-func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, insecureAXFR bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -149,6 +150,7 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		nameservers:           nameservers,
 		zoneNames:             zoneNames,
 		insecure:              insecure,
+		insecureAXFR:          insecureAXFR,
 		gssTsig:               gssTsig,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
@@ -259,9 +261,15 @@ OuterLoop:
 	return eps, nil
 }
 
+// attachTSIGSecret evaluates if TSIG secret is attached based on flags provided.
+func attachTSIGSecret(insecure, gssTsig, insecureAXFR bool) bool {
+	return !insecure && !gssTsig && !insecureAXFR
+}
+
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
-	if !r.insecure && !r.gssTsig {
+
+	if attachTSIGSecret(r.insecure, r.gssTsig, r.insecureAXFR) {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
@@ -289,7 +297,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		m := new(dns.Msg)
 		m.SetAxfr(dns.Fqdn(zone))
-		if !r.insecure && !r.gssTsig {
+		if attachTSIGSecret(r.insecure, r.gssTsig, r.insecureAXFR) {
 			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
 
