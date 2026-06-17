@@ -251,7 +251,132 @@ dig +short @coredns.default.svc.cluster.local aa.example.org AAAA
 ❯❯ 2001:db8::1
 ```
 
-### 6. Cleanup
+### 6. PTR records (reverse DNS) — optional
+
+Once forward DNS works, you can optionally enable reverse lookups (PTR records).
+ExternalDNS can write PTR records into the same etcd backend — mapping IP addresses back
+to hostnames (e.g. `172.18.0.2 → my-service`).
+
+Two things are different from the forward-zone setup:
+
+- ExternalDNS needs the `--managed-record-types=PTR` flag (default only manages A, CNAME, TXT).
+- The `--domain-filter` must match the reverse zone you want to manage (e.g. `18.172.in-addr.arpa`).
+
+> **CoreDNS limitation:** the etcd plugin stores exactly **one** PTR record per reverse-DNS
+> key. ExternalDNS writes at the exact reverse-DNS path (e.g.
+> `/skydns/arpa/in-addr/172/18/0/2`) without any random suffix, so multiple targets for
+> the same IP are not supported — the last target wins.
+
+#### Step 6a. Add the reverse zone to CoreDNS
+
+Edit `docs/snippets/tutorials/coredns/values-coredns.yaml` and add a **second** `etcd`
+plugin block for the reverse zone, right after the existing `example.org` block:
+
+```yaml
+      # existing block (forward zone)
+      - name: etcd
+        parameters: "example.org"
+        configBlock: |
+          stubzones
+          path /skydns
+          endpoint http://etcd.default.svc.cluster.local:2379
+          fallthrough
+      # ▼ NEW — reverse zone for PTR
+      - name: etcd
+        parameters: "18.172.in-addr.arpa"
+        configBlock: |
+          path /skydns
+          endpoint http://etcd.default.svc.cluster.local:2379
+```
+
+Upgrade CoreDNS and wait for rollout:
+
+```sh
+helm upgrade coredns coredns/coredns \
+  -f docs/snippets/tutorials/coredns/values-coredns.yaml \
+  -n default
+kubectl rollout status deploy/coredns
+```
+
+#### Step 6b. Reconfigure ExternalDNS for the reverse zone
+
+When running from source, add the two flags:
+
+```sh
+export ETCD_URLS="http://127.0.0.1:32379"
+
+go run main.go \
+    --provider=coredns \
+    --source=service \
+    --managed-record-types=PTR \
+    --domain-filter=18.172.in-addr.arpa \
+    --log-level=debug
+```
+
+When running via Helm, update the values (`domainFilters` and `managedRecordTypes`):
+
+```yaml
+domainFilters:
+  - 18.172.in-addr.arpa      # ← was: example.org
+
+managedRecordTypes:
+  - PTR                       # ← add PTR (default: A, CNAME, TXT)
+```
+
+```sh
+helm upgrade external-dns external-dns/external-dns \
+  -f docs/snippets/tutorials/coredns/values-extdns-coredns.yaml \
+  -n default
+```
+
+#### Step 6c. Create a PTR-enabled service
+
+Annotate a service with the reverse-DNS hostname (`<reversed-ip>.in-addr.arpa`).
+The IP in the annotation must match the service's load-balancer IP:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    external-dns.kubernetes.io/hostname: 2.0.18.172.in-addr.arpa
+    cluster-name: "cluster1"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+  selector:
+    app: my-app
+```
+
+Patch the status IP so ExternalDNS picks it up:
+
+```sh
+kubectl apply -f - <<EOF
+<service manifest above>
+EOF
+
+kubectl patch svc my-service --type=merge \
+  -p '{"status":{"loadBalancer":{"ingress":[{"ip":"172.18.0.2"}]}}}' \
+  --subresource=status
+```
+
+#### Step 6d. Verify
+
+```sh
+# The etcd key sits at the exact reverse-DNS path — no random prefix
+kubectl exec -it etcd-0 -- etcdctl get /skydns/arpa/in-addr/172/18/0/2
+# /skydns/arpa/in-addr/172/18/0/2
+# {"host":"my-service","ttl":0}
+
+# Reverse DNS lookup via CoreDNS
+kubectl run --rm -it dnsutils --image=infoblox/dnstools --restart=Never -- \
+  dig +short @coredns.default.svc.cluster.local -x 172.18.0.2
+# my-service.
+```
+
+### 7. Cleanup
 
 ```sh
 kind delete cluster --name coredns-etcd
