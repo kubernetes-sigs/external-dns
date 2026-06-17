@@ -24,6 +24,7 @@ import (
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +38,10 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -54,7 +58,7 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:resources=TransportServer.cis.f5.com
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
@@ -62,6 +66,7 @@ type f5TransportServerSource struct {
 	kubeClient              kubernetes.Interface
 	annotationFilter        string
 	namespace               string
+	templateEngine          template.Engine
 	unstructuredConverter   *unstructuredConverter
 }
 
@@ -99,6 +104,7 @@ func NewF5TransportServerSource(
 		kubeClient:              kubeClient,
 		namespace:               cfg.Namespace,
 		annotationFilter:        cfg.AnnotationFilter,
+		templateEngine:          cfg.TemplateEngine,
 		unstructuredConverter:   uc,
 	}, nil
 }
@@ -123,6 +129,10 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		if err != nil {
 			return nil, err
 		}
+		transportServer.TypeMeta = metav1.TypeMeta{
+			Kind:       "TransportServer",
+			APIVersion: f5TransportServerGVR.GroupVersion().String(),
+		}
 		transportServers = append(transportServers, transportServer)
 	}
 
@@ -131,7 +141,10 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
-	endpoints := ts.endpointsFromTransportServers(transportServers)
+	endpoints, err := ts.endpointsFromTransportServers(transportServers)
+	if err != nil {
+		return nil, err
+	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
@@ -142,33 +155,96 @@ func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler fu
 	informers.MustAddEventHandler(ts.transportServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
-// endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
-func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) []*endpoint.Endpoint {
+// endpointsFromTransportServers extracts the endpoints from a slice of TransportServers.
+func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
-		if !hasValidTransportServerIP(transportServer) {
+		var tsEndpoints []*endpoint.Endpoint
+
+		if hasValidTransportServerIP(transportServer) {
+			resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
+
+			ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
+
+			targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
+			if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
+				targets = append(targets, transportServer.Spec.VirtualServerAddress)
+			}
+			if len(targets) == 0 && transportServer.Status.VSAddress != "" {
+				targets = append(targets, transportServer.Status.VSAddress)
+			}
+
+			tsEndpoints = append(tsEndpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		}
+
+		var err error
+		tsEndpoints, err = ts.templateEngine.CombineWithEndpoints(
+			tsEndpoints,
+			func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTSFQDNTargetTemplate(transportServer) },
+		)
+		if err != nil {
+			return nil, err
+		}
+		tsEndpoints, err = ts.templateEngine.CombineWithEndpoints(
+			tsEndpoints,
+			func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTSTemplate(transportServer) },
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(tsEndpoints) == 0 {
 			log.Warnf("F5 TransportServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				transportServer.Namespace, transportServer.Name)
-			continue
 		}
 
-		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
+		endpoint.AttachRefObject(tsEndpoints, events.NewObjectReference(transportServer, types.F5TransportServer))
 
-		ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
-
-		targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
-		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, transportServer.Spec.VirtualServerAddress)
-		}
-		if len(targets) == 0 && transportServer.Status.VSAddress != "" {
-			targets = append(targets, transportServer.Status.VSAddress)
-		}
-
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, tsEndpoints...)
 	}
 
-	return endpoints
+	return endpoints, nil
+}
+
+// endpointsFromTSTemplate creates endpoints using the FQDN and target templates.
+func (ts *f5TransportServerSource) endpointsFromTSTemplate(obj *f5.TransportServer) ([]*endpoint.Endpoint, error) {
+	hostnames, err := ts.templateEngine.ExecFQDN(obj)
+	if err != nil || len(hostnames) == 0 {
+		return nil, err
+	}
+	targets, err := ts.templateEngine.ExecTarget(obj)
+	if err != nil {
+		return nil, err
+	}
+	return EndpointsForHostsAndTargets(hostnames, targets), nil
+}
+
+// endpointsFromTSFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
+func (ts *f5TransportServerSource) endpointsFromTSFQDNTargetTemplate(obj *f5.TransportServer) ([]*endpoint.Endpoint, error) {
+	pairs, err := ts.templateEngine.ExecFQDNTarget(obj)
+	if err != nil || len(pairs) == 0 {
+		return nil, err
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from transportserver %s/%s: missing ':' separator",
+				pair, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from transportserver %s/%s: field may not yet be populated",
+				pair, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+	}
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

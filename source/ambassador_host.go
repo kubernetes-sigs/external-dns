@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
+	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
@@ -51,7 +52,7 @@ const (
 )
 
 var (
-	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
 	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
 )
 
@@ -176,6 +177,8 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
+
+		endpoint.AttachRefObject(hostEndpoints, events.NewObjectReference(host, types.AmbassadorHost))
 
 		log.Debugf("Endpoints generated from Host: %s: %v", fullname, hostEndpoints)
 		endpoints = append(endpoints, hostEndpoints...)

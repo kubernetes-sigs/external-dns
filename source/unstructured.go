@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -352,20 +353,17 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoi
 	}
 
 	// Deduplicate hostnames
-	hostSet := make(map[string]struct{}, len(hostnames))
-	for _, h := range hostnames {
-		hostSet[h] = struct{}{}
-	}
-	sortedHosts := slices.Sorted(maps.Keys(hostSet))
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
 
 	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]map[string]struct{})
+	targetsByType := make(map[string]sets.Set[string])
 	for _, target := range targets {
 		recordType := endpoint.SuitableType(target)
 		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = make(map[string]struct{})
+			targetsByType[recordType] = sets.New(target)
+		} else {
+			targetsByType[recordType].Insert(target)
 		}
-		targetsByType[recordType][target] = struct{}{}
 	}
 
 	// Resolve to sorted slices once

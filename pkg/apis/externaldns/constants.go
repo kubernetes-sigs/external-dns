@@ -22,7 +22,6 @@ const (
 	RegistryDynamoDB = "dynamodb"
 	RegistryAWSSD    = "aws-sd"
 
-	ProviderAkamai       = "akamai"
 	ProviderAlibabaCloud = "alibabacloud"
 	ProviderAWS          = "aws"
 	ProviderAWSSD        = "aws-sd"
@@ -45,9 +44,7 @@ const (
 	ProviderOVH          = "ovh"
 	ProviderPDNS         = "pdns"
 	ProviderPihole       = "pihole"
-	ProviderPlural       = "plural"
 	ProviderRFC2136      = "rfc2136"
 	ProviderScaleway     = "scaleway"
-	ProviderTransip      = "transip"
 	ProviderWebhook      = "webhook"
 )

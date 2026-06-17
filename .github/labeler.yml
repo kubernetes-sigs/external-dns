@@ -32,9 +32,6 @@ provider/dyn: provider/dyn*
 # Add 'provider/exoscale' in file which starts with exoscale
 provider/exoscale: provider/exoscale*
 
-# Add 'provider/transip' in file which starts with transip
-provider/transip: provider/transip*
-
 # Add 'provider/rfc2136' in file which starts with rfc2136
 provider/rfc2136: provider/rfc2136*
 

@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -4788,7 +4789,7 @@ func TestNewServiceTypes(t *testing.T) {
 		name        string
 		filter      []string
 		wantEnabled bool
-		wantTypes   map[v1.ServiceType]bool
+		wantTypes   sets.Set[v1.ServiceType]
 		wantErr     bool
 	}{
 		{
@@ -4809,10 +4810,10 @@ func TestNewServiceTypes(t *testing.T) {
 			name:        "valid filter enables serviceTypes",
 			filter:      []string{string(v1.ServiceTypeClusterIP), string(v1.ServiceTypeNodePort)},
 			wantEnabled: true,
-			wantTypes: map[v1.ServiceType]bool{
-				v1.ServiceTypeClusterIP: true,
-				v1.ServiceTypeNodePort:  true,
-			},
+			wantTypes: sets.New(
+				v1.ServiceTypeClusterIP,
+				v1.ServiceTypeNodePort,
+			),
 			wantErr: false,
 		},
 		{

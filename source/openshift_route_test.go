@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type OCPRouteSuite struct {
@@ -116,6 +117,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-target",
+					UID:       "openshift-route-uid",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -133,13 +135,13 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(types.OpenShiftRoute)),
 			},
 		},
 		{

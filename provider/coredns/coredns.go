@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net"
 	"os"
 	"slices"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
@@ -47,19 +47,20 @@ const (
 
 	randomPrefixLabel     = "prefix"
 	providerSpecificGroup = "coredns/group"
+	originalTextLabel     = "originalText"
 )
 
 var (
 	// avoids allocating a new slice on every call
 	// prevents unwanted deletion of etcd keys based on labels
-	skipLabels = []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
+	skipLabels = []string{originalTextLabel, randomPrefixLabel, "resource", endpoint.OwnerLabelKey}
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(ctx context.Context, prefix string) ([]*Service, error)
 	SaveService(ctx context.Context, value *Service) error
-	DeleteService(ctx context.Context, key string) error
+	DeleteService(ctx context.Context, key string, exact bool) error
 }
 
 type coreDNSProvider struct {
@@ -120,7 +121,7 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 	}
 
 	var svcs []*Service
-	bx := make(map[Service]bool)
+	bx := sets.New[Service]()
 	for _, n := range r.Kvs {
 		svc, err := c.unmarshalService(n)
 		if err != nil {
@@ -137,12 +138,12 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 			Text:     svc.Text,
 			Key:      string(n.Key),
 		}
-		if _, ok := bx[b]; ok {
+		if bx.Has(b) {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
 			continue
 		}
-		bx[b] = true
+		bx.Insert(b)
 
 		svc.Key = string(n.Key)
 		if svc.Priority == 0 {
@@ -188,13 +189,19 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	return nil
 }
 
-// DeleteService deletes service record from etcd
-func (c etcdClient) DeleteService(ctx context.Context, key string) error {
+// DeleteService deletes service record from etcd.
+// If exact is true, only the single key is deleted. Otherwise all keys sharing
+// the key as a byte-prefix are removed (etcd WithPrefix semantics).
+func (c etcdClient) DeleteService(ctx context.Context, key string, exact bool) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
 	if c.strictlyOwned {
-		rs, err := c.client.Get(ctx, key, etcdcv3.WithPrefix())
+		var getOpts []etcdcv3.OpOption
+		if !exact {
+			getOpts = append(getOpts, etcdcv3.WithPrefix())
+		}
+		rs, err := c.client.Get(ctx, key, getOpts...)
 		if err != nil {
 			return err
 		}
@@ -213,10 +220,13 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 			}
 		}
 		return err
-	} else {
-		_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
-		return err
 	}
+	var delOpts []etcdcv3.OpOption
+	if !exact {
+		delOpts = append(delOpts, etcdcv3.WithPrefix())
+	}
+	_, err := c.client.Delete(ctx, key, delOpts...)
+	return err
 }
 
 func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
@@ -325,9 +335,13 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				ep.Targets = append(ep.Targets, service.Host)
 				log.Debugf("Extending ep (%s) with new service host (%s)", ep, service.Host)
 			} else {
+				recordType := guessRecordType(service.Host)
+				if isPTRDomain(dnsName) {
+					recordType = endpoint.RecordTypePTR
+				}
 				ep = endpoint.NewEndpointWithTTL(
 					dnsName,
-					guessRecordType(service.Host),
+					recordType,
 					endpoint.TTL(service.TTL),
 					service.Host,
 				)
@@ -339,7 +353,7 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			if p.strictlyOwned {
 				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
 			}
-			ep.Labels["originalText"] = service.Text
+			ep.Labels[originalTextLabel] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
 			ep.Labels[service.Host] = prefix
 			result = append(result, ep)
@@ -421,6 +435,23 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 	var services []*Service
 
 	for _, target := range ep.Targets {
+		if ep.RecordType == endpoint.RecordTypePTR {
+			if len(ep.Targets) > 1 {
+				log.Warnf("PTR %s has %d targets; CoreDNS etcd backend stores one target per reverse-DNS key, using %q and ignoring %v",
+					dnsName, len(ep.Targets), ep.Targets[0], ep.Targets[1:])
+			}
+			// CoreDNS etcd plugin expects PTR records at the exact reverse-DNS
+			// path (e.g., /skydns/arpa/in-addr/172/26/0/2) without any unique suffix.
+			services = append(services, &Service{
+				Host:        target,
+				Text:        ep.Labels[originalTextLabel],
+				Key:         p.etcdKeyFor(dnsName),
+				TargetStrip: 0,
+				TTL:         uint32(ep.RecordTTL),
+			})
+			continue
+		}
+
 		prefix := ep.Labels[target]
 		if prefix == "" {
 			prefix = fmt.Sprintf("%08x", rand.Int31())
@@ -432,7 +463,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		}
 		service := Service{
 			Host:        target,
-			Text:        ep.Labels["originalText"],
+			Text:        ep.Labels[originalTextLabel],
 			Key:         p.etcdKeyFor(prefix + "." + dnsName),
 			TargetStrip: strings.Count(prefix, ".") + 1,
 			TTL:         uint32(ep.RecordTTL),
@@ -442,14 +473,21 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		ep.Labels[target] = prefix
 	}
 
-	// Clean outdated labels
+	// Clean outdated labels.
+	// For PTR records, all targets share the same etcd key (the exact
+	// reverse-DNS path). Stale labels are superseded by the in-place overwrite
+	// from the new target — issuing a delete would either be a no-op (save
+	// restores the key) or, worse, delete a sibling key that shares the same
+	// byte-prefix. So skip stale-label cleanup entirely for PTR records.
+	if ep.RecordType == endpoint.RecordTypePTR {
+		return services, nil
+	}
 	for label, labelPrefix := range ep.Labels {
 		if slices.Contains(skipLabels, label) {
 			continue
 		}
 		if !slices.Contains(ep.Targets, label) {
-			err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName)
-			if err != nil {
+			if err := p.deleteByDnsName(ctx, labelPrefix+"."+dnsName, false); err != nil {
 				return nil, err
 			}
 		}
@@ -459,19 +497,31 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
 func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endpoint, services []*Service) []*Service {
+	isPTR := isPTRDomain(dnsName)
 	index := 0
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
 			continue
 		}
 		if index >= len(services) {
-			prefix := ep.Labels[randomPrefixLabel]
-			if prefix == "" {
-				prefix = fmt.Sprintf("%08x", rand.Int31())
+			var key string
+			var targetStrip int
+			if isPTR {
+				// PTR reverse zones must not have a random prefix — CoreDNS
+				// expects the key at the exact reverse-DNS path.
+				key = p.etcdKeyFor(dnsName)
+				targetStrip = 0
+			} else {
+				prefix := ep.Labels[randomPrefixLabel]
+				if prefix == "" {
+					prefix = fmt.Sprintf("%08x", rand.Int31())
+				}
+				key = p.etcdKeyFor(prefix + "." + dnsName)
+				targetStrip = strings.Count(prefix, ".") + 1
 			}
 			services = append(services, &Service{
-				Key:         p.etcdKeyFor(prefix + "." + dnsName),
-				TargetStrip: strings.Count(prefix, ".") + 1,
+				Key:         key,
+				TargetStrip: targetStrip,
 				TTL:         uint32(ep.RecordTTL),
 			})
 		}
@@ -491,7 +541,8 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
-		err := p.deleteByDnsName(ctx, dnsName)
+		exact := ep.RecordType == endpoint.RecordTypePTR || ep.RecordType == endpoint.RecordTypeTXT
+		err := p.deleteByDnsName(ctx, dnsName, exact)
 		if err != nil {
 			return err
 		}
@@ -499,13 +550,13 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 	return nil
 }
 
-func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string) error {
+func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string, exact bool) error {
 	key := p.etcdKeyFor(dnsName)
-	log.Infof("Delete key %s", key)
+	log.Infof("Delete key %s (exact=%v)", key, exact)
 	if p.dryRun {
 		return nil
 	}
-	if err := p.client.DeleteService(ctx, key); err != nil {
+	if err := p.client.DeleteService(ctx, key, exact); err != nil {
 		return err
 	}
 	return nil
@@ -517,11 +568,12 @@ func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
 	return p.coreDNSPrefix + strings.Join(domains, "/")
 }
 
+func isPTRDomain(dnsName string) bool {
+	return strings.HasSuffix(dnsName, ".in-addr.arpa") || strings.HasSuffix(dnsName, ".ip6.arpa")
+}
+
 func guessRecordType(target string) string {
-	if net.ParseIP(target) != nil {
-		return endpoint.RecordTypeA
-	}
-	return endpoint.RecordTypeCNAME
+	return endpoint.SuitableType(target)
 }
 
 func reverse(slice []string) {

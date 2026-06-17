@@ -134,7 +134,9 @@ func TestSelectProvider(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, p)
-				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
+				mw, ok := p.(*AliasNormalizingMiddleware)
+				require.True(t, ok, "expected outer *AliasNormalizingMiddleware, got %T", p)
+				assert.Equal(t, tt.expectedType, reflect.TypeOf(mw.Provider).String())
 			}
 		})
 	}

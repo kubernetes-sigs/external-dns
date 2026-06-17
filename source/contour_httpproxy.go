@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -151,6 +152,8 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		if endpoint.HasNoEmptyEndpoints(hpEndpoints, types.ContourHTTPProxy, hp) {
 			continue
 		}
+
+		endpoint.AttachRefObject(hpEndpoints, events.NewObjectReference(hp, types.ContourHTTPProxy))
 
 		log.Debugf("Endpoints generated from HTTPProxy: %s/%s: %v", hp.Namespace, hp.Name, hpEndpoints)
 		endpoints = append(endpoints, hpEndpoints...)

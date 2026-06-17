@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -57,6 +58,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
+					UID:       "f5-vs-uid-1234",
 					Annotations: map[string]string{
 						annotations.TargetKey: "192.168.1.150",
 					},
@@ -71,7 +73,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.com",
 					Targets:    []string{"192.168.1.150"},
 					RecordType: endpoint.RecordTypeA,
@@ -79,7 +81,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Labels: endpoint.Labels{
 						"resource": "f5-virtualserver/virtualserver/test-vs",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(string(types.F5VirtualServer))),
 			},
 		},
 		{

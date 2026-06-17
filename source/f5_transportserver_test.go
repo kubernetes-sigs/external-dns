@@ -29,7 +29,9 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -56,6 +58,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-vs",
 					Namespace: defaultF5TransportServerNamespace,
+					UID:       "f5-ts-uid-1234",
 					Annotations: map[string]string{
 						annotations.TargetKey: "192.168.1.150",
 					},
@@ -70,7 +73,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.com",
 					Targets:    []string{"192.168.1.150"},
 					RecordType: endpoint.RecordTypeA,
@@ -78,7 +81,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Labels: endpoint.Labels{
 						"resource": "f5-transportserver/transportserver/test-vs",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(string(types.F5TransportServer))),
 			},
 		},
 		{
@@ -395,7 +398,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(t.Context())
 			require.NoError(t, err)
 			assert.Len(t, endpoints, len(tc.expected))
-			assert.Equal(t, tc.expected, endpoints)
+			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 		})
 	}
 }

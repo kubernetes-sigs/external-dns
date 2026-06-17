@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 var (
@@ -209,15 +210,15 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 	}
 
 	// Verify all supported records are tested
-	testedRecords := make(map[string]bool)
+	testedRecords := sets.New[string]()
 	for _, tt := range tests {
 		if tt.wantRecordType != "" {
-			testedRecords[tt.wantRecordType] = true
+			testedRecords.Insert(tt.wantRecordType)
 		}
 	}
 
 	for _, recordType := range supportedRecords {
-		assert.True(t, testedRecords[recordType], "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToEndpointName", recordType)
+		assert.True(t, testedRecords.Has(recordType), "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToEndpointName", recordType)
 	}
 }
 
@@ -407,13 +408,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 	}
 
 	// Verify all supported records are tested
-	testedRecords := make(map[string]bool)
+	testedRecords := sets.New[string]()
 	for _, tt := range tests {
-		testedRecords[tt.recordType] = true
+		testedRecords.Insert(tt.recordType)
 	}
 
 	for _, recordType := range supportedRecords {
-		assert.True(t, testedRecords[recordType], "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToTXTName", recordType)
+		assert.True(t, testedRecords.Has(recordType), "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToTXTName", recordType)
 	}
 }
 

@@ -33,10 +33,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -403,6 +405,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				{
 					name:      "fake1",
 					namespace: namespace,
+					uid:       "contour-httpproxy-uid",
 					annotations: map[string]string{
 						"contour.heptio.com/ingress.class": "contour",
 					},
@@ -410,11 +413,11 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.ContourHTTPProxy))),
 			},
 		},
 		{
@@ -1061,6 +1064,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 type fakeHTTPProxy struct {
 	namespace   string
 	name        string
+	uid         string
 	annotations map[string]string
 
 	host         string
@@ -1099,6 +1103,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ir.namespace,
 			Name:        ir.name,
+			UID:         k8stypes.UID(ir.uid),
 			Annotations: ir.annotations,
 		},
 		Spec: spec,

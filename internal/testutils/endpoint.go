@@ -208,6 +208,13 @@ func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string
 		WithRefObject(events.NewObjectReference(obj, source))
 }
 
+// RefSource returns an ObjectReference carrying only a source identity. Set it on an
+// expected endpoint via WithRefObject to opt into ValidateEndpoints' RefObject check,
+// which asserts the actual endpoint has a non-nil RefObject with this Source and a non-empty UID.
+func RefSource(source string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("", "", "", "", "", source)
+}
+
 // AssertEndpointsHaveRefObject asserts that endpoints have the expected count
 // and each endpoint has a non-nil RefObject with the expected source type.
 func AssertEndpointsHaveRefObject(
@@ -218,9 +225,10 @@ func AssertEndpointsHaveRefObject(
 	t.Helper()
 	assert.Len(t, endpoints, expectedCount)
 	for _, ep := range endpoints {
-		assert.NotNil(t, ep.RefObject())
-		assert.NotEmpty(t, ep.RefObject().UID())
-		assert.Equal(t, expectedSource, ep.RefObject().Source())
+		refs := ep.RefObjects()
+		assert.NotEmpty(t, refs)
+		assert.NotEmpty(t, refs[0].UID())
+		assert.Equal(t, expectedSource, refs[0].Source())
 	}
 }
 
@@ -268,6 +276,20 @@ func validateEndpoint(ep, expected *endpoint.Endpoint) []string {
 	}
 	if ep.SetIdentifier != expected.SetIdentifier {
 		errs = append(errs, fmt.Sprintf("%s: SetIdentifier expected %q, got %q", prefix, expected.SetIdentifier, ep.SetIdentifier))
+	}
+	// Opt-in: only checked when the expected endpoint declares a RefObject (see RefSource).
+	if expRefs := expected.RefObjects(); len(expRefs) > 0 {
+		actRefs := ep.RefObjects()
+		if len(actRefs) == 0 {
+			errs = append(errs, fmt.Sprintf("%s: RefObject expected, got none", prefix))
+		} else {
+			if actRefs[0].Source() != expRefs[0].Source() {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.Source expected %q, got %q", prefix, expRefs[0].Source(), actRefs[0].Source()))
+			}
+			if actRefs[0].UID() == "" {
+				errs = append(errs, fmt.Sprintf("%s: RefObject.UID is empty", prefix))
+			}
+		}
 	}
 
 	return errs

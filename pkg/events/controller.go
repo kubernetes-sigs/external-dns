@@ -24,10 +24,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v1 "k8s.io/client-go/kubernetes/typed/events/v1"
 	"k8s.io/client-go/util/workqueue"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 const (
@@ -118,11 +119,9 @@ func (ec *Controller) Add(events ...Event) {
 			dropped++
 			continue
 		}
-		event := e.event()
-		if event == nil {
-			continue
+		for _, event := range e.events() {
+			ec.emit(event)
 		}
-		ec.emit(event)
 	}
 	if dropped > 0 {
 		log.Warnf("event queue is full, dropped %d events", dropped)

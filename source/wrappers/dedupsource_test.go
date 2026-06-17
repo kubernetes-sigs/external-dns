@@ -484,14 +484,15 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "foo", ep[0].RefObject().Name())
-				require.Equal(t, "123", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.NotEmpty(t, refs)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "foo", refs[0].Name())
+				require.Equal(t, "123", string(refs[0].UID()))
 			},
 		},
 		{
-			name: "duplicate endpoints with same source type - first RefObject preserved",
+			name: "duplicate endpoints with same source type - both RefObjects collected",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
@@ -504,14 +505,16 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "first-svc", ep[0].RefObject().Name())
-				require.Equal(t, "uid-first", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 2)
+				// First endpoint is the surviving one; its ref is first
+				require.Equal(t, "uid-first", string(refs[0].UID()))
+				uids := []string{string(refs[0].UID()), string(refs[1].UID())}
+				require.ElementsMatch(t, []string{"uid-first", "uid-second"}, uids)
 			},
 		},
 		{
-			name: "duplicate endpoints with different source types - first RefObject preserved",
+			name: "duplicate endpoints with different source types - both RefObjects collected",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
@@ -524,15 +527,16 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				// First endpoint (Service) wins, Ingress is discarded
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "my-service", ep[0].RefObject().Name())
-				require.Equal(t, "svc-uid", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 2)
+				// Service arrived first — still primary
+				require.Equal(t, types.Service, refs[0].Source())
+				sources := []string{refs[0].Source(), refs[1].Source()}
+				require.ElementsMatch(t, []string{types.Service, types.Ingress}, sources)
 			},
 		},
 		{
-			name: "duplicate endpoints - Ingress first, Service second - Ingress RefObject preserved",
+			name: "duplicate endpoints - Ingress first, Service second - both RefObjects collected",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
@@ -545,11 +549,12 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				// First endpoint (Ingress) wins, Service is discarded
-				require.Equal(t, types.Ingress, ep[0].RefObject().Source())
-				require.Equal(t, "my-ingress", ep[0].RefObject().Name())
-				require.Equal(t, "ing-uid", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 2)
+				// Ingress arrived first — still primary
+				require.Equal(t, types.Ingress, refs[0].Source())
+				sources := []string{refs[0].Source(), refs[1].Source()}
+				require.ElementsMatch(t, []string{types.Ingress, types.Service}, sources)
 			},
 		},
 		{
@@ -579,18 +584,20 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				}
 
 				require.NotNil(t, svcEndpoint)
-				require.NotNil(t, svcEndpoint.RefObject())
-				require.Equal(t, types.Service, svcEndpoint.RefObject().Source())
-				require.Equal(t, "my-service", svcEndpoint.RefObject().Name())
+				svcRefs := svcEndpoint.RefObjects()
+				require.NotEmpty(t, svcRefs)
+				require.Equal(t, types.Service, svcRefs[0].Source())
+				require.Equal(t, "my-service", svcRefs[0].Name())
 
 				require.NotNil(t, ingEndpoint)
-				require.NotNil(t, ingEndpoint.RefObject())
-				require.Equal(t, types.Ingress, ingEndpoint.RefObject().Source())
-				require.Equal(t, "my-ingress", ingEndpoint.RefObject().Name())
+				ingRefs := ingEndpoint.RefObjects()
+				require.NotEmpty(t, ingRefs)
+				require.Equal(t, types.Ingress, ingRefs[0].Source())
+				require.Equal(t, "my-ingress", ingRefs[0].Name())
 			},
 		},
 		{
-			name: "three duplicate endpoints from different sources - first RefObject preserved",
+			name: "three duplicate endpoints from different sources - all RefObjects collected",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
@@ -606,11 +613,12 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				// First endpoint (Service) wins
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "my-service", ep[0].RefObject().Name())
-				require.Equal(t, "123", string(ep[0].RefObject().UID()))
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 3)
+				// Service arrived first — still primary
+				require.Equal(t, types.Service, refs[0].Source())
+				uids := []string{string(refs[0].UID()), string(refs[1].UID()), string(refs[2].UID())}
+				require.ElementsMatch(t, []string{"123", "345", "456"}, uids)
 			},
 		},
 		{
@@ -625,13 +633,15 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				require.NotNil(t, ep[0].RefObject())
-				require.Equal(t, types.Service, ep[0].RefObject().Source())
-				require.Equal(t, "123", string(ep[0].RefObject().UID()))
+				// Duplicate has no refs — surviving endpoint keeps its single ref
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 1)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "123", string(refs[0].UID()))
 			},
 		},
 		{
-			name: "duplicate endpoints with first having nil RefObject - nil preserved",
+			name: "duplicate endpoints with first having nil RefObject - second RefObject merged in",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
@@ -642,8 +652,11 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
 				require.Len(t, ep, 1)
-				// First endpoint (without RefObject) wins
-				require.Nil(t, ep[0].RefObject())
+				// First endpoint had no ref; the duplicate's ref is merged in
+				refs := ep[0].RefObjects()
+				require.Len(t, refs, 1)
+				require.Equal(t, types.Service, refs[0].Source())
+				require.Equal(t, "345", string(refs[0].UID()))
 			},
 		},
 	}

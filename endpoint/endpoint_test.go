@@ -1569,12 +1569,52 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 }
 
 func TestEndpoint_WithRefObject(t *testing.T) {
-	ep := &Endpoint{}
-	ref := events.NewObjectReferenceFromParts("Service", "", "default", "my-service", "", "")
-	result := ep.WithRefObject(ref)
+	ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+	ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
 
-	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
-	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+	tests := []struct {
+		name     string
+		add      []*events.ObjectReference
+		wantLen  int
+		wantRefs []*events.ObjectReference
+	}{
+		{
+			name:     "nil ref is a no-op",
+			add:      []*events.ObjectReference{nil},
+			wantLen:  0,
+			wantRefs: nil,
+		},
+		{
+			name:     "single ref is stored",
+			add:      []*events.ObjectReference{ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "same ref added twice is deduplicated",
+			add:      []*events.ObjectReference{ref1, ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "distinct refs are added in insertion order",
+			add:      []*events.ObjectReference{ref1, ref2},
+			wantLen:  2,
+			wantRefs: []*events.ObjectReference{ref1, ref2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &Endpoint{}
+			for _, ref := range tt.add {
+				ep.WithRefObject(ref)
+			}
+			refs := ep.RefObjects()
+			require.Len(t, refs, tt.wantLen)
+			assert.Equal(t, tt.wantRefs, refs)
+		})
+	}
 }
 
 func TestTargets_UniqueOrdered(t *testing.T) {

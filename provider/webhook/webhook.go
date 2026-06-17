@@ -270,12 +270,12 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustEndpointsRequestsGauge.Gauge.Inc()
 
-	// refObject is not serialized to JSON (tagged json:"-"), so we must
-	// preserve it across the webhook round-trip to keep event emission working.
-	refObjects := make(map[endpoint.EndpointKey]*endpoint.ObjectRef, len(e))
+	// refObjects are not serialized to JSON (tagged json:"-"), so we must
+	// preserve them across the webhook round-trip to keep event emission working.
+	refObjects := make(map[endpoint.EndpointKey][]*endpoint.ObjectRef, len(e))
 	for _, ep := range e {
-		if ep.RefObject() != nil {
-			refObjects[ep.Key()] = ep.RefObject()
+		if refs := ep.RefObjects(); len(refs) > 0 {
+			refObjects[ep.Key()] = refs
 		}
 	}
 
@@ -331,7 +331,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	}
 
 	for _, ep := range endpoints {
-		if ref, ok := refObjects[ep.Key()]; ok {
+		for _, ref := range refObjects[ep.Key()] {
 			ep.WithRefObject(ref)
 		}
 	}

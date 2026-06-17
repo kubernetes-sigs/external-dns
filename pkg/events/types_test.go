@@ -29,8 +29,9 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
@@ -75,7 +76,7 @@ func TestSanitize(t *testing.T) {
 	}
 }
 
-func TestEvent_Reference(t *testing.T) {
+func TestObjectReference_Description(t *testing.T) {
 	tests := []struct {
 		kind      string
 		namespace string
@@ -84,19 +85,13 @@ func TestEvent_Reference(t *testing.T) {
 	}{
 		{"Pod", "default", "nginx", "Pod/default/nginx"},
 		{"Service", "prod", "api", "Service/prod/api"},
-		{"", "", "", "//"},
+		{"Node", "", "worker-1", "Node/worker-1"},
+		{"", "", "", "/"},
 	}
 
 	for _, tt := range tests {
-		ev := Event{
-			ref: ObjectReference{
-				kind:      tt.kind,
-				namespace: tt.namespace,
-				name:      tt.name,
-				source:    "fake-source",
-			},
-		}
-		require.Equal(t, tt.expected, ev.description())
+		ref := ObjectReference{kind: tt.kind, namespace: tt.namespace, name: tt.name}
+		require.Equal(t, tt.expected, ref.description())
 	}
 }
 
@@ -104,13 +99,13 @@ func TestEvent_NewEvents(t *testing.T) {
 	tests := []struct {
 		name    string
 		event   Event
-		asserts func(e *eventsv1.Event)
+		asserts func(evs []*eventsv1.Event)
 	}{
 		{
 			name:  "empty event",
 			event: NewEvent(nil, "", ActionCreate, RecordReady),
-			asserts: func(e *eventsv1.Event) {
-				require.Nil(t, e)
+			asserts: func(evs []*eventsv1.Event) {
+				require.Empty(t, evs)
 			},
 		},
 		{
@@ -125,8 +120,9 @@ func TestEvent_NewEvents(t *testing.T) {
 					Namespace: apiv1.NamespaceDefault,
 				},
 			}, "fake"), "", ActionCreate, RecordReady),
-			asserts: func(e *eventsv1.Event) {
-				require.NotNil(t, e)
+			asserts: func(evs []*eventsv1.Event) {
+				require.Len(t, evs, 1)
+				e := evs[0]
 				require.Contains(t, e.Name, "fake-pod.")
 				require.Equal(t, apiv1.NamespaceDefault, e.Namespace)
 				require.Nil(t, e.Related)
@@ -148,8 +144,9 @@ func TestEvent_NewEvents(t *testing.T) {
 					UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
 				},
 			}, "fake"), "", ActionCreate, RecordReady),
-			asserts: func(e *eventsv1.Event) {
-				require.NotNil(t, e)
+			asserts: func(evs []*eventsv1.Event) {
+				require.Len(t, evs, 1)
+				e := evs[0]
 				require.Contains(t, e.Name, "fake-pod.")
 				require.NotNil(t, e.Related)
 				require.NotNil(t, e.Regarding)
@@ -158,7 +155,7 @@ func TestEvent_NewEvents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(_ *testing.T) {
-			tt.asserts(tt.event.event())
+			tt.asserts(tt.event.events())
 		})
 	}
 }
@@ -170,9 +167,10 @@ func TestEvent_Transpose(t *testing.T) {
 		name:      "nginx",
 	}, "test message", ActionCreate, RecordReady)
 
-	event := ev.event()
-	require.NotNil(t, event)
-	require.Contains(t, event.ObjectMeta.Name, ev.ref.name)
+	evs := ev.events()
+	require.Len(t, evs, 1)
+	event := evs[0]
+	require.Contains(t, event.ObjectMeta.Name, ev.refs[0].name)
 	require.Equal(t, "default", event.ObjectMeta.Namespace)
 	require.Equal(t, string(ActionCreate), event.Action)
 	require.Equal(t, string(RecordReady), event.Reason)
@@ -183,11 +181,12 @@ func TestEvent_Transpose(t *testing.T) {
 
 	longMsg := strings.Repeat("a", 2000)
 	ev.message = longMsg
-	event = ev.event()
-	require.Equal(t, longMsg[:1021]+"...", event.Note)
+	evs = ev.events()
+	require.Len(t, evs, 1)
+	require.Equal(t, longMsg[:1021]+"...", evs[0].Note)
 
-	ev.ref.name = ""
-	require.Nil(t, ev.event())
+	ev.refs[0].name = ""
+	require.Empty(t, ev.events())
 }
 
 func TestEvent_NameAndEventTimeConsistent(t *testing.T) {
@@ -199,8 +198,9 @@ func TestEvent_NameAndEventTimeConsistent(t *testing.T) {
 			kind: "Pod", namespace: "default", name: "nginx",
 		}, "msg", ActionCreate, RecordReady)
 
-		k8sEvent := ev.event()
-		require.NotNil(t, k8sEvent)
+		evs := ev.events()
+		require.Len(t, evs, 1)
+		k8sEvent := evs[0]
 
 		require.True(t, strings.HasSuffix(k8sEvent.Name, expectedSuffix),
 			"name %q must end with timestamp suffix %q", k8sEvent.Name, expectedSuffix)
@@ -219,9 +219,9 @@ func TestWithEmitEvents(t *testing.T) {
 		{
 			name:     "valid events",
 			input:    []string{string(RecordReady), string(RecordError)},
-			expected: sets.New[Reason](RecordReady, RecordError),
+			expected: sets.New(RecordReady, RecordError),
 			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady, RecordError), c.emitEvents)
+				require.Equal(t, sets.New(RecordReady, RecordError), c.emitEvents)
 				require.True(t, c.IsEnabled())
 			},
 		},
@@ -237,9 +237,9 @@ func TestWithEmitEvents(t *testing.T) {
 		{
 			name:     "mixed valid and invalid",
 			input:    []string{string(RecordReady), "InvalidEvent"},
-			expected: sets.New[Reason](RecordReady),
+			expected: sets.New(RecordReady),
 			assert: func(c *Config) {
-				require.Equal(t, sets.New[Reason](RecordReady), c.emitEvents)
+				require.Equal(t, sets.New(RecordReady), c.emitEvents)
 				require.True(t, c.IsEnabled())
 			},
 		},
@@ -271,15 +271,15 @@ type mockEndpointInfo struct {
 	recordTTL  int64
 	targets    []string
 	owner      string
-	refObject  *ObjectReference
+	refObjects []*ObjectReference
 }
 
-func (m *mockEndpointInfo) GetDNSName() string          { return m.dnsName }
-func (m *mockEndpointInfo) GetRecordType() string       { return m.recordType }
-func (m *mockEndpointInfo) GetRecordTTL() int64         { return m.recordTTL }
-func (m *mockEndpointInfo) GetTargets() []string        { return m.targets }
-func (m *mockEndpointInfo) GetOwner() string            { return m.owner }
-func (m *mockEndpointInfo) RefObject() *ObjectReference { return m.refObject }
+func (m *mockEndpointInfo) GetDNSName() string             { return m.dnsName }
+func (m *mockEndpointInfo) GetRecordType() string          { return m.recordType }
+func (m *mockEndpointInfo) GetRecordTTL() int64            { return m.recordTTL }
+func (m *mockEndpointInfo) GetTargets() []string           { return m.targets }
+func (m *mockEndpointInfo) GetOwner() string               { return m.owner }
+func (m *mockEndpointInfo) RefObjects() []*ObjectReference { return m.refObjects }
 
 func TestNewEventFromEndpoint(t *testing.T) {
 	tests := []struct {
@@ -299,14 +299,14 @@ func TestNewEventFromEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "endpoint with nil RefObject returns empty event",
+			name: "endpoint with no RefObjects returns empty event",
 			ep: &mockEndpointInfo{
 				dnsName:    "example.com",
 				recordType: "A",
 				recordTTL:  300,
 				targets:    []string{"10.0.0.1"},
 				owner:      "default",
-				refObject:  nil,
+				refObjects: nil,
 			},
 			action: ActionCreate,
 			reason: RecordReady,
@@ -322,12 +322,12 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  300,
 				targets:    []string{"10.0.0.1", "10.0.0.2"},
 				owner:      "my-owner",
-				refObject: &ObjectReference{
+				refObjects: []*ObjectReference{{
 					kind:      "Service",
 					namespace: "default",
 					name:      "my-service",
 					source:    "service",
-				},
+				}},
 			},
 			action: ActionCreate,
 			reason: RecordReady,
@@ -335,9 +335,10 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				require.Equal(t, ActionCreate, ev.action)
 				require.Equal(t, RecordReady, ev.reason)
 				require.Equal(t, EventTypeNormal, ev.eType)
-				require.Equal(t, "Service", ev.ref.kind)
-				require.Equal(t, "default", ev.ref.namespace)
-				require.Equal(t, "my-service", ev.ref.name)
+				require.Len(t, ev.refs, 1)
+				require.Equal(t, "Service", ev.refs[0].kind)
+				require.Equal(t, "default", ev.refs[0].namespace)
+				require.Equal(t, "my-service", ev.refs[0].name)
 				require.Contains(t, ev.message, "record:test.example.com")
 				require.Contains(t, ev.message, "owner:my-owner")
 				require.Contains(t, ev.message, "type:A")
@@ -354,12 +355,12 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  0,
 				targets:    []string{"target.example.com"},
 				owner:      "",
-				refObject: &ObjectReference{
+				refObjects: []*ObjectReference{{
 					kind:      "Ingress",
 					namespace: "prod",
 					name:      "my-ingress",
 					source:    "ingress",
-				},
+				}},
 			},
 			action: ActionDelete,
 			reason: RecordDeleted,
@@ -379,22 +380,45 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  60,
 				targets:    []string{"192.168.1.1"},
 				owner:      "default",
-				refObject: &ObjectReference{
+				refObjects: []*ObjectReference{{
 					kind:      "Node",
 					namespace: "", // cluster-scoped
 					name:      "node1",
 					source:    "node",
-				},
+				}},
 			},
 			action: ActionCreate,
 			reason: RecordReady,
 			asserts: func(t *testing.T, ev Event) {
 				require.Equal(t, ActionCreate, ev.action)
-				require.Empty(t, ev.ref.namespace)
+				require.Empty(t, ev.refs[0].namespace)
 
-				k8sEvent := ev.event()
-				require.NotNil(t, k8sEvent)
-				require.Equal(t, "default", k8sEvent.Namespace)
+				evs := ev.events()
+				require.Len(t, evs, 1)
+				require.Equal(t, "default", evs[0].Namespace)
+			},
+		},
+		{
+			name: "endpoint with multiple RefObjects emits one k8s event per ref",
+			ep: &mockEndpointInfo{
+				dnsName:    "shared.example.com",
+				recordType: "A",
+				recordTTL:  300,
+				targets:    []string{"1.2.3.4"},
+				owner:      "owner",
+				refObjects: []*ObjectReference{
+					{kind: "DNSEndpoint", namespace: "default", name: "shared-dns", source: "crd"},
+					{kind: "Service", namespace: "default", name: "shared-svc", source: "service"},
+				},
+			},
+			action: ActionCreate,
+			reason: RecordReady,
+			asserts: func(t *testing.T, ev Event) {
+				require.Len(t, ev.refs, 2)
+				evs := ev.events()
+				require.Len(t, evs, 2)
+				names := []string{evs[0].Regarding.Name, evs[1].Regarding.Name}
+				require.ElementsMatch(t, []string{"shared-dns", "shared-svc"}, names)
 			},
 		},
 	}
@@ -547,6 +571,35 @@ func TestEvent_Accessors(t *testing.T) {
 	assert.Equal(t, ActionDelete, ev.Action())
 	assert.Equal(t, RecordDeleted, ev.Reason())
 	assert.Equal(t, EventTypeNormal, ev.EventType())
+}
+
+func TestObjectReference_Key(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      *ObjectReference
+		expected string
+	}{
+		{
+			name:     "namespaced resource",
+			ref:      &ObjectReference{source: "service", namespace: "default", name: "svc"},
+			expected: "service/default/svc",
+		},
+		{
+			name:     "cluster-scoped resource has empty namespace segment",
+			ref:      &ObjectReference{source: "node", namespace: "", name: "node-1"},
+			expected: "node//node-1",
+		},
+		{
+			name:     "different sources with same namespace and name produce distinct keys",
+			ref:      &ObjectReference{source: "crd", namespace: "default", name: "my-dns"},
+			expected: "crd/default/my-dns",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.ref.Key())
+		})
+	}
 }
 
 func TestWithDryRun(t *testing.T) {

@@ -317,7 +317,7 @@ func TestExecFQDN(t *testing.T) {
 					Name: "test",
 				},
 			},
-			want: nil,
+			want: []string{},
 		},
 		{
 			name: "ignore trailing comma output",

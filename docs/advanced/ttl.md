@@ -45,7 +45,6 @@ TTL must be a positive value.
 
 | Provider       | Supported |
 |:---------------|:---------:|
-| `Akamai`       |    Yes    |
 | `AlibabaCloud` |    Yes    |
 | `AWS`          |    Yes    |
 | `AWSSD`        |    Yes    |
@@ -65,10 +64,8 @@ TTL must be a positive value.
 | `OVH`          |    No     |
 | `PDNS`         |    No     |
 | `PiHole`       |    Yes    |
-| `Plural`       |    No     |
 | `RFC2136`      |    Yes    |
 | `Scaleway`     |    Yes    |
-| `Transip`      |    Yes    |
 | `Webhook`      |    Yes    |
 
 ### Sources
@@ -134,10 +131,6 @@ This behavior may change in the future.
 ### Linode Provider
 
 The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
-
-### TransIP Provider
-
-The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
 
 ## Use Cases for `external-dns.kubernetes.io/ttl` annotation and `--min-ttl` flag`
 

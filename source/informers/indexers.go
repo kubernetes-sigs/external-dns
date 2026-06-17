@@ -124,15 +124,18 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 					return nil, nil
 				}
 			}
-			name := entity.GetName()
 			if options.indexByLabelKey != "" {
-				name = entity.GetLabels()[options.indexByLabelKey]
+				name := entity.GetLabels()[options.indexByLabelKey]
 				if name == "" {
 					return nil, nil
 				}
+				return []string{types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()}, nil
 			}
-			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()
-			return []string{key}, nil
+			ns := entity.GetNamespace()
+			if ns == "" {
+				return []string{entity.GetName()}, nil
+			}
+			return []string{ns + "/" + entity.GetName()}, nil
 		},
 	}
 }
@@ -155,6 +158,26 @@ func MustAddEventHandler(informer cache.SharedInformer, handler cache.ResourceEv
 	if _, err := informer.AddEventHandler(handler); err != nil {
 		log.Warnf("AddEventHandler called on stopped informer: %v", err)
 	}
+}
+
+// ListIndexed returns all objects of type T admitted by the IndexWithSelectors index.
+// Objects missing from the store or failing type assertion are silently skipped — a missing
+// key means the object was deleted between the index scan and the lookup, which is normal.
+func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
+	keys := indexer.ListIndexFuncValues(IndexWithSelectors)
+	result := make([]T, 0, len(keys))
+	for _, key := range keys {
+		raw, exists, err := indexer.GetByKey(key)
+		if !exists || err != nil {
+			continue
+		}
+		obj, ok := raw.(T)
+		if !ok {
+			continue
+		}
+		result = append(result, obj)
+	}
+	return result
 }
 
 // GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.

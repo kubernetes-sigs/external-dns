@@ -41,10 +41,11 @@ import (
 const defaultCoreDNSPrefix = "/skydns/"
 
 type fakeETCDClient struct {
-	services map[string]Service
+	services    map[string]Service
+	deletedKeys []string
 }
 
-func (c fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Service, error) {
+func (c *fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Service, error) {
 	var result []*Service
 	for key, value := range c.services {
 		if strings.HasPrefix(key, prefix) {
@@ -56,13 +57,26 @@ func (c fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Servic
 	return result, nil
 }
 
-func (c fakeETCDClient) SaveService(_ context.Context, service *Service) error {
+func (c *fakeETCDClient) SaveService(_ context.Context, service *Service) error {
 	c.services[service.Key] = *service
 	return nil
 }
 
-func (c fakeETCDClient) DeleteService(_ context.Context, key string) error {
-	delete(c.services, key)
+// DeleteService mirrors real etcd DeleteService semantics:
+// exact=false uses WithPrefix (range delete of all keys byte-prefixed by key),
+// exact=true deletes only the single key.
+// Also records all keys passed to DeleteService for test assertions.
+func (c *fakeETCDClient) DeleteService(_ context.Context, key string, exact bool) error {
+	c.deletedKeys = append(c.deletedKeys, key)
+	if exact {
+		delete(c.services, key)
+		return nil
+	}
+	for k := range c.services {
+		if strings.HasPrefix(k, key) {
+			delete(c.services, k)
+		}
+	}
 	return nil
 }
 
@@ -97,7 +111,7 @@ func (m *MockEtcdKV) Delete(ctx context.Context, key string, opts ...etcdcv3.OpO
 }
 
 func TestETCDConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		input map[string]string
 		want  *etcdcv3.Config
@@ -171,10 +185,9 @@ func TestAServiceTranslation(t *testing.T) {
 	expectedDNSName := "example.com"
 	expectedRecordType := endpoint.RecordTypeA
 
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/com/example": {Host: expectedTarget},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example": {Host: expectedTarget},
+	},
 	}
 	provider := coreDNSProvider{
 		client:        client,
@@ -196,15 +209,81 @@ func TestAServiceTranslation(t *testing.T) {
 	}
 }
 
+func TestGuessRecordType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		{"1.2.3.4", endpoint.RecordTypeA},
+		{"2001:db8::1", endpoint.RecordTypeAAAA},
+		{"::1", endpoint.RecordTypeAAAA},
+		{"::ffff:1.2.3.4", endpoint.RecordTypeAAAA}, // IPv4-mapped IPv6 is typed AAAA, matching endpoint.SuitableType
+		{"other.example.com", endpoint.RecordTypeCNAME},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.target, func(t *testing.T) {
+			assert.Equal(t, tt.expected, guessRecordType(tt.target))
+		})
+	}
+}
+
+// It asserts both record types survive an apply + read round-trip with the correct
+// type (A stays A, AAAA stays AAAA), and that a second reconcile is a no-op.
+func TestCoreDNSRoundTrip(t *testing.T) {
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	desired := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.example.org", endpoint.RecordTypeA, "172.18.0.2"),
+		endpoint.NewEndpoint("aa.example.org", endpoint.RecordTypeAAAA, "2001:db8::1"),
+	}
+
+	// Write the records (controller's ApplyChanges with the source's desired state).
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{Create: desired})
+	require.NoError(t, err)
+
+	// Read them back from etcd.
+	current, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, current, 2)
+
+	byName := map[string]*endpoint.Endpoint{}
+	for _, ep := range current {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "a.example.org")
+	assert.Equal(t, endpoint.RecordTypeA, byName["a.example.org"].RecordType)
+	assert.Equal(t, "172.18.0.2", byName["a.example.org"].Targets[0])
+
+	require.Contains(t, byName, "aa.example.org")
+	assert.Equal(t, endpoint.RecordTypeAAAA, byName["aa.example.org"].RecordType, "IPv6 target must read back as AAAA, not A")
+	assert.Equal(t, "2001:db8::1", byName["aa.example.org"].Targets[0])
+
+	// Second reconcile: desired vs read-back state must produce no changes.
+	managed := []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}
+	changes := (&plan.Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managed,
+	}).Calculate().Changes
+	assert.Empty(t, changes.Create, "no records to create on second sync")
+	assert.Empty(t, changes.UpdateNew, "no records to update on second sync (no churn)")
+	assert.Empty(t, changes.Delete, "no records to delete on second sync")
+}
+
 func TestCNAMEServiceTranslation(t *testing.T) {
 	expectedTarget := "example.net"
 	expectedDNSName := "example.com"
 	expectedRecordType := endpoint.RecordTypeCNAME
 
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/com/example": {Host: expectedTarget},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example": {Host: expectedTarget},
+	},
 	}
 	provider := coreDNSProvider{
 		client:        client,
@@ -231,10 +310,9 @@ func TestTXTServiceTranslation(t *testing.T) {
 	expectedDNSName := "example.com"
 	expectedRecordType := endpoint.RecordTypeTXT
 
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/com/example": {Text: expectedTarget},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example": {Text: expectedTarget},
+	},
 	}
 	provider := coreDNSProvider{
 		client:        client,
@@ -263,10 +341,9 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 	}
 	expectedDNSName := "example.com"
 
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/com/example": {Host: "1.2.3.4", Text: "string"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example": {Host: "1.2.3.4", Text: "string"},
+	},
 	}
 	provider := coreDNSProvider{
 		client:        client,
@@ -303,10 +380,9 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 	}
 	expectedDNSName := "example.com"
 
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/com/example": {Host: "example.net", Text: "string"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example": {Host: "example.net", Text: "string"},
+	},
 	}
 	provider := coreDNSProvider{
 		client:        client,
@@ -336,10 +412,62 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 	}
 }
 
-func TestCoreDNSApplyChanges(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{},
+// Deleting a TXT ownership marker must NOT delete the sibling A record that
+// shares the same dnsName. TXT keys (e.g. /skydns/local/domain1) are byte-
+// prefixes of A keys (/skydns/local/domain1/<random>); WithPrefix delete on
+// the TXT key would range-delete the A key too.
+func TestDeleteTXTDoesNotOverDeleteARecord(t *testing.T) {
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{client: client, coreDNSPrefix: defaultCoreDNSPrefix}
+
+	// Create A + TXT for domain1, and A for domain2
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
+			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "6.6.6.6"),
+		},
+	})
+	require.NoError(t, err)
+
+	// Verify A record exists for domain1 before delete
+	foundBefore := false
+	for _, svc := range client.services {
+		if svc.Host == "5.5.5.5" {
+			foundBefore = true
+		}
 	}
+	require.True(t, foundBefore, "A record must exist before TXT delete")
+
+	// Delete ONLY the TXT for domain1 (not the A record)
+	err = coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
+		},
+	})
+	require.NoError(t, err)
+
+	// domain1's A record must survive
+	foundA := false
+	for _, svc := range client.services {
+		if svc.Host == "5.5.5.5" {
+			foundA = true
+		}
+	}
+	assert.True(t, foundA, "TXT delete must NOT delete sibling A record (WithPrefix over-delete)")
+
+	// domain2's A record must also survive
+	foundD2 := false
+	for _, svc := range client.services {
+		if svc.Host == "6.6.6.6" {
+			foundD2 = true
+		}
+	}
+	assert.True(t, foundD2, "domain2 A record must be unaffected")
+}
+
+func TestCoreDNSApplyChanges(t *testing.T) {
+	client := &fakeETCDClient{services: map[string]Service{}}
 	coredns := coreDNSProvider{
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
@@ -420,9 +548,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 }
 
 func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{},
-	}
+	client := &fakeETCDClient{services: map[string]Service{}}
 	coredns := coreDNSProvider{
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
@@ -754,7 +880,7 @@ func TestDeleteService(t *testing.T) {
 				},
 			}
 
-			err := c.DeleteService(t.Context(), tt.key)
+			err := c.DeleteService(t.Context(), tt.key, false)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -893,7 +1019,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 				strictlyOwned: true,
 			}
 
-			err := c.DeleteService(t.Context(), tt.key)
+			err := c.DeleteService(t.Context(), tt.key, false)
 
 			require.NoError(t, err)
 			mockKV.AssertExpectations(t)
@@ -1301,9 +1427,7 @@ func TestCoreDNSProvider_updateTXTRecords_ClearsExtraText(t *testing.T) {
 }
 
 func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{},
-	}
+	client := &fakeETCDClient{services: map[string]Service{}}
 	coredns := coreDNSProvider{
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
@@ -1328,14 +1452,13 @@ func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
 
 // Prevents unwanted deletion of etcd keys https://github.com/kubernetes-sigs/external-dns/commit/83ea480c57fcc6beeaf8a6a3e8446cb87e07415d
 func TestApplyChangesPreventCleanupForKnownLabels(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/local/domain1/test":         {Host: "10.0.0.0"},
-			"/skydns/local/domain1/originalText": {Host: "10.0.0.0"},
-			"/skydns/local/domain1/prefix":       {Host: "10.0.0.0"},
-			"/skydns/local/domain1/resource":     {Host: "10.0.0.0"},
-			"/skydns/local/domain1/owner":        {Host: "10.0.0.0"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/local/domain1/test":         {Host: "10.0.0.0"},
+		"/skydns/local/domain1/originalText": {Host: "10.0.0.0"},
+		"/skydns/local/domain1/prefix":       {Host: "10.0.0.0"},
+		"/skydns/local/domain1/resource":     {Host: "10.0.0.0"},
+		"/skydns/local/domain1/owner":        {Host: "10.0.0.0"},
+	},
 	}
 	coredns := coreDNSProvider{
 		client:        client,
@@ -1387,10 +1510,9 @@ func TestApplyChangesPreventCleanupForKnownLabels(t *testing.T) {
 }
 
 func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
+	},
 	}
 	coredns := coreDNSProvider{
 		client:        client,
@@ -1406,11 +1528,10 @@ func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 }
 
 func TestRecordsIncludeLabelOwnerWithStrictlyOwned(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
-			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+		"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+	},
 	}
 	coredns := coreDNSProvider{
 		client:        client,
@@ -1425,11 +1546,10 @@ func TestRecordsIncludeLabelOwnerWithStrictlyOwned(t *testing.T) {
 }
 
 func TestRecordsIncludeOwnerASLabelWithoutStrictlyOwned(t *testing.T) {
-	client := fakeETCDClient{
-		map[string]Service{
-			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
-			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
-		},
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+		"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+	},
 	}
 	coredns := coreDNSProvider{
 		client:        client,
@@ -1441,4 +1561,235 @@ func TestRecordsIncludeOwnerASLabelWithoutStrictlyOwned(t *testing.T) {
 	for _, ep := range endpoints {
 		assert.Empty(t, ep.Labels[endpoint.OwnerLabelKey])
 	}
+}
+
+func TestPTRRecords(t *testing.T) {
+	t.Run("ReadIPv4PTR", func(t *testing.T) {
+		expectedTarget := "coredns-etcd-worker"
+		expectedDNSName := "2.0.26.172.in-addr.arpa"
+
+		client := &fakeETCDClient{services: map[string]Service{
+			"/skydns/arpa/in-addr/172/26/0/2": {Host: expectedTarget},
+		},
+		}
+		provider := coreDNSProvider{
+			client:        client,
+			coreDNSPrefix: defaultCoreDNSPrefix,
+		}
+		endpoints, err := provider.Records(t.Context())
+		require.NoError(t, err)
+		require.Len(t, endpoints, 1)
+		assert.Equal(t, expectedDNSName, endpoints[0].DNSName)
+		assert.Equal(t, expectedTarget, endpoints[0].Targets[0])
+		assert.Equal(t, endpoint.RecordTypePTR, endpoints[0].RecordType)
+	})
+
+	t.Run("ReadIPv6PTR", func(t *testing.T) {
+		expectedTarget := "coredns-etcd-worker"
+		// IPv6 2001:db8::1 → 32 nibbles reversed
+		expectedDNSName := "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+
+		client := &fakeETCDClient{services: map[string]Service{
+			"/skydns/arpa/ip6/2/0/0/1/0/d/b/8/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/1": {Host: expectedTarget},
+		},
+		}
+		provider := coreDNSProvider{
+			client:        client,
+			coreDNSPrefix: defaultCoreDNSPrefix,
+		}
+		endpoints, err := provider.Records(t.Context())
+		require.NoError(t, err)
+		require.Len(t, endpoints, 1)
+		assert.Equal(t, expectedDNSName, endpoints[0].DNSName)
+		assert.Equal(t, expectedTarget, endpoints[0].Targets[0])
+		assert.Equal(t, endpoint.RecordTypePTR, endpoints[0].RecordType)
+	})
+
+	t.Run("CreateAndDeletePTR", func(t *testing.T) {
+		client := &fakeETCDClient{services: map[string]Service{}}
+		coredns := coreDNSProvider{
+			client:        client,
+			coreDNSPrefix: defaultCoreDNSPrefix,
+		}
+
+		// Create PTR records
+		changes := &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
+				endpoint.NewEndpoint("3.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-control-plane"),
+			},
+		}
+		err := coredns.ApplyChanges(t.Context(), changes)
+		require.NoError(t, err)
+
+		// Verify keys are created WITHOUT random prefix
+		expectedServices := map[string][]*Service{
+			"/skydns/arpa/in-addr/172/26/0/2": {{Host: "coredns-etcd-worker", TargetStrip: 0}},
+			"/skydns/arpa/in-addr/172/26/0/3": {{Host: "coredns-etcd-control-plane", TargetStrip: 0}},
+		}
+		validateServices(client.services, expectedServices, t, 1)
+
+		// Delete PTR records
+		deleteChanges := &plan.Changes{
+			Delete: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
+			},
+		}
+		err = applyServiceChanges(coredns, deleteChanges)
+		require.NoError(t, err)
+
+		// Only the second record should remain
+		expectedAfterDelete := map[string][]*Service{
+			"/skydns/arpa/in-addr/172/26/0/3": {{Host: "coredns-etcd-control-plane", TargetStrip: 0}},
+		}
+		validateServices(client.services, expectedAfterDelete, t, 2)
+	})
+
+	t.Run("UpdatePTRTargetOverwritesInPlace", func(t *testing.T) {
+		// Verifies that updating a PTR target overwrites the same key (no
+		// separate delete needed — PTR records share a single etcd key, so
+		// stale-label cleanup is skipped).
+		client := &fakeETCDClient{services: map[string]Service{}}
+		coredns := coreDNSProvider{
+			client:        client,
+			coreDNSPrefix: defaultCoreDNSPrefix,
+		}
+
+		// Step 1: Create a PTR record pointing to "old-host"
+		createChanges := &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "old-host"),
+			},
+		}
+		require.NoError(t, coredns.ApplyChanges(t.Context(), createChanges))
+
+		key := "/skydns/arpa/in-addr/172/26/0/2"
+		require.Equal(t, "old-host", client.services[key].Host)
+
+		// Step 2: Update target to "new-host"
+		records, err := coredns.Records(t.Context())
+		require.NoError(t, err)
+		oldEP := records[0]
+
+		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "new-host")
+		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
+			UpdateNew: []*endpoint.Endpoint{newEP},
+			UpdateOld: []*endpoint.Endpoint{oldEP},
+		}))
+
+		// The key still exists with the new target (overwrite, not delete+create)
+		require.Contains(t, client.services, key)
+		assert.Equal(t, "new-host", client.services[key].Host)
+	})
+
+	t.Run("DeletePTRDoesNotOverDeleteNeighbors", func(t *testing.T) {
+		client := &fakeETCDClient{services: map[string]Service{}}
+		coredns := coreDNSProvider{client: client, coreDNSPrefix: defaultCoreDNSPrefix}
+
+		// Create PTR records for .0.2 and .0.20 (bare octet keys where .2 is
+		// a byte-prefix of .20)
+		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
+				endpoint.NewEndpoint("20.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-20"),
+			},
+		}))
+
+		key2 := "/skydns/arpa/in-addr/172/26/0/2"
+		key20 := "/skydns/arpa/in-addr/172/26/0/20"
+		require.Contains(t, client.services, key2)
+		require.Contains(t, client.services, key20)
+
+		// Delete ONLY .2
+		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
+			Delete: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
+			},
+		}))
+
+		assert.NotContains(t, client.services, key2, "intended target must be deleted")
+		assert.Contains(t, client.services, key20,
+			"deleting .2 must NOT delete neighbour .20 — etcd WithPrefix over-delete")
+	})
+
+	t.Run("MultiTargetPTRUpdateDoesNotDeleteSurvivor", func(t *testing.T) {
+		// Scenario: PTR has targets [host-1, host-2], updated to [host-2].
+		// The stale-label cleanup must NOT delete the key that host-2 lives on.
+		client := &fakeETCDClient{services: map[string]Service{}}
+		coredns := coreDNSProvider{client: client, coreDNSPrefix: defaultCoreDNSPrefix}
+
+		// Simulate the "before" state: a PTR record at the key with host-1
+		key := "/skydns/arpa/in-addr/172/26/0/2"
+		client.services[key] = Service{
+			Host:        "host-1",
+			TargetStrip: 0,
+		}
+
+		// Read records to populate labels (simulates what the controller does)
+		records, err := coredns.Records(t.Context())
+		require.NoError(t, err)
+		require.Len(t, records, 1)
+		oldEP := records[0]
+		require.Equal(t, "host-1", oldEP.Targets[0])
+
+		// Update: change target from host-1 to host-2
+		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
+		updateChanges := &plan.Changes{
+			UpdateNew: []*endpoint.Endpoint{newEP},
+			UpdateOld: []*endpoint.Endpoint{oldEP},
+		}
+		require.NoError(t, coredns.ApplyChanges(t.Context(), updateChanges))
+
+		// host-2 should be at the key (the update should have taken effect)
+		require.Contains(t, client.services, key,
+			"PTR key must survive after updating target from host-1 to host-2")
+		assert.Equal(t, "host-2", client.services[key].Host)
+	})
+
+	t.Run("PTRStaleLabelCleanupSkippedWhenOtherTargetsRemain", func(t *testing.T) {
+		// Verifies that stale-label cleanup for PTR records does NOT delete the
+		// shared key when other targets still exist. Uses a delete-recording
+		// client to assert that deleteByDnsName is never called for PTR stale
+		// labels (PTR records are overwritten in-place, not deleted+recreated).
+		rec := &fakeETCDClient{services: map[string]Service{
+			"/skydns/arpa/in-addr/172/26/0/2": {Host: "host-1", TargetStrip: 0},
+		}}
+		coredns := coreDNSProvider{client: rec, coreDNSPrefix: defaultCoreDNSPrefix}
+
+		// Read records to get labels, then update target from host-1 → host-2
+		records, err := coredns.Records(t.Context())
+		require.NoError(t, err)
+		oldEP := records[0]
+
+		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
+		updateChanges := &plan.Changes{
+			UpdateNew: []*endpoint.Endpoint{newEP},
+			UpdateOld: []*endpoint.Endpoint{oldEP},
+		}
+		require.NoError(t, coredns.ApplyChanges(t.Context(), updateChanges))
+
+		// The delete should NOT have been called for the PTR dnsName
+		// (stale host-1 label should be cleaned up by overwrite, not by delete)
+		ptrKey := "/skydns/arpa/in-addr/172/26/0/2"
+		assert.NotContains(t, rec.deletedKeys, ptrKey,
+			"stale-label cleanup for PTR must not issue delete when new target will overwrite the same key")
+	})
+
+	t.Run("UpdateTXTRecordsForPTRDomain", func(t *testing.T) {
+		provider := coreDNSProvider{coreDNSPrefix: "/skydns/"}
+		dnsName := "3.0.18.172.in-addr.arpa"
+		group := []*endpoint.Endpoint{
+			{
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{"txt-value"},
+				Labels:     map[string]string{randomPrefixLabel: ""},
+				RecordTTL:  60,
+			},
+		}
+		services := provider.updateTXTRecords(dnsName, group, []*Service{})
+		require.Len(t, services, 1)
+		assert.Equal(t, "/skydns/arpa/in-addr/172/18/0/3", services[0].Key)
+		assert.Equal(t, 0, services[0].TargetStrip)
+		assert.Equal(t, "txt-value", services[0].Text)
+	})
 }

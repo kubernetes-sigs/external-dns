@@ -36,6 +36,7 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -193,7 +194,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			routes: []*v1.HTTPRoute{{
-				ObjectMeta: objectMeta("route-namespace", "test"),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "route-namespace",
+					UID:       "httproute-uid",
+				},
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
@@ -209,7 +214,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "1.2.3.4").
+					WithRefObject(testutils.RefSource(string(types.GatewayHttpRoute))),
 			},
 			logExpectations: []string{
 				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
