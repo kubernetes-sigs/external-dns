@@ -156,6 +156,33 @@ spec:
 
 ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/267.
 
+## Two sources claim the same hostname and the record won't switch. Why?
+
+When more than one source (for example an `ingress` and a `gateway-httproute`)
+generates the same DNS name with different targets, ExternalDNS keeps the record
+pointing at whichever resource acquired it first and ignores the competing
+source. This is intentional: it prevents the record from flapping between
+resources when both keep claiming the name.
+
+As a result, migrating a hostname from one source to another does not update the
+target on its own. To complete the migration you must make the old source stop
+emitting the hostname entirely. Once it does, ExternalDNS hands the record to the
+remaining source on the next reconcile, with no manual record deletion required.
+
+Be aware that a source may produce a hostname from more than one place, so
+removing a single field is not always enough. An `ingress`, for example, emits a
+hostname from both `spec.rules[].host` and the
+`external-dns.alpha.kubernetes.io/hostname` annotation, and by default returns
+the union of the two. Commenting out the annotation alone does not help if the
+host is still listed under `spec.rules`. To stop an Ingress from claiming
+`test1.example.com`, do one of:
+
+- remove `test1.example.com` from `spec.rules[].host`;
+- set `external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only`
+  so only the annotation is read (then remove the annotation), or
+  `defined-hosts-only` so only `spec.rules` is read; or
+- delete the Ingress.
+
 ## I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
 CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/262.
