@@ -436,6 +436,10 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 
 	for _, target := range ep.Targets {
 		if ep.RecordType == endpoint.RecordTypePTR {
+			if len(ep.Targets) > 1 {
+				log.Warnf("PTR %s has %d targets; CoreDNS etcd backend stores one target per reverse-DNS key, using %q and ignoring %v",
+					dnsName, len(ep.Targets), ep.Targets[0], ep.Targets[1:])
+			}
 			// CoreDNS etcd plugin expects PTR records at the exact reverse-DNS
 			// path (e.g., /skydns/arpa/in-addr/172/26/0/2) without any unique suffix.
 			services = append(services, &Service{
