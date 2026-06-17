@@ -221,11 +221,11 @@ func (c etcdClient) DeleteService(ctx context.Context, key string, exact bool) e
 		}
 		return err
 	}
-	if exact {
-		_, err := c.client.Delete(ctx, key)
-		return err
+	var delOpts []etcdcv3.OpOption
+	if !exact {
+		delOpts = append(delOpts, etcdcv3.WithPrefix())
 	}
-	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
+	_, err := c.client.Delete(ctx, key, delOpts...)
 	return err
 }
 
