@@ -608,6 +608,12 @@
         "noop"
       ]
     },
+    "replicaCount": {
+      "description": "Number of replicas of the `external-dns` `Deployment`. external-dns does not support leader election, so this must be `0` or `1` to avoid duplicate or conflicting DNS record updates. Set to `0` to scale the `Deployment` down.",
+      "type": "integer",
+      "maximum": 1,
+      "minimum": 0
+    },
     "resources": {
       "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container.",
       "type": "object",
