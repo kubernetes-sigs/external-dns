@@ -301,7 +301,8 @@ spec:
 
 ## external-dns.alpha.kubernetes.io/resolve-target
 
-Controls whether load balancer hostname targets when they are CNAME records. When the annotation is set to `"true"` the CNAME records are resolved to their underlying
+Controls load balancer hostname targets with CNAME records. 
+When the annotation is set to `"true"` the CNAME records are resolved to their underlying
 A/AAAA records at sync time, ExternalDNS performs a DNS lookup for each hostname target and emits the
 resulting IP addresses as A and/or AAAA endpoints. If resolution fails (e.g. the hostname is
 temporarily unresolvable), that target is silently skipped.
