@@ -21,11 +21,13 @@ import (
 	"net"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 func TestResolveTargetEndpoints(t *testing.T) {
@@ -364,4 +366,29 @@ func TestResolveTarget_RefObjectIsPreserved(t *testing.T) {
 	require.Len(t, got, 1)
 	require.Equal(t, endpoint.RecordTypeA, got[0].RecordType)
 	require.Equal(t, ref, got[0].RefObject(), "RefObject should be preserved after resolution")
+}
+
+func TestLeakedPropertyShouldNotUpdate(t *testing.T) {
+	current := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+
+	desired := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	desired.WithProviderSpecific("resolve-target", "true")
+
+	ms := new(testutils.MockSource)
+	ms.On("Endpoints").Return([]*endpoint.Endpoint{desired}, nil)
+	wrapped := NewResolveTarget(ms)
+
+	desiredEndpoints, err := wrapped.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	changes := (&plan.Plan{
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        desiredEndpoints,
+		ManagedRecords: []string{endpoint.RecordTypeA},
+	}).Calculate().Changes
+
+	assert.Empty(t, changes.Create, "no create expected")
+	assert.Empty(t, changes.Delete, "no delete expected")
+	// Correct: unchanged record must NOT be updated. Fails today due to the leak.
+	assert.Empty(t, changes.UpdateNew, "unchanged record should not be updated")
 }

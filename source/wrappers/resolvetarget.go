@@ -81,16 +81,13 @@ func (rs *resolveTarget) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		// Skip early if not a CNAME record, as only those can have hostname targets that need resolution.
-		if ep.RecordType != endpoint.RecordTypeCNAME {
-			result = append(result, ep)
-			continue
-		}
-
-		// Check if the "resolve-target" provider-specific property is set to "true" for this endpoint.
-		v, _ := ep.GetProviderSpecificProperty(resolveTargetPropertyName)
+		// Always consume the "resolve-target" property so it never leaks downstream,
+		// regardless of record type or value otherwise it won't converge with a non-empty UpdateNew in the plan.
+		resolve, _ := ep.GetProviderSpecificProperty(resolveTargetPropertyName)
 		ep.DeleteProviderSpecificProperty(resolveTargetPropertyName)
-		if v != "true" {
+
+		// Only CNAME endpoints opted in via "true" are resolved; everything else passes through.
+		if ep.RecordType != endpoint.RecordTypeCNAME || resolve != "true" {
 			result = append(result, ep)
 			continue
 		}
