@@ -136,12 +136,13 @@ func groupRecords(zone string, records []libdns.Record) []*endpoint.Endpoint {
 	for _, record := range records {
 		rr := record.RR()
 		name := strings.TrimSuffix(libdns.AbsoluteName(rr.Name, ensureTrailingDot(zone)), ".")
+		data := normalizeData(rr.Type, rr.Data)
 		k := key{name, rr.Type}
 		if ep, ok := groups[k]; ok {
-			ep.Targets = append(ep.Targets, rr.Data)
+			ep.Targets = append(ep.Targets, data)
 			continue
 		}
-		ep := endpoint.NewEndpointWithTTL(name, rr.Type, endpoint.TTL(rr.TTL/time.Second), rr.Data)
+		ep := endpoint.NewEndpointWithTTL(name, rr.Type, endpoint.TTL(rr.TTL/time.Second), data)
 		groups[k] = ep
 		endpoints = append(endpoints, ep)
 	}
@@ -155,13 +156,15 @@ func (p *Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) erro
 
 	// Create and UpdateNew describe the desired final state of an RRset, which
 	// maps onto libdns SetRecords semantics.
-	for _, ep := range append(append([]*endpoint.Endpoint{}, changes.Create...), changes.UpdateNew...) {
-		zone, ok := p.zoneFor(ep.DNSName)
-		if !ok {
-			log.Warnf("libdns: no managed zone for %q, skipping", ep.DNSName)
-			continue
+	for _, eps := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew} {
+		for _, ep := range eps {
+			zone, ok := p.zoneFor(ep.DNSName)
+			if !ok {
+				log.Warnf("libdns: no managed zone for %q, skipping", ep.DNSName)
+				continue
+			}
+			setByZone[zone] = append(setByZone[zone], toRecords(zone, ep)...)
 		}
-		setByZone[zone] = append(setByZone[zone], toRecords(zone, ep)...)
 	}
 	for _, ep := range changes.Delete {
 		zone, ok := p.zoneFor(ep.DNSName)
@@ -277,7 +280,7 @@ func toRecords(zone string, ep *endpoint.Endpoint) []libdns.Record {
 			Name: name,
 			Type: ep.RecordType,
 			TTL:  ttl,
-			Data: target,
+			Data: normalizeData(ep.RecordType, target),
 		})
 	}
 	return records
@@ -295,4 +298,14 @@ func moduleNames() []string {
 
 func ensureTrailingDot(zone string) string {
 	return strings.TrimSuffix(zone, ".") + "."
+}
+
+// normalizeData strips the surrounding quotes ExternalDNS wraps TXT values in,
+// keeping read and write in one canonical form so the plan does not churn (libdns
+// modules pass content through verbatim). Non-TXT data is returned unchanged.
+func normalizeData(rtype, data string) string {
+	if rtype == endpoint.RecordTypeTXT {
+		return strings.Trim(data, `"`)
+	}
+	return data
 }

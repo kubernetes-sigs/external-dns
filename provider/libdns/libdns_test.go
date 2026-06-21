@@ -199,6 +199,31 @@ func TestToRecordsRelativeNameAndTTL(t *testing.T) {
 	assert.Equal(t, time.Duration(0), noTTL[0].RR().TTL)
 }
 
+func TestTXTQuotesNormalized(t *testing.T) {
+	// Read: a quoted TXT value from the backend is unquoted, while a non-TXT
+	// value keeps any quotes.
+	client := &fakeClient{records: []libdns.Record{
+		libdns.RR{Name: "@", Type: "TXT", TTL: 60 * time.Second, Data: `"heritage=external-dns"`},
+		libdns.RR{Name: "www", Type: "A", TTL: 60 * time.Second, Data: "1.2.3.4"},
+	}}
+	p := &Provider{client: client, zones: []string{"example.com"}}
+
+	endpoints, err := p.Records(t.Context())
+	require.NoError(t, err)
+	byName := map[string]*endpoint.Endpoint{}
+	for _, ep := range endpoints {
+		byName[ep.DNSName] = ep
+	}
+	assert.Equal(t, []string{"heritage=external-dns"}, []string(byName["example.com"].Targets))
+	assert.Equal(t, []string{"1.2.3.4"}, []string(byName["www.example.com"].Targets))
+
+	// Write: a quoted TXT target is unquoted before reaching the module, so the
+	// stored value matches what Records reads back (no plan churn).
+	recs := toRecords("example.com", endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, `"heritage=external-dns"`))
+	require.Len(t, recs, 1)
+	assert.Equal(t, "heritage=external-dns", recs[0].RR().Data)
+}
+
 func TestAdjustEndpointsStripsSetIdentifier(t *testing.T) {
 	ep := endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "1.2.3.4")
 	ep.SetIdentifier = "blue"
