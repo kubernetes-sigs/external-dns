@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 - Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) _@yugstar_
+- Add `crd` as a valid `registry` value and grant the matching RBAC on `dnsrecords` for the CRD registry. [#6513](https://github.com/kubernetes-sigs/external-dns/pull/6513) _@mloiseleur_
 
 ### Fixed
 
