@@ -175,5 +175,9 @@ dig +short test.example.com @ns0.transip.net
 ## Limitations
 
 The adapter targets flat-zone providers and does **not** support provider-native routing.
-`SetIdentifier` and weighted/latency/geo fields are stripped in `AdjustEndpoints` (with a warning) to
-keep the reconcile loop convergent. For routing policies, use a provider that models them.
+`SetIdentifier` is cleared in `AdjustEndpoints` (with a warning) to keep the reconcile loop
+convergent; the weighted/latency/geo `ProviderSpecific` fields are only ever set by routing-aware
+sources and are ignored. For routing policies, use a provider that models them.
+
+Zones are resolved once at startup — from `--domain-filter`, or auto-discovered when it is empty. A
+zone added at the provider afterwards is not picked up until ExternalDNS restarts.

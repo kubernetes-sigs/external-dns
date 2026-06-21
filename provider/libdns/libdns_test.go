@@ -117,6 +117,45 @@ func TestApplyChangesUsesSetAndDelete(t *testing.T) {
 	assert.Equal(t, 1, client.delN, "Delete should be deleted")
 }
 
+// noSetterClient implements only the mandatory interfaces (no RecordSetter), so
+// setRecords exercises the delete-then-append fallback.
+type noSetterClient struct {
+	deleted []libdns.Record
+}
+
+func (c *noSetterClient) GetRecords(_ context.Context, _ string) ([]libdns.Record, error) {
+	return nil, nil
+}
+
+func (c *noSetterClient) AppendRecords(_ context.Context, _ string, recs []libdns.Record) ([]libdns.Record, error) {
+	return recs, nil
+}
+
+func (c *noSetterClient) DeleteRecords(_ context.Context, _ string, recs []libdns.Record) ([]libdns.Record, error) {
+	c.deleted = append(c.deleted, recs...)
+	return recs, nil
+}
+
+func TestSetRecordsFallbackClearsRRset(t *testing.T) {
+	client := &noSetterClient{}
+	p := &Provider{client: client, zones: []string{"example.com"}}
+
+	changes := &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeA, 300, "2.2.2.2"),
+		},
+	}
+	require.NoError(t, p.ApplyChanges(t.Context(), changes))
+
+	// The fallback must delete the whole RRset by (name, type) with empty Data,
+	// not the new records, so dropped targets do not survive.
+	require.Len(t, client.deleted, 1)
+	rr := client.deleted[0].RR()
+	assert.Equal(t, "www", rr.Name)
+	assert.Equal(t, "A", rr.Type)
+	assert.Empty(t, rr.Data)
+}
+
 func TestApplyChangesDryRun(t *testing.T) {
 	client := &fakeClient{}
 	p := &Provider{client: client, zones: []string{"example.com"}, dryRun: true}

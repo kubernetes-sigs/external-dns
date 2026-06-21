@@ -196,23 +196,45 @@ func (p *Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) erro
 }
 
 // setRecords writes an RRset. It prefers RecordSetter; modules lacking it fall
-// back to delete-then-append.
+// back to clearing the whole RRset then appending the desired records. The
+// delete must target the RRset by (name, type) — not the new records — otherwise
+// targets dropped in an update would survive.
 func (p *Provider) setRecords(ctx context.Context, zone string, records []libdns.Record) error {
 	absZone := ensureTrailingDot(zone)
 	if setter, ok := p.client.(libdns.RecordSetter); ok {
 		_, err := setter.SetRecords(ctx, absZone, records)
 		return err
 	}
-	if _, err := p.client.DeleteRecords(ctx, absZone, records); err != nil {
+	if _, err := p.client.DeleteRecords(ctx, absZone, rrsetStubs(records)); err != nil {
 		return err
 	}
 	_, err := p.client.AppendRecords(ctx, absZone, records)
 	return err
 }
 
-// AdjustEndpoints strips routing fields flat libdns backends cannot represent.
-// Keeping them would make the plan key on a non-empty SetIdentifier that the
-// backend returns empty on read-back, causing perpetual create/delete churn.
+// rrsetStubs reduces records to one (name, type) stub per RRset. libdns
+// DeleteRecords treats an empty Data field as a wildcard, so each stub deletes
+// every record sharing that name and type.
+func rrsetStubs(records []libdns.Record) []libdns.Record {
+	seen := map[string]bool{}
+	var stubs []libdns.Record
+	for _, r := range records {
+		rr := r.RR()
+		k := rr.Name + "\x00" + rr.Type
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		stubs = append(stubs, libdns.RR{Name: rr.Name, Type: rr.Type})
+	}
+	return stubs
+}
+
+// AdjustEndpoints clears SetIdentifier, which flat libdns backends cannot
+// represent. Keeping it would make the plan key on a non-empty SetIdentifier
+// that the backend returns empty on read-back, causing perpetual create/delete
+// churn. Provider-native routing (weighted/latency/geo) lives in ProviderSpecific
+// and is only ever set by routing-aware sources, so nothing else needs stripping.
 func (p *Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		if ep.SetIdentifier != "" {
