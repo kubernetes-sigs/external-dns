@@ -198,6 +198,8 @@ type Config struct {
 	NS1Endpoint                                   string
 	NS1IgnoreSSL                                  bool
 	NS1MinTTLSeconds                              int
+	LibdnsProvider                                string
+	LibdnsConfig                                  string `secure:"yes"`
 	ManagedDNSRecordTypes                         []string
 	ExcludeDNSRecordTypes                         []string
 	GoDaddyAPIKey                                 string `secure:"yes"`
@@ -402,6 +404,7 @@ var ProviderNames = []string{
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,
+	ProviderLibdns,
 	ProviderLinode,
 	ProviderNS1,
 	ProviderOCI,
@@ -620,6 +623,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)", defaultConfig.NS1Endpoint, &cfg.NS1Endpoint)
 	b.BoolVar("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)", defaultConfig.NS1IgnoreSSL, &cfg.NS1IgnoreSSL)
 	b.IntVar("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.", cfg.NS1MinTTLSeconds, &cfg.NS1MinTTLSeconds)
+	// libdns flags
+	b.StringVar("libdns-provider", "When using the libdns provider, specify the libdns module to use (required when --provider=libdns, options: transip)", defaultConfig.LibdnsProvider, &cfg.LibdnsProvider)
+	b.StringVar("libdns-config", "When using the libdns provider, specify the module configuration as a JSON object (required when --provider=libdns)", defaultConfig.LibdnsConfig, &cfg.LibdnsConfig)
 	// GoDaddy flags
 	b.StringVar("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)", defaultConfig.GoDaddyAPIKey, &cfg.GoDaddyAPIKey)
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)

@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/provider/libdns"
 	"sigs.k8s.io/external-dns/provider/linode"
 	"sigs.k8s.io/external-dns/provider/ns1"
 	"sigs.k8s.io/external-dns/provider/oci"
@@ -92,6 +93,7 @@ func providers(selector string) (ProviderConstructor, bool) {
 		externaldns.ProviderGoDaddy:      godaddy.New,
 		externaldns.ProviderGoogle:       google.New,
 		externaldns.ProviderInMemory:     inmemory.New,
+		externaldns.ProviderLibdns:       libdns.New,
 		externaldns.ProviderLinode:       linode.New,
 		externaldns.ProviderNS1:          ns1.New,
 		externaldns.ProviderOCI:          oci.New,

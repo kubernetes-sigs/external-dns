@@ -38,6 +38,7 @@ const (
 	ProviderGoDaddy      = "godaddy"
 	ProviderGoogle       = "google"
 	ProviderInMemory     = "inmemory"
+	ProviderLibdns       = "libdns"
 	ProviderLinode       = "linode"
 	ProviderNS1          = "ns1"
 	ProviderOCI          = "oci"
