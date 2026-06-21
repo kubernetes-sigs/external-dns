@@ -56,9 +56,9 @@ Issue #4347 moves providers out of tree, with the webhook mechanism as the repla
 
 libdns is a small, stable interface set (`RecordGetter`, `RecordAppender`, `RecordSetter`,
 `RecordDeleter`, `ZoneLister`) with 80+ maintained modules. One adapter serves many providers, and new
-DNS vendors integrate by publishing their own libdns module — so the gate stays closed. Modules already
-exist for `transip`, `scaleway`, `linode`, `dnsimple`, `gandi`, `godaddy`, `civo`, `exoscale`, and `ovh`
-(no module for `ns1`).
+DNS vendors integrate by publishing their own libdns module — so the gate stays closed. As of 2026-06,
+modules already exist for `transip`, `scaleway`, `linode`, `dnsimple`, `gandi`, `godaddy`, `civo`,
+`exoscale`, and `ovh` (no module for `ns1`).
 
 ### Goals
 
@@ -141,8 +141,8 @@ Group `plan.Changes` by zone, then by `(name, type)` RRset:
 libdns needs the zone as a separate argument, while ExternalDNS hands providers FQDNs. `--domain-filter`
 is the primary zone source (works for every module, commonly set already); FQDNs match by longest suffix.
 `ZoneLister` is an optional convenience: when implemented, the adapter can auto-discover zones and
-`--domain-filter` becomes optional; otherwise `--domain-filter` is required. Among in-scope modules only
-`transip` and `linode` implement `ZoneLister`.
+`--domain-filter` becomes optional; otherwise `--domain-filter` is required. As of 2026-06, among in-scope
+modules only `transip` and `linode` implement `ZoneLister`.
 
 #### Provider Selection
 
@@ -166,24 +166,12 @@ via `--libdns-provider`.
 
 #### Unsupported Endpoint Features
 
-`SetIdentifier`, `Weights`, `Latency`, `Geolocation`, and routing `ProviderSpecific` express
-provider-native routing. They require storing multiple records with the same `(name, type)` keyed by an
-identifier, which flat libdns backends cannot do — and which the TXT ownership marker also depends on.
+`SetIdentifier` drives provider-native routing — multiple records per `(name, type)`, which flat libdns
+backends cannot store. It cannot be silently dropped: the plan keys on `(dnsName, setIdentifier)`, but a
+flat backend reads back an empty identifier, so desired (non-empty) and current (empty) never match and
+the record churns every reconcile under `--update-events`.
 
-They must not be silently dropped. The plan keys on `(dnsName, setIdentifier)`, but a flat backend returns
-an empty identifier on read-back; the desired (non-empty) and current (empty) rows never match, so the
-record is re-created and deleted on every reconcile — continuous churn under `--update-events`. Instead the
-adapter strips these fields (and warns) in `AdjustEndpoints`, so both sides key on an empty identifier and
-the plan converges. This mirrors the in-tree OCI provider (`provider/oci/oci.go`):
-
-```go
-if e.SetIdentifier != "" {
-    log.Warnf("Adjusting endpoint: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
-    e.SetIdentifier = ""
-}
-```
-
-Routing is lost (impossible on these backends), but the controller stays convergent.
+As a consequence, the adapter strips it (and warns) in `AdjustEndpoints`.
 
 ### Distribution Policy (Open Question)
 
@@ -202,8 +190,7 @@ distribution ships it as a separate image or folds it into the main one — poli
   to every image.
 - **Provider quirks still leak** — libdns abstracts the API call, not provider behavior. Quirks like the
   trailing-dot bug in #6491 surface in the module and are fixed upstream, not here.
-- **Reduced feature surface** — no routing policies; routing fields are stripped in `AdjustEndpoints`.
-  Acceptable for the simple-zone tier, but must be documented.
+- **Reduced feature surface** — no routing policies; `SetIdentifier` is stripped in `AdjustEndpoints`,
 - **Two integration paths** — adapter vs. webhook; docs must steer users.
 - **Coverage gaps** — providers without a module (e.g. `ns1`) are not served.
 
