@@ -123,6 +123,15 @@ var (
 			Help:      "Number of consecutive soft errors in reconciliation loop.",
 		},
 	)
+
+	deletionsSkippedByPolicy = metrics.NewGaugedVectorOpts(
+		prometheus.GaugeOpts{
+			Subsystem: "controller",
+			Name:      "deletions_skipped_by_policy",
+			Help:      "Number of DNS record deletions skipped by the current policy, partitioned by owner (see docs/advanced/operational-best-practices.md).",
+		},
+		[]string{"owned"},
+	)
 )
 
 func init() {
@@ -141,6 +150,7 @@ func init() {
 	metrics.RegisterMetric.MustRegister(verifiedRecords)
 
 	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
+	metrics.RegisterMetric.MustRegister(deletionsSkippedByPolicy)
 }
 
 type dnsKey struct {
