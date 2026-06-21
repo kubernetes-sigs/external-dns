@@ -198,6 +198,13 @@ func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
 		log.Errorf("Failed to get effective TLD+1 for hostname %s %v", hostname, err)
 		return false
 	}
+
+	if p.zonePlanCache != nil {
+		if paid, ok := p.zonePlanCache.get(zone); ok {
+			return paid
+		}
+	}
+
 	zoneID, err := p.Client.ZoneIDByName(zone)
 	if err != nil {
 		log.Errorf("Failed to get zone %s by name %v", zone, err)
@@ -210,7 +217,11 @@ func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
 		return false
 	}
 
-	return zoneDetails.Plan.IsSubscribed //nolint:staticcheck // SA1019: Plan.IsSubscribed is deprecated but no replacement available yet
+	paid := zoneDetails.Plan.IsSubscribed //nolint:staticcheck // SA1019: Plan.IsSubscribed is deprecated but no replacement available yet
+	if p.zonePlanCache != nil {
+		p.zonePlanCache.set(zone, paid)
+	}
+	return paid
 }
 
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
@@ -225,6 +236,10 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
+	// zonePlanCache memoises ZoneHasPaidPlan to avoid firing ListZones+GetZone
+	// per DNS record change whose comment exceeds the free-zone max length.
+	// See https://github.com/kubernetes-sigs/external-dns/issues/6391.
+	zonePlanCache *zonePlanCache
 }
 
 // cloudFlareChange differentiates between ChangeActions
@@ -324,6 +339,7 @@ func newProvider(
 		DryRun:                 dryRun,
 		RegionalServicesConfig: regionalServicesConfig,
 		DNSRecordsConfig:       dnsRecordsConfig,
+		zonePlanCache:          newZonePlanCache(defaultZonePlanCacheTTL),
 	}, nil
 }
 
