@@ -169,6 +169,10 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 		log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
 		return
 	}
+	if pod.Status.Phase != v1.PodRunning {
+		log.Debugf("skipping pod %q. phase is %q", pod.Name, pod.Status.Phase)
+		return
+	}
 
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 
@@ -219,11 +223,13 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 }
 
 func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
-	if ps.podSourceDomain != "" {
-		domain := pod.Name + "." + ps.podSourceDomain
-		if len(targets) == 0 {
-			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
-		}
+	if ps.podSourceDomain == "" {
+		return
+	}
+	domain := pod.Name + "." + ps.podSourceDomain
+	if len(targets) == 0 {
+		addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+	} else {
 		addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 	}
 }
