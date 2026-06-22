@@ -37,10 +37,10 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
-	"sigs.k8s.io/external-dns/source"
 )
 
 // CRDRegistry implements registry interface with ownership implemented via associated custom resource records (DNSRecord)
@@ -75,15 +75,9 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namesp
 		namespace = "default"
 	}
 
-	// new Singleton because the user may want to store this registry on a
-	// remote (and shared) cluster between multiple external-dns instances
-	clientGenerator := &source.SingletonClientGenerator{
-		KubeConfig:     kubeConfig,
-		APIServerURL:   apiServerURL,
-		RequestTimeout: apiServerTimeout,
-	}
-
-	restConfig, err := clientGenerator.RESTConfig()
+	// Build the REST config from the shared client package: this registry may run
+	// against a remote, shared cluster, so it does not reuse the source clients.
+	restConfig, err := kubeclient.InstrumentedRESTConfig(kubeConfig, apiServerURL, apiServerTimeout, 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build rest config: %w", err)
 	}
