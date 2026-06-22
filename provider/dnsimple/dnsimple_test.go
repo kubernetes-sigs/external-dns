@@ -106,8 +106,18 @@ func TestDnsimpleServices(t *testing.T) {
 		Priority: 0,
 		Type:     "A",
 	}
+	fifthRecord := dnsimple.ZoneRecord{
+		ID:       5,
+		ZoneID:   "example.com",
+		ParentID: 0,
+		Name:     "example-ipv6",
+		Content:  "fd00::1",
+		TTL:      3600,
+		Priority: 0,
+		Type:     "AAAA",
+	}
 
-	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord, fourthRecord}
+	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord, fourthRecord, fifthRecord}
 	dnsimpleListRecordsResponse = dnsimple.ZoneRecordsResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
 		Data:     records,
@@ -179,6 +189,16 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	result, err := mockProvider.Records(ctx)
 	assert.NoError(t, err)
 	assert.Len(t, result, len(dnsimpleListRecordsResponse.Data))
+
+	var foundAAAA bool
+	for _, ep := range result {
+		if ep.RecordType == endpoint.RecordTypeAAAA {
+			foundAAAA = true
+			assert.Equal(t, "example-ipv6.example.com", ep.DNSName)
+			assert.Equal(t, endpoint.Targets{"fd00::1"}, ep.Targets)
+		}
+	}
+	assert.True(t, foundAAAA, "AAAA records should be returned by Records")
 
 	mockProvider.accountID = "2"
 	_, err = mockProvider.Records(ctx)
