@@ -44,11 +44,12 @@ For the domain `www.ex.com` the expected result is
 
 ### AWS A ALIAS records
 
-AWS ALIAS records are materialized in Route 53 as `A`/`AAAA` records, and their ownership TXT now
-uses the matching `a-`/`aaaa-` prefix. Earlier versions used the `cname-` prefix (external-dns
-models an A ALIAS as a CNAME internally). The legacy `cname-` record is still recognized, so
-ownership survives the upgrade; the new `a-` record is created on the next reconciliation and the
-obsolete `cname-` record is left in place with a warning logged.
+[AWS ALIAS records](../tutorials/aws.md#alias) are materialized in Route 53 as `A`/`AAAA` records
+(see the [Route 53 documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html)),
+and their ownership TXT now uses the matching `a-`/`aaaa-` prefix. Earlier versions used the `cname-`
+prefix (external-dns models an A ALIAS as a CNAME internally). The legacy `cname-` record is still
+recognized, so ownership survives the upgrade; the new `a-` record is created on the next
+reconciliation and the obsolete `cname-` record is left in place with a warning logged.
 See [#2903](https://github.com/kubernetes-sigs/external-dns/issues/2903).
 
 ### Manually Cleanup Legacy TXT Records
