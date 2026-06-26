@@ -183,6 +183,88 @@ Once the API shows the record correctly, you can double check your record using:
 dig @${PDNS_FQDN} echo.example.com.
 ```
 
+## Testing locally with Docker and kind
+
+This setup runs everything on your machine: a disposable PowerDNS server in
+Docker and a local [kind](https://kind.sigs.k8s.io/) cluster. Useful to test
+changes to the PDNS provider without touching a real PowerDNS deployment.
+
+Start a PowerDNS authoritative server with the HTTP API enabled:
+
+```bash
+docker run -d --name pdns -p 1053:53 -p 1053:53/udp -p 8081:8081 \
+  powerdns/pdns-auth-49 \
+  --api=yes --api-key=secret --webserver=yes \
+  --webserver-address=0.0.0.0 --webserver-allow-from=0.0.0.0/0 \
+  --zone-cache-refresh-interval=0
+```
+
+`--zone-cache-refresh-interval=0` disables the zone cache so newly created
+zones are served immediately.
+
+Create a zone:
+
+```bash
+curl -s -X POST -H "X-API-Key: secret" -H "Content-Type: application/json" \
+  -d '{"name": "example.com.", "kind": "Native"}' \
+  http://localhost:8081/api/v1/servers/localhost/zones
+```
+
+Create a kind cluster and a Service with an external-dns hostname annotation
+(no pods are required to test DNS record management):
+
+```bash
+kind create cluster --name pdns-test
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+  annotations:
+    external-dns.kubernetes.io/hostname: echo.example.com
+spec:
+  selector:
+    app: echo
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+EOF
+```
+
+Run external-dns against the local PowerDNS
+(`--publish-internal-services` lets it publish the ClusterIP):
+
+```bash
+go run main.go --provider=pdns \
+  --pdns-server=http://localhost:8081 \
+  --pdns-api-key=secret \
+  --txt-owner-id=local-test \
+  --source=service --publish-internal-services \
+  --once --log-level=info
+```
+
+You should see a `CREATE` for `echo.example.com` and its ownership TXT
+record. Re-running the same command should produce no changes. Verify via the
+API and DNS:
+
+```bash
+curl -s -H "X-API-Key: secret" \
+  http://localhost:8081/api/v1/servers/localhost/zones/example.com. | jq .rrsets
+dig +short @127.0.0.1 -p 1053 echo.example.com A
+```
+
+Updates and deletions can be tested the same way, for example with
+`kubectl annotate service echo external-dns.kubernetes.io/ttl=120` or
+`kubectl delete service echo`, followed by another `--once` run.
+
+Clean up when done:
+
+```bash
+kind delete cluster --name pdns-test
+docker rm -f pdns
+```
+
 ## Using CRD source to manage DNS records in PowerDNS
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.

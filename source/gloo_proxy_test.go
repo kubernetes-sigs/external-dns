@@ -27,13 +27,16 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -799,4 +802,191 @@ func newGlooDynamicClient(objs ...runtime.Object) *fakeDynamic.FakeDynamicClient
 			virtualServiceGVR: "VirtualServiceList",
 			gatewayGVR:        "GatewayList",
 		}, objs...)
+}
+
+func TestGlooProxyIndexer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		proxies          []proxy
+		glooNamespaces   []string
+		annotationFilter string
+		labelFilter      string
+		expectedCount    int
+	}{
+		{
+			name:           "no allowed namespaces returns no endpoints",
+			glooNamespaces: []string{},
+			proxies:        []proxy{glooProxyFixture("p1", "ns-a", "a.test")},
+			expectedCount:  0,
+		},
+		{
+			name:           "single namespace — matching proxies returned",
+			glooNamespaces: []string{"ns-a"},
+			proxies: []proxy{
+				glooProxyFixture("p1", "ns-a", "a.test"),
+				glooProxyFixture("p2", "ns-a", "b.test"),
+				glooProxyFixture("p3", "ns-b", "c.test"),
+			},
+			expectedCount: 2,
+		},
+		{
+			name:           "multiple allowed namespaces",
+			glooNamespaces: []string{"ns-a", "ns-b"},
+			proxies: []proxy{
+				glooProxyFixture("p1", "ns-a", "a.test"),
+				glooProxyFixture("p2", "ns-b", "b.test"),
+				glooProxyFixture("p3", "ns-c", "c.test"),
+			},
+			expectedCount: 2,
+		},
+		{
+			name:           "proxy outside allowed namespace excluded",
+			glooNamespaces: []string{"ns-a"},
+			proxies:        []proxy{glooProxyFixture("p1", "ns-b", "a.test")},
+			expectedCount:  0,
+		},
+		{
+			name:             "annotation filter matches subset",
+			glooNamespaces:   []string{"ns-a"},
+			annotationFilter: "tier=frontend",
+			proxies: func() []proxy {
+				p1 := glooProxyFixture("p1", "ns-a", "a.test")
+				p2 := glooProxyFixture("p2", "ns-a", "b.test")
+				p3 := glooProxyFixture("p3", "ns-a", "c.test")
+				p1.Annotations["tier"] = "frontend"
+				p2.Annotations["tier"] = "frontend"
+				return []proxy{p1, p2, p3}
+			}(),
+			expectedCount: 2,
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			glooNamespaces:   []string{"ns-a"},
+			annotationFilter: "tier=backend",
+			proxies: func() []proxy {
+				p := glooProxyFixture("p1", "ns-a", "a.test")
+				p.Annotations["tier"] = "frontend"
+				return []proxy{p}
+			}(),
+			expectedCount: 0,
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all proxies pass through",
+			glooNamespaces:   []string{"ns-a"},
+			annotationFilter: "tier in (x y)",
+			proxies: []proxy{
+				glooProxyFixture("p1", "ns-a", "a.test"),
+				glooProxyFixture("p2", "ns-a", "b.test"),
+			},
+			expectedCount: 2,
+		},
+		{
+			name:           "label filter matches subset",
+			glooNamespaces: []string{"ns-a"},
+			labelFilter:    "env=prod",
+			proxies: func() []proxy {
+				p1 := glooProxyFixture("p1", "ns-a", "a.test")
+				p2 := glooProxyFixture("p2", "ns-a", "b.test")
+				p3 := glooProxyFixture("p3", "ns-a", "c.test")
+				p1.Labels = map[string]string{"env": "prod"}
+				p2.Labels = map[string]string{"env": "prod"}
+				return []proxy{p1, p2, p3}
+			}(),
+			expectedCount: 2,
+		},
+		{
+			name:           "controller mismatch excludes proxy",
+			glooNamespaces: []string{"ns-a"},
+			proxies: func() []proxy {
+				ok := glooProxyFixture("p1", "ns-a", "a.test")
+				ok2 := glooProxyFixture("p2", "ns-a", "b.test")
+				mismatch := glooProxyFixture("p3", "ns-a", "c.test")
+				mismatch.Annotations[annotations.ControllerKey] = "other-controller"
+				return []proxy{ok, ok2, mismatch}
+			}(),
+			expectedCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			dynClient := newGlooDynamicClient()
+
+			for _, p := range tt.proxies {
+				data, err := json.Marshal(p)
+				require.NoError(t, err)
+				var u unstructured.Unstructured
+				require.NoError(t, u.UnmarshalJSON(data))
+				_, err = dynClient.Resource(proxyGVR).Namespace(p.Namespace).Create(t.Context(), &u, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewGlooSource(t.Context(), dynClient, fakeKube.NewSimpleClientset(), &Config{
+				GlooNamespaces:   tt.glooNamespaces,
+				AnnotationFilter: tt.annotationFilter,
+				LabelFilter:      labelSel,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func TestGlooSource_AddEventHandler(t *testing.T) {
+	inf := &testInformer{}
+	gs := &glooSource{
+		proxyInformer: &fakeGlooProxyInformer{inf: inf},
+	}
+	gs.AddEventHandler(t.Context(), func() {})
+	assert.Equal(t, 1, inf.times)
+}
+
+type fakeGlooProxyInformer struct {
+	inf *testInformer
+}
+
+func (f *fakeGlooProxyInformer) Informer() cache.SharedIndexInformer { return f.inf }
+func (f *fakeGlooProxyInformer) Lister() cache.GenericLister         { return nil }
+
+// glooProxyFixture returns a minimal proxy that generates exactly one endpoint:
+// the target comes from the annotation so no backing Service is needed.
+func glooProxyFixture(name, namespace, domain string) proxy {
+	return proxy{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: proxyGVR.GroupVersion().String(),
+			Kind:       "Proxy",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				annotations.TargetKey: "1.2.3.4",
+			},
+		},
+		Spec: proxySpec{
+			Listeners: []proxySpecListener{
+				{
+					HTTPListener: proxySpecHTTPListener{
+						VirtualHosts: []proxyVirtualHost{
+							{Domains: []string{domain}},
+						},
+					},
+				},
+			},
+		},
+	}
 }

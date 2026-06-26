@@ -41,6 +41,6 @@ var (
 )
 
 func addKnownTypes(s *runtime.Scheme) error {
-	s.AddKnownTypes(GroupVersion, &DNSEndpoint{}, &DNSEndpointList{})
+	s.AddKnownTypes(GroupVersion, &DNSEndpoint{}, &DNSEndpointList{}, &DNSRecord{}, &DNSRecordList{})
 	return nil
 }

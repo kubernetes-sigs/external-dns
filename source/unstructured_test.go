@@ -525,67 +525,6 @@ func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Unstructured, len(objects))
 }
 
-func TestEndpointsForHostsAndTargets(t *testing.T) {
-	tests := []struct {
-		name      string
-		hostnames []string
-		targets   []string
-		expected  []*endpoint.Endpoint
-	}{
-		{
-			name:      "empty hostnames returns nil",
-			hostnames: []string{},
-			targets:   []string{"192.168.1.1"},
-			expected:  nil,
-		},
-		{
-			name:      "empty targets returns nil",
-			hostnames: []string{"example.com"},
-			targets:   []string{},
-			expected:  nil,
-		},
-		{
-			name:      "duplicate hostname with IPv4 and IPv6 targets",
-			hostnames: []string{"example.com", "example.com"},
-			targets:   []string{"192.168.1.1", "192.168.1.1", "2001:db8::1"},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-			},
-		},
-		{
-			name:      "multiple hostnames with single target",
-			hostnames: []string{"example.com", "www.example.com"},
-			targets:   []string{"192.168.1.1"},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "192.168.1.1"),
-			},
-		},
-		{
-			name:      "multiple of each type maintains grouping",
-			hostnames: []string{"example.com"},
-			targets:   []string{"192.168.1.1", "192.168.1.2", "2001:db8::1", "2001:db8::2", "a.example.com", "b.example.com"},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1", "2001:db8::2"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.example.com", "b.example.com"),
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := EndpointsForHostsAndTargets(tc.hostnames, tc.targets)
-			if tc.expected == nil {
-				assert.Nil(t, result)
-				return
-			}
-			testutils.ValidateEndpoints(t, result, tc.expected)
-		})
-	}
-}
-
 // setupUnstructuredTestClients creates fake kube and dynamic clients with the given resources and objects.
 func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*unstructured.Unstructured) (
 	kubernetes.Interface, dynamic.Interface,
