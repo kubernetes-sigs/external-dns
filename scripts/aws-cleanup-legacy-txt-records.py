@@ -99,8 +99,12 @@ class Config:
         # Target legacy "cname-" alias records, but only when their "a-" twin exists (#2903).
         self.alias_cname_cleanup = alias_cname_cleanup
 
-def list_all_txt_records(r53client, zone_id) -> list[Record]:
-    """Return every TXT record in the zone (handles pagination)."""
+def list_all_txt_records(r53client, zone_id, limit=None) -> list[Record]:
+    """Return TXT records in the zone (handles pagination).
+
+    Stops once `limit` records are collected; pass None to list the whole zone
+    (required by alias cleanup, which needs every 'a-' twin to be visible).
+    """
     all_txt = []
     params = {'HostedZoneId': zone_id, 'MaxItems': str(MAX_ITEMS)}
     dns_in_iteration = r53client.list_resource_record_sets(**params)
@@ -109,6 +113,8 @@ def list_all_txt_records(r53client, zone_id) -> list[Record]:
         for el in elements:
             if el['Type'] == 'TXT':
                 all_txt.append(Record(el))
+                if limit is not None and len(all_txt) >= limit:
+                    return all_txt
         if len(elements) == 0 or 'NextRecordName' not in dns_in_iteration:
             break
         dns_in_iteration = r53client.list_resource_record_sets(
@@ -145,11 +151,12 @@ def records(config: Config) -> None:
     r53client = boto3.client('route53', config=cfg)
     dns_records_to_cleanup = []
     try:
-        all_txt = list_all_txt_records(r53client, config.zone_id)
-
         if config.alias_cname_cleanup:
+            all_txt = list_all_txt_records(r53client, config.zone_id)
             candidates = orphaned_alias_cname_records(all_txt, config.contain)
         else:
+            # Default mode: stop early once enough deletion candidates are found.
+            all_txt = list_all_txt_records(r53client, config.zone_id, limit=config.total_items)
             candidates = [r for r in all_txt if r.is_for_deletion(config.contain)]
 
         for record in candidates:

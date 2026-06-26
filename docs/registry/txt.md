@@ -44,12 +44,11 @@ For the domain `www.ex.com` the expected result is
 
 ### AWS A ALIAS records
 
-[AWS ALIAS records](../tutorials/aws.md#alias) are materialized in Route 53 as `A`/`AAAA` records
-(see the [Route 53 documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html)),
-and their ownership TXT now uses the matching `a-`/`aaaa-` prefix. Earlier versions used the `cname-`
-prefix (external-dns models an A ALIAS as a CNAME internally). The legacy `cname-` record is still
-recognized, so ownership survives the upgrade; the new `a-` record is created on the next
-reconciliation and the obsolete `cname-` record is left in place with a warning logged.
+[AWS ALIAS records](../tutorials/aws.md#alias) are stored in Route 53 as
+[`A`/`AAAA` records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html),
+so their ownership TXT uses the matching `a-`/`aaaa-` prefix. For `A` ALIAS records this replaces the
+legacy `cname-` prefix: the old `cname-` record is still recognized (ownership is preserved), the `a-`
+record is created on the next reconciliation, and the obsolete `cname-` is left in place with a warning.
 See [#2903](https://github.com/kubernetes-sigs/external-dns/issues/2903).
 
 ### Manually Cleanup Legacy TXT Records
@@ -63,8 +62,7 @@ The script performs targeted deletion of TXT records that include `ResourceRecor
 In the event of unintended deletion of all TXT records managed by `external-dns`, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be aware, this operation's duration is directly proportional to the DNS estate size."
 
 To remove the obsolete `cname-` records left by the AWS A ALIAS migration, run the script with
-`--alias-cname-cleanup`. It only deletes a `cname-` record when the matching `a-` record exists, so
-genuine `CNAME` ownership records are preserved.
+`--alias-cname-cleanup`, which deletes a `cname-` record only when its `a-` counterpart exists.
 
 ### For version `v0.16.0 & v0.16.1`
 
