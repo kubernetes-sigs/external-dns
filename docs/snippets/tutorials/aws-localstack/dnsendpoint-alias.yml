@@ -1,0 +1,19 @@
+# ref: docs/snippets/tutorials/aws-localstack/dnsendpoint-alias.yml
+# A ALIAS record: recordType CNAME with an ELB-style target makes the AWS
+# provider treat it as an ALIAS and store it as an A record in Route 53, so its
+# ownership TXT uses the "a-" prefix (see docs/registry/txt.md, issue #2903).
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: alias-example
+  namespace: default
+  annotations:
+    dns.why/type: aws-localstack-tutorial
+spec:
+  endpoints:
+    - dnsName: alias.example.com
+      recordTTL: 300
+      recordType: CNAME
+      targets:
+        - my-lb.eu-west-1.elb.amazonaws.com
