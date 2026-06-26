@@ -42,6 +42,15 @@ For the domain `www.ex.com` the expected result is
 | `www-.cname.ex.com.` |  `TXT`  |
 |    `www.ex.com.`     | `CNAME` |
 
+### AWS A ALIAS records
+
+AWS ALIAS records are materialized in Route 53 as `A`/`AAAA` records, and their ownership TXT now
+uses the matching `a-`/`aaaa-` prefix. Earlier versions used the `cname-` prefix (external-dns
+models an A ALIAS as a CNAME internally). The legacy `cname-` record is still recognized, so
+ownership survives the upgrade; the new `a-` record is created on the next reconciliation and the
+obsolete `cname-` record is left in place with a warning logged.
+See [#2903](https://github.com/kubernetes-sigs/external-dns/issues/2903).
+
 ### Manually Cleanup Legacy TXT Records
 
 > While deleting registry TXT records won't cause downtime, a well-thought-out migration and cleanup plan is crucial.
@@ -51,6 +60,10 @@ Occasionally, it may be necessary to remove outdated TXT records from your regis
 An example script for AWS can be found in [scripts/aws-cleanup-legacy-txt-records.py](../../scripts/aws-cleanup-legacy-txt-records.py) with instructions on how to run it.
 The script performs targeted deletion of TXT records that include `ResourceRecords` matching the `heritage=external-dns,external-dns/owner=default` or similar pattern.
 In the event of unintended deletion of all TXT records managed by `external-dns`, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be aware, this operation's duration is directly proportional to the DNS estate size."
+
+To remove the obsolete `cname-` records left by the AWS A ALIAS migration, run the script with
+`--alias-cname-cleanup`. It only deletes a `cname-` record when the matching `a-` record exists, so
+genuine `CNAME` ownership records are preserved.
 
 ### For version `v0.16.0 & v0.16.1`
 

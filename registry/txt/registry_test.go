@@ -1110,9 +1110,9 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
 			newTXTEndpointWithOwnedRecord("cname-example", "\"heritage=external-dns,external-dns/owner=owner\"", "example"),
 			newEndpointWithOwner("new-alias.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasTrue),
-			newTXTEndpointWithOwnedRecord("cname-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithAliasProperty(endpoint.AliasTrue),
+			newTXTEndpointWithOwnedRecord("a-new-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias.test-zone.example.org").WithAliasProperty(endpoint.AliasTrue),
 			newEndpointWithOwner("new-alias-a-only.test-zone.example.org", "my-domain.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasA),
-			newTXTEndpointWithOwnedRecord("cname-new-alias-a-only.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias-a-only.test-zone.example.org").WithAliasProperty(endpoint.AliasA),
+			newTXTEndpointWithOwnedRecord("a-new-alias-a-only.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "new-alias-a-only.test-zone.example.org").WithAliasProperty(endpoint.AliasA),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
@@ -2193,4 +2193,91 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	records, err = p.Records(ctx)
 	assert.NoError(t, err)
 	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
+}
+
+// TestTXTRegistryAliasARecordUsesARecordTXTPrefixIssue2903 verifies an A ALIAS record (a CNAME
+// converted by the AWS provider) now gets an "a-" prefixed ownership TXT instead of "cname-" (#2903).
+func TestTXTRegistryAliasARecordUsesARecordTXTPrefixIssue2903(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	err := p.CreateZone(testZone)
+	require.NoError(t, err)
+
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+
+	// Endpoint as produced by the AWS provider's AdjustEndpoints for a CNAME-to-ELB: RecordType
+	// has been rewritten to A and the alias provider-specific property is set to true.
+	aliasA := newEndpointWithOwner("alias.test-zone.example.org", "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, "").
+		WithAliasProperty(endpoint.AliasTrue)
+
+	var applied *plan.Changes
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+		applied = got
+	}
+
+	err = r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{aliasA}})
+	require.NoError(t, err)
+	require.NotNil(t, applied)
+
+	var primary, txt *endpoint.Endpoint
+	for _, ep := range applied.Create {
+		switch ep.RecordType {
+		case endpoint.RecordTypeTXT:
+			txt = ep
+		case endpoint.RecordTypeA:
+			primary = ep
+		}
+	}
+	require.NotNil(t, primary, "expected an A record to be applied")
+	require.NotNil(t, txt, "expected a TXT ownership record to be applied")
+
+	assert.Equal(t, endpoint.RecordTypeA, primary.RecordType)
+
+	// The TXT ownership record now uses the "a-" prefix, matching the A record it describes.
+	assert.Equal(t, "a-alias.test-zone.example.org", txt.DNSName)
+	assert.NotEqual(t, "cname-alias.test-zone.example.org", txt.DNSName)
+}
+
+// TestTXTRegistryAliasARecordLegacyCNAMEMigrationIssue2903 verifies the migration: a zone with only
+// the legacy "cname-" ownership TXT keeps its ownership and gets the new "a-" record generated (#2903).
+func TestTXTRegistryAliasARecordLegacyCNAMEMigrationIssue2903(t *testing.T) {
+	p := inmemory.NewInMemoryProvider()
+	err := p.CreateZone(testZone)
+	require.NoError(t, err)
+
+	// Seed the zone with an A ALIAS record and only its legacy "cname-" ownership TXT.
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("alias.test-zone.example.org", "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasTrue),
+			newTXTEndpointWithOwnedRecord("cname-alias.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "alias.test-zone.example.org"),
+		},
+	})
+	require.NoError(t, err)
+
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+	require.NoError(t, err)
+
+	records, err := r.Records(t.Context())
+	require.NoError(t, err)
+
+	// The A ALIAS record is recognized as owned via the legacy "cname-" TXT record.
+	var aliasEp *endpoint.Endpoint
+	for _, ep := range records {
+		if ep.DNSName == "alias.test-zone.example.org" && ep.RecordType == endpoint.RecordTypeA {
+			aliasEp = ep
+		}
+	}
+	require.NotNil(t, aliasEp, "expected the A ALIAS record to be returned")
+	assert.Equal(t, "owner", aliasEp.Labels[endpoint.OwnerLabelKey], "ownership must be preserved during migration")
+
+	// The migration must mark the record for re-creation (force-update) so the planner emits an
+	// update for it; the AWS provider applies updates as upserts, creating the new "a-" TXT.
+	forceUpdate, _ := aliasEp.GetProviderSpecificProperty(providerSpecificForceUpdate)
+	assert.Equal(t, "true", forceUpdate, "expected force-update so the new a- TXT is created")
+
+	// The desired ownership TXT generated for the alias endpoint now uses the "a-" prefix, so the
+	// new-format record is what gets created on apply.
+	desired := r.generateTXTRecord(aliasEp)
+	require.Len(t, desired, 1)
+	assert.Equal(t, "a-alias.test-zone.example.org", desired[0].DNSName)
 }
