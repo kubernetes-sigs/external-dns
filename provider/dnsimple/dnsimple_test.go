@@ -307,9 +307,6 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	}
 }
 
-// ptr is a small helper for building the *string fields the DNSimple options use.
-func ptr[T any](v T) *T { return &v }
-
 // testDnsimpleProviderApplyChanges drives ApplyChanges through a table of cases
 // and verifies the exact DNSimple API calls made for each one. Unlike a bare
 // "no error returned" assertion, it calls AssertExpectations so a no-op
@@ -323,12 +320,12 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 	}
 
 	// listRecords builds the single-record response GetRecordID expects for a
-	// ListRecords(name, type) lookup.
-	listRecords := func(id int64, name, recordType string) *dnsimple.ZoneRecordsResponse {
+	// ListRecords lookup of the "www" host scoped to the given type.
+	listRecords := func(id int64, recordType string) *dnsimple.ZoneRecordsResponse {
 		return &dnsimple.ZoneRecordsResponse{
 			Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
 			Data: []dnsimple.ZoneRecord{
-				{ID: id, ZoneID: "example.com", Name: name, Type: recordType},
+				{ID: id, ZoneID: "example.com", Name: "www", Type: recordType},
 			},
 		}
 	}
@@ -345,8 +342,8 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 				{DNSName: "www.example.com", Targets: endpoint.Targets{"fd00::1"}, RecordType: endpoint.RecordTypeAAAA},
 			}},
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
-				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
-				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "AAAA", Content: "fd00::1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: new("www"), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: new("www"), Type: "AAAA", Content: "fd00::1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
 		},
 		{
@@ -355,7 +352,7 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 				{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
 			}},
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
-				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr(""), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: new(""), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
 		},
 		{
@@ -364,7 +361,7 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 				{DNSName: "ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 			}},
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
-				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("ttl"), Type: "CNAME", Content: "target", TTL: 60}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: new("ttl"), Type: "CNAME", Content: "target", TTL: 60}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
 		},
 		{
@@ -373,8 +370,8 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.2"}, RecordType: endpoint.RecordTypeA},
 			}},
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
-				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "www", "A"), nil).Once()
-				m.On("UpdateRecord", t.Context(), "1", "example.com", int64(10), dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "A", Content: "127.0.0.2", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: new("www"), Type: new("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "A"), nil).Once()
+				m.On("UpdateRecord", t.Context(), "1", "example.com", int64(10), dnsimple.ZoneRecordAttributes{Name: new("www"), Type: "A", Content: "127.0.0.2", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
 		},
 		{
@@ -383,7 +380,7 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
 			}},
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
-				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "www", "A"), nil).Once()
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: new("www"), Type: new("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "A"), nil).Once()
 				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(10)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
 		},
@@ -396,8 +393,8 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
 				// Same name, different types: each lookup must be scoped by type
 				// and return that type's distinct record ID.
-				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(11, "www", "A"), nil).Once()
-				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("AAAA"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(12, "www", "AAAA"), nil).Once()
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: new("www"), Type: new("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(11, "A"), nil).Once()
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: new("www"), Type: new("AAAA"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(12, "AAAA"), nil).Once()
 				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(11)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(12)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
 			},
