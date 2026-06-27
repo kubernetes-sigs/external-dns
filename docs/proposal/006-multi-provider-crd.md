@@ -23,6 +23,7 @@ status: provisional
   - [Behavior](#behavior)
     - [Pipeline Lifecycle](#pipeline-lifecycle)
     - [Routing Endpoints to a Provider](#routing-endpoints-to-a-provider)
+    - [Endpoint Provenance and Merge Ordering](#endpoint-provenance-and-merge-ordering)
     - [Credentials](#credentials)
     - [Ownership Isolation](#ownership-isolation)
     - [Conflict Resolution](#conflict-resolution)
@@ -40,13 +41,17 @@ CLI flags / env vars and resolved **once** at startup
 ([`controller/execute.go`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go)).
 Managing several providers, accounts, or zones requires one deployment per configuration.
 
-This proposal adds an **opt-in operational mode** in which provider+zone configuration lives in
-two new CRDs — `DNSProvider` (namespaced) and `ClusterDNSProvider` (cluster-scoped) — modeled on
-cert-manager's `Issuer` / `ClusterIssuer`.
+This proposal moves provider+zone configuration into two new CRDs — `DNSProvider` (namespaced)
+and `ClusterDNSProvider` (cluster-scoped) — modeled on cert-manager's `Issuer` / `ClusterIssuer`.
 
 A single ExternalDNS deployment watches these resources and runs one independent reconcile
-pipeline per resource, created and torn down dynamically as the CRDs change. Existing
-flag-based single-provider deployments are unaffected.
+pipeline per resource, created and torn down dynamically as the CRDs change.
+
+This **replaces** the provider-selection flags (`--provider`, `--domain-filter`, `--txt-owner-id`,
+registry flags, credential env, …) rather than living beside them: the CRD becomes the single config
+mechanism for providers and zones. Migration is a mechanical near-1:1 flag→field mapping, but a
+**breaking change** gated on the next major version. Global flags (`--policy`, `--interval`, source
+selection, logging, metrics, leader election) stay on the CLI.
 
 This addresses [#1961](https://github.com/kubernetes-sigs/external-dns/issues/1961)
 
@@ -77,7 +82,8 @@ multi-tenant cases.
   `ClusterDNSProvider` for platform-wide zones.
 - Support **split-horizon**: a single source record may be published by more than one provider.
 - **Reuse the existing provider/registry factories** rather than reimplementing provider wiring.
-- Keep the existing flag-based mode working, **unchanged and as the default**.
+- Make the CRD the **single** provider/zone configuration mechanism, with a mechanical, near-1:1
+  migration from the existing provider-selection flags.
 
 ### Non-Goals
 
@@ -86,7 +92,8 @@ multi-tenant cases.
   [#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347).
 - **Not** a fully-typed per-provider CRD schema for all 20+ providers (see
   [Alternatives](#alternatives)).
-- **Not** removing or deprecating flag-based configuration in this proposal.
+- **Not** changing the global controller flags (`--policy`, `--interval`, source selection, logging,
+  metrics, leader election); only the provider-selection flags move to the CRD.
 - **Not** redesigning the `Source` interface or the `plan` diffing logic.
 - **Not** solving cross-deployment leader election beyond what
   [proposal 001](./001-leader-election.md) already covers.
@@ -101,7 +108,7 @@ configuration synthesized from the CRD spec.
 
 ```text
                          ┌──────────────────────────────────────────────┐
-                         │ ExternalDNS deployment (--provider=crd)        │
+                         │ ExternalDNS deployment                         │
                          │                                                │
   DNSProvider ───────────►  watch ──► pipeline manager                    │
   ClusterDNSProvider ────►          │   ├─ pipeline A (route53, zoneA)     │
@@ -121,7 +128,7 @@ owns (see [Routing](#routing-endpoints-to-a-provider)).
 #### Story 1: Multiple AWS accounts (#1961, nikolaiderzhak)
 
 *As a platform engineer*, I run workloads spanning three AWS accounts. I create three
-`ClusterDNSProvider` resources, each with a Route53 config and a `secretRef`/IRSA role for its account.
+`ClusterDNSProvider` resources, each with a Route53 config and a `credentialsRef`/IRSA role for its account.
 One ExternalDNS deployment publishes records into the right account based on the zone each hostname
 falls under — no more three deployments to upgrade in lockstep.
 
@@ -172,12 +179,9 @@ spec:
   config:
     aws-zone-type: public
     aws-assume-role: "arn:aws:iam::111122223333:role/external-dns"
-  # Credentials, kept distinct in-memory per provider.
+  # Credentials, kept distinct in-memory per provider (per-pipeline, not global env).
   credentialsRef:
-    name: route53-prod-credentials   # Secret; keys injected as provider env
-  # Optional per-provider overrides of otherwise-global controller settings.
-  policy: sync          # sync | upsert-only | create-only; defaults to controller flag
-  interval: 1m
+    name: route53-prod-credentials   # Secret; keys read by this pipeline only
 status:
   conditions:
     - type: Ready
@@ -205,11 +209,29 @@ spec:
     name: cloudflare-foo-token   # Secret in namespace foo
 ```
 
-The deployment runs in this mode when started with **`--provider=crd`** (working name). In this mode
-the provider-selection flags (`--provider`, `--domain-filter`, `--txt-owner-id`, credential env, …)
-are **not** read for pipeline construction; only genuinely global flags remain
-(`--policy` default, `--interval` default, `--log-level`, `--metrics-address`, `--events`, leader
-election, source selection flags). Started without it, ExternalDNS behaves exactly as today.
+The CRD is the **only** way to configure providers and zones; there is no mode flag. At least one
+`DNSProvider` / `ClusterDNSProvider` must exist for the deployment to publish records. The
+provider-selection flags (`--provider`, `--domain-filter`, `--txt-owner-id`, `--txt-prefix`, registry
+flags, credential env, …) are removed; only genuinely global flags remain (`--policy` default,
+`--interval` default, `--log-level`, `--metrics-address`, `--events`, leader election, source selection).
+
+#### Migration
+
+Each removed flag maps near-1:1 to a CRD field; an existing deployment becomes one `ClusterDNSProvider`
+plus the unchanged global flags. Breaking, gated on the next major version. An external
+`scripts/migrate-flags-to-crd.py` helper renders the CRD (+ Secret stub) from an existing flag set so
+migration is `run script → kubectl apply`.
+
+| Removed flag | CRD field |
+|---|---|
+| `--provider=aws` | `spec.type: aws` |
+| `--domain-filter=example.com` | `spec.domainFilter.include: [example.com]` |
+| `--exclude-domains=internal.example.com` | `spec.domainFilter.exclude: [internal.example.com]` |
+| `--registry=txt` | `spec.registry.type: txt` |
+| `--txt-owner-id=me` | `spec.registry.txtOwnerId: me` |
+| `--txt-prefix=edns-` | `spec.registry.txtPrefix: edns-` |
+| provider-specific flags (`--aws-zone-type`, …) | `spec.config` map entries |
+| credential env (`AWS_*`, API tokens) | `spec.credentialsRef` → Secret |
 
 ### Behavior
 
@@ -217,8 +239,8 @@ election, source selection flags). Started without it, ExternalDNS behaves exact
 
 A **pipeline manager** watches both CRD kinds:
 
-- **Add** — synthesize a per-provider `externaldns.Config` from the spec (see [Credentials](#credentials)),
-  build a `DomainFilter`, then call the **existing**
+- **Add** — synthesize a per-provider `externaldns.Config` plus a credential source from the spec
+  (see [Credentials](#credentials)), build a `DomainFilter`, then call the **existing**
   [`providerfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L110)
   and
   [`registryfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L159),
@@ -227,8 +249,8 @@ A **pipeline manager** watches both CRD kinds:
 - **Delete** — stop the loop, drain in-flight work. **Records are not deleted** on CRD removal; ownership
   cleanup remains an explicit operator action (consistent with how stopping a deployment behaves today).
 
-Each pipeline runs its own `RunOnce` on its own interval, and is additionally triggered by shared source
-events (`--events`), throttled by `--min-event-sync-interval` exactly as the single pipeline is today.
+Each pipeline runs its own `RunOnce` on the global `--interval`, and is additionally triggered by shared
+source events (`--events`), throttled by `--min-event-sync-interval` exactly as the single pipeline is today.
 
 #### Routing Endpoints to a Provider
 
@@ -241,9 +263,9 @@ it should manage using a **two-tier rule** (explicit reference wins, domain matc
    metadata:
      annotations:
        # namespaced DNSProvider in the resource's namespace
-       external-dns.alpha.kubernetes.io/provider: "team-foo-zone"
+       external-dns.kubernetes.io/provider: "team-foo-zone"
        # cluster-scoped, comma-separated for split-horizon
-       external-dns.alpha.kubernetes.io/cluster-provider: "route53-prod,rfc2136-internal"
+       external-dns.kubernetes.io/cluster-provider: "route53-prod,rfc2136-internal"
    ```
 
    When present, **only** the named providers consider the record. A list publishes the **same** record
@@ -257,19 +279,38 @@ it should manage using a **two-tier rule** (explicit reference wins, domain matc
 This keeps **zero-annotation flows working** (records land on the provider that owns their zone) while
 giving explicit control where needed.
 
+#### Endpoint Provenance and Merge Ordering
+
+Explicit-reference routing needs each endpoint's source object. Two existing mechanics must be pinned down:
+
+- **Provenance via `RefObjects`.** The reference annotation is read from
+  [`Endpoint.RefObjects()`](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/endpoint.go),
+  not the DNS name — so every routable source must populate `RefObjects` (the gap
+  [#6492](https://github.com/kubernetes-sigs/external-dns/pull/6492) closed for ~17 sources). Sources with
+  no Kubernetes object (`connector`, static) get **domain-match routing only**.
+- **Route before `MergeEndpoints`.**
+  [`MergeEndpoints`](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/utils.go)
+  collapses same-name records into one endpoint with the **union** of their `RefObjects`. Routing runs on
+  the **pre-merge** set (each endpoint = one source object, one annotation set); merge then runs within
+  each pipeline's subset. This also keeps namespaced-`DNSProvider` enforcement sound.
+- **Conflicting references on a merged name** are resolved as in
+  [Conflict Resolution](#conflict-resolution): **skip** the contested providers with a `Warning` event +
+  metric.
+
 #### Credentials
 
-Each provider's `credentialsRef` points to a Secret. Because the existing provider factory reads
-credentials from process **environment**, and several providers cannot have distinct global env at once,
-credentials are injected **per pipeline** rather than into `os.Environ()`. The thin-wrapper approach:
+Each provider's `credentialsRef` points to a Secret. Many providers read credentials from process
+**environment** today, so running N providers in one process needs an explicit **per-pipeline credential
+boundary** — never a mutated shared `os.Environ()`:
 
-- The synthesized per-provider `Config` carries the Secret's key/values.
-- Provider construction reads credentials from this `Config` (a small, additive change at the factory
-  boundary) instead of, or in addition to, global env.
+- A per-pipeline key/value source (from `credentialsRef` + `spec.config`) is passed into provider
+  construction at the factory boundary; providers read credentials from it, **not** global env.
+- Ambient identity (IRSA, Workload Identity) still works when `credentialsRef` is omitted and the
+  role/identity is set via `spec.config`.
 
-This is the main code change required in the factory layer; the per-provider provider/registry logic is
-otherwise reused unchanged. Providers that authenticate via ambient identity (IRSA, Workload Identity)
-keep working when `credentialsRef` is omitted and the role/identity is selected via `config`.
+This is the main factory-layer change; per-provider logic is reused unchanged. **Phase 2 acceptance**:
+two same-type pipelines with distinct credentials run concurrently without interference, no global-env
+mutation.
 
 #### Ownership Isolation
 
@@ -313,26 +354,35 @@ When two providers match the same record by **domain** (no explicit reference), 
   webhook, and status reporting are substantial new code and test surface.
 - **Resource usage** — N pipelines means N provider clients and N reconcile loops in one process;
   memory/CPU grow with provider count (still typically cheaper than N deployments).
-- **Credential injection at the factory boundary** touches a sensitive, well-exercised code path.
+- **Per-pipeline credential handling at the factory boundary** touches a sensitive, well-exercised code path.
 - **Thin-wrapper config is less type-safe** than per-provider schemas: provider-specific keys are a
   passthrough map, so misconfiguration surfaces at pipeline init, not at `kubectl apply` (mitigated by
   status conditions and the validating webhook).
-- **Two config systems** (flags and CRDs) coexist, increasing documentation and support burden.
+- **Breaking change.** Every deployment — including the common single-provider case — must install the
+  CRDs and apply one `ClusterDNSProvider` before publishing. Migration is mechanical but not zero-effort;
+  an external `scripts/migrate-flags-to-crd.py` helper renders the CRD (+ Secret stub) from an existing
+  flag set (cf. `scripts/aws-cleanup-legacy-txt-records.py`).
 
 ## Implementation Plan
 
-Phased, each phase independently shippable behind `--provider=crd` (alpha):
+Phased. Phases 1–5 land additively behind an alpha CRD path so the work is reviewable incrementally;
+phase 6 performs the breaking flag removal at the major-version boundary:
 
 1. **CRD types + scaffolding** — `DNSProvider` / `ClusterDNSProvider` types in `apis/v1alpha1`, `make crd`,
    RBAC, deepcopy. No behavior yet.
-2. **Per-provider `Config` synthesis + factory credential injection** — synthesize `Config` from spec;
-   add credential injection at the provider factory boundary. Unit-tested without K8s.
+2. **Per-pipeline credential/config boundary** — add a per-pipeline credential source at the provider
+   factory boundary; synthesize the source from `spec`. *Acceptance*: two same-type pipelines with
+   distinct credentials run concurrently; no global-env mutation. Unit-tested without K8s.
 3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, shared source store.
    Domain-match routing only.
-4. **Explicit reference annotations + split-horizon** — two-tier routing, list references.
+4. **Explicit reference annotations + split-horizon** — pre-merge two-tier routing, list references.
+   *Acceptance*: routing reads provenance from `RefObjects` before `MergeEndpoints`; conflicting refs on a
+   merged name are skipped + warned; namespaced references enforced against the referencing object.
 5. **Status, metrics labels, validating webhook** — conditions, duplicate-`txtOwnerId` rejection,
    overlap warnings.
-6. **Docs + tutorial** — migration guide from N deployments to one; cert-manager analogy.
+6. **Flag removal + migration** — remove provider-selection flags; ship the flag→field migration guide
+   and an external `scripts/migrate-flags-to-crd.py` helper that renders a `ClusterDNSProvider` (+ Secret
+   stub) from existing args. Breaking; major version.
 
 ## Alternatives
 
@@ -408,19 +458,22 @@ this proposal.
 **Recommendation**: ❌ Not recommended — namespaced + cluster-scoped chosen to match the cert-manager
 model the issue references. Cluster scope alone cannot express per-namespace ownership.
 
-### Alternative 5: Replace flag-based config outright
+### Alternative 5: Additive opt-in mode, keep the flags
 
-**Description**: Make the CRDs the only configuration path and deprecate provider-selection flags.
+**Description**: Keep the provider-selection flags working and add the CRD path behind a mode flag
+(e.g. `--provider=crd`), so existing single-provider deployments are unaffected.
 
 **Pros**:
 
-- One canonical config path
-- Cleaner end state
+- Non-breaking; gradual adoption
+- Existing deployments need no migration
 
 **Cons**:
 
-- Breaking migration for every existing user
-- Large blast radius for an alpha feature
+- Two configuration systems coexist permanently — more code, docs, and support surface
+- A mode flag overloaded onto `--provider` collides with existing CRD *source* and CRD *registry*
+  terminology
+- The dual path becomes the long-term shape, not a transition
 
-**Recommendation**: ❌ Not recommended for now — ship additively, revisit deprecation once the CRD path
-is proven.
+**Recommendation**: ❌ Not recommended — the mechanical near-1:1 migration is outweighed by collapsing to
+a single configuration mechanism. Retained as the fallback if the breaking change proves too disruptive.
