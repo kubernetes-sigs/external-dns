@@ -26,7 +26,6 @@ status: draft
     - [Zone Discovery](#zone-discovery)
     - [Provider Selection](#provider-selection)
     - [Unsupported Endpoint Features](#unsupported-endpoint-features)
-  - [Distribution Policy (Open Question)](#distribution-policy-open-question)
   - [Drawbacks](#drawbacks)
 - [Alternatives](#alternatives)
 <!-- /toc -->
@@ -34,13 +33,12 @@ status: draft
 ## Summary
 
 Add one generic in-tree provider that adapts [libdns](https://github.com/libdns) modules to the
-ExternalDNS `Provider` interface. This replaces several bespoke in-tree providers with thin, build-tag
-shims over maintained libdns modules — cutting per-provider code and dependency churn — while keeping the
-"no new in-tree providers" gate from
-[#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347) intact.
+ExternalDNS `Provider` interface, replacing several bespoke in-tree providers with thin shims over
+maintained libdns modules. It ships in the single default binary — no build tags, no second image.
 
-It is **not** a reversal of #4347, but a way to make its end state cheaper to maintain and less disruptive
-for users of the simpler providers.
+This is not a reversal of [#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347) but a way
+to advance it: remove bespoke simple-zone providers, offload their upkeep to the libdns ecosystem, and
+still serve their users from one pod — while keeping the "no new in-tree providers" gate intact.
 
 ## Motivation
 
@@ -62,27 +60,29 @@ modules already exist for `transip`, `scaleway`, `linode`, `dnsimple`, `gandi`, 
 
 ### Goals
 
-- One generic in-tree adapter from libdns modules to the `Provider` interface.
-- A libdns-backed replacement path for simple-zone providers before/with their removal.
-- Default binary free of any libdns dependency (build-tag gated).
+- One generic in-tree adapter from libdns modules to the `Provider` interface, in the single default
+  binary — no build tags, no separate image.
+- Replace bespoke simple-zone providers (`transip`, `scaleway`, `linode`, `dnsimple`, `gandi`, `godaddy`,
+  `civo`, `exoscale`, `ovh`) with libdns shims, moving their per-provider upkeep upstream and advancing
+  #4347.
 - Keep the #4347 gate: new providers arrive as libdns modules, not in-tree code.
 
 ### Non-Goals
 
 - In-tree status for AWS, Azure, Google, or Cloudflare routing — they need the rich endpoint model
   (set identifiers, weighted/latency/geo routing, provider-specific fields) libdns does not model.
-- Auto-importing all 80+ libdns modules into the default binary.
+- Bundling all 80+ libdns modules; only a curated set is compiled in.
 - Replacing the webhook mechanism; the two coexist.
 
 ## Proposal
 
 A generic provider at `provider/libdns/` implementing the `Provider` interface on top of the libdns
-interfaces. It imports no vendor SDK directly — only libdns modules, behind a build tag.
+interfaces. It imports no vendor SDK directly — only the curated set of libdns modules.
 
 ```text
 provider/libdns/
   libdns.go     // generic Provider impl (Records, ApplyChanges, AdjustEndpoints)
-  registry.go   // name -> factory for the curated set; gated by //go:build libdns
+  registry.go   // name -> factory for the curated, compiled-in provider set
 ```
 
 ### User Stories
@@ -92,8 +92,8 @@ provider/libdns/
   `libdns/transip` — no second container, no third-party image.
 - **New DNS vendor.** A vendor publishes a libdns module and is usable through the adapter without adding
   code to this repo or coupling to its release cycle.
-- **Maintainer.** Retire a bespoke provider and its SDK by replacing it with a libdns shim behind the
-  build tag; the SDK leaves the default binary.
+- **Maintainer.** Retire a bespoke provider by replacing it with a small libdns shim; its per-provider
+  upkeep moves upstream to the libdns module.
 
 ### API
 
@@ -146,23 +146,20 @@ modules only `transip` and `linode` implement `ZoneLister`.
 
 #### Provider Selection
 
-The supported modules are one curated set fixed at build time (no per-provider compile selection), gated
-behind a single `libdns` tag:
+The supported modules are one curated set compiled into the binary; the active one is chosen at runtime
+via `--libdns-provider`. Registration is a package-level map (no `init()`, per the repo's `gochecknoinits`
+lint):
 
 ```go
-//go:build libdns
-
-func init() {
-    register("transip", func(cfg json.RawMessage) (libdnsClient, error) {
-        p := &transip.Provider{}
-        return p, json.Unmarshal(cfg, p)
-    })
+// registry.go
+var registry = map[string]factory{
+    "transip":  func(cfg json.RawMessage) (libdnsClient, error) { p := &transip.Provider{}; return p, json.Unmarshal(cfg, p) },
+    "scaleway": func(cfg json.RawMessage) (libdnsClient, error) { p := &scaleway.Provider{}; return p, json.Unmarshal(cfg, p) },
     // ... rest of the curated set
 }
 ```
 
-Without the tag, no libdns module is imported. With `-tags libdns`, the active module is chosen at runtime
-via `--libdns-provider`.
+Adding a provider to the set is one `go.mod` entry plus one map line.
 
 #### Unsupported Endpoint Features
 
@@ -173,24 +170,16 @@ the record churns every reconcile under `--update-events`.
 
 As a consequence, the adapter strips it (and warns) in `AdjustEndpoints`.
 
-### Distribution Policy (Open Question)
-
-The `libdns` tag gates the curated set as one unit. The decision for the SIG is whether the official
-distribution ships it as a separate image or folds it into the main one — policy, not code.
-
-- **Option A — two images.** Main image unchanged; a separate `external-dns:<ver>-libdns` variant is built
-  with `-tags libdns`. Lean default, dependency churn confined to the variant. Cost: an extra image to
-  build, scan, release.
-- **Option B — single unified image.** Main image built with `-tags libdns` for everyone. Simplest to
-  operate, best UX. Cost: the libdns SDKs and their churn land in every user's image.
-
 ### Drawbacks
 
-- **Distribution overhead** — Option A adds an image variant; Option B adds the libdns dependency surface
-  to every image.
+- **Dependency surface in the default binary** — pure-HTTP modules (`gandi`, `godaddy`) add almost
+  nothing, but SDK-wrapping ones (`scaleway`, `ovh`, `civo`, `dnsimple`) keep the vendor SDK as a
+  transitive dep. So #4347's dependency churn is *reduced* (fewer direct provider deps, upkeep shared
+  upstream) but not eliminated — the cost of one binary over build tags or a second image.
 - **Provider quirks still leak** — libdns abstracts the API call, not provider behavior. Quirks like the
-  trailing-dot bug in #6491 surface in the module and are fixed upstream, not here.
-- **Reduced feature surface** — no routing policies; `SetIdentifier` is stripped in `AdjustEndpoints`,
+  trailing-dot bug in #6491 are fixed upstream in the module, not here.
+- **Reduced feature surface** — no routing policies; `SetIdentifier` is stripped in `AdjustEndpoints`.
+  Acceptable for the simple-zone tier (these providers have no routing), but must be documented.
 - **Two integration paths** — adapter vs. webhook; docs must steer users.
 - **Coverage gaps** — providers without a module (e.g. `ns1`) are not served.
 
@@ -198,16 +187,22 @@ distribution ships it as a separate image or folds it into the main one — poli
 
 ### Alternative 1: First-party generic libdns webhook image
 
-- **Pros:** No in-tree libdns dependency; smallest footprint; fully decoupled release cycle.
-- **Cons:** Keeps the two-container UX #6491 objected to.
-- **Recommendation:** Possible *in addition* to the adapter, not instead.
+An officially recognized, best-effort libdns webhook in a separate repo. Preferred by some maintainers in
+the [#6509 discussion](https://github.com/kubernetes-sigs/external-dns/pull/6509).
+
+- **Pros:** No in-tree libdns dependency; decoupled release cycle; surfaces the dependency to the user.
+- **Cons:** Keeps the two-container UX #6491 objected to; removes no in-tree code; simple-tier users leave
+  the default distribution.
+- **Recommendation:** Viable *in addition* to the adapter, not instead.
 
 ### Alternative 2: Status quo (webhook only)
 
 Relying on the webhook, including the third-party `orbit-online/external-dns-libdns-webhook`.
 
-- **Pros:** No work; functional today.
-- **Cons:** The third-party, low-activity image is the exact concern raised in #6491.
+- **Pros:** No work; functional today; one mechanism, no overlap.
+- **Cons:** The third-party, low-activity image is the exact #6491 concern. "Webhook is a superset, libdns
+  degrades" does not apply here: the simple-zone tier has no routing/weighted/geo features, so the adapter
+  degrades nothing while removing in-tree code.
 - **Recommendation:** Not recommended as the only option for the simple-zone tier.
 
 ### Alternative 3: Keep bespoke in-tree providers
