@@ -34,7 +34,6 @@ import (
 
 var (
 	mockProvider                     dnsimpleProvider
-	dnsimpleListRecordsResponse      dnsimple.ZoneRecordsResponse
 	dnsimpleListZonesResponse        dnsimple.ZonesResponse
 	dnsimpleListZonesFromEnvResponse dnsimple.ZonesResponse
 )
@@ -118,18 +117,12 @@ func TestDnsimpleServices(t *testing.T) {
 	}
 
 	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord, fourthRecord, fifthRecord}
-	dnsimpleListRecordsResponse = dnsimple.ZoneRecordsResponse{
-		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
-		Data:     records,
-	}
 
 	// Setup mock services
 	// Note: AnythingOfType doesn't work with interfaces https://github.com/stretchr/testify/issues/519
 	mockDNS := &mockDnsimpleZoneServiceInterface{}
 	mockDNS.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(&dnsimpleListZonesResponse, nil)
 	mockDNS.On("ListZones", t.Context(), "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
-	mockDNS.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(&dnsimpleListRecordsResponse, nil)
-	mockDNS.On("ListRecords", t.Context(), "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
 
 	for _, record := range records {
 		recordName := record.Name
@@ -184,26 +177,134 @@ func testDnsimpleProviderZones(t *testing.T) {
 	os.Unsetenv("DNSIMPLE_ZONES")
 }
 
-func testDnsimpleProviderRecords(t *testing.T) {
-	ctx := t.Context()
-	mockProvider.accountID = "1"
-	result, err := mockProvider.Records(ctx)
-	assert.NoError(t, err)
-	assert.Len(t, result, len(dnsimpleListRecordsResponse.Data))
+// wantEndpoint is the comparable shape we assert Records() produced for a case.
+type wantEndpoint struct {
+	dnsName    string
+	recordType string
+	target     string
+}
 
-	var foundAAAA bool
-	for _, ep := range result {
-		if ep.RecordType == endpoint.RecordTypeAAAA {
-			foundAAAA = true
-			assert.Equal(t, "example-ipv6.example.com", ep.DNSName)
-			assert.Equal(t, endpoint.Targets{"fd00::1"}, ep.Targets)
+// testDnsimpleProviderRecords drives Records() through a table of cases with a
+// fresh mock per case, instead of relying on shared global mock state. It
+// covers the supported record types returned together, a dual-stack host where
+// an A and an AAAA record share the same name, the apex domain (empty record
+// name mapping to the zone name), and error propagation from both ListZones and
+// ListRecords.
+func testDnsimpleProviderRecords(t *testing.T) {
+	zonesResponse := &dnsimple.ZonesResponse{
+		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
+		Data:     []dnsimple.Zone{{ID: 1, AccountID: 12345, Name: "example.com"}},
+	}
+	recordsResponse := func(records ...dnsimple.ZoneRecord) *dnsimple.ZoneRecordsResponse {
+		return &dnsimple.ZoneRecordsResponse{
+			Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
+			Data:     records,
 		}
 	}
-	assert.True(t, foundAAAA, "AAAA records should be returned by Records")
 
-	mockProvider.accountID = "2"
-	_, err = mockProvider.Records(ctx)
-	assert.Error(t, err)
+	tests := []struct {
+		name       string
+		setup      func(m *mockDnsimpleZoneServiceInterface)
+		wantErr    bool
+		wantRecord []wantEndpoint
+	}{
+		{
+			name: "all supported types returned together",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
+					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "a", Content: "127.0.0.1", TTL: 3600, Type: "A"},
+					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "aaaa", Content: "fd00::1", TTL: 3600, Type: "AAAA"},
+					dnsimple.ZoneRecord{ID: 3, ZoneID: "example.com", Name: "cname", Content: "target", TTL: 3600, Type: "CNAME"},
+					dnsimple.ZoneRecord{ID: 4, ZoneID: "example.com", Name: "txt", Content: "hello", TTL: 3600, Type: "TXT"},
+				), nil)
+			},
+			wantRecord: []wantEndpoint{
+				{"a.example.com", "A", "127.0.0.1"},
+				{"aaaa.example.com", "AAAA", "fd00::1"},
+				{"cname.example.com", "CNAME", "target"},
+				{"txt.example.com", "TXT", "hello"},
+			},
+		},
+		{
+			name: "dual-stack host returns both A and AAAA",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
+					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "www", Content: "127.0.0.1", TTL: 3600, Type: "A"},
+					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "www", Content: "fd00::1", TTL: 3600, Type: "AAAA"},
+				), nil)
+			},
+			wantRecord: []wantEndpoint{
+				{"www.example.com", "A", "127.0.0.1"},
+				{"www.example.com", "AAAA", "fd00::1"},
+			},
+		},
+		{
+			name: "apex domain maps empty name to the zone name",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
+					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "", Content: "127.0.0.1", TTL: 3600, Type: "A"},
+				), nil)
+			},
+			wantRecord: []wantEndpoint{
+				{"example.com", "A", "127.0.0.1"},
+			},
+		},
+		{
+			name: "unsupported types are skipped",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
+					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "a", Content: "127.0.0.1", TTL: 3600, Type: "A"},
+					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "soa", Content: "ns.example.com", TTL: 3600, Type: "SOA"},
+				), nil)
+			},
+			wantRecord: []wantEndpoint{
+				{"a.example.com", "A", "127.0.0.1"},
+			},
+		},
+		{
+			name: "ListZones error is propagated",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(nil, fmt.Errorf("zones boom"))
+			},
+			wantErr: true,
+		},
+		{
+			name: "ListRecords error is propagated",
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(nil, fmt.Errorf("records boom"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockDNS := &mockDnsimpleZoneServiceInterface{}
+			tt.setup(mockDNS)
+			p := dnsimpleProvider{client: mockDNS, accountID: "1"}
+
+			result, err := p.Records(t.Context())
+			if tt.wantErr {
+				assert.Error(t, err)
+				mockDNS.AssertExpectations(t)
+				return
+			}
+			require.NoError(t, err)
+
+			got := make([]wantEndpoint, 0, len(result))
+			for _, ep := range result {
+				require.Len(t, ep.Targets, 1)
+				got = append(got, wantEndpoint{ep.DNSName, ep.RecordType, ep.Targets[0]})
+			}
+			assert.ElementsMatch(t, tt.wantRecord, got)
+			mockDNS.AssertExpectations(t)
+		})
+	}
 }
 
 // ptr is a small helper for building the *string fields the DNSimple options use.
